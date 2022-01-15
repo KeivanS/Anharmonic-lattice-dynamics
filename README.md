@@ -1,4 +1,4 @@
-# Anharmonic-lattice-dynamics
+# Anharmonic-LAttice-DYNamics (ALADYN)
 This repository contains 5 sets of stand-alone codes:
 -FOrce Constant EXtraction (FOCEX): to extract force constants from force-displacements data, the output of which can be used as input to the following codes,
 -Self-CoOnsistent Phonon (SCOP-) to calculate the state of equilibrium of a crystal at a given temperature and pressure solely from the set of force constants parameters of the high-symmetry phase,
