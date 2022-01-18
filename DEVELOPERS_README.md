@@ -5,7 +5,7 @@ The developers should follow these conventions when adding their contribution to
   !! this subroutine performs a singular value decomposition to solve a set of overdetermined linear equations defined by the matrix a(n,m) and array b(n)
   !! it is used to solve for the force constants given force-displacement data
   
-- The first line explains what it does and the second line explains why it is used.
+- In the above example, the first line explains what it does and the second line explains why it is used.
 
 - **Style**: Standard fortran programming style should be adopted: 
 - All subroutines must start with IMPLICIT NONE
