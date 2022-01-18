@@ -8,9 +8,12 @@ The developers should follow these conventions when adding their contribution to
     !! it is used to solve for the force constants given force-displacement data
     ```
   
-- In the above example, the first line explains what it does and the second line explains why it is used.
+    In the above example, the first line explains what it does and the second line explains why it is used.
 
 - **Style**: Standard fortran programming style should be adopted: 
-- All subroutines must start with IMPLICIT NONE
-- Intent of every variable must be specified (IN, OUT, or INOUT)
-- END statements should be followed with the name of the corresponding subroutine
+
+    All subroutines must start with `IMPLICIT NONE`
+
+    Intent of every variable must be specified (`IN`, `OUT`, or `INOUT`)
+
+    `END` statements should be followed with the name of the corresponding subroutine
