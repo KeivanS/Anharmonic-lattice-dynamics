@@ -1,0 +1,1806 @@
+1,12c1,12
+< *******************************************************************************
+< * initialize data
+<       subroutine force_constants_init(lattparams,primlatt,natoms_in,
+<      $     iatomtype,atompos_in)
+< 
+< * arguments:
+< *     lattparams(i) (input), lattice parameters a,b,c,alpha,beta,gamma
+< *     primlatt(i,j) (input), ith dimensionless coordinate of jth basis vector
+< *          of the primitive lattice
+< *     natoms_in (input), number of atoms in the primitive unit cell
+< *     iatomtype(i) (input), type of ith atom, numbered 1,2,3,etc.
+< *     atompos_in(j,i) (input), jth dimensionless coordinate of the ith atom
+---
+> !******************************************************************************
+> ! initialize data
+>       subroutine force_constants_init(lattparams,primlatt,natoms_in, &
+>      &     iatomtype,atompos_in)
+> 
+> ! arguments:
+> !     lattparams(i) (input), lattice parameters a,b,c,alpha,beta,gamma
+> !     primlatt(i,j) (input), ith dimensionless coordinate of jth basis vector
+> !          of the primitive lattice
+> !     natoms_in (input), number of atoms in the primitive unit cell
+> !     iatomtype(i) (input), type of ith atom, numbered 1,2,3,etc.
+> !     atompos_in(j,i) (input), jth dimensionless coordinate of the ith atom
+20,24c20,24
+<       integer i,j,k,m,n,i1,i2,i3,j1,j2,j3,nd2save,ncmp,nshell,
+<      $     natoms_in,iatomtype(natoms_in),ier,ifractcount,iatom,
+<      $     iatom2,itype2,iatom3,ipntop,
+<      $     itype,isg,iatom0,iop,icell(3),
+<      $     iop_matrix(3,3,48)
+---
+>       integer i,j,k,m,n,i1,i2,i3,j1,j2,j3,nd2save,ncmp,nshell,   &
+>      &     natoms_in,iatomtype(natoms_in),ier,ifractcount,iatom,   &
+>      &     iatom2,itype2,iatom3,ipntop,   &
+>      &     itype,isg,iatom0,iop,icell(3),   &
+>      &     iop_matrix(3,3,48)
+26,30c26,30
+<       double precision d2save(maxneighbors),r(3),d2, d2r,
+<      $     lattparams(6),primlatt(3,3),      tempi(3,3),latp(6),
+<      $     conv_to_cart(3,3),prim_to_cart(3,3),cart_to_prim(3,3),
+<      $     prim_to_conv(3,3),conv_to_prim(3,3),atompos_in(3,natoms_in),
+<      $     atomposconv(3,natoms_in),fract(3),v(3),v2(3),temp(3,3)
+---
+>       double precision d2save(maxneighbors),r(3),d2, d2r,   &
+>      &     lattparams(6),primlatt(3,3),      tempi(3,3),latp(6),   &
+>      &     conv_to_cart(3,3),prim_to_cart(3,3),cart_to_prim(3,3),   &
+>      &     prim_to_conv(3,3),conv_to_prim(3,3),atompos_in(3,natoms_in),   &
+>      &     atomposconv(3,natoms_in),fract(3),v(3),v2(3),temp(3,3)
+36,38c36,38
+< *-----------------------------------------------------------------------------
+< * some preliminary stuff
+< * copy input arguments into global variables
+---
+> !-------------------------------------------------------------------------------
+> ! some preliminary stuff
+> ! copy input arguments into global variables
+42c42
+< * allocate memory
+---
+> ! allocate memory
+51c51
+< * get primitive lattice vectors in terms of conventional lattice vectors
+---
+> ! get primitive lattice vectors in terms of conventional lattice vectors
+55,56c55,56
+<         write(6,*)'Error in force_constants_init: primitive_lattice '
+<      $       //'is singular'
+---
+>         write(6,*)'Error in force_constants_init: primitive_lattice '   &
+>      &       //'is singular'
+59c59
+< * get conventional lattice parameters in cartesian coordinates
+---
+> ! get conventional lattice parameters in cartesian coordinates
+62c62
+<       latp(4:6) = latp(4:6)*d2r   ! convert angles from degree to radian
+---
+> !     latp(4:6) = latp(4:6)*d2r   ! convert angles from degree to radian
+64,71c64,70
+<       conv_to_cart(1,2)=latp(2)*dcos(latp(6))
+<       conv_to_cart(2,2)=latp(2)*dsin(latp(6))
+<       conv_to_cart(1,3)=latp(3)*dcos(latp(5))
+<       conv_to_cart(2,3)=latp(3)*(dcos(latp(4))
+<      $     -dcos(latp(6))*dcos(latp(5)))
+<      $     /dsin(latp(6))
+<       conv_to_cart(3,3)=sqrt(latp(3)**2-conv_to_cart(1,3)**2
+<      $     -conv_to_cart(2,3)**2)
+---
+>       conv_to_cart(1,2)=latp(2)*dcosd(latp(6))
+>       conv_to_cart(2,2)=latp(2)*dsind(latp(6))
+>       conv_to_cart(1,3)=latp(3)*dcosd(latp(5))
+>       conv_to_cart(2,3)=latp(3)*(dcosd(latp(4))   &
+>      &     -dcosd(latp(6))*dcosd(latp(5)))  /dsind(latp(6))
+>       conv_to_cart(3,3)=sqrt(latp(3)**2-conv_to_cart(1,3)**2   &
+>      &     -conv_to_cart(2,3)**2)
+73c72
+< * get primitive lattice parameters in cartesian coordinates
+---
+> ! get primitive lattice parameters in cartesian coordinates
+77,78c76,77
+<         write(6,*)'Error in force_constants_init: primitive_lattice '
+<      $       //'is singular'
+---
+>         write(6,*)'Error in force_constants_init: primitive_lattice '   &
+>      &       //'is singular'
+94c93
+< * get atomic positions in cartesian coordinates
+---
+> ! get atomic positions in cartesian coordinates
+101,102c100
+<         call unitcell(cart_to_prim,prim_to_cart,atompos(1,i),
+<      $       atompos(1,i))
+---
+>         call unitcell(cart_to_prim,prim_to_cart,atompos(1,i), atompos(1,i))
+107,109c105,107
+< *-----------------------------------------------------------------------------
+< * find symmetry of crystal.
+< * find point group of lattice
+---
+> !-------------------------------------------------------------------------------
+> ! find symmetry of crystal.
+> ! find point group of lattice
+127c125
+< * find transformation matrices for k vectors
+---
+> ! find transformation matrices for k vectors
+163,164c161,162
+< * find elements of space group
+< * count them
+---
+> ! find elements of space group
+> ! count them
+166c164
+< * try each element of point group of lattice
+---
+> ! try each element of point group of lattice
+168,169c166,167
+< * operate on atom 1.  v contains the coordinates of the atom after
+< * the operation
+---
+> ! operate on atom 1.  v contains the coordinates of the atom after
+> ! the operation
+171c169
+< * try to map the rotated atom 1 onto every other atom of the same type
+---
+> ! try to map the rotated atom 1 onto every other atom of the same type
+174c172
+< * find the fractional translation required in the space group element
+---
+> ! find the fractional translation required in the space group element
+176,178c174,175
+<             call unitcell(cart_to_prim,prim_to_cart,
+<      +           fract,fract)
+< * now try this space group element on every other atom
+---
+>             call unitcell(cart_to_prim,prim_to_cart, fract,fract)
+> ! now try this space group element on every other atom
+181,185c178,181
+< * operate on the atom: rotation followed by a fractional translation
+< * v contains the coordinates of the atom after the operation by the space
+< * group element.
+<               call xvmlt(op_matrix(1,1,ipntop),atompos(1,iatom2),v2,
+<      $             3,3,3)
+---
+> ! operate on the atom: rotation followed by a fractional translation
+> ! v contains the coordinates of the atom after the operation by the space
+> ! group element.
+>               call xvmlt(op_matrix(1,1,ipntop),atompos(1,iatom2),v2, 3,3,3)
+188c184
+< * try to find another atom of the same type with these coordinates
+---
+> ! try to find another atom of the same type with these coordinates
+192,194c188,189
+< * this one isn't it, try another one
+<                     if(ncmp(v2(i)-atompos(i,iatom3)).ne.0)
+<      $                   cycle iatom3loop2
+---
+> ! this one isn't it, try another one
+>                     if(ncmp(v2(i)-atompos(i,iatom3)).ne.0)  cycle iatom3loop2
+196c191
+< * we found it, try the space group element on another atom
+---
+> ! we found it, try the space group element on another atom
+199c194
+< * try to find another atom (iatom3)
+---
+> ! try to find another atom (iatom3)
+201c196
+< * did not find it, try mapping atom 1 onto another atom
+---
+> ! did not find it, try mapping atom 1 onto another atom
+203c198
+< * try the space group element on the next atom (iatom2)
+---
+> ! try the space group element on the next atom (iatom2)
+205,206c200,201
+< * space group element was successful for every atom, save it
+< * count them
+---
+> ! space group element was successful for every atom, save it
+> ! count them
+208c203
+< * save rotation part of element
+---
+> ! save rotation part of element
+210c205
+< * save translational part of element
+---
+> ! save translational part of element
+214c209
+< * do next element of point group
+---
+> ! do next element of point group
+216c211
+< * try mapping atom 1 onto another atom
+---
+> ! try mapping atom 1 onto another atom
+219,220c214,215
+< * this element is not in space group
+< * do next element of point group (ipg)
+---
+> ! this element is not in space group
+> ! do next element of point group (ipg)
+222,224c217,219
+< *--------------------------------------------------------------------------
+< * find operators that take atoms into atoms in the primitive unit cell
+< * do each atom
+---
+> !----------------------------------------------------------------------------
+> ! find operators that take atoms into atoms in the primitive unit cell
+> ! do each atom
+227c222
+< * do each element of space group
+---
+> ! do each element of space group
+230,232c225,226
+< * operate on position of atom iatom
+<           call xvmlt(op_matrix(1,1,ipntop),atompos(1,iatom),v,
+<      $         3,3,3)
+---
+> ! operate on position of atom iatom
+>           call xvmlt(op_matrix(1,1,ipntop),atompos(1,iatom),v,3,3,3)
+235c229
+< * look for atom
+---
+> ! look for atom
+239,240c233
+<                 if(ncmp(v2(i)-atompos(i,iatom2)).ne.0)
+<      $               cycle iatom2loop3
+---
+>                 if(ncmp(v2(i)-atompos(i,iatom2)).ne.0)  cycle iatom2loop3
+242c235
+< * found it.  save it if not already previously found
+---
+> ! found it.  save it if not already previously found
+245,246c238
+<                 call xvsub(atompos(1,iatom),v,
+<      $               atomopfract(1,iatom,iatom2),3)
+---
+>                 call xvsub(atompos(1,iatom),v, atomopfract(1,iatom,iatom2),3)
+249c241
+< * try to match another atom (iatom2)
+---
+> ! try to match another atom (iatom2)
+252c244
+< * next space group element
+---
+> ! next space group element
+254c246
+< * next atom (iatom)
+---
+> ! next atom (iatom)
+256,258c248,250
+< *-----------------------------------------------------------------------------
+< * collect nearest neighbor atoms
+< * do each atom in primitive unit cell
+---
+> !-------------------------------------------------------------------------------
+> ! collect nearest neighbor atoms
+> ! do each atom in primitive unit cell
+262,263c254,255
+< * collect distances to nearest neighbors
+< * do one shell of unit cells at a time
+---
+> ! collect distances to nearest neighbors
+> ! do one shell of unit cells at a time
+269,270c261,262
+<             if(iabs(i1).ne.n.and.iabs(i2).ne.n.and.iabs(i3).ne.n)cycle
+< * do each atom in unit cell
+---
+>             if(iabs(i1).ne.n.and.iabs(i2).ne.n.and.iabs(i3).ne.n)cycle ! only 8 terms in the sum
+> ! do each atom in unit cell
+272c264
+< * skip the atom at the origin
+---
+> ! skip the atom at the origin
+274c266
+< * position of atom and distance squared
+---
+> ! position of atom and distance squared
+276c268
+<               d2=0
+---
+>               d2=0  ! d2 = Ri+tau_i-tau_j
+278,280c270,271
+<                 r(j)=atompos(j,i)+i1*prim_to_cart(j,1)
+<      $               +i2*prim_to_cart(j,2)+i3*prim_to_cart(j,3)
+<      $               -atompos(j,iatom0)
+---
+>                 r(j)=atompos(j,i)+i1*prim_to_cart(j,1)  &
+>      &               +i2*prim_to_cart(j,2)+i3*prim_to_cart(j,3) -atompos(j,iatom0)
+283c274
+< * did we find any new ones in this shell?
+---
+> ! did we find any new ones in this shell?
+286,287c277
+<               else if(ncmp(d2-d2save(nd2save)).eq.0.or.
+<      $               d2.lt.d2save(nd2save))then
+---
+>               else if(ncmp(d2-d2save(nd2save)).eq.0.or.  d2.lt.d2save(nd2save))then
+290c280
+< * compare distance to atom with previously found distances
+---
+> ! compare distance to atom with previously found distances
+292c282
+< * same distance: do another atom
+---
+> ! same distance: do another atom
+294c284
+< * new distance: insert into list
+---
+> ! new distance: insert into list
+304c294
+< * new distance: insert at end of list if list is not already full
+---
+> ! new distance: insert at end of list if list is not already full
+313c303
+< * no new atom found in shell:  save previous shell and exit loop
+---
+> ! no new atom found in shell:  save previous shell and exit loop
+318c308
+< * list is filled
+---
+> ! list is filled
+320c310
+< * we reached the last shell before we finished the list
+---
+> ! we reached the last shell before we finished the list
+327,329c317,319
+< *---------------------------------------------------------------------------
+< * generate positions of neighbors
+< * do each shell of unit cells
+---
+> !-----------------------------------------------------------------------------
+> ! generate positions of neighbors
+> ! do each shell of unit cells
+338c328
+< * do each atom in unit cell
+---
+> ! do each atom in unit cell
+340c330
+< * skip atom at origin
+---
+> ! skip atom at origin
+342c332
+< * position of atom
+---
+> ! position of atom
+346,347c336,337
+<                 r(j)=atompos(j,i)+i1*prim_to_cart(j,1)
+<      $               +i2*prim_to_cart(j,2)+i3*prim_to_cart(j,3)
+---
+>                 r(j)=atompos(j,i)+i1*prim_to_cart(j,1)  &
+>      &               +i2*prim_to_cart(j,2)+i3*prim_to_cart(j,3)
+350c340
+< * find in list
+---
+> ! find in list
+357,358c347,348
+<                       write(6,*)'Warning: in force_constants_init:  '
+<      $                     //'the value of maxatoms needs to be larger.'
+---
+>                       write(6,*)'Warning: in force_constants_init:  '   &
+>      &                     //'the value of maxatoms needs to be larger.'
+376c366
+< * next inequivalent atom
+---
+> ! next inequivalent atom
+380,419c370,409
+< *******************************************************************************
+< * get force constants
+<       subroutine force_constants(nrank,iatomd,ixyzd,
+<      $     ntermsindep,iatomtermindep,ixyztermindep,
+<      $     nterm5,iatomtermall,ixyztermall,amat,ntermszero,
+<      $     iatomtermzero,ixyztermzero,
+<      $     maxrank,maxterms,maxtermsindep,maxtermszero,ierz,iert,ieri)
+< * find relationships between terms of the form d^nU/dxidxjdxk...
+< * where U is the total energy of the crystal and xi is a coordinate (x=x,y,z)
+< * of the ith atom.
+< 
+< * arguments:
+< *     nrank (input), order of derivative
+< *     iatomd(i) (input), atom at ith location in denominator
+< *     ixyzd(i) (input), coordinate (1,2,3=x,y,z) at ith location in denominator
+< *     ntermsindep (output), number of independent terms
+< *     iatomtermindep(i,j) (output), atom at ith location in denominator of
+< *          jth independent term
+< *     ixyztermindep(i,j) (output), coordinate at ith location in denomonitor
+< *          of jth independent term
+< *     nterm5 (output), total number of nonzero terms
+< *     iatomtermall(i,j) (output), atom at ith location in denominator of
+< *          jth nonzero term
+< *     ixyztermall(i,j) (output), coordinate at ith location in denomonitor of 
+< *          jth nonzero term
+< *     amat(i,j) (output), coefficient of jth independent term in equation for
+< *          kth nonzero term
+< *     ntermszero (output), number of zero terms generated
+< *     iatomtermzero(i,j) (output), atom at ith location in denominator of
+< *          jth zero term
+< *     ixyztermzero(i,j) (output), coordinate at ith location in denomonitor
+< *          of jth zero term
+< *     maxrank (input), number of rows in arrays iatomtermindep, ixyztermindep,
+< *          iatomtermall, ixyztermall, iatomtermzero and ixyztermzero
+< *     maxterms (input), number of columns in arrays iatomtermall and
+< *          ixyztermall
+< *     maxtermsindep (input), number of columns in arrays iatomtermindep and
+< *          ixyztermindep
+< *     maxtermszero (input), number columns in arrays iatomtermzero and
+< *          ixyztermzero
+---
+> !******************************************************************************
+> ! get force constants
+>       subroutine force_constants(nrank,iatomd,ixyzd,   &
+>      &     ntermsindep,iatomtermindep,ixyztermindep,   &
+>      &     nterm5,iatomtermall,ixyztermall,amat,ntermszero,   &
+>      &     iatomtermzero,ixyztermzero,   &
+>      &     maxrank,maxterms,maxtermsindep,maxtermszero,ierz,iert,ieri)
+> ! find relationships between terms of the form d^nU/dxidxjdxk...
+> ! where U is the total energy of the crystal and xi is a coordinate (x=x,y,z)
+> ! of the ith atom.
+> 
+> ! arguments:
+> !     nrank (input), order of derivative
+> !     iatomd(i) (input), atom at ith location in denominator
+> !     ixyzd(i) (input), coordinate (1,2,3=x,y,z) at ith location in denominator
+> !     ntermsindep (output), number of independent terms
+> !     iatomtermindep(i,j) (output), atom at ith location in denominator of
+> !          jth independent term
+> !     ixyztermindep(i,j) (output), coordinate at ith location in denomonitor
+> !          of jth independent term
+> !     nterm5 (output), total number of nonzero terms
+> !     iatomtermall(i,j) (output), atom at ith location in denominator of
+> !          jth nonzero term
+> !     ixyztermall(i,j) (output), coordinate at ith location in denomonitor of 
+> !          jth nonzero term
+> !     amat(i,j) (output), coefficient of jth independent term in equation for
+> !          kth nonzero term
+> !     ntermszero (output), number of zero terms generated
+> !     iatomtermzero(i,j) (output), atom at ith location in denominator of
+> !          jth zero term
+> !     ixyztermzero(i,j) (output), coordinate at ith location in denomonitor
+> !          of jth zero term
+> !     maxrank (input), number of rows in arrays iatomtermindep, ixyztermindep,
+> !          iatomtermall, ixyztermall, iatomtermzero and ixyztermzero
+> !     maxterms (input), number of columns in arrays iatomtermall and
+> !          ixyztermall
+> !     maxtermsindep (input), number of columns in arrays iatomtermindep and
+> !          ixyztermindep
+> !     maxtermszero (input), number columns in arrays iatomtermzero and
+> !          ixyztermzero
+425,436c415,426
+<       integer i,j,k,m,n,iatomd(nrank),ixyz(nrank),iatom(nrank),ncmp,
+<      $   iatomterm(maxrank,maxterms),ixyzterm(maxrank,maxterms),jterm,
+<      $     icell(3),iv(3),isg,ixyzd(nrank),ntermsindep,msave,nn,
+<      $     irank,k2,neqs,ipermute(:,:),ifactorial,msave2,j2,
+<      $     npermute,ixyzfirst(nrank),nterm5,ixyz4(nrank),
+<      $     mapdep(maxterms),mapterms(maxterms),
+<      $     maptermsindep(maxterms),mapindepterms(maxterms),
+<      $   iatomtermall(maxrank,maxterms),ixyztermall(maxrank,maxterms),
+<      $     iatomtermindep(maxrank,maxterms),
+<      $     ixyztermindep(maxrank,maxterms),
+<      $     ntermszero,iatomtermzero(maxrank,maxtermszero),
+<      $     ixyztermzero(maxrank,maxtermszero)
+---
+>       integer i,j,k,m,n,iatomd(nrank),ixyz(nrank),iatom(nrank),ncmp,   &
+>      &   iatomterm(maxrank,maxterms),ixyzterm(maxrank,maxterms),jterm,   &
+>      &     icell(3),iv(3),isg,ixyzd(nrank),ntermsindep,msave,nn,   &
+>      &     irank,k2,neqs,ipermute(:,:),ifactorial,msave2,j2,   &
+>      &     npermute,ixyzfirst(nrank),nterm5,ixyz4(nrank),   &
+>      &     mapdep(maxterms),mapterms(maxterms),   &
+>      &     maptermsindep(maxterms),mapindepterms(maxterms),   &
+>      &   iatomtermall(maxrank,maxterms),ixyztermall(maxrank,maxterms),   &
+>      &     iatomtermindep(maxrank,maxterms),   &
+>      &     ixyztermindep(maxrank,maxterms),   &
+>      &     ntermszero,iatomtermzero(maxrank,maxtermszero),   &
+>      &     ixyztermzero(maxrank,maxtermszero)
+438,439c428,429
+<       double precision v(3),amp,eqs(:,:),
+<      $     eqs2(:,:),amat(maxterms,maxtermsindep)
+---
+>       double precision v(3),amp,eqs(:,:),   &
+>      &     eqs2(:,:),amat(maxterms,maxtermsindep)
+443c433
+< * check if input values are valid
+---
+> ! check if input values are valid
+458c448
+< * get permutations of nrank items
+---
+> ! get permutations of nrank items
+474,475c464,465
+< *        write(6,*)jterm,nterm5
+< * do each space-group operator
+---
+> !        write(6,*)jterm,nterm5
+> ! do each space-group operator
+486c476
+< * operate on each item in denominator
+---
+> ! operate on each item in denominator
+488,489c478,479
+<           call xvmlt(op_matrix(1,1,isgop(isg)),
+<      $         atompos(1,iatomterm(irank,jterm)),v,3,3,3)
+---
+>           call xvmlt(op_matrix(1,1,isgop(isg)),  &
+>      &         atompos(1,iatomterm(irank,jterm)),v,3,3,3)
+491c481
+< * find atom
+---
+> ! find atom
+500c490
+< * rotate coordinates
+---
+> ! rotate coordinates
+523,524c513
+<               if(ncmp(op_matrix(ixyz4(k),ixyzterm(k,jterm),isgop(isg)))
+<      $             .ne.0)exit
+---
+>               if(ncmp(op_matrix(ixyz4(k),ixyzterm(k,jterm),isgop(isg))) .ne.0)exit
+531c520
+< * amplitude
+---
+> ! amplitude
+537c526
+< * get unique denominator
+---
+> ! get unique denominator
+539c528
+< * look for variable
+---
+> ! look for variable
+542,544c531,532
+<               if(iatomterm(k,i).ne.iatom(k).or.ixyzterm(k,i).ne.ixyz(k))
+<      $             exit
+< * foundit: add in amp
+---
+>               if(iatomterm(k,i).ne.iatom(k).or.ixyzterm(k,i).ne.ixyz(k))  exit
+> ! foundit: add in amp
+550c538
+< * did not find it: add it and add in amp
+---
+> ! did not find it: add it and add in amp
+554,555c542
+<                 write(6,*)
+<      $      'Warning: in force_constants: maxterms too small',maxterms
+---
+>            write(6,*) 'Warning: in force_constants: maxterms too small',maxterms
+566c553
+< * next space-group operator
+---
+> ! next space-group operator
+568c555
+< * solve simultaneous equations
+---
+> ! solve simultaneous equations
+570c557
+< * find number of equations
+---
+> ! find number of equations
+580c567
+< * next seed
+---
+> ! next seed
+583c570
+< * put terms in order
+---
+> ! put terms in order
+619c606
+< * find independent and dependent terms
+---
+> ! find independent and dependent terms
+633c620
+< * save independent terms
+---
+> ! save independent terms
+639,640c626
+<             write(6,*)
+<      $           'Warning: in force_constants: maxtermsindep too small'
+---
+>        write(6,*) 'Warning: in force_constants: maxtermsindep too small'
+647,650c633,634
+<           iatomtermindep(1:nrank,ntermsindep)=
+<      $         iatomterm(1:nrank,mapterms(i))
+<           ixyztermindep(1:nrank,ntermsindep)=
+<      $         ixyzterm(1:nrank,mapterms(i))
+---
+>           iatomtermindep(1:nrank,ntermsindep)= iatomterm(1:nrank,mapterms(i))
+>           ixyztermindep(1:nrank,ntermsindep)=  ixyzterm(1:nrank,mapterms(i))
+653c637
+< * no independent terms: all terms are zero
+---
+> ! no independent terms: all terms are zero
+668c652
+< * look for zero terms
+---
+> ! look for zero terms
+680c664
+< * do each term
+---
+> ! do each term
+684c668
+< * find all permutations
+---
+> ! find all permutations
+691c675
+< * look for it
+---
+> ! look for it
+699c683
+< * new term: add it
+---
+> ! new term: add it
+709c693
+< * find all translations
+---
+> ! find all translations
+713,714c697
+<             if(iatomcell0(iatomtermall(j2,i)).eq.iatomtermall(j2,i))
+<      $           cycle
+---
+>             if(iatomcell0(iatomtermall(j2,i)).eq.iatomtermall(j2,i))  cycle
+716c699
+< * move atoms and identify them
+---
+> ! move atoms and identify them
+721,722c704
+<               call findatom(icell,iatomcell0(iatomtermall(k,i)),
+<      $             iatomtermall(k,m+1))
+---
+>               call findatom(icell,iatomcell0(iatomtermall(k,i)), iatomtermall(k,m+1))
+729c711
+< * look for it
+---
+> ! look for it
+737c719
+< * new term: add it
+---
+> ! new term: add it
+748c730
+< * zero terms
+---
+> ! zero terms
+751,752c733
+<             write(6,*)'Warning: in force_constants: maxtermszero '
+<      $           //'too small'
+---
+>          write(6,*)'Warning: in force_constants: maxtermszero too small'
+757,760c738,741
+<           iatomtermzero(1:nrank,ntermszero+1:ntermszero+m-msave)=
+<      $         iatomtermall(1:nrank,msave+1:m)
+<           ixyztermzero(1:nrank,ntermszero+1:ntermszero+m-msave)=
+<      $         ixyztermall(1:nrank,msave+1:m)
+---
+>           iatomtermzero(1:nrank,ntermszero+1:ntermszero+m-msave)=   &
+>      &         iatomtermall(1:nrank,msave+1:m)
+>           ixyztermzero(1:nrank,ntermszero+1:ntermszero+m-msave)=   &
+>      &         ixyztermall(1:nrank,msave+1:m)
+763c744
+< * independent terms
+---
+> ! independent terms
+766c747
+< * dependent terms
+---
+> ! dependent terms
+780,818c761,799
+< *****************************************************************************
+< * get force constants for a given rank out to a given nearest neighbor shell
+<       subroutine collect_force_constants_old(nrank,nshell,ngroups,
+<      $     ntermsindep,iatomtermindep,ixyztermindep,nterm6,
+<      $     iatomterm,ixyzterm,amat,ntermszero,iatomtermzero,
+<      $     ixyztermzero,maxrank,maxterms,maxtermsindep,maxtermszero,
+<      $     maxgroups,ierz,iert,ieri,ierg)
+< * arguments:
+< *     nrank (input), order or derivative
+< *     nshell (input), shell of nearest-neighbor atoms to be included
+< *     ngroups (output), number of groups of terms.  Within each group, the
+< *          terms are related by symmetry.
+< *     For the ith group:
+< *     ntermsindep(i) (output), number of independent terms
+< *     iatomtermindep(k,j,i) (output), atom at kth location in denominator of
+< *          jth independent term
+< *     ixyztermindep(k,j,i) (output), coordinate at kth location in denomonitor 
+< *          of jth independent term
+< *     nterm6(i) (output), total number of terms
+< *     iatomterm(k,j,i) (output), atom at kth location in denominators of
+< *          jth term
+< *     ixyzterm(k,j,i) (output), coordinate at kth location in denomonitor of 
+< *          jth term
+< *     amat(k,j,i) (output), coefficient of jth independent term in equation
+< *          for kth term
+< *     ntermszero (output), number of zero terms
+< *     iatomtermzero(k,j) (output), atom at kth location in denominator of
+< *          jth zero term
+< *     ixyztermzero(k,j) (output), coordinate at kth location in denomonitor 
+< *          of jth zero term
+< *     maxrank (input), number of rows in arrays iatomtermindep, ixyztermindep,
+< *          iatomterm, and ixyzterm
+< *     maxterms (input), number of rows in array amat and number of columns
+< *          in arrays iatomterm and ixyzterm
+< *     maxtermsindep (input), number of columns
+< *          in arrays amat, iatomtermindep, and ixyztermindep
+< *     maxtermszero (input), number of columns
+< *          in arrays iatomtermzero and ixyztermzero
+< *     maxgroups (input), maximum number of groups
+---
+> !****************************************************************************
+> ! get force constants for a given rank out to a given nearest neighbor shell
+>       subroutine collect_force_constants_old(nrank,nshell,ngroups,  &
+>      &     ntermsindep,iatomtermindep,ixyztermindep,nterm6,   &
+>      &     iatomterm,ixyzterm,amat,ntermszero,iatomtermzero,   &
+>      &     ixyztermzero,maxrank,maxterms,maxtermsindep,maxtermszero,   &
+>      &     maxgroups,ierz,iert,ieri,ierg)
+> ! arguments:
+> !     nrank (input), order or derivative
+> !     nshell (input), shell of nearest-neighbor atoms to be included
+> !     ngroups (output), number of groups of terms.  Within each group, the
+> !          terms are related by symmetry.
+> !     For the ith group:
+> !     ntermsindep(i) (output), number of independent terms
+> !     iatomtermindep(k,j,i) (output), atom at kth location in denominator of
+> !          jth independent term
+> !     ixyztermindep(k,j,i) (output), coordinate at kth location in denomonitor 
+> !          of jth independent term
+> !     nterm6(i) (output), total number of terms
+> !     iatomterm(k,j,i) (output), atom at kth location in denominators of
+> !          jth term
+> !     ixyzterm(k,j,i) (output), coordinate at kth location in denomonitor of 
+> !          jth term
+> !     amat(k,j,i) (output), coefficient of jth independent term in equation
+> !          for kth term
+> !     ntermszero (output), number of zero terms
+> !     iatomtermzero(k,j) (output), atom at kth location in denominator of
+> !          jth zero term
+> !     ixyztermzero(k,j) (output), coordinate at kth location in denomonitor 
+> !          of jth zero term
+> !     maxrank (input), number of rows in arrays iatomtermindep, ixyztermindep,
+> !          iatomterm, and ixyzterm
+> !     maxterms (input), number of rows in array amat and number of columns
+> !          in arrays iatomterm and ixyzterm
+> !     maxtermsindep (input), number of columns
+> !          in arrays amat, iatomtermindep, and ixyztermindep
+> !     maxtermszero (input), number of columns
+> !          in arrays iatomtermzero and ixyztermzero
+> !     maxgroups (input), maximum number of groups
+822,833c803,814
+<       integer nrank,maxrank,maxterms,maxtermsindep,maxgroups,
+<      $     maxtermszero,ierz,iert,ieri,ierg
+<       integer i,j,k,m,n,nshell,ngroups,nterm6(maxgroups),
+<      $     iatomterm(maxrank,maxterms,maxgroups),ncount,
+<      $     ixyzterm(maxrank,maxterms,maxgroups),
+<      $     iatomtermindep(maxrank,maxterms,maxgroups),
+<      $     ixyztermindep(maxrank,maxterms,maxgroups),
+<      $     ishell,iatom,iatom0,iatomd(nrank),ixyz,ngroupsave,
+<      $     ixyzd(nrank),nterms2,ncmp,icell(3),
+<      $     ntermsindep(maxgroups),iatomd2(nrank),ixyzd2(nrank),
+<      $     ntermszero,iatomtermzero(maxrank,maxtermszero),
+<      $     ixyztermzero(maxrank,maxtermszero),ntermszerosave
+---
+>       integer nrank,maxrank,maxterms,maxtermsindep,maxgroups,  &
+>      &     maxtermszero,ierz,iert,ieri,ierg
+>       integer i,j,k,m,n,nshell,ngroups,nterm6(maxgroups),  &
+>      &     iatomterm(maxrank,maxterms,maxgroups),ncount,  &
+>      &     ixyzterm(maxrank,maxterms,maxgroups),  &
+>      &     iatomtermindep(maxrank,maxterms,maxgroups),  &
+>      &     ixyztermindep(maxrank,maxterms,maxgroups),  &
+>      &     ishell,iatom,iatom0,iatomd(nrank),ixyz,ngroupsave,  &
+>      &     ixyzd(nrank),nterms2,ncmp,icell(3),  &
+>      &     ntermsindep(maxgroups),iatomd2(nrank),ixyzd2(nrank),  &
+>      &     ntermszero,iatomtermzero(maxrank,maxtermszero),  &
+>      &     ixyztermzero(maxrank,maxtermszero),ntermszerosave
+844c825
+< * check if input values are valid
+---
+> ! check if input values are valid
+854c835
+< * do each atom in unit cell
+---
+> ! do each atom in unit cell
+856c837
+< * find first nearest neighbor in list
+---
+> ! find first nearest neighbor in list
+860,861c841,842
+<             write(6,*)'Error in collect_force_constants_old: first '
+<      $           //'nearest neighbor not found'
+---
+>             write(6,*)'Error in collect_force_constants_old: first '  &
+>      &           //'nearest neighbor not found'
+865,866c846,847
+< * try each atom for each position in denominator
+< * begin with first nearest neighbor
+---
+> ! try each atom for each position in denominator
+> ! begin with first nearest neighbor
+872c853
+< * next set of atoms
+---
+> ! next set of atoms
+878c859
+< * try each position in denominator
+---
+> ! try each position in denominator
+880c861
+< * try each atom in that position
+---
+> ! try each atom in that position
+882c863
+< * nearest neighbor to atom in cell at origin?
+---
+> ! nearest neighbor to atom in cell at origin?
+884c865
+< * nearest neighbor to all other atoms in denominator?
+---
+> ! nearest neighbor to all other atoms in denominator?
+891,892c872
+<                   if(iatomneighbor(iatomcell0(j),m).gt.nshell)
+<      $                 cycle jloop
+---
+>                   if(iatomneighbor(iatomcell0(j),m).gt.nshell)  cycle jloop
+894c874
+< * yes: put atom in denominator and get terms
+---
+> ! yes: put atom in denominator and get terms
+899c879
+< * done: try next atom in cell at origin
+---
+> ! done: try next atom in cell at origin
+902c882
+< * check if found yet
+---
+> ! check if found yet
+910c890
+< * found it: try next set of atoms
+---
+> ! found it: try next set of atoms
+918c898
+< * found it: try next set of atoms
+---
+> ! found it: try next set of atoms
+921,922c901,902
+< * did not find it: generate terms
+< * all possible sets of coordinates
+---
+> ! did not find it: generate terms
+> ! all possible sets of coordinates
+931,933c911,912
+< * check if found yet
+<             call unique_force_constant(nrank,iatomd,ixyzd,
+<      $           iatomd2,ixyzd2)
+---
+> ! check if found yet
+>             call unique_force_constant(nrank,iatomd,ixyzd, iatomd2,ixyzd2)
+940c919
+< * found it: try next set of coordinates
+---
+> ! found it: try next set of coordinates
+949c928
+< * found it: try next set of coordinates
+---
+> ! found it: try next set of coordinates
+952c931
+< * did not find it: generate terms
+---
+> ! did not find it: generate terms
+961,967c940,946
+<             call force_constants(nrank,iatomd2,ixyzd2,
+<      $           ntermsindep(ngroups),iatomtermindep(1,1,ngroups),
+<      $           ixyztermindep(1,1,ngroups),nterm6(ngroups),
+<      $           iatomterm(1,1,ngroups),ixyzterm(1,1,ngroups),
+<      $           amat(1,1,ngroups),n,iatomtermzero(1,ntermszero+1),
+<      $           ixyztermzero(1,ntermszero+1),maxrank,maxterms,
+<      $           maxtermsindep,maxtermszero-ntermszero,ierz,iert,ieri)
+---
+>             call force_constants(nrank,iatomd2,ixyzd2,   &
+>      &           ntermsindep(ngroups),iatomtermindep(1,1,ngroups),   &
+>      &           ixyztermindep(1,1,ngroups),nterm6(ngroups),   &
+>      &           iatomterm(1,1,ngroups),ixyzterm(1,1,ngroups),   &
+>      &           amat(1,1,ngroups),n,iatomtermzero(1,ntermszero+1),   &
+>      &           ixyztermzero(1,ntermszero+1),maxrank,maxterms,   &
+>      &           maxtermsindep,maxtermszero-ntermszero,ierz,iert,ieri)
+982c961
+< * no nonzero terms in group
+---
+> ! no nonzero terms in group
+987c966
+< * next set of coordinates
+---
+> ! next set of coordinates
+989c968
+< * next set of atoms
+---
+> ! next set of atoms
+996c975
+<       write(*,3)' iatomtrmindep(rnk,1,ngroups)=',  
+---
+>       write(*,3)' iatomtrmindep(rnk,1,ngroups)=',   &
+998c977
+<       write(*,3)' ixyztermindep(rnk,1,ngroups)=',  
+---
+>       write(*,3)' ixyztermindep(rnk,1,ngroups)=',   &
+1000c979
+<       write(*,3)' iatomterm    (rnk,1,ngroups)=',  
+---
+>       write(*,3)' iatomterm    (rnk,1,ngroups)=',   &
+1002c981
+<       write(*,3)' ixyzterm     (rnk,1,ngroups)=',
+---
+>       write(*,3)' ixyzterm     (rnk,1,ngroups)=',   &
+1009,1019c988,997
+< *****************************************************************************
+< * bring a force constant to a unique form: atoms
+<       subroutine unique_force_constant(nrank,iatomin,ixyzin,iatomout,
+<      $     ixyzout)
+< 
+< * arguments:
+< *     nrank (input), order of derivative
+< *     iatomin(i) (input), atom at ith location in denominator
+< *     ixyzin(i) (input), x,y,z coordinate of atom
+< *     iatomout(i) (output), atom at ith location in denominator
+< *     ixyzout(i) (output), x,y,z coordinate of atom
+---
+> !****************************************************************************
+> ! bring a force constant to a unique form: atoms
+>       subroutine unique_force_constant(nrank,iatomin,ixyzin,iatomout,ixyzout)
+> 
+> ! arguments:
+> !     nrank (input), order of derivative
+> !     iatomin(i) (input), atom at ith location in denominator
+> !     ixyzin(i) (input), x,y,z coordinate of atom
+> !     iatomout(i) (output), atom at ith location in denominator
+> !     ixyzout(i) (output), x,y,z coordinate of atom
+1024,1027c1002,1005
+<       integer i,j,k,m,n,iatomin(nrank),iatomout(nrank),
+<      $     iatomtemp(nrank),irank,iv(3),icell(3),iatom,k2,k3,
+<      $     iatomtemp2(nrank),ixyzin(nrank),ixyzout(nrank),
+<      $     ixyztemp(nrank),ixyztemp2(nrank),ixyz
+---
+>       integer i,j,k,m,n,iatomin(nrank),iatomout(nrank),  &
+>      &     iatomtemp(nrank),irank,iv(3),icell(3),iatom,k2,k3,  &
+>      &     iatomtemp2(nrank),ixyzin(nrank),ixyzout(nrank),  &
+>      &     ixyztemp(nrank),ixyztemp2(nrank),ixyz
+1031c1009
+< * bring atom in each item to unit cell at origin
+---
+> ! bring atom in each item to unit cell at origin
+1034c1012
+< * move atoms and identify them
+---
+> ! move atoms and identify them
+1045c1023
+< * put atoms in order
+---
+> ! put atoms in order
+1047,1049c1025,1027
+<             if(iatomtemp(k).lt.iatomtemp(k2).or.
+<      $           (iatomtemp(k).eq.iatomtemp(k2).and.
+<      $           ixyztemp(k).lt.ixyztemp(k2)))then
+---
+>             if(iatomtemp(k).lt.iatomtemp(k2).or.  &
+>      &           (iatomtemp(k).eq.iatomtemp(k2).and.  &
+>      &           ixyztemp(k).lt.ixyztemp(k2))) then
+1062c1040
+< *compared with saved term
+---
+> !compared with saved term
+1094,1095c1072,1073
+< *****************************************************************************
+< * routines
+---
+> !****************************************************************************
+> ! routines
+1097,1103c1075,1081
+< * find atom in data base
+< * arguments:
+< *     icell(i) (input), linear combination of basis vectors of the primitive
+< *          lattice that takes us to the unit cell containing the ith atom
+< *     icell0 (input), identity of equivalent atom in unit cell at origin
+< *     iatom (output), location of atom in data base.  Returns zero if not found
+< *          in data base
+---
+> ! find atom in data base
+> ! arguments:
+> !     icell(i) (input), linear combination of basis vectors of the primitive
+> !          lattice that takes us to the unit cell containing the ith atom
+> !     icell0 (input), identity of equivalent atom in unit cell at origin
+> !     iatom (output), location of atom in data base.  Returns zero if not found
+> !          in data base
+1119c1097
+< *------------------------------------------------------------------------------
+---
+> !--------------------------------------------------------------------------------
+1121,1125c1099,1103
+< * find atom in data base
+< * arguments:
+< *     pos(i) (input), ith cartesian coordinate of atomic position
+< *     iatom (output), location of atom in data base.  Returns zero if not found
+< *          in data base
+---
+> ! find atom in data base
+> ! arguments:
+> !     pos(i) (input), ith cartesian coordinate of atomic position
+> !     iatom (output), location of atom in data base.  Returns zero if not found
+> !          in data base
+1141c1119
+< *------------------------------------------------------------------------------
+---
+> !--------------------------------------------------------------------------------
+1144,1149c1122,1127
+< *
+< *	COMPARE X WITH ZERO
+< *	NCMP=0 IF X IS CLOSE ENOUGH TO ZERO
+< *	NCMP=1 OTHERWISE
+< *	X IS REAL
+< *
+---
+> !
+> !	COMPARE X WITH ZERO
+> !	NCMP=0 IF X IS CLOSE ENOUGH TO ZERO
+> !	NCMP=1 OTHERWISE
+> !	X IS REAL
+> !
+1155c1133
+<       if(abs(x).gt.1d-3)ncmp=1
+---
+>       if(abs(x).gt.1d-6)ncmp=1
+1158c1136
+< *------------------------------------------------------------------------------
+---
+> !--------------------------------------------------------------------------------
+1162c1140
+< * invert a 3 by 3 matrix
+---
+> ! invert a 3 by 3 matrix
+1167c1145
+< * dimension of matrix
+---
+> ! dimension of matrix
+1169c1147
+< * clear error flag
+---
+> ! clear error flag
+1178c1156
+< * decomposition
+---
+> ! decomposition
+1180c1158
+< * singular matrix
+---
+> ! singular matrix
+1185c1163
+< * inverse matrix
+---
+> ! inverse matrix
+1191c1169
+< * The following routines are from Numerical Recipes
+---
+> ! The following routines are from Numerical Recipes
+1207c1185
+< * singular matrix
+---
+> ! singular matrix
+1283c1261
+< *----------------------------------------------------------------------------
+---
+> !------------------------------------------------------------------------------
+1286,1298c1264,1276
+< * multiply two real matrices, x3=x1*x2
+< * double precision version
+< * arguments:
+< *     x1,x2 (input), first and second matrix
+< *     x3 (output), product x1*x2
+< *     nrow1 (input), number of rows in x1, also the number of rows in x3
+< *     ncol1 (input), number of columns in x1, also the number of
+< *          rows in x2
+< *     ncol2 (input), number of columns in x2, also the number of
+< *          columns in x3
+< *     nr1 (input), number of rows in the physical array x1
+< *     nr2 (input), number of rows in the physical array x2
+< *     nr3 (input), number of rows in the physical array x3
+---
+> ! multiply two real matrices, x3=x1*x2
+> ! double precision version
+> ! arguments:
+> !     x1,x2 (input), first and second matrix
+> !     x3 (output), product x1*x2
+> !     nrow1 (input), number of rows in x1, also the number of rows in x3
+> !     ncol1 (input), number of columns in x1, also the number of
+> !          rows in x2
+> !     ncol2 (input), number of columns in x2, also the number of
+> !          columns in x3
+> !     nr1 (input), number of rows in the physical array x1
+> !     nr2 (input), number of rows in the physical array x2
+> !     nr3 (input), number of rows in the physical array x3
+1321c1299
+< *-----------------------------------------------------------------------------
+---
+> !-------------------------------------------------------------------------------
+1324,1331c1302,1309
+< * multiply a double precision vector by a double precision matrix, v2=x*v1
+< * arguments:
+< *     x (input), matrix
+< *     v1 (input), vector
+< *     v2 (output), product x*v1
+< *     nrow (input), number of rows in x, also the number of rows in v2
+< *     ncol (input), number of columns in x, also the number of rows in v1
+< *     nr (input), number of rows in the physical array x
+---
+> ! multiply a double precision vector by a double precision matrix, v2=x*v1
+> ! arguments:
+> !     x (input), matrix
+> !     v1 (input), vector
+> !     v2 (output), product x*v1
+> !     nrow (input), number of rows in x, also the number of rows in v2
+> !     ncol (input), number of columns in x, also the number of rows in v1
+> !     nr (input), number of rows in the physical array x
+1348,1349c1326,1327
+< *----------------------------------------------------------------------------
+< * bring a point into the unit cell at the origin
+---
+> !------------------------------------------------------------------------------
+> ! bring a point into the unit cell at the origin
+1353,1354c1331,1332
+<       double precision cart_to_prim(3,3),prim_to_cart(3,3),v1(3),
+<      +     v2(3),buff(3)
+---
+>       double precision cart_to_prim(3,3),prim_to_cart(3,3),v1(3),  &
+>      &     v2(3),buff(3)
+1356,1357c1334,1335
+< * change coordinates of point to linear combination of basis vectors of the
+< * primitive lattice
+---
+> ! change coordinates of point to linear combination of basis vectors of the
+> ! primitive lattice
+1359,1360c1337,1338
+< * in the unit cell at the origin, the coefficient must be greater than or
+< * equal to zero and less than one.
+---
+> ! in the unit cell at the origin, the coefficient must be greater than or
+> ! equal to zero and less than one.
+1369c1347
+< * return to cartesian coordinates
+---
+> ! return to cartesian coordinates
+1372c1350
+< *--------------------------------------------------------------------------
+---
+> !----------------------------------------------------------------------------
+1375c1353
+< * find symmetry matrices for a given lattice
+---
+> ! find symmetry matrices for a given lattice
+1377,1381c1355,1359
+< * arguments:
+< *     cart(i,j) (input), ith cartesian component of jth basis vector
+< *     eps (input), tolerance for length
+< *     nmatrices (output), number of matrices
+< *     matrices(i,j,k) (output), kth matrix
+---
+> ! arguments:
+> !     cart(i,j) (input), ith cartesian component of jth basis vector
+> !     eps (input), tolerance for length
+> !     nmatrices (output), number of matrices
+> !     matrices(i,j,k) (output), kth matrix
+1388,1392c1366,1370
+<       integer n,i,j,j1,j2,j3,k,m,i1,i2,i3,nshort(3),ndet,itrans(3,3),
+<      $     nmatrices,matrices(3,3,48),ichoose(3)
+<       double precision eps, dshort(nmax,3),ishort(3,nmax,3),
+<      $     vshort(3,nmax,3),v(3),xmax, vlength,x,dvdot,d,abc(3,3),
+<      $     cart(3,3)
+---
+>       integer n,i,j,j1,j2,j3,k,m,i1,i2,i3,nshort(3),ndet,itrans(3,3),  &
+>      &     nmatrices,matrices(3,3,48),ichoose(3)
+>       double precision eps, dshort(nmax,3),ishort(3,nmax,3),  &
+>      &     vshort(3,nmax,3),v(3),xmax, vlength,x,dvdot,d,abc(3,3),  &
+>      &     cart(3,3)
+1395c1373
+< * some initialization
+---
+> ! some initialization
+1412c1390
+< * longest lattice parameter
+---
+> ! longest lattice parameter
+1414,1415c1392,1393
+< * try each shell until every vector in a shell is longer than the longest
+< * lattice parameter
+---
+> ! try each shell until every vector in a shell is longer than the longest
+> ! lattice parameter
+1419c1397
+< * find all lattice vectors in shell
+---
+> ! find all lattice vectors in shell
+1424c1402
+< * length of lattice vector
+---
+> ! length of lattice vector
+1432c1410
+< * if shorter than longest lattice parameter, then do next shell too
+---
+> ! if shorter than longest lattice parameter, then do next shell too
+1434c1412
+< * check each lattice parameter a,b,c
+---
+> ! check each lattice parameter a,b,c
+1436c1414
+< * equal to length of lattice parameter to within tolerance
+---
+> ! equal to length of lattice parameter to within tolerance
+1438c1416
+< * count them
+---
+> ! count them
+1444c1422
+< * length
+---
+> ! length
+1446c1424
+< * dimensionless coordinates
+---
+> ! dimensionless coordinates
+1450c1428
+< * cartesian coordinates
+---
+> ! cartesian coordinates
+1456c1434
+< * next vector in shell
+---
+> ! next vector in shell
+1461c1439
+< * next shell
+---
+> ! next shell
+1464c1442
+< * try mappings of basis vectors onto vectors the "same" length
+---
+> ! try mappings of basis vectors onto vectors the "same" length
+1475c1453
+< * determinant of the transformation matrix must be equal to 1
+---
+> ! determinant of the transformation matrix must be equal to 1
+1477c1455
+< * lengths of differences of lattice vectors must match to within tolerance
+---
+> ! lengths of differences of lattice vectors must match to within tolerance
+1485,1487c1463,1465
+< * found a transformation:  count them and save it
+< * if this is the identity op, just put it into the first matrix where we
+< * have reserved a place for it
+---
+> ! found a transformation:  count them and save it
+> ! if this is the identity op, just put it into the first matrix where we
+> ! have reserved a place for it
+1498c1476
+< * next mapping
+---
+> ! next mapping
+1502c1480
+< * find any additional matrices by multiplication
+---
+> ! find any additional matrices by multiplication
+1511c1489,1490
+<               call matmlt(matrices(1,1,i),matrices(1,1,j),itrans)
+---
+> !             call matmlt(matrices(1,1,i),matrices(1,1,j),itrans)
+>               itrans=matmul(matrices(:,:,i),matrices(:,:,j)) 
+1523,1524c1502,1503
+<                     write(6,*)'Error in dlatmat2: '//
+<      $                   'more than 48 point operators'
+---
+>                     write(6,*)'Error in dlatmat2: '//  &
+>      &                   'more than 48 point operators'
+1535c1514
+< *------------------------------------------------------------------------------
+---
+> !--------------------------------------------------------------------------------
+1538,1543c1517,1522
+< * subtract two real vectors: v3=v1-v2
+< * double precision version
+< * arguments:
+< *     v1,v2 (input), vectors
+< *     v3 (output), vector v1-v2
+< *     nrow (input), number of rows in each vector
+---
+> ! subtract two real vectors: v3=v1-v2
+> ! double precision version
+> ! arguments:
+> !     v1,v2 (input), vectors
+> !     v3 (output), vector v1-v2
+> !     nrow (input), number of rows in each vector
+1552c1531
+< *----------------------------------------------------------------------------
+---
+> !------------------------------------------------------------------------------
+1555,1560c1534,1539
+< * add two real vectors: v3=v1+v2
+< * double precision version
+< * arguments:
+< *     v1,v2 (input), vectors
+< *     v3 (output), vector v1+v2
+< *     nrow (input), number of rows in each vector
+---
+> ! add two real vectors: v3=v1+v2
+> ! double precision version
+> ! arguments:
+> !     v1,v2 (input), vectors
+> !     v3 (output), vector v1+v2
+> !     nrow (input), number of rows in each vector
+1569c1548
+< *-----------------------------------------------------------------------------
+---
+> !-------------------------------------------------------------------------------
+1581c1560
+< *-----------------------------------------------------------------------------
+---
+> !-------------------------------------------------------------------------------
+1588c1567
+< *----------------------------------------------------------------------------
+---
+> !------------------------------------------------------------------------------
+1591,1593c1570,1572
+< *
+< *	FIND THE DETERMINANT OF A 3X3 MATRIX MAT
+< *
+---
+> !
+> !	FIND THE DETERMINANT OF A 3X3 MATRIX MAT
+> !
+1595,1597c1574,1576
+<       ndet=mat(1,1)*(mat(2,2)*mat(3,3)-mat(2,3)*mat(3,2))
+<      +-mat(1,2)*(mat(2,1)*mat(3,3)-mat(2,3)*mat(3,1))
+<      ++mat(1,3)*(mat(2,1)*mat(3,2)-mat(2,2)*mat(3,1))
+---
+>       ndet=mat(1,1)*(mat(2,2)*mat(3,3)-mat(2,3)*mat(3,2))  &
+>      & -mat(1,2)*(mat(2,1)*mat(3,3)-mat(2,3)*mat(3,1))  &
+>      & +mat(1,3)*(mat(2,1)*mat(3,2)-mat(2,2)*mat(3,1))
+1600,1618c1579
+< *----------------------------------------------------------------------------
+<       subroutine matmlt(mat1,mat2,mat3)
+<       implicit none
+< *
+< *	MULTIPLY TWO 3X3 MATRICES
+< *	MAT3=MAT1*MAT2
+< *
+<       integer mat1(3,3),mat2(3,3),mat3(3,3),mat4(3,3),j,k,l
+<       do 1 j=1,3
+<       do 1 k=1,3
+<       mat4(j,k)=0
+<       do 1 l=1,3
+< 1     mat4(j,k)=mat4(j,k)+mat1(j,l)*mat2(l,k)
+<       do 2 j=1,3
+<       do 2 k=1,3
+< 2     mat3(j,k)=mat4(j,k)
+<       return
+<       end
+< *----------------------------------------------------------------------------
+---
+> !------------------------------------------------------------------------------
+1620,1625c1581,1586
+< * find all permutations of n objects
+< * arguments:
+< *     n (input), number of objects
+< *     ipermutations(i,j) (output), object in ith location of jth permutation
+< *     nr (input), number of rows in ipermutations
+< *     nc (input), number of columns in ipermutations
+---
+> ! find all permutations of n objects
+> ! arguments:
+> !     n (input), number of objects
+> !     ipermutations(i,j) (output), object in ith location of jth permutation
+> !     nr (input), number of rows in ipermutations
+> !     nc (input), number of columns in ipermutations
+1629,1630c1590
+<       integer n,ipermutations(nr,nc),ip(10),np,ifactorial,
+<      $     i,j,k,m,mm,kk,nexc,ip2(10)
+---
+>       integer n,ipermutations(nr,nc),ip(10),np,ifactorial, i,j,k,m,mm,kk,nexc,ip2(10)
+1633c1593
+< * check for valid input
+---
+> ! check for valid input
+1647c1607
+< * first permutation
+---
+> ! first permutation
+1652c1612
+< * done if only one object
+---
+> ! done if only one object
+1654c1614
+< * mark which objects are used in the first n-1 locations
+---
+> ! mark which objects are used in the first n-1 locations
+1657c1617
+< * count permutations
+---
+> ! count permutations
+1659,1661c1619,1622
+< * try changing the object in a location, starting at location n-1
+<  1    do i=n-1,1,-1
+< * moving this object: not at this location anymore
+---
+> ! try changing the object in a location, starting at location n-1
+>     loop1: do while (np.lt.nc) 
+>       do i=n-1,1,-1
+> ! moving this object: not at this location anymore
+1663c1624
+< * look for a vacant location
+---
+> ! look for a vacant location
+1665c1626
+< * found one
+---
+> ! found one
+1667c1628
+< * put object in that location
+---
+> ! put object in that location
+1670c1631
+< * put the remaining objects in the remaining locations
+---
+> ! put the remaining objects in the remaining locations
+1684c1645
+< * count permutations and save it
+---
+> ! count permutations and save it
+1687c1648
+<             goto 1
+---
+>             cycle loop1 !goto 1
+1690a1652
+>     enddo loop1
+1692,1693c1654,1655
+< *-----------------------------------------------------------------------------
+< * factorial:  ifactorial = n!
+---
+> !-------------------------------------------------------------------------------
+> ! factorial:  ifactorial = n!
+1710c1672
+< *-----------------------------------------------------------------------------
+---
+> !-------------------------------------------------------------------------------
+1713,1716c1675,1678
+< *
+< *	DO ROW OPERATIONS ON MATRIX ZNA TO BRING IT TO UPPER TRIANGULAR FORM
+< *	DOUBLE PRECISION NUMBERS
+< *
+---
+> !
+> !	DO ROW OPERATIONS ON MATRIX ZNA TO BRING IT TO UPPER TRIANGULAR FORM
+> !	DOUBLE PRECISION NUMBERS
+> !
+1720,1721c1682,1683
+< *
+< *	TRANSFORM MATRIX BY ROWS
+---
+> !
+> !	TRANSFORM MATRIX BY ROWS
+1723c1685
+<       do 1 j=1,nrow
+---
+>    do j=1,nrow
+1725c1687
+< *	PUT NON-ZERO ELEMENTS ON DIAGONAL
+---
+> !	PUT NON-ZERO ELEMENTS ON DIAGONAL
+1727,1729c1689,1692
+<       do 2 k=j+1,nrow
+< 2     if(ncmp(zna(k,j+nout)).ne.0)goto 3
+< *	IF COLUMN HAS ALL ZEROES, GO TO NEXT COLUMN
+---
+>       do  k=j+1,nrow
+>       if(ncmp(zna(k,j+nout)).ne.0)goto 3
+>       enddo
+> !	IF COLUMN HAS ALL ZEROES, GO TO NEXT COLUMN
+1732,1733c1695,1696
+< *	INTERCHANGE ROWS
+< 3     do 6 l=1,ncol
+---
+> !	INTERCHANGE ROWS
+> 3     do l=1,ncol
+1736,1737c1699,1701
+< 6     zna(k,l)=zntemp
+< *	NORMALIZE ELEMENTS IN ROW
+---
+>       zna(k,l)=zntemp
+>       enddo
+> !	NORMALIZE ELEMENTS IN ROW
+1739,1746c1703,1711
+<       do 20 k=j+nout,ncol
+< 20    zna(j,k)=zna(j,k)/zntemp
+< *	REDUCE ALL OTHER ROWS
+<       do 7 k=1,nrow
+<       if(k.eq.j)goto 7
+<       if(ncmp(zna(k,j+nout)).eq.0)goto 7
+<       do 8 l=1,ncol
+<       if(l.eq.j+nout)goto 8
+---
+>       do k=j+nout,ncol
+>       zna(j,k)=zna(j,k)/zntemp
+>       enddo
+> !	REDUCE ALL OTHER ROWS
+>       do  k=1,nrow
+>         if(k.eq.j) cycle
+>         if(ncmp(zna(k,j+nout)).eq.0) cycle
+>         do  l=1,ncol
+>           if(l.eq.j+nout) cycle 
+1748c1713
+< 8     continue
+---
+>         enddo
+1750,1751c1715,1716
+< 7     continue
+< 1     continue
+---
+>       enddo
+>   enddo
+1754c1719
+< *-----------------------------------------------------------------------------
+---
+> !-------------------------------------------------------------------------------
+1756,1758c1721,1723
+< * find atom in data base
+< * arguments:
+< *     kvec(i) (input), ith dimensionless component of k vector
+---
+> ! find atom in data base
+> ! arguments:
+> !     kvec(i) (input), ith dimensionless component of k vector
+1765,1766c1730,1731
+<       double precision kvec(3),kvecstar(3,48),primlatt(3,3),v(3),
+<      $     v2(3),v3(3),kvecstarp(3,48)
+---
+>       double precision kvec(3),kvecstar(3,48),primlatt(3,3),v(3),  &
+>      &     v2(3),v3(3),kvecstarp(3,48)
+1792,1830c1757,1795
+< *****************************************************************************
+< * get force constants for a given rank out to a given nearest neighbor shell
+<       subroutine collect_force_constants(nrank,nshell,ngroups,
+<      $     ntermsindep,iatomtermindep,ixyztermindep,nterm6,
+<      $     iatomterm,ixyzterm,amat,ntermszero,iatomtermzero,
+<      $     ixyztermzero,maxrank,maxterms,maxtermsindep,maxtermszero,
+<      $     maxgroups,ierz,iert,ieri,ierg)
+< * arguments:
+< *     nrank (input), order or derivative
+< *     nshell (input), shell of nearest-neighbor atoms to be included
+< *     ngroups (output), number of groups of terms.  Within each group, the
+< *          terms are related by symmetry.
+< *     For the ith group:
+< *     ntermsindep(i) (output), number of independent terms
+< *     iatomtermindep(k,j,i) (output), atom at kth location in denominator of
+< *          jth independent term
+< *     ixyztermindep(k,j,i) (output), coordinate at kth location in denomonitor 
+< *          of jth independent term
+< *     nterm6(i) (output), total number of terms
+< *     iatomterm(k,j,i) (output), atom at kth location in denominators of
+< *          jth term
+< *     ixyzterm(k,j,i) (output), coordinate at kth location in denomonitor of 
+< *          jth term
+< *     amat(k,j,i) (output), coefficient of jth independent term in equation
+< *          for kth term
+< *     ntermszero (output), number of zero terms
+< *     iatomtermzero(k,j) (output), atom at kth location in denominator of
+< *          jth zero term
+< *     ixyztermzero(k,j) (output), coordinate at kth location in denomonitor 
+< *          of jth zero term
+< *     maxrank (input), number of rows in arrays iatomtermindep, ixyztermindep,
+< *          iatomterm, and ixyzterm
+< *     maxterms (input), number of rows in array amat and number of columns
+< *          in arrays iatomterm and ixyzterm
+< *     maxtermsindep (input), number of columns
+< *          in arrays amat, iatomtermindep, and ixyztermindep
+< *     maxtermszero (input), number of columns
+< *          in arrays iatomtermzero and ixyztermzero
+< *     maxgroups (input), maximum number of groups
+---
+> !****************************************************************************
+> ! get force constants for a given rank out to a given nearest neighbor shell
+>       subroutine collect_force_constants(nrank,nshell,ngroups,  &
+>      &     ntermsindep,iatomtermindep,ixyztermindep,nterm6,  &
+>      &     iatomterm,ixyzterm,amat,ntermszero,iatomtermzero,  &
+>      &     ixyztermzero,maxrank,maxterms,maxtermsindep,maxtermszero,  &
+>      &     maxgroups,ierz,iert,ieri,ierg)
+> ! arguments:
+> !     nrank (input), order or derivative
+> !     nshell (input), shell of nearest-neighbor atoms to be included
+> !     ngroups (output), number of groups of terms.  Within each group, the
+> !          terms are related by symmetry.
+> !     For the ith group:
+> !     ntermsindep(i) (output), number of independent terms
+> !     iatomtermindep(k,j,i) (output), atom at kth location in denominator of
+> !          jth independent term
+> !     ixyztermindep(k,j,i) (output), coordinate at kth location in denomonitor 
+> !          of jth independent term
+> !     nterm6(i) (output), total number of terms
+> !     iatomterm(k,j,i) (output), atom at kth location in denominators of
+> !          jth term
+> !     ixyzterm(k,j,i) (output), coordinate at kth location in denomonitor of 
+> !          jth term
+> !     amat(k,j,i) (output), coefficient of jth independent term in equation
+> !          for kth term
+> !     ntermszero (output), number of zero terms
+> !     iatomtermzero(k,j) (output), atom at kth location in denominator of
+> !          jth zero term
+> !     ixyztermzero(k,j) (output), coordinate at kth location in denomonitor 
+> !          of jth zero term
+> !     maxrank (input), number of rows in arrays iatomtermindep, ixyztermindep,
+> !          iatomterm, and ixyzterm
+> !     maxterms (input), number of rows in array amat and number of columns
+> !          in arrays iatomterm and ixyzterm
+> !     maxtermsindep (input), number of columns
+> !          in arrays amat, iatomtermindep, and ixyztermindep
+> !     maxtermszero (input), number of columns
+> !          in arrays iatomtermzero and ixyztermzero
+> !     maxgroups (input), maximum number of groups
+1834,1835c1799,1800
+<       integer nrank,maxrank,maxterms,maxtermsindep,maxgroups,
+<      $     maxtermszero,ierz,iert,ieri,ierg
+---
+>       integer nrank,maxrank,maxterms,maxtermsindep,maxgroups,  &
+>      &     maxtermszero,ierz,iert,ieri,ierg
+1837,1846c1802,1811
+<       integer i,j,k,m,n,nshell(natoms0),ngroups,nterm6(maxgroups),
+<      $     iatomterm(maxrank,maxterms,maxgroups),ncount,
+<      $     ixyzterm(maxrank,maxterms,maxgroups),
+<      $     iatomtermindep(maxrank,maxterms,maxgroups),
+<      $     ixyztermindep(maxrank,maxterms,maxgroups),
+<      $     ishell,iatom,iatom0,iatomd(nrank),ixyz,ngroupsave,
+<      $     ixyzd(nrank),nterms2,ncmp,icell(3),
+<      $     ntermsindep(maxgroups),iatomd2(nrank),ixyzd2(nrank),
+<      $     ntermszero,iatomtermzero(maxrank,maxtermszero),
+<      $     ixyztermzero(maxrank,maxtermszero),ntermszerosave
+---
+>       integer i,j,k,m,n,nshell(natoms0),ngroups,nterm6(maxgroups),  &
+>      &     iatomterm(maxrank,maxterms,maxgroups),ncount,  &
+>      &     ixyzterm(maxrank,maxterms,maxgroups),  &
+>      &     iatomtermindep(maxrank,maxterms,maxgroups),  &
+>      &     ixyztermindep(maxrank,maxterms,maxgroups),  &
+>      &     ishell,iatom,iatom0,iatomd(nrank),ixyz,ngroupsave,  &
+>      &     ixyzd(nrank),nterms2,ncmp,icell(3),  &
+>      &     ntermsindep(maxgroups),iatomd2(nrank),ixyzd2(nrank),  &
+>      &     ntermszero,iatomtermzero(maxrank,maxtermszero),  &
+>      &     ixyztermzero(maxrank,maxtermszero),ntermszerosave
+1860c1825
+< * check if input values are valid
+---
+> ! check if input values are valid
+1870c1835
+< * do each atom in unit cell
+---
+> ! do each atom in unit cell
+1872c1837
+< * find first nearest neighbor in list
+---
+> ! find first nearest neighbor in list
+1876,1877c1841,1842
+<             write(6,*)'Error in collect_force_constants: first '
+<      $           //'nearest neighbor not found'
+---
+>             write(6,*)'Error in collect_force_constants: first '  &  
+>      &           //'nearest neighbor not found'
+1881,1882c1846,1847
+< * try each atom for each position in denominator
+< * begin with first nearest neighbor
+---
+> ! try each atom for each position in denominator
+> ! begin with first nearest neighbor
+1888c1853
+< * next set of atoms
+---
+> ! next set of atoms
+1894c1859
+< * try each position in denominator
+---
+> ! try each position in denominator
+1896c1861
+< * try each atom in that position
+---
+> ! try each atom in that position
+1898c1863
+< * nearest neighbor to atom in cell at origin?
+---
+> ! nearest neighbor to atom in cell at origin?
+1900c1865
+< * nearest neighbor to all other atoms in denominator?
+---
+> ! nearest neighbor to all other atoms in denominator?
+1907,1908c1872
+<                   if(iatomneighbor(iatomcell0(j),m).gt.nshell(iatom0))
+<      $                 cycle jloop
+---
+>                   if(iatomneighbor(iatomcell0(j),m).gt.nshell(iatom0)) cycle jloop
+1910c1874
+< * yes: put atom in denominator and get terms
+---
+> ! yes: put atom in denominator and get terms
+1915c1879
+< * done: try next atom in cell at origin
+---
+> ! done: try next atom in cell at origin
+1918c1882
+< * check if found yet
+---
+> ! check if found yet
+1926c1890
+< * found it: try next set of atoms
+---
+> ! found it: try next set of atoms
+1934c1898
+< * found it: try next set of atoms
+---
+> ! found it: try next set of atoms
+1937,1938c1901,1902
+< * did not find it: generate terms
+< * all possible sets of coordinates
+---
+> ! did not find it: generate terms
+> ! all possible sets of coordinates
+1947,1949c1911,1912
+< * check if found yet
+<             call unique_force_constant(nrank,iatomd,ixyzd,
+<      $           iatomd2,ixyzd2)
+---
+> ! check if found yet
+>             call unique_force_constant(nrank,iatomd,ixyzd, iatomd2,ixyzd2)
+1956c1919
+< * found it: try next set of coordinates
+---
+> ! found it: try next set of coordinates
+1965c1928
+< * found it: try next set of coordinates
+---
+> ! found it: try next set of coordinates
+1968c1931
+< * did not find it: generate terms
+---
+> ! did not find it: generate terms
+1977,1983c1940,1946
+<             call force_constants(nrank,iatomd2,ixyzd2,
+<      $           ntermsindep(ngroups),iatomtermindep(1,1,ngroups),
+<      $           ixyztermindep(1,1,ngroups),nterm6(ngroups),
+<      $           iatomterm(1,1,ngroups),ixyzterm(1,1,ngroups),
+<      $           amat(1,1,ngroups),n,iatomtermzero(1,ntermszero+1),
+<      $           ixyztermzero(1,ntermszero+1),maxrank,maxterms,
+<      $           maxtermsindep,maxtermszero-ntermszero,ierz,iert,ieri)
+---
+>             call force_constants(nrank,iatomd2,ixyzd2,  &
+>      &           ntermsindep(ngroups),iatomtermindep(1,1,ngroups),  &
+>      &           ixyztermindep(1,1,ngroups),nterm6(ngroups),  &
+>      &           iatomterm(1,1,ngroups),ixyzterm(1,1,ngroups),  &
+>      &           amat(1,1,ngroups),n,iatomtermzero(1,ntermszero+1),  &
+>      &           ixyztermzero(1,ntermszero+1),maxrank,maxterms,  &
+>      &           maxtermsindep,maxtermszero-ntermszero,ierz,iert,ieri)
+1998c1961
+< * no nonzero terms in group
+---
+> ! no nonzero terms in group
+2003c1966
+< * next set of coordinates
+---
+> ! next set of coordinates
+2005c1968
+< * next set of atoms
+---
+> ! next set of atoms
+2012,2019c1975,1978
+<       write(*,3)' iatomtrmindep(rnk,1,ngroups)=',  
+<      &  iatomtermindep(nrank,1,1:ngroups)
+<       write(*,3)' ixyztermindep(rnk,1,ngroups)=',  
+<      &  ixyztermindep(nrank,1,1:ngroups)
+<       write(*,3)' iatomterm    (rnk,1,ngroups)=',  
+<      &  iatomterm(nrank,1,1:ngroups)
+<       write(*,3)' ixyzterm     (rnk,1,ngroups)=',
+<      &  ixyzterm(nrank,1,1:ngroups)
+---
+>       write(*,3)' iatomtrmindep(rnk,1,ngroups)=', iatomtermindep(nrank,1,1:ngroups)
+>       write(*,3)' ixyztermindep(rnk,1,ngroups)=', ixyztermindep(nrank,1,1:ngroups)
+>       write(*,3)' iatomterm    (rnk,1,ngroups)=', iatomterm(nrank,1,1:ngroups)
+>       write(*,3)' ixyzterm     (rnk,1,ngroups)=', ixyzterm(nrank,1,1:ngroups)
+2025c1984
+< *****************************************************************************
+---
+> !****************************************************************************

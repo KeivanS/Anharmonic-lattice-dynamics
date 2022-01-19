@@ -1,0 +1,28 @@
+14 14 14    .True.   kmesh  , if true calculate only dos-bs
+1 6    lamin,lamax
+0 0 0 0.5 0.5 0.5 2300 0.1300 0.4000    shift_xyz, (fine mesh in IBZ) 0<sx<sy<sz
+600  520    wmesh and wmax (in cm^-1)
+1.0  2.0     width of gaussian broadening for DOS (in cm^_1), imaginary part of omega(lifetimes)
+1d-11      tau0(s)  added to the inverse of the relaxation time
+.True.    verbosity
+0 0 0      wshift in 3 directions; it pushes the phonon frequencies up
+300 300 1    tmin, tmax, ntemp
+0  0  0  1 iterative_BTE,readv3,usetetra: read/write if it is=1; collect if it's 2 ; use svd
+1            ncpu;  below is path to v33sq.dat files  
+/Users/keivan/TMP/
+100 4    max_iter, n_dig_accuracy
+0.00000001  v3_threshold
+0      # 1 for classical and 0 for quantum
+0 0 0 0     for cross setion if=1
+0      for the 3-phonon matrix elt if=1
+
+
+########## HOW TO USE THE PROGRAM  (params.phon : iter, split, readv3, writev3, calk)
+1. (multiple node) run the program to calculate v33.dat (split mode)  (params.phon : 1 1 0 1 0)
+   v33.dat created in each split directory
+   v33.dat should be kept for multiple temperatures.
+
+1.5. (multiple node) run the program to calculate v33 * delta (params.phon : 1 1 2 1 0)
+
+2. (single node in FAT) run the program with iter=1 && readv3=1      (params.phon : 1 $ 1 0 1)
+

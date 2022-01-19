@@ -1,0 +1,20 @@
+1 1 1 90 90 90
+0 0.5 0.5 0.5 0 0.5 0.5 0.5  0 ###1 0  0 0 1  
+5.39761  #401788    scale factor for lattparams (must be consistent with POSCAR data) 
+7       maxneighbors
+1 1 1 1  include 1st 2nd 3rd and 4th order force constants
+1  1  1 0  flags for including translational and rotational invce constraints.
+0.001 0.00000001  tolerance for equating (two coordinates in general), margin for eliminating a FC 
+1d-9     svd cutoff for the smallest eigenvalue to be included
+2        number of force-displacement files
+1        natom_type
+28.0855
+Si      names of atoms
+2     number of atoms in the primitive cell, coordinates are in reduced units (of cubic cell) 
+1 1  # of rank1 FCs for each atom
+5 5  # of rank2 FCs for each atom
+1 1  # of rank3 FCs for each atom
+1 1  # of rank4 FCs for each atom
+1 1 0.00 0.00 0.00 
+2 1 0.25 0.25 0.25
+
