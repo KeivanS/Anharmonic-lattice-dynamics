@@ -1,3 +1,4 @@
+!!legacy code, no comment
 !==========================================================
  module io2
  integer, parameter:: ulog=30,ubs=50,uparams=13,udos=40,ueiv=60,ukap=175,uklem=71,uslf=3000, &
