@@ -1,4 +1,5 @@
-!THIS MODULE IS SEPERATED FROM modules9.f90
+!!THIS MODULE IS SEPERATED FROM modules9.f90
+!!legacy code, no comment
 !==============================================
 module params
  real(8) tolerance,margin,alfaborn
