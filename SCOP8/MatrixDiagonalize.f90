@@ -1,3 +1,4 @@
+!! This module is for diagonalize dynamic matrix
 MODULE MatrixDiagonalize
     USE eigen
     IMPLICIT NONE
@@ -11,7 +12,8 @@ MODULE MatrixDiagonalize
     CONTAINS
 
 !==========================================================
-    !eigen_number = d*atom_number = ndyn = nb
+    !!Allocate eigen related variables
+    !!eigen_number = d*atom_number = ndyn = nb
     SUBROUTINE allocate_eigen(eigen_number,k_number)
         IMPLICIT NONE
         INTEGER,INTENT(IN) :: eigen_number,k_number
@@ -21,11 +23,13 @@ MODULE MatrixDiagonalize
         return
     END SUBROUTINE allocate_eigen
 !==========================================================
-    SUBROUTINE diagonalize(n,mat,eival,nv,eivec,ier)
+    !!Diagonalize dynamic matrix mat, calculate eigenvalues eival and eigenvectors eivec
     !!this subroutine will change the mat, after calling, mat will no longer have the original value
-    ! n=size of mat; nv is the number of needed eigenvectors
-    !here the eival and eivec are dummy variables...
-    !... and only corresponds to 1 specified k point e.g. eivecs(:,:,1)
+    !! n=size of mat; nv is the number of needed eigenvectors
+    !!here the eival and eivec are dummy variables...
+    !!... and only corresponds to 1 specified k point e.g. eivecs(:,:,1)
+    SUBROUTINE diagonalize(n,mat,eival,nv,eivec,ier)
+ 
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: n,ier,nv  !,i,j
     COMPLEX(8),INTENT(INOUT) :: mat(n,n),eivec(n,n)
@@ -59,12 +63,14 @@ MODULE MatrixDiagonalize
 
     END SUBROUTINE diagonalize
 !=============================================================================
+    !! get the transposed conjugate eigenvector eivec
     SUBROUTINE dagger_eigen(eivec,eivec_t)
         IMPLICIT NONE
         COMPLEX(8),INTENT(INOUT),DIMENSION(:,:) :: eivec,eivec_t
         eivec_t = transpose(conjg(eivec))
     END SUBROUTINE dagger_eigen
 !=============================================================================
+    !! test subroutine for diagonalization
     SUBROUTINE test_diagonalization(s)
         IMPLICIT NONE
         INTEGER,INTENT(in) :: s
