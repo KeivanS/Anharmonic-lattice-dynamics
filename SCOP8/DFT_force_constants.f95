@@ -1,5 +1,5 @@
-!!This module is for read in 'real' force constants from DFT calculation(the fc#.dat files)
 MODULE DFT_force_constants
+    !!This module is for read in 'real' force constants from DFT calculation(the fc#.dat files)
     USE Structure_info !We use 'atom_number, unit_cell_number, d' of this module
 
     IMPLICIT NONE
@@ -69,8 +69,8 @@ MODULE DFT_force_constants
 
 CONTAINS
 !******************************************************************************************************
-    !!Utility function: for convert direction from integer(123) to character(xyz)
     FUNCTION get_letter(direction) RESULT(letter)
+        !!Utility function: for convert direction from integer(123) to character(xyz)
         IMPLICIT NONE
         INTEGER, INTENT(IN) :: direction
         CHARACTER :: letter
@@ -87,9 +87,9 @@ CONTAINS
         ENDSELECT
     END FUNCTION get_letter
 !-------------------------------------------------------------------------------------
-!!Utility subroutine: unique_sort
-!!read in an unsorted array with duplicated elements and return array with only unique values, sorted
     SUBROUTINE unique_sort(arrayIn, arrayOut)
+    !!Utility subroutine: unique_sort
+!!read in an unsorted array with duplicated elements and return array with only unique values, sorted
         IMPLICIT NONE
         INTEGER :: i=0, min_val, max_val
         INTEGER, INTENT(in) :: arrayIn(:)
@@ -112,8 +112,9 @@ CONTAINS
         DEALLOCATE(unique)
     END SUBROUTINE unique_sort
 
-    !!unique_sort for double value
+    
     SUBROUTINE unique_sort2(arrayIn, arrayOut)
+    !!unique_sort for double value
         IMPLICIT NONE
         INTEGER :: i=0
         REAL(8) :: min_val, max_val
@@ -137,11 +138,11 @@ CONTAINS
         DEALLOCATE(unique)
     END SUBROUTINE unique_sort2
 !--------------------------------------------------------------------------
-!!Utility subroutine: find_loc
-!!find the index of element in array
-!!NOTICE: intrinsic function FINDLOC() is not supported until F2008,
-!!This function may not be used in current build
     FUNCTION find_loc(array, element) RESULT(idx)
+    !!Utility subroutine: find_loc
+    !!find the index of element in array
+    !!NOTICE: intrinsic function FINDLOC() is not supported until F2008,
+    !!This function may not be used in current build
         IMPLICIT NONE
         INTEGER, INTENT(in) :: array(:), element
         INTEGER :: idx, i=0
@@ -156,8 +157,9 @@ CONTAINS
         END IF
     END FUNCTION find_loc
 
-    !!find_loc for double value
+    
     FUNCTION find_loc2(array, element) RESULT(idx)
+    !!find_loc for double value
         IMPLICIT NONE
         REAL(8), INTENT(in) :: array(:), element
         INTEGER :: idx, i=0
@@ -173,8 +175,9 @@ CONTAINS
         END IF
     END FUNCTION find_loc2
 !-----------------------------------------------------------------------------------------------
-    !!check if child array is included in the parent array
+    
     FUNCTION include_arrays(child, parent) RESULT(inc)
+    !!check if child array is included in the parent array
         IMPLICIT NONE
         INTEGER,DIMENSION(:),INTENT(in) :: child, parent
         LOGICAL :: inc
@@ -190,8 +193,8 @@ CONTAINS
         inc = .true.
     END FUNCTION include_arrays
 !-----------------------------------------------------------------------------------------------
-    !!get all the fc-related atoms index given initial nshells(:,:)
     SUBROUTINE get_atoms_fcs
+    !!get all the fc-related atoms index given initial nshells(:,:)
         IMPLICIT NONE
         INTEGER :: i,j, idx, rnk
         INTEGER,ALLOCATABLE, DIMENSION(:) :: atoms
@@ -227,8 +230,8 @@ CONTAINS
 
     END SUBROUTINE get_atoms_fcs
 !-----------------------------------------------------------------------------
-    !!get all the fc-related atoms index given nshells(:,:) on the fly, from map(:)
     SUBROUTINE get_atoms_otf(rnk,atoms_otf)
+    !!get all the fc-related atoms index given nshells(:,:) on the fly, from map(:)
         IMPLICIT NONE
         INTEGER,INTENT(in) :: rnk
         INTEGER :: i,j, idx
@@ -257,8 +260,8 @@ CONTAINS
 
     END SUBROUTINE get_atoms_otf
 !===============================================================================================
-    !!The major subroutine to read FCs from fc#.dat files(rank#=2,3,4)
     SUBROUTINE read_force_constants
+    !!The major subroutine to read FCs from fc#.dat files(rank#=2,3,4)
         IMPLICIT NONE
 
         INTEGER :: i,j,k,l,ufc1,ufc2,ufc3,ufc4,mx
@@ -519,8 +522,8 @@ CONTAINS
 
    END SUBROUTINE read_force_constants
 !******************************************************************************************************
-    !! The major subroutine to read maps.dat file
     SUBROUTINE read_map
+    !! The major subroutine to read maps.dat file
         IMPLICIT NONE
 
         INTEGER :: indie_number,indie_flag,term_flag,i,weight_number
@@ -703,8 +706,8 @@ CONTAINS
 
         END SUBROUTINE read_map
 !******************************************************************************************************
-!! Convert FC2 indexes back to string format, not used
 SUBROUTINE Get_FC2index(line,direction1,atom1,direction2,atom2) 
+!! Convert FC2 indexes back to string format, not used
     IMPLICIT NONE
     CHARACTER, INTENT(IN) :: line
     INTEGER :: i,j,temp_digit(5)
@@ -760,9 +763,9 @@ SUBROUTINE Get_FC2index(line,direction1,atom1,direction2,atom2)
     !WRITE(*,'(4(A,I6))')'direction1: ',direction1, ', atom1: ', atom1,', direction2: ',direction2,', atom2: ',atom2
 END SUBROUTINE Get_FC2index
 !------------------------------------------------------------------------------------------------
+SUBROUTINE Get_FC2pairs
 !!This subroutine is for given initial indiefc2_index(:) calculate the different atom pairs
 !!then multiply by 6 to get max possible variational_parameters_size(3)
-SUBROUTINE Get_FC2pairs
     IMPLICIT NONE
 
     TYPE tuple
@@ -809,9 +812,9 @@ SUBROUTINE Get_FC2pairs
 !    END DO
 END SUBROUTINE Get_FC2pairs
 !------------------------------------------------------------------------------------------------
+SUBROUTINE Extend_indiefc2(ex_indiefc2_index)
 !!This subroutine is for at any time, extend the current indiefc2_index to accomodate/fill in
 !!all possible indiefc2 directional components, even if they are 0
-SUBROUTINE Extend_indiefc2(ex_indiefc2_index)
     IMPLICIT NONE
     TYPE tuple
         INTEGER :: member1,member2
@@ -926,9 +929,9 @@ SUBROUTINE Extend_indiefc2(ex_indiefc2_index)
 !    END DO
 END SUBROUTINE Extend_indiefc2
 !------------------------------------------------------------------------------------------------
+FUNCTION find_indiefc2(atoms,xyzs) RESULT(found)
 !!Utility function, given atoms(2),xyzs(2) label,
 !!search in current indiefc2_index(:), then output found or not
-FUNCTION find_indiefc2(atoms,xyzs) RESULT(found)
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: atoms(:), xyzs(:)
     LOGICAL :: found
@@ -1190,8 +1193,8 @@ END FUNCTION find_indiefc2
 !         DEALLOCATE(check_fc4)
 !   END SUBROUTINE Force_ASR
 !******************************************************************************************************************
-   !!Symmetrize FC2s based on indexes F_ij^xy = F_ji^yx
    SUBROUTINE Symmetrize_FCs
+    !!Symmetrize FC2s based on indexes F_ij^xy = F_ji^yx
 
         IMPLICIT NONE
         INTEGER :: x,y,z,w
@@ -1216,9 +1219,9 @@ END FUNCTION find_indiefc2
 
     END SUBROUTINE Symmetrize_FCs
 !****************************************************************************************************************
- !! legacy subroutinie that read fc2.dat and fc3.dat, then store the info in 
- !! legacy variables
  subroutine read_fc23
+  !! legacy subroutinie that read fc2.dat and fc3.dat, then store the info in 
+ !! legacy variables
  use io2
  implicit none
  character line*90
@@ -1328,9 +1331,9 @@ IF(ALLOCATED(fcs_3)) DEALLOCATE(fcs_3)
  close(ufc3)
  end subroutine read_fc23
 !----------------------------------------------------------------------------------------
- !!mainly to check the effects of <fix_asr_fc#> subroutines have on the fcs
- !!show the difference between 'original value' and 'after fix value' of fcs
  SUBROUTINE check_read_fcs(rnk)
+  !!mainly to check the effects of <fix_asr_fc#> subroutines have on the fcs
+ !!show the difference between 'original value' and 'after fix value' of fcs
     IMPLICIT NONE
     INTEGER,INTENT(in) :: rnk
     INTEGER :: atom1,atom2,atom3,atom4
@@ -1392,8 +1395,8 @@ IF(ALLOCATED(fcs_3)) DEALLOCATE(fcs_3)
     CLOSE(71)
  END SUBROUTINE check_read_fcs
 !----------------------------------------------------------------------------------------
-!!a subroutine to check <fc2.dat> read correctly
 SUBROUTINE check_read_fc2
+!!a subroutine to check <fc2.dat> read correctly
     IMPLICIT NONE
     INTEGER :: i
     INTEGER :: atom1,atom2
@@ -1418,8 +1421,8 @@ SUBROUTINE check_read_fc2
     CLOSE(24)
 END SUBROUTINE check_read_fc2
 !----------------------------------------------------------------------------------------
- !!check if translational symmetry is still satisfied or not
 SUBROUTINE check_trans_fcs(rnk)
+!!check if translational symmetry is still satisfied or not
     IMPLICIT NONE
     INTEGER,INTENT(in) :: rnk
     INTEGER :: atom1,atom2,atom3,atom4
@@ -1492,8 +1495,8 @@ SUBROUTINE check_trans_fcs(rnk)
     CLOSE(72)
 END SUBROUTINE check_trans_fcs
 !-----------------------------------------------------------------------------------
- !! Get inverse matrix inv_phiiTau for FC2, used for guess start calculation
  SUBROUTINE GetInversePhi
+  !! Get inverse matrix inv_phiiTau for FC2, used for guess start calculation
     IMPLICIT NONE
     INTEGER :: i,j
     INTEGER :: atom1,atom2,xyz1,xyz2
@@ -1549,8 +1552,8 @@ END SUBROUTINE check_trans_fcs
     DEALLOCATE(a,b)
  END SUBROUTINE GetInversePhi
  !-----------------------------------------------------------------------------------
- !!approximate elastic constant from simple formula, using initial fc2
  SUBROUTINE GetElastic_simple
+  !!approximate elastic constant from simple formula, using initial fc2
     IMPLICIT NONE
     INTEGER :: i,j,al,be,ga,de
     INTEGER :: v1, v2, voigt
@@ -1590,8 +1593,8 @@ END SUBROUTINE check_trans_fcs
 
  END SUBROUTINE GetElastic_simple
 !========================================================================================
-    !! print all the irreducible FC2
     SUBROUTINE print_indieFC2
+    !! print all the irreducible FC2
         IMPLICIT NONE
         INTEGER :: i
 
