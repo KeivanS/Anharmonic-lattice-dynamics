@@ -1,3 +1,4 @@
+!!A module contains constants value
 module constants
  implicit none
  real(8) :: pi=3.14159265358979323846d0
@@ -25,7 +26,7 @@ module constants
 
  end module constants
  !===========================================================
- ! Module for saved data
+ !! Module for saved data, seems mostly not used
 module force_constants_module
 ! maximum number of shells of nearest neighbors
       integer maxneighbors
@@ -68,7 +69,7 @@ module force_constants_module
 end module force_constants_module
 !*************************************************************************
 
-
+!! not used
 module test
     use constants
     implicit none
