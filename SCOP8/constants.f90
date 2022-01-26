@@ -1,6 +1,6 @@
-!!A module contains constants value
 module constants
- implicit none
+!!A module contains constants value
+implicit none
  real(8) :: pi=3.14159265358979323846d0
  complex(8) :: ci=cmplx(0d0,1d0)
  real(8) :: h_plank= 6.62606896d-34
@@ -26,8 +26,8 @@ module constants
 
  end module constants
  !===========================================================
- !! Module for saved data, seems mostly not used
 module force_constants_module
+ !! Module for saved data, seems mostly not used
 ! maximum number of shells of nearest neighbors
       integer maxneighbors
 !     parameter(maxneighbors=18 )
@@ -69,9 +69,10 @@ module force_constants_module
 end module force_constants_module
 !*************************************************************************
 
-!! not used
+
 module test
-    use constants
+!! not used
+use constants
     implicit none
     real(8) :: pi_test
     contains
