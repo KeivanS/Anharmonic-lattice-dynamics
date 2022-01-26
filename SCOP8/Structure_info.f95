@@ -436,7 +436,8 @@ subroutine write_input_fit
     close(unit_params)
 end subroutine write_input_fit
 !-----------------------------------------------------------------------
-!! legacy subroutine, may not be used
+!! modified legacy subroutine, read params.inp
+!! major
  subroutine read_input_fit
     use io2 !the uparams is causing trouble because it's declared both in [ios] & [io2] with different value
     !use params !redundant
@@ -548,6 +549,7 @@ CLOSE(unit_params)
 end subroutine read_input_fit
 !==========================================================
 !! my subroutine to read lat_fc.dat and store info into corresponding TYPE
+!! major
     SUBROUTINE read_structure
         IMPLICIT NONE
 
