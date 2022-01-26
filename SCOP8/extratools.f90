@@ -1,12 +1,12 @@
  !============================================================================
- ! functional programming: substitute for map(f, x)
+ !! functional programming: substitute for map(f, x)
  PURE ELEMENTAL REAL FUNCTION square(x)
     REAL, INTENT(in) :: x
     square = x**2
  END FUNCTION square
  !=============================================================================
+ !! says if the string "word" exists in string "line"
  subroutine findword(word,line,found)
-! says if the string "word" exists in string "line"
  implicit none
  logical found
  character(*) line, word
