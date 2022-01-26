@@ -1,4 +1,4 @@
-!This module is for Fourier fcs calculation
+!!This module is for Fourier fcs calculation
 MODULE Fourier_force_constants
     USE DFT_force_constants !this DFT... module itself uses structure_info module
     USE kp
@@ -32,6 +32,7 @@ MODULE Fourier_force_constants
     COMPLEX(8), ALLOCATABLE :: nself(:,:),uself(:,:)
     CONTAINS
 !====================================================================================================
+    !! Allocate fourier force constant variables
     SUBROUTINE Allocate_FFC(k_number)
         IMPLICIT NONE
 
@@ -56,6 +57,7 @@ MODULE Fourier_force_constants
         ALLOCATE(nself(k_number,ndn),uself(k_number,ndn))
     END SUBROUTINE Allocate_FFC
 !==================================================================================================
+     !! this subroutine read born charge from params.born
      subroutine read_born
     ! reads ! born ! effective ! charge ! and ! dielectric ! constants ! from ! para.born
          integer i,j,k
@@ -92,6 +94,7 @@ MODULE Fourier_force_constants
 !====================================================================================================
 
 !====================================================================================================
+    !! This subroutine Fourier transform FC2s, uncomment for FC3 and FC4(but they are not used) 
     SUBROUTINE Fourier_Force_Constants_Calculation(k_number)
         IMPLICIT NONE
         INTEGER :: i,j,R1,R2,R3,R4,tau1,tau2,tau3,tau4,atom1,atom2,atom3,atom4
