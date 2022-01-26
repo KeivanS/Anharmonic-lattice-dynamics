@@ -20,7 +20,7 @@ MODULE Iteration_parameters
 
 CONTAINS
 !--------------------------------------------------------------------------------------------
- !! Read structure parameters from <params.in>
+ !! Read phonon parameters from <params.phon>
  subroutine read_params
  use io2
  use om_dos
