@@ -1,5 +1,4 @@
-!This module is for reading iteration parameters and first set of trial variational parameters
-!The input file format is not fixed, unlike the other two modules. And it's very easy
+!!This module is for reading iteration parameters from various config files
 MODULE Iteration_parameters
     USE DFT_force_constants
 
@@ -21,6 +20,7 @@ MODULE Iteration_parameters
 
 CONTAINS
 !--------------------------------------------------------------------------------------------
+ !! Read structure parameters from <params.in>
  subroutine read_params
  use io2
  use om_dos
@@ -82,6 +82,7 @@ CONTAINS
 3 format(a,6(1x,i6))
  end subroutine read_params
 !----------------------------------------------------------------------------------------------------
+    !! initiate variational parameters to trivial start
     SUBROUTINE initiate_var
          IMPLICIT NONE
          INTEGER :: tau1,direction1,direction2
@@ -117,7 +118,7 @@ CONTAINS
 
     END SUBROUTINE initiate_var
 !----------------------------------------------------------------------------------------------------
-    !just for Bismuth 385K test, manually make it a rhombohedral
+    !!just for Bismuth 385K test, manually make it a rhombohedral
     SUBROUTINE make_rhombohedral
         IMPLICIT NONE
         REAL(8) :: x,y,utau
@@ -135,7 +136,8 @@ CONTAINS
 
     END SUBROUTINE make_rhombohedral
 !----------------------------------------------------------------------------------------------------
-    !add randomness to the ALREADY initialized variational parameters
+    !!Randomize eta and utau for random start, optional
+    !!run initiate_var first
     SUBROUTINE test_update
         IMPLICIT NONE
         INTEGER :: i,j,k,l
@@ -158,8 +160,9 @@ CONTAINS
 
     END SUBROUTINE test_update
 !----------------------------------------------------------------------------------------------------
-    !target initialize variational parameter, optional
-    !only if there the target flag is .true. and there is a 'targetInitialize.dat' file
+    !!Initialize variational parameters from 'targetInitialize.dat' file, optional
+    !!inherited should be 'true'
+    !!run initiate_var first
     SUBROUTINE target_update
         IMPLICIT NONE
         INTEGER :: i,idx
@@ -186,8 +189,9 @@ CONTAINS
 
     END SUBROUTINE
 !----------------------------------------------------------------------------------------------------
-    !choice is fixed_params
-    !select x feed into this iteration, used after <combine_x> before <bro90>
+    !!utility subroutine for freeze/free variational params
+    !!choice is fixed_params
+    !!select x feed into this iteration, used after <combine_x> before <bro90>
     SUBROUTINE select_xy(choice,x_in,x_out)
         IMPLICIT NONE
         INTEGER :: i,j,idx
@@ -208,7 +212,8 @@ CONTAINS
         END DO
     END SUBROUTINE select_xy
 
-    !reassign x after this iteration, used after <bro90>/<cg> before <decompose_x>
+    !!utility subroutine for freeze/free variational params
+    !!reassign x after this iteration, used after <bro90>/<cg> before <decompose_x>
     SUBROUTINE release_x(choice,x_in,x_out)
         IMPLICIT NONE
         INTEGER :: i,j,idx
@@ -304,7 +309,8 @@ CONTAINS
 
     END SUBROUTINE release_x
 !----------------------------------------------------------------------------------------------------
-    !this is called with variational_parameters_size(3) known
+    !!read iteration parameters from <iteration_parameters.in>
+    !!this should be called with variational_parameters_size(3) known
     SUBROUTINE read_iteration_parameters_file
 
         IMPLICIT NONE
@@ -350,7 +356,8 @@ CONTAINS
         temperature=temperature*k_b/100/h_plank/c_light!convert T(K) to T(1/cm)
     END SUBROUTINE read_iteration_parameters_file
 !----------------------------------------------------------------------------------------------------
-    SUBROUTINE drop_fc2terms ! get the number of independent fc2
+    !!get the number of independent fc2
+    SUBROUTINE drop_fc2terms  
         IMPLICIT NONE
         INTEGER :: i,temp,atom1,atom2
         temp=0
@@ -365,7 +372,8 @@ CONTAINS
         !variational_parameters_size(3) = temp !fixed the center cell
     END SUBROUTINE drop_fc2terms
 !----------------------------------------------------------------------------------------------------
-    SUBROUTINE asr_checkfc2(dummyFC) !check asr on selected [myfc2_value] object
+    !!check asr on selected [myfc2_value] object, i.e. Phi or K
+    SUBROUTINE asr_checkfc2(dummyFC)  
         IMPLICIT NONE
         TYPE(fc2_value),INTENT(IN),DIMENSION(:,:) :: dummyFC
         TYPE(fc2_value),DIMENSION(:),ALLOCATABLE :: checkfc2
