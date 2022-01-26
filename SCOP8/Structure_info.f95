@@ -1,4 +1,4 @@
-!This module is used for reading info from input file and allocate variables, as following:
+!!This module is used for reading info from lat_fc.dat and store those info
 MODULE Structure_info
     USE lattice
     USE atoms_force_constants
@@ -39,6 +39,7 @@ MODULE Structure_info
 CONTAINS
 !************************************************************************************
 !=============================original subs==========================================
+!! legacy subroutine, not used
 subroutine read_params_org
  use io2
  use om_dos
@@ -116,6 +117,7 @@ print*,' file params.phon read'
 3 format(a,6(1x,i6))
  end subroutine read_params_org
  !--------------------------------------------------------------------------------
+ !! legacy subroutine not used
  subroutine read_input_fit_org
  use io2
  use params
@@ -201,6 +203,7 @@ print*,' file params.inp read'
 
 end subroutine read_input_fit_org
 !------------------------------------------------------------------------------------
+!! legacy subroutine not used
 subroutine read_lattice_org
  use io2
  use params
@@ -343,6 +346,7 @@ CLOSE(ulog2)
 
  end subroutine read_lattice_org
 !===================================================================================
+!! legacy subroutine not used
 subroutine write_neighbors
 ! redundant module usage
 ! use atoms_force_constants
@@ -374,6 +378,7 @@ subroutine write_neighbors
 3 format(a,2x,i3,2x,f8.4,2x,i3,4x,i3,' (',3(1x,i4),')')
  end subroutine write_neighbors
 !========================================================================
+!! legacy subroutine not used
 subroutine write_input_fit
     use io2
     implicit none
@@ -431,6 +436,7 @@ subroutine write_input_fit
     close(unit_params)
 end subroutine write_input_fit
 !-----------------------------------------------------------------------
+!! legacy subroutine, may not be used
  subroutine read_input_fit
     use io2 !the uparams is causing trouble because it's declared both in [ios] & [io2] with different value
     !use params !redundant
@@ -541,7 +547,7 @@ if(.not.allocated(at_label)) allocate(at_label(natoms0))
 CLOSE(unit_params)
 end subroutine read_input_fit
 !==========================================================
-!************************************************************************************
+!! my subroutine to read lat_fc.dat and store info into corresponding TYPE
     SUBROUTINE read_structure
         IMPLICIT NONE
 
@@ -726,6 +732,7 @@ inner:      DO direction=1,d
 !4 format(i6,3(2x,g11.5),4(3x,i4))
     END SUBROUTINE read_structure
 !==========================================================
+!! old subroutine by me, not used
     SUBROUTINE decide_ksize(cell_vec,nk_c1,nk_c2,nk_c3)
         IMPLICIT NONE
         REAL(8),ALLOCATABLE,DIMENSION(:,:),INTENT(IN) :: cell_vec
@@ -750,7 +757,7 @@ inner:      DO direction=1,d
         WRITE(*,*) nk_c1,nk_c2,nk_c3
     END SUBROUTINE decide_ksize
 !==========================================================
-   !check if <latfc.dat> is read correctly
+   !!check if <latfc.dat> is read correctly
     SUBROUTINE check_latfc
         IMPLICIT NONE
         INTEGER :: i,direction
