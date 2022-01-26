@@ -1,14 +1,14 @@
-!!A module contains various check subroutine
 MODULE check
+!!A module contains various check subroutine
     USE force_update
     USE broy
 
     CONTAINS
 !==========================================================================================================
+    SUBROUTINE small_test(i,step,many)
     !!Subroutines used for free energy landscape calculation
     !!this test a single variable x(i) versus F and f(i), for many steps
     !!this test subroutine should be run after <Allocate_Gradients>
-    SUBROUTINE small_test(i,step,many)
         IMPLICIT NONE
         INTEGER,INTENT(IN):: i, many ! which x:f, how many steps
         INTEGER :: j
@@ -33,10 +33,10 @@ MODULE check
         WRITE(*,*) 'Finished Testing'
     END SUBROUTINE small_test
 !---------------------------------------------------------------------------------------------------------
+    SUBROUTINE small_test_ex(i,j,step,many)
     !!Subroutines used for free energy landscape calculation
     !!this test two variable x(i) and x(j) versus F and f(i), for many steps
     !!this test subroutine should be run after <Allocate_Gradients>
-    SUBROUTINE small_test_ex(i,j,step,many)
         IMPLICIT NONE
         INTEGER,INTENT(IN):: many,i,j ! how many steps,x(i),x(j)
         INTEGER :: idx,jdx
@@ -90,9 +90,9 @@ MODULE check
         WRITE(*,*) 'Finished Testing'
     END SUBROUTINE small_test_ex
 !---------------------------------------------------------------------------------------------------------
-    !!Subroutines used for free energy landscape calculation
-    !after assign i, j make the rest of strain and atomic deviation to be rhom symmetry
     SUBROUTINE rhom_symmetrize
+    !!Subroutines used for free energy landscape calculation
+    !!after assign i, j make the rest of strain and atomic deviation to be rhom symmetry
         IMPLICIT NONE
         INTEGER :: i,j
 
@@ -109,9 +109,9 @@ MODULE check
 
     END SUBROUTINE rhom_symmetrize
 !---------------------------------------------------------------------------------------------------------
-    !!Subroutines used for free energy landscape calculation
-    !just for rhom test, so i,j values are limited to {4,7,8} which stands for utau_2^x,eta^xx, eta^xy
     SUBROUTINE rhom_contour(i,j,step1,step2,many)
+    !!Subroutines used for free energy landscape calculation
+    !!just for rhom test, so i,j values are limited to {4,7,8} which stands for utau_2^x,eta^xx, eta^xy
         IMPLICIT NONE
 
         INTEGER,INTENT(IN):: many,i,j ! how many steps,x(i),x(j)
@@ -159,10 +159,10 @@ MODULE check
 
     END SUBROUTINE rhom_contour
 !---------------------------------------------------------------------------------------------------------
+    SUBROUTINE small_test2(step)
     !!Subroutines used for free energy landscape calculation
     !!this test all variable x(:), f(:) from formula vs. finite difference
     !!this test subroutine should be run after <initiate_yy>
-    SUBROUTINE small_test2(step)
         IMPLICIT NONE
         INTEGER :: i,num_var
         INTEGER :: tau1,atom2,xyz1,xyz2,temp
@@ -264,11 +264,11 @@ MODULE check
         9 format((I3,3X),3(G12.6,3X),A)
     END SUBROUTINE small_test2
 
-    !!Subroutines used for free energy landscape calculation
+    SUBROUTINE small_test3(i,step,n)
+        !!Subroutines used for free energy landscape calculation
     !!this test for x(i),change step(epsilon) for n times,
     !!how the discrepancy between f_math and f_fd look
     !!used for logrithm plot
-    SUBROUTINE small_test3(i,step,n)
         IMPLICIT NONE
         INTEGER,INTENT(in) :: i,n
         INTEGER :: j,num_var
@@ -375,9 +375,9 @@ MODULE check
         CLOSE(520)
     END SUBROUTINE small_test3
 !---------------------------------------------------------------------------------------------------------
+    SUBROUTINE assign_x(i,step)
     !!Subroutines used for free energy landscape calculation
     !!add 'step' value to variational_parameter(i)
-    SUBROUTINE assign_x(i,step)
         IMPLICIT NONE
         INTEGER,INTENT(IN) :: i !index
         REAL(8),INTENT(IN) :: step !value wants to be added to original x(i)
@@ -415,9 +415,9 @@ MODULE check
         END IF
     END SUBROUTINE assign_x
 !---------------------------------------------------------------------------------------------------------
+    SUBROUTINE collect_xf(x,f)
     !!Subroutines used for free energy landscape calculation
     !!collect variational parameters x and free energy gradients f w.r.t them
-    SUBROUTINE collect_xf(x,f)
         IMPLICIT NONE
         REAL(8),DIMENSION(:),ALLOCATABLE,INTENT(out) :: x,f
         INTEGER :: mx,i,temp
@@ -469,10 +469,10 @@ MODULE check
 
     END SUBROUTINE collect_xf
 !---------------------------------------------------------------------------------------------------------
+    SUBROUTINE UpdateTrialFC2
     !!Update K with gradients 
     !!this subroutine is only used in situational test, should not be used in real calculation
     !!used after call <GetV_avg_And_GradientV_avg>
-    SUBROUTINE UpdateTrialFC2
         IMPLICIT NONE
         INTEGER :: tau1, atom2, direction1, direction2
 
@@ -495,8 +495,9 @@ MODULE check
 
     END SUBROUTINE UpdateTrialFC2
 
-    !set all <yy> to 0 for QHA test
+    
     SUBROUTINE set_yy_0
+    !!set all <yy> to 0 for QHA test
         IMPLICIT NONE
         INTEGER :: tau1,atom2,direction1,direction2
 
@@ -515,9 +516,9 @@ MODULE check
     END SUBROUTINE set_yy_0
 !---------------------------------------------------------------------------------------------------------
 !======================Subroutine below are developed in 2020 summer, all no use=========================
+    SUBROUTINE atompos_Update2
     !! subroutines below not used
     !! update every atom position using info directly from variational params
-    SUBROUTINE atompos_Update2
         IMPLICIT NONE
         INTEGER :: i
 
@@ -562,8 +563,8 @@ MODULE check
 
     END SUBROUTINE atompos_Update2
  !---------------------------------------------------------------------------------------------------
- !! not used
  SUBROUTINE uni_fc_update2(rnk, atoms, xyzs)
+  !! not used
         IMPLICIT NONE
         INTEGER, INTENT(in) :: rnk, atoms(:), xyzs(:)
         SELECTCASE(rnk)
@@ -577,8 +578,8 @@ MODULE check
 
     END SUBROUTINE uni_fc_update2
 !---------------------------------------------------
-    !! not used
     SUBROUTINE renew_fc2_2(atoms, xyzs)
+        !! not used
         IMPLICIT NONE
         INTEGER, INTENT(in) :: atoms(:), xyzs(:)
         INTEGER :: i, j,k,l,idx
@@ -749,8 +750,8 @@ MODULE check
 !WRITE(34,*)'Successfully updated this fc2!'
     END SUBROUTINE renew_fc2_2
 !---------------------------------------------------
-    !! not used
     SUBROUTINE renew_fc3_2(atoms, xyzs)
+        !! not used
         IMPLICIT NONE
         INTEGER, INTENT(in) :: atoms(:), xyzs(:)
         INTEGER :: i, j, idx
@@ -815,17 +816,16 @@ MODULE check
 
     END SUBROUTINE renew_fc3_2
 !---------------------------------------------------
-    !! not used
     SUBROUTINE renew_fc4_2(atoms, xyzs)
+        !! not used
         IMPLICIT NONE
         INTEGER, INTENT(in) :: atoms(:), xyzs(:)
         !Do nothing, fc4 is already updated in the prepare_fc4
 
     END SUBROUTINE renew_fc4_2
 !---------------------------------------------------------------------------------------------------------
-
-    !just update fc by their value
     SUBROUTINE all_fc_update2
+        !!just update fc by their value
         IMPLICIT NONE
         INTEGER :: rnk, i, j
         INTEGER :: atom1, atom2, atom3, atom4
