@@ -1,8 +1,6 @@
+Module VA_math
 !!Module VA_math to get trial Free Energy and its gradients
 !!it contains most of the math subroutines
-
-Module VA_math
-
     USE Iteration_parameters
     USE Fourier_force_constants
     USE MatrixDiagonalize
@@ -49,9 +47,9 @@ Module VA_math
 
     CONTAINS
 !=========================================FOR INITIAL GUESS=======================================================
+    SUBROUTINE initiate_guess
     !!to get a guessing start point for atomic deviation and strain
     !!based on input data
-    SUBROUTINE initiate_guess
         IMPLICIT NONE
         INTEGER :: i,j,al,be
         INTEGER :: avg_lambda
@@ -103,8 +101,9 @@ Module VA_math
         WRITE(*,*) 'strain', strain
     END SUBROUTINE initiate_guess
 !---------------------------------------------------------------------------
-    !!approximate the stress tensor, for the eivecs(tau*xyz,neg_lambda, neg_k)
+
     SUBROUTINE GetStress(sig)
+    !!approximate the stress tensor, for the eivecs(tau*xyz,neg_lambda, neg_k)
         IMPLICIT NONE
         INTEGER :: i,j,al,be,ga
         INTEGER :: v1, voigt
@@ -149,10 +148,9 @@ Module VA_math
         sig = sig/cell_volume
 
     END SUBROUTINE GetStress
-!=================================================================================================================
-    !! allocate free energy gradients f(:) and <V> gradients
+!=================================================================================================================    
     SUBROUTINE Allocate_Gradients
-
+    !! allocate free energy gradients f(:) and <V> gradients
         IMPLICIT NONE
 
         INTEGER :: size_GradientF_trial
@@ -184,13 +182,12 @@ Module VA_math
         ALLOCATE(cutoff_fixed(ifc2_terms))
     END SUBROUTINE Allocate_Gradients
 !=================================================================================================================
+    SUBROUTINE GetF_trial_And_GradientF_trial(kvector)
     !!major overall subroutine to
     !!1.call subroutine <initiate_yy> that diagonalize Dynmat, calculate <YY>, etc
     !!2.call subroutines that calculates F0, V0 and <V>
     !!3.combine all the energy gradients into one array f(:)
     !!4.other utilities such as symetrize strain, add pressure, etc
-    SUBROUTINE GetF_trial_And_GradientF_trial(kvector)
-
         IMPLICIT NONE
 
         TYPE(vector),INTENT(INOUT)::kvector(:)
@@ -299,10 +296,10 @@ WRITE(34,*) 'F=F0+V-V0:',REAL(F_trial)
 7 format(a,f10.8)
     END SUBROUTINE GetF_trial_And_GradientF_trial
 !================================================================================================================
+    SUBROUTINE GetEigen(kvector)
     !!to Fourier transform trial force constant K into 'trialffc2_value'
     !!then diagonalize trial force constant K dynamic matrix 'trialffc2_matrix'
     !!call subroutines in MatrixDiagonalize module
-    SUBROUTINE GetEigen(kvector)
         IMPLICIT NONE
          TYPE(vector),INTENT(IN) :: kvector(:)
          TYPE(ffc2_value),DIMENSION(:,:,:),ALLOCATABLE :: trialffc2_value
@@ -513,8 +510,8 @@ CLOSE(71)
 9 format(A,3(I4,2X),G16.7)
     END SUBROUTINE GetEigen
 !================================================================================================================
-    !!calculate F0 and <V0>
     SUBROUTINE GetF0_and_V0
+    !!calculate F0 and <V0>
         IMPLICIT NONE
         INTEGER :: i,k
         F0=0
@@ -536,12 +533,12 @@ CLOSE(71)
         V0=V0/SIZE(kvector)/ee
     END SUBROUTINE GetF0_and_V0
 !================================================================================================================
+SUBROUTINE initiate_yy(kvector)
    !!major subroutine that
    !!1.Call diagonalization subroutine
    !!2.apply shift to eigenvalues if negative
    !!3.Call <YY> calculation subroutine
    !!it runs every iteration,  'initiate' maybe improper name
-SUBROUTINE initiate_yy(kvector)
     IMPLICIT NONE
     TYPE(vector),INTENT(IN)::kvector(:)
 
@@ -691,9 +688,9 @@ DEALLOCATE(phi_test)
 8 FORMAT(2(A2,I3),(G16.7,SP,G16.7,"i"),2(3X,G16.7))
 END SUBROUTINE initiate_yy
 !================================================================================================================
+SUBROUTINE CheckFixEigen
 !! fix if there is any negative eigenvalues based on input fc2
 !!(1)if there are too negative eigenvalues: drop Broyden values, manual update trialfc2 = 2*GradientVCor*
-SUBROUTINE CheckFixEigen
     IMPLICIT NONE
     INTEGER :: k,l,i,j
     INTEGER :: unitnumber
@@ -736,8 +733,9 @@ outer:    IF(min_eivals.lt.0d0) THEN
 
     CLOSE(unitnumber)
 END SUBROUTINE CheckFixEigen
-!!(2)if there still are negative eigenvalues, rollback to prev_trial_fc2(freeze eff fc2)*
+
 SUBROUTINE CheckFixEigenAgain
+!!(2)if there still are negative eigenvalues, rollback to prev_trial_fc2(freeze eff fc2)*
     IMPLICIT NONE
 
     INTEGER :: k,l,i,j
@@ -772,10 +770,10 @@ SUBROUTINE CheckFixEigenAgain
 
 END SUBROUTINE CheckFixEigenAgain
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+FUNCTION ifExistYY(atom1,atom2) RESULT(found)
 
 !!if <Y(direction1,atom1)Y(direction2,atom2)> exist by translational symmetry
 !!return the correspondence atom2 number, else return 0
-FUNCTION ifExistYY(atom1,atom2) RESULT(found)
     IMPLICIT NONE
     INTEGER,INTENT(in) :: atom1,atom2
     INTEGER :: n1,n2,n3,tau
@@ -805,9 +803,9 @@ FUNCTION ifExistYY(atom1,atom2) RESULT(found)
 
 END FUNCTION ifExistYY
 !=========================================================================================================
+SUBROUTINE GetV_avg_And_GradientV_avg(kvector)
 !!calculate <V> gradients w.r.t strain(:,:), atomic_deviation(:,:), yy_value(:,:)
 !!translation invariant ver.
-SUBROUTINE GetV_avg_And_GradientV_avg(kvector)
     IMPLICIT NONE
 
     TYPE(vector),INTENT(IN)::kvector(:)
@@ -1395,8 +1393,8 @@ CLOSE(47)
 7 FORMAT(2(A2,I3),2(3X,G16.7))
 END SUBROUTINE GetV_avg_And_GradientV_avg
 !=====================================================================================================================================
-    !!Fix by shift all the matrix elements, just for test purpose
     SUBROUTINE CheckFixMatrix(negative_eivals)
+    !!Fix by shift all the matrix elements, just for test purpose
         IMPLICIT NONE
         INTEGER :: k=0,l=0,i,j
         INTEGER :: atom1,atom2,tau1,tau2
@@ -1427,8 +1425,8 @@ END SUBROUTINE GetV_avg_And_GradientV_avg
 
     END SUBROUTINE CheckFixMatrix
 !--------------------------------------------------------------------------------------------------------------------------------------
-    !!directly shift the eigenvalues, just for test purpose
     SUBROUTINE CheckFixMatrix2(negative_eivals)
+        !!directly shift the eigenvalues, just for test purpose
         IMPLICIT NONE
         INTEGER :: k=0,l=0,i,j
         REAL(8),INTENT(IN) :: negative_eivals
@@ -1440,8 +1438,8 @@ END SUBROUTINE GetV_avg_And_GradientV_avg
         END DO !l loop
     END SUBROUTINE CheckFixMatrix2
 !--------------------------------------------------------------------------------------------------------------------------------------
-    !!linear transformation the eigenvalues, just for test purpose
     SUBROUTINE CheckFixMatrix3(min_eivals,max_eivals)
+    !!linear transformation the eigenvalues, just for test purpose
         IMPLICIT NONE
         INTEGER :: k=0,l=0,i,j
         REAL(8),INTENT(IN) :: min_eivals,max_eivals
@@ -1454,8 +1452,8 @@ END SUBROUTINE GetV_avg_And_GradientV_avg
 
     END SUBROUTINE CheckFixMatrix3
 !----------------------------------------------------------------------------------------------------------------------------------------
-    !!force ASR in trialfc2 K
     SUBROUTINE CheckFixASR
+    !!force ASR in trialfc2 K
         IMPLICIT NONE
         TYPE(fc2_value),DIMENSION(:),ALLOCATABLE :: check_trialfc2
         INTEGER :: i,j,k,direction1,direction2,temp=0
@@ -1501,8 +1499,8 @@ END SUBROUTINE GetV_avg_And_GradientV_avg
         DEALLOCATE(check_trialfc2)
     END SUBROUTINE CheckFixASR
 !======================================================================================================================================
-!!given R1 and R2 and atom type, find if there is an atom at R1+R2 with same atom type, and give its atom index
 SUBROUTINE select_atom(R1_vec,R2_vec,type_tau,condition,found)
+!!given R1 and R2 and atom type, find if there is an atom at R1+R2 with same atom type, and give its atom index
     IMPLICIT NONE
     REAL(8),INTENT(IN),DIMENSION(d) :: R1_vec,R2_vec
     REAL(8),DIMENSION(d) :: R_combine,R
@@ -1533,9 +1531,9 @@ outer: DO i=1,tot_atom_number
 
 END SUBROUTINE select_atom
 !======================================================================================================================================
+SUBROUTINE ConvertAtomicIndex(R1_vec,R2_vec,type_tau,found)
 !!duplicate version of previous subroutine, only return atom index
 !!Need to take tau2 index into consideration
-SUBROUTINE ConvertAtomicIndex(R1_vec,R2_vec,type_tau,found)
     IMPLICIT NONE
     REAL(8),INTENT(IN), DIMENSION(d) :: R1_vec, R2_vec
     REAL(8),DIMENSION(d) :: R_combine,R
@@ -1562,9 +1560,9 @@ outer:  DO i=1,tot_atom_number
         END DO outer
 END SUBROUTINE ConvertAtomicIndex
 !-------------------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE CheckRange(R1_vec,R2_vec,condition)
 !!duplicate version of previous subroutine, only return if found or not
 !!just to check if the corresponding cell is inside the farthest shell or not
-SUBROUTINE CheckRange(R1_vec,R2_vec,condition)
     IMPLICIT NONE
     LOGICAL, INTENT(OUT) :: condition
     REAL(8),INTENT(IN), DIMENSION(d) :: R1_vec, R2_vec
@@ -1589,9 +1587,9 @@ inner:      DO j=1, SIZE(R)
         END DO outer
 END SUBROUTINE CheckRange
 !======================================================================================================================================
+    SUBROUTINE calculate_dynmat(qp)
     !! calculate dynmat & ddyn at q-point qp(d)
     !! dynmat & ddyn are global variable declared in module [Fourier_force_constants]
-    SUBROUTINE calculate_dynmat(qp)
         IMPLICIT NONE
 
         INTEGER :: i,j,k,l
@@ -1684,11 +1682,12 @@ END SUBROUTINE CheckRange
 
     END SUBROUTINE calculate_dynmat
 !==================================================================================================
+SUBROUTINE get_vgr(qp,ndn,vg,eival,eivec) 
+!!get the group velocity/eival/eivec for a single k point
 !!for group velocity method
 !! this is a refined and crucial version of original <get_freq>
 !! use this otherwise it will have negative w
 !! also use this because the dynmat comes from my trialfc2 which is updated every Broyden loop
-SUBROUTINE get_vgr(qp,ndn,vg,eival,eivec) !get the group velocity/eival/eivec for a single k point
     USE Fourier_force_constants
     IMPLICIT NONE
 
@@ -1755,9 +1754,9 @@ enddo
 
 END SUBROUTINE get_vgr
 !---------------------------------------------------------------------------
+SUBROUTINE finitedif_vgr(q0,ndn,vgr,evl0,evc0)
 !! this is a refined and crucial version of original <finitedif_vel>
 !! use this otherwise it will have segment fault
-SUBROUTINE finitedif_vgr(q0,ndn,vgr,evl0,evc0)
     !calculates the group velocities from finite difference
     IMPLICIT NONE
     INTEGER,INTENT(IN) :: ndn
@@ -1785,10 +1784,9 @@ SUBROUTINE finitedif_vgr(q0,ndn,vgr,evl0,evc0)
 
 END SUBROUTINE finitedif_vgr
 !=====================================================================================================================================
+subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,vg)
 !! also outputs the group velocities from HF theorem (exact) in units of c_light
 !! eival is w not w^2, it's in unit cm^(-1)
-subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,vg)
-
  implicit none
  integer, intent(in) :: nkp,ndn,nv ! no of wanted eivecs
  real(8), intent(in) :: kp(3,nkp),dk(nkp)
@@ -1864,8 +1862,8 @@ subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,vg)
 
  end subroutine get_frequencies
 !======================================================================================================================================
-    !!some check subroutine, not used
     SUBROUTINE check_conj_eivec
+        !!some check subroutine, not used
         IMPLICIT NONE
         INTEGER :: temp,l,k
         REAL(8) :: real_part, imaginary_part
@@ -1897,8 +1895,9 @@ subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,vg)
 9 FORMAT(3I3,2(G16.7,SP,G16.7,"i"))
         CLOSE(70)
     END SUBROUTINE check_conj_eivec
-    !!some check subroutine, not used
+    
     FUNCTION Get_phi_test(k_number,direction1,atom1,direction2,atom2)
+    !!some check subroutine, not used
         IMPLICIT NONE
         INTEGER :: i,j,k,l,steps
         INTEGER :: R1,tau1,R2,tau2,temp1,temp2,temp3,temp4
@@ -1938,9 +1937,9 @@ subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,vg)
 
     END FUNCTION Get_phi_test
 !--------------------------------------------------------------------------------------------
+    FUNCTION Get_Y_square(k_number,direction1,atom1,direction2,atom2)
     !!Major subroutine that calculate <YY> for specific indexes given
     !!utilize analytical approximation for diverging terms
-    FUNCTION Get_Y_square(k_number,direction1,atom1,direction2,atom2)
         IMPLICIT NONE
         INTEGER :: i,j,k,l,steps
         INTEGER :: R1,tau1,R2,tau2,temp1,temp2,temp3,temp4
@@ -2326,9 +2325,9 @@ END IF
 !        DEALLOCATE(res,arg,om,func,array)
     END FUNCTION Get_Y_square
 !======================================================================================================================================
+    SUBROUTINE Get_SKfreq(kpoint,freq)
     !!get omega^2 at a single k-point
     !!only used for dispersion plot
-    SUBROUTINE Get_SKfreq(kpoint,freq)
         IMPLICIT NONE
         INTEGER :: ndim
         INTEGER :: atom1,atom2,R1,R2,tau1,tau2,direction1,direction2
@@ -2474,9 +2473,9 @@ END IF
         !*********************************************************
     END SUBROUTINE Get_SKfreq
 !----------------------------------------------------------------------------------------------------------------------------------
+    SUBROUTINE Get_AKfreq(kp_bs,SE)
     !!get omega^2 at every k-point in kp_bs(:,k), the k path
     !!only used for dispersion plot
-    SUBROUTINE Get_AKfreq(kp_bs,SE)
         IMPLICIT NONE
         INTEGER :: i,j,unit_number
         REAL(8),INTENT(IN),DIMENSION(:,:) :: kp_bs
@@ -2510,14 +2509,15 @@ END IF
 !==============================================================================================
 !==============================================================================================
 !----------------------For Output Phonon Dispersion-------------------------
-    !! for plot dispersion
     SUBROUTINE Get_Dispersion
+    !! for plot dispersion
         IMPLICIT NONE
         CALL make_kp_bs2
         CALL Get_AKfreq(kp_bs,.false.)
     END SUBROUTINE Get_Dispersion
-    !! for plot dispersion with self energy, not used and not finished
+    
     SUBROUTINE Get_Dispersion_SE
+    !! for plot dispersion with self energy, not used and not finished
         IMPLICIT NONE
         INTEGER nkbs,unit_number1,unit_number2,unit_number3
         INTEGER i,j,ksubset(2)
@@ -2587,8 +2587,8 @@ END IF
 
     END SUBROUTINE Get_Dispersion_SE
 !================================================================================================
-!!Force Constants I/O, legacy code not used
 subroutine write_lat_fc(ngrps,ntrms)
+!!Force Constants I/O, legacy code not used
  use svd_stuff
  use ios
  use force_constants_module
@@ -2882,8 +2882,8 @@ stop
  end subroutine read_fcs_2
 !
 !-------------------------BELOW IS FOR SELF-ENERGY PART---------------------
-!!legacy code for self energy, currently not used
  SUBROUTINE mySelfEnergy(ksub,tempk)
+ !!legacy code for self energy, currently not used
         IMPLICIT NONE
         INTEGER, INTENT(in) :: ksub(2) ! for pool size
         INTEGER ::nkbs,lambda,nqs,monitor,i,j,om_idx
@@ -2987,6 +2987,7 @@ stop
 8 FORMAT(1(A,I5,2X),1(A,G16.7,2X))
     END SUBROUTINE mySelfEnergy
 !------------------------------------------------------------------------------------------------------------------------------
+subroutine function_self_36(nqs,q,la,omega,temp,nself,uself)
 !!legacy code for self energy, currently not used
 !!notes: I modified this a bit
 !!this version uses the 5-component array v33_squared
@@ -2995,7 +2996,6 @@ stop
 !! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
 !! it assumes the input momentum q is on the already-generated kibz mesh and
 !! the second argument of V33(q,k2,k3) k2 covers the FBZ and similarly k3=-q-k2
-subroutine function_self_36(nqs,q,la,omega,temp,nself,uself)
 
  use kpoints
  use om_dos
@@ -3207,8 +3207,8 @@ CLOSE(check_file)
 
  end subroutine function_self_36
 !--------------------------------------------------------------------------------------------------
-    !! tells if k3 is on a g-vector, grid will be 1
     SUBROUTINE check_g(kpoint,rr,grid)
+    !! tells if k3 is on a g-vector, grid will be 1
         IMPLICIT NONE
         REAL(8) :: g(3), temp
         REAL(8),INTENT(in) :: kpoint(3)
@@ -3229,9 +3229,9 @@ CLOSE(check_file)
 
     END SUBROUTINE check_g
 !--------------------------------------------------------------------------------------------------
-    !! v3sq(:,:,:,:,:) flattened into v33sq(:) and nq1(:),nq2(:),nq3(:)
-    !! only works on kpc(:,:) mesh
     SUBROUTINE mySelfEnergy_re(ksub, tempk,filename)
+        !! v3sq(:,:,:,:,:) flattened into v33sq(:) and nq1(:),nq2(:),nq3(:)
+    !! only works on kpc(:,:) mesh
         IMPLICIT NONE
         INTEGER, INTENT(in) :: ksub(2) ! for pool size
         INTEGER ::lambda,q,monitor,unit_number5,i,j
@@ -3302,10 +3302,10 @@ CLOSE(check_file)
 7 FORMAT(2(a,I5,2x))
     END SUBROUTINE mySelfEnergy_re
 !------------------------------------------------------------------
-!!subroutines extracted from subs.f90
-!!used for phonon lifetime calculations
  subroutine read_ksubset (ksubset,nib)
-! this subroutine reads ksubset.inp
+ !!subroutines extracted from subs.f90
+!!used for phonon lifetime calculations
+!! this subroutine reads ksubset.inp
  use io2
  implicit none
  integer ksubset_f,tmp,nib
@@ -3330,11 +3330,10 @@ CLOSE(check_file)
  endif
  end subroutine read_ksubset
 !=========================================================================================
+ subroutine matrix_kpt_sy
 !!subroutines extracted from subs.f90
 !!used for phonon lifetime calculations
 !! print out k2 points, omega, sum(1,3) V33(k1,la1,k2,la2,k3,la3)^2
- subroutine matrix_kpt_sy
-
  use kpoints
  use io2
  use phi3
@@ -3380,11 +3379,10 @@ CLOSE(check_file)
 
  end subroutine matrix_kpt_sy
 !==================================================================================================
+ subroutine matrix_elt(q1,q2,l1,l2,l3,w33,inside)
  !!subroutines extracted from subs.f90
 !!used for phonon lifetime calculations
 !!for input modes (qi,li) i=1,2,3 calculates the 3-phonon matrix element w33(1,2,3) on the fly
- subroutine matrix_elt(q1,q2,l1,l2,l3,w33,inside)
-
  use kpoints
  use phi3
  use svd_stuff
@@ -3457,11 +3455,10 @@ END IF
 
  end subroutine matrix_elt
 !==================================================================================================
+subroutine matrix_elt_full(q,q2,q3,omq,om2,om3,evq,ev2,ev3,w33)
 !!subroutines extracted from subs.f90
 !!used for phonon lifetime calculations
 !!for input modes (qi,li) i=1,2,3 calculates the 3-phonon matrix element w33(1,2,3) on the fly
-subroutine matrix_elt_full(q,q2,q3,omq,om2,om3,evq,ev2,ev3,w33)
-
  use kpoints
  use phi3
  use svd_stuff
@@ -3521,16 +3518,16 @@ subroutine matrix_elt_full(q,q2,q3,omq,om2,om3,evq,ev2,ev3,w33)
 !==================================================================================================
 !subroutine get_freq is in extratools.f90
 !==================================================================================================
+subroutine function_self_tetra(nqs,q,la,omega,temp,nself,uself)
 !!subroutines extracted from subs.f90
 !!used for phonon lifetime calculations
-subroutine function_self_tetra(nqs,q,la,omega,temp,nself,uself)
-! the tetrahedron method requires direct access to v3 for given k,la indices.
-! we therefore assume v3sq is calculated and used
-! frequencies, temperatures are in cm^-1 (same unit as wmax)
-! It uses the following formula for q in the IFBZ (no restriction on k in the sum):
-! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
-! it assumes the 2nd momentum k2 is on the already-generated kmesh and
-! is the second argument of V33(q,k2,k3) where k2 covers the FBZ and k3=-q-k2
+!! the tetrahedron method requires direct access to v3 for given k,la indices.
+!! we therefore assume v3sq is calculated and used
+!! frequencies, temperatures are in cm^-1 (same unit as wmax)
+!! It uses the following formula for q in the IFBZ (no restriction on k in the sum):
+!! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
+!! it assumes the 2nd momentum k2 is on the already-generated kmesh and
+!! is the second argument of V33(q,k2,k3) where k2 covers the FBZ and k3=-q-k2
  use phi3
  use eigen
  use om_dos
@@ -3631,15 +3628,15 @@ subroutine function_self_tetra(nqs,q,la,omega,temp,nself,uself)
 !==================================================================================================
 
 !--------------------------------------------------------------------------------------------------
+subroutine function_self_new_sq(q,la,omega,temp,nself,uself)
 !!subroutines extracted from subs.f90
 !!used for phonon lifetime calculations
-subroutine function_self_new_sq(q,la,omega,temp,nself,uself)
-! this version uses the general index in v33sq
-! frequencies, temperatures are in cm^-1 (same unit as wmax)
-! It uses the following formula for q in the IFBZ (no restriction on k in the sum):
-! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
-! it assumes the input momentum q is on the already-generated kmesh and
-! is the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
+!! this version uses the general index in v33sq
+!! frequencies, temperatures are in cm^-1 (same unit as wmax)
+!! It uses the following formula for q in the IFBZ (no restriction on k in the sum):
+!! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
+!! it assumes the input momentum q is on the already-generated kmesh and
+!! is the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
  use io2
  use phi3
@@ -3732,15 +3729,15 @@ subroutine function_self_new_sq(q,la,omega,temp,nself,uself)
 
  end subroutine function_self_new_sq
 !--------------------------------------------------------------------------------------------------
+ subroutine function_self_w2_sy(q,la,omega,temp,nself,uself)
 !!subroutines extracted from subs.f90
 !!used for phonon lifetime calculations
- subroutine function_self_w2_sy(q,la,omega,temp,nself,uself)
-! calculates the self-energy on the fly for q-point in the generated kmesh and Lorentzian delta
-! frequencies, temperatures are in cm^-1 (same unit as wmax)
-! It uses the following formula for q in the IFBZ (no restriction on k in the sum):
-! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
-! it assumes the input momentum q is on the already-generated kmesh and
-! is the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
+!! calculates the self-energy on the fly for q-point in the generated kmesh and Lorentzian delta
+!! frequencies, temperatures are in cm^-1 (same unit as wmax)
+!! It uses the following formula for q in the IFBZ (no restriction on k in the sum):
+!! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
+!! it assumes the input momentum q is on the already-generated kmesh and
+!! is the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
  use phi3
  use eigen
@@ -3870,17 +3867,17 @@ subroutine function_self_new_sq(q,la,omega,temp,nself,uself)
 
  end subroutine function_self_w2_sy
 !--------------------------------------------------------------------------------------------------
+subroutine function_self_w3(q,la,omega,temp,nself,uself)
 !!subroutines extracted from subs.f90
 !!used for phonon lifetime calculations
-subroutine function_self_w3(q,la,omega,temp,nself,uself)
-! this one is for arbitrary q
-! uses lorentzian delta with 4 terms, and calculates both real and imaginary parts
-! In this subroutine, which calculates like self_w on the fly, the second momentum
-! is restricted to be on the kpc mesh, but the first and third momenta can be anywhere
-! frequencies, temperatures are in cm^-1 (same unit as wmax)
-! It uses the following formula for q in the IFBZ (no restriction on k in the sum):
-! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
-! the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
+!! this one is for arbitrary q
+!! uses lorentzian delta with 4 terms, and calculates both real and imaginary parts
+!! In this subroutine, which calculates like self_w on the fly, the second momentum
+!! is restricted to be on the kpc mesh, but the first and third momenta can be anywhere
+!! frequencies, temperatures are in cm^-1 (same unit as wmax)
+!! It uses the following formula for q in the IFBZ (no restriction on k in the sum):
+!! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
+!! the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
  use om_dos
  use phi3
@@ -3990,17 +3987,17 @@ subroutine function_self_w3(q,la,omega,temp,nself,uself)
  end subroutine function_self_w3
 
 !--------------------------------------------------------------------------------------------------
+ subroutine function_self_w4(q,la,omega,temp,nself,uself)
 !!subroutines extracted from subs.f90
 !!used for phonon lifetime calculations
- subroutine function_self_w4(q,la,omega,temp,nself,uself)
-! this one is for arbitrary q
-! uses gaussian delta with 3 terms, and just calculates the imaginary part.
-! In this subroutine, which calculates like self_w on the fly, the second momentum
-! is restricted to be on the kpc mesh, but the first and third momenta can be anywhere
-! frequencies, temperatures are in cm^-1 (same unit as wmax)
-! It uses the following formula for q in the IFBZ (no restriction on k in the sum):
-! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
-! the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
+!! this one is for arbitrary q
+!! uses gaussian delta with 3 terms, and just calculates the imaginary part.
+!! In this subroutine, which calculates like self_w on the fly, the second momentum
+!! is restricted to be on the kpc mesh, but the first and third momenta can be anywhere
+!! frequencies, temperatures are in cm^-1 (same unit as wmax)
+!! It uses the following formula for q in the IFBZ (no restriction on k in the sum):
+!! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
+!! the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
  use om_dos
  use phi3
@@ -4109,19 +4106,19 @@ subroutine function_self_w3(q,la,omega,temp,nself,uself)
 
  end subroutine function_self_w4
 !===========================================================
+ subroutine calculate_v35(ksubibz,ndn,nib,eivlibz,eivcibz,nk,eival,eivec)
 !!subroutines extracted from subs.f90
 !!used for phonon lifetime calculations
 !!all of the write() will give compiling time error, so commented out
- subroutine calculate_v35(ksubibz,ndn,nib,eivlibz,eivcibz,nk,eival,eivec)
-! this version is used when direct access is needed to v33 for given k_indices and bands
-! this subroutine computes the sum_R2,R3,Tau1,Tau2,Tau3,al,be,ga of  (hbar/2)**1.5
-! Psi_R2,R3,Tau1,Tau2,Tau3^al,be,ga e^{i k2.R2+i k3.R3} /sqrt(m_tau1*m_tau2*m_tau3) *
-! e_la1^{tau1,al}(k1)*e_la2^{tau2,be}(k2)*e_la3^{tau3,ga}(k3)/sqrt(w_la1(k1)*w_la2(k2)*w_la3(k3))
-! with k1=-k2-k3+G so that all k1,k2,k3 are within the primitive cell of the recip space i.e.
-! between 0 and gi; i=1,2,3 ; units are in cm^-1
-! this works for k1 in the IBZ and k2 in the FBZ on the k-mesh, defined by sum_i=1,3 ni/Ni*gi
-! to avoid ambiguity in the case of degenerate eigenstates, and to satisfy symmetry exactly,
-! not to mention saving time, we calculate only for 0<q_i<G/2 and complete by symmetry
+!! this version is used when direct access is needed to v33 for given k_indices and bands
+!! this subroutine computes the sum_R2,R3,Tau1,Tau2,Tau3,al,be,ga of  (hbar/2)**1.5
+!! Psi_R2,R3,Tau1,Tau2,Tau3^al,be,ga e^{i k2.R2+i k3.R3} /sqrt(m_tau1*m_tau2*m_tau3) *
+!! e_la1^{tau1,al}(k1)*e_la2^{tau2,be}(k2)*e_la3^{tau3,ga}(k3)/sqrt(w_la1(k1)*w_la2(k2)*w_la3(k3))
+!! with k1=-k2-k3+G so that all k1,k2,k3 are within the primitive cell of the recip space i.e.
+!! between 0 and gi; i=1,2,3 ; units are in cm^-1
+!! this works for k1 in the IBZ and k2 in the FBZ on the k-mesh, defined by sum_i=1,3 ni/Ni*gi
+!! to avoid ambiguity in the case of degenerate eigenstates, and to satisfy symmetry exactly,
+!! not to mention saving time, we calculate only for 0<q_i<G/2 and complete by symmetry
 !
  use kpoints
  use phi3
@@ -4283,23 +4280,23 @@ OPEN(207,file='monitor_v35.dat',status='unknown')
 
  end subroutine calculate_v35
 !===========================================================
+subroutine calculate_w3_ibz_split_sq(ibz_subset,nv3_split,ndn,nk,kp)
 !!subroutines extracted from subs.f90
 !!used for phonon lifetime calculations
-subroutine calculate_w3_ibz_split_sq(ibz_subset,nv3_split,ndn,nk,kp)
-! This is a modified calculate_w3_ibz by sy.
-! It reads ibz_subset (ibz_subset(1)-starting index, ibz_subset(2)-end index in nibz)
-! This subroutine will not write header in output file. This should be done by another code for merging v33.dat
+!! This is a modified calculate_w3_ibz by sy.
+!! It reads ibz_subset (ibz_subset(1)-starting index, ibz_subset(2)-end index in nibz)
+!! This subroutine will not write header in output file. This should be done by another code for merging v33.dat
 
-! Below is for the original calculate_w3_ibz
-! this subroutine computes the sum_R2,R3,Tau1,Tau2,Tau3,al,be,ga of  (hbar/2)**1.5
-! Psi_R2,R3,Tau1,Tau2,Tau3^al,be,ga e^{i k2.R2+i k3.R3} /sqrt(m_tau1*m_tau2*m_tau3) *
-! e_la1^{tau1,al}(k1)*e_la2^{tau2,be}(k2)*e_la3^{tau3,ga}(k3)/sqrt(w_la1(k1)*w_la2(k2)*w_la3(k3))
-! with k1=-k2-k3+G so that all k1,k2,k3 are within the primitive cell of the recip space i.e.
-! between 0 and gi; i=1,2,3 ; units for V3 are in cm^-1
-! this works for two k's (k2,k3) in the prim cell on the k-mesh, defined by sum_i=1,3 ni/Ni*gi
-! this subroutine calculates V3(k1,la1,k2,la2,k3,la3)  with k1=-k2-k3+G  and all ki in the primitive G-cell
-! with the restriction of k2 in the IRREDUCIBLE BZ defined by ki(3,ni) included in kp(3,nk)
-!
+!! Below is for the original calculate_w3_ibz
+!! this subroutine computes the sum_R2,R3,Tau1,Tau2,Tau3,al,be,ga of  (hbar/2)**1.5
+!! Psi_R2,R3,Tau1,Tau2,Tau3^al,be,ga e^{i k2.R2+i k3.R3} /sqrt(m_tau1*m_tau2*m_tau3) *
+!! e_la1^{tau1,al}(k1)*e_la2^{tau2,be}(k2)*e_la3^{tau3,ga}(k3)/sqrt(w_la1(k1)*w_la2(k2)*w_la3(k3))
+!! with k1=-k2-k3+G so that all k1,k2,k3 are within the primitive cell of the recip space i.e.
+!! between 0 and gi; i=1,2,3 ; units for V3 are in cm^-1
+!! this works for two k's (k2,k3) in the prim cell on the k-mesh, defined by sum_i=1,3 ni/Ni*gi
+!! this subroutine calculates V3(k1,la1,k2,la2,k3,la3)  with k1=-k2-k3+G  and all ki in the primitive G-cell
+!! with the restriction of k2 in the IRREDUCIBLE BZ defined by ki(3,ni) included in kp(3,nk)
+!!
  use kpoints
  use phi3
  use atoms_force_constants
@@ -4431,8 +4428,8 @@ subroutine calculate_w3_ibz_split_sq(ibz_subset,nv3_split,ndn,nk,kp)
     ! check subroutine rta_sub(ksub,tempk)
 
 !=================================All below are for checking purpose===================================================================
-!!check subroutine, not used
 SUBROUTINE naiveCheck(n1,nk2,nk3,l1,l2,l3,ta1,ta2,ta3,t, eiqr,xx, counter)
+!!check subroutine, not used
     USE eigen
     USE svd_stuff
     IMPLICIT NONE
@@ -4460,9 +4457,9 @@ SUBROUTINE naiveCheck(n1,nk2,nk3,l1,l2,l3,ta1,ta2,ta3,t, eiqr,xx, counter)
     END IF
 7 format(3(a,i5,3x))
 END SUBROUTINE naiveCheck
-!-----------------------------
-!!check subroutine, not used
+!----------------------------
 SUBROUTINE naiveCheck2(n1,nk2,nk3,l1,l2,l3,xx, den)
+!!check subroutine, not used
     USE eigen
     USE svd_stuff
     USE constants
@@ -4582,8 +4579,8 @@ END SUBROUTINE naiveCheck2
 !    CLOSE(unitnumber)
 !END SUBROUTINE CheckASR
 !!=========================================================================================================================
-!!Force ASR in FC2
 SUBROUTINE FixASR2
+!!Force ASR in FC2
     IMPLICIT NONE
     INTEGER :: direction1, direction2
     INTEGER :: unitnumber
@@ -4692,8 +4689,8 @@ END SUBROUTINE FixASR2
 !
 !END SUBROUTINE CheckASR4
 !--------------------------------------------------------------------------------------------------
-    !!force symmetry on strain gradients
     SUBROUTINE sym_strain
+      !!force symmetry on strain gradients
         IMPLICIT NONE
         INTEGER :: i,j
         DO i=1,d-1
@@ -4704,8 +4701,8 @@ END SUBROUTINE FixASR2
         END DO
     END SUBROUTINE sym_strain
 !--------------------------------------------------------------------------------------------------
-     !!update translational vectors with strain eta
      SUBROUTINE R_Update
+     !!update translational vectors with strain eta
         IMPLICIT NONE
         INTEGER :: i=0
         !restore original
@@ -4737,9 +4734,9 @@ END SUBROUTINE FixASR2
 
     END SUBROUTINE R_Update
 !--------------------------------------------------------------------------------------------------
+    SUBROUTINE TreatGradientV
     !!adjust <V> gradients of utau and eta by a matrix
     !!this subroutine is used for the guessing start
-    SUBROUTINE TreatGradientV
         IMPLICIT NONE
         INTEGER :: i,j,voigt_idx1,voigt_idx2
         INTEGER :: atom1,atom2,xyz1,xyz2
@@ -4802,8 +4799,8 @@ END SUBROUTINE FixASR2
         DEALLOCATE(temp)
     END SUBROUTINE TreatGradientV
 !--------------------------------------------------------------------------------------------------
-    !!just simple update,same as broy, it updates x, not used
     SUBROUTINE SimpleUpdate(mx,x,f)
+     !!just simple update,same as broy, it updates x, not used
         IMPLICIT NONE
         INTEGER :: i,j,temp,voigt_idx1,voigt_idx2
         INTEGER :: atom1,atom2, xyz1,xyz2
@@ -4882,9 +4879,9 @@ END SUBROUTINE FixASR2
 
     END SUBROUTINE SimpleUpdate
 !--------------------------------------------------------------------------------------------
- !!update all K, using new strain and atomic deviation, but no <yy>
- !!used for specific testing cases, should not be used in real calculations
     SUBROUTINE updateK
+     !!update all K, using new strain and atomic deviation, but no <yy>
+ !!used for specific testing cases, should not be used in real calculations
         IMPLICIT NONE
 
         INTEGER :: i
@@ -4951,8 +4948,8 @@ END SUBROUTINE FixASR2
 
     END SUBROUTINE updateK
 !--------------------------------------------------------------------------------------------
-    !!copy the final trialfc2 values to fcs_2
     SUBROUTINE updateFCS2
+    !!copy the final trialfc2 values to fcs_2
         IMPLICIT NONE
         INTEGER :: atom1, atom2, xyz1, xyz2
         INTEGER :: i
@@ -4971,9 +4968,9 @@ END SUBROUTINE FixASR2
 
     END SUBROUTINE updateFCS2
 !--------------------------------------------------------------------------------------------
+    FUNCTION normGradients(selected,x,f) RESULT(norm)
     !!calculate the weighted L1 norm of gradients f(:)
     !!used for Broyden threshold check
-    FUNCTION normGradients(selected,x,f) RESULT(norm)
         IMPLICIT NONE
         INTEGER,DIMENSION(:),INTENT(in) :: selected
         REAL(8),DIMENSION(:),INTENT(in) :: x,f
@@ -5002,9 +4999,9 @@ END SUBROUTINE FixASR2
 
     END FUNCTION normGradients
 !----------------------------------------------------------------------------------------------------
+    SUBROUTINE printGradients(x)
     !!output all gradients and variational parameters in a file 'GradientF.dat'
     !!for every iteration
-    SUBROUTINE printGradients(x)
         IMPLICIT NONE
         INTEGER :: checkF, i, j
         INTEGER :: atom1,xyz1,atom2,xyz2
@@ -5068,8 +5065,8 @@ END SUBROUTINE FixASR2
         CLOSE(checkF)
     END SUBROUTINE printGradients
 !-------------------------------------------------------------------------------------------------------
-    !!check subroutine, not used
     SUBROUTINE checkGradientYY
+    !!check subroutine, not used
         IMPLICIT NONE
         INTEGER :: checkYY,rnk,ntindp
         INTEGER :: i,j
@@ -5120,10 +5117,10 @@ END SUBROUTINE FixASR2
         CLOSE(checkYY)
     END SUBROUTINE checkGradientYY
 !-------------------------------------------------------------------------------------------------------
+    SUBROUTINE printResults
     !!major subroutine that output the targetinitialization.dat file
     !!that file has the optimized/converged/solved variational parameters x(:)
     !!that file can also be used as an input for 'inherited' start, where user can assign start value for specific vari para
-    SUBROUTINE printResults
         implicit none
 
         INTEGER :: i,j
@@ -5150,9 +5147,9 @@ END SUBROUTINE FixASR2
         CLOSE(21)
     END SUBROUTINE printResults
 !===============================POST PROCESS RELATED================================
-    !!my subroutine to set om(i), for phonon DOS calculation
-    !!wmax is not read from params.phon but the actual max eivals
     SUBROUTINE my_set_omdos(lambda,mesh)
+     !!my subroutine to set om(i), for phonon DOS calculation
+    !!wmax is not read from params.phon but the actual max eivals
         IMPLICIT NONE
         INTEGER :: i
         INTEGER, INTENT(in) :: lambda, mesh
@@ -5172,8 +5169,8 @@ END SUBROUTINE FixASR2
 
     END SUBROUTINE my_set_omdos
 !-------------------------------------------------------------------------------------------------------
-    !! calculate phonon dos using gauss broadening, params defined in params.phon
     SUBROUTINE calc_dos_gauss
+    !! calculate phonon dos using gauss broadening, params defined in params.phon
         IMPLICIT NONE
         INTEGER :: lambda,i,j
         REAL(8),ALLOCATABLE,DIMENSION(:) :: evc
@@ -5226,8 +5223,9 @@ END SUBROUTINE FixASR2
         CLOSE(udos)
 
     END SUBROUTINE calc_dos_gauss
-    !! use gaussian broadening to calculate phonon DOS
+    
      subroutine calculate_dos(mx,eival,wkp,mesh,omega,ds)
+     !! use gaussian broadening to calculate phonon DOS
          implicit none
          integer i,j,mx,mesh
          real(8) x,wkp(mx),delta,ds(mesh),omega(mesh),eival(mx)  !,cnst
@@ -5249,9 +5247,8 @@ END SUBROUTINE FixASR2
 
      end subroutine calculate_dos
 !-------------------------------------------------------------------------------------------------------
-    !! use tetrahedron to calculate phonon DOS
     SUBROUTINE calc_dos_tet
-
+    !! use tetrahedron to calculate phonon DOS
         IMPLICIT NONE
 
         INTEGER :: lambda,i
@@ -5309,9 +5306,8 @@ END SUBROUTINE FixASR2
 4 format(g11.5,3(3x,a,3x,g11.5))
     END SUBROUTINE calc_dos_tet
 !-------------------------------------------------------------------------------------------------------
-    !!calculate gruneisen
     SUBROUTINE calc_gruneisen
-
+    !!calculate gruneisen
         IMPLICIT NONE
         INTEGER :: i,j
         INTEGER,ALLOCATABLE :: mp(:)
@@ -5392,8 +5388,8 @@ END SUBROUTINE FixASR2
         WRITE(*,*) 'thermal calculation done'
     END SUBROUTINE calc_gruneisen
 !-------------------------------------------------------------------------------------------------------
-    !!calculate multiple thermal dynamical terms
     SUBROUTINE my_thermal(cv,gama) !everthing is in standard unit
+    !!calculate multiple thermal dynamical terms
         IMPLICIT NONE
         INTEGER :: la,k
         REAL(8) :: cv_nk,  x, temp, nbe, nbx
@@ -5421,9 +5417,9 @@ END SUBROUTINE FixASR2
 
     END SUBROUTINE my_thermal
 !-------------------------------------------------------------------------------------------------------
-!! legacy code
 subroutine get_k_info3(q,nkt,ex) !,i1,j1,k1,gg1,gg2,gg3,inside)
-! scans the kpoints to identify the index of the input q
+!! legacy code
+!! scans the kpoints to identify the index of the input q
 
  implicit none
  real(8) q(3),ll
@@ -5451,8 +5447,8 @@ subroutine get_k_info3(q,nkt,ex) !,i1,j1,k1,gg1,gg2,gg3,inside)
  endif
  end subroutine get_k_info3
 !-------------------------------------------------------------------------------------------------------
-!! legacy code, not used
     subroutine subst_eivecs(ndn,nk,eival,eivec,kp,nposi,map)
+!! legacy code, not used
 !! this subroutine keeps the eivecs(q) for q in the nposi list and replaces the
 !! other eivec(q') (for q'=-q) by the conjugate of eivec(q) in order to get
 !! rid of the ambiguity in the case of the degenerate case, and assure e(-q)=conjg(e(q)).
@@ -5494,11 +5490,11 @@ subroutine get_k_info3(q,nkt,ex) !,i1,j1,k1,gg1,gg2,gg3,inside)
 
  end subroutine subst_eivecs
 !-------------------------------------------------------------------------------------------------------
-!! legacy code, calculate mode gruneisen
     SUBROUTINE gruneisen(nkp,kp,dk,ndn,eivl,eivc,ugr,grn)
-! takes the eigenvalues (w) and eigenvectors calculated along some
-! crystalline directions and calculates the corresponding mode
-! gruneisen parameters
+!! legacy code, calculate mode gruneisen
+!! takes the eigenvalues (w) and eigenvectors calculated along some
+!! crystalline directions and calculates the corresponding mode
+!! gruneisen parameters
         IMPLICIT NONE
         INTEGER :: ik,i0,nkp,la,al,be,ga,j,k,j0,k0,ta1,ta2,t,ugr,ndn
         REAL(8) :: mi,mj,rx3(3),rx2(3),qq(3),denom,qdotr,omk,mysqrt
@@ -5609,9 +5605,8 @@ subroutine gruneisen_fc
 7 format('****',i7,2(4x,'(',i3,',',i1,')'),9(1x,g10.4))
  end subroutine gruneisen_fc
 !-------------------------------------------------------------------------------------------------------
-    !!legacy code, calculate multiple thermal dynamical terms
     SUBROUTINE calculate_thermal(nk,wk,ndyn,eival,grn,tmn,tmx,ual,veloc)
-
+        !!legacy code, calculate multiple thermal dynamical terms
         IMPLICIT NONE
         INTEGER nk,ndyn,b,k,ual,itemp,nat,ntmp,iter,al,be
         REAL(8) wk(nk),eival(ndyn,nk),veloc(3,ndyn,nk),nbx,cv,cv_nk,cv2,nbe,dlogv,dalpha,kapoverl(3,3)
@@ -5693,8 +5688,8 @@ WRITE(*,*) 'CHECK MARK2'
 
 END SUBROUTINE calculate_thermal
 
-!!calculate bulk modulus?
 subroutine mechanical(bulk,c11,c44,dlogv)
+!!calculate bulk modulus?
  implicit none
  integer i0,al,be,j,t
  real(8) bulk,rija,rijb,c11,c44,dlogv
@@ -5728,9 +5723,9 @@ subroutine mechanical(bulk,c11,c44,dlogv)
 
  end subroutine mechanical
 
-!!calculate specific heat?
  subroutine energies(nk,wk,ndyn,eival,grn,temp,etot,free,pres,pres0,cv)
-! calculate total and free energies within QHA, at a given temperature (temp in Kelvin)
+ !!calculate specific heat?
+!! calculate total and free energies within QHA, at a given temperature (temp in Kelvin)
  implicit none
  integer nk,ndyn,b,k,nat
  real(8) wk(nk),eival(ndyn,nk)
@@ -5777,8 +5772,8 @@ subroutine mechanical(bulk,c11,c44,dlogv)
 
  end subroutine energies
 !-------------------------------------------------------------------------------------------------------
-  !!elastic constant approximation from simple formula, using trial fc2
  SUBROUTINE GetElastic_final
+ !!elastic constant approximation from simple formula, using trial fc2
     IMPLICIT NONE
     INTEGER :: i,j,al,be,ga,de
     INTEGER :: v1, v2, voigt
@@ -5829,10 +5824,10 @@ subroutine mechanical(bulk,c11,c44,dlogv)
     WRITE(33,*)
  END SUBROUTINE GetElastic_final
 !-------------------------------------------------------------------------------------------------------
- !!elastic constants calculation based on Wallace book page 82
+ SUBROUTINE GetElastic2
+  !!elastic constants calculation based on Wallace book page 82
  !!his S(miu) is my u_tau; his u_ij is my eta_ij; his eta_ij is something else
  !!problem that his u_tau and eta are relevant while mine are independent, his coefficient X should be 0
- SUBROUTINE GetElastic2
     IMPLICIT NONE
 
     INTEGER :: i,j,k,l,m,n
@@ -5937,8 +5932,9 @@ subroutine mechanical(bulk,c11,c44,dlogv)
     WRITE(33,*)
  END SUBROUTINE GetElastic2
 !-------------------------------------------------------------------------------------------------------
- !!utility subroutine, for pressure part
- SUBROUTINE Extract_xy(idx,odx1,odx2) !i.e. give idx = 4(xy), output odx1 = 1(x), odx2 = 2(y). etc
+ SUBROUTINE Extract_xy(idx,odx1,odx2) 
+  !!utility subroutine, for pressure part
+  !!i.e. give idx = 4(xy), output odx1 = 1(x), odx2 = 2(y). etc
     IMPLICIT NONE
     INTEGER, INTENT(in) :: idx
     INTEGER, INTENT(out) :: odx1, odx2
@@ -5948,8 +5944,9 @@ subroutine mechanical(bulk,c11,c44,dlogv)
 
  END SUBROUTINE Extract_xy
 !-------------------------------------------------------------------------------------------------------
- !!utility subroutine, for pressure part
- SUBROUTINE Infer_xyz(idx,odx1,odx2) !i.e. give idx = 2(y), output odx1 = 3(z), odx2 = 1(x). etc
+ SUBROUTINE Infer_xyz(idx,odx1,odx2) 
+  !!utility subroutine, for pressure part
+  !!i.e. give idx = 2(y), output odx1 = 3(z), odx2 = 1(x). etc
     IMPLICIT NONE
     INTEGER, INTENT(in) :: idx
     INTEGER, INTENT(out) :: odx1, odx2
@@ -5965,8 +5962,8 @@ subroutine mechanical(bulk,c11,c44,dlogv)
 
  END SUBROUTINE Infer_xyz
 !-------------------------------------------------------------------------------------------------------
-!!add pressure factor to energy and its gradients
 SUBROUTINE add_Pressure
+!!add pressure factor to energy and its gradients
     IMPLICIT NONE
     INTEGER :: i, temp
     INTEGER :: xyz1,xyz2
