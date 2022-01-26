@@ -1,4 +1,5 @@
 !******************************************************************************
+!!legacy code, no comment
 ! initialize data
       subroutine force_constants_init(lattparams,primlatt,natoms_in, &
      &     iatomtype,atompos_in)
