@@ -1,5 +1,5 @@
-!!This module generates k mesh using tetrahedron method
 module tetrahedron
+!!This module generates k mesh using tetrahedron method
 USE kpoints
         implicit none
         type point
@@ -20,8 +20,8 @@ USE kpoints
 
 contains
 !-------------------------------------
-!!allocate k point mesh and size
  subroutine allocate_tetra(n1,n2,n3,mesh)
+    !!allocate k point mesh and size
     implicit none
     integer n1, n2, n3 , mesh
 
@@ -36,20 +36,19 @@ contains
     allocate( tet(n1*n2*n3*6),eig(n1*n2*n3),afunc(n1*n2*n3) )
  end subroutine allocate_tetra
 !-------------------------------------
-!!deallocate related var.
  subroutine deallocate_tetra
+ !!deallocate related var.
     deallocate(tet,eig,afunc,afunc_dos_tet,dos_tet)
  end subroutine deallocate_tetra
 !-------------------------------------
 
 !-------------------------------------
+ subroutine make_kp_reg_tet
 !! generate a regular mesh for tetrahedron method (same as make_kp_reg)
 !! kpoints kpc(nkc) and their weights wk(nkc) are accessed through module kpoints,  otherwise all
 !! other variables needed are internal to the module tetrahedron
 !! nk_tet is a copy of nkc which is defined in modeule tetrahedron
 !! there is no shift in this first call
- subroutine make_kp_reg_tet
-
     !use geometry
     !use lattice
     !use io2
@@ -243,11 +242,10 @@ contains
 
  end subroutine eigen_tet
 !-------------------------------------
+ subroutine weight_tet(energy) 
  !!this subroutine allocates the weights tet(i)%p(j)%c to each corner of the tetrahedron
  !! energy is the other argument of the delta function. tet is the array of tetrahedra
  !!PRB 29.6, 1984
- subroutine weight_tet(energy) 
-
  implicit none
  integer i,j,k,l,m,nb,uns(4),zero
  real :: e1,e2,e3,e4,e21,e31,e41,e32,e42,e43,en(4),en1(4),a1,a2,a3,a4,b11,b12,b21,b22,b31,b32,b41,b42
@@ -442,14 +440,13 @@ contains
 
  end subroutine weight_tet
 !-------------------------------------
+ subroutine calc_tet(mesh,emin,emax,nk,omt,kpt,eig1,afunc1)
  !! nk is the #of kpoints, mesh and emin,emax are energy meshing params defining omt.
  !! kpt and eig and afunc are the arrays of kpoints eigenvalues
  !! which are arguments of the delta function and the weighting function in front of delta, all of
  !! which are defined at the kpoints
  !! output: afunc_dos_tet(E) is the result of the integration method for a function afunc(k)*delta(E-eig(k))
  !! dos_tet is the result of the integration method for a function afunc(k) = 1
- subroutine calc_tet(mesh,emin,emax,nk,omt,kpt,eig1,afunc1)
-
  implicit none
  integer :: i,j,la,l,nk,mesh
  real(8) :: emin,emax,omt(mesh),kpt(3,nk), eig1(nk), afunc1(nk)
@@ -483,13 +480,12 @@ contains
 
  end subroutine calc_tet
 !-------------------------------------
+ subroutine tet_sum(om,nk,arg,func,res,array)
  !! for given om, it calculates res=sum_k delta(om-arg(k))*func(k)
  !! nk is the #of kpoints, *k_number
  !! arg and func are the arrays of kpoints eigenvalues, arguments of the delta
  !! function and the weighting function in front of delta, all of
  !! which are defined at the kpoints
- subroutine tet_sum(om,nk,arg,func,res,array)
-
  implicit none
  integer :: j,l,nk,k
  real(8) :: om, arg(nk), func(nk), res,array(nk),term ! res=sum_k array(k)
@@ -521,8 +517,8 @@ contains
  end subroutine tet_sum
 
 !-------------------------------------
-!!sorting algorithm, (insertion sort)
 SUBROUTINE SSORT (X, IY, N)   
+!!sorting algorithm, (insertion sort)
 IMPLICIT NONE
 
 INTEGER N
@@ -547,8 +543,8 @@ INTRINSIC MAXLOC
 
 END SUBROUTINE SSORT
 !--------------------------------------
-!!copy what's in kpc(:,:) to my TYPE kvector(:)
 SUBROUTINE tet_map (kvector)
+!!copy what's in kpc(:,:) to my TYPE kvector(:)
     !USE kpoints
     IMPLICIT NONE
 
@@ -561,8 +557,8 @@ SUBROUTINE tet_map (kvector)
     END DO !i loop
 END SUBROUTINE tet_map
 !---------------------------------------
-!!legacy check code
 SUBROUTINE tet_check(nkp,condition)
+!!legacy check code
     IMPLICIT NONE
 
     INTEGER :: i,j
