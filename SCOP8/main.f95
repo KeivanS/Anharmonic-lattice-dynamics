@@ -1,12 +1,11 @@
 !zoom id: 931-799-30456
-!watch presentation https://www.youtube.com/watch?v=VsSnsvK2NC4
-!Program for variational approach based on Bougliubov inequality
+!!main program
 Program Phonon
     USE VA_math
     USE force_update
     USE broy
     USE CG
-!   USE check
+    USE check
 
     IMPLICIT NONE
 
@@ -181,7 +180,7 @@ WRITE(unit_number2,*)
     CALL Allocate_Gradients
 !===============INITIALIZE THE VARIATIONAL PARAMETERS=============
     IF(inherit) CALL target_update
-!    CALL test_update !turn on for random starting point
+    IF(rand_start) CALL test_update
 
 !==========TESTING SECTION, REMOVE IN THE FINAL VERSION===========
 !CALL make_rhombohedral
@@ -206,7 +205,7 @@ WRITE(unit_number2,*)
 !CALL print_indieFC2
 !STOP
 
-!----------Free Energy vs. variational params test--------------
+!----------Free Energy Landscape test--------------
  !comment off guessloop and comment on that STOP for this part
 
 !step = 0.04
@@ -218,25 +217,29 @@ WRITE(unit_number2,*)
 !CALL small_test(6,0.01d0,30) !single var.
 !CALL small_test_ex(4,7,step,20) !contour two vars.
 
-!step_1 = 0.02; step_2 = 0.001
-!strain(1,2) = 0d0;atomic_deviation(1,2) = 0d0
-!CALL rhom_contour(4,8,step_1,step_2,20)
-!STOP
+!NOTICE: turn on inherit option for contour, by doing that you are only allowing
+!        two variables to change, while others are fixed at their optimized values
+step_1 = 0.02; step_2 = 0.001
+strain(1,2) = 0d0;atomic_deviation(1,2) = 0d0
+pressure = .true.
+stress(1,1) = 7.5*1d-20/ee;stress(2,2) = 7.5*1d-20/ee; stress(3,3) = 7.5*1d-20/ee
+CALL rhom_contour(4,8,step_1,step_2,20)
+STOP
 !----------------------------------------------------------------
 !=========MAKE AN INITIAL GUESS BASED ON FC2 DIAGONALIZATION==============
 !first run a 0 starting point guess, then if the converged K still has negative eigen, run guess method
 accept = -1d-10
 min_eival = accept
 
-!guessloop: DO guess = 1,2
-!    IF(min_eival.lt.accept) THEN
-!        CALL initiate_yy(kvector)
-!        CALL GetElastic_simple
-!        CALL initiate_guess
-!        CALL updateK
-!    ELSEIF(min_eival.gt.accept) THEN
-!        EXIT guessloop
-!    END IF
+guessloop: DO guess = 1,2
+    IF(min_eival.lt.accept) THEN
+        CALL initiate_yy(kvector)
+        CALL GetElastic_simple
+        CALL initiate_guess
+        CALL updateK
+    ELSEIF(min_eival.gt.accept) THEN
+        EXIT guessloop
+    END IF
 !=============================FIRST RUN======================================
 WRITE(*,*)'======================Check 1st Variational Approach calculation======================'
 WRITE(unit_number2,*)'======================Check 1st Variational Approach calculation======================'
@@ -471,7 +474,7 @@ WRITE(unit_number2,*)'===============End of Broyden/CG Iterations===============
 WRITE(unit_number2,*)''
 WRITE(unit_number2,*)''
 
-!END DO guessloop !guess loop
+END DO guessloop !guess loop
 
     CALL printGradients(x) !final gradients value and variational parameters value
     !-----out put results for target initialization of next temperature(optional)-----
