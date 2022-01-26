@@ -9,7 +9,7 @@
       !real(8) , allocatable :: wk(:)
 
       contains
-
+	!! allocate k poinits, the only subroutine used in this module
         subroutine allocatek(n)
             implicit none
             integer :: i
@@ -25,8 +25,9 @@
             return
         end subroutine allocatek
 !-------------------------------------------------------------------------------------------
-        subroutine generate_irk(n)
-        ! generate the irreducible n kpoints in (0,pi/R]
+        !! not used
+	!! generate the irreducible n kpoints in (0,pi/R]
+	subroutine generate_irk(n)       
             implicit none
             integer :: i
             integer, intent(in) :: n
@@ -38,7 +39,9 @@
             end do
         end subroutine
 !-------------------------------------------------------------------------------------------
-        subroutine fill_k(n)
+        !! not used
+	!! for simple k mesh generation
+	subroutine fill_k(n)
             implicit none
             integer :: i,j
             integer,intent(in) :: n
@@ -47,7 +50,8 @@
             end do
 
         end subroutine fill_k
-
+	!!not used
+	!!shift k points
         subroutine shift_k(n)
             implicit none
             integer,intent(in)::n
@@ -58,7 +62,7 @@
                 kvector(i)%component(1)=kvector(i)%component(1)-shift
             end do
         end subroutine shift_k
-
+	!!not used
         subroutine eliminate_gamma(n)
             implicit none
             integer,intent(in) :: n
