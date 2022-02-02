@@ -29,4 +29,25 @@
 
 #### Input Files Explanation
 
-- <>
+- <fc2.dat>,<fc3.dat>,<fc4.dat> are force constants file extracted from runing **FOCEX**, values are labeled with atom number and directional indexes, stored as objects in this code
+- <lat_fc.dat> contains some structure info of crystal and a complete atom list of the supercell, stored as objects in this code
+- <params.born> has the born charge and electric constsant
+- <params.inp> contains some structure info
+- <params.phon> contains some phonon related info, such as k mesh size, etc
+- <iteration_parameters.in> is <u>user defined</u> input file, what every line does is noted directly in the sample file
+- <kpbs.in> is <u>user defined</u> input file. It is only for post process, gives the high symmetry k point path that user chooses to calculate phonon dispersion, etc
+- <targetInitialize.dat> is both <u>user defined</u> input file and code's output file. Can be used to manually assign initial values to corresponding variational parameters. When a run finishes, it will be updated as the optimized variational parameters at this temperature.
+
+---
+
+#### Selected Output Files Explanation
+
+- <convergence.dat> records the converging history of Broyden. Col 1 is the iteration number, Col 2 is the L1 norm threshold, Col 3 is the current free energy
+- <Dispersion.dat> is the phonon band data. First column is the index of k point. Each following columns corresponds to a band
+- <dos...dat> files start with dos are phonon DOS 
+- <eigenvalues.dat> and <eigenvectors.dat> record the eigenvalues and eigenvectors of current run
+- <GradientF.dat> contains all the current variational parameters value, all the corresponding free energy gradients and free energy, from first iteration to the last iteration.
+- <output.txt> contains various info about the running
+- <result.txt> contains few selected results such as final free energy, final volume, gruneisen, specific heat, etc at this temperature
+- <targetInitialize.dat> is explained above
+- <Y_square.dat> contains every yy value and the its gamma point approximation
