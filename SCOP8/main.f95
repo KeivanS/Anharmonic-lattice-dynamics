@@ -219,12 +219,10 @@ WRITE(unit_number2,*)
 
 !NOTICE: turn on inherit option for contour, by doing that you are only allowing
 !        two variables to change, while others are fixed at their optimized values
-step_1 = 0.02; step_2 = 0.001
-strain(1,2) = 0d0;atomic_deviation(1,2) = 0d0
-pressure = .true.
-stress(1,1) = 7.5*1d-20/ee;stress(2,2) = 7.5*1d-20/ee; stress(3,3) = 7.5*1d-20/ee
-CALL rhom_contour(4,8,step_1,step_2,20)
-STOP
+!step_1 = 0.02; step_2 = 0.001
+!strain(1,2) = 0d0;atomic_deviation(1,2) = 0d0
+!CALL rhom_contour(4,8,step_1,step_2,20)
+!STOP
 !----------------------------------------------------------------
 !=========MAKE AN INITIAL GUESS BASED ON FC2 DIAGONALIZATION==============
 !first run a 0 starting point guess, then if the converged K still has negative eigen, run guess method

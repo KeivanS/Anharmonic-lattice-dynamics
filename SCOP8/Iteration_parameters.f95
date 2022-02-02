@@ -1,5 +1,5 @@
 MODULE Iteration_parameters
-!!This module is for reading iteration parameters from various config files
+    !!This module is for reading iteration parameters from various config files
     USE DFT_force_constants
 
     IMPLICIT NONE
@@ -16,12 +16,14 @@ MODULE Iteration_parameters
     INTEGER,DIMENSION(:),ALLOCATABLE :: free_var
     LOGICAL :: unleashed = .false.
     LOGICAL :: inherit = .false.
-    !REAL(8),DIMENSION(:,:,:,:),ALLOCATABLE :: Y_square
+    LOGICAL :: rand_start = .false.
+    LOGICAL :: pressure = .false.
+    REAL(8) :: stress(d,d) !for pressure test
 
 CONTAINS
 !--------------------------------------------------------------------------------------------
  subroutine read_params
-  !! Read phonon parameters from <params.phon>
+     !! Read phonon parameters from <params.phon>
  use io2
  use om_dos
  use phi3
@@ -83,7 +85,7 @@ CONTAINS
  end subroutine read_params
 !----------------------------------------------------------------------------------------------------
     SUBROUTINE initiate_var
-     !! initiate variational parameters to trivial start
+         !! initiate variational parameters to trivial start
          IMPLICIT NONE
          INTEGER :: tau1,direction1,direction2
          INTEGER :: seed
@@ -119,7 +121,7 @@ CONTAINS
     END SUBROUTINE initiate_var
 !----------------------------------------------------------------------------------------------------
     SUBROUTINE make_rhombohedral
-    !!just for Bismuth 385K test, manually make it a rhombohedral
+        !!just for Bismuth 385K test, manually make it a rhombohedral
         IMPLICIT NONE
         REAL(8) :: x,y,utau
 
@@ -143,13 +145,13 @@ CONTAINS
         INTEGER :: i,j,k,l
         INTEGER ::atom1,atom2,xyz1,xyz2
         REAL(8) :: x(3)
-        !randomize strain
+        !randomize strain eta
         CALL srand(seed)
         strain(:,1) = strain(:,1) + 0.02*(/rand(),rand(),rand()/)-(/0.01,0.01,0.01/)
         strain(:,2) = strain(:,2) + 0.02*(/rand(),rand(),rand()/)-(/0.01,0.01,0.01/)
         strain(:,3) = strain(:,3) + 0.02*(/rand(),rand(),rand()/)-(/0.01,0.01,0.01/)
 
-        !randomize atomic deviation
+        !randomize atomic deviation utau
         CALL RANDOM_NUMBER(x)
         atomic_deviation(:,1) = atomic_deviation(:,1) + (2*x-1)*0.05
         CALL RANDOM_NUMBER(x)
@@ -213,7 +215,7 @@ CONTAINS
     END SUBROUTINE select_xy
 
     SUBROUTINE release_x(choice,x_in,x_out)
-     !!utility subroutine for freeze/free variational params
+    !!utility subroutine for freeze/free variational params
     !!reassign x after this iteration, used after <bro90>/<cg> before <decompose_x>
         IMPLICIT NONE
         INTEGER :: i,j,idx
@@ -320,11 +322,20 @@ CONTAINS
 
         unit_number = 60
         OPEN(unit_number,file='iteration_parameters.in',status='old',action='read')
+
+        READ(unit_number,*) rand_start !start randomly or not
         READ(unit_number,*) inherit !use results from last run to target initialize or not
+        READ(unit_number,*) pressure !whether include pressure factor
         READ(unit_number,*) tolerance2
         READ(unit_number,*)seed
         READ(unit_number,*) max_it_number
         READ(unit_number,*) temperature
+
+        DO i=1,3
+            READ(unit_number,*) stress(i,:) !read stress tensor
+        END DO
+        stress = stress*1d-21/ee !unify the unit
+
         READ(unit_number,'(E5.0)') danger !used in this version
         READ(unit_number,*) n !number of fixed variational parameter
         IF(ALLOCATED(fixed_params)) DEALLOCATE(fixed_params)
@@ -356,8 +367,8 @@ CONTAINS
         temperature=temperature*k_b/100/h_plank/c_light!convert T(K) to T(1/cm)
     END SUBROUTINE read_iteration_parameters_file
 !----------------------------------------------------------------------------------------------------
-    SUBROUTINE drop_fc2terms  
-    !!get the number of independent fc2
+    SUBROUTINE drop_fc2terms
+        !!get the number of independent fc2
         IMPLICIT NONE
         INTEGER :: i,temp,atom1,atom2
         temp=0
@@ -372,8 +383,8 @@ CONTAINS
         !variational_parameters_size(3) = temp !fixed the center cell
     END SUBROUTINE drop_fc2terms
 !----------------------------------------------------------------------------------------------------
-    SUBROUTINE asr_checkfc2(dummyFC)  
-    !!check asr on selected [myfc2_value] object, i.e. Phi or K
+    SUBROUTINE asr_checkfc2(dummyFC)
+        !!check asr on selected [myfc2_value] object, i.e. Phi or K
         IMPLICIT NONE
         TYPE(fc2_value),INTENT(IN),DIMENSION(:,:) :: dummyFC
         TYPE(fc2_value),DIMENSION(:),ALLOCATABLE :: checkfc2
