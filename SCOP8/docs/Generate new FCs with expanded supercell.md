@@ -16,6 +16,14 @@ where n1, n2, n3 belongs to 2nd atom in FC2 indexes. For the newly generated FC2
 
 6. In order to avoid re-calculate, mark every matched new FC pairs(don't know how)
 
+---
+
+reduced unit, locate reference atom(new atom type in new translational vector sets)
+
+match and duplicate force constants
+
+update lat_fc.dat and params.inp accordingly
+
 ```fortran
 !---------------------------------------------------------------------------------------------------
     FUNCTION findAtom_inOld(new_idx) RESULT(atomIndex)
