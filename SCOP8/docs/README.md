@@ -59,7 +59,7 @@
 1. Put that MingW folder in C:\ (download [here](https://drive.google.com/file/d/1mdHpw7Eac_hwmtHLrHkKdj9zlLljesz8/view?usp=sharing), the newest version of MingW may not work properly) 
 2. Open control panel > system advanced settings > add path of "C:\MingW", see below
 
-<img src="img\how.jpg" style="zoom:50%;" />
+<img src="SCOP8\docs\img\how.jpg" style="zoom:50%;" />
 
 3. Install codeblocks, download [here](www.codeblocks.org/downloads/)
 
