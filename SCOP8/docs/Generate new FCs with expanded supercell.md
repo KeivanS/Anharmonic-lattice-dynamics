@@ -14,6 +14,8 @@
 
 where n1, n2, n3 belongs to 2nd atom in FC2 indexes. For the newly generated FC2 to match, make sure the atom types match, the two xyz indexes also match(? not sure).
 
+6. In order to avoid re-calculate, mark every matched new FC pairs(don't know how)
+
 ```fortran
 !---------------------------------------------------------------------------------------------------
     FUNCTION findAtom_inOld(new_idx) RESULT(atomIndex)
