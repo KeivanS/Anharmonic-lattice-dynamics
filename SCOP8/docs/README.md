@@ -6,6 +6,8 @@
 
 #### Code Files Explanation
 
+- *test.cbp* is the code::blocks project file that contains dependency and so on, only for Windows
+
 - *main.f95* is the main program file, can modify according to comments on different type of calculations
 - *Broyden.f95* is the root finding module that utilizes Broyden's method
 - *check.f90* contains several test subroutines, including free energy landscape calculations
@@ -62,5 +64,5 @@
 <img src="img\how.JPG" style="zoom:50%;" />
 
 3. Install codeblocks, download [here](www.codeblocks.org/downloads/)
-
 4. Codeblocks > settings > compiler > set ==gnu fortran== as default and auto detect compilers (you may need to uncheck all the optional compiling options)
+4. Double click *test.cbp* to open the project in code::blocks and compile, run.

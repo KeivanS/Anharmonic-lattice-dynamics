@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="test" />
+		<Option pch_mode="2" />
+		<Option compiler="gfortran" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/test" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gfortran" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/test" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gfortran" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="Broyden.f95">
+			<Option weight="6" />
+		</Unit>
+		<Unit filename="ConjugateGradient.f90">
+			<Option weight="7" />
+		</Unit>
+		<Unit filename="DFT_force_constants.f95">
+			<Option weight="4" />
+		</Unit>
+		<Unit filename="Fourier_force_constants.f95">
+			<Option weight="5" />
+		</Unit>
+		<Unit filename="Iteration_parameters.f95">
+			<Option weight="5" />
+		</Unit>
+		<Unit filename="MatrixDiagonalize.f90">
+			<Option weight="3" />
+		</Unit>
+		<Unit filename="Structure_info.f95">
+			<Option weight="3" />
+		</Unit>
+		<Unit filename="VA_math.f95">
+			<Option weight="6" />
+		</Unit>
+		<Unit filename="check.f90">
+			<Option weight="8" />
+		</Unit>
+		<Unit filename="constants.f90">
+			<Option weight="0" />
+		</Unit>
+		<Unit filename="extratools.f90">
+			<Option weight="4" />
+		</Unit>
+		<Unit filename="force_constants.f90">
+			<Option weight="2" />
+		</Unit>
+		<Unit filename="force_update.f90">
+			<Option weight="7" />
+		</Unit>
+		<Unit filename="geometry.f95">
+			<Option weight="1" />
+		</Unit>
+		<Unit filename="kp_1d.f90">
+			<Option weight="4" />
+		</Unit>
+		<Unit filename="main.f95">
+			<Option weight="9" />
+		</Unit>
+		<Unit filename="mods9.f90">
+			<Option weight="2" />
+		</Unit>
+		<Unit filename="modules_tetra.f90">
+			<Option weight="3" />
+		</Unit>
+		<Unit filename="others3_nshells.f90">
+			<Option weight="2" />
+		</Unit>
+		<Unit filename="zhegv.f">
+			<Option weight="0" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
