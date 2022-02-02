@@ -51,3 +51,16 @@
 - <result.txt> contains few selected results such as final free energy, final volume, gruneisen, specific heat, etc at this temperature
 - <targetInitialize.dat> is explained above
 - <Y_square.dat> contains every yy value and the its gamma point approximation
+
+---
+
+#### How to Run Code on Windows
+
+1. Put that MingW folder in C:\ (download [here](https://drive.google.com/file/d/1mdHpw7Eac_hwmtHLrHkKdj9zlLljesz8/view?usp=sharing), the newest version of MingW may not work properly) 
+2. Open control panel > system advanced settings > add path of "C:\MingW", see below
+
+![](\img\how.JPG)
+
+3. Install codeblocks, download [here](www.codeblocks.org/downloads/)
+
+4. Codeblocks > settings > compiler > set ==gnu fortran== as default and auto detect compilers (you may need to uncheck all the optional compiling options)
