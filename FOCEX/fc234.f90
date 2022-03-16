@@ -1,4 +1,5 @@
 program FC234
+!
 ! todo: supress redundant parameters lines maxshell. The latter
 ! should be based on the number of requested shells by fc2
 ! Same for error tolerances
@@ -49,7 +50,6 @@ program FC234
 ! needs to read params.born to get dielectric constant and Born charges; the long-range
 ! part of the FCs is (Zi.q)(Zj.q)/eps q^2 corresponding to force: Fi=- sum_q (Zi.q)(Zj.q)/eps q^2 e^iq.Rij u_j
 ! need to calculate this force, subtract it from the DFT input force, and fit the remainder.
-!
 !
 use lattice
 use params
