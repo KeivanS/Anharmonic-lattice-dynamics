@@ -63,16 +63,14 @@ end module mod_ksubset2
   subroutine deallocate_v33_sq
     deallocate(v33sq1)
   end subroutine
-  subroutine allocate_phi3_sy(nk,nl,nw,ni)
-  integer nk,nw,nl,ni
+  subroutine allocate_phi3_sy(nk,nl,ni)
+  integer nk,nl,ni
 !   allocate(delta3(nk,nl,nw),gamma3(nk,nl,nw),v3(nk,nk,nl,nl,nl))
 !   allocate(selfN(ni,nl,nw),selfU(ni,nl,nw))
     allocate(v33_md(ni,nk,nl,nl,nl))
   end subroutine allocate_phi3_sy
 
  end module phi3_sy
-
-
 
 
 !===========================================================
@@ -98,7 +96,7 @@ contains
 
 subroutine allocate_iter_kap (nk,ndn)
  implicit none
- integer ni,nk,ndn
+ integer nk,ndn
 !allocate (F_RTA(nk,ndn,3),F1(nk,ndn,3),F2(nk,ndn,3),F1_old(nk,ndn,3),Qvalue(nk,ndn), &
 !&         iselfenergy(nk,ndn),tau(nk,ndn,3),error(nk,ndn,3),diff(nk,ndn,3))
  allocate (diff_kap(nk,ndn,3,3),kappa(ndn,3,3) ) !,kappa_k(nk,ndn,3,3),kappa_RTA(ndn,3,3), &
@@ -112,7 +110,7 @@ allocate (Qvalue_N(ni,ndn),Qvalue_U(ni,ndn),qval(ni*ndn),mval(nk*ndn,ni*ndn))
 end subroutine allocate_iter0
 
 subroutine allocate_iter1 (ni,nk,ndn)
-allocate (rhs(ndn*nk,3),rhsi(ndn*ni,3),coll(ndn*ni,ndn*ni),ne_dist(ni*ndn,3),ne_dist_rta(ni*ndn,3)) 
+allocate (rhs(ndn*nk,3),rhsi(ndn*ni,3),coll(ndn*ni,ndn*ni),ne_dist(ni*ndn,3),ne_dist_rta(ni*ndn,3))
 end subroutine allocate_iter1
 
 subroutine allocate_iter2 (n1,n2,l1,l2,l3)
@@ -126,7 +124,7 @@ deallocate(diff_kap,kappa) !,kappa_k,kappa_RTA,kappa_k_RTA)
 end subroutine deallocate_iter_kap
 
 subroutine deallocate_iter0
-deallocate(Qvalue_N,Qvalue_U,qval,mval) 
+deallocate(Qvalue_N,Qvalue_U,qval,mval)
 end subroutine deallocate_iter0
 
 subroutine deallocate_iter1
@@ -143,16 +141,11 @@ end subroutine deallocate_iter2
 
 end module exactBTE2
 
-
-
-
-
-
 !==============================================================
  module constants
  implicit none
  real(8) :: pi=3.14159265358979323846d0
- complex(8) :: ci=cmplx(0d0,1d0)
+ complex(8) :: ci=dcmplx(0d0,1d0)
  real(8) :: h_plank= 6.62606896d-34
  real(8) :: n_avog= 6.023d23
  real(8) :: k_b = 1.3806504d-23       ! J/K:
@@ -165,16 +158,16 @@ end module exactBTE2
 ! real(8) :: cnst = sqrt(ee*1d20/uma)/pi/200/c_light ! converts sqrt(eV/A/A/uma) to cm^-1
   real(8) :: cnst= 521.1098918
 ! real(8) :: ryd= me*ee**4/2/pi/pi/hbar**2/16/pi/pi/eps0/eps0
-  real(8) :: ryd= 27.2116  
+  real(8) :: ryd= 27.2116
 ! real(8) :: ab = hbar*hbar/me/ee/ee*4*pi*eps0
   real(8) :: ab = 0.529177
-! kbe=8.617343e-05 
+! kbe=8.617343e-05
  end module constants
 !==============================================
 module params
  real(8) tolerance,margin,scalelengths
  integer nconfigs,classical,ntemp,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,isvd
- integer nshells(4,20)   ! up to which shell to include for each rank of FC
+ integer nshells(4,10)   ! up to which shell to include for each rank of FC
  integer include_fc(4)  ! whether to include FCs of that rank
  real(8) rcut(4),tau0,wshift(3)
  real(8) tmin,tmax,qcros(3),svdc
@@ -201,7 +194,7 @@ end module params
    end interface
    interface operator(+)
      module procedure addition_avv , addition_vav, addition !,  &
-! &                     addition_ava , addition_vaa 
+! &                     addition_ava , addition_vaa
    end interface
    interface operator(-)
      module procedure subtraction,subtraction_av,subtraction_va; end interface
@@ -783,7 +776,7 @@ end subroutine write_outr
   subroutine write_outi(unit,string,var)
   implicit none
   character*(*) string
-  integer n,unit,l
+  integer unit,l
   integer var
 
   l=len_trim(string)
@@ -826,9 +819,9 @@ end module ios
 ! sgfract(j,i), jth cartesian coordinate of fractional in ith space group operator
       double precision sgfract(3,48)
 ! iatomop(j,i), point operator that takes jth atom into ith atom
-      integer iatomop(:,:)
+      integer, allocatable :: iatomop(:,:)
 ! atomopfract(k,j,i), kth cartesian coordinate of fractional to accompany iatomop
-      double precision atomopfract(:,:,:)
+      double precision, allocatable :: atomopfract(:,:,:)
 ! natoms0, number of atoms in the primitive unit cell
       integer natoms0
 ! natoms, number of atoms out to maxneighbors
@@ -844,8 +837,8 @@ end module ios
 !  integer iatomcell0(maxatoms)
 ! iatomneighbor(j,i), nearest neighbor shell of jth atom in primitive unit
 ! cell at the origin that contains the ith atom
-      integer iatomneighbor(:,:)
-      allocatable iatomneighbor,iatomop,atomopfract
+      integer, allocatable:: iatomneighbor(:,:)
+!      allocatable iatomneighbor,iatomop,atomopfract
       end module force_constants_module
 !============================================================
  module lattice
@@ -860,10 +853,10 @@ end module ios
  integer n1min,n2min,n3min,n1max,n2max,n3max,NC(3),NF(3)
  integer nr1(3),nr2(3),nr3(3)
 
-! contains 
+! contains
 ! subroutine get_components(q,n,i,j,k )  !,g1,g2,g3)
 !! for a given q-vector, it finds its integer components assuming it was
-!! created as: nk=0 do i=0,N(1)-1 ; do j=0,N(2)-1; do k=0,N(3)-1; nk=nk+1 ;q=i*G1/N1+j*G2/N2+k*G3/N3 
+!! created as: nk=0 do i=0,N(1)-1 ; do j=0,N(2)-1; do k=0,N(3)-1; nk=nk+1 ;q=i*G1/N1+j*G2/N2+k*G3/N3
 !! as the ones created in make_kp_reg with zero shift
 !! it works even if there's a shift less than 0.5
 ! implicit none
@@ -906,7 +899,7 @@ end module ios
 !   type(tensor1) force   ! force applied on it
     type(vector) equilibrium_pos
     type(cell_id) cell
-    integer at_type    
+    integer at_type
     real(8) mass
  end type
 !-------------------------
@@ -1047,10 +1040,10 @@ contains
  rcut(2) = rmax
 
 2 format(a,2(2x,i4),', (',3(1x,f8.4),') ,',3x,f10.5)
-3 format(a,' (',i4,2(1x,i4),1x,')')
-4 format(a,1x,i4,' (',f8.4,2(1x,f8.4),1x,')')
+!3 format(a,' (',i4,2(1x,i4),1x,')')
+!4 format(a,1x,i4,' (',f8.4,2(1x,f8.4),1x,')')
 5 format(a,3(2x,i4),' (',i4,2(1x,i4),1x,')')
-6 format(a,2x,g16.7)
+!6 format(a,2x,g16.7)
 
  end subroutine set_neighbor_list
 
@@ -1098,14 +1091,14 @@ contains
 
  subroutine set_maxterms
    maxterms(1)=15
-   maxterms(2)=200 
+   maxterms(2)=200
    maxterms(3)=200
-   maxterms(4)=600 
+   maxterms(4)=600
    maxtermsindep(1)=5
    maxtermsindep(2)=30
    maxtermsindep(3)=30
    maxtermsindep(4)=60
-   maxgroups=90 
+   maxgroups=90
  end subroutine set_maxterms
 
   end module svd_stuff
@@ -1295,12 +1288,12 @@ contains
  k(:) = q(1)*g1 + q(2)*g2 + q(3)*g3
 
  end subroutine dir2cart_g
-!===========================================================    
+!===========================================================
   module born
   real(8) epsil(3,3)
   real(8), allocatable:: zeu(:,:,:)
-  real(8) rho 
+  real(8) rho
   integer born_flag
   end module born
-!===========================================================    
- 
+!===========================================================
+

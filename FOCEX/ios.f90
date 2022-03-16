@@ -33,10 +33,10 @@
  read(uparams,*) (mas(i),i=1,natom_type)  ! in the same order as in POTCAR
  read(uparams,*) (atname(i),i=1,natom_type)  ! in the same order as in POTCAR
  read(uparams,*) natoms0        ! # of atoms in primitive cell
- read(uparams,*) nshells(1,1:natoms0) 
- read(uparams,*) nshells(2,1:natoms0) 
- read(uparams,*) nshells(3,1:natoms0) 
- read(uparams,*) nshells(4,1:natoms0) 
+ read(uparams,*) nshells(1,1:natoms0)
+ read(uparams,*) nshells(2,1:natoms0)
+ read(uparams,*) nshells(3,1:natoms0)
+ read(uparams,*) nshells(4,1:natoms0)
 
  write(ulog,*) svdcut,'    cutoff for smallest eigenvalue w to be included'
  write(ulog,*) tolerance,'   tolerance for equating two coordinates '
@@ -99,8 +99,8 @@
  use atoms_force_constants
  implicit none
  character line*90, poscar*(*)
- integer i,j,n1,n2,n3,t
- real(8) a1,a2,a3,om,latt_const,a,b,c,dc(3),dr(3),om0
+ integer i
+ real(8) om,latt_const,a,b,c,om0
  type(vector) pos
  logical exst
 
@@ -200,7 +200,7 @@
  call write_out(ulog,'g3 ',g3)
 
 4 format(9(2x,f19.9))
-6 format(2x,i5,1x,a2,2x,i5,9(2x,f19.10))
+!6 format(2x,i5,1x,a2,2x,i5,9(2x,f19.10))
 
  end subroutine read_crystal
 !===========================================================
@@ -213,7 +213,7 @@
  use lattice
  use params
  implicit none
- integer i,j,k,ipr,isc, counter,ier,n1,n2,n3,tau1
+ integer i,j,k, counter,ier,n1,n2,n3
  real(8) a1,a2,a3
  type(vector) shift0,vec
  logical matched
@@ -233,17 +233,17 @@
  write(ulog,*)' COMMENSURABILITY CHECKED ---------------------------------'
 4 format(a,3(2x,f8.3),2x,i1)
 !7 format(a,2(1x,i4),9(2x,f9.4))
-8 format(a,3(1x,i4),9(2x,f9.4))
+!8 format(a,3(1x,i4),9(2x,f9.4))
 
-! do i=1,natoms0 
+! do i=1,natoms0
 !    tau1 = atom0(i)%at_type
 !    do j=1,natom_super_cell
-!       if (tau1 .eq. atom_sc(j)%cell%tau) then  
+!       if (tau1 .eq. atom_sc(j)%cell%tau) then
 ! see if they can be mapped onto one another by a primitive translation vector
 !          vec = atom_sc(j)%equilibrium_pos - atom0(i)%equilibrium_pos
 !          call check(vec,a1,a2,a3,ier,g01,g02,g03)
 !          if (ier .eq. 1) then  ! There might be a constant shift
-!              shift0 = (a1-floor(a1)) * r01 + (a2-floor(a2)) * r02 + (a3-floor(a3)) * r03     
+!              shift0 = (a1-floor(a1)) * r01 + (a2-floor(a2)) * r02 + (a3-floor(a3)) * r03
 !              write(ulog,8)'i,j,tau,shift=',i,j,tau1,shift0
 !          endif
 !       endif
@@ -278,13 +278,13 @@
 
     enddo SC
     if (matched) exit checkloop
- enddo checkloop   
+ enddo checkloop
 
  if (i.ge.1 .and. i.le.natoms0) then
     call write_out(ulog,'THE shift vector ', shift0)
     write(ulog,*)' it maps atom 1 of the SC to atom ',i,' of the prim cell'
  else
-    write(ulog,*)' NO SHIFT VECTOR COULD BE DEFINED!, check your coordinates again' 
+    write(ulog,*)' NO SHIFT VECTOR COULD BE DEFINED!, check your coordinates again'
     stop
  endif
 
@@ -329,7 +329,7 @@
                 atom_sc(k)%mass = atom0(j)%mass
             endif
          enddo PRIM2
-         
+
          if (counter.eq. 0) then
             call write_out(ulog,' ATOM which can not be mapped to the prim cell ',i)
             write(ulog,*)' check your coordinates '
@@ -359,7 +359,7 @@
  use lattice
  use params
  implicit none
- integer i,j,k,ipr,isc, counter,ier,n1,n2,n3,tau1
+ integer i,j,k, counter,ier,n1,n2,n3
  real(8) a1,a2,a3
  type(vector) shift0,vec
  logical matched
@@ -386,17 +386,17 @@
 
 4 format(a,3(2x,f8.3),2x,i1)
 7 format(a,2(1x,i4),9(2x,f9.4))
-8 format(a,3(1x,i4),9(2x,f9.4))
+!8 format(a,3(1x,i4),9(2x,f9.4))
 
-! do i=1,natoms0 
+! do i=1,natoms0
 !    tau1 = atom0(i)%at_type
 !    do j=1,natom_super_cell
-!       if (tau1 .eq. atom_sc(j)%cell%tau) then  
+!       if (tau1 .eq. atom_sc(j)%cell%tau) then
 ! see if they can be mapped onto one another by a primitive translation vector
 !          vec = atom_sc(j)%equilibrium_pos - atom0(i)%equilibrium_pos
 !          call check(vec,a1,a2,a3,ier,g01,g02,g03)
 !          if (ier .eq. 1) then  ! There might be a constant shift
-!              shift0 = (a1-floor(a1)) * r01 + (a2-floor(a2)) * r02 + (a3-floor(a3)) * r03     
+!              shift0 = (a1-floor(a1)) * r01 + (a2-floor(a2)) * r02 + (a3-floor(a3)) * r03
 !              write(ulog,8)'i,j,tau,shift=',i,j,tau1,shift0
 !          endif
 !       endif
@@ -441,13 +441,13 @@
        exit checkloop
 !   if (matched) exit checkloop
     endif
- enddo checkloop   
+ enddo checkloop
 
  if (i.ge.1 .and. i.le.natoms0) then
     call write_out(ulog,'THE shift vector ', shift0)
     write(ulog,*)' it maps atom 1 of the SC to atom ',i,' of the prim cell'
  else
-    write(ulog,*)' NO SHIFT VECTOR COULD BE DEFINED!, check your coordinates again;i=',i 
+    write(ulog,*)' NO SHIFT VECTOR COULD BE DEFINED!, check your coordinates again;i=',i
     stop
  endif
 
@@ -493,7 +493,7 @@
                 atom_sc(k)%at_type = atom0(j)%at_type
             endif
          enddo PRIM2
-         
+
          if (counter.eq. 0) then
             call write_out(ulog,' ATOM which can not be mapped to the prim cell ',i)
             write(ulog,*)' check your coordinates '
@@ -515,11 +515,11 @@
 
  open(173,file='poscar.xyz')
  write(173,*) natom_super_cell
- write(173,*) 'poscar.xyz to visualize' 
+ write(173,*) 'poscar.xyz to visualize'
  i=0
  do n1=1,natom_type
       do i=1,natom_super_cell
-           if(atom_sc(i)%at_type .eq. n1) then 
+           if(atom_sc(i)%at_type .eq. n1) then
     if(n1.eq.1)  then
          write(173,9)'N ',atom_sc(i)%equilibrium_pos
     elseif(n1.eq.2) then
@@ -548,9 +548,9 @@
  use lattice
  use svd_stuff
  implicit none
- integer n1,n2,i,t,j,k,frc_constr
- type(vector) v
- real(8) x1,x2,x3,x4,const,rr(3)
+ integer i,t,j,frc_constr
+! type(vector) v
+! real(8) x1,x2,x3,x4
  character line*99,outcar*(*)
  logical found,exst
 
@@ -563,7 +563,7 @@
       stop
  endif
 
- t=0 
+ t=0
  do j=1,11000000
     read(utraj,'(a)',end=99)line
     call findword('POSITION',line,found)
@@ -581,7 +581,7 @@
  i=(j-1)/t - 2  ! this is the number of atoms read from OUTCAR
  if (i .ne. natom_super_cell ) then
     write(ulog,*)' number of atoms read .ne. no of atoms in POSCAR file',i,natom_super_cell
-    write(ulog,*)' # of read lines in OUTCAR is=',j 
+    write(ulog,*)' # of read lines in OUTCAR is=',j
     write(ulog,*)' check your POSCAR and OUTCAR again '
     write(ulog,*)' make sure the # of atoms is the same in both files'
     write(ulog,*)' there should be no blank lines at the end of OUTCAR'
@@ -634,22 +634,30 @@
  use ios
  use params
  implicit none
- integer i,k,g,cnt2,cnt
+ integer i,g,cnt2,cnt
  real(8), intent(out):: sd(4)
 
    write(ulog,*)'******* Violation of translational invariance relations: ',itrans
    do i=1,transl_constraints
       write(ulog,*)i,dot_product(atransl(i,:),fcs(:))
    enddo
+
    write(ulog,*)'******* Violation of rotational invariance relations: ',irot
    do i=1,rot_constraints
       write(ulog,*)i,dot_product(arot(i,:),fcs(:)),brot(i)
    enddo
-   write(ulog,*)'******* Violation of Huang invariance relations: '
-   do i=1,huang_constraints
-      write(ulog,*)i,dot_product(ahuang(i,:),fcs(:))
-   enddo
-   call check_huang
+
+!  if(.not.allocated(ahuang)) allocate( ahuang(dim_al,ngr))
+   if (ihuang.ne.0) then
+      write(ulog,*)'******* Violation of Huang invariance relations: '
+      do i=1,huang_constraints
+         write(ulog,*)i,dot_product(ahuang(i,:),fcs(:))
+      enddo
+   endif
+
+!   call check_huang
+
+!return
 
    write(ulog,*)' group, fcs(group), sigma(group) for all SVD'
    do i=1,dim_ac
@@ -809,21 +817,24 @@
  bunit = ryd/ab/ab
  one =1d0
 
-6 format(2x,i5,1x,a2,2x,i5,9(2x,f19.10))
-7 format(1(2x,i5),3(2x,f19.10),4(2x,i5),2x,f9.5)
+!6 format(2x,i5,1x,a2,2x,i5,9(2x,f19.10))
+!7 format(1(2x,i5),3(2x,f19.10),4(2x,i5),2x,f9.5)
 8 format(2(2x,i5),3(2x,f19.10),4(2x,i5),2x,f9.5)
-9 format(9(2x,f19.10))
+!9 format(9(2x,f19.10))
 
 ! first write the crystal data
 ! nt=0; ni=0
-! do i=1,4 
+! do i=1,4
 !    if(map(i)%ngr.gt.0) then
 !      nt(i)= sum(map(i)%nt(:))
 !      ni(i)= sum(map(i)%ntind(:))
+!      if ( (ni(i).ne.map(i)%ntotind) .or. (nt(i).ne.map(i)%ntot) ) then
+!         write(ulog,*)'WRITE_OUTPUT_FC2: ERROR!!'
+!         write(ulog,*)'ni(i).ne.map(i)%ntotind ',ni(i),map(i)%ntotind
+!         write(ulog,*)'nt(i).ne.map(i)%ntot    ',nt(i),map(i)%ntot
 !    endif
 ! enddo
-! call write_lat_fc(ni,nt)
- call write_lat_fc(map(:)%ntotind,map(:)%ntot)
+! call write_lat_fc(ni,nt)  ! same as call write_lat_fc(map(:)%ntotind,map(:)%ntot)
 
 !----------------------------------------
  res = 0
@@ -837,7 +848,6 @@
     write(ulog,*)' FOR RANK=',rnk,' format=',frmt
     write(*,*)' FOR RANK=',rnk,' format=',frmt
     write(ufc1-1+rnk,*)'# RANK ',rnk,' tensors :term,group,(iatom,ixyz)_2 d^nU/dx_{i,alpha}^n'
-!   call get_dim(rnk,map(rnk),ndindp(rnk),ndfull(rnk)) ! no need already called
 
   ng=map(rnk)%ngr ! number of groups
   cnt2=0
@@ -879,7 +889,7 @@
     enddo
   enddo
 !  res = res+ndindp(rnk)
-  res = res+map(rnk)%ntotind 
+  res = res+map(rnk)%ntotind
   endif
  enddo
 
@@ -893,7 +903,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
      rij = length(atompos(:,i)-atompos(:,j))
      trace=0
 !     rs=ndindp(1)
-     rs=map(1)%ntotind 
+     rs=map(1)%ntotind
      if ( include_fc(rnk) .ne. 0 ) then
         ng=map(rnk)%ngr ! number of groups
         cnt2=0
@@ -916,14 +926,14 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
        dij = length(atompos(:,iat(1))-atompos(:,iat(2)))
        if (ixyz(1).eq.ixyz(2)) then
           term2= term2+1
-          trace = trace+ fcd 
+          trace = trace+ fcd
   !       write(*,*)'al,term2,trace=',ixyz(1),term2,trace
        endif
     enddo
   enddo
        if(trace.ne.0) then
-           write(ulog,8) i,j,dij,trace 
-           write(456,8) i,j,dij,trace 
+           write(ulog,8) i,j,dij,trace
+           write(456,8) i,j,dij,trace
        endif
  !     if (term2.ne.3) write(456,*)'#ERROR: there are ',term2,' terms for rij=',dij
 
@@ -937,7 +947,7 @@ write(ulog,*)'***************** END OF FC Trace ******************'
 
 
 !----------------------------------------
- 125  format(a)
+! 125  format(a)
 
  if (res.ne.ngr) then
     write(ulog,*)'WRITE_OUTPUT: sum(nterms),ngr=',res,ngr
@@ -945,7 +955,7 @@ write(ulog,*)'***************** END OF FC Trace ******************'
  endif
  end subroutine write_output_fc2
 !============================================================
- subroutine write_output_fc 
+ subroutine write_output_fc
  use svd_stuff
  use ios
  use force_constants_module
@@ -954,7 +964,7 @@ write(ulog,*)'***************** END OF FC Trace ******************'
  use lattice
  use constants
  implicit none
- integer rank,t,i,res,j,term2,g
+ integer rank,t,i,res,j,term2
  real(8) rij,bunit,one,dij,trace,fcd
 
  one = 1d0
@@ -964,12 +974,12 @@ write(ulog,*)'***************** END OF FC Trace ******************'
 2 format(i6,1x,i5,2(3x,(i4,1x,i1)),3x,g15.8,2x,f5.2)
 3 format(i6,1x,i5,3(3x,(i4,1x,i1)),3x,g15.8,2x,f5.2)
 4 format(i6,1x,i5,4(3x,(i4,1x,i1)),3x,g15.8,2x,f5.2)
-6 format(2x,i5,1x,a2,2x,i5,9(2x,f19.10))
-7 format(1(2x,i5),3(2x,f19.10),4(2x,i5),2x,f9.5)
+!6 format(2x,i5,1x,a2,2x,i5,9(2x,f19.10))
+!7 format(1(2x,i5),3(2x,f19.10),4(2x,i5),2x,f9.5)
 8 format(2(2x,i3),9(2x,g13.6))
 18 format(a,2(2x,i3),9(2x,g13.6))
-9 format(9(2x,f19.10))
-12 format(i6,1x,i4,2(3x,(i3,1x,i1)),' [',i2,',(',3(1x,i2),') ]',3x,g13.6,2(2x,f7.3))
+!9 format(9(2x,f19.10))
+!12 format(i6,1x,i4,2(3x,(i3,1x,i1)),' [',i2,',(',3(1x,i2),') ]',3x,g13.6,2(2x,f7.3))
 31 format(a1,i6,1x,i5,1(3x,(i3,1x,i1)),3x,2(g15.8,2x),f5.2)
 32 format(a1,i6,1x,i4,2(3x,(i3,1x,i1)),' [',i3,',(',3(1x,i2),') ]',3x,2(g13.6,1x),2(2x,f7.3))
 33 format(a1,i6,1x,i5,3(3x,(i3,1x,i1)),3x,2(g15.8,2x),f5.2)
@@ -1064,16 +1074,16 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
               stop
            endif
            write(*,*)'i,j,term2,al,be=',i,j,term2,ixyzterm_2(1,t),ixyzterm_2(2,t)
-           fcd = fcs(res+igroup_2(t))*ampterm_2(t) 
+           fcd = fcs(res+igroup_2(t))*ampterm_2(t)
           if (ixyzterm_2(1,t).eq.ixyzterm_2(2,t)) then
              term2= term2+1
-             trace = trace+ fcd 
+             trace = trace+ fcd
   !          write(*,*)'al,term2,trace=',ixyz(1),term2,trace
           endif
         enddo
         if(trace.ne.0) then
-           write(ulog,8) i,j,rij,trace 
-           write(456,8) i,j,rij,trace 
+           write(ulog,8) i,j,rij,trace
+           write(456,8) i,j,rij,trace
         endif
  !      if (term2.ne.3) write(456,*)'#ERROR: there are ',term2,' terms for rij=',dij
 
@@ -1158,7 +1168,7 @@ write(ulog,*)'***************** END OF FC Trace ******************'
     write(ulog,*)'WRITE_OUTPUT: sum(nterms),ngr=',res,ngr
     write(ulog,*)'WRITE_OUTPUT: they should be equal!'
  endif
- end subroutine write_output_fc 
+ end subroutine write_output_fc
 !============================================================
  subroutine read_fcs_2(iunit,rank)
  use svd_stuff
@@ -1247,7 +1257,7 @@ stop
  use geometry
  use atoms_force_constants
  implicit none
- character line*90
+! character line*90
  integer i,j,t,step
  real(8) dc(3),dr(3)
 
@@ -1286,9 +1296,9 @@ stop
  use geometry
  use atoms_force_constants
  implicit none
- character line*90
- integer i,j,t,n1,n2,n3
- real(8) a(3),dr(3),a1,a2,a3
+! character line*90
+ integer i,n1,n2,n3
+ real(8) a(3),a1,a2,a3
 
 ! check mapping and assign label and address to each atom in the supercell
 ! this seems to be working for now....
@@ -1319,10 +1329,10 @@ stop
  enddo
 
  close(uposcar)
-3 format(i5,9(2x,g13.6))
-4 format(9(2x,f10.4))
-5 format(a,3(i6,2x))
-7 format(a,9(1x,f10.4))
+!3 format(i5,9(2x,g13.6))
+!4 format(9(2x,f10.4))
+!5 format(a,3(i6,2x))
+!7 format(a,9(1x,f10.4))
 8 format(a,i4,i3,i3,'(',3(i2,','),')',3(1x,f10.5))
  write(ulog,*)' POSCAR read successfully and closed'
 
@@ -1330,7 +1340,7 @@ stop
 !=================================================================
       subroutine ustring(m,lineout,nrank,iatom,ixyz)
       implicit none
-      integer i,j,k,m,n,nrank,iatom(nrank),ixyz(nrank)
+      integer i,m,n,nrank,iatom(nrank),ixyz(nrank)
       character lineout*80,xyz(3)
       data xyz/'x','y','z'/
 !     write(*,*)' Entering ustring with rank=',nrank
@@ -1480,7 +1490,7 @@ stop
  use force_constants_module
  use lattice
  implicit none
- integer t,ired,nat,iatom,jatom,l,rnk
+ integer t,nat,iatom,jatom,l,rnk
  integer al,be,taui,tauj,ni(3),nj(3),nsi(3),nsj(3)
  real(8) rij
 
@@ -1489,7 +1499,7 @@ stop
  write(ulog,*)' Basically we describe the harmonic terms in the Taylor expansion'
  write(ulog,*)' Which atom pairs in the supercell are bridged by a FC element '
  write(ulog,*)' Below, ni refers to the translations of the supercell'
- write(ulog,*)'  i,    taui (nsi)        ;   j,    tauj (nsj)          :   term  group   rij ' 
+ write(ulog,*)'  i,    taui (nsi)        ;   j,    tauj (nsj)          :   term  group   rij '
  write(ucor,*)'# i,    taui (ni),  alpha ;   j,    tauj  (nj),   beta  :   term  group   rij '
 
 ! do nat=1,natom_super_cell
@@ -1575,7 +1585,7 @@ stop
  implicit none
  real(8) rij
  integer i,j,ngrps(4),ntrms(4),j_sc
- 
+
  write(ufco,*)' Crystal data: translation vectors of the primitive cell '
  write(ufco,9)r01
  write(ufco,9)r02
@@ -1612,7 +1622,7 @@ stop
  write(173,*) natoms
  write(173,*) ngrps(1),ngrps(2),ngrps(3),ngrps(4)
  do i=1,natoms
-      call findatom_sc(iatomcell(:,i),iatomcell0(i),j_sc)
+      call findatom_sc(iatomcell(:,i),iatomcell0(i),j_sc)  ! (=n(3),tau)
    write(173,8)atom0(iatomcell0(i))%name,(atompos(j,i),j=1,3),j_sc
  enddo
  close(173)

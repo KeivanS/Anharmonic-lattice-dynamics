@@ -19,7 +19,7 @@
 !    call random_number( prod )
 !    b(i) = 2*prod - 1
 ! enddo
- uio = 345 
+ uio = 345
 
 ! open(uio,file='svd-results.dat',status='unknown')
  open(uio,file=fnsvd,status='unknown')
@@ -28,7 +28,7 @@
 ! do i=1,m3
 !   write(uio,9)i,(a(i,j),j=1,n),b(i)
 ! enddo
-9 format(i8,1x,99(1x,f7.3))
+!9 format(i8,1x,99(1x,f7.3))
 8 format(i8,1x,i8,3x,f25.15,3x,f25.15)
 7 format(i8,1x,99(1x,g16.9))
 
@@ -46,19 +46,19 @@
      do i=1,m3
         prod = prod+u(i,j)*u(i,k)
      enddo
-! if it is not 0 or 1 write...     
+! if it is not 0 or 1 write...
      if( abs(abs(prod-0.5)-0.5) .gt. 1d-12) write(uio,8)k,j,prod
   enddo
   enddo
- 
+
 !write(uio,*)' product of V*V^T is: (no lines means it is identity) '
   do k=1,n
   do j=1,n
      prod = 0
      do i=1,n
-        prod = prod+v(j,i)*v(k,i) 
+        prod = prod+v(j,i)*v(k,i)
      enddo
-! if it is not 0 or 1 write...     
+! if it is not 0 or 1 write...
      if( abs(abs(prod-0.5)-0.5) .gt. 1d-12) write(uio,8)k,j,prod
   enddo
   enddo
@@ -79,7 +79,7 @@
      if( abs(prod-a(i,j)) .gt. 1d-10) write(uio,8)i,j,prod,a(i,j)
   enddo
   enddo
-       
+
   wmax = maxval(abs(w))
   wmin = svdcut*wmax
    write(uio,*)' Maxval of w is=',wmax
@@ -89,7 +89,7 @@
      if(abs(w(j)).lt.wmin) w(j)=0d0
   enddo
   call svbksb(u,w,v,m3,n,m3,n,b,x)
-      
+
   write(uio,*)' results of SVD solution, variance, error are: x,sigma,Dx'
   do j=1,n
      sig(j) = 0
@@ -103,7 +103,7 @@
   enddo
 
  deallocate(u,v,w)
-     
+
 !write(uio,*)' residual of SVD solution is: Ax,b,Ax-b,(Ax-b)/Ax'
   error = 0; ermax = 0; num=0; denom=0
   do i=1,m3
@@ -129,7 +129,7 @@
 6 format(i6,3(1x,g13.6),3x,g11.4)
 3 format(a,3(1x,g13.6))
   close(uio)
-    
+
  end subroutine svd_set
 !===================================================
       SUBROUTINE svdcmp(a,m,n,mp,np,w,v)
@@ -356,7 +356,7 @@
         enddo
 ! 3       continue
       enddo L49
-                                                                                
+
       END SUBROUTINE svdcmp
 !  (C) Copr. 1986-92 Numerical Recipes Software !+!).
 !===================================================
@@ -368,7 +368,7 @@
       INTEGER i,j,jj
 !     REAL(8) s,tmp(NMAX)
       REAL(8) s,tmp(n)
-                                                                                
+
       do j=1,n
         s=0d0
         if(w(j).ne.0d0)then
@@ -386,7 +386,7 @@
         enddo
         x(j)=s
       enddo
-                                                                                
+
       END SUBROUTINE svbksb
 !  (C) Copr. 1986-92 Numerical Recipes Software !+!)
 !===================================================
@@ -394,21 +394,21 @@
       implicit none
       REAL(8) a,b,pythag2
       REAL(8) absa,absb,rat
-                                                                                
+
       absa=abs(a)
       absb=abs(b)
 
       if(absa.gt.absb)then
-      rat = absb/absa 
+      rat = absb/absa
       pythag2=absa*sqrt(1d0+rat*rat)
       else
         if(absb.eq.0d0)then
           pythag2=0d0
         else
-          rat = absa/absb 
+          rat = absa/absb
           pythag2=absb*sqrt(1d0+rat*rat)
         endif
       endif
-                                                                                
+
       END FUNCTION pythag2
 !  (C) Copr. 1986-92 Numerical Recipes Software !+!).

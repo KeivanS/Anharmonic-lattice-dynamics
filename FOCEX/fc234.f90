@@ -46,9 +46,11 @@ program FC234
 ! data and enforces the former "exactly" using a separate svd algorithm.
 ! we need to first subtract from the forces the long-range Coulombic part in order
 ! to insure the remaining part is short-ranged.
-! needs to read params.born to get dielectric constant and Born charges; the long-range 
+! needs to read params.born to get dielectric constant and Born charges; the long-range
 ! part of the FCs is (Zi.q)(Zj.q)/eps q^2 corresponding to force: Fi=- sum_q (Zi.q)(Zj.q)/eps q^2 e^iq.Rij u_j
 ! need to calculate this force, subtract it from the DFT input force, and fit the remainder.
+!
+!
 use lattice
 use params
 use ios
@@ -58,11 +60,11 @@ use svd_stuff
 use geometry
 implicit none
 ! type(vector) v
-integer i,j,n3,rank,iunit,tra,rot,hua,eliminate_fc,n_constr,n_kept
+integer i,j,n3,rank,iunit,tra,rot,hua,eliminate_fc
 character xt*1,fn*7,poscar*7,outcar*7
 logical ex
-real(8), allocatable :: newamat(:,:),newbmat(:),afrc(:,:),bfrc(:),us(:,:),vs(:,:),ws(:),project(:,:)
-integer, allocatable :: frc_constr(:)
+real(8), allocatable :: newamat(:,:),newbmat(:),afrc(:,:),bfrc(:),aux1(:,:)
+integer, allocatable :: frc_constr(:),auxi(:,:)
 real(8) error,ermax,sd(4),sig !,a1,a2,a3
 real tim
  character now*10,today*8,zone*5
@@ -117,7 +119,7 @@ real tim
  write(utimes,'(a,f10.4)')' READ_INPUT CALLED, TIME                       IS ',tim
 
 ! This does not work: fcinit must be called once or latparam(4:6) will be overwritten
-  maxatoms=2000; imaxat=1
+  maxatoms=20; imaxat=1
   do while (imaxat.ne.0)
      maxatoms=maxatoms+300
      write(6,*)' maxatoms=',maxatoms
@@ -126,13 +128,30 @@ real tim
      if (allocated(iatomcell))  deallocate(iatomcell)
      if (allocated(atompos))    deallocate(atompos)
      allocate(atompos(3,maxatoms), iatomcell(3,maxatoms),iatomcell0(maxatoms))
-     call force_constants_init(latticeparameters,primitivelattice,natoms0,  &
-      &     atom_type,atompos0)  !(n,natom_type,atompos0)
-  enddo
 ! inputs: natoms0,latticeparameters,primitivelattice,atom_type,atompos0
 ! outputs: r0i, atompos (cart coord of atoms and natoms neighbor shells),
 ! iatomcell, iatomcell0, iatomneighbor, iatomop, ...
+     call force_constants_init(latticeparameters,primitivelattice,natoms0,  &
+      &     atom_type,atompos0)  !(n,natom_type,atompos0)
+  enddo
 
+! reallocate atompos,iatomcell and iatomcell0
+  allocate(auxi(3,natoms),aux1(3,natoms))
+
+      auxi(1:3,1:natoms)=iatomcell(1:3,1:natoms) 
+      aux1(1:3,1:natoms)=atompos(1:3,1:natoms)
+      deallocate(atompos,iatomcell)
+      allocate(atompos(3,natoms),iatomcell(3,natoms))
+      atompos=aux1; iatomcell=auxi
+
+      auxi(1,1:natoms)=iatomcell0(1:natoms) 
+      deallocate(iatomcell0)
+      allocate(iatomcell0(natoms))
+      iatomcell0=auxi(1,:)             
+      maxatoms=natoms
+
+  deallocate(aux1,auxi)
+       
  call cpu_time(tim)
  write(utimes,'(a,f10.4)')' FC_INIT CALLED, TIME                          IS ',tim
  write(utimes,*)' FC_init called, atmpos, neighbs, iatmcell calculated'
@@ -214,7 +233,7 @@ real tim
   call cpu_time(tim)
   write(utimes,'(a,f10.4)')' TIME after set_Huang_inv_constraints         IS ',tim
 
-  call write_lat_fc(map(:)%ntotind,map(:)%ntot) !ngroups,nterms)
+ call write_lat_fc(map(:)%ntotind,map(:)%ntot) !ngroups,nterms)
 
 !!  call homogeneous_constraints_overlap(n_constr)
 !!
@@ -226,14 +245,14 @@ real tim
 ! allocate( us(n_constr,n_constr),vs(n_constr,n_constr),ws(n_constr) )
 ! us = overl
 ! call svdcmp(us,n_constr,n_constr,n_constr,n_constr,ws,vs)
- 
+
 ! truncate and keep the highest eigenvalues of ws
 ! call truncate(ngr,ws,n_kept)
 ! write(ulog,*)' the largest  ws is=',ws(1)
 ! write(ulog,*)' the smallest ws kept and its index is=',n_kept,ws(n_kept)
 ! write(ulog,*)' their ratio is=',ws(n_kept)/ws(1)
 
-! for the kept eigenvalues calculate the correction or the residual FCS 
+! for the kept eigenvalues calculate the correction or the residual FCS
 ! by projecting the initial solution onto the kernel of the constraint matrix
 ! here we are constructing the projection matrix which should later multiply X0
 ! allocate( project(n_constr,n_constr) )
@@ -335,7 +354,7 @@ real tim
      n3 = n3 + frc_constr(i)
      deallocate(afrc,bfrc)
 
-! writing the coordinates of primitive cells in the supercell 
+! writing the coordinates of primitive cells in the supercell
 ! reference of each prim cell is atom #1
      open(111,file='struct-supercell-'//xt)
      write(111,5)r1
@@ -347,7 +366,7 @@ real tim
 &                    +atom_sc(j)%cell%n(3)*r03,atom_sc(j)%equilibrium_pos
      enddo
      close(111)
-    
+
  enddo structures
 
   if (n3.ne.force_constraints) then
@@ -384,7 +403,7 @@ real tim
 !! do the SVD decomposition
 !
 !  call svd_set(dim_al,dim_ac,newamat,newbmat,fcs,sigma,svdcut,error,ermax,sig,'svd-force.dat')
-! 
+!
 !  write(ulog,*)'After svd, || F_dft-F_fit || / || F_dft || =',sig
 !
 !  call cpu_time(tim)
@@ -449,11 +468,11 @@ real tim
  if (itrans .ne. 0) tra= transl_constraints
  if (irot   .ne. 0) rot= rot_constraints
  if (ihuang .ne. 0) hua= huang_constraints
- write(ulog,*)' Number of invariance constraints   =',inv_constraints 
+ write(ulog,*)' Number of invariance constraints   =',inv_constraints
  write(ulog,*)' Size of the homogeneous part of A  =',tra+rot+hua
  if (inv_constraints.ne.tra+rot+hua) then
      inv_constraints = tra+rot+hua
-     write(ulog,*)' Setting # of invariance constraints=',inv_constraints 
+     write(ulog,*)' Setting # of invariance constraints=',inv_constraints
  endif
  write(ulog,*)' Size of the unknown FCs of all rank=',dim_ac
 
@@ -495,7 +514,7 @@ real tim
 ! do the SVD decomposition
 
   call svd_set(dim_al,dim_ac,amat,bmat,fcs,sigma,svdcut,error,ermax,sig,'svd-all.dat')
- 
+
   write(ulog,*)'After svd, || F_dft-F_fit || / || F_dft || =',sig
 
   call cpu_time(tim)
@@ -623,8 +642,8 @@ end program FC234
  use params
  use ios
  implicit none
- integer i,j,n_elim
- integer, allocatable:: fcmap(:) 
+ integer i,n_elim
+ integer, allocatable:: fcmap(:)
  real(8), allocatable:: newa(:,:),newb(:,:),newc(:,:),newd(:,:),ainv(:,:),sig_new(:),fc_new(:),bmat_new(:),fc_elim(:)
  real(8) error,ermax,sd(4),sig,num,denom
  real tim
@@ -658,7 +677,7 @@ end program FC234
 
 
 ! eliminate n_elim largest fcs defining A=[newa newb]  where newa(n_elim,n_elim) is inverted and substituted
-!                                         [newc newd] 
+!                                         [newc newd]
  do i=1,n_elim
     newa(1:n_elim       ,i)=amat(1:n_elim       ,fcmap(i))
     newc(1:dim_al-n_elim,i)=amat(1+n_elim:dim_al,fcmap(i))
@@ -670,8 +689,8 @@ end program FC234
 
 ! now do the elimination by SVD-solving [D-C(1/A)B]y=b
  call inverse_real(newa,ainv,n_elim)
- 
- newd=newd-matmul(newc,matmul(ainv,newb)) 
+
+ newd=newd-matmul(newc,matmul(ainv,newb))
 
  call svd_set(dim_al-n_elim,dim_ac-n_elim,newd,bmat_new,fc_new,  &
 &             sig_new,svdcut,error,ermax,sig,'svd-aux.out')
@@ -691,7 +710,7 @@ end program FC234
  do i=1+n_elim,dim_ac
     fcs(fcmap(i))=fc_new(i-n_elim)
  enddo
- 
+
  call write_independent_fcs(sd)
 
  call write_output_fc2
@@ -714,7 +733,7 @@ end program FC234
   real(8) r(n)
   integer mcor(n)
 
-  do i=1,n 
+  do i=1,n
      mcor(i)=i
   enddo
   do i=1,n  ! was 1,n-1

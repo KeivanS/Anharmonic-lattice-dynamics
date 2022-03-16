@@ -27,8 +27,10 @@
       use ios
       use atoms_force_constants
       implicit none
-      integer n3(3),tau,iatom,j,m(3),l,isin
-      real(8) a(3),b(3),zero(3)
+      integer, intent(in):: n3(3),tau
+      integer j,m(3)
+      integer, intent(out):: iatom
+      real(8) a(3),zero(3)
 
 ! first check to see if it is one of the sc atoms
       zero = 0d0
@@ -47,7 +49,7 @@
 !             endif
               if(abs(a(1)-nint(a(1))).lt.0.0001 .and.  &
     &            abs(a(2)-nint(a(2))).lt.0.0001 .and.  &
-    &            abs(a(3)-nint(a(3))).lt.0.0001) then 
+    &            abs(a(3)-nint(a(3))).lt.0.0001) then
                   iatom=j
                   exit jloop
               endif
@@ -89,7 +91,7 @@
  real(8) a1,a2,a3,ep
  integer ier
 
- ep = tolerance ! 0.001 ! displacements larger than 0.001 A are not tolerated 
+ ep = tolerance ! 0.001 ! displacements larger than 0.001 A are not tolerated
 !call write_out(ulog,'CHECK: R ',r)
  a1 = r .dot. g1
  a2 = r .dot. g2
@@ -105,7 +107,7 @@
 !  write(ulog,3) ' n1,n2,n3  =',a1,a2,a3
    ier = 0
  endif
-3 format(a,3(1x,g13.6))
+!3 format(a,3(1x,g13.6))
 
  end subroutine check
 !============================================================
@@ -339,7 +341,7 @@ end subroutine calculate_volume
  implicit none
  type(vector) g1,g2,g3
  real(8) q(3),qx,qy,qz,q2(3)
- integer n
+! integer n
  integer inside
 
 ! first shift q by  (g1+g2+g3)/2
@@ -445,10 +447,10 @@ end subroutine calculate_volume
     kdg = k(1)*g2%x + k(2)*g2%y
     q2 =  g2%x*g2%x + g2%y*g2%y
     if ( kdg .lt. q2/2 .and. kdg .ge.0) inside=inx
-!   write(6,9)'k,g01,g02=',k,g1,g2,kdg,q2 
+!   write(6,9)'k,g01,g02=',k,g1,g2,kdg,q2
  endif
 !if (inside) write(444,*)"k HEX=",k
-9 format(a,99(1x,f6.3))
+!9 format(a,99(1x,f6.3))
  end subroutine check_inside_irred_fbz2
 !===========================================================
  subroutine check_inside_irred_fbz(k,inside)
@@ -499,12 +501,13 @@ end subroutine calculate_volume
 
  end subroutine select_IBZ
 !============================================================
- function indexg(i,j,k,nil,nih,njl,njh,nkl,nkh) result(n)
+ function indexg(i,j,k,nil,njl,njh,nkl,nkh) result(n)
+! function indexg(i,j,k,nil,nih,njl,njh,nkl,nkh) result(n)
 ! finds the index n of the kpoint defined with 3 loop indices
 ! ijk going in general from nil to nih, njl to njh nkl to nkh
 ! n=0; do i1=nil,nih; do j=njl,njh; do k=nkl,nkh; n=n+1
  implicit none
- integer i,j,k,nil,nih,njl,njh,nkl,nkh,n
+ integer i,j,k,nil,njl,njh,nkl,nkh,n
 
  n = (k-nkl+1) + (j-njl)*(nkh-nkl+1) + (i-nil)*(njh-njl+1)*(nkh-nkl+1)
 
@@ -520,15 +523,15 @@ end subroutine calculate_volume
 
  end function indexn
 !============================================================
- function index_reg(i,j,k,n1,n2,n3) result(n)
-! finds the index n of the coarse kpoint defined with 3 loop indices
-! ijk going from 1 to ni , i being the outer loop and k the inner one
- implicit none
- integer i,j,k,n1,n2,n3,n
-
- n = k + (j-1)*n3 + (i-1)*n2*n3
-
- end function index_reg
+! function index_reg(i,j,k,n1,n2,n3) result(n)
+!! finds the index n of the coarse kpoint defined with 3 loop indices
+!! ijk going from 1 to ni , i being the outer loop and k the inner one
+! implicit none
+! integer i,j,k,n1,n2,n3,n
+!
+! n = k + (j-1)*n3 + (i-1)*n2*n3
+!
+! end function index_reg
 !===========================================================
  subroutine make_sorted_gs(g1,g2,g3,nshell,gg)
 ! from the basis (g1,g2,g3) generate the nshell shortest linear combinations including 0
@@ -541,7 +544,7 @@ end subroutine calculate_volume
  real(8), allocatable :: g5(:,:),gs(:)
  integer, allocatable :: xmap(:)
 
- ns = (2*nshell+1)**(0.3333)
+ ns = nint((2*nshell+1)**(0.3333))
  n5 = (2*ns+1)**3
  allocate ( g5(3,n5),gs(n5),xmap(n5) )
 
@@ -573,7 +576,7 @@ end subroutine calculate_volume
  subroutine get_direct_components(q,qx,qy,qz,g1,g2,g3,inside)
 ! for a given q-vector, it finds its direct components assuming it was
 ! created as: q=qx*g1+qy*g2+qz*g3
-! if the integer variable inside=1 then q is inside the primcell, defined 
+! if the integer variable inside=1 then q is inside the primcell, defined
 ! by [0:g1[,[0:g2[,[0:g3[ ; if inside=0 it's outside
  use geometry
  implicit none
@@ -585,7 +588,7 @@ end subroutine calculate_volume
  real(8), intent(out):: qx,qy,qz
  real(8) epsl
 
- epsl=5d-10 
+ epsl=5d-10
 
  call make_reciprocal_lattice(g1,g2,g3,rr1,rr2,rr3)  ! no factor of 2pi
  inside = 1
@@ -600,7 +603,7 @@ end subroutine calculate_volume
  qz = (q.dot.rr3) + epsl
  if (qz.lt.0 .or. qz.ge.1) inside=0
 
-7 format(a,i5,9(1x,g12.5))
+!7 format(a,i5,9(1x,g12.5))
  end subroutine get_direct_components
 !============================================================
  subroutine comp1(q,rr,n,i,insid)
@@ -621,18 +624,18 @@ end subroutine calculate_volume
 ! write(*,7)'i,qdotr,aux=',i,qdr,aux
  if (i.eq.n+1) i=1
 
-7 format(a,i5,9(1x,g12.5))
+!7 format(a,i5,9(1x,g12.5))
  end subroutine comp1
 !============================================================
  subroutine comp_c(q,rr,n,i,insid)
 ! inside would be =1 if -0.5<q<0.5
  use geometry
  implicit none
- real(8) q(3),aux,qdr,epsl
+ real(8) q(3),aux,qdr
  type(vector) rr
  integer n,i,insid
 
- qdr = (q.dot.rr) 
+ qdr = (q.dot.rr)
 ! include from -0.00005 to 0.99995 included (include 0.0 and exclude 1.0)
  if (qdr.lt.-0.5d0 .or. qdr.ge.0.5d0) insid=0
 
@@ -642,10 +645,11 @@ end subroutine calculate_volume
 ! write(*,7)'i,qdotr,aux=',i,qdr,aux
  if (i.eq.n+1) i=1
 
-7 format(a,i5,9(1x,g12.5))
+!7 format(a,i5,9(1x,g12.5))
  end subroutine comp_c
 !============================================================
- subroutine get_components_g(q,n,i,j,k,gg1,gg2,gg3,inside)
+ subroutine get_components_g(q,n,i,j,k,inside)
+! subroutine get_components_g(q,n,i,j,k,gg1,gg2,gg3,inside)
 ! for a given q-vector, it finds its integer components assuming it was
 ! created as: q=(i-1)/n1*g1 + (j-1)/n2*g2 + (k-1)/n3*g3; i=1,n1 j=1,n2 k=1,n3
 ! as the ones created in make_kp_reg with zero shift
@@ -656,7 +660,7 @@ end subroutine calculate_volume
  use geometry
  implicit none
  real(8), intent(in):: q(3)
- type(vector),intent(in):: gg1,gg2,gg3
+! type(vector),intent(in):: gg1,gg2,gg3
 ! type(vector)rx1,rx2,rx3
  integer, intent(in):: n(3)
  integer, intent(out):: i,j,k,inside
@@ -675,9 +679,10 @@ end subroutine calculate_volume
 
  end subroutine get_components_g
 !============================================================
- subroutine get_components_g_centered(q,n,i,j,k,gg1,gg2,gg3,inside)
+ subroutine get_components_g_centered(q,n,i,j,k,inside)
+! subroutine get_components_g_centered(q,n,i,j,k,gg1,gg2,gg3,inside)
 ! for a given q-vector, it finds its integer components assuming it was
-! created as: q=(i-1-n1/2)/n1*g1 + (j-1-n2/2)/n2*g2 + (k-1-n3/2)/n3*g3; 
+! created as: q=(i-1-n1/2)/n1*g1 + (j-1-n2/2)/n2*g2 + (k-1-n3/2)/n3*g3;
 ! i=1,n1 j=1,n2 k=1,n3
 ! as the ones created in make_kp_reg with zero shift
 ! if the integer variable inside=1 then q is inside the primcell, if inside=0 it's outside
@@ -686,14 +691,14 @@ end subroutine calculate_volume
  use lattice
  implicit none
  real(8), intent(in):: q(3)
- type(vector),intent(in):: gg1,gg2,gg3
+! type(vector),intent(in):: gg1,gg2,gg3
  integer, intent(in):: n(3)
  integer, intent(out):: i,j,k,inside
 ! real(8) w(3)
 
 ! w = q+0.5d0*(gg1+gg2+gg3)
-! write(*,8)'q=',q 
-! write(*,8)'w=',w 
+! write(*,8)'q=',q
+! write(*,8)'w=',w
 
  inside = 1
 
@@ -784,7 +789,7 @@ end subroutine calculate_volume
      endif
  enddo foldloop
 
-3 format(3(i6),9(2x,f8.4))
+!3 format(3(i6),9(2x,f8.4))
 
  end subroutine send_to_fbz
 !===========================================================
@@ -871,7 +876,7 @@ end subroutine calculate_volume
 !===============================================================
   subroutine mean_sd(x,mean,sd)
   implicit none
-  integer n,i
+  integer n
   real(8) x(:),mean,sd,sd2
 
   n=size(x)
@@ -888,7 +893,7 @@ end subroutine calculate_volume
   integer, intent(in):: m,mesh
   real(8), intent(in):: x(m)
   integer i,j,cnt,unit
-  real(8) xmin,xmax,dx,sume,cume,e(mesh)
+  real(8) xmin,xmax,dx,e(mesh)
 
   unit=123
   open(unit,file='histo.dat')
@@ -911,7 +916,7 @@ end subroutine calculate_volume
      endif
 !     write(unit,4)j,xmin+(j-0.5)*dx,e(j),e(j)/sume/dx,cume
   enddo
- 4 format(i8,9(2x,g13.6))
+! 4 format(i8,9(2x,g13.6))
  5 format(a,i8,9(2x,g13.6))
 
   close(unit)
@@ -929,4 +934,4 @@ end subroutine calculate_volume
  enddo
 
  end function trace
-!===========================================================    
+!===========================================================

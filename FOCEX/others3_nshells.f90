@@ -1,5 +1,6 @@
 !=============================================================================
  subroutine set_translational_inv_constraints
+!! sets the translational invariance part of the amatrx
  use svd_stuff
  use params
  use atoms_force_constants
@@ -7,7 +8,7 @@
  use geometry
  use force_constants_module
  implicit none
- integer i0,j,k,l,mx,ired,counter,rnk,res,dum
+ integer i0,j,k,ired,counter,rnk,res
  integer al,be,ga,de,cnt2,g,t,ti
  real(8), allocatable:: atemp(:,:),btemp(:),ared1d(:),zero(:)
  logical new
@@ -44,7 +45,7 @@
 ! include translatnal invce constraints, otherwise calculate deviations from it
  write(ulog,*)' TREATING TRANSLATIONAL INVARIANCES ======================='
 
- rnk = 1  !********************************************
+ rnk = 1  !------------------------------------------
  if ( include_fc(rnk) .ne. 0 ) then
 !if ( include_fc(rnk) .eq. 1 ) then
 ! mx=nterms(rnk)
@@ -86,7 +87,7 @@
  write(ulog,*)' RANK=1; residual index is=',res
  endif
 
- rnk = 2  !********************************************
+ rnk = 2  !------------------------------------------
  if ( include_fc(rnk) .ne. 0 ) then
 !if ( include_fc(rnk) .eq. 1 ) then
 ! mx=nterms(rnk)
@@ -132,7 +133,7 @@
  write(ulog,*)' RANK=2; residual index is=',res
  endif
 
- rnk = 3  !********************************************
+ rnk = 3  !------------------------------------------
  if ( include_fc(rnk) .ne. 0 ) then
 !if ( include_fc(rnk) .eq. 1 ) then
 ! mx=nterms(rnk)
@@ -192,7 +193,7 @@
  write(ulog,*)' RANK=3 cnter for tr cnstr=',counter
  endif
 
- rnk = 4  !********************************************
+ rnk = 4  !------------------------------------------
  if ( include_fc(rnk) .ne. 0 ) then
 !if ( include_fc(rnk) .eq. 1 ) then
 ! mx=nterms(rnk)
@@ -266,13 +267,14 @@
  deallocate( atemp,ared1d,zero )
  write(*,*) 'exiting translational invce constraints routine'
 
-6 format(a,3(1x,i3),66(2x,f7.3))
-7 format(66(1x,f7.3))
-11 format(a,1(1x,i3),66(2x,f7.3))
+!6 format(a,3(1x,i3),66(2x,f7.3))
+!7 format(66(1x,f7.3))
+!11 format(a,1(1x,i3),66(2x,f7.3))
 
  end subroutine set_translational_inv_constraints
 !===========================================================================
  subroutine set_rotational_inv_constraints
+!! sets the rotational invariance part of the amatrx
  use svd_stuff
  use params
  use atoms_force_constants
@@ -280,7 +282,7 @@
  use geometry
  use force_constants_module
  implicit none
- integer i0,j,k,l,t,mx,ired,counter,rnk,res,res1,dum,g,ti,cnt2,cnt3
+ integer i0,j,k,l,t,ired,counter,rnk,res,res1,g,ti,cnt2,cnt3
  integer al,be,ga,de,mu,nu
  integer lc(3,3,3)
  real(8), allocatable:: ared1d(:),zero(:),aux(:)
@@ -288,12 +290,12 @@
  real(8) junk
  logical new
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!-----------------------------------------------------------------
+!-----------------------------------------------------------------
 ! BEWARE: for include_fc=2; you may need to add res to cnt3 when defining ired
 ! res being from the previous rank
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!-----------------------------------------------------------------
+!-----------------------------------------------------------------
 
  write(*,*) 'entering rotational invce constraints routine'
  write(ulog,*)' SETTING ROTATIONAL INVARIANCE CONSTRAINTS  ******************'
@@ -311,7 +313,7 @@
  lc(1,3,2) = -1 ; lc(2,1,3) = -1 ; lc(3,2,1) = -1
 
  res = 0 ; res1 = 0
- rnk = 1  !********************************************
+ rnk = 1  !------------------------------------------
  if ( include_fc(rnk) .ne. 0 ) then  ! sum of the torques is zero
 !   mx=nterms(rnk)
 !   write(ulog,*)' allocated size of igroup arrays, mx=nterms(rnk) is=',rnk,mx
@@ -326,11 +328,11 @@
           i0 = map(rnk)%gr(g)%iat(1,t)   ! should be in the primitive cell
 !         write(*,*)'ga,t,i0=',ga,t,i0
 
-!! ADDED LINE BY K1 on JULY 10th &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+! ADDED LINE BY K1 on JULY 10th &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
           if(i0 .ne. iatomcell0(i0) ) cycle  ! restrict to atoms in the primitive cell
 
-!! ADDED LINE BY K1 on JULY 10th &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+! ADDED LINE BY K1 on JULY 10th &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
           al = map(rnk)%gr(g)%ixyz(1,t)
           do ti=1,map(rnk)%ntind(g)
@@ -362,7 +364,7 @@
    write(ulog,*)' RANK=1 cnter for rot cntr=',counter
  endif
 
- rnk = 2  !********************************************
+ rnk = 2  !------------------------------------------
  if ( include_fc(rnk) .ne. 0 ) then ! .and. include_fc(1) .ne. 0 ) then
 !   mx=nterms(rnk)
    allocate(aux(ngroups(1)))
@@ -443,7 +445,7 @@
    write(ulog,*)' RANK=2 cnter for rot cntr=',counter
  endif
 
- rnk = 3  !********************************************
+ rnk = 3  !------------------------------------------
  if ( include_fc(rnk) .ne. 0 ) then
 !   mx=nterms(rnk)
    allocate(aux(ngroups(2)))
@@ -536,7 +538,7 @@
    write(ulog,*)' RANK=3 cnter for rot cntr=',counter
  endif
 
- rnk = 4  !********************************************
+ rnk = 4  !------------------------------------------
  if ( include_fc(rnk) .ne. 0 ) then
 !   mx=nterms(rnk)
    allocate(aux(ngroups(3)))
@@ -654,17 +656,17 @@
  deallocate ( atemp,btemp,ared1d,zero )
  write(*,*) 'exiting rotational invce constraints routine'
 
-3 format(a,2(1x,i6),66(1x,i3))
-4 format(a,66(1x,i3))
+!3 format(a,2(1x,i6),66(1x,i3))
+!4 format(a,66(1x,i3))
 5 format(a,4(1x,i3),66(2x,f7.3))
-6 format(a,3(1x,i3),66(2x,f7.3))
-7 format(66(1x,f7.3))
-8 format(i8,1x,i8,3x,f25.15,3x,f25.15)
-9 format(i8,1x,99(1x,f8.4))
-11 format(a,1(1x,i3),66(2x,f7.3))
-13 format(a,3(1x,i3),66(2x,f7.3))
-15 format(a,5(1x,i3),66(2x,f7.3))
-17 format(a,7(1x,i3),66(2x,f7.3))
+!6 format(a,3(1x,i3),66(2x,f7.3))
+!7 format(66(1x,f7.3))
+!8 format(i8,1x,i8,3x,f25.15,3x,f25.15)
+!9 format(i8,1x,99(1x,f8.4))
+!11 format(a,1(1x,i3),66(2x,f7.3))
+!13 format(a,3(1x,i3),66(2x,f7.3))
+!15 format(a,5(1x,i3),66(2x,f7.3))
+!17 format(a,7(1x,i3),66(2x,f7.3))
 
  end subroutine set_rotational_inv_constraints
 !===========================================================================
@@ -676,12 +678,12 @@
  use geometry
  use force_constants_module
  implicit none
- integer i0,j,k,l,t,ired,counter,rnk,nat,confg,jatom,katom,latom,res,cnt2
- integer al,be,ga,de,mu,nu,taui,tauj,tauk,taul,ni(3),nj(3),nk(3),nl(3),ti,frc_constr
+ integer l,t,ired,counter,rnk,nat,confg,jatom,katom,latom,res,cnt2
+ integer al,be,ga,de,taui,tauj,tauk,taul,ni(3),nj(3),nk(3),nl(3),ti,frc_constr
  real(8), allocatable:: ared1d(:),aux(:)
- real(8) afrc(frc_constr,ngr),bfrc(frc_constr),rij,rik,rjk
- real(8) junk
- logical new
+ real(8) afrc(frc_constr,ngr),bfrc(frc_constr),rij
+! real(8) junk
+! logical new
 
  write(*,*) 'entering set_force_displacements routine'
  write(ulog,*)' SETUP_AMATRICES : ************************************'
@@ -696,7 +698,7 @@
  allocate( ared1d(ngr) )
  afrc = 0d0; bfrc = 0d0
 
-5 format(a,9(i5))
+!5 format(a,9(i5))
  write(ulog,6)'********************************************************'
  write(ulog,6)' Now making the force-displacement part of the A matrix'
  write(ulog,*)' Force_constraints     =', frc_constr
@@ -719,7 +721,7 @@
 
 ! now set up ared1d: rank by rank
         ared1d = 0d0 ; res=0
-        rnk=1  !********************************************
+        rnk=1  !------------------------------------------
         if ( include_fc(rnk) .ne. 0 ) then
 
 !           allocate(aux(ndindp(rnk))) ! size of aux =  # of independent FCs for that rank
@@ -755,7 +757,7 @@
            deallocate(aux)
         endif
 
-        rnk=2  !********************************************
+        rnk=2  !------------------------------------------
         if ( include_fc(rnk) .ne. 0 ) then
 
 ! the force on atom i is from j in the supercell and all of its images for which the corresponding FC needs to be identified
@@ -780,11 +782,11 @@
                     write(ulog,4)'atom,xyz,cnfg ',nat,al,confg
                     stop
                  endif
-    !! K1 NEW --------------------------
-  !!!  !            rij=length(atompos(:,nat)-atompos(:,jatom))
-  !!!  !            if (rij.gt.radius(rnk)) cycle l8
-! need to find how many images of j are connected to i with the same force constant.        
-    !! K1 NEW --------------------------
+    ! K1 NEW --------------------------
+  !              rij=length(atompos(:,nat)-atompos(:,jatom))
+  !              if (rij.gt.radius(rnk)) cycle l8
+! need to find how many images of j are connected to i with the same force constant.
+    ! K1 NEW --------------------------
                  do ti=1,map(rnk)%ntind(l)
 ! this is the index of the indep FC coming in the A*FC=b matrix product
                     ired = cnt2+ti ! this is the corresponding index of aux
@@ -818,7 +820,7 @@
            deallocate(aux)
         endif
 
-        rnk=3  !********************************************
+        rnk=3  !------------------------------------------
         if ( include_fc(rnk) .ne. 0 ) then
 
 !           allocate(aux(ndindp(rnk)))
@@ -852,17 +854,17 @@
                     write(ulog,4)'atom,xyz,cnfg ',nat,al,confg
                     stop
                  endif
-    !! K1 NEW --------------------------
-    !!           rij=length(atompos(:,nat)-atompos(:,jatom))
-    !!           rik=length(atompos(:,nat)-atompos(:,katom))
-    !!           rjk=length(atompos(:,jatom)-atompos(:,katom))
-    !!   ! cycle if two of the pair distances is larger than radius
-    !!           if (rij.gt.radius(rnk)) then
-    !!              if (rik.gt.radius(rnk) .or. rjk.gt.radius(rnk) ) cycle
-    !!           else
-    !!              if (rik.gt.radius(rnk) .and. rjk.gt.radius(rnk) ) cycle
-    !!           endif
-    !! K1 NEW --------------------------
+    ! K1 NEW --------------------------
+    !           rij=length(atompos(:,nat)-atompos(:,jatom))
+    !           rik=length(atompos(:,nat)-atompos(:,katom))
+    !           rjk=length(atompos(:,jatom)-atompos(:,katom))
+    !   ! cycle if two of the pair distances is larger than radius
+    !           if (rij.gt.radius(rnk)) then
+    !              if (rik.gt.radius(rnk) .or. rjk.gt.radius(rnk) ) cycle
+    !           else
+    !              if (rik.gt.radius(rnk) .and. rjk.gt.radius(rnk) ) cycle
+    !           endif
+    ! K1 NEW --------------------------
                  do ti=1,map(rnk)%ntind(l)
 ! this is the index of the indep FC coming in the A*FC=b matrix product
                     ired = cnt2+ti ! this is the corresponding index of aux
@@ -883,7 +885,7 @@
            deallocate(aux)
         endif
 
-        rnk=4  !********************************************
+        rnk=4  !------------------------------------------
         if ( include_fc(rnk) .ne. 0 ) then
 
 !           allocate(aux(ndindp(rnk)))
@@ -926,17 +928,17 @@
                     write(ulog,4)'atom,xyz,cnfg ',nat,al,confg
                     stop
                  endif
-    !! K1 NEW --------------------------
-    !!           rij=length(atompos(:,nat)-atompos(:,jatom))
-    !!           rik=length(atompos(:,nat)-atompos(:,katom))
-    !!           rjk=length(atompos(:,jatom)-atompos(:,katom))
-    !!   ! cycle if two of the pair distances is larger than radius
-    !!           if (rij.gt.radius(rnk)) then
-    !!              if (rik.gt.radius(rnk) .or. rjk.gt.radius(rnk) ) cycle
-    !!           else
-    !!              if (rik.gt.radius(rnk) .and. rjk.gt.radius(rnk) ) cycle
-    !!           endif
-    !! K1 NEW --------------------------
+    ! K1 NEW --------------------------
+    !           rij=length(atompos(:,nat)-atompos(:,jatom))
+    !           rik=length(atompos(:,nat)-atompos(:,katom))
+    !           rjk=length(atompos(:,jatom)-atompos(:,katom))
+    !   ! cycle if two of the pair distances is larger than radius
+    !           if (rij.gt.radius(rnk)) then
+    !              if (rik.gt.radius(rnk) .or. rjk.gt.radius(rnk) ) cycle
+    !           else
+    !              if (rik.gt.radius(rnk) .and. rjk.gt.radius(rnk) ) cycle
+    !           endif
+    ! K1 NEW --------------------------
                  do ti=1,map(rnk)%ntind(l)
 ! this is the index of the indep FC coming in the A*FC=b matrix product
                     ired = cnt2+ti ! this is the corresponding index of aux
@@ -978,16 +980,16 @@
 
 4 format(a,4(1x,i6))
 6 format(a,3(1x,i3),66(2x,f7.3))
-7 format(66(1x,g9.2))
-9 format(4(i4),66(1x,g9.2))
-12 format(a,2(1x,i3),66(2x,g11.4))
-22 format(a,6(1x,i3),66(2x,f9.5))
+!7 format(66(1x,g9.2))
+!9 format(4(i4),66(1x,g9.2))
+!12 format(a,2(1x,i3),66(2x,g11.4))
+!22 format(a,6(1x,i3),66(2x,f9.5))
 
  end subroutine set_force_displacement_matrix
 !===============================================================================
  subroutine setup_maps
-! maps the output of collect_fcs to the new arrays for each rank,
-! with the proper (allocatable) dimensions
+!! maps the output of collect_fcs to the new arrays for each rank,
+!! with the proper (allocatable) dimensions
  use svd_stuff
  use params
  use atoms_force_constants
@@ -995,8 +997,8 @@
  use geometry
  implicit none
  character lineout*80
- integer i0,j,is,i,t,n,m,mx,mxi,mxzero,ired,k,l,counter,rnk,tauj,nj(3)   &
- &      ,ntermszero,ntermszerosave,nd,ntindp,ierz,iert,ieri,ierg,jnk
+ integer j,i,n,m,mx,mxi,mxzero,rnk   &
+ &      ,ntermszero,nd,ntindp,ierz,iert,ieri,ierg,jnk
  integer, allocatable:: iatomtermzero(:,:),ixyztermzero(:,:)
 ! logical new
 
@@ -1022,7 +1024,7 @@
 ! -----------------------------------
  rankloop: do rnk=1,4 !,1,-1
   if ( include_fc(rnk) .ne. 0 ) then
-   
+
     mx=maxterms(rnk)
     mxi = maxtermsindep(rnk)
     write(ulog,4)'rank,mx,mxi,maxgrps=',rnk,mx,mxi,maxgroups
@@ -1031,7 +1033,7 @@
 
 ! start from a small maxterms and maxtermszero and increase by 100 if too small
   checkloop: do while (ierg+ierz+iert+ieri.ne.0)
-   
+
      write(*,4) 'maxtrmzero,maxtrm,maxtrmindp,maxgrp=',mxzero,mx,mxi,maxgroups
 !    allocate(mapmat(mx,mxi,maxgroups) &
 !    &     ,iatmtrm(rnk,mx,maxgroups),ixyztrm(rnk,mx,maxgroups)  &
@@ -1058,7 +1060,7 @@
    !     mxzero = mxzero+30*(4**rnk)
          mxzero = mxzero+333*rnk
          write(ulog,*)' mxtermszero   increased to ',mxzero
-         if (allocated(iatomtermzero)) deallocate(iatomtermzero) 
+         if (allocated(iatomtermzero)) deallocate(iatomtermzero)
          if (allocated(ixyztermzero )) deallocate(ixyztermzero)
      endif
      if (iert.ne.0) then
@@ -1091,8 +1093,8 @@
      endif
 
   enddo checkloop
-     
-     write(umap,'(a,i1,a,20(1x,i2),a,i8,a,i5,a)')   &
+
+     write(umap,'(a,i1,a,10(1x,i2),a,i8,a,i5,a)')   &
 &     '************ rank ',rnk,', shell ',nshells(rnk,:),', groups ',ngroups(rnk)
      if(ngroups(rnk).gt.0) then
        write(umap,'(a,i2,a,99(i5))')'rank=',rnk,' indepterms=',ntermsindep(1:ngroups(rnk))
@@ -1142,7 +1144,7 @@
 
      deallocate(iatmtrm,ixyztrm,mapmat,  &
   &     iatomtermzero,ixyztermzero,iatomtermindep,ixyztermindep)
-     
+
      write(ulog,*)'iattrm,ixyztrm,mapmat, iattrm0,ixyztrm0,iattrmindp,ixyztrmindp deallocated'
 
   else
@@ -1152,6 +1154,7 @@
      map(rnk)%nt(1)=0
      map(rnk)%ntind(1)=0
   endif
+
  enddo rankloop
 
  write(*,*) 'SETUP_MAPS: Exited the main rank loop , and going to write by calling ustring'
@@ -1191,11 +1194,9 @@
  do rnk=1,4
     if ( include_fc(rnk) .ne. 0 ) then
 ! get the total number of independent and full terms for each rank
-       call get_dim(rnk,map(rnk),map(rnk)%ntotind,map(rnk)%ntot)
-!       call get_dim(rnk,map(rnk),ndindp(rnk),ndfull(rnk))
+       call get_dim(map(rnk),map(rnk)%ntotind,map(rnk)%ntot)
        write(ulog,*)'SETUP_MAPS: RANK, NDINDEP, NDFULL=',rnk,map(rnk)%ntotind,map(rnk)%ntot
        ngr = ngr + map(rnk)%ntotind
-!       ngr = ngr + ndindp(rnk)
     endif
  enddo
  write(ulog,*)'END OF SETUP_MAPS: NGR=',ngr
@@ -1204,16 +1205,16 @@
  end subroutine setup_maps
 !===============================================================================
  subroutine include_constraints
-! now that we have the 3 matrices atransl,arot,ahuang and aforce, here we decide
-! how to put them together to do the SVD
-! outputs are amat and bmat and their dimensions:dim_al,dim_ac, which go to SVD
+!! now that we have the 3 matrices atransl,arot,ahuang and aforce, here we decide
+!! how to put them together to do the SVD
+!! outputs are amat and bmat and their dimensions:dim_al,dim_ac, which go to SVD
  use svd_stuff
  use params
  use ios
  implicit none
- integer i,j,l,n_constr,counter
- real(8), allocatable:: w(:),v(:,:)
- real(8), allocatable:: a11(:,:),b1(:),a12(:,:),a11i(:,:),b2(:)
+ integer n_constr
+! real(8), allocatable:: w(:),v(:,:)
+! real(8), allocatable:: a11(:,:),b1(:),a12(:,:),a11i(:,:),b2(:)
 
 !-----------------------------------------------------------------------
 ! in this case, invariances are obtained in a rms sense and are not exact.
@@ -1260,14 +1261,14 @@
  end subroutine include_constraints
 !===============================================================================
  subroutine homogeneous_constraints_overlap(n_constr)
-! now that we have the 3 matrices atransl,arot,ahuang, 
+! now that we have the 3 matrices atransl,arot,ahuang,
 ! we put them together to do the SVD
 ! outputs are amat and bmat and their dimensions:dim_al,dim_ac, which go to SVD
  use svd_stuff
  use params
  use ios
  implicit none
- integer i,j,l,n_constr,counter
+ integer i,j,n_constr
 
 !-----------------------------------------------------------------------
 ! in this case, invariances are obtained in a rms sense and are not exact.
@@ -1278,7 +1279,7 @@
    if (irot   .ne. 0) dim_hom= dim_hom+    rot_constraints
    if (ihuang .ne. 0) dim_hom= dim_hom+  huang_constraints
    allocate(ahom(dim_hom,dim_ac))
-   ahom = 0d0 
+   ahom = 0d0
    write(ulog,*)' size(ahom) nlines,ncolumn=(dim(a1d))=',dim_hom,dim_ac
    n_constr = 1
    if (itrans .ne. 0) then
@@ -1310,7 +1311,7 @@
       overl(i,j)=dot_product(ahom(i,:),ahom(j,:))
    enddo
    enddo
-      
+
  end subroutine homogeneous_constraints_overlap
 ! ============================================
  function voigt(i,j)
@@ -1344,11 +1345,11 @@
 
  end subroutine estimate_inv_constraints
 ! ============================================
- subroutine get_dim(rnk,mapd,ndimindep,ndimfull)
-! calculate the number of in/dependent fcs for all groups
+ subroutine get_dim(mapd,ndimindep,ndimfull)
+!! calculate the number of in/dependent fcs for all groups to fillup map%ntot and %ntotind
  use svd_stuff
  implicit none
- integer rnk,g,ndimindep,ndimfull
+ integer g,ndimindep,ndimfull
  type(fulldmatrix) mapd
 
  ndimindep=0 ; ndimfull=0
@@ -1359,12 +1360,12 @@
  end subroutine get_dim
 ! ============================================
  subroutine check_zero_column(line,col,afrc)
-! check if there is any column that is zero (the corresponding FC can not be extracted)
+!! check if there is any column that is zero (the corresponding FC can not be extracted)
  use ios
  use params
  use svd_stuff
  implicit none
- integer line,col,i,j,noforc,nosym,rnk,dum,t
+ integer line,col,i,j,noforc,nosym,rnk,dum
  real(8) afrc(line,col)
 
  write(ulog,*)'==== CHECK_ZERO_COLUMN: lines and columns are:',line,col
@@ -1400,7 +1401,7 @@ write(*,*)'j=',j,line-force_constraints
     if ((noforc .eq. 0) .and. (nosym .eq. 0)) then  ! column i was all = zero in the symmetry constraints
        call warn(6)
        write(6,*)' The column no. ',i,' of Amatrix is 0, the corresponding '// &
-&                ' FC will not be evaluated correctly because it does not appear in' // & 
+&                ' FC will not be evaluated correctly because it does not appear in' // &
 &                ' any of the constraints or force-displacement data '// &
 &                ' perhaps a larger supercell or one of different symmetry is needed'
 ! for a given col number,i ,get corresponding rank and  ntindp number=dum
@@ -1410,11 +1411,11 @@ write(*,*)'j=',j,line-force_constraints
        endif
        map(rnk)%err(dum) = '*'
        write(ulog,*)' WARNINIG: column no. ',i,' of Amatrix is 0, the corresponding '// &
-&                ' FC will not be evaluated correctly because it does not appear in' // & 
+&                ' FC will not be evaluated correctly because it does not appear in' // &
 &                ' any of the constraints or force-displacement data '// &
 &                ' perhaps a larger supercell or one of different symmetry is needed', &
 &                ' rank and group no. are ',rnk,dum
- 
+
     endif
  enddo main
  write(ulog,*)' ============  END OF CHECK_ZERO_COLUMN =============='
@@ -1422,7 +1423,7 @@ write(*,*)'j=',j,line-force_constraints
  end subroutine check_zero_column
 !=============================================================================
  subroutine find_t(t,rnk,nti)
-! for a given t in {1,...,ngr} find its corresponding rank and ntindp number nti
+!! for a given t in {1,...,ngr} find its corresponding rank and ntindp number nti
  use svd_stuff
  use ios  ! for the ulog file
  implicit none
@@ -1488,7 +1489,7 @@ write(*,*)'j=',j,line-force_constraints
  use params
  use ios
  implicit none
- integer j,t,rnk,counter,m,n,j0,i
+ integer j,t,counter,m,n,j0,i
  logical new
  real(8) junk,zero
  real(8), dimension(n) :: a1d,b
@@ -1496,6 +1497,7 @@ write(*,*)'j=',j,line-force_constraints
 
  zero = 0d0
  new=.true.
+ j0=0
 
     checkloop: do t=1,counter
 ! check to see if they are multiples of each other
@@ -1538,7 +1540,7 @@ write(*,*)'j=',j,line-force_constraints
 ! use geometry
  use force_constants_module
  implicit none
- integer i,j,al,be,ga,de,t,ti,mterm,cnt2,g,rnk,voigt,vab,vcd,counter,ired,dum,res  !,nterm
+ integer i,j,al,be,ga,de,t,ti,mterm,cnt2,g,rnk,voigt,vab,vcd,counter,ired,res  !,nterm
  real(8) huang,rr(3)
  real(8), allocatable:: ared1d(:),zero(:)
 
@@ -1615,7 +1617,7 @@ write(*,*)'j=',j,line-force_constraints
 
  endif
 6 format(a,8(1x,i4),9(2x,f7.3))
-7 format(66(1x,g9.2))
+!7 format(66(1x,g9.2))
 
  end subroutine set_huang_inv_constraints
 !===============================================================================
@@ -1691,7 +1693,7 @@ write(*,*)'j=',j,line-force_constraints
  end subroutine check_huang
 ! ============================================
  subroutine truncate(n,ws,n_kept)
-! find a gap in the ws and drop the small ws values 
+!! find a gap in the ws and drop the small ws values
  implicit none
  integer n,n_kept,i,i1
  real(8) ws(n), logws(n),gap(n-1),maxgap1,wmax
@@ -1724,12 +1726,12 @@ write(*,*)'j=',j,line-force_constraints
 
  ws=ws*wmax
 
-! if(i1.lt.n_kept) then 
-!! the largest gap is before n_kept , ie larger than 10^-6
-!! use the second largest gap
+! if(i1.lt.n_kept) then
+! the largest gap is before n_kept , ie larger than 10^-6
+! use the second largest gap
 !   i2=maxloc(gap(i1+1:n-1))
-! else
-!! the largest gap comes after, and so that's where we will truncate
+!else
+! the largest gap comes after, and so that's where we will truncate
 !   n_kept=i1
 !   return
 ! endif

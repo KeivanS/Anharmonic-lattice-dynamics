@@ -1,5 +1,5 @@
 !******************************************************************************
-! initialize data
+!! initialize data
       subroutine force_constants_init(lattparams,primlatt,natoms_in, &
      &     iatomtype,atompos_in)
 
@@ -17,16 +17,15 @@
       integer maxshell
 !      parameter(maxshell=10)
 
-      integer i,j,k,m,n,i1,i2,i3,j1,j2,j3,nd2save,ncmp,nshell,   &
-     &     natoms_in,iatomtype(natoms_in),ier,ifractcount,iatom,   &
-     &     iatom2,itype2,iatom3,ipntop,   &
-     &     itype,isg,iatom0,iop,icell(3),   &
-     &     iop_matrix(3,3,48)
-      logical foundit,foundone
-      double precision d2save(maxneighbors),r(3),d2, d2r,   &
-     &     lattparams(6),primlatt(3,3),      tempi(3,3),latp(6),   &
+      integer, intent(in):: natoms_in,iatomtype(natoms_in)
+      real(8), intent(in):: lattparams(6),primlatt(3,3),atompos_in(3,natoms_in)
+      integer i,j,k,m,n,i1,i2,i3,i6,nd2save,ncmp,nshell,   &
+     &     ier,iatom,iatom2,itype2,iatom3,ipntop,   &
+     &     itype,isg,iatom0,icell(3), iop_matrix(3,3,48)
+      logical foundone
+      real(8) d2save(maxneighbors),r(3),d2, d2r,   &
      &     conv_to_cart(3,3),prim_to_cart(3,3),cart_to_prim(3,3),   &
-     &     prim_to_conv(3,3),conv_to_prim(3,3),atompos_in(3,natoms_in),   &
+     &     prim_to_conv(3,3),conv_to_prim(3,3), tempi(3,3),latp(6),    &
      &     atomposconv(3,natoms_in),fract(3),v(3),v2(3),temp(3,3)
 
 !k1
@@ -80,8 +79,8 @@
       write(*,*)'cart_to_prim=',cart_to_prim
 
 ! added by k1 --------
-! prim_to_cart(i,j) is the ith cartesian coordinate of the jth translation 
-! vector of the primitive lattice. 
+! prim_to_cart(i,j) is the ith cartesian coordinate of the jth translation
+! vector of the primitive lattice.
 !     call write_out(ulog,'translationc ',3,3,prim_to_cart)
       r01 = prim_to_cart(:,1)
       r02 = prim_to_cart(:,2)
@@ -137,7 +136,7 @@
           write(*,*)'After xmatinv in line 125: ier=',ier
           call bomb
         endif
-         
+
          write(*,*)' NOW GENERATING THE STARS OF K; lattpgcount=',i
          do j=1,3
          do k=1,3
@@ -179,7 +178,7 @@
 ! v contains the coordinates of the atom after the operation by the space
 ! group element.
               call xvmlt(op_matrix(1,1,ipntop),atompos(1,iatom2),v2, 3,3,3)
-              call xvadd(fract,v2,v2,3)
+              v2=v2+fract !call xvadd(fract,v2,v2,3)
               call unitcell(cart_to_prim,prim_to_cart,v2,v2)
 ! try to find another atom of the same type with these coordinates
               iatom3loop2: do iatom3=1,natoms0
@@ -224,7 +223,7 @@
           ipntop=isgop(isg)
 ! operate on position of atom iatom
           call xvmlt(op_matrix(1,1,ipntop),atompos(1,iatom),v,3,3,3)
-          call xvadd(sgfract(1,isg),v,v2,3)
+          v2=v+sgfract(:,isg)  !call xvadd(sgfract(1,isg),v,v2,3)
           call unitcell(cart_to_prim,prim_to_cart,v2,v2)
 ! look for atom
           iatom2loop3: do iatom2=1,natoms0
@@ -347,7 +346,15 @@
                       write(6,*)'Warning: in force_constants_init:  '   &
      &                     //'the value of maxatoms needs to be larger.'
                       imaxat=1
+
+!                      do i6=1,3
+!                         atompos(i6,:)=[atompos(i6,:),r(i6)]
+!                         iatomcell(i6,:)=[iatomcell(i6,:),icell(i6)]
+!                      enddo
+!                      iatomcell0=[iatomcell0,i]
+!                      iatomneighbor(iatom0,:)=[iatomneighbor(iatom0,:),m]
                       return
+
                     endif
                     atompos(1:3,natoms)=r(1:3)
                     iatomcell(1:3,natoms)=icell(1:3)
@@ -368,7 +375,7 @@
       imaxat=0
       end subroutine force_constants_init
 !******************************************************************************
-! get force constants
+!! get force constants
       subroutine force_constants(nrank,iatomd,ixyzd,   &
      &     ntermsindep,iatomtermindep,ixyztermindep,   &
      &     nterm5,iatomtermall,ixyztermall,amat,ntermszero,   &
@@ -390,7 +397,7 @@
 !     nterm5 (output), total number of nonzero terms
 !     iatomtermall(i,j) (output), atom at ith location in denominator of
 !          jth nonzero term
-!     ixyztermall(i,j) (output), coordinate at ith location in denomonitor of 
+!     ixyztermall(i,j) (output), coordinate at ith location in denomonitor of
 !          jth nonzero term
 !     amat(i,j) (output), coefficient of jth independent term in equation for
 !          kth nonzero term
@@ -410,24 +417,27 @@
 
       use force_constants_module
       implicit none
-      integer nrank,maxrank,maxterms,maxtermsindep,maxtermszero
-      integer ierz,iert,ieri
-      integer i,j,k,m,n,iatomd(nrank),ixyz(nrank),iatom(nrank),ncmp,   &
-     &   iatomterm(maxrank,maxterms),ixyzterm(maxrank,maxterms),jterm,   &
-     &     icell(3),iv(3),isg,ixyzd(nrank),ntermsindep,msave,nn,   &
-     &     irank,k2,neqs,ipermute(:,:),ifactorial,msave2,j2,   &
-     &     npermute,ixyzfirst(nrank),nterm5,ixyz4(nrank),   &
-     &     mapdep(maxterms),mapterms(maxterms),   &
-     &     maptermsindep(maxterms),mapindepterms(maxterms),   &
+      integer, intent(in):: nrank,maxrank,maxterms,maxtermsindep,maxtermszero
+      integer, intent(out):: ierz,iert,ieri,ntermsindep,nterm5,ntermszero
+      integer, intent(in):: iatomd(nrank),ixyzd(nrank)
+     integer, intent(out):: iatomtermindep(maxrank,maxterms), &
+     &                       ixyztermindep(maxrank,maxterms), &
      &   iatomtermall(maxrank,maxterms),ixyztermall(maxrank,maxterms),   &
-     &     iatomtermindep(maxrank,maxterms),   &
-     &     ixyztermindep(maxrank,maxterms),   &
-     &     ntermszero,iatomtermzero(maxrank,maxtermszero),   &
+     &     iatomtermzero(maxrank,maxtermszero),   &
      &     ixyztermzero(maxrank,maxtermszero)
+      integer i,j,k,m,n,iatom(nrank),ncmp,ixyz(nrank),   &
+     &   iatomterm(maxrank,maxterms),ixyzterm(maxrank,maxterms),jterm,   &
+     &     icell(3),iv(3),isg,msave,nn,   &
+     &     irank,k2,neqs,ifactorial,msave2,j2,   &
+     &     npermute,ixyzfirst(nrank),ixyz4(nrank),   &
+     &     mapdep(maxterms),mapterms(maxterms),   &
+     &     maptermsindep(maxterms),mapindepterms(maxterms)
       logical foundit(maxterms),firstone,zero(maxterms)
-      double precision v(3),amp,eqs(:,:),   &
-     &     eqs2(:,:),amat(maxterms,maxtermsindep)
-      allocatable ipermute,eqs,eqs2
+      double precision v(3),amp
+      real(8), intent(out):: amat(maxterms,maxtermsindep)
+      integer, allocatable :: ipermute(:,:)
+      real(8), allocatable :: eqs(:,:),eqs2(:,:)
+
       allocate(eqs(maxterms,maxterms),eqs2(maxterms,maxterms))
 
 ! check if input values are valid
@@ -467,7 +477,7 @@
         neqs=neqs+1
         if(neqs.gt.maxterms)then
           write(6,*)'Warning: in force_constants: maxterms too small'
-          iert=iert+1         
+          iert=iert+1
           deallocate(ipermute,eqs,eqs2)
           return
         endif
@@ -477,7 +487,7 @@
         do irank=1,nrank
           call xvmlt(op_matrix(1,1,isgop(isg)),  &
      &         atompos(1,iatomterm(irank,jterm)),v,3,3,3)
-          call xvadd(sgfract(1,isg),v,v,3)
+          v=v+sgfract(:,isg)  !call xvadd(sgfract(1,isg),v,v,3)
 ! find atom
           call findatom2(v,iatom(irank))
           if(iatom(irank).eq.0)then
@@ -540,7 +550,7 @@
               nterm5=nterm5+1
               if(nterm5.gt.maxterms)then
            write(6,*) 'Warning: in force_constants: maxterms too small',maxterms
-                iert=iert+1         
+                iert=iert+1
                 deallocate(ipermute,eqs,eqs2)
                 return
               endif
@@ -740,7 +750,7 @@
           ixyztermzero(1:nrank,ntermszero+1:ntermszero+m-msave)=   &
      &         ixyztermall(1:nrank,msave+1:m)
           ntermszero=ntermszero+m-msave
-          m=msave          
+          m=msave
 ! independent terms
         else if(mapdep(n).eq.0)then
           amat(msave+1:m,maptermsindep(n))=1
@@ -759,234 +769,7 @@
 
       end subroutine force_constants
 !****************************************************************************
-! get force constants for a given rank out to a given nearest neighbor shell
-      subroutine collect_force_constants_old(nrank,nshell,ngroups,  &
-     &     ntermsindep,iatomtermindep,ixyztermindep,nterm6,   &
-     &     iatomterm,ixyzterm,amat,ntermszero,iatomtermzero,   &
-     &     ixyztermzero,maxrank,maxterms,maxtermsindep,maxtermszero,   &
-     &     maxgroups,ierz,iert,ieri,ierg)
-! arguments:
-!     nrank (input), order or derivative
-!     nshell (input), shell of nearest-neighbor atoms to be included
-!     ngroups (output), number of groups of terms.  Within each group, the
-!          terms are related by symmetry.
-!     For the ith group:
-!     ntermsindep(i) (output), number of independent terms
-!     iatomtermindep(k,j,i) (output), atom at kth location in denominator of
-!          jth independent term
-!     ixyztermindep(k,j,i) (output), coordinate at kth location in denomonitor 
-!          of jth independent term
-!     nterm6(i) (output), total number of terms
-!     iatomterm(k,j,i) (output), atom at kth location in denominators of
-!          jth term
-!     ixyzterm(k,j,i) (output), coordinate at kth location in denomonitor of 
-!          jth term
-!     amat(k,j,i) (output), coefficient of jth independent term in equation
-!          for kth term
-!     ntermszero (output), number of zero terms
-!     iatomtermzero(k,j) (output), atom at kth location in denominator of
-!          jth zero term
-!     ixyztermzero(k,j) (output), coordinate at kth location in denomonitor 
-!          of jth zero term
-!     maxrank (input), number of rows in arrays iatomtermindep, ixyztermindep,
-!          iatomterm, and ixyzterm
-!     maxterms (input), number of rows in array amat and number of columns
-!          in arrays iatomterm and ixyzterm
-!     maxtermsindep (input), number of columns
-!          in arrays amat, iatomtermindep, and ixyztermindep
-!     maxtermszero (input), number of columns
-!          in arrays iatomtermzero and ixyztermzero
-!     maxgroups (input), maximum number of groups
-
-      use force_constants_module
-      implicit none
-      integer nrank,maxrank,maxterms,maxtermsindep,maxgroups,  &
-     &     maxtermszero,ierz,iert,ieri,ierg
-      integer i,j,k,m,n,nshell,ngroups,nterm6(maxgroups),  &
-     &     iatomterm(maxrank,maxterms,maxgroups),ncount,  &
-     &     ixyzterm(maxrank,maxterms,maxgroups),  &
-     &     iatomtermindep(maxrank,maxterms,maxgroups),  &
-     &     ixyztermindep(maxrank,maxterms,maxgroups),  &
-     &     ishell,iatom,iatom0,iatomd(nrank),ixyz,ngroupsave,  &
-     &     ixyzd(nrank),nterms2,ncmp,icell(3),  &
-     &     ntermsindep(maxgroups),iatomd2(nrank),ixyzd2(nrank),  &
-     &     ntermszero,iatomtermzero(maxrank,maxtermszero),  &
-     &     ixyztermzero(maxrank,maxtermszero),ntermszerosave
-      logical firsttime
-      double precision amat(maxterms,maxtermsindep,maxgroups)
-
-      ierz=0; iert=0; ierg=0; ieri=0
-
-      write(*,*)' INPUTS OF COLLECT_FORCE_CONSTANTS '
-      write(*,*)' nrank,nshell=',nrank,nshell
-      write(*,*)' mxrnk,mxtrm,mxtrmindp=',maxrank,maxterms,maxtermsindep
-      write(*,*)' maxtermszero,maxgroups=',maxtermszero,maxgroups
-
-! check if input values are valid
-      if(nrank.gt.maxrank)then
-        write(6,*)'Error in collect_force_constants_ol: nrank > maxrank'
-        stop
-      endif
-
-      ncount=0
-      ngroups=0
-      amat=0
-      ntermszero=0
-! do each atom in unit cell
-      iatom0loop: do iatom0=1,natoms0
-! find first nearest neighbor in list
-        do iatom=1,natoms
-          if(iatomneighbor(iatom0,iatom).le.nshell)exit
-          if(iatom.eq.natoms)then
-            write(6,*)'Error in collect_force_constants_old: first '  &
-     &           //'nearest neighbor not found'
-            stop
-          endif
-        enddo
-! try each atom for each position in denominator
-! begin with first nearest neighbor
-        iatomd(1:nrank)=iatom
-        iatomd(nrank)=iatom-1
-        iatomd(1)=iatom0
-        firsttime=.true.
-        nextatomloop: do while(.true.)
-! next set of atoms
-          if(firsttime)then
-            firsttime=.false.
-          else
-            if(nrank.eq.1)exit nextatomloop
-          endif
-! try each position in denominator
-          iloop: do i=nrank,2,-1
-! try each atom in that position
-            jloop: do j=iatomd(i)+1,natoms
-! nearest neighbor to atom in cell at origin?
-              if(iatomneighbor(iatom0,j).le.nshell)then
-! nearest neighbor to all other atoms in denominator?
-                do k=2,i-1
-                  do m=1,3
-                    icell(m)=iatomcell(m,iatomd(k))-iatomcell(m,j)
-                  enddo
-                  call findatom(icell,iatomcell0(iatomd(k)),m)
-                  if(m.eq.0)cycle jloop
-                  if(iatomneighbor(iatomcell0(j),m).gt.nshell)  cycle jloop
-                enddo
-! yes: put atom in denominator and get terms
-                iatomd(i:nrank)=j
-                exit iloop
-              endif
-            enddo jloop
-! done: try next atom in cell at origin
-            if(i.eq.2)cycle iatom0loop
-          enddo iloop
-! check if found yet
-          ixyzd=1
-          call unique_force_constant(nrank,iatomd,ixyzd,iatomd2,ixyzd2)
-          do k=1,ngroups
-          iloop2: do i=1,nterm6(k)
-            do j=1,nrank
-              if(iatomterm(j,i,k).ne.iatomd2(j))cycle iloop2
-            enddo
-! found it: try next set of atoms
-            cycle nextatomloop
-          enddo iloop2
-          enddo
-          iloop4: do i=1,ntermszero
-            do j=1,nrank
-              if(iatomtermzero(j,i).ne.iatomd2(j))cycle iloop4
-            enddo
-! found it: try next set of atoms
-            cycle nextatomloop
-          enddo iloop4
-! did not find it: generate terms
-! all possible sets of coordinates
-          ngroupsave=ngroups
-          ntermszerosave=ntermszero
-          ixyzloop: do ixyz=1,3**nrank
-            m=ixyz-1
-            do i=1,nrank
-              ixyzd(i)=mod(m,3)+1
-              m=m/3
-            enddo
-! check if found yet
-            call unique_force_constant(nrank,iatomd,ixyzd, iatomd2,ixyzd2)
-            do k=ngroupsave+1,ngroups
-            iloop3: do i=1,nterm6(k)
-              do j=1,nrank
-                if(iatomterm(j,i,k).ne.iatomd2(j))cycle iloop3
-                if(ixyzterm(j,i,k).ne.ixyzd2(j))cycle iloop3
-              enddo
-! found it: try next set of coordinates
-              cycle ixyzloop
-            enddo iloop3
-            enddo
-           iloop5: do i=ntermszerosave+1,ntermszero
-             do j=1,nrank
-               if(iatomtermzero(j,i).ne.iatomd2(j))cycle iloop5
-               if(ixyztermzero(j,i).ne.ixyzd2(j))cycle iloop5
-             enddo
-! found it: try next set of coordinates
-             cycle ixyzloop
-           enddo iloop5
-! did not find it: generate terms
-            ngroups=ngroups+1
-
-            if(ngroups.ge.maxgroups)then
-              write(6,*)' maxgroups is too small ',maxgroups
-              ierg=ierg+1
-              return
-            endif
-
-            call force_constants(nrank,iatomd2,ixyzd2,   &
-     &           ntermsindep(ngroups),iatomtermindep(1,1,ngroups),   &
-     &           ixyztermindep(1,1,ngroups),nterm6(ngroups),   &
-     &           iatomterm(1,1,ngroups),ixyzterm(1,1,ngroups),   &
-     &           amat(1,1,ngroups),n,iatomtermzero(1,ntermszero+1),   &
-     &           ixyztermzero(1,ntermszero+1),maxrank,maxterms,   &
-     &           maxtermsindep,maxtermszero-ntermszero,ierz,iert,ieri)
-
-            if (ierz.ne.0) then
-              write(*,*)' maxtermszero is too small',maxtermszero,ierz
-              return
-            endif
-            if (iert.ne.0) then
-              write(*,*)' maxterms is too small',maxterms,iert
-              return
-            endif
-            if (ieri.ne.0) then
-              write(*,*)' maxtermsindep is too small',maxtermsindep,ieri
-              return
-            endif
-            ntermszero=ntermszero+n
-! no nonzero terms in group
-            if(nterm6(ngroups).eq.0)then
-              ngroups=ngroups-1
-              ncount=ncount+1
-            endif
-! next set of coordinates
-          enddo ixyzloop
-! next set of atoms
-        enddo nextatomloop
-      enddo iatom0loop
-
-      write(*,*)' ngroups=',ngroups
-      write(*,3)' ntermsindep      (maxgroups)=',ntermsindep(1:ngroups)
-      write(*,3)' nterm6           (maxgroups)=',nterm6(1:ngroups)
-      write(*,3)' iatomtrmindep(rnk,1,ngroups)=',   &
-     &  iatomtermindep(nrank,1,1:ngroups)
-      write(*,3)' ixyztermindep(rnk,1,ngroups)=',   &
-     &  ixyztermindep(nrank,1,1:ngroups)
-      write(*,3)' iatomterm    (rnk,1,ngroups)=',   &
-     &  iatomterm(nrank,1,1:ngroups)
-      write(*,3)' ixyzterm     (rnk,1,ngroups)=',   &
-     &  ixyzterm(nrank,1,1:ngroups)
-
-      ierz=0 ; iert=0 ; ieri=0 ; ierg=0    
-
- 3    format(a,99(i4))
-      end subroutine collect_force_constants_old
-!****************************************************************************
-! bring a force constant to a unique form: atoms
+!! bring a force constant to a unique form: atoms
       subroutine unique_force_constant(nrank,iatomin,ixyzin,iatomout,ixyzout)
 
 ! arguments:
@@ -998,11 +781,10 @@
 
       use force_constants_module
       implicit none
-      integer nrank
-      integer i,j,k,m,n,iatomin(nrank),iatomout(nrank),  &
-     &     iatomtemp(nrank),irank,iv(3),icell(3),iatom,k2,k3,  &
-     &     iatomtemp2(nrank),ixyzin(nrank),ixyzout(nrank),  &
-     &     ixyztemp(nrank),ixyztemp2(nrank),ixyz
+      integer, intent(in):: nrank,iatomin(nrank),ixyzin(nrank)
+      integer, intent(out):: iatomout(nrank),ixyzout(nrank)
+      integer k,m,iatomtemp(nrank),irank,iv(3),icell(3),iatom,k2,k3,  &
+     &     iatomtemp2(nrank),ixyztemp(nrank),ixyztemp2(nrank),ixyz
       logical firsttime
 
       firsttime=.true.
@@ -1067,12 +849,13 @@
       enddo irankloop
       iatomout(1:nrank)=iatomtemp2(1:nrank)
       ixyzout(1:nrank)=ixyztemp2(1:nrank)
-      end
+
+      end subroutine unique_force_constant
 
 !****************************************************************************
 ! routines
       subroutine findatom(icell,icell0,iatom)
-! find atom in data base
+!! find atom in data base
 ! arguments:
 !     icell(i) (input), linear combination of basis vectors of the primitive
 !          lattice that takes us to the unit cell containing the ith atom
@@ -1081,7 +864,10 @@
 !          in data base
       use force_constants_module
       implicit none
-      integer icell(3),icell0,iatom,i,j
+      integer, intent(in):: icell(3),icell0
+      integer, intent(out):: iatom
+      integer i,j
+
       do i=1,natoms
         if(icell0.ne.iatomcell0(i))cycle
         do j=1,3
@@ -1093,10 +879,10 @@
         enddo
       enddo
       iatom=0
-      end
+      end subroutine findatom
 !--------------------------------------------------------------------------------
       subroutine findatom2(pos,iatom)
-! find atom in data base
+!! find atom in data base
 ! arguments:
 !     pos(i) (input), ith cartesian coordinate of atomic position
 !     iatom (output), location of atom in data base.  Returns zero if not found
@@ -1115,7 +901,7 @@
         enddo
       enddo
       iatom=0
-      end
+      end subroutine findatom2
 !--------------------------------------------------------------------------------
       function ncmp(x)
       implicit none
@@ -1126,18 +912,18 @@
 !	X IS REAL
 !
       integer ncmp
-      real(8) x,delta
+      real(8) x !,delta
 !     data delta/1.e-3/
       ncmp=0
 !     if(abs(x).gt.delta)ncmp=1
       if(abs(x).gt.1d-6)ncmp=1
       return
-      end
+      end function ncmp
 !--------------------------------------------------------------------------------
       subroutine xmatinv(xmatin,xmatout,ier)
       implicit none
 
-! invert a 3 by 3 matrix
+!! invert a 3 by 3 matrix
 
       double precision xmatin(3,3),xmatout(3,3),buffer(3,3),x
       integer indx(3),ier,n,i,j
@@ -1164,10 +950,10 @@
       do j=1,n
         call lubksb(buffer,n,n,indx,xmatout(1,j))
       enddo
-      end
 
+      end subroutine xmatinv
+!------------------------------------------------------------------
 ! The following routines are from Numerical Recipes
-
       subroutine ludcmp(a,n,np,indx,d)
       implicit none
       integer nmax,np,n
@@ -1227,8 +1013,8 @@
           enddo
         endif
       enddo
-      end
-
+      end subroutine ludcmp
+!-----------------------------------------------
       subroutine lubksb(a,n,np,indx,b)
       implicit none
       integer n,np
@@ -1257,11 +1043,12 @@
         endif
         b(i)=sum/a(i,i)
       enddo
-      end
+
+      end subroutine lubksb
 !------------------------------------------------------------------------------
       subroutine xmatmlt(x1,x2,x3,nrow1,ncol1,ncol2,nr1,nr2,nr3)
 
-! multiply two real matrices, x3=x1*x2
+!! multiply two real matrices, x3=x1*x2
 ! double precision version
 ! arguments:
 !     x1,x2 (input), first and second matrix
@@ -1274,11 +1061,12 @@
 !     nr1 (input), number of rows in the physical array x1
 !     nr2 (input), number of rows in the physical array x2
 !     nr3 (input), number of rows in the physical array x3
-      
+
       implicit none
       integer i,j,k,nrow1,ncol1,ncol2,nr1,nr2,nr3
-      double precision x1(nr1,ncol1),x2(nr2,ncol2),x3(nr3,ncol2),x(:,:)
-      allocatable x
+      double precision x1(nr1,ncol1),x2(nr2,ncol2),x3(nr3,ncol2)
+      real(8), allocatable :: x(:,:)
+
       allocate(x(nrow1,ncol2))
       do i=1,ncol2
       do j=1,nrow1
@@ -1294,12 +1082,12 @@
       enddo
       enddo
       deallocate(x)
-      
-      end
+
+      end subroutine xmatmlt
 !-------------------------------------------------------------------------------
       subroutine xvmlt(x,v1,v2,nrow,ncol,nr)
 
-! multiply a double precision vector by a double precision matrix, v2=x*v1
+!! multiply a double precision vector by a double precision matrix, v2=x*v1
 ! arguments:
 !     x (input), matrix
 !     v1 (input), vector
@@ -1307,11 +1095,12 @@
 !     nrow (input), number of rows in x, also the number of rows in v2
 !     ncol (input), number of columns in x, also the number of rows in v1
 !     nr (input), number of rows in the physical array x
-      
+
       implicit none
       integer nrow,ncol,nr,i,j
-      double precision x(nr,ncol),v1(ncol),v2(nrow),v(:)
-      allocatable v
+      double precision x(nr,ncol),v1(ncol),v2(nrow)
+      real(8), allocatable:: v(:)
+
       allocate(v(nrow))
       do i=1,nrow
         v(i)=0
@@ -1321,10 +1110,10 @@
       enddo
       v2(1:nrow)=v(1:nrow)
       deallocate(v)
-      
-      end
+
+      end subroutine xvmlt
 !------------------------------------------------------------------------------
-! bring a point into the unit cell at the origin
+!! bring a point into the unit cell at the origin
 
       subroutine unitcell(cart_to_prim,prim_to_cart,v1,v2)
       implicit none
@@ -1346,11 +1135,12 @@
       enddo
 ! return to cartesian coordinates
       call xmatmlt(prim_to_cart,buff,v2,3,3,1,3,3,3)
-      end
+
+      end subroutine unitcell
 !----------------------------------------------------------------------------
       subroutine dlatmat2(cart,eps,nmatrices,matrices)
 
-! find symmetry matrices for a given lattice
+!! find symmetry matrices for a given lattice
 
 ! arguments:
 !     cart(i,j) (input), ith cartesian component of jth basis vector
@@ -1363,11 +1153,11 @@
       integer nmax
       parameter(nmax=400)
 
+      real(8), intent(in)  :: cart(3,3),eps
+      integer, intent(out) :: nmatrices,matrices(3,3,48) 
       integer n,i,j,j1,j2,j3,k,m,i1,i2,i3,nshort(3),ndet,itrans(3,3),  &
-     &     nmatrices,matrices(3,3,48),ichoose(3)
-      double precision eps, dshort(nmax,3),ishort(3,nmax,3),  &
-     &     vshort(3,nmax,3),v(3),xmax, vlength,x,dvdot,d,abc(3,3),  &
-     &     cart(3,3)
+     &      ichoose(3),ishort(3,nmax,3)
+      real(8) vshort(3,nmax,3),v(3),xmax,vlength,x,d,abc(3,3),dshort(nmax,3)     
       logical foundone,tried(48,48)
 
 ! some initialization
@@ -1487,7 +1277,7 @@
             if(.not.tried(i,j))then
               tried(i,j)=.true.
 !             call matmlt(matrices(1,1,i),matrices(1,1,j),itrans)
-              itrans=matmul(matrices(:,:,i),matrices(:,:,j)) 
+              itrans=matmul(matrices(:,:,i),matrices(:,:,j))
               kloop: do k=1,nmatrices
                 mloop: do m=1,3
                 do n=1,3
@@ -1510,41 +1300,44 @@
           enddo
         enddo
       enddo
-      end
+
+      end subroutine dlatmat2
 !--------------------------------------------------------------------------------
       subroutine xvsub(v1,v2,v3,nrow)
 
-! subtract two real vectors: v3=v1-v2
+!! subtract two real vectors: v3=v1-v2
 ! double precision version
 ! arguments:
 !     v1,v2 (input), vectors
 !     v3 (output), vector v1-v2
 !     nrow (input), number of rows in each vector
-      
+
       implicit none
       integer i,nrow
       double precision v1(nrow),v2(nrow),v3(nrow)
       do i=1,nrow
         v3(i)=v1(i)-v2(i)
       enddo
-      end
+
+      end subroutine xvsub
 !------------------------------------------------------------------------------
       subroutine xvadd(v1,v2,v3,nrow)
 
-! add two real vectors: v3=v1+v2
+!! add two real vectors: v3=v1+v2
 ! double precision version
 ! arguments:
 !     v1,v2 (input), vectors
 !     v3 (output), vector v1+v2
 !     nrow (input), number of rows in each vector
-      
+
       implicit none
       integer i,nrow
       double precision v1(nrow),v2(nrow),v3(nrow)
       do i=1,nrow
         v3(i)=v1(i)+v2(i)
       enddo
-      end
+
+      end subroutine xvadd
 !-------------------------------------------------------------------------------
       function vlength(n,v)
       implicit none
@@ -1556,14 +1349,14 @@
         x=x+v(i)**2
       enddo
       vlength=dsqrt(x)
-      end
+      end function vlength
 !-------------------------------------------------------------------------------
       subroutine bomb
       implicit none
       write(6,'(a)')'This program has bombed.'
       write(6,'(a)')'exit'
       stop
-      end
+      end subroutine bomb
 !------------------------------------------------------------------------------
       function ndet(mat)
       implicit none
@@ -1574,8 +1367,8 @@
       ndet=mat(1,1)*(mat(2,2)*mat(3,3)-mat(2,3)*mat(3,2))  &
      & -mat(1,2)*(mat(2,1)*mat(3,3)-mat(2,3)*mat(3,1))  &
      & +mat(1,3)*(mat(2,1)*mat(3,2)-mat(2,2)*mat(3,1))
-      return
-      end
+      
+      end function ndet
 !------------------------------------------------------------------------------
       subroutine permutations(n,ipermutations,nr,nc)
 ! find all permutations of n objects
@@ -1587,7 +1380,7 @@
 
       implicit none
       integer nr,nc
-      integer n,ipermutations(nr,nc),ip(10),np,ifactorial, i,j,k,m,mm,kk,nexc,ip2(10)
+      integer n,ipermutations(nr,nc),ip(10),np,ifactorial, i,j,k,m !,mm,nexc !,ip2(10)
       logical used(10)
 
 ! check for valid input
@@ -1617,7 +1410,7 @@
 ! count permutations
       np=1
 ! try changing the object in a location, starting at location n-1
-    loop1: do while (np.lt.nc) 
+    loop1: do while (np.lt.nc)
       do i=n-1,1,-1
 ! moving this object: not at this location anymore
         used(ip(i))=.false.
@@ -1650,7 +1443,8 @@
         enddo
       enddo
     enddo loop1
-      end
+
+      end subroutine permutations
 !-------------------------------------------------------------------------------
 ! factorial:  ifactorial = n!
       function ifactorial(n)
@@ -1667,8 +1461,8 @@
         enddo
         ifactorial=m
       endif
-      return
-      end
+      
+      end function ifactorial
 !-------------------------------------------------------------------------------
       subroutine xrowop2(zna,nrow,ncol,nnrow,nncol)
       implicit none
@@ -1708,14 +1502,14 @@
         if(k.eq.j) cycle
         if(ncmp(zna(k,j+nout)).eq.0) cycle
         do  l=1,ncol
-          if(l.eq.j+nout) cycle 
+          if(l.eq.j+nout) cycle
           zna(k,l)=zna(k,l)-zna(j,l)*zna(k,j+nout)
         enddo
         zna(k,j+nout)=0.
       enddo
   enddo
-      return
-      end
+      
+      end subroutine xrowop2
 !-------------------------------------------------------------------------------
       subroutine getstar(kvec,primlatt,narms,kvecstar,kvecop)
 ! find atom in data base
@@ -1726,15 +1520,18 @@
 !     kvecop(i), the symmetry operation number for the star vecor i
       use force_constants_module
       implicit none
-      integer i,j,k,m,n,narms,kvecop(48),ier,ncmp
-      double precision kvec(3),kvecstar(3,48),primlatt(3,3),v(3),  &
-     &     v2(3),v3(3),kvecstarp(3,48)
+      integer, intent(out):: narms,kvecop(48)
+      real(8), intent(in) :: kvec(3),primlatt(3,3)
+      real(8), intent(out):: kvecstar(3,48)
+      integer i,j,k,n,ncmp
+      real(8) v(3),v2(3),v3(3),kvecstarp(3,48)
+
       narms=0
 !      print*,'lattpgcount=',lattpgcount
       iloop: do i=1,lattpgcount
-! apply symmetry operation to k to get v=kstar      
+! apply symmetry operation to k to get v=kstar
         call xvmlt(op_kmatrix(1,1,i),kvec,v,3,3,3)
-! find the reduced coordinates of v and store in v2        
+! find the reduced coordinates of v and store in v2
         call xmatmlt(v,primlatt,v2,1,3,3,1,3,1)
 
 ! now check if v2 - any_previous_v2 is integer (differ by a G vector)
@@ -1753,9 +1550,10 @@
         kvecstarp(1:3,narms)=v2(1:3)
         kvecop(narms)=i
       enddo iloop
-      end
+
+      end subroutine getstar
 !****************************************************************************
-! get force constants for a given rank out to a given nearest neighbor shell
+!! get force constants for a given rank out to a given nearest neighbor shell
       subroutine collect_force_constants(nrank,nshell,ngroups,  &
      &     ntermsindep,iatomtermindep,ixyztermindep,nterm6,  &
      &     iatomterm,ixyzterm,amat,ntermszero,iatomtermzero,  &
@@ -1770,19 +1568,19 @@
 !     ntermsindep(i) (output), number of independent terms
 !     iatomtermindep(k,j,i) (output), atom at kth location in denominator of
 !          jth independent term
-!     ixyztermindep(k,j,i) (output), coordinate at kth location in denomonitor 
+!     ixyztermindep(k,j,i) (output), coordinate at kth location in denomonitor
 !          of jth independent term
 !     nterm6(i) (output), total number of terms
 !     iatomterm(k,j,i) (output), atom at kth location in denominators of
 !          jth term
-!     ixyzterm(k,j,i) (output), coordinate at kth location in denomonitor of 
+!     ixyzterm(k,j,i) (output), coordinate at kth location in denomonitor of
 !          jth term
 !     amat(k,j,i) (output), coefficient of jth independent term in equation
 !          for kth term
 !     ntermszero (output), number of zero terms
 !     iatomtermzero(k,j) (output), atom at kth location in denominator of
 !          jth zero term
-!     ixyztermzero(k,j) (output), coordinate at kth location in denomonitor 
+!     ixyztermzero(k,j) (output), coordinate at kth location in denomonitor
 !          of jth zero term
 !     maxrank (input), number of rows in arrays iatomtermindep, ixyztermindep,
 !          iatomterm, and ixyzterm
@@ -1796,21 +1594,17 @@
 
       use force_constants_module
       implicit none
-      integer nrank,maxrank,maxterms,maxtermsindep,maxgroups,  &
-     &     maxtermszero,ierz,iert,ieri,ierg
-! make sure natoms0 < 20
-      integer i,j,k,m,n,nshell(natoms0),ngroups,nterm6(maxgroups),  &
-     &     iatomterm(maxrank,maxterms,maxgroups),ncount,  &
-     &     ixyzterm(maxrank,maxterms,maxgroups),  &
-     &     iatomtermindep(maxrank,maxterms,maxgroups),  &
-     &     ixyztermindep(maxrank,maxterms,maxgroups),  &
-     &     ishell,iatom,iatom0,iatomd(nrank),ixyz,ngroupsave,  &
-     &     ixyzd(nrank),nterms2,ncmp,icell(3),  &
-     &     ntermsindep(maxgroups),iatomd2(nrank),ixyzd2(nrank),  &
-     &     ntermszero,iatomtermzero(maxrank,maxtermszero),  &
-     &     ixyztermzero(maxrank,maxtermszero),ntermszerosave
+      integer, intent(in) :: nrank,maxrank,maxterms,maxtermsindep,maxgroups,  &
+     &     maxtermszero,nshell(natoms0) 
+      integer, intent(out):: ierz,iert,ieri,ierg,ngroups,ntermszero,nterm6(maxgroups), &
+     &     ntermsindep(maxgroups),iatomtermindep(maxrank,maxterms,maxgroups),  &
+     &     ixyztermindep(maxrank,maxterms,maxgroups), &
+     &     iatomterm(maxrank,maxterms,maxgroups),ixyzterm(maxrank,maxterms,maxgroups),  &
+     &     iatomtermzero(maxrank,maxtermszero),ixyztermzero(maxrank,maxtermszero)
+      real(8), intent(out):: amat(maxterms,maxtermsindep,maxgroups)
+      integer i,j,k,m,n,ncount,iatom,iatom0,iatomd(nrank),ixyz,ngroupsave,  &
+     &     ixyzd(nrank),icell(3),iatomd2(nrank),ixyzd2(nrank),ntermszerosave
       logical firsttime
-      double precision amat(maxterms,maxtermsindep,maxgroups)
 
       ierz=0; iert=0; ierg=0; ieri=0
 
@@ -1838,7 +1632,7 @@
         do iatom=1,natoms
           if(iatomneighbor(iatom0,iatom).le.nshell(iatom0))exit
           if(iatom.eq.natoms)then
-            write(6,*)'Error in collect_force_constants: first '  &  
+            write(6,*)'Error in collect_force_constants: first '  &
      &           //'nearest neighbor not found'
             stop
           endif
@@ -1970,14 +1764,14 @@
       enddo iatom0loop
 
       write(*,*)' ngroups=',ngroups
-      write(*,3)' ntermsindep      (maxgroups)=',ntermsindep(1:ngroups)
-      write(*,3)' nterm6           (maxgroups)=',nterm6(1:ngroups)
+      write(*,3)' ntermsindep      (maxgroups)=', ntermsindep(1:ngroups)
+      write(*,3)' nterm6           (maxgroups)=', nterm6(1:ngroups)
       write(*,3)' iatomtrmindep(rnk,1,ngroups)=', iatomtermindep(nrank,1,1:ngroups)
       write(*,3)' ixyztermindep(rnk,1,ngroups)=', ixyztermindep(nrank,1,1:ngroups)
       write(*,3)' iatomterm    (rnk,1,ngroups)=', iatomterm(nrank,1,1:ngroups)
       write(*,3)' ixyzterm     (rnk,1,ngroups)=', ixyzterm(nrank,1,1:ngroups)
 
-      ierz=0 ; iert=0 ; ieri=0 ; ierg=0    
+      ierz=0 ; iert=0 ; ieri=0 ; ierg=0
 
  3    format(a,99(i4))
       end subroutine collect_force_constants
