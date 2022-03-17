@@ -37,9 +37,9 @@ symmetries of the crystal itself. These symmetries are as follows:
 1. Invariance under the permutation of indices:
 
 .. math::
-    \Phi_{ij} = \Phi_{ji} \\
-    \Psi_{ijk} = \Psi_{ikj} = \Psi_{jik} = \Psi_{kji} = ... \\
-    \chi_{ijkl} = \chi_{ikjl}=\chi_{ijlk}=\chi_{jikl} = ...
+    \Phi_{ij} &= \Phi_{ji} \\
+    \Psi_{ijk} &= \Psi_{ikj} = \Psi_{jik} = \Psi_{kji} = ... \\
+    \chi_{ijkl} &= \chi_{ikjl}=\chi_{ijlk}=\chi_{jikl} = ...
 
 where :math:`i,j,k` and :math:`l` 
 refer to neighboring atoms.
@@ -57,10 +57,10 @@ shift vector (may be incommensurate with :math:`R`).
 This implies the well-known "acoustic sum rule" (ASR) generalized to higher order FCs:
 
 .. math::
-    0 = \sum_{\tau} \, \Pi_{0 \tau}^{ \alpha} \,\,\, \forall (\alpha) \,\, => {\rm Total \,~force \,~on\,~unit\,~cell = 0}  \\
-    0 = \sum_{R_1,\tau_1} \, \Phi_{0\tau,R_1 \tau_1}^{\alpha\beta} \,\,\, \forall (\alpha\beta,\tau) \\
-    0 = \sum_{R_2,\tau_2} \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\alpha\beta\gamma} \,\,\, \forall(\alpha\beta\gamma,R_1,\tau_1) \\
-    0 = \sum_{R_3,\tau_3} \, \chi_{0\tau,R_1\tau_1,R_2\tau_2,R_3\tau_3}^{\alpha\beta\gamma\delta} \,\,\,  \forall(\alpha\beta\gamma\delta,R_1R_2,\tau_1\tau_2)
+    0 &= \sum_{\tau} \, \Pi_{0 \tau}^{ \alpha} \,\,\, \forall (\alpha) \,\, => {\rm Total \,~force \,~on\,~unit\,~cell = 0}  \\
+    0 &= \sum_{R_1,\tau_1} \, \Phi_{0\tau,R_1 \tau_1}^{\alpha\beta} \,\,\, \forall (\alpha\beta,\tau) \\
+    0 &= \sum_{R_2,\tau_2} \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\alpha\beta\gamma} \,\,\, \forall(\alpha\beta\gamma,R_1,\tau_1) \\
+    0 &= \sum_{R_3,\tau_3} \, \chi_{0\tau,R_1\tau_1,R_2\tau_2,R_3\tau_3}^{\alpha\beta\gamma\delta} \,\,\,  \forall(\alpha\beta\gamma\delta,R_1R_2,\tau_1\tau_2)
 
 so that diagonal terms in these tensors can be defined in terms of their 
 off-diagonal elements, for arbitrary cartesian components.
@@ -72,21 +72,15 @@ energy and forces should not change. This leads to the following
 relations [Ref]_:
 
 .. math::
-    0 = \sum_{\tau} \,  \Pi_{0 \tau}^{ \alpha}\, \tau^{\beta}\, \epsilon^{\alpha\beta\nu}, \,\,\, \forall ( \nu) \,\, ({\rm Torque \,on\,unit\,cell}=0)
-
-.. math::
-    0 =  \sum_{R_1,\tau_1} \, \Phi_{0\tau,R_1 \tau_1}^{\alpha\beta}\, (R_1\tau_1)^{\gamma}\, \epsilon^{\beta\gamma\nu}
-     + \Pi_{0 \tau}^{ \beta }\, \epsilon^{\beta \alpha \nu}  \,\,\, \forall (\alpha\nu,\tau)
-
-.. math::
-    0 = \sum_{R_2,\tau_2} \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\alpha\beta\gamma} \, (R_2\tau_2)^{\delta} \, \epsilon^{\gamma\delta\nu} + \Phi_{0\tau,R_1\tau_1}^{\gamma\beta}\, \epsilon^{\gamma\alpha\nu}  + \Phi_{0\tau,R_1\tau_1}{\alpha\gamma}\, \epsilon^{\gamma\beta\nu} \,\,\, \forall(\alpha\nu,R_1,\tau\tau_1)
-
-.. math::
-    0 = \sum_{R_3\tau_3}\, \chi_{0\tau,R_1\tau_1,R_2\tau_2,R_3\tau_3}^{\alpha\beta\gamma\delta}\,
+    0 &= \sum_{\tau} \,  \Pi_{0 \tau}^{ \alpha}\, \tau^{\beta}\, \epsilon^{\alpha\beta\nu}, \,\,\, \forall ( \nu) \,\, ({\rm Torque \,on\,unit\,cell}=0) \\
+    0 &=  \sum_{R_1,\tau_1} \, \Phi_{0\tau,R_1 \tau_1}^{\alpha\beta}\, (R_1\tau_1)^{\gamma}\, \epsilon^{\beta\gamma\nu}
+     + \Pi_{0 \tau}^{ \beta }\, \epsilon^{\beta \alpha \nu}  \,\,\, \forall (\alpha\nu,\tau) \\
+    0 &= \sum_{R_2,\tau_2} \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\alpha\beta\gamma} \, (R_2\tau_2)^{\delta} \, \epsilon^{\gamma\delta\nu} + \Phi_{0\tau,R_1\tau_1}^{\gamma\beta}\, \epsilon^{\gamma\alpha\nu}  + \Phi_{0\tau,R_1\tau_1}{\alpha\gamma}\, \epsilon^{\gamma\beta\nu} \,\,\, \forall(\alpha\nu,R_1,\tau\tau_1) \\
+    0 &= \sum_{R_3\tau_3}\, \chi_{0\tau,R_1\tau_1,R_2\tau_2,R_3\tau_3}^{\alpha\beta\gamma\delta}\,
     (R_3\tau_3)^{\mu}\, \epsilon^{\delta\mu\nu}
     + \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\delta\beta\gamma} \,\epsilon^{\delta\alpha\nu} +
      \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\alpha\delta\gamma} \,\epsilon^{\delta\beta\nu}   \\
-    + \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\alpha\beta\delta} \,\epsilon^{\delta\gamma\nu} 
+    & \quad + \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\alpha\beta\delta} \,\epsilon^{\delta\gamma\nu} 
     \,\, \, \forall(\alpha\nu,R_1R_2,\tau\tau_1\tau_2)
 
 Here :math:`\epsilon^{\alpha\beta\gamma}` is the anti-symmetric Levy-Civita symbol, and
@@ -100,5 +94,50 @@ if the expansion of the potential energy is truncated after the fourth order
 terms, we need to start with the fourth order terms, and application of 
 rotational invariance rules will give us constraints on third and 
 second order FCs respectively.  
+
+Point and/or space group symmetries
+-----------------------------------
+
+The other constraints come from symmetry operations, such as lattice
+translation, rotation, mirror
+or any symmetry operation of the space and/or point group of the crystal and/or molecule 
+which leaves the latter invariant. 
+Invariance under a translation of the system by any translation 
+lattice vector :math:`R` implies the following relations:
+
+.. math::
+    \Pi_{R\tau}^{\alpha} &= \Pi_{0 \tau}^{ \alpha} \,\, \forall (R \tau \alpha)  \\
+    \Phi_{R\tau,R_1\tau_1}^{\alpha\beta} &= \Phi_{0 \tau ,R_1-R \tau_1}^{\alpha\beta}  \\
+    \Psi_{R\tau,R_1\tau_1,R_2\tau_2}^{\alpha\beta\gamma} &= \Psi_{0 \tau ,R_1-R \tau_1,R_2-R \tau_2}^{\alpha\beta\gamma}  \\
+    \chi_{R\tau,R_1\tau_1,R_2\tau_2,R_3\tau_3}^{\alpha\beta\gamma\delta} &= \chi_{0 \tau ,R_1-R \tau_1,R_2-R \tau_2, R_3-R \tau_3}^{\alpha\beta\gamma\delta} 
+
+So in an ideal crystal, this reduces the number of force constants considerably 
+(by the number of unit cells, to be exact), meaning that we will use for the atoms in all the other cells the same FCs
+as those we have kept for the atoms in the "central" cell.
+
+If a rotation or mirror symmetry operation is denoted by :math:`S`, 
+we must have:
+
+.. math::
+    \Pi_{S\tau}^{\alpha} &= \sum_{\alpha'} \,\Pi_{\tau}^{\alpha'} \, {\cal S}_{\alpha,\alpha'} \\
+    \Phi_{ S\tau, S\tau_1}^{\alpha\beta} &= \sum_{\alpha'\beta'} \,\Phi_{\tau,\tau_1}^{\alpha'
+    \beta'} \, {\cal S}_{\alpha,\alpha'}\, {\cal S}_{\beta,\beta' }  \\
+    \Psi_{ S\tau, S\tau_1, S\tau_2}^{\alpha\beta\gamma} &= \sum_{\alpha'\beta'\gamma'} \,\Psi_{\tau,\tau_1\tau_2}^{\alpha' \beta'\gamma'} \, {\cal S}_{\alpha,\alpha'}\, {\cal S}_{\beta,\beta' } \, {\cal S}_{\gamma,\gamma' }   \\
+    \chi_{ S\tau, S\tau_1, S\tau_2, S\tau_3}^{\alpha\beta\gamma\delta} &= \sum_{\alpha'\beta'\gamma'\delta'} \,\chi_{\tau,\tau_1,\tau_2,\tau_3}^{\alpha' \beta' \gamma' \delta'} \, {\cal S}_{\alpha,\alpha'}\, {\cal S}_{\beta,\beta' } \, {\cal S}_{\gamma,\gamma'}\, {\cal S}_{\delta,\delta' }  
+
+where :math:`{\cal S}_{\alpha,\alpha'}` are the :math:`3\times3` matrix elements of the 
+symmetry operation :math:`S`. 
+These symmetry relations impose a linear set of constraints on the force
+constants. 
+
+Any physically correct model of force constants 
+must satisfy the invariance relations. On the other hand, we do 
+approximations by truncating the range of FCs and their order in the 
+Taylor expansion of the potential. Therefore imposing the constraints
+will move their value away from the true value, but has the advantage
+that they are physically correct, and will for instance reproduce the linear
+dispersion of acoustic phonons near :math:`k=0`. So one should keep in mind
+that an unrealistic truncation to a too short of a range will produce 
+results in disagreement with experiments.
 
 .. [Ref] G. Leibfried and W. Ludwig, in Solid State Physics, edited by F. Seitz and D. Turnbull (Academic, New York, 1961), Vol. 12.
