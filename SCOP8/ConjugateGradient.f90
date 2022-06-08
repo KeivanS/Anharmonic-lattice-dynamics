@@ -1,5 +1,4 @@
 MODULE CG
-!!This Module is not used
     USE VA_math
     USE check
     IMPLICIT NONE
@@ -153,7 +152,7 @@ FUNCTION brent(ax,bx,cx,f,tol,xmin)
             endif
         endif
     enddo
-    write(*,*)'WARNING!! brent exceed maximum iterations'
+    pause 'brent exceed maximum iterations'
 3   xmin=x
     brent=fx
     return

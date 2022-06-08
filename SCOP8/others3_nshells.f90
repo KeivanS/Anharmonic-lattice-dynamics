@@ -1,4 +1,3 @@
-!!all legacy codes, no comment
 !=============================================================================
  subroutine set_translational_inv_constraints
  use svd_stuff

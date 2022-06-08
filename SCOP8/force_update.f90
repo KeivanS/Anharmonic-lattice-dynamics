@@ -1,5 +1,5 @@
-!note: unit_number2=34
-!!Module developed in 2020 summer based on wrong scheme, mostly not used 
+!unit_number2=34
+
 MODULE force_update
     USE VA_math
     REAL(8) R_0
@@ -7,7 +7,6 @@ MODULE force_update
 
     CONTAINS
 !==========================================================================================================
-    !!not used
     SUBROUTINE all_fc_update
         IMPLICIT NONE
         INTEGER :: rnk, i, j
@@ -193,7 +192,6 @@ CLOSE(302)
         CALL fc4_update_check
     END SUBROUTINE all_fc_update
 !---------------------------------------------------
-    !!not used
     SUBROUTINE prepare_fc2
         IMPLICIT NONE
         INTEGER :: i, j, idx
@@ -400,7 +398,6 @@ CLOSE(302)
         CLOSE(362)
     END SUBROUTINE prepare_fc2
 !---------------------------------------------------
-    !!not used
     SUBROUTINE prepare_fc3
         IMPLICIT NONE
         INTEGER :: i
@@ -514,7 +511,6 @@ CLOSE(302)
 
     END SUBROUTINE prepare_fc3
 !---------------------------------------------------
-    !!not used
     SUBROUTINE prepare_fc4
         IMPLICIT NONE
         INTEGER :: i
@@ -675,7 +671,6 @@ CLOSE(302)
 
     END SUBROUTINE prepare_fc4
 !---------------------------------------------------
-    !!not used
     SUBROUTINE uni_fc_update(rnk, atoms, xyzs)
         IMPLICIT NONE
         INTEGER, INTENT(in) :: rnk, atoms(:), xyzs(:)
@@ -690,7 +685,6 @@ CLOSE(302)
 
     END SUBROUTINE uni_fc_update
 !---------------------------------------------------
-    !!not used
     SUBROUTINE renew_fc2(atoms, xyzs)
         IMPLICIT NONE
         INTEGER, INTENT(in) :: atoms(:), xyzs(:)
@@ -794,7 +788,6 @@ CLOSE(302)
 !WRITE(34,*)'Successfully updated this fc2!'
     END SUBROUTINE renew_fc2
 !---------------------------------------------------
-    !!not used
     SUBROUTINE renew_fc3(atoms, xyzs)
         IMPLICIT NONE
         INTEGER, INTENT(in) :: atoms(:), xyzs(:)
@@ -865,7 +858,6 @@ CLOSE(302)
 
     END SUBROUTINE renew_fc3
 !---------------------------------------------------
-    !!not used
     SUBROUTINE renew_fc4(atoms, xyzs)
         IMPLICIT NONE
         INTEGER, INTENT(in) :: atoms(:), xyzs(:)
@@ -873,9 +865,8 @@ CLOSE(302)
 
     END SUBROUTINE renew_fc4
 !================================================================================================================
-!! Below are subroutines related with update structure and fcs
+! Below are subroutines related with update structure and fcs
 !================================================================================================================
-    !!not used
      SUBROUTINE trans_Update
         IMPLICIT NONE
         INTEGER :: i=0
@@ -922,9 +913,7 @@ CLOSE(302)
         WRITE(34,*) "Check Product", volume_r*volume_g/(2*pi)**d !1
     END SUBROUTINE trans_Update
 !-------------------------------------------------------------------------------------------------------
-    !!not used
-    !! update conventional lattice vector
-    SUBROUTINE convs_Update(conv_to_cart)
+    SUBROUTINE convs_Update(conv_to_cart)! update conventional lattice vector
         IMPLICIT NONE
         INTEGER :: i
         REAL(8), INTENT(OUT) :: conv_to_cart(3,3)!translation vectors of conventional lattice
@@ -949,9 +938,7 @@ CLOSE(302)
         END DO
     END SUBROUTINE convs_Update
 !-----------------------------------------------------------------------------------------------------
-     !!not used
-     !!update a, b, c, alpha, beta, gamma
-    SUBROUTINE latticeparameters_Update(conv_to_cart) 
+    SUBROUTINE latticeparameters_Update(conv_to_cart) ! update a, b, c, alpha, beta, gamma
         IMPLICIT NONE
         REAL(8) :: a, b, c, alpha, beta, garma
         REAL(8),INTENT(IN) :: conv_to_cart(3,3)
@@ -978,9 +965,7 @@ CLOSE(302)
         latticeparameters = (/a,b,c,alpha,beta,garma/)
     END SUBROUTINE latticeparameters_Update
 !----------------------------------------------------------------------------------------------------
-    !!not used
-    !!update mipritive cell atoms position
-    SUBROUTINE atompos0_Update(conv_to_cart) 
+    SUBROUTINE atompos0_Update(conv_to_cart) ! update mipritive cell atoms position
         IMPLICIT NONE
         INTEGER :: i
         REAL(8), INTENT(IN) :: conv_to_cart(3,3)! this is conventional trans vec
@@ -1026,10 +1011,8 @@ CLOSE(302)
         END DO
     END SUBROUTINE atompos0_Update
 !----------------------------------------------------------------------------------------------------
-    !!not used
-    !!primitivelattices can be left untouched
-    !!keep the primitive lattice matrix identity
-    SUBROUTINE primitivelattices_Update(conv_to_cart) 
+    ! primitivelattices can be left untouched
+    SUBROUTINE primitivelattices_Update(conv_to_cart) ! keep the primitive lattice matrix identity
         IMPLICIT NONE
         INTEGER :: i
         REAL(8), INTENT(IN) :: conv_to_cart(3,3)! this is conventional trans vec
@@ -1057,9 +1040,8 @@ CLOSE(302)
     END SUBROUTINE primitivelattices_Update
 !------------------------------------------------------------------------------------------------
 !----------------------------------------------------------------------------------------------------
-    !!not used
-    !!re-allocate iatomcello, iatomcell, atompos
-    !!get new atompos
+    !re-allocate iatomcello, iatomcell, atompos
+    !get new atompos
     SUBROUTINE fcinit_Update
         IMPLICIT NONE
 !        INTEGER :: counter
@@ -1084,7 +1066,6 @@ CLOSE(302)
         WRITE(34,*)'fcinit_Update finished!'
     END SUBROUTINE fcinit_Update
 !----------------------------------------------------------------------------------------------------
-    !!not used
     SUBROUTINE get_maxneighbors
         IMPLICIT NONE
         INTEGER :: i
@@ -1098,9 +1079,7 @@ CLOSE(302)
         maxneighbors = 84
     END SUBROUTINE
 !----------------------------------------------------------------------------------------------------
-    !!not used
-    !!update every atom position
-    SUBROUTINE atompos_Update(conv_to_cart) 
+    SUBROUTINE atompos_Update(conv_to_cart) ! update every atom position
         IMPLICIT NONE
         INTEGER :: i
         REAL(8), INTENT(IN) :: conv_to_cart(3,3)! this is conventional trans vec
@@ -1145,8 +1124,6 @@ CLOSE(302)
 
     END SUBROUTINE atompos_Update
 !---------------------------------------------------------------------------------------------------
-    !!not used
-    !!map atom position indexes old -> new
     FUNCTION findAtom_inOld(new_idx) RESULT(atomIndex)
         IMPLICIT NONE
         INTEGER :: i
@@ -1285,8 +1262,7 @@ CLOSE(302)
         DEALLOCATE(myatoms, mydirections)
     END FUNCTION findAtom_inRegion12
 !--------------------------------------------------------------------------------------------------
-    !!not used
-    !!renew an array of atom index by remapping from old to new, using (n, tau)
+    !renew an array of atom index by remapping from old to new, using (n, tau)
     FUNCTION include_atoms_fc(rnk) RESULT(inc)
         IMPLICIT NONE
         INTEGER :: i,temp
@@ -1469,7 +1445,7 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         CLOSE(625)
     END SUBROUTINE get_nshells
 !---------------------------------------------------------------------------------------------------
-    SUBROUTINE cellvec_Update 
+    SUBROUTINE cellvec_Update ! very crucial
         IMPLICIT NONE
         INTEGER :: i, j, direction
         REAL(8) :: check(d)
@@ -1524,7 +1500,6 @@ WRITE(34,*)'Finish <get_nshells> stage3'
 
     END SUBROUTINE CheckCellvec
 !--------------------------------------------------------------------------------------------------
-    !!not used
     SUBROUTINE fc4_update
         IMPLICIT NONE
         INTEGER :: i
@@ -1755,7 +1730,6 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         DEALLOCATE(atoms,directions)
     END SUBROUTINE fc4_update_check
 !--------------------------------------------------------------------------------------------------
-    !!not used
     SUBROUTINE fc3_update
         IMPLICIT NONE
         INTEGER :: i
@@ -2101,9 +2075,9 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         DEALLOCATE(atoms,directions)
     END SUBROUTINE fc3_update_check
 !------------------------------------------------------------------------------------------------
-    !!utility subroutines
-    !!not really add in terms of set operation. It append a new element to the end of arrayIn,
-    !!output as arrayOut
+    !utility subroutines
+    !not really add in terms of set operation. It append a new element to the end of arrayIn,
+    !output as arrayOut
     SUBROUTINE fortran_add(arrayIn,element,arrayOut)
         IMPLICIT NONE
         INTEGER,INTENT(in) :: arrayIn(:),element
@@ -2116,7 +2090,7 @@ WRITE(34,*)'Finish <get_nshells> stage3'
 
     END SUBROUTINE fortran_add
 !----------------------------------------------------------------------------------------------
-    !!utility subroutines for fc3
+    !utility subroutines for fc3
     SUBROUTINE fc3_update_unique(new_atom)
         IMPLICIT NONE
         INTEGER,INTENT(in) :: new_atom
@@ -2182,7 +2156,7 @@ WRITE(34,*)'Finish <get_nshells> stage3'
 
     END SUBROUTINE fc3_add
 !-------------------------------------------------------------------------------------------------
-    !!not used
+
     SUBROUTINE fc2_update
         IMPLICIT NONE
         INTEGER :: i, j, idx
@@ -2547,9 +2521,9 @@ WRITE(34,*)'Finish <get_nshells> stage3'
 !---------------------------------------------------------------------------------------------------
 
 !========================================================================================================
-!--------------------------------------ASR related, used-------------------------------------------------
+!--------------------------------------------ASR related-------------------------------------------------
 !========================================================================================================
-    !!check asr in FC2
+
     SUBROUTINE asr_fc2
         IMPLICIT NONE
         INTEGER :: i
@@ -2591,7 +2565,7 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         DEALLOCATE(fc2_sum)
 !        CLOSE(34)
     END SUBROUTINE asr_fc2
-    !!Check asr in FC3
+
     SUBROUTINE asr_fc3
         IMPLICIT NONE
         INTEGER :: i,j
@@ -2686,7 +2660,7 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         DEALLOCATE(fc3_sum)
 !        CLOSE(34)
     END SUBROUTINE asr_fc3
-    !!Check asr in FC4
+
     SUBROUTINE asr_fc4
         IMPLICIT NONE
         INTEGER :: i,j,k
@@ -2864,7 +2838,6 @@ WRITE(34,*)'Finish <get_nshells> stage3'
 !        CLOSE(34)
     END SUBROUTINE asr_fc4
 !========================================================================================================
-    !!force asr in FC2
     SUBROUTINE fix_asr_fc2
         IMPLICIT NONE
         INTEGER :: i
@@ -2908,7 +2881,7 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         DEALLOCATE(fc2_sum)
 !        CLOSE(34)
     END SUBROUTINE fix_asr_fc2
-     !!force asr in FC3
+
     SUBROUTINE fix_asr_fc3
         IMPLICIT NONE
         INTEGER :: i,j
@@ -3084,7 +3057,7 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         DEALLOCATE(fc3_sum)
 !        CLOSE(34)
     END SUBROUTINE fix_asr_fc3
-     !!force asr in FC4
+
     SUBROUTINE fix_asr_fc4
         IMPLICIT NONE
         INTEGER :: i,j,k
@@ -3449,7 +3422,6 @@ WRITE(34,*)'Finish <get_nshells> stage3'
 !        CLOSE(34)
     END SUBROUTINE fix_asr_fc4
 !========================================================================================================
-    !! update k points
     SUBROUTINE kvector_Update(nband,nk)
         IMPLICIT NONE
         INTEGER,INTENT(in) :: nband,nk
@@ -3478,8 +3450,7 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         WRITE(34,*)"kvector_Update successfully called"
     END SUBROUTINE kvector_Update
  !---------------------------------------------------------------------------
-    !!shift all kvector_components by a random shift
-    SUBROUTINE kvector_Shift 
+    SUBROUTINE kvector_Shift !shift all kvector_components by a random shift
         IMPLICIT NONE
         INTEGER :: i, shift_seed
         REAL(8) :: shift_range
@@ -3500,8 +3471,7 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         kp_gamma = kpc(:,1)
     END SUBROUTINE kvector_Shift
   !---------------------------------------------------------------------------
-    !!check two successive eivals for each k, if difference small
-    SUBROUTINE check_degeneracy 
+    SUBROUTINE check_degeneracy !check two successive eivals for each k, if difference small
         IMPLICIT NONE
         INTEGER :: k,l
         REAL(8) :: diff,threshold
@@ -3522,8 +3492,7 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         CLOSE(58)
     END SUBROUTINE check_degeneracy
   !---------------------------------------------------------------------------
-    !!manually check the inverse fourier transform, 1d
-    SUBROUTINE special_check
+    SUBROUTINE special_check !manually check the inverse fourier transform, 1d
         IMPLICIT NONE
         INTEGER :: i,k
         REAL(8),DIMENSION(:),ALLOCATABLE :: fc_pseudo,R_mesh,q_mesh
@@ -3568,7 +3537,7 @@ WRITE(34,*)'Finish <get_nshells> stage3'
 
     END SUBROUTINE special_check
 !========================================================================================================
-    !!not used, 2020 summer code
+
     SUBROUTINE all_Update
         IMPLICIT NONE
         WRITE(34,*)'====================ENTER UPDATE ROUTINES==================='
