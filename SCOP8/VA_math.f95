@@ -45,6 +45,8 @@ Module VA_math
     END TYPE omega_index
     TYPE(omega_index),DIMENSION(:),ALLOCATABLE :: soft
 
+    REAL(8) :: reserve !for fd vs. math check, frustrating but effective
+
     CONTAINS
 !=========================================FOR INITIAL GUESS=======================================================
     SUBROUTINE initiate_guess
@@ -97,8 +99,8 @@ Module VA_math
         END DO
         END DO
 
-        WRITE(*,*) 'atomic deviation',atomic_deviation(:,2)
-        WRITE(*,*) 'strain', strain
+        WRITE(33,*) 'atomic deviation',atomic_deviation(:,2)
+        WRITE(33,*) 'strain', strain
     END SUBROUTINE initiate_guess
 !---------------------------------------------------------------------------
 
@@ -148,7 +150,7 @@ Module VA_math
         sig = sig/cell_volume
 
     END SUBROUTINE GetStress
-!=================================================================================================================    
+!=================================================================================================================
     SUBROUTINE Allocate_Gradients
     !! allocate free energy gradients f(:) and <V> gradients
         IMPLICIT NONE
@@ -228,7 +230,7 @@ Module VA_math
 !CALL updatePhi !just for test
 !STOP
         CALL GetF0_and_V0 ! not really needed here
-        CALL GetV_avg_And_GradientV_avg(kvector) ! translational invariant form that actually works
+        CALL GetV_avg_And_GradientV_avg2(kvector) ! translational invariant form that actually works
 !        CALL TreatGradientV ! modify GradientV_utau GradientV_eta with a matrix
         F_trial=F0+V_avg-V0
 
@@ -455,37 +457,37 @@ END DO !for test, no other uses
             CALL dagger_eigen(eivecs(:,:,k),eivecs_t(:,:,k))
 
 !--------------------check consistency-----------------------
-OPEN(71,FILE='dynmat_check.dat',STATUS='unknown',ACTION='write')
-IF(k.eq.1) THEN
-    WRITE(71,*)
-    WRITE(71,*)'iteration # ',iter_rec
-    WRITE(71,*)'=====dynamic matrix index i,j,at which k vector,difference of &
-&<from fc2 fourier transform> vs <revert by multiply eigenvec with eigenval>'
-END IF
-DO test_i=1,ndim
-DO test_j=1,ndim
-    test_sum = CMPLX(0d0,0d0)
-    DO test_l=1,ndim !sum all lambda, for any given (i,j)
-        test_sum = test_sum + eivecs(test_i,test_l,k)*eivecs_t(test_l,test_j,k)*eivals(test_l,k)
-    END DO
-    IF(k.eq.1) THEN
-        test_diff_r = ABS(REAL(dynmat(test_i,test_j))-REAL(test_sum))
-        test_diff_i = ABS(AIMAG(dynmat(test_i,test_j))-AIMAG(test_sum))
-        WRITE(71,9)'real part',test_i,test_j,k,test_diff_r
-        WRITE(71,9)'imaginary part',test_i,test_j,k,test_diff_i
-    END IF
-    IF(test_diff_r.gt.1d-15) THEN
-        WRITE(71,*)'real part not match'
-        WRITE(71,8)test_i,test_j,k,test_diff_r
-        WRITE(71,*)
-    ELSEIF(test_diff_i.gt.1d-15) THEN
-        WRITE(71,*)'imaginary part not match'
-        WRITE(71,8)test_i,test_j,k,test_diff_i
-        WRITE(71,*)
-    END IF
-END DO
-END DO
-CLOSE(71)
+!OPEN(71,FILE='dynmat_check.dat',STATUS='unknown',ACTION='write')
+!IF(k.eq.1) THEN
+!    WRITE(71,*)
+!    WRITE(71,*)'iteration # ',iter_rec
+!    WRITE(71,*)'=====dynamic matrix index i,j,at which k vector,difference of &
+!&<from fc2 fourier transform> vs <revert by multiply eigenvec with eigenval>'
+!END IF
+!DO test_i=1,ndim
+!DO test_j=1,ndim
+!    test_sum = CMPLX(0d0,0d0)
+!    DO test_l=1,ndim !sum all lambda, for any given (i,j)
+!        test_sum = test_sum + eivecs(test_i,test_l,k)*eivecs_t(test_l,test_j,k)*eivals(test_l,k)
+!    END DO
+!    IF(k.eq.1) THEN
+!        test_diff_r = ABS(REAL(dynmat(test_i,test_j))-REAL(test_sum))
+!        test_diff_i = ABS(AIMAG(dynmat(test_i,test_j))-AIMAG(test_sum))
+!        WRITE(71,9)'real part',test_i,test_j,k,test_diff_r
+!        WRITE(71,9)'imaginary part',test_i,test_j,k,test_diff_i
+!    END IF
+!    IF(test_diff_r.gt.1d-15) THEN
+!        WRITE(71,*)'real part not match'
+!        WRITE(71,8)test_i,test_j,k,test_diff_r
+!        WRITE(71,*)
+!    ELSEIF(test_diff_i.gt.1d-15) THEN
+!        WRITE(71,*)'imaginary part not match'
+!        WRITE(71,8)test_i,test_j,k,test_diff_i
+!        WRITE(71,*)
+!    END IF
+!END DO
+!END DO
+!CLOSE(71)
 !------------------------------------------------------------
 
          End Do outer
@@ -561,7 +563,7 @@ SUBROUTINE initiate_yy(kvector)
     WRITE(unitnumber,*) 'iteration # = ',iter_rec
     WRITE(gthb,*) 'iteration # = ', iter_rec
 
-    OPEN(47,FILE='Y_square.dat',STATUS='unknown',ACTION='write')
+    OPEN(47,FILE='Y_square.dat',STATUS='unknown',ACTION='write',POSITION='append')
     WRITE(47,*)"This is Iteration #",iter_rec
     WRITE(47,*)"xyz_1,atom_1,xyz_2,atom_2, gamma point correction, <YY> "
 
@@ -665,9 +667,9 @@ WRITE(*,*)'minimum eigenvalue after shift:',MINVAL(MINVAL(eivals,DIM=2))
 
 
 !****Test the value of gamma point correction****
-WRITE(47,6) get_letter(xyz1),atom1,get_letter(xyz2),atom2,&
-&for_check,yy_value(atom1,atom2)%phi(xyz1,xyz2)
-WRITE(47,*)
+!WRITE(47,6) get_letter(xyz1),atom1,get_letter(xyz2),atom2,&
+!&for_check,yy_value(atom1,atom2)%phi(xyz1,xyz2)
+!WRITE(47,*)
 !****Test if using <yy> can recover the trial fc2****
 !phi_test(xyz1,atom1,xyz2,atom2) = Get_phi_test(k_number,xyz1,atom1,xyz2,atom2)
 !WRITE(47,8) get_letter(xyz1),atom1,get_letter(xyz2),atom2,phi_test(xyz1,atom1,xyz2,atom2),&
@@ -1393,6 +1395,665 @@ CLOSE(47)
 7 FORMAT(2(A2,I3),2(3X,G16.7))
 END SUBROUTINE GetV_avg_And_GradientV_avg
 !=====================================================================================================================================
+SUBROUTINE GetV_avg_And_GradientV_avg2(kvector)
+!!calculate <V> gradients w.r.t strain(:,:), atomic_deviation(:,:), yy_value(:,:)
+!!translation invariant ver.
+!!formulas are modified y -> (1+eta)y
+    IMPLICIT NONE
+
+    TYPE(vector),INTENT(IN)::kvector(:)
+    LOGICAL :: condition1,condition2,condition3,condition4
+
+    INTEGER :: i=0,j=0,m=0,n=0,o=0,p=0 !atomic loop control
+    INTEGER :: new_i, new_j, new_m, new_n, new_o, new_p !mapped new index for myfc_values
+    INTEGER :: l=0,l2=0 !eigen loop control
+    INTEGER :: k=0,k2=0 !kvector loop control
+    INTEGER :: atom1, atom2
+    INTEGER :: R1,R2,R3,R4,R5,R6,tau1,tau2,tau3,tau4,tau5,tau6 !atomic indexes
+    INTEGER :: tau !atomic indexes for specific gradient
+    INTEGER :: found1,found2,found3,found4,found5,found6!found atomic indexes
+    INTEGER :: found
+    INTEGER :: direction1,direction2,direction3,direction4
+    INTEGER :: flag(2)
+    INTEGER :: temp1, temp2,k_number
+
+    REAL(8) :: weight(2),cputime
+    REAL(8) :: nbe
+    REAL(8),DIMENSION(d) :: R1_vec,R2_vec,R3_vec,R4_vec,R5_vec,R6_vec
+    REAL(8),DIMENSION(d) :: tau1_vec,tau2_vec,tau3_vec,tau4_vec
+    REAL(8),DIMENSION(:,:,:,:),ALLOCATABLE :: Y_square
+    !Y_square(direction1,total atom number1,direction2,total atom number2) is the thermal average of correlation dynamic terms
+    !Y_square should be real by definition, but in calculations it might be complex due to eivecs
+    REAL(8),DIMENSION(:,:),ALLOCATABLE :: S        !S(d,tot_atom_number) is the static displacement
+    !--------------------------------------------------------------------
+    REAL(8) :: check1, check2
+    REAL(8),DIMENSION(3,3) :: zero
+    !--------------------------------------------------------------------
+    COMPLEX(8) :: check
+    REAL(8) :: threshold
+    REAL(8) :: inspect1,inspect2,inspect3,inspect4,inspect_tot
+    REAL(8) :: short
+    TYPE(fc2_value),DIMENSION(:,:),ALLOCATABLE :: term1,term2,term3,term4
+    REAL(8),DIMENSION(3,3) :: term5,term6,term7,term8
+    REAL(8),DIMENSION(6,6,6,6) :: C4
+    INTEGER :: d1,d2,d3,d4,d5,d6,d7,d8
+    INTEGER :: idx1,idx2,idx3,idx4
+    INTEGER :: vij,vkl,vik,vjl,vjk,vil
+
+    REAL(8),DIMENSION(6,6) :: C2,A2,A
+    INTEGER :: ntindp,rnk, voigt,g,t
+    INTEGER :: counter1,counter2
+
+    REAL(8) :: dummy
+    REAL(8),DIMENSION(d,d) :: identity,fake_strain
+
+    identity(:,1) = (/1d0,0d0,0d0/)
+    identity(:,2) = (/0d0,1d0,0d0/)
+    identity(:,3) = (/0d0,0d0,1d0/)
+
+ALLOCATE(term1(atom_number,tot_atom_number),&
+&term2(atom_number,tot_atom_number),&
+&term3(atom_number,tot_atom_number),&
+&term4(atom_number,tot_atom_number))
+DO i=1,atom_number
+DO j=1,tot_atom_number
+    term1(i,j)%phi = 0d0
+    term2(i,j)%phi = 0d0
+    term3(i,j)%phi = 0d0
+    term4(i,j)%phi = 0d0
+END DO
+END DO
+
+term5=0d0;term6=0d0;term7=0d0;term8=0d0
+C4 = 0d0
+C2 = 0d0
+A2 = 0d0
+A = 0d0
+!WRITE(34,*)'===========================CHECK Gradients==========================================='
+
+    ALLOCATE(S(d,tot_atom_number))
+    ALLOCATE(Y_square(d,tot_atom_number,d,tot_atom_number))
+    Y_square=0d0
+    k_number=SIZE(kvector)
+
+!OPEN(52,FILE='check_EC2.dat',STATUS='unknown',POSITION='append',ACTION='write')
+!OPEN(54,FILE='check_EC4.dat',STATUS='unknown',POSITION='append',ACTION='write')
+!OPEN(79,FILE='GradientVcor.dat',STATUS='unknown',POSITION='append',ACTION='write')
+!----------------------------------------------calculate S for every atom------------------------------------------
+    !keep S as it is
+    DO i=1,tot_atom_number
+        S(:,i)=(strain(:,:).dot.(every_atom(i)%R+every_atom(i)%tau))+atomic_deviation(:,every_atom(i)%type_tau)
+    END DO
+    i=0
+    direction1=0
+    direction2=0
+!--------------------record YY value for threshold calculation-------------------
+    IF(ALLOCATED(YY_record)) DEALLOCATE(YY_record)
+    ALLOCATE(YY_record(eff_fc2_terms))
+    YY_record = 0d0
+
+WRITE(47,*) "===== ALL Y_square at this iteration ====="
+j = 0
+DO i=1,SIZE(myfc2_index)
+    atom1=myfc2_index(i)%iatom_number
+    direction1=myfc2_index(i)%iatom_xyz
+    atom2=myfc2_index(i)%jatom_number
+    direction2=myfc2_index(i)%jatom_xyz
+
+    !assign the iterated yy_value to Y_square
+    IF(atom1.le.atom_number) THEN
+        Y_square(direction1,atom1,direction2,atom2) = yy_value(atom1,atom2)%phi(direction1,direction2)
+        j = j + 1
+        !record current <YY> for threshold calculation
+        YY_record(j) = Y_square(direction1,atom1,direction2,atom2)
+    ELSEIF(atom1.gt.atom_number .AND. atom2.le.atom_number) THEN
+        Y_square(direction1,atom1,direction2,atom2) = yy_value(atom2,atom1)%phi(direction2,direction1)!symmetry
+    ELSE
+        Y_square(direction1,atom1,direction2,atom2) = 0d0
+    END IF
+WRITE(47,*) get_letter(direction1),atom1,get_letter(direction2),atom2,Y_square(direction1,atom1,direction2,atom2)
+END DO
+WRITE(47,*) '========================================================'
+
+    !up to here the <YY> ranges (0tau1,R2tau2) have all been calculated
+
+    i=0;j=0;k=0;l=0;direction1=0;direction2=0;atom1=0;atom2=0
+!-------------------------------------------initialize V and GradientV---------------------------------------------------------
+    V_avg=0;
+    GradientV_utau=0
+    GradientV_eta=0
+    DO i=1,atom_number
+        DO j=1,tot_atom_number
+            GradientV_cor(i,j)%phi=0
+        END DO
+    END DO
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!----reference check for elastic constants rank 2-----
+!CALL check_latfc
+!CALL check_read_fc2
+!STOP
+!CALL read_fc23
+!CALL set_huang_inv_constraints
+!---- test elastic constants rank 2-------
+!C2 = 0d0;A2 = 0d0
+!DO i=1,3
+!DO j=1,3
+!DO k=1,3
+!DO l=1,3
+!
+!vij = voigt(i,j)
+!vkl = voigt(k,l)
+!vik = voigt(i,k)
+!vjl = voigt(j,l)
+!
+!DO m=1,atom_number
+!DO n=1,tot_atom_number
+!    !----below is for A2_ikjl----
+!    A2(vik,vjl) = A2(vik,vjl) - 0.125*&
+!    &myfc2_value(m,n)%phi(i,k)*(every_atom(n)%R(j)+every_atom(n)%tau(j)-every_atom(m)%tau(j))*&
+!    &(every_atom(n)%R(l)+every_atom(n)%tau(l)-every_atom(m)%tau(l))&
+!    &-0.125*myfc2_value(m,n)%phi(j,l)*(every_atom(n)%R(i)+every_atom(n)%tau(i)-every_atom(m)%tau(i))*&
+!    &(every_atom(n)%R(k)+every_atom(n)%tau(k)-every_atom(m)%tau(k))&
+!    &-0.125*myfc2_value(m,n)%phi(i,l)*(every_atom(n)%R(j)+every_atom(n)%tau(j)-every_atom(m)%tau(j))*&
+!    &(every_atom(n)%R(k)+every_atom(n)%tau(k)-every_atom(m)%tau(k))&
+!    &-0.125*myfc2_value(m,n)%phi(j,k)*(every_atom(n)%R(i)+every_atom(n)%tau(i)-every_atom(m)%tau(i))*&
+!    &(every_atom(n)%R(l)+every_atom(n)%tau(l)-every_atom(m)%tau(l))
+!    !----below is for A_ijkl----
+!    A(vij,vkl) = A(vij,vkl) - 0.5*&
+!    &myfc2_value(m,n)%phi(i,k)*S(m,j)*S(n,l)
+!    !----below is derived from brutal force C_ijkl----
+!    short = myfc2_value(m,n)%phi(i,k)*(every_atom(n)%R(l)+every_atom(n)%tau(l))*&
+!            &(2*every_atom(m)%tau(j)-every_atom(n)%R(j)-every_atom(n)%tau(j))&
+!            &+myfc2_value(m,n)%phi(k,i)*(every_atom(n)%R(j)+every_atom(n)%tau(j))*&
+!            &(2*every_atom(m)%tau(l)-every_atom(n)%R(l)-every_atom(n)%tau(l))
+!    IF(i.eq.j .AND. k.eq.l) THEN
+!        C2(vij,vkl) = C2(vij,vkl) + 0.25*short
+!    ELSEIF((i.ne.j .AND. k.eq.l) .OR. (i.eq.j .AND. k.ne.l)) THEN
+!        C2(vij,vkl) = C2(vij,vkl) + 0.5*short
+!    ELSE
+!        C2(vij,vkl) = C2(vij,vkl) + short
+!    END IF
+!END DO
+!END DO
+!
+!END DO
+!END DO
+!END DO
+!END DO
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+!---------------------------------------QUADRATIC TERMS-----------------------------------------------------------
+    DO i=1,atom_number
+        tau1=every_atom(i)%type_tau
+        tau1_vec=every_atom(i)%tau
+        R1_vec=every_atom(i)%R
+    DO j=1,tot_atom_number
+        tau2=every_atom(j)%type_tau
+        tau2_vec=every_atom(j)%tau
+        R2_vec=every_atom(j)%R
+
+        !free energy, two terms
+        V_avg=V_avg+&
+            &0.5*(myfc2_value(tau1,j)%phi.dot.((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))&
+            -0.25*((S(:,j)-S(:,i)).dot.myfc2_value(tau1,j)%phi.dot.(S(:,j)-S(:,i)))
+
+        !gradient w.r.t <YY>, one term
+        GradientV_cor(tau1,j)%phi = GradientV_cor(tau1,j)%phi+&
+                                    &0.5*((identity+strain).newdot.myfc2_value(tau1,j)%phi.newdot.(identity+strain))
+
+        DO direction1=1,d
+
+        !gradient w.r.t atomic deviation
+        GradientV_utau(direction1,tau1)=GradientV_utau(direction1,tau1)&
+        &+(myfc2_value(tau1,j)%phi(direction1,:).dot.(S(:,j)-S(:,tau1)))
+
+        DO direction2=1,d
+
+        !gradient w.r.t strain
+
+        GradientV_eta(direction1,direction2)=GradientV_eta(direction1,direction2)&
+        &+(myfc2_value(tau1,j)%phi(direction1,:).dot.S(:,j))&
+        &*(0.5*tau1_vec(direction2)-0.25*R2_vec(direction2)-0.25*tau2_vec(direction2))&
+        &+(myfc2_value(tau1,j)%phi(:,direction1).dot.(0.5*S(:,i)-0.25*S(:,j)))&
+        &*(R2_vec(direction2)+tau2_vec(direction2))&
+        &+(myfc2_value(tau1,j)%phi(direction2,:).dot.S(:,j))&
+        &*(0.5*tau1_vec(direction1)-0.25*R2_vec(direction1)-0.25*tau2_vec(direction1))&
+        &+(myfc2_value(tau1,j)%phi(:,direction2).dot.(0.5*S(:,i)-0.25*S(:,j)))&
+        &*(R2_vec(direction1)+tau2_vec(direction1))
+
+        !gradient w.r.t strain, new term
+        GradientV_eta(direction1,direction2)=GradientV_eta(direction1,direction2)&
+        &+0.5*(myfc2_value(tau1,j)%phi(direction1,:).dot.(identity+strain).dot.Y_square(direction2,tau1,:,j))&
+        &+0.5*(myfc2_value(tau1,j)%phi(direction2,:).dot.(identity+strain).dot.Y_square(direction1,tau1,:,j))&
+        &+0.5*(myfc2_value(tau1,j)%phi(:,direction1).dot.(identity+strain).dot.Y_square(:,tau1,direction2,j))&
+        &+0.5*(myfc2_value(tau1,j)%phi(:,direction2).dot.(identity+strain).dot.Y_square(:,tau1,direction1,j))
+
+
+        END DO !direction2
+        END DO !direction1
+
+    END DO !j loop *atomic
+    END DO !i loop *atomic
+
+WRITE(*,*) 'FINISH QUADRATIC TERMS CALCULATION'
+
+!-------------------------------------------CUBIC TERMS------------------------------------------------------
+    DO i=1,atom_number
+        tau1=every_atom(i)%type_tau
+        tau1_vec=every_atom(i)%tau
+        R1_vec=every_atom(i)%R
+    DO j=1,tot_atom_number
+        IF(.NOT.ANY(fc3_unique_idx==j)) CYCLE !skip if j not valid
+        tau2=every_atom(j)%type_tau
+        tau2_vec=every_atom(j)%tau
+        R2_vec=every_atom(j)%R
+    DO m=1,tot_atom_number
+        IF(.NOT.ANY(fc3_unique_idx==m)) CYCLE !skip if m not valid
+        tau3=every_atom(m)%type_tau
+        tau3_vec=every_atom(m)%tau
+        R3_vec=every_atom(m)%R
+
+        !map j,m for valid fc3 search
+        new_j=find_loc(fc3_unique_idx,j)
+        new_m=find_loc(fc3_unique_idx,m)
+
+        !free energy
+        V_avg=V_avg-1d0/12*(myfc3_value(tau1,new_j,new_m)%psi.dot.(S(:,m)-S(:,i)).dot. &
+        &(S(:,j)-S(:,i)).dot.(S(:,j)-S(:,i)))+1d0/2*(myfc3_value(tau1,new_j,new_m)%psi.dot. &
+        &(S(:,m)-S(:,i)).dot.((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))
+
+
+        !gradient w.r.t <YY>
+        GradientV_cor(tau1,j)%phi=GradientV_cor(tau1,j)%phi+&
+        &0.5*((identity+strain).newdot.(myfc3_value(tau1,new_j,new_m)%psi.dot.(S(:,m)-S(:,i))).newdot.(identity+strain))
+
+        DO direction1=1,d
+        !gradient w.r.t atomic deviation, term 1
+        GradientV_utau(direction1,tau1)=GradientV_utau(direction1,tau1)&
+        &+1d0/2*(myfc3_value(tau1,new_j,new_m)%psi(direction1,:,:).dot.(S(:,m)-S(:,tau1)).dot.(S(:,j)-S(:,tau1)))
+
+        !gradient w.r.t atomic deviation, term 2
+        GradientV_utau(direction1,tau3)=GradientV_utau(direction1,tau3)&
+        &+1d0/2*(myfc3_value(i,new_j,new_m)%psi(:,:,direction1).dot. &
+        &((identity+strain).newdot.Y_square(:,i,:,j).newdot.(identity+strain)))
+
+        DO direction2=1,d
+
+        !gradient w.r.t strain, term 1
+
+        GradientV_eta(direction1,direction2)=GradientV_eta(direction1,direction2)&
+        &-1d0/12*(myfc3_value(tau1,new_j,new_m)%psi(direction1,:,:).dot.(S(:,m)-S(:,i)).dot.(S(:,j)-S(:,i)))&
+        &*(R2_vec(direction2)+tau2_vec(direction2)-tau1_vec(direction2))&
+        &-1d0/12*(myfc3_value(tau1,new_j,new_m)%psi(direction2,:,:).dot.(S(:,m)-S(:,i)).dot.(S(:,j)-S(:,i)))&
+        &*(R2_vec(direction1)+tau2_vec(direction1)-tau1_vec(direction1))&
+        &-1d0/12*(myfc3_value(tau1,new_j,new_m)%psi(:,direction1,:).dot.(S(:,m)-S(:,i)).dot.(S(:,j)-S(:,i)))&
+        &*(R2_vec(direction2)+tau2_vec(direction2)-tau1_vec(direction2))&
+        &-1d0/12*(myfc3_value(tau1,new_j,new_m)%psi(:,direction2,:).dot.(S(:,m)-S(:,i)).dot.(S(:,j)-S(:,i)))&
+        &*(R2_vec(direction1)+tau2_vec(direction1)-tau1_vec(direction1))&
+        &-1d0/12*(myfc3_value(tau1,new_j,new_m)%psi(:,:,direction1).dot.(S(:,j)-S(:,i)).dot.(S(:,j)-S(:,i)))&
+        &*(R3_vec(direction2)+tau3_vec(direction2)-tau1_vec(direction2))&
+        &-1d0/12*(myfc3_value(tau1,new_j,new_m)%psi(:,:,direction2).dot.(S(:,j)-S(:,i)).dot.(S(:,j)-S(:,i)))&
+        &*(R3_vec(direction1)+tau3_vec(direction1)-tau1_vec(direction1))
+
+        !gradient w.r.t strain, new term
+        GradientV_eta(direction1,direction2)=GradientV_eta(direction1,direction2)&
+
+        &+0.5d0*(myfc3_value(tau1,new_j,new_m)%psi(:,:,direction1).dot. &
+        &((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))&
+        &*(R3_vec(direction2)+tau3_vec(direction2)-tau1_vec(direction2))&
+        &+0.5d0*(myfc3_value(tau1,new_j,new_m)%psi(:,:,direction2).dot. &
+        &((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))&
+        &*(R3_vec(direction1)+tau3_vec(direction1)-tau1_vec(direction1))&
+
+        &+0.5d0*(myfc3_value(tau1,new_j,new_m)%psi(direction1,:,:).dot. &
+        &(S(:,m)-S(:,i)).dot.(Y_square(direction2,tau1,:,j).dot.(identity+strain)))&
+        &+0.5d0*(myfc3_value(tau1,new_j,new_m)%psi(direction2,:,:).dot. &
+        &(S(:,m)-S(:,i)).dot.(Y_square(direction1,tau1,:,j).dot.(identity+strain)))&
+
+        &+0.5d0*(myfc3_value(tau1,new_j,new_m)%psi(:,direction1,:).dot. &
+        &(S(:,m)-S(:,i)).dot.((identity+strain).dot.Y_square(:,tau1,direction2,j)))&
+        &+0.5d0*(myfc3_value(tau1,new_j,new_m)%psi(:,direction2,:).dot. &
+        &(S(:,m)-S(:,i)).dot.((identity+strain).dot.Y_square(:,tau1,direction1,j)))
+
+
+        !gradient w.r.t strain,term 2
+        found = ifExistYY(j,m)
+        IF(found.ne.0) THEN
+
+        END IF
+
+        END DO !direction2 loop
+        END DO !direction1 loop
+
+    END DO !m loop *atomic
+    END DO !j loop *atomic
+    END DO !i loop *atomic
+
+WRITE(*,*) 'FINISH CUBIC TERMS CALCULATION'
+
+!------------------------------------------------QUARTIC TERMS-----------------------------------------------------
+    DO i=1,atom_number
+        tau1=every_atom(i)%type_tau
+        tau1_vec=every_atom(i)%tau
+        R1_vec=every_atom(i)%R
+    DO j=1,tot_atom_number
+        IF(.NOT.ANY(fc4_unique_idx==j)) CYCLE !skip if j not valid
+        tau2=every_atom(j)%type_tau
+        tau2_vec=every_atom(j)%tau
+        R2_vec=every_atom(j)%R
+    DO m=1,tot_atom_number
+        IF(.NOT.ANY(fc4_unique_idx==m)) CYCLE !skip if m not valid
+        tau3=every_atom(m)%type_tau
+        tau3_vec=every_atom(m)%tau
+        R3_vec=every_atom(m)%R
+    DO n=1,tot_atom_number
+        IF(.NOT.ANY(fc4_unique_idx==n)) CYCLE !skip if n not valid
+        tau4=every_atom(n)%type_tau
+        tau4_vec=every_atom(n)%tau
+        R4_vec=every_atom(n)%R
+
+        !map j,m,n for valid fc4 search
+        new_j=find_loc(fc4_unique_idx,j)
+        new_m=find_loc(fc4_unique_idx,m)
+        new_n=find_loc(fc4_unique_idx,n)
+
+
+        !free energy, term 1&2
+        V_avg = V_avg - 1d0/48*(myfc4_value(tau1,new_j,new_m,new_n)%chi.dot.(S(:,n)-S(:,i)).dot.(S(:,m)-S(:,i)).dot. &
+        &(S(:,j)-S(:,i)).dot.(S(:,j)-S(:,i)))+1d0/4*(myfc4_value(tau1,new_j,new_m,new_n)%chi.dot.(S(:,n)-S(:,i)).dot. &
+        &(S(:,m)-S(:,i)).dot.((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))
+
+
+!        !free energy, term 3
+        found = ifExistYY(m,n)
+        IF(found.ne.0) THEN
+            V_avg = V_avg + 3d0/24*(myfc4_value(tau1,new_j,new_m,new_n)%chi.dot. &
+            &((identity+strain).newdot.Y_square(:,tau3,:,found).newdot.(identity+strain)).dot. &
+            &((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))
+        END IF
+
+        !gradient w.r.t <YY>, term 1
+        GradientV_cor(tau1,j)%phi=GradientV_cor(tau1,j)%phi&
+        &+1d0/4*((identity+strain).newdot.(myfc4_value(tau1,new_j,new_m,new_n)%chi.dot. &
+        &(S(:,n)-S(:,i)).dot.(S(:,m)-S(:,i))).newdot.(identity+strain))
+
+
+        DO direction1=1,d
+
+        !gradient w.r.t atomic deviation, term 1
+        GradientV_utau(direction1,tau1)=GradientV_utau(direction1,tau1)&
+        &+1d0/6*(myfc4_value(tau1,new_j,new_m,new_n)%chi(direction1,:,:,:).dot. &
+        &(S(:,n)-S(:,tau1)).dot.(S(:,m)-S(:,tau1)).dot.(S(:,j)-S(:,tau1)))
+
+        !gradient w.r.t atomic deviation, term 2
+        GradientV_utau(direction1,tau3)=GradientV_utau(direction1,tau3)&
+        &+1d0/2*(myfc4_value(i,new_j,new_m,new_n)%chi(:,:,direction1,:).dot.(S(:,n)-S(:,i)).dot. &
+        &((identity+strain).newdot.Y_square(:,i,:,j).newdot.(identity+strain)))
+
+        DO direction2=1,d
+
+        !gradient w.r.t strain, old and new term
+        GradientV_eta(direction1,direction2)=GradientV_eta(direction1,direction2)&
+        &-1d0/48*(myfc4_value(tau1,new_j,new_m,new_n)%chi(direction1,:,:,:).dot. &
+        &(S(:,n)-S(:,i)).dot.(S(:,m)-S(:,i)).dot.(S(:,j)-S(:,i)))*(R2_vec(direction2)+tau2_vec(direction2)-tau1_vec(direction2))&
+        &-1d0/48*(myfc4_value(tau1,new_j,new_m,new_n)%chi(direction2,:,:,:).dot. &
+        &(S(:,n)-S(:,i)).dot.(S(:,m)-S(:,i)).dot.(S(:,j)-S(:,i)))*(R2_vec(direction1)+tau2_vec(direction1)-tau1_vec(direction1))&
+        &-1d0/16*(myfc4_value(tau1,new_j,new_m,new_n)%chi(:,direction1,:,:).dot. &
+        &(S(:,n)-S(:,i)).dot.(S(:,m)-S(:,i)).dot.(S(:,j)-S(:,i)))*(R2_vec(direction2)+tau2_vec(direction2)-tau1_vec(direction2))&
+        &-1d0/16*(myfc4_value(tau1,new_j,new_m,new_n)%chi(:,direction2,:,:).dot. &
+        &(S(:,n)-S(:,i)).dot.(S(:,m)-S(:,i)).dot.(S(:,j)-S(:,i)))*(R2_vec(direction1)+tau2_vec(direction1)-tau1_vec(direction1))&
+
+        &+0.5*(myfc4_value(tau1,new_j,new_m,new_n)%chi(:,:,direction1,:).dot. &
+        &(S(:,n)-S(:,i)).dot.((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))&
+        &*(R3_vec(direction2)+tau3_vec(direction2)-tau1_vec(direction2))&
+        &+0.5*(myfc4_value(tau1,new_j,new_m,new_n)%chi(:,:,direction2,:).dot. &
+        &(S(:,n)-S(:,i)).dot.((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))&
+        &*(R3_vec(direction1)+tau3_vec(direction1)-tau1_vec(direction1))&
+
+        &+0.25*(myfc4_value(tau1,new_j,new_m,new_n)%chi(direction1,:,:,:).dot.(S(:,n)-S(:,i)).dot.(S(:,m)-S(:,i))&
+        & .dot.(Y_square(direction2,tau1,:,j).dot.(identity+strain)))&
+        &+0.25*(myfc4_value(tau1,new_j,new_m,new_n)%chi(direction2,:,:,:).dot.(S(:,n)-S(:,i)).dot.(S(:,m)-S(:,i))&
+        & .dot.(Y_square(direction1,tau1,:,j).dot.(identity+strain)))&
+        &+0.25*(myfc4_value(tau1,new_j,new_m,new_n)%chi(direction1,:,:,:).dot.(S(:,n)-S(:,i)).dot.(S(:,m)-S(:,i))&
+        & .dot.((identity+strain).dot.Y_square(:,tau1,direction2,j)))&
+        &+0.25*(myfc4_value(tau1,new_j,new_m,new_n)%chi(direction2,:,:,:).dot.(S(:,n)-S(:,i)).dot.(S(:,m)-S(:,i))&
+        & .dot.((identity+strain).dot.Y_square(:,tau1,direction1,j)))
+
+        !gradient w.r.t strain, another new term
+        found = ifExistYY(m,n)
+        IF(found.ne.0) THEN
+
+            GradientV_eta(direction1,direction2)=GradientV_eta(direction1,direction2)&
+
+            &+3d0/24*(myfc4_value(tau1,new_j,new_m,new_n)%chi(:,:,:,direction1).dot. &
+            &((identity+strain).dot.Y_square(:,tau3,direction2,found)).dot. &
+            &((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))&
+            &+3d0/24*(myfc4_value(tau1,new_j,new_m,new_n)%chi(:,:,:,direction2).dot. &
+            &((identity+strain).dot.Y_square(:,tau3,direction1,found)).dot. &
+            &((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))&
+
+            &+3d0/24*(myfc4_value(tau1,new_j,new_m,new_n)%chi(:,:,direction1,:).dot. &
+            &(Y_square(direction2,tau3,:,found).dot.(identity+strain)).dot. &
+            &((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))&
+            &+3d0/24*(myfc4_value(tau1,new_j,new_m,new_n)%chi(:,:,direction2,:).dot. &
+            &(Y_square(direction1,tau3,:,found).dot.(identity+strain)).dot. &
+            &((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))&
+
+            &+3d0/24*(myfc4_value(tau1,new_j,new_m,new_n)%chi(:,direction1,:,:).dot. &
+            &((identity+strain).newdot.Y_square(:,tau3,:,found).newdot.(identity+strain)).dot. &
+            &((identity+strain).dot.Y_square(:,tau1,direction2,j)))&
+            &+3d0/24*(myfc4_value(tau1,new_j,new_m,new_n)%chi(:,direction2,:,:).dot. &
+            &((identity+strain).newdot.Y_square(:,tau3,:,found).newdot.(identity+strain)).dot. &
+            &((identity+strain).dot.Y_square(:,tau1,direction1,j)))&
+
+            &+3d0/24*(myfc4_value(tau1,new_j,new_m,new_n)%chi(direction1,:,:,:).dot. &
+            &((identity+strain).newdot.Y_square(:,tau3,:,found).newdot.(identity+strain)).dot. &
+            &(Y_square(direction2,tau1,:,j).dot.(identity+strain)))&
+            &+3d0/24*(myfc4_value(tau1,new_j,new_m,new_n)%chi(direction2,:,:,:).dot. &
+            &((identity+strain).newdot.Y_square(:,tau3,:,found).newdot.(identity+strain)).dot. &
+            &(Y_square(direction1,tau1,:,j).dot.(identity+strain)))
+
+        END IF
+
+
+        !gradient w.r.t <YY>, term 3
+        found = ifExistYY(m,n)
+        IF(found.ne.0) THEN
+            GradientV_cor(tau1,j)%phi(direction1,direction2)=GradientV_cor(tau1,j)%phi(direction1,direction2)&
+            &+3d0/24*((myfc4_value(tau1,new_j,new_m,new_n)%chi.dot. &
+            &((identity+strain).newdot.Y_square(:,tau3,:,found).newdot.(identity+strain))).dot. &
+            &(identity(direction2,:)+strain(direction2,:)).dot.(identity(:,direction1)+strain(:,direction1)))
+
+            GradientV_cor(tau3,found)%phi(direction1,direction2)=GradientV_cor(tau3,found)%phi(direction1,direction2)&
+            &+3d0/24*(myfc4_value(tau1,new_j,new_m,new_n)%chi.dot. &
+            &(identity(direction2,:)+strain(direction2,:)).dot.(identity(:,direction1)+strain(:,direction1)).dot. &
+            &((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))
+        END IF
+
+        END DO !direction2
+        END DO !direction1
+
+
+    END DO !n loop *atomic
+    END DO !m loop *atomic
+    END DO !j loop *atomic
+    END DO !i loop *atomic
+
+WRITE(*,*)'FINISH QUARTIC TERMS CALCULATION'
+
+check = V_avg - check
+WRITE(*,*) 'check quartic:', check
+
+!-------------fix the gradient of eta if direction1=direction2----------
+DO direction1=1,d
+DO direction2=1,d
+    IF(direction1.eq.direction2) THEN
+        GradientV_eta(direction1,direction2) = 0.5*GradientV_eta(direction1,direction2)
+    END IF
+END DO
+END DO
+
+!**************Check Specific Term Block****************
+
+!-----------------convert A into C according to Wallace------------------
+!DO i=1,3
+!DO j=1,3
+!DO k=1,3
+!DO l=1,3
+!    vij = voigt(i,j)
+!    vkl = voigt(k,l)
+!    vil = voigt(i,l)
+!    vjk = voigt(j,k)
+!    vik = voigt(i,k)
+!    vjl = voigt(j,l)
+!
+!    C2(vij,vkl) = A2(vik,vjl)+A2(vjk,vil)-A2(vij,vkl)
+!
+!END DO
+!END DO
+!END DO
+!END DO
+!------------------------------------------------------------------------
+!WRITE(54,*)"elastic constants rank 4 check"
+!WRITE(52,*)"elastic constants rank 2 check"
+!WRITE(52,*)"idx1,idx2,A_hat,C,A_tilda"
+!DO idx1=1,6
+!DO idx2=1,6
+!    IF(ABS(A2(idx1,idx2)).gt.1d-8 .OR.ABS(C2(idx1,idx2)).gt.1d-8&
+!    & .OR.ABS(A(idx1,idx2)).gt.1d-8) THEN
+!        WRITE(52,6) idx1,', ',idx2, ', ',&
+!        &A2(idx1,idx2),C2(idx1,idx2),A(idx1,idx2)
+!    END IF
+!DO idx3=1,6
+!DO idx4=1,6
+!    IF(ABS(C4(idx1,idx2,idx3,idx4)).gt.1d-10) THEN
+!        WRITE(54,*) idx1,', ',idx2, ', ',&
+!        &idx3,', ',idx4,', ',&
+!        &C4(idx1,idx2,idx3,idx4)
+!    END IF
+!
+!END DO
+!END DO
+!END DO
+!END DO
+!
+!WRITE(52,*) '  eigenvalues for C2 matrix'
+!WRITE(52,*)' eig1 = 2*V0*(C11-C12)=',2*(C2(1,1)-C2(1,2))
+!WRITE(52,*)' eig2 = 3*V0*(C11+2*C12)=',3*(C2(1,1)+2*C2(1,2))
+!WRITE(52,*)' eig3 = 4*V0*C44=',4*C2(4,4)
+
+!WRITE(54,*)"strain gradients terms check"
+!WRITE(54,*)"===== xyz1, xyz2, term5, term6, term7, term8 ===== "
+!DO direction1=1,3
+!DO direction2=1,3
+!    WRITE(54,*) get_letter(direction1),',  ',get_letter(direction2),',  ',&
+!    & term5(direction1,direction2),',  ', term6(direction1,direction2),',  ',&
+!    & term7(direction1,direction2),',  ', term8(direction1,direction2)
+!END DO
+!END DO
+!WRITE(54,*)'============================================'
+!DO i=1,atom_number
+!DO direction1=1,d
+!DO direction2=1,d
+!    inspect1 = 0d0; inspect2 = 0d0; inspect3 = 0d0; inspect4 = 0d0
+!    inspect_tot = 0d0
+!DO j=1,tot_atom_number
+!    inspect1 = inspect1 + term1(i,j)%phi(direction1,direction2)
+!    inspect2 = inspect2 + term2(i,j)%phi(direction1,direction2)
+!    inspect3 = inspect3 + term3(i,j)%phi(direction1,direction2)
+!    inspect4 = inspect4 + term4(i,j)%phi(direction1,direction2)
+!    inspect_tot = inspect_tot + GradientV_cor(i,j)%phi(direction1,direction2)
+!END DO
+!
+!threshold = 1e-8
+!
+!IF(ABS(inspect1).gt.threshold) THEN
+!    WRITE(54,*) "term1 sum failed ASR check: ", inspect1
+!    WRITE(54,*) i,get_letter(direction1),get_letter(direction2)
+!    WRITE(54,*) '-----------------------------------------'
+!END IF
+!
+!IF(ABS(inspect2).gt.threshold) THEN
+!    WRITE(54,*) "term2 sum failed ASR check: ", inspect2
+!    WRITE(54,*) i,get_letter(direction1),get_letter(direction2)
+!    WRITE(54,*) '-----------------------------------------'
+!END IF
+!
+!IF(ABS(inspect3).gt.threshold) THEN
+!    WRITE(54,*) "term3 sum failed ASR check: ", inspect3
+!    WRITE(54,*) i,get_letter(direction1),get_letter(direction2)
+!    WRITE(54,*) '-----------------------------------------'
+!END IF
+!IF(ABS(inspect4).gt.threshold) THEN
+!    WRITE(54,*) "term4 sum failed ASR check: ", inspect4
+!    WRITE(54,*) i,get_letter(direction1),get_letter(direction2)
+!    WRITE(54,*) '-----------------------------------------'
+!END IF
+!
+!IF(inspect_tot.ne.0) THEN
+!    WRITE(54,*) "gradients sum failed ASR check: ", inspect_tot
+!    WRITE(54,*) i,get_letter(direction1),get_letter(direction2)
+!    WRITE(54,*) '-----------------------------------------'
+!END IF
+!
+!END DO
+!END DO
+!END DO
+!WRITE(54,*)'============================================'
+!
+!rnk = 2
+!DO j=1, map(rnk)%ngr
+!    ntindp = map(rnk)%ntind(j)
+!    WRITE(54,*)'----group',j,'-----'
+!    DO i=1, map(rnk)%nt(j)
+!        atom1 = map(rnk)%gr(j)%iat(1,i)
+!        IF(atom1.gt.atom_number) CYCLE
+!        atom2 = map(rnk)%gr(j)%iat(2,i)
+!        direction1 = map(rnk)%gr(j)%ixyz(1,i)
+!        direction2 = map(rnk)%gr(j)%ixyz(2,i)
+!        WRITE(54,'(2(a10,f12.9),f7.3)')'term1: ' ,term1(atom1,atom2)%phi(direction1,direction2),&
+!        &'  term2: ',term2(atom1,atom2)%phi(direction1,direction2),&
+!        &map(rnk)%gr(j)%mat(i,1:ntindp)
+!        WRITE(54,*)
+!        WRITE(54,'(2(a10,f12.9),f7.3)')'term3: ' ,term3(atom1,atom2)%phi(direction1,direction2),&
+!        &'  term4: ',term4(atom1,atom2)%phi(direction1,direction2),&
+!        &map(rnk)%gr(j)%mat(i,1:ntindp)
+!        WRITE(54,*)
+!        WRITE(54,*) 'gradient <YY>: ',GradientV_cor(atom1,atom2)%phi(direction1,direction2)
+!        WRITE(54,*)
+!    END DO
+!END DO
+
+!DO i=1,SIZE(myfc2_index)
+!    atom1 = myfc2_index(i)%iatom_number
+!    IF(atom1.gt.atom_number) CYCLE
+!    atom2 = myfc2_index(i)%jatom_number
+!    direction1 = myfc2_index(i)%iatom_xyz
+!    direction2 = myfc2_index(i)%jatom_xyz
+!
+!    WRITE(79,7) get_letter(direction1),atom1,get_letter(direction2),atom2,&
+!    &GradientV_cor(atom1,atom2)%phi(direction1,direction2),&
+!    &myfc2_value(atom1,atom2)%phi(direction1,direction2)
+!END DO
+!
+!DEALLOCATE(term1,term2,term3,term4)
+!!CLOSE(52)
+!!CLOSE(54)
+!CLOSE(79)
+!STOP
+!*******************************************************
+
+    DEALLOCATE(S)
+    DEALLOCATE(Y_square)
+CLOSE(47)
+
+5 format(4i4,99(4x,g10.4))
+6 format(2(i4,a),3(2x,g11.4))
+7 FORMAT(2(A2,I3),2(3X,G16.7))
+END SUBROUTINE GetV_avg_And_GradientV_avg2
+!=====================================================================================================================================
     SUBROUTINE CheckFixMatrix(negative_eivals)
     !!Fix by shift all the matrix elements, just for test purpose
         IMPLICIT NONE
@@ -1682,7 +2343,7 @@ END SUBROUTINE CheckRange
 
     END SUBROUTINE calculate_dynmat
 !==================================================================================================
-SUBROUTINE get_vgr(qp,ndn,vg,eival,eivec) 
+SUBROUTINE get_vgr(qp,ndn,vg,eival,eivec)
 !!get the group velocity/eival/eivec for a single k point
 !!for group velocity method
 !! this is a refined and crucial version of original <get_freq>
@@ -1895,7 +2556,7 @@ subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,vg)
 9 FORMAT(3I3,2(G16.7,SP,G16.7,"i"))
         CLOSE(70)
     END SUBROUTINE check_conj_eivec
-    
+
     FUNCTION Get_phi_test(k_number,direction1,atom1,direction2,atom2)
     !!some check subroutine, not used
         IMPLICIT NONE
@@ -2515,7 +3176,7 @@ END IF
         CALL make_kp_bs2
         CALL Get_AKfreq(kp_bs,.false.)
     END SUBROUTINE Get_Dispersion
-    
+
     SUBROUTINE Get_Dispersion_SE
     !! for plot dispersion with self energy, not used and not finished
         IMPLICIT NONE
@@ -5223,7 +5884,7 @@ END SUBROUTINE FixASR2
         CLOSE(udos)
 
     END SUBROUTINE calc_dos_gauss
-    
+
      subroutine calculate_dos(mx,eival,wkp,mesh,omega,ds)
      !! use gaussian broadening to calculate phonon DOS
          implicit none
@@ -5932,7 +6593,7 @@ subroutine mechanical(bulk,c11,c44,dlogv)
     WRITE(33,*)
  END SUBROUTINE GetElastic2
 !-------------------------------------------------------------------------------------------------------
- SUBROUTINE Extract_xy(idx,odx1,odx2) 
+ SUBROUTINE Extract_xy(idx,odx1,odx2)
   !!utility subroutine, for pressure part
   !!i.e. give idx = 4(xy), output odx1 = 1(x), odx2 = 2(y). etc
     IMPLICIT NONE
@@ -5944,7 +6605,7 @@ subroutine mechanical(bulk,c11,c44,dlogv)
 
  END SUBROUTINE Extract_xy
 !-------------------------------------------------------------------------------------------------------
- SUBROUTINE Infer_xyz(idx,odx1,odx2) 
+ SUBROUTINE Infer_xyz(idx,odx1,odx2)
   !!utility subroutine, for pressure part
   !!i.e. give idx = 2(y), output odx1 = 3(z), odx2 = 1(x). etc
     IMPLICIT NONE
@@ -6011,5 +6672,104 @@ SUBROUTINE add_Pressure
 
 END SUBROUTINE add_Pressure
 !-------------------------------------------------------------------------------------------------------
+    FUNCTION atom_distance(atom1,atom2) RESULT(dist)
+        !!calculate distance for two atoms
+        IMPLICIT NONE
+        INTEGER, INTENT(in) :: atom1, atom2
+        REAL(8) :: dist
 
+        dist = (every_atom(atom1)%x-every_atom(atom2)%x)**2 + &
+            & (every_atom(atom1)%y-every_atom(atom2)%y)**2 + &
+            & (every_atom(atom1)%z-every_atom(atom2)%z)**2
+
+        dist = SQRT(dist)
+
+    END FUNCTION atom_distance
+!-------------------------------------------------------------------------------------------------------
+    SUBROUTINE check_yy_value
+        !!a subroutine to print the yy-value versus atom pair distance
+        IMPLICIT NONE
+        INTEGER :: atom1,atom2,xyz1,xyz2
+
+        REAL(8),ALLOCATABLE,DIMENSION(:) :: x,y
+        REAL(8),ALLOCATABLE,DIMENSION(:) :: dist, yy
+        REAL(8) :: temp
+
+        INTEGER :: i
+
+
+        DO atom1=1,atom_number
+        DO atom2=1,tot_atom_number
+        temp = 0d0
+        DO xyz1=1,d
+            temp = temp + yy_value(atom1,atom2)%phi(xyz1,xyz1)
+        END DO
+        IF(temp.ne.0d0) THEN
+append:     IF(.not.ALLOCATED(x)) THEN
+                ALLOCATE(x(1))
+                x(1) = atom_distance(atom1,atom2)
+                ALLOCATE(y(1))
+                y(1) = temp
+            ELSE
+!                DO i=1,SIZE(x)
+!                    IF(atom_distance(atom1,atom2).eq.x(i))  EXIT append
+!                END DO
+
+                x = [x,atom_distance(atom1,atom2)]
+                y = [y,temp]
+            END IF append
+        END IF
+        END DO
+        END DO
+
+        OPEN(86,FILE='dist_yy.txt',STATUS='unknown',ACTION='write')
+        DO i=1,SIZE(x)
+            WRITE(86,*) x(i),',',y(i)
+        END DO
+        CLOSE(86)
+    END SUBROUTINE check_yy_value
+!-------------------------------------------------------------------------------------------------------
+    SUBROUTINE check_fc2_value
+        !!a subroutine to print the yy-value versus atom pair distance
+        IMPLICIT NONE
+        INTEGER :: atom1,atom2,xyz1,xyz2
+
+        REAL(8),ALLOCATABLE,DIMENSION(:) :: x,y
+        REAL(8),ALLOCATABLE,DIMENSION(:) :: dist, yy
+        REAL(8) :: temp
+
+        INTEGER :: i
+
+
+        DO atom1=1,atom_number
+        DO atom2=1,tot_atom_number
+        temp = 0d0
+        DO xyz1=1,d
+            temp = temp + myfc2_value(atom1,atom2)%phi(xyz1,xyz1)
+        END DO
+        IF(temp.ne.0d0) THEN
+append:     IF(.not.ALLOCATED(x)) THEN
+                ALLOCATE(x(1))
+                x(1) = atom_distance(atom1,atom2)
+                ALLOCATE(y(1))
+                y(1) = temp
+            ELSE
+!                DO i=1,SIZE(x)
+!                    IF(atom_distance(atom1,atom2).eq.x(i))  EXIT append
+!                END DO
+
+                x = [x,atom_distance(atom1,atom2)]
+                y = [y,temp]
+            END IF append
+        END IF
+        END DO
+        END DO
+
+        OPEN(86,FILE='dist_fc2.txt',STATUS='unknown',ACTION='write')
+        DO i=1,SIZE(x)
+            WRITE(86,*) x(i),',',y(i)
+        END DO
+        CLOSE(86)
+    END SUBROUTINE check_fc2_value
+!-------------------------------------------------------------------------------------------------------
 End Module VA_math
