@@ -1085,8 +1085,10 @@ contains
  real(8), allocatable:: amat(:,:),bmat(:),sigma(:),fcs(:),ahom(:,:),overl(:,:)
  real(8), allocatable:: a11ia12(:,:),fc1(:)
  real(8), allocatable:: arot(:,:),brot(:),atransl(:,:),ahuang(:,:),aforce(:,:),bforce(:)
+ real(8), allocatable:: fc_ind(:) ! This is for getting force constant by reading FC2.dat file
  integer inv_constraints,force_constraints,dim_al,dim_ac,n_indep,newdim_al,dim_hom   &
 &        ,transl_constraints, rot_constraints, huang_constraints,ngr
+real(8), allocatable:: energy(:)
 contains
 
  subroutine set_maxterms

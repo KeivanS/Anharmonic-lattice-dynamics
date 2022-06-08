@@ -124,6 +124,7 @@
      error = error + junk
   enddo
   error = error /(1.*m3)
+write(*,*), "VAL OF ERROR IS: ",error
   sigma=sqrt(num/denom)
   write(uio,3)' Average, largest errors in force,percent deviation=',error,ermax,sigma
 6 format(i6,3(1x,g13.6),3x,g11.4)
