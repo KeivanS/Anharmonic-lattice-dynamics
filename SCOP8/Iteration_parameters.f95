@@ -8,6 +8,7 @@ MODULE Iteration_parameters
     INTEGER :: seed
     INTEGER :: max_it_number,indie_fc2
     REAL(8) :: temperature,tolerance2,danger
+    REAL(8) :: my_pmix !for user input
     INTEGER,DIMENSION(:),ALLOCATABLE :: fixed_params
     REAL(8),ALLOCATABLE :: atomic_deviation(:,:),strain(:,:) !atomic_deviation(xyz,atom_type),strain(xyz,xyz)
     REAL(8),ALLOCATABLE :: atomic_deviation_sav(:,:),strain_sav(:,:)
@@ -329,6 +330,7 @@ CONTAINS
         READ(unit_number,*) tolerance2
         READ(unit_number,*)seed
         READ(unit_number,*) max_it_number
+        READ(unit_number,*) my_pmix
         READ(unit_number,*) temperature
 
         DO i=1,3

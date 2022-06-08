@@ -112,7 +112,7 @@ CONTAINS
         DEALLOCATE(unique)
     END SUBROUTINE unique_sort
 
-    
+
     SUBROUTINE unique_sort2(arrayIn, arrayOut)
     !!unique_sort for double value
         IMPLICIT NONE
@@ -157,7 +157,7 @@ CONTAINS
         END IF
     END FUNCTION find_loc
 
-    
+
     FUNCTION find_loc2(array, element) RESULT(idx)
     !!find_loc for double value
         IMPLICIT NONE
@@ -175,7 +175,7 @@ CONTAINS
         END IF
     END FUNCTION find_loc2
 !-----------------------------------------------------------------------------------------------
-    
+
     FUNCTION include_arrays(child, parent) RESULT(inc)
     !!check if child array is included in the parent array
         IMPLICIT NONE
@@ -706,7 +706,7 @@ CONTAINS
 
         END SUBROUTINE read_map
 !******************************************************************************************************
-SUBROUTINE Get_FC2index(line,direction1,atom1,direction2,atom2) 
+SUBROUTINE Get_FC2index(line,direction1,atom1,direction2,atom2)
 !! Convert FC2 indexes back to string format, not used
     IMPLICIT NONE
     CHARACTER, INTENT(IN) :: line
@@ -1220,7 +1220,7 @@ END FUNCTION find_indiefc2
     END SUBROUTINE Symmetrize_FCs
 !****************************************************************************************************************
  subroutine read_fc23
-  !! legacy subroutinie that read fc2.dat and fc3.dat, then store the info in 
+  !! legacy subroutinie that read fc2.dat and fc3.dat, then store the info in
  !! legacy variables
  use io2
  implicit none

@@ -1,6 +1,5 @@
 !=========================================================================
       module broy
-      !! module for loop control and broyden method
       use Iteration_parameters
       implicit none
       real(8), allocatable :: xin(:,:),ubroy(:,:),vbroy(:,:),fbroy(:,:)
@@ -11,7 +10,6 @@
       contains
 !------------------------------------------------------------------------
         subroutine allocatebroy(n,m)
-        !! allocate var. for broyden use
         implicit none
         integer, intent(in) :: n,m !n is size of array, m is the iteration number
 
@@ -26,7 +24,6 @@
         end subroutine allocatebroy
 !------------------------------------------------------------------------
         subroutine deallocatebroy
-        !! deallocate above var.
         implicit none
 
         deallocate (xin,ubroy,vbroy,fbroy)
@@ -36,9 +33,9 @@
         end subroutine deallocatebroy
 !------------------------------------------------------------------------
         subroutine combine_variants(x)
-      !!mx is the size of x, it equals the size of GradientF_trial, which is f
-      !!x is the: atomic_deviation(d,atom_number),strain(d,d),yy_value(atom_number,tot_atom_number)%phi(d,d)
-      !!...combined into a single rank array
+            !mx is the size of x, it equals the size of GradientF_trial, which is f
+            !x is the: atomic_deviation(d,atom_number),strain(d,d),yy_value(atom_number,tot_atom_number)%phi(d,d)
+            !...combined into a single rank array
             implicit none
             integer checkcombine
             integer i,j,mx,temp,temp1,temp2,tau1,atom2,direction1,direction2
@@ -92,8 +89,8 @@ close(checkcombine)
         end subroutine combine_variants
 !------------------------------------------------------------------------
         subroutine decompose_variants(x)
-      !!it's a inverse process of combine_variants(x)
-      !!after one call of bro90, the x is updated. when need to decompose and distribute x, for VA_math to get f
+            !it's a inverse process of combine_variants(x)
+            !after one call of bro90, the x is updated. when need to decompose and distribute x, for VA_math to get f
             implicit none
             INTEGER :: checkdecompose,flag(2), checknewfc2
             integer i,j,k,l
@@ -156,8 +153,8 @@ close(checkdecompose)
         end subroutine decompose_variants
 !====================================================================================================
         subroutine decompose_variants2(x)
-      !!it's a inverse process of combine_variants(x)
-      !!after one call of bro90, the x is updated. when need to decompose and distribute x, for VA_math to get f
+            !it's a inverse process of combine_variants(x)
+            !after one call of bro90, the x is updated. when need to decompose and distribute x, for VA_math to get f
             implicit none
             INTEGER :: checkdecompose,flag(2), checknewfc2
             integer i,j,k,l
@@ -247,8 +244,9 @@ close(checknewfc2)
         end subroutine decompose_variants2
 
 !------------------------------------------------------------------------
+!this subroutine is to check if the trial fc2 is recovered correctly from
+!subroutine <decompose_variants>
 SUBROUTINE check_decompose
-!!this subroutine is to check if the trial fc2 is recovered correctly from subroutine <decompose_variants>
     IMPLICIT NONE
     INTEGER :: atom1,atom2,direction1,direction2
     INTEGER :: i,j,ntindp,rnk
@@ -274,7 +272,8 @@ SUBROUTINE check_decompose
     CLOSE(checkK)
 END SUBROUTINE check_decompose
 !------------------------------------------------------------------------
-        !!this subroutine extend f(:) used in Broyden by the indiefc2 <-----> extendfc2 relation
+        !this subroutine extend f(:) used in Broyden by
+        !the indiefc2 <-----> extendfc2 relation
         subroutine extend_f(arrayIn,arrayOut)
             IMPLICIT NONE
             INTEGER :: atoms(2),xyzs(2)
@@ -333,10 +332,10 @@ END SUBROUTINE check_decompose
         end subroutine extend_f
 !------------------------------------------------------------------------
         subroutine calf(x,f,m)
-        !! this is the subroutine which calculates the array f for the input array x
-        !! in the actual code, it can have any name, but the 3 arguments must be as (x,f,m)
-        !! where both arrays x and f are of dimension m,
-        !! the same name should be used in the calling routine (here testbro) within the dowhile loop above
+        ! this is the subroutine which calculates the array f for the input array x
+        ! in the actual code, it can have any name, but the 3 arguments must be as (x,f,m)
+        ! where both arrays x and f are of dimension m,
+        ! the same name should be used in the calling routine (here testbro) within the dowhile loop above
         implicit none
         integer i, m
         real(8),intent(inout)::  x(m),f(m)
@@ -349,12 +348,14 @@ END SUBROUTINE check_decompose
 
         end subroutine calf
 !-----------------------------------------------------------------------
-      !! uses the broyden method to make fbroy(xin)=0 at the next few
-      !! iterations. It starts with a linear mixing scheme with mix,
-      !! it gives the new input value for the next iteration
-      !! It basically solves for rhoin, to make fbroy equal to 0
-      !! mx is the actual dimension of the x and f arrays
-       subroutine bro90(mx,x,f,it)
+        subroutine bro90(mx,x,f,it)
+!
+! uses the broyden method to make fbroy(xin)=0 at the next few
+! iterations. It starts with a linear mixing scheme with mix,
+! it gives the new input value for the next iteration
+! It basically solves for rhoin, to make fbroy equal to 0
+! mx is the actual dimension of the x and f arrays
+!
       !use broy
       implicit none
       integer i,j,l,it,jmin,mx

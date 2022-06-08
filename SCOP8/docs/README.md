@@ -14,7 +14,7 @@
 - *ConjugateGradient.f90* is the root finding module that utilizes conjugate gradient method, currently not in use
 - *DFT_force_constants.f95* declare force constants objects, allocate them and read info from fc#.dat files
 - *extratools.f90* is the legacy code contains various utility functions
-- *force_constants.f90* legacy code that mostly from **FOCEX**(I think?)
+- *force_constants.f90* legacy code that mostly from **FOCEX**
 - *force_update.f90* a module written in 2020 summer mostly contains updating scheme subroutines(which is wrong), the useful subroutines for now are those with ASR checking and ASR fixing
 - *Fourier_force_constants.f95* is a small module that mainly used for Fourier transform force constants
 - *geometry.f95* contains various constants, math operation interfaces, etc.
@@ -26,6 +26,8 @@
 - *others3_nshells.f90* legacy code that contains useful subroutines
 - *Structure_info.f95* declare atom and structure related object, allocate and initialize them, also read parameters from legacy input files lat_fc.dat, params.inp, etc
 - *VA_math.f95* major module for variational approach, contains subroutines for free energy and its gradients calculation and many others
+  - The new and old math regarding whether to couple $\eta$ with $\lang yy\rang$ can be switched between subroutine 'GetV_avg_And_GradientV_avg2' and 'GetV_avg_And_GradientV_avg' 
+
 
 ---
 
@@ -42,21 +44,21 @@
 
 ---
 
-#### Selected Output Files Explanation
+#### Output Files Explanation
 
 - <convergence.dat> records the converging history of Broyden. Col 1 is the iteration number, Col 2 is the L1 norm threshold, Col 3 is the current free energy
 - <Dispersion.dat> is the phonon band data. First column is the index of k point. Each following columns corresponds to a band
-- <dos...dat> files start with dos are phonon DOS 
+- <dos...dat> files start with 'dos' are phonon DOS using different methods.
 - <eigenvalues.dat> and <eigenvectors.dat> record the eigenvalues and eigenvectors of current run
 - <GradientF.dat> contains all the current variational parameters value, all the corresponding free energy gradients and free energy, from first iteration to the last iteration.
 - <output.txt> contains various info about the running
 - <result.txt> contains few selected results such as final free energy, final volume, gruneisen, specific heat, etc at this temperature
-- <targetInitialize.dat> is explained above
+- <targetInitialize.dat> is explained above, which have all the converged/optimized results for variational parameters $u_\tau$, $\eta$ and $K$, this file also serves as an input file for next run if 'inherit' option is selected
 - <Y_square.dat> contains every yy value and the its gamma point approximation
 
 ---
 
-#### How to Run Code on Windows
+#### How to Install/Compile Code on Windows
 
 1. Put that MingW folder in C:\ (download [here](https://drive.google.com/file/d/1mdHpw7Eac_hwmtHLrHkKdj9zlLljesz8/view?usp=sharing), the newest version of MingW may not work properly) 
 2. Open control panel > system advanced settings > add path of "C:\MingW", see below
@@ -65,4 +67,12 @@
 
 3. Install codeblocks, download [here](www.codeblocks.org/downloads/)
 4. Codeblocks > settings > compiler > set ==gnu fortran== as default and auto detect compilers (you may need to uncheck all the optional compiling options)
-4. Double click *test.cbp* to open the project in code::blocks and compile, run.
+5. Double click *test.cbp* to open the project in code::blocks and compile.
+
+---
+
+#### How to Run Code
+
+1. Move all the files in 'input_sample' to the root folder where '.cbp' file is.
+2. Double click *test.cbp* to open the project in code::blocks and run.
+3. Sample output is in 'output_sample' folder for user to compare.

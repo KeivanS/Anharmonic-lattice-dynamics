@@ -60,6 +60,10 @@ end module params
 !------------------------------------------------------------
 !-------------------------------------------------------------
     interface operator(.dot.)
+    !!this sums all concatenate=able tensor/array
+    !!for example, a v(:,:).dot.w(:,:) will lead to a scalar
+    !! a v(:,:).do.tw(:,:,:) will lead to an 1D array
+    !!it's really a sum, that's why procedure are named as doubledot, etc
         module procedure dotproduct_v,dotproduct_a,  &
 &                         dotproduct_av,dotproduct_va,dotproduct_sv,&
 &                         dotproduct_vt2,dotproduct_vt3,dotproduct_vt4,&
@@ -81,6 +85,13 @@ end module params
 !------------------------------------------------------------
     interface operator(.odot.)
         module procedure doubledot3
+    end interface
+!-------------------------------------------------------------
+    interface operator(.newdot.)
+    !!this operator only concatenate one dimension between v and w
+    !!for example, a v(:,:).newdot.w(:,:) will lead to a 2D matrix
+    !!just like in real algebra
+        module procedure dotproduct_t2t2
     end interface
 !-------------------------------------------------------------
     interface length
@@ -436,6 +447,18 @@ function dotproductIM_t4v(v,w) result(dot)
         dot(i,:,:)=dotproductIM_t3v(v(i,:,:,:),w)
     end do
 end function dotproductIM_t4v
+!-----------------------------------------
+function dotproduct_t2t2(v,w) result(dot)
+    real(8),dimension(d,d) :: dot
+    real(8),intent(in),dimension(d,d) :: v,w
+    integer ::  i,j
+    do i=1, d
+        do j=1,d
+            dot(i,j) = sum(v(i,:)*w(:,j))
+        end do
+    end do
+
+end function dotproduct_t2t2
 !-----------------------------------------
 function doubledot(v,w) result(dot)
     real(8) :: dot

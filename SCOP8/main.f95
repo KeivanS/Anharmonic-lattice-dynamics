@@ -1,6 +1,6 @@
 !zoom id: 931-799-30456
 !!main program
-Program Phonon
+Program SCOP8
     USE VA_math
     USE force_update
     USE broy
@@ -33,14 +33,16 @@ Program Phonon
     INTEGER :: guess
     REAL(8) :: accept
     REAL(8) :: cell_vol
-!---------test dot --------------
+!---------test dot or newdot --------------
 !REAL(8),DIMENSION(3,3) :: a
-!REAL(8),DIMENSION(3) :: b
+!REAL(8),DIMENSION(3,3) :: b
 !a(1,:) = (/1,2,3/)
 !a(2,:) = (/4,5,6/)
 !a(3,:) = (/7,8,9/)
-!b(:) = (/1,1,1/)
-!WRITE(*,*) a.dot.b
+!b(1,:) = (/1,4,7/)
+!b(2,:) = (/2,5,8/)
+!b(3,:) = (/3,6,9/)
+!WRITE(*,*) a.newdot.b
 !STOP
 !---------test mat_inv-----------
 !REAL(8),DIMENSION(2,2) :: a,b
@@ -98,13 +100,14 @@ WRITE(*,*)
 WRITE(unit_number2,*)
 
 !======================READ INDEPENDENT/NONINDEPENDENT FC MAP======================
-    CALL setup_maps
-    CALL read_map
+!    CALL setup_maps !can be commented off
+!    CALL read_map !can be commented off
+!    CALL get_atoms_fcs !can be commented off
 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 variational_parameters_size(3)=eff_fc2_terms!^^^^
 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    CALL get_atoms_fcs
+
 
 !check and fix asr in real fcs
     resolution = 1e-7 * max_fc2
@@ -181,7 +184,6 @@ WRITE(unit_number2,*)
 !===============INITIALIZE THE VARIATIONAL PARAMETERS=============
     IF(inherit) CALL target_update
     IF(rand_start) CALL test_update
-
 !==========TESTING SECTION, REMOVE IN THE FINAL VERSION===========
 !CALL make_rhombohedral
 
@@ -198,11 +200,14 @@ WRITE(unit_number2,*)
 !        CALL initiate_guess
 !CALL updateK !change also the initial K and thus the <YY>
 !CALL GetF_trial_And_GradientF_trial(kvector)
-!CALL Get_Dispersion_SE
+!CALL check_yy_value
+!CALL check_fc2_value
+!CALL Get_Dispersion
 !CALL calc_dos_gauss
 !CALL calc_dos_tet
 !CALL calc_gruneisen
 !CALL print_indieFC2
+!CALL printResults
 !STOP
 
 !----------Free Energy Landscape test--------------
@@ -210,7 +215,8 @@ WRITE(unit_number2,*)
 
 !step = 0.04
 !CALL small_test2(step) !general check
-!CALL small_test3(706,step,6) !compare with finite difference for given x
+!CALL small_test3(6,step,4) !compare with finite difference for given utau or eta
+!CALL small_test3_yy(18,step,4) !compare with finite difference for given yy
 
 !NOTICE: turn off <test_update> when doing this, so x can start from 0
 !NOTICE: turn off <make_rhombohedral> and <updateK> when doing this
@@ -238,7 +244,7 @@ guessloop: DO guess = 1,2
     ELSEIF(min_eival.gt.accept) THEN
         EXIT guessloop
     END IF
-!=============================FIRST RUN======================================
+!!=============================FIRST RUN======================================
 WRITE(*,*)'======================Check 1st Variational Approach calculation======================'
 WRITE(unit_number2,*)'======================Check 1st Variational Approach calculation======================'
     iter_rec = 0
@@ -296,9 +302,10 @@ WRITE(*,*)'=====================================================================
 WRITE(*,*)'======================Broyden/CG Iterations======================'
 WRITE(unit_number2,*)'======================Broyden/CG Iterations======================'
 WRITE(unit_number3,*)'=====iteration #, L1 norm of all gradients, free energy value====='
+WRITE(unit_number3,*) 'iteration 0 free energy ', REAL(F_trial)
     !initialize loop control values
     iter = 0; ft=100;ft2=100;threshold=100;itmax=max_it_number
-    pmix = -0.006d0
+    pmix = my_pmix
     err = 1e-9
     mx=SIZE(GradientF_trial)
     IF(ALLOCATED(x)) DEALLOCATE(x)
@@ -555,5 +562,5 @@ CLOSE(unit_number4)
 10 FORMAT(2(I6.1),2(I6.1,I2.1),4x,F9.6)
 11 FORMAT(2(I2,A),3(A,F9.6))
 !15 format(99(2x,g14.8))
-End Program Phonon
+End Program SCOP8
 
