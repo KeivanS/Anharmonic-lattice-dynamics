@@ -10,7 +10,7 @@
  use svd_stuff
  implicit none
  integer i,counter,label
- real(8) scal
+ real(8) scal, temperature
 
  open(uparams,file='params.inp',status='old')
 
@@ -75,7 +75,6 @@
     endif
     counter = atom_type(label)
  enddo
- ! Trying to create temperature insertion in the params.inp
 read(uparams,*) temperature
 close(uparams)
 

@@ -617,11 +617,14 @@ do i=1,dim_al
 enddo
 do i=1,dim_al
    wts(i)=exp(-1.0d0*(abs(rm_zero_energy(i))-abs(V1))/kBT)
+   write(*,*) "NORMALIZED LOOP WTS: ", wts(i)
    norm_wts=norm_wts+wts(i)
 enddo
+write(*,*) "THE NORMALIZED VALUE FOR WTS IS: ", norm_wts
 do i=1,dim_al
    wts(i)=wts(i)/norm_wts
 enddo
+write(*,*) "THE VALUE OF WTS is: ", wts
 qmat=0.0d0
 mat=0.0d0
 lnew=0

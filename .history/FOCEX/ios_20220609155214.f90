@@ -10,7 +10,7 @@
  use svd_stuff
  implicit none
  integer i,counter,label
- real(8) scal
+ real(8) scal, temperature
 
  open(uparams,file='params.inp',status='old')
 

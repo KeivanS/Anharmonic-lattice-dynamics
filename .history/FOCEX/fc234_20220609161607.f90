@@ -617,11 +617,14 @@ do i=1,dim_al
 enddo
 do i=1,dim_al
    wts(i)=exp(-1.0d0*(abs(rm_zero_energy(i))-abs(V1))/kBT)
+   write(*,*) "NORMALIZED LOOP WTS: ", wts(i)
    norm_wts=norm_wts+wts(i)
 enddo
+write(*,*) "THE NORMALIZED VALUE FOR WTS IS: ", norm_wts
 do i=1,dim_al
    wts(i)=wts(i)/norm_wts
 enddo
+write(*,*) "THE VALUE OF WTS is: ", wts
 qmat=0.0d0
 mat=0.0d0
 lnew=0
@@ -652,24 +655,24 @@ enddo
 !write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
 !enddo
  !  deallocate(wts,qmat,mat,mat_inverse)
-!   do i=1,dim_al
-!      write(*,*) "AMAT NO SQ VAL: ",amat(i,:)
-!   enddo
+   do i=1,dim_al
+      write(*,*) "AMAT NO SQ VAL: ",amat(i,:)
+   enddo
 
-!   do i=1,dim_ac
-!      write(*,*) "AMAT SQ VAL: ", mat(i,:)
-!   enddo
+   do i=1,dim_ac
+      write(*,*) "AMAT SQ VAL: ", mat(i,:)
+   enddo
 
-!   do i=1,dim_ac
-!      write(*,*) "BMAT VAL: ", bmat(i)
-!  enddo
+   do i=1,dim_ac
+      write(*,*) "BMAT VAL: ", bmat(i)
+   enddo
 
-!   do i=1,dim_ac
-!      write(*,*) "QMAT VAL: ", qmat(i)
-!   enddo
-!write(*,*) "VALUE OF ERROR IS: ",error
-!write(*,*) "VALUE OF ERMAX IS: ",ermax
-!write(*,*) "VALUE OF SVDCUT IS: ",svdcut
+   do i=1,dim_ac
+      write(*,*) "QMAT VAL: ", qmat(i)
+   enddo
+write(*,*) "VALUE OF ERROR IS: ",error
+write(*,*) "VALUE OF ERMAX IS: ",ermax
+write(*,*) "VALUE OF SVDCUT IS: ",svdcut
    allocate(fc(dim_ac))
    call svd_set(dim_ac,dim_ac,mat,qmat,fc,sigma,svdcut,error,ermax,sig,'svd-all-new.dat') ! JUST SWITCH IT ON AND SEE THE RESULT
 

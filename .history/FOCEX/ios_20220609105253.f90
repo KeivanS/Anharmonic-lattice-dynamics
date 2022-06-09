@@ -37,7 +37,7 @@
  read(uparams,*) nshells(2,1:natoms0)
  read(uparams,*) nshells(3,1:natoms0)
  read(uparams,*) nshells(4,1:natoms0)
-
+! Trying to create temperature insertion in the params.inp
  write(ulog,*) svdcut,'    cutoff for smallest eigenvalue w to be included'
  write(ulog,*) tolerance,'   tolerance for equating two coordinates '
  write(ulog,*) include_fc,'  which ranks of FCs to include '
@@ -75,9 +75,8 @@
     endif
     counter = atom_type(label)
  enddo
- ! Trying to create temperature insertion in the params.inp
-read(uparams,*) temperature
-close(uparams)
+
+ close(uparams)
 
  do i=1,4
 !   if (nshells(i) .gt. maxneighbors) then

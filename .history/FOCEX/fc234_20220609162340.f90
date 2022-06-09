@@ -619,6 +619,7 @@ do i=1,dim_al
    wts(i)=exp(-1.0d0*(abs(rm_zero_energy(i))-abs(V1))/kBT)
    norm_wts=norm_wts+wts(i)
 enddo
+write(*,*) "THE NORMALIZED VALUE FOR WTS IS: ", norm_wts
 do i=1,dim_al
    wts(i)=wts(i)/norm_wts
 enddo
