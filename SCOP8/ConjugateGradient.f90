@@ -152,7 +152,8 @@ FUNCTION brent(ax,bx,cx,f,tol,xmin)
             endif
         endif
     enddo
-    pause 'brent exceed maximum iterations'
+
+    Write(*,*) ¡®WARNING: BRENT exceed maximum iterations'
 3   xmin=x
     brent=fx
     return
