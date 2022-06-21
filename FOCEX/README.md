@@ -4,9 +4,9 @@
 
 cd Anharmonic-lattice-dynamics/FOCEX
 
-- edit the Makefile. generally you do not need to change the Makefile. In case if you need to change the compiler flags adjust the FLAGS option by uncommenting or adding the available option in
+- edit the Makefile. generally you do not need to change the Makefile. In case if you need to change the compiler flags adjust the FLAGS option by uncommenting or adding the available option
 
-FLAGS= -fcheck=all #-Wall #-fbounds-check #-fbacktrace #-ffpe-trap=invalid,zero,overflow,underflow,inexact #-inline-debug-info #-p #-pedantic #-std=f95
+FLAGS= -fcheck=all -fdec-math #-Wall #-fbounds-check #-fbacktrace #-ffpe-trap=invalid,zero,overflow,underflow,inexact #-inline-debug-info #-p #-pedantic #-std=f95
 
 - From that directory make the file by
 
