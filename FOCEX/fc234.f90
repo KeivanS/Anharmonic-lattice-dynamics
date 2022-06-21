@@ -455,13 +455,30 @@ real tim
 ! SINCE I HAVE TO CREATE EXPLICIT INTERFACE FOR SUBROUTINE REMOVE_ZEROS IN ORDER FOR ME TO ACCESS
 ! AND REMOVE ENERGY WHERE THE LINES BMAT IS ZERO BUT I DONT WANT TO DO THAT BECAUSE I AM GOING TO ALTER
 ! THE FORMULATION OF REMOVE_ZERO SUBROUTINE. ONE OF THE WAY I SEE IS CHECK FOR ZERO COLUMN DIRECTLY HERE.
-
 small=1d-7
 nz_index=0
-do i=1,dim_al    !shape(amat,1)
+if (nconfigs .eq. 1) then
+do i=1,dim_al-3    !shape(amat,1)
    suml = maxval(abs(amat(i,:)))
    if (suml .gt. small) then
-      nz_index=nz_index+1
+         nz_index=nz_index+1
+   endif
+enddo
+allocate(rm_zero_energy(nz_index))
+nz_index=1
+do i=1,dim_al-3
+   suml=maxval(abs(amat(i,:)))
+      if (suml .gt. small) then
+         rm_zero_energy(nz_index)=energy(i)
+         nz_index=nz_index+1      
+      endif
+enddo
+endif
+if (nconfigs .ne. 1) then
+do i=1,dim_al-3    !shape(amat,1)
+   suml = maxval(abs(amat(i,:)))
+   if (suml .gt. small) then
+         nz_index=nz_index+1
    endif
 enddo
 allocate(rm_zero_energy(nz_index))
@@ -470,9 +487,10 @@ do i=1,dim_al
    suml=maxval(abs(amat(i,:)))
       if (suml .gt. small) then
          rm_zero_energy(nz_index)=energy(i)
-         nz_index=nz_index+1      
+         nz_index=nz_index+1
       endif
 enddo
+endif
 !allocate(mat(dim_ac,dim_ac),mat_inverse(dim_ac,dim_ac),amat_trans(dim_ac,dim_al))
 !allocate(wts(dim_al),qmat(dim_ac))
 !V1=1.0d0
@@ -601,32 +619,77 @@ allocate(newamat(newdim_al,dim_ac),newbmat(newdim_al))
 ! do the SVD decomposition
 !  HERE I TRY TO ADD THE WEIGHTED VALUE BASED ON TEMPERATURE IN THE BELOW LINES BEFORE CALLING TO SVD SET
 ! SO THE AMAT WILL BE AT*A AND BMAT WILL BE AT*B
-allocate(mat(dim_ac,dim_ac),mat_inverse(dim_ac,dim_ac),amat_trans(dim_ac,dim_al))
-allocate(wts(dim_al),qmat(dim_ac))
+if (nconfigs .eq. 1) then
+allocate(amat_trans(dim_ac,dim_al-3),wts(dim_al-3))
+endif
+if (nconfigs .ne. 1) then
+allocate(amat_trans(dim_ac,dim_al),wts(dim_al))
+endif
+allocate(mat(dim_ac,dim_ac),mat_inverse(dim_ac,dim_ac))
+allocate(qmat(dim_ac))
 !V1=1.0d0
+if (nconfigs .eq. 1) then
+V1=floor(minval(rm_zero_energy))
+endif
+if (nconfigs .ne. 1) then
 V1=minval(rm_zero_energy)
+endif
 kB=0.00008617333262145d0
 !Temp=116050000000.518120d0
 !write(*,*) "VALUE OF TEMPERATURE IS: ",temperature
 kBT=kB*temperature
 norm_wts=0.0d0
+if (nconfigs .eq. 1) then
+do i=1,dim_al-3
+   do j=1,dim_ac
+      amat_trans(j,i)=amat(i,j)
+   enddo
+enddo
+endif
+
+if (nconfigs .ne. 1) then
 do i=1,dim_al
    do j=1,dim_ac
       amat_trans(j,i)=amat(i,j)
    enddo
 enddo
-do i=1,dim_al
+endif
+
+if (nconfigs .eq. 1) then
+do i=1,dim_al-3
    wts(i)=exp(-1.0d0*(abs(rm_zero_energy(i))-abs(V1))/kBT)
+   wts(i)=wts(i)/norm_wts
    norm_wts=norm_wts+wts(i)
 enddo
+endif
+
+if (nconfigs .ne. 1) then
 do i=1,dim_al
+   wts(i)=exp(-1.0d0*(abs(rm_zero_energy(i))-abs(V1))/kBT)
    wts(i)=wts(i)/norm_wts
+   norm_wts=norm_wts+wts(i)
 enddo
+endif
+
+!do i=1,dim_al
+!   wts(i)=wts(i)/norm_wts
+!enddo
 qmat=0.0d0
 mat=0.0d0
 lnew=0
 do i=1,dim_ac
    lnew=lnew+1
+if (nconfigs .eq. 1) then
+   do l=1,dim_al-3
+      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat_trans(lnew,l)
+!      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat(l,i)
+      do j=1,dim_ac
+         mat(i,j)=mat(i,j)+wts(l)*amat_trans(j,l)*amat(l,i)
+      enddo
+   enddo
+endif
+
+if (nconfigs .ne. 1) then
    do l=1,dim_al
       qmat(i)=qmat(i)+wts(l)*bmat(l)*amat_trans(lnew,l)
 !      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat(l,i)
@@ -634,6 +697,7 @@ do i=1,dim_ac
          mat(i,j)=mat(i,j)+wts(l)*amat_trans(j,l)*amat(l,i)
       enddo
    enddo
+endif
 !   do j=1,dim_ac
 !      mat(i,j)=0.0d0
 !      do l=1,dim_al
@@ -671,11 +735,13 @@ enddo
 !write(*,*) "VALUE OF ERMAX IS: ",ermax
 !write(*,*) "VALUE OF SVDCUT IS: ",svdcut
    allocate(fc(dim_ac))
-   call svd_set(dim_ac,dim_ac,mat,qmat,fc,sigma,svdcut,error,ermax,sig,'svd-all-new.dat') ! JUST SWITCH IT ON AND SEE THE RESULT
-
-   do i=1,dim_ac
-   write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
-   enddo
+   
+   if (nconfigs .ne. 1) then
+      call svd_set(dim_ac,dim_ac,mat,qmat,fc,sigma,svdcut,error,ermax,sig,'svd-all-new.dat') ! JUST SWITCH IT ON AND SEE THE RESULT
+     do i=1,dim_ac
+       write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
+     enddo
+    endif
 
   call svd_set(dim_al,dim_ac,amat,bmat,fcs,sigma,svdcut,error,ermax,sig,'svd-all.dat')
 

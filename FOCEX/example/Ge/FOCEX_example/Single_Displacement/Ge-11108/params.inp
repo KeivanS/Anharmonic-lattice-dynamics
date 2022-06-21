@@ -1,0 +1,56 @@
+1 1 1 90 90 90
+0 0.5 0.5 0.5 0 0.5 0.5 0.5  0 ###1 0  0 0 1  
+5.762862  #401788    scale factor for lattparams (must be consistent with POSCAR data) 
+9        maxshell
+1 1 1 0  include 1st 2nd 3rd and 4th order force constants
+1 0 0 0  flags for including translational and rotational invce constraints.
+0.0001 1.e-5  tolerance for equating (two coordinates in general), margin for eliminating a FC 
+1d-9     svd cutoff for the smallest eigenvalue to be included
+1  .True.
+1     natom_type
+72.64
+Ge     names of atoms
+2    number of atoms in the primitive cell, coordinates are in reduced units (of cubic cell) 
+1 1    
+8 8   
+1 1     
+1 1    
+1 1 0.00 0.00 0.00 
+2 1 0.25 0.25 0.25
+
+3 1 0.5 0.5 0
+4 1 0.6666666667 0 0
+
+2.03478 2.03478 2.03478  60 60 60  ## primitive unit cell 
+1 0 0  0 1 0  0 0 1  
+1 1 0.00 0.00 0.00 0 0 0
+2 1 0.25 0.25 0.00
+
+4.26777319 2.464 10.0  90 90 90  ## primitive unit cell 
+0.5 0.5 0   0 1 0  0 0 1  
+1.00        scale factor for lattparams (must be consistent with POSCAR data)
+11       maxshell
+1 1 0 0  include 1st 2nd 3rd and 4th order force constants
+0 3 3 1  number of neighbor shells to be included in the calculation of FCs
+1  1  0  flags for including translational and rotational invce constraints.
+0.0005 0.00001  tolerance for equating (two coordinates in general) 
+1d-9     svd cutoff for the smallest eigenvalue to be included
+1        natom_type
+12.0 12.0     masses of natom_type atoms
+C1  C2      names of atoms
+2       number of atoms in the primitive cell , coordinates are in reduced units
+1 1 0.00 0.00 0.00 0 0 0
+2 1 0.1666666667 0.5 0.
+
+
+
+
+
+1 1  0.0 0.0       0        label (tau), atom type, xyz (in reduced format)
+2 1  0.5 0.1666667 0.5      label (tau), atom type, xyz
+3 1  0.5 0.5       0
+4 1  0   0.6666667 0.5
+5 2  0.5 0.1666667 0.125
+6 2  0   0         0.625
+7 2  0   0.6666667 0.125
+8 2  0.5 0.5       0.625

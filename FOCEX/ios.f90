@@ -549,7 +549,7 @@ close(uparams)
  use lattice
  use svd_stuff
  implicit none
- integer i,t,j,frc_constr,junk, k, xyzconfgs
+ integer i,t,j,frc_constr,junk, k, xyzconfgs,en_count
 ! type(vector) v
 ! real(8) x1,x2,x3,x4
  character line*99,outcar*(*)
@@ -595,7 +595,8 @@ real(8) en_nconfigs
  if ( allocated(energy)) deallocate(energy)
  call allocate_pos(natom_super_cell,nconfigs)
 ! allocate(energy(nconfigs)) ! was this so I changed it to 3*nconfigs*natom_super_cell because the number of line dim_al=3*nconfigs*natom
-allocate(energy(3*nconfigs*natom_super_cell)) 
+en_count=3*nconfigs*natom_super_cell
+allocate(energy(en_count)) 
 ! now get the FORCES from OUTCAR file
  rewind(utraj)
  t=0

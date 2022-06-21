@@ -1,0 +1,15 @@
+ This program was launched at    2022/03/23   16:35:53.831   -0400
+ At the start of the Program FC234 the  TIME IS     0.0037
+ READ_INPUT CALLED, TIME                       IS     0.0042
+ FC_INIT CALLED, TIME                          IS     0.0079
+  FC_init called, atmpos, neighbs, iatmcell calculated
+ TIME after setup_maps and before write_correspondance IS     0.8740
+ TIME after set_translational_inv_constraints IS     0.8849
+ TIME after set_rotational_inv_constraints    IS     0.9526
+ TIME after set_Huang_inv_constraints         IS     0.9526
+ STRUCTURE   1 after write_correspondance time IS     0.9695
+ TIME after structure loop                    IS     1.1302
+ TIME after include_constraints  before SVD   IS       1.1307
+ TIME after SVD calculation                   IS     1.1472
+ ENDING TIME OF THE PROGRAM                   IS     1.2393
+       Program FC234 ended at    2022/03/23   16:35:55.068   -0400
