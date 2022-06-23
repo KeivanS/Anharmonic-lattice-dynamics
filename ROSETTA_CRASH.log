@@ -1,0 +1,39 @@
+##############################################################################################################
+#
+# Rosetta crash log. Please submit the contents of this file to http://crash.rosettacommons.org/
+# or use the script Rosetta/main/source/scripts/python/public/report_crashes.py
+#
+
+[START_CRASH_REPORT]
+[ROSETTA_VERSION]: 2021.16+release.8ee4f02
+[COMMIT_DATE]: 2021-04-20T20:52:25.363712
+[APPLICATION]: vip.mpi.linuxgccrelease
+[MODE]: Release
+[EXTRAS]: mpi (OpenMPI 3.1.6) 
+[OS]: GNU/Linux
+[COMPILER]: GCC version "9.2.0"
+[STDLIB]: libstdc++ version 20190812
+[START_OPTIONS]
+ -run:version
+
+[END_OPTIONS]
+
+[START_BACKTRACE]: RAW_LIBC
+/apps/software/vendor/rosetta/3.13/source/build/src/release/linux/3.10/64/x86/gcc/9.2/mpi/libutility.so(utility::save_crash_report(char const*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int)+0x24) [0x2acfee318644]
+/apps/software/vendor/rosetta/3.13/source/build/src/release/linux/3.10/64/x86/gcc/9.2/mpi/libutility.so(utility::signal_handler(int)+0xd4) [0x2acfee318754]
+/lib64/libc.so.6(+0x36400) [0x2acfefd85400]
+vip.mpi.linuxgccrelease(utility::file::FileName::name[abi:cxx11]() const+0x17) [0x40a397]
+vip.mpi.linuxgccrelease() [0x406b46]
+/lib64/libc.so.6(__libc_start_main+0xf5) [0x2acfefd71555]
+vip.mpi.linuxgccrelease() [0x407d5f]
+
+[END_BACKTRACE]
+
+[FILE]: SIGSEGV
+[LINE]: 11
+[START_MESSAGE]
+Segmentation Fault
+
+[END_MESSAGE]
+[END_CRASH_REPORT]
+
