@@ -1,10 +1,7 @@
 FF=gfortran
 DFLAGS=  #-C # to check everything O3 #g -p #for profiling with gprof
-<<<<<<< HEAD
 FLAGS= -fcheck=all -fdec-math #-Wall# -fbounds-check -fbacktrace #-ffpe-trap=invalid,zero,overflow,underflow,inexact #g -inline-debug-info #-p #for profiling with gprof -pedantic -std=f95 
-=======
 FLAGS= -fcheck=all -fdec-math#-Wall# -fbounds-check -fbacktrace #-ffpe-trap=invalid,zero,overflow,underflow,inexact #g -inline-debug-info #-p #for profiling with gprof -pedantic -std=f95 
->>>>>>> 7640597c840c2fdc3051a87cc7d2474c1b353357
 
 MOD=modules9.f90  svd.f90 extratools.f90 ios.f90
 MOD9=modules9.f90 mods9.f90 modules_tetra.f90
