@@ -1,6 +1,6 @@
 FF=gfortran #ifort
-DFLAGS= #-O3  #-C # to check everything O3 #g -p #for profiling with gprof
-FLAGS= #-fbounds-check -fbacktrace #g -inline-debug-info #-p #for profiling with gprof
+DFLAGS= -fdec-math #-O3  #-C # to check everything O3 #g -p #for profiling with gprof
+FLAGS= -fdec-math #-fbounds-check -fbacktrace #g -inline-debug-info #-p #for profiling with gprof
 
 MOD=modules.f90  svd.f90 extratools.f90
 MOD9=modules9.f90 mods9.f90 modules_tetra.f90
