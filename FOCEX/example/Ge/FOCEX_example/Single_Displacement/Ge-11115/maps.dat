@@ -1,11 +1,11 @@
-************ rank 1, shell   1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0, groups        0
-************ rank 2, shell   5  5  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0, groups       17
+************ rank 1, shell   1  1  0  0  0  0  0  0  0  0, groups        0
+************ rank 2, shell   5  5  0  0  0  0  0  0  0  0, groups       17
 rank= 2 indepterms=    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1
 rank= 2 all  terms=    6   42   84   96   96  192   48   48   24   48  192   96   96   96   96  192   48
-************ rank 3, shell   1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0, groups        5
+************ rank 3, shell   1  1  0  0  0  0  0  0  0  0, groups        5
 rank= 3 indepterms=    1    1    1    1    1
 rank= 3 all  terms=   12  126  504  252  252
-************ rank 4, shell   1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0, groups       14
+************ rank 4, shell   1  1  0  0  0  0  0  0  0  0, groups       14
 rank= 4 indepterms=    1    1    1    1    1    1    1    1    1    1    1    1    1    1
 rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504  504 1008
  ============== RANK, GROUP ===============   2   1

@@ -1,5 +1,5 @@
- Program THERMALsplit was laun   2022/03/21   12:52:52.298   -0400
- At the start of the Program,        TIME IS       0.0021
- After readings,                     TIME IS       0.0289
- After band structure,               TIME IS       0.6746
- After om(k) calculation within FBZ, TIME IS      13.1138
+ Program THERMALsplit was laun   2022/06/24   11:24:12.750   -0400
+ At the start of the Program,        TIME IS       0.0043
+ After readings,                     TIME IS       0.0184
+ After band structure,               TIME IS       0.4172
+ After om(k) calculation within FBZ, TIME IS       7.0606

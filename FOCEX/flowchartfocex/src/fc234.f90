@@ -60,12 +60,14 @@ use svd_stuff
 use geometry
 implicit none
 ! type(vector) v
-integer i,j,n3,rank,iunit,tra,rot,hua,eliminate_fc,fcalloc !g, t
+integer i,j,n3,rank,iunit,tra,rot,hua,eliminate_fc,fcalloc, nz_index,l,lnew ! g, t
 character xt*1,fn*11,poscar*7,outcar*7
 logical ex
-real(8), allocatable :: newamat(:,:),newbmat(:),afrc(:,:),bfrc(:),aux1(:,:)
+real(8), allocatable:: mat(:,:),mat_inverse(:,:)
+real(8), allocatable :: newamat(:,:),newbmat(:),afrc(:,:),bfrc(:),aux1(:,:),rm_zero_energy(:),fc(:),wts(:),qmat(:)
+real(8), allocatable :: amat_trans(:,:)
 integer, allocatable :: frc_constr(:),auxi(:,:)
-real(8) error,ermax,sd(4),sig !,a1,a2,a3
+real(8) error,ermax,sd(4),sig,small,suml,V1, kB, kBT, norm_wts!, temperature !,a1,a2,a3
 real tim
  character now*10,today*8,zone*5
 
@@ -97,9 +99,7 @@ real tim
   call read_input
 ! outputs: lattparams,primlat,nshells,include_fc,itrans,irot,natoms0,mas,atname,
 ! atompos0 (reduced coords within the primitive cell)
-
   maxshells = maxneighbors
-
   call write_out(ulog,'latticeparameters',latticeparameters)
   call write_out(ulog,'primitive lattice',3,3,primitivelattice)
   write(ulog,*)'atompos0_d'
@@ -178,16 +178,14 @@ real tim
 ! outpus: atom0%equilb_pos,shells%no_of_neighbors , rij, neighbors(:)%tau and n
 
   call write_neighbors
-write(*,*) "The value of map(2)%ngr is: ", map(2)%ngr
+!write(*,*) "The value of map(2)%ngr is: ", map(2)%ngr
 ! define the dimensions of the FC arrays, for each rank if include_fc.ne.0
 ! collects identical force_constants
+
   call setup_maps
 ! inputs: outputs of force_constants_init: iatomop etc...
 ! outputs: map structure including for rank, the groups of indep FCs and the full FCs
 ! maxterms, nshells, ngroups, nterms, inv_constraints, ngr
-  write(*,*) "The value of map(2)%ngr is: ", map(2)%ngr
-  write(*,*) "The value of map(2)%ntotind is: ", map(2)%ntotind
-
   call cpu_time(tim)
   write(utimes,'(a,f10.4)')' TIME after setup_maps and before write_correspondance IS ',tim
 
@@ -199,7 +197,7 @@ write(*,*) "The value of map(2)%ngr is: ", map(2)%ngr
      iunit = ufco+rank
      if (include_fc(rank) .eq. 2 ) then   ! this rank is not to be included
       fcalloc=0
-      write(*,*) "The value of RFCS2 allocation is: ", fcalloc
+!      write(*,*) "The value of RFCS2 allocation is: ", fcalloc
     ! in the fit, read the fcs from a file
       fn='fc'//xt//'_fit.dat'
         inquire(file="fc2.dat",exist=ex)
@@ -444,25 +442,101 @@ write(*,*) "The value of map(2)%ngr is: ", map(2)%ngr
 ! enddo
 !
 !--------------------------- FOR TESTING -----------------------
-
+!write(*,*) "CALL BEFORE INCLUDE_CONSTRAINTS"
   call include_constraints
 ! inputs: inv_constraints,force_constraints,
 ! outputs:  dim_al,dim_ac, amat, bmat
-
+  !write(*,*) "CALL AFTER INCLUDE_CONSTRAINTS"
 ! we remove the following because if one starts with reference positons in POSCAR
 ! which are not equilibrium position, then FC1 are not zero and lines with u=0
 ! should still be kept, and not thrown away.
 ! the following removes lines=0 from amat (where all displacements are zero)
 
-  call remove_zeros(dim_al,dim_ac, amat, bmat,newdim_al)
+! SINCE I HAVE TO CREATE EXPLICIT INTERFACE FOR SUBROUTINE REMOVE_ZEROS IN ORDER FOR ME TO ACCESS
+! AND REMOVE ENERGY WHERE THE LINES BMAT IS ZERO BUT I DONT WANT TO DO THAT BECAUSE I AM GOING TO ALTER
+! THE FORMULATION OF REMOVE_ZERO SUBROUTINE. ONE OF THE WAY I SEE IS CHECK FOR ZERO COLUMN DIRECTLY HERE.
+
+small=1d-7
+nz_index=0
+do i=1,dim_al    !shape(amat,1)
+   suml = maxval(abs(amat(i,:)))
+   if (suml .gt. small) then
+      nz_index=nz_index+1
+   endif
+enddo
+allocate(rm_zero_energy(nz_index))
+nz_index=1
+do i=1,dim_al
+   suml=maxval(abs(amat(i,:)))
+      if (suml .gt. small) then
+         rm_zero_energy(nz_index)=energy(i)
+         nz_index=nz_index+1      
+      endif
+enddo
+!allocate(mat(dim_ac,dim_ac),mat_inverse(dim_ac,dim_ac),amat_trans(dim_ac,dim_al))
+!allocate(wts(dim_al),qmat(dim_ac))
+!V1=1.0d0
+!kB=0.00008617333262145d0
+!Temp=116040000.518120d0
+!kBT=kB*Temp
+!norm_wts=0.0d0
+!do i=1,dim_al
+!   do j=1,dim_ac
+!      amat_trans(j,i)=amat(i,j)
+!   enddo
+!enddo
+!do i=1,dim_al
+!   wts(i)=exp(-1.0d0*(abs(energy(i))-V1)/kBT)
+!   write(*,*) "NORMALIZED LOOP WTS: ", wts(i)
+!   norm_wts=norm_wts+wts(i)
+!enddo
+!write(*,*) "THE NORMALIZED VALUE FOR WTS IS: ", norm_wts
+!do i=1,dim_al
+!   wts(i)=wts(i)/norm_wts
+!enddo
+!wts=1.0d0
+!write(*,*) "THE VALUE OF WTS is: ", wts
+!qmat=0.0d0
+!mat=0.0d0
+!lnew=0
+!do i=1,dim_ac
+!   lnew=lnew+1
+!   do l=1,dim_al
+!      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat_trans(lnew,l)
+!      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat(l,i)
+!      do j=1,dim_ac
+!         mat(i,j)=mat(i,j)+wts(l)*amat_trans(j,l)*amat(l,i)
+!      enddo
+!   enddo
+!   do j=1,dim_ac
+!      mat(i,j)=0.0d0
+!      do l=1,dim_al
+!         mat(i,j)=mat(i,j)+wts(l)*amat(l,i)*amat(l,j)
+!      enddo
+!   enddo
+!enddo
+!mat_inverse=0.0d0
+!do i=1,dim_ac
+!   mat_inverse(i,i)=1.0d0
+!enddo
+!allocate(fc(dim_ac))
+!call inverse_real(mat,mat_inverse,dim_ac)
+!fc=matmul(mat_inverse,qmat)
+!do i=1,dim_ac
+!write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
+!enddo
+!  deallocate(wts,qmat,mat,mat_inverse)
+
+call remove_zeros(dim_al,dim_ac, amat, bmat,newdim_al)
 !if ( include_fc(2) .ne. 2) then
+ ! write(*,*) "THE NEWDIM_AL AND DIM_AC is: ",newdim_al, dim_ac
 allocate(newamat(newdim_al,dim_ac),newbmat(newdim_al))
 !endif
 !if (include_fc(2) .eq. 2) then
 !  allocate(newamat(newdim_al,map(2)%ngr:dim_ac),newbmat(map(2)%ngr:dim_al))
 !   write(*,*) "The value for newdiv_al, map(3).ntotind+map(4).ntotind is: ", map(3)%ntotind+map(4)%ntotind
 !   allocate(newamat(newdim_al,map(3)%ntotind+map(4)%ntotind),newbmat(map(2)%ngr:dim_al)) ! what is the dimension here map(2)%ngr:dim_al
-   ! or 1:dim_al-map(2)%ngr
+   ! or 1:dim_al-map(2)%ngr`  
 !endif
   newamat(:,:) = amat(1:newdim_al,1:dim_ac)
   newbmat(:  ) = bmat(1:newdim_al)
@@ -471,11 +545,12 @@ allocate(newamat(newdim_al,dim_ac),newbmat(newdim_al))
   amat = newamat
   bmat = newbmat
   dim_al = newdim_al
+
   deallocate(newamat,newbmat)
 
 ! give warnings if any column in aforce is totally zero
   call check_zero_column(dim_al,dim_ac,amat)
-
+!write(*,*) "CHECK ZERO COL, DIM_AC", dim_ac
  tra=0; rot=0; hua=0
  if (itrans .ne. 0) tra= transl_constraints
  if (irot   .ne. 0) rot= rot_constraints
@@ -510,20 +585,97 @@ allocate(newamat(newdim_al,dim_ac),newbmat(newdim_al))
 !----------------------- END FOR TESTING -----------------------
 
   allocate(fcs(dim_ac),sigma(dim_ac))
-
   call cpu_time(tim)
   write(utimes,'(a,f10.4)')' TIME after include_constraints  before SVD   IS   ',tim
 
 ! write the a and b matrices
   if (verbose) then
      write(umatrx,*)' before call to svd, amat and bmat are:'
+ !    write(*,*) "DIM_AL, DIM_AC is: ", dim_al, dim_ac
      do i=1,dim_al
-        write(umatrx,17)(amat(i,j),j=1,dim_ac),bmat(i)
+        write(umatrx,17)(amat(i,j),j=1,dim_ac),bmat(i) ! what is this and where do you get amat here?
      enddo
   endif
 17 format(999(1x,g9.2))
 
 ! do the SVD decomposition
+!  HERE I TRY TO ADD THE WEIGHTED VALUE BASED ON TEMPERATURE IN THE BELOW LINES BEFORE CALLING TO SVD SET
+! SO THE AMAT WILL BE AT*A AND BMAT WILL BE AT*B
+allocate(mat(dim_ac,dim_ac),mat_inverse(dim_ac,dim_ac),amat_trans(dim_ac,dim_al))
+allocate(wts(dim_al),qmat(dim_ac))
+!V1=1.0d0
+V1=minval(rm_zero_energy)
+kB=0.00008617333262145d0
+!Temp=116050000000.518120d0
+!write(*,*) "VALUE OF TEMPERATURE IS: ",temperature
+kBT=kB*temperature
+norm_wts=0.0d0
+do i=1,dim_al
+   do j=1,dim_ac
+      amat_trans(j,i)=amat(i,j)
+   enddo
+enddo
+do i=1,dim_al
+   wts(i)=exp(-1.0d0*(abs(rm_zero_energy(i))-abs(V1))/kBT)
+   norm_wts=norm_wts+wts(i)
+enddo
+do i=1,dim_al
+   wts(i)=wts(i)/norm_wts
+enddo
+qmat=0.0d0
+mat=0.0d0
+lnew=0
+do i=1,dim_ac
+   lnew=lnew+1
+   do l=1,dim_al
+      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat_trans(lnew,l)
+!      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat(l,i)
+      do j=1,dim_ac
+         mat(i,j)=mat(i,j)+wts(l)*amat_trans(j,l)*amat(l,i)
+      enddo
+   enddo
+!   do j=1,dim_ac
+!      mat(i,j)=0.0d0
+!      do l=1,dim_al
+!         mat(i,j)=mat(i,j)+wts(l)*amat(l,i)*amat(l,j)
+!      enddo
+!   enddo
+enddo
+mat_inverse=0.0d0
+do i=1,dim_ac
+   mat_inverse(i,i)=1.0d0
+enddo
+!allocate(fc(dim_ac))
+!call inverse_real(mat,mat_inverse,dim_ac)
+!fc=matmul(mat_inverse,qmat)
+!do i=1,dim_ac
+!write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
+!enddo
+ !  deallocate(wts,qmat,mat,mat_inverse)
+!   do i=1,dim_al
+!      write(*,*) "AMAT NO SQ VAL: ",amat(i,:)
+!   enddo
+
+!   do i=1,dim_ac
+!      write(*,*) "AMAT SQ VAL: ", mat(i,:)
+!   enddo
+
+!   do i=1,dim_ac
+!      write(*,*) "BMAT VAL: ", bmat(i)
+!  enddo
+
+!   do i=1,dim_ac
+!      write(*,*) "QMAT VAL: ", qmat(i)
+!   enddo
+!write(*,*) "VALUE OF ERROR IS: ",error
+!write(*,*) "VALUE OF ERMAX IS: ",ermax
+!write(*,*) "VALUE OF SVDCUT IS: ",svdcut
+   allocate(fc(dim_ac))
+   call svd_set(dim_ac,dim_ac,mat,qmat,fc,sigma,svdcut,error,ermax,sig,'svd-all-new.dat') ! JUST SWITCH IT ON AND SEE THE RESULT
+
+   do i=1,dim_ac
+   write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
+   enddo
 
   call svd_set(dim_al,dim_ac,amat,bmat,fcs,sigma,svdcut,error,ermax,sig,'svd-all.dat')
 
@@ -545,7 +697,7 @@ allocate(newamat(newdim_al,dim_ac),newbmat(newdim_al))
 !    call eliminate_fcs(sig)
 !    write(ulog,*)'After ELIMINATE_FCS, sigma=',sig
 ! endif
-
+deallocate(wts,qmat,mat,mat_inverse,rm_zero_energy,fc,amat_trans)
 7 format(a,2(2x,g12.5),2x,4(1x,g11.4))
 
  write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' Program  FC234 ended at ',today(1:4)//'/'  &
@@ -579,15 +731,17 @@ end program FC234
  use params
  use svd_stuff  !for itrans,irot,ihuang
  implicit none
- integer nl,nc,i,j,nz,tra,rot,hua
+ integer nl,nc,i,j,nz,tra,rot,hua!,nz_index
  real(8) amatr(nl,nc),bmatr(nl),suml,small
  real(8), allocatable:: aa(:,:),bb(:)
+ !real(8), allocatable:: rm_zero_energy(:) ! This is what I would like to create an array that removes energy for the lines whose bmat is zero
  integer, allocatable:: zz(:)
-
+!write(*,*) "THE SIZE OF AMATR and NL is: ", size(amatr), NL
  small=1d-7 !10  displacements or cos(t) are never that small
  allocate(zz(nl))
  zz = 1
  nz = 0
+ !nz_index=0
  do i=1,nl
 ! get the norm1 of each line
 !   suml = 0
@@ -608,6 +762,17 @@ end program FC234
        nz = nz + 1
     endif
  enddo
+
+!allocate(rm_zero_energy(nl-nz))
+!nz_index=1
+!do i=1,nl
+!   suml = maxval(abs(amatr(i,:)))
+!   if (suml .gt. small) then
+!      rm_zero_energy(nz_index)=energy(i)
+!      nz_index=nz_index+1
+!   endif
+!enddo
+
  write(ulog,*)' number of lines=0 in amat are=',nz
  allocate(aa(nl-nz,nc),bb(nl-nz))
 
@@ -717,10 +882,10 @@ end program FC234
 
 ! put back in the old order
  do i=1,n_elim
-    fcs(fcmap(i))=fc_elim(i)
+    fcs(fcmap(i))=fc_elim(i)          ! I DO NOT UNDERSTAND THIS PART - NO CHANGE HERE JUST WANT TO KNOW WHAT IS BEING DONE
  enddo
  do i=1+n_elim,dim_ac
-    fcs(fcmap(i))=fc_new(i-n_elim)
+    fcs(fcmap(i))=fc_new(i-n_elim)   ! AND WHAT IS THIS PART WHAT ARE WE DOING IT HERE - NO CHANGE HERE JUST WANT TO KNOW WHAT IS BEING DONE
  enddo
 
  call write_independent_fcs(sd)

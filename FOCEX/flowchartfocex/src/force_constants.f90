@@ -37,7 +37,7 @@
 ! copy input arguments into global variables
       natoms0=natoms_in
       atomposconv(1:3,1:natoms0)=atompos_in(1:3,1:natoms0)
-      write(*,*)'atompos_in= ',atompos_in
+!      write(*,*)'atompos_in= ',atompos_in
 ! allocate memory
       if(allocated(iatomneighbor)) deallocate(iatomneighbor)
       if(allocated(atomopfract))   deallocate(atomopfract)
@@ -46,7 +46,7 @@
       allocate(iatomop(natoms0,natoms0),atomopfract(3,natoms0,natoms0))
       iatomneighbor=maxneighbors+1
       iatomop=0
-      write(*,*)'primlatt=',primlatt
+!      write(*,*)'primlatt=',primlatt
 ! get primitive lattice vectors in terms of conventional lattice vectors
       prim_to_conv(1:3,1:3)=primlatt(1:3,1:3)
       call xmatinv(prim_to_conv,conv_to_prim,ier)
@@ -76,7 +76,7 @@
      &       //'is singular'
         stop
       endif
-      write(*,*)'cart_to_prim=',cart_to_prim
+!      write(*,*)'cart_to_prim=',cart_to_prim
 
 ! added by k1 --------
 ! prim_to_cart(i,j) is the ith cartesian coordinate of the jth translation

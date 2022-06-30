@@ -12,7 +12,7 @@
  integer al,be,ga,de,cnt2,g,t,ti
  real(8), allocatable:: atemp(:,:),btemp(:),ared1d(:),zero(:)
  logical new
-
+ if(itrans .ne. 1) return
  write(*,*) 'entering translational invce constraints routine'
  write(ulog,*)' SETTING TRANSLATIONAL INVARIANCE CONSTRAINTS *****************'
 
@@ -289,7 +289,7 @@ if ( include_fc(rnk) .eq. 1 ) then
  real(8), allocatable:: atemp(:,:),btemp(:)
  real(8) junk
  logical new
-
+if(irot .ne. 1) return
 !-----------------------------------------------------------------
 !-----------------------------------------------------------------
 ! BEWARE: for include_fc=2; you may need to add res to cnt3 when defining ired
@@ -334,7 +334,6 @@ if ( include_fc(rnk) .eq. 1 ) then
           if(i0 .ne. iatomcell0(i0) ) cycle  ! restrict to atoms in the primitive cell
 
 ! ADDED LINE BY K1 on JULY 10th &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-
           al = map(rnk)%gr(g)%ixyz(1,t)
           do ti=1,map(rnk)%ntind(g)
             ired = cnt2+ti    ! this is the corresponding index of i in ared
@@ -393,7 +392,7 @@ if ( include_fc(rnk) .eq. 1 ) then
                stop
             endif
             do ga=1,3
-              ared1d(ired) = ared1d(ired) + map(rnk)%gr(g)%mat(t,ti)*atompos(ga,j)*lc(be,ga,de)
+              ared1d(ired) = ared1d(ired) + map(rnk)%gr(g)%mat(t,ti)*atompos(ga,j)*lc(be,ga,de) 
             enddo
           enddo
           if(verbose) write(ulog,5)'i0,g,t,ired,ared=',i0,g,t,ired,ared1d(ired)
@@ -433,7 +432,7 @@ if ( include_fc(rnk) .eq. 1 ) then
 ! TO CHECK------------
       aux=0;! junk = 0   ! junk goes to bmat (it already includes the - sign)
       cnt3 = 0
-      if(include_fc(1) .eq. 1 .or. include_fc(1) .eq. 2) then
+      if(include_fc(1) .eq. 1 .or. include_fc(1) .eq. 2 .or. include_fc(2) .eq. 2) then    ! what if I add include_fc(2) .eq. 2 here? ...
       do g=1,map(rnk-1)%ngr  ! ineq. terms and identify neighbors
         if(g.gt.1) cnt3 = cnt3 + map(rnk-1)%ntind(g-1)
         do t=1,map(rnk-1)%nt(g)
@@ -473,16 +472,16 @@ if ( include_fc(rnk) .eq. 1 ) then
    deallocate(aux)
    if(include_fc(2) .eq. 1) then
       if (map(rnk)%ngr .gt. 0) then
-         write(*,*) "RNK and RES1 are: ", rnk, res1
+!         write(*,*) "RNK and RES1 are: ", rnk, res1
          !res1=res1+map(1)%ntotind(:)
       endif
       if (map(rnk-1)%ngr .gt. 0) then
-         write(*,*) "RNK and RES1 are: ", rnk, res1
+!         write(*,*) "RNK and RES1 are: ", rnk, res1
          !res1 = res1 + map(1)%ntotind(:)
       endif
    elseif(include_fc(2) .eq. 2) then
       if(map(rnk-1)%ngr.gt.0) then
-         write(*,*) "RNK and RES1 are: ", rnk, res1
+!         write(*,*) "RNK and RES1 are: ", rnk, res1
          !res1 = res1 + map(1)%ntotind(:)
       endif
    endif
@@ -554,10 +553,10 @@ if ( include_fc(rnk) .eq. 1 ) then
         enddo
       enddo
       endif
-write(*,*) "Value of include_fc(2) is: ", include_fc(2)
+!write(*,*) "Value of include_fc(2) is: ", include_fc(2)
       if(include_fc(2) .eq. 2 ) then ! So in this case include_fc(2) equals 1 or 2 are separated see exactly above
     !     call read_fcs_2(2)
-         write(*,*) "value of map(rnk-1)%ngr is: ", map(rnk-1)%ngr
+!         write(*,*) "value of map(rnk-1)%ngr is: ", map(rnk-1)%ngr
            do g=1,map(rnk-1)%ngr  ! ineq. terms and identify neighbors
              if(g.gt.1) cnt3 = cnt3 + map(rnk-1)%ntind(g-1)
              do t=1,map(rnk-1)%nt(g)
@@ -565,7 +564,7 @@ write(*,*) "Value of include_fc(2) is: ", include_fc(2)
                 do ti=1,map(rnk-1)%ntind(g)
                    ired = cnt3+ti    ! this is the corresponding index of i in ared
          !          ired = res1+ cnt3+ti    ! this is the corresponding index of i in ared ! was this before
-                 write(*,*) "value of ired is: ", ired
+!                 write(*,*) "value of ired is: ", ired
                  if (ired.gt.ngr .or. ired.lt.1) then
                     write(ulog,*)'rnk=3 ired=',ired,'>ngr=',ngr
                     stop
@@ -582,9 +581,9 @@ write(*,*) "Value of include_fc(2) is: ", include_fc(2)
                 enddo
              enddo
            enddo
-           write(*,*) "Junk before is given by this: ", junk
+!           write(*,*) "Junk before is given by this: ", junk
            junk=junk-dot_product(aux,fc_ind) ! This is added here make sure fc_ind is declared global
-           write(*,*) "Junk after this is given by: ", junk
+!           write(*,*) "Junk after this is given by: ", junk
            endif
 
 
@@ -758,10 +757,10 @@ write(*,*) "Value of include_fc(2) is: ", include_fc(2)
  use geometry
  use force_constants_module
  implicit none
- integer l,t,ired,counter,rnk,nat,confg,jatom,katom,latom,res,cnt2, a, b, c, d, e, f, i, reason
+ integer l,t,ired,counter,rnk,nat,confg,jatom,katom,latom,res,cnt2, a !, b, c, d, e, f, i, reason
  integer al,be,ga,de,taui,tauj,tauk,taul,ni(3),nj(3),nk(3),nl(3),ti,frc_constr
  real(8), allocatable:: ared1d(:),aux(:)!, fc_ind(:)
- real(8) afrc(frc_constr,ngr),bfrc(frc_constr),rij, amp, rijs
+ real(8) afrc(frc_constr,ngr),bfrc(frc_constr),rij !, amp, rijs
 ! real(8) junk
 logical ex !new
 
@@ -789,10 +788,10 @@ logical ex !new
 !   ixyzterm (1,t)=alpha     ixyzterm (2,t)=beta
 ! Really the (n1,tau1)=(iatomcell(:,iatomterm(2,t)),iatomcell0(iatomterm(2,t)))
   counter = 0
-  if ( include_fc(2) .eq. 2) then
-   write(*,*) "ALLOCATION CONDITION FC_IND"
+!  if ( include_fc(2) .eq. 2) then
+!   write(*,*) "ALLOCATION CONDITION FC_IND"
  !  allocate(fc_ind(map(2)%ngr))
-  endif
+!  endif
   do confg=1,nconfigs
   do nat=1,natom_super_cell
   do al=1,3             ! this is how we order each line
@@ -809,7 +808,7 @@ logical ex !new
         rnk=1  !------------------------------------------
         if ( include_fc(rnk) .ne. 0 ) then
 
-!           allocate(aux(ndindp(rnk))) ! size of aux =  # of independent FCs for that rank
+!          allocate(aux(ndindp(rnk))) ! size of aux =  # of independent FCs for that rank
            allocate(aux(map(rnk)%ntotind))  ! size of aux =  # of independent FCs for that rank
            cnt2= 0        ! cnt2 is the size of previous groups
            aux = 0
@@ -821,7 +820,7 @@ logical ex !new
                     do ti=1,map(rnk)%ntind(l)
 ! this is the index of the indep FC coming in the A*FC=b matrix product
                        ired = cnt2+ti
-!                       write(ulog,5)'l,cnt2,ti,ired=',l,cnt2,ti,ired
+                       write(ulog,5)'l,cnt2,ti,ired=',l,cnt2,ti,ired
                        aux(ired) = map(rnk)%gr(l)%mat(t,ti)
                     enddo
                  endif
@@ -841,6 +840,8 @@ logical ex !new
            endif
            deallocate(aux)
         endif
+
+!write(*,*) 'Rank, res=',rnk,res ! write was on here so I commented this
 
         rnk=2  !------------------------------------------
       if ( include_fc(rnk) .ne. 0 ) then
@@ -875,7 +876,7 @@ logical ex !new
                  do ti=1,map(rnk)%ntind(l)
 ! this is the index of the indep FC coming in the A*FC=b matrix product
                     ired = cnt2+ti ! this is the corresponding index of aux
-!                   write(ulog,5)'l,cnt2,ti,ired=',l,cnt2,ti,ired
+                    write(ulog,5)'l,cnt2,ti,ired=',l,cnt2,ti,ired
                     aux(ired) = aux(ired) + displ(be,jatom,confg)*map(rnk)%gr(l)%mat(t,ti)
                  enddo
  rij=atom_sc(nat)%equilibrium_pos .dot. atom_sc(nat)%equilibrium_pos
@@ -889,14 +890,17 @@ logical ex !new
               endif
            enddo l8
            enddo groups
-
+ !          write(*,*) "DISPLACEMENT: ",displ(be,jatom,confg)
            if ( include_fc(rnk) .eq. 1 ) then
               ared1d(res+1:res+map(rnk)%ntotind) = aux(1:map(rnk)%ntotind)
 !              ared1d(res+1:res+ndindp(rnk)) = aux(1:ndindp(rnk))
               res = res + map(rnk)%ntotind
 !              res = res + ndindp(rnk)
+              !if ( rnk .eq. 2) then
+              !write(*,*) "AUX FOR INCLUDE_FC 1: ", aux
+              !endif
           elseif ( include_fc(rnk) .eq. 2 ) then
-            write(*,*) "Check for include_fc(rnk) 2: "
+!            write(*,*) "Check for include_fc(rnk) 2: "
 !             inquire ( file="fc2_fit.dat", exist=ex)
 !             if (ex) then
 !               open(473,file="fc2_fit.dat")
@@ -916,18 +920,32 @@ logical ex !new
          !   allocate(map_2(map(rnk)%ngr))
          !    write(*,*) "The value for aux is: ", aux
   !          call read_fcs_2(2)
-             do l=1,map(rnk)%ngr
+         !   write(*,*) "DISPLACEMENT: ",displ(be,jatom,confg)
+!            write(*,*) "VALUE OF BFRC BEFORE: ", bfrc(counter)
+            ! do l=1,map(rnk)%ngr !! HAVE TO UNCOMMENT THIS LINE ! IT WAS SOMETHING LIKE THIS WHY WE ARE DOING IT HERE? DOES IT NOT DO map(rnk)%ngr times the dot prod?
             !   t = map_2(l)
             !   write(*,*) "Check shape of aux and rfcsind_2: ", shape(aux), shape(rfcsind_2)
-               write(*,*) "Check for the value of BFRCS counter before: ", bfrc(counter)
+!               write(*,*) "Check for the value of BFRCS counter before: ", bfrc(counter)
+!               if (counter .eq. 1) then
+!               endif
+   !            write(*,*) "BEFORE BFRC COUNTER: ", bfrc(counter)
+            !   write(*,*) "VALUE OF BFRC BEFORE: ", bfrc(counter) 
                bfrc(counter)=bfrc(counter)-dot_product(aux,fc_ind) ! Have to uncomment this line
-               write(*,*) "Check for the value of BFRCS counter in this case: ", bfrc(counter)
+       !        write(*,*) "COUNTER AND BFRCS VALUE: ", counter, bfrc(counter)
             !  bfrc(counter)=bfrc(counter)-fcs_2(igroup_2(t))*aux(igroup_2(t))
 ! shouldn't this line simply be: bf = bf - fcs_2(j) * aux(j) ??
-             enddo
+            ! enddo   !! HAVE TO UNCOMMENT THIS LINE
+!             write(*,*) "VALUE OF FC_IND: ", fc_ind
+!             write(*,*) "VALUE OF BFRC AFTER: ", bfrc(counter)
+!             write(*,*) "VALUE OF AUX: ", aux
+!             write(*,*) "VALUE OF DOT_PRODUCT: ", dot_product(aux,fc_ind)
            endif
+      !     write(*,*) "The shape of bfrc(counter) is: ", size(bfrc)
            deallocate(aux)
         endif
+
+!write(*,*) 'Rank, res=',rnk,res ! write was on here so I commented this
+
 
         rnk=3  !------------------------------------------
         if ( include_fc(rnk) .ne. 0 ) then
@@ -977,7 +995,7 @@ logical ex !new
                  do ti=1,map(rnk)%ntind(l)
 ! this is the index of the indep FC coming in the A*FC=b matrix product
                     ired = cnt2+ti ! this is the corresponding index of aux
-!                   write(ulog,5)'l,cnt2,ti,ired=',l,cnt2,ti,ired
+                    write(ulog,5)'l,cnt2,ti,ired=',l,cnt2,ti,ired
                     aux(ired) = aux(ired) + map(rnk)%gr(l)%mat(t,ti) *  &
   &                 displ(be,jatom,confg)*displ(ga,katom,confg)/2d0
                  enddo
@@ -993,6 +1011,9 @@ logical ex !new
            endif
            deallocate(aux)
         endif
+
+
+!write(*,*) 'Rank, res=',rnk,res  ! There was Rank, res print out so I commented this section
 
         rnk=4  !------------------------------------------
         if ( include_fc(rnk) .ne. 0 ) then
@@ -1051,7 +1072,7 @@ logical ex !new
                  do ti=1,map(rnk)%ntind(l)
 ! this is the index of the indep FC coming in the A*FC=b matrix product
                     ired = cnt2+ti ! this is the corresponding index of aux
-!                   write(ulog,5)'l,cnt2,ti,ired=',l,cnt2,ti,ired
+                    write(ulog,5)'l,cnt2,ti,ired=',l,cnt2,ti,ired
                     aux(ired) = aux(ired) + map(rnk)%gr(l)%mat(t,ti) *  &
   &  displ(be,jatom,confg)*displ(ga,katom,confg)*displ(de,latom,confg)/6d0
                  enddo
@@ -1088,6 +1109,7 @@ logical ex !new
  write(*,*) 'exiting set_force_displacements routine'
 
 4 format(a,4(1x,i6))
+5 format(a,9(1x,i6))
 6 format(a,3(1x,i3),66(2x,f7.3))
 !7 format(66(1x,g9.2))
 !9 format(4(i4),66(1x,g9.2))
@@ -1125,7 +1147,7 @@ logical ex !new
     write(ulog,*)'SETUP_MAPS: nd>4, check your include_fc array ',nd
     write(*   ,*)'SETUP_MAPS: nd>4, check your include_fc array ',nd,include_fc(2)
     if (include_fc(2) .eq. 2) then
-      write(*,*) "SUM OF INCLUDE FORCE_CONSTANT IS GREATER THAN 4"
+!      write(*,*) "SUM OF INCLUDE FORCE_CONSTANT IS GREATER THAN 4"
 !   call read_harm_fcs(2)
     endif
 !    stop
@@ -1134,21 +1156,23 @@ logical ex !new
  write(ulog,*)' SETUP_MAPS: ********************************'
 ! loop over ranks that are supposed to be included
 !if(include_fc(2) .eq. 2) then  ! This is what you have to do in order for to get force constant and declare fc_ind as global
-!call read_fcs_2(2)
+!   write(*,*) "ENTERING SETUP MAPS READ_FCS_2-ROUTINE: ", map(2)%ntotind
+!   call read_fcs_2(2)
 !endif
+!write(*,*) "THE FC_IND-BIKASH: ", fc_ind
 ! -----------------------------------
  rankloop: do rnk=1,4 !,1,-1
   if ( include_fc(rnk) .ne. 0 ) then
-write(*,*) "This condition is satisfied:::"
+!write(*,*) "This condition is satisfied:::"
     mx=maxterms(rnk)
     mxi = maxtermsindep(rnk)
     write(ulog,4)'rank,mx,mxi,maxgrps=',rnk,mx,mxi,maxgroups
     mxzero = 90
     iert=1 ; ieri=1 ; ierz=1
-write(*,*) "The value for ierg is: ", ierg, iert, ieri, ierz
+!write(*,*) "The value for ierg is: ", ierg, iert, ieri, ierz
 ! start from a small maxterms and maxtermszero and increase by 100 if too small
   checkloop: do while (ierg+ierz+iert+ieri.ne.0)
-  write(*,*) "IF IERGIERZ is satisfied::"
+!  write(*,*) "IF IERGIERZ is satisfied::"
 !write(*,*) "VALUES: nterm, ntermsindep, mapmat, iatmtrm, ixyzterm, iatomtermindep, ixyztermindep, iatomtermzero, ixyztermzero", &
 !& nterm, ntermsindep, mapmat, iatmtrm, iatomtermindep, ixyztermindep, iatomtermzero, ixyztermzero
      write(*,4) 'maxtrmzero,maxtrm,maxtrmindp,maxgrp=',mxzero,mx,mxi,maxgroups
@@ -1208,7 +1232,6 @@ write(*,*) "The value for ierg is: ", ierg, iert, ieri, ierz
          if (allocated(nterm)) deallocate(nterm)
          if (allocated(ntermsindep)) deallocate(ntermsindep)
      endif
-write(*,*) "map(2)%ngr value is: ", map(2)%ngr
       !if ( rnk .eq. 2) then
       !   if(include_fc(rnk) .eq. 2) then  ! This is what you have to do in order for to get force constant and declare fc_ind as global
       !      call read_fcs_2(2)
@@ -1257,12 +1280,20 @@ write(*,*) "map(2)%ngr value is: ", map(2)%ngr
         do i=0,nshells(rnk,1)
            m = m + atom0(1)%shells(i)%no_of_neighbors
         enddo
+        write(*,*)'value of m, natoms0 and inv_constraints is: ',m,natoms0, inv_constraints
         write(ulog,*)'atm 1 has ',m,'inclusve nghbrs within ',nshells(rnk,1),' shell'
         inv_constraints = inv_constraints + natoms0*12*m
         write(ulog,*)' rank=',rnk,' groups=',ngroups(rnk)
         write(ulog,'(a,99(i4))')' nterm=',nterm(1:ngroups(rnk))
         write(ulog,*)' Cumulative invce_cnstrnts for this shell ', inv_constraints
 
+     endif
+
+     if ( rnk .eq. 2) then
+         if( include_fc(rnk) .eq. 2) then
+   !         write(*,*) "INFO-NGR: ", map(rnk)%ngr
+            call read_fcs_2(rnk)
+         endif
      endif
 
      deallocate(iatmtrm,ixyztrm,mapmat,  &
@@ -1279,6 +1310,11 @@ write(*,*) "map(2)%ngr value is: ", map(2)%ngr
   endif
 
  enddo rankloop
+
+!if(include_fc(2) .eq. 2) then  ! This is what you have to do in order for to get force constant and declare fc_ind as global
+!   call read_fcs_2(2) ! You need to put this here
+!   write(*,*) "Check FC_IND-Bikash: ",fc_ind
+!endif
 
  write(*,*) 'SETUP_MAPS: Exited the main rank loop , and going to write by calling ustring'
 
@@ -1333,10 +1369,6 @@ write(*,*) "map(2)%ngr value is: ", map(2)%ngr
  write(ulog,*)'END OF SETUP_MAPS: NGR=',ngr
  write(*,*) 'exiting setup_maps routine'
 
-if(include_fc(2) .eq. 2) then  ! This is what you have to do in order for to get force constant and declare fc_ind as global
-    call read_fcs_2(2) ! You need to put this here
-endif
-
  end subroutine setup_maps
 !===============================================================================
  subroutine include_constraints
@@ -1350,7 +1382,7 @@ endif
  integer n_constr
 ! real(8), allocatable:: w(:),v(:,:)
 ! real(8), allocatable:: a11(:,:),b1(:),a12(:,:),a11i(:,:),b2(:)
-
+!write(*,*) "THE FORCE_CONSTRAINTS VALUE IS: ", force_constraints
 !-----------------------------------------------------------------------
 ! in this case, invariances are obtained in a rms sense and are not exact.
    dim_al= force_constraints
@@ -1360,7 +1392,7 @@ endif
    write(ulog,*)'INCLUDE_CONSTRAINTS :c(transl),dim(A)=',transl_constraints,dim_al
    write(ulog,*)'INCLUDE_CONSTRAINTS :c(rotatn),dim(A)=',rot_constraints   ,dim_al
    write(ulog,*)'INCLUDE_CONSTRAINTS :c(huang ),dim(A)=',huang_constraints ,dim_al
-   write(*,*) "The dimension of the AMATRIX, dima_al, dim_ac is: ", dim_al, ngr
+!   write(*,*) "The dimension of the AMATRIX, dima_al, dim_ac is: ", dim_al, ngr
    if (itrans .ne. 0) dim_al= dim_al+ transl_constraints
    if (irot   .ne. 0) dim_al= dim_al+    rot_constraints
    if (ihuang .ne. 0) dim_al= dim_al+  huang_constraints
@@ -1721,7 +1753,7 @@ write(*,*)'j=',j,line-force_constraints
  real(8) huang,rr(3)
  real(8), allocatable:: ared1d(:),zero(:)
 
- if (ihuang .ne. 0) then
+ if (ihuang .ne. 1) return
 
    rnk = 2; huang_constraints=15
 !  res = sum(map(1)%ntind(:))
@@ -1792,7 +1824,6 @@ write(*,*)'j=',j,line-force_constraints
 
    deallocate( ared1d,zero )
 
- endif
 6 format(a,8(1x,i4),9(2x,f7.3))
 !7 format(66(1x,g9.2))
 

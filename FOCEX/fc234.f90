@@ -457,7 +457,7 @@ real tim
 ! THE FORMULATION OF REMOVE_ZERO SUBROUTINE. ONE OF THE WAY I SEE IS CHECK FOR ZERO COLUMN DIRECTLY HERE.
 small=1d-7
 nz_index=0
-if (nconfigs .eq. 1) then
+if (nconfigs .eq. 1 .and. include_fc(4) .ne. 1) then
 do i=1,dim_al-3    !shape(amat,1)
    suml = maxval(abs(amat(i,:)))
    if (suml .gt. small) then
@@ -474,7 +474,27 @@ do i=1,dim_al-3
       endif
 enddo
 endif
-if (nconfigs .ne. 1) then
+
+if (nconfigs .eq. 1 .and. include_fc(4) .eq. 1) then
+do i=1,dim_al    !shape(amat,1)
+    suml = maxval(abs(amat(i,:)))
+    if (suml .gt. small) then
+          nz_index=nz_index+1
+    endif
+enddo
+allocate(rm_zero_energy(nz_index))
+nz_index=1
+do i=1,dim_al
+    suml=maxval(abs(amat(i,:)))
+       if (suml .gt. small) then
+          rm_zero_energy(nz_index)=energy(1)
+          nz_index=nz_index+1
+       endif
+enddo
+endif
+
+write(*,*) "value of dim_al is: ",dim_al
+if (nconfigs .ne. 1 .and. include_fc(4) .ne. 1) then
 do i=1,dim_al-3    !shape(amat,1)
    suml = maxval(abs(amat(i,:)))
    if (suml .gt. small) then
@@ -483,7 +503,7 @@ do i=1,dim_al-3    !shape(amat,1)
 enddo
 allocate(rm_zero_energy(nz_index))
 nz_index=1
-do i=1,dim_al
+do i=1,dim_al-3
    suml=maxval(abs(amat(i,:)))
       if (suml .gt. small) then
          rm_zero_energy(nz_index)=energy(i)
@@ -491,6 +511,25 @@ do i=1,dim_al
       endif
 enddo
 endif
+
+if (nconfigs .ne. 1 .and. include_fc(4) .eq. 1) then 
+do i=1,dim_al    !shape(amat,1)
+   suml = maxval(abs(amat(i,:)))
+   if (suml .gt. small) then 
+         nz_index=nz_index+1
+   endif
+enddo
+allocate(rm_zero_energy(nz_index))
+nz_index=1
+do i=1,dim_al
+   suml=maxval(abs(amat(i,:)))
+      if (suml .gt. small) then 
+         rm_zero_energy(nz_index)=energy(1)
+         nz_index=nz_index+1
+      endif
+enddo
+endif
+
 !allocate(mat(dim_ac,dim_ac),mat_inverse(dim_ac,dim_ac),amat_trans(dim_ac,dim_al))
 !allocate(wts(dim_al),qmat(dim_ac))
 !V1=1.0d0

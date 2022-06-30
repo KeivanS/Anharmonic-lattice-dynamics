@@ -706,7 +706,7 @@ module ios
  integer, parameter:: ulog=30,uposcar=10,uparams=11, utraj=40,ufco=20,  &
 &         umap=60,umatrx=50,utimes=70,ufc1=21,ufc2=22,ufc3=23,ufc4=24,   &
 &         ufc=80,ufit1=31,ufit2=32,ufit3=33,ufit4=34,ucor=93,uborn=12
-
+real(8) temperature
 
   interface write_out
      module procedure write_outiv, write_outrv, write_outim, write_outrm &
@@ -1088,6 +1088,7 @@ contains
  real(8), allocatable:: fc_ind(:) ! This is for getting force constant by reading FC2.dat file
  integer inv_constraints,force_constraints,dim_al,dim_ac,n_indep,newdim_al,dim_hom   &
 &        ,transl_constraints, rot_constraints, huang_constraints,ngr
+real(8), allocatable:: energy(:)
 contains
 
  subroutine set_maxterms
