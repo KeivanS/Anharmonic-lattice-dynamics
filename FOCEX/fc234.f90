@@ -675,7 +675,6 @@ V1=minval(rm_zero_energy)
 endif
 kB=0.00008617333262145d0
 !Temp=116050000000.518120d0
-!write(*,*) "VALUE OF TEMPERATURE IS: ",temperature
 kBT=kB*temperature
 norm_wts=0.0d0
 if (nconfigs .eq. 1) then
@@ -695,24 +694,26 @@ enddo
 endif
 
 if (nconfigs .eq. 1) then
+norm_wts=0.0
 do i=1,dim_al-3
    wts(i)=exp(-1.0d0*(abs(rm_zero_energy(i))-abs(V1))/kBT)
-   wts(i)=wts(i)/norm_wts
    norm_wts=norm_wts+wts(i)
 enddo
+do i=1,dim_al-3
+   wts(i)=wts(i)/norm_wts
+enddo
 endif
-
 if (nconfigs .ne. 1) then
+norm_wts=0.0
 do i=1,dim_al
    wts(i)=exp(-1.0d0*(abs(rm_zero_energy(i))-abs(V1))/kBT)
-   wts(i)=wts(i)/norm_wts
    norm_wts=norm_wts+wts(i)
 enddo
+do i=1,dim_al
+   wts(i)=wts(i)/norm_wts
+enddo
 endif
-
-!do i=1,dim_al
-!   wts(i)=wts(i)/norm_wts
-!enddo
+!write(*,*) "VALUE OF WTS IS: ", wts
 qmat=0.0d0
 mat=0.0d0
 lnew=0
@@ -731,7 +732,7 @@ endif
 if (nconfigs .ne. 1) then
    do l=1,dim_al
       qmat(i)=qmat(i)+wts(l)*bmat(l)*amat_trans(lnew,l)
-!      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat(l,i)
+ !     qmat(i)=qmat(i)+wts(l)*bmat(l)*amat(l,i)
       do j=1,dim_ac
          mat(i,j)=mat(i,j)+wts(l)*amat_trans(j,l)*amat(l,i)
       enddo
@@ -770,17 +771,24 @@ enddo
 !   do i=1,dim_ac
 !      write(*,*) "QMAT VAL: ", qmat(i)
 !   enddo
-!write(*,*) "VALUE OF ERROR IS: ",error
-!write(*,*) "VALUE OF ERMAX IS: ",ermax
 !write(*,*) "VALUE OF SVDCUT IS: ",svdcut
    allocate(fc(dim_ac))
    
+   if (nconfigs .eq. 1) then
+      call svd_set(dim_ac,dim_ac,mat,qmat,fc,sigma,svdcut,error,ermax,sig,'svd-all-new.dat') ! JUST SWITCH IT ON AND SEE THE RESULT
+     do i=1,dim_ac
+       write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
+     enddo
+     call write_output_temp_fc2(fc)
+   endif
+
    if (nconfigs .ne. 1) then
       call svd_set(dim_ac,dim_ac,mat,qmat,fc,sigma,svdcut,error,ermax,sig,'svd-all-new.dat') ! JUST SWITCH IT ON AND SEE THE RESULT
      do i=1,dim_ac
        write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
      enddo
-    endif
+     call write_output_temp_fc2(fc)
+   endif
 
   call svd_set(dim_al,dim_ac,amat,bmat,fcs,sigma,svdcut,error,ermax,sig,'svd-all.dat')
 
@@ -827,8 +835,8 @@ deallocate(wts,qmat,mat,mat_inverse,rm_zero_energy,fc,amat_trans)
   close(umap)
   close(umatrx)
   close(utimes)
-
-end program FC234
+contains
+!end program FC234
 !===========================================================
  subroutine remove_zeros(nl,nc, amatr, bmatr,j)
 ! removes lines which are all zero from the amatrix
@@ -1029,3 +1037,190 @@ end program FC234
   enddo
 !  r(mcor) is now the ordered array r(mcor(1)) > r(mcor(2)) > ... > r(mcor(n))
  end subroutine invsort
+
+ subroutine write_output_temp_fc2(fc)
+   use svd_stuff
+   use ios
+   use force_constants_module
+   use atoms_force_constants
+   use params
+   use lattice
+   use constants
+   implicit none
+   real(8), allocatable, intent(in) :: fc(:)
+   integer rnk,t,ti,i,res,j,rs !ni(4),nt(4)
+   integer iat(4),ixyz(4),g,ng,term,term2,cnt2,frm,ufit1_temp,uf1_temp,k
+   real(8) rij,bunit,one,fcd,trace,dij
+   character frmt*2,goh*48,ln*1,geh*47,file_temp*16,rank_tag*1,file_fc_temp*12
+   ufit1_temp=41
+   uf1_temp=51
+   bunit = ryd/ab/ab
+   one =1d0
+  
+  !6 format(2x,i5,1x,a2,2x,i5,9(2x,f19.10))
+  !7 format(1(2x,i5),3(2x,f19.10),4(2x,i5),2x,f9.5)
+  8 format(2(2x,i5),3(2x,f19.10),4(2x,i5),2x,f9.5)
+  !9 format(9(2x,f19.10))
+  
+  ! first write the crystal data
+  ! nt=0; ni=0
+  ! do i=1,4
+  !    if(map(i)%ngr.gt.0) then
+  !      nt(i)= sum(map(i)%nt(:))
+  !      ni(i)= sum(map(i)%ntind(:))
+  !      if ( (ni(i).ne.map(i)%ntotind) .or. (nt(i).ne.map(i)%ntot) ) then
+  !         write(ulog,*)'WRITE_OUTPUT_FC2: ERROR!!'
+  !         write(ulog,*)'ni(i).ne.map(i)%ntotind ',ni(i),map(i)%ntotind
+  !         write(ulog,*)'nt(i).ne.map(i)%ntot    ',nt(i),map(i)%ntot
+  !    endif
+  ! enddo
+  ! call write_lat_fc(ni,nt)  ! same as call write_lat_fc(map(:)%ntotind,map(:)%ntot)
+  ! write(*,*) "FCS VALUE is: ", fcs
+  !----------------------------------------
+  !write(*,*) "map(3)%ngrB and map(4)%ngrB: ", map(3)%ngr, map(4)%ngr
+  !if(allocated(fc)) then
+  !write(*,*) "VALUE OF FC passed: ",fc
+  !endif
+   res = 0
+   if (include_fc(2) .ne. 2) then
+   do rnk=1,4
+    if ( include_fc(rnk) .ne. 0 ) then
+      write(rank_tag,'(I1)') rnk
+      file_temp='fc'//rank_tag//'_fit_temp.dat'
+      file_fc_temp='fc'//rank_tag//'_temp.dat'
+      open(ufit1_temp-1+rnk,file=file_temp,status='unknown')
+      open(uf1_temp-1+rnk,file=file_fc_temp,status='unknown')
+      frm=30+rnk
+      write(ln,'(i1)')rnk
+      goh='(a1,i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,2(g14.8,2x),f5.2)'
+      geh='(i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,g14.8,f8.4,2x,f9.5)'
+      write(frmt,'(i2)')30+rnk
+      !write(ulog,*)' FOR RANK=',rnk,' format=',frmt
+      !write(*,*)' FOR RANK=',rnk,' format=',frmt
+      write(uf1_temp-1+rnk,*)'# RANK ',rnk,' tensors :term,group,(iatom,ixyz)_2 d^nU/dx_{i,alpha}^n'
+  
+    ng=map(rnk)%ngr ! number of groups
+    cnt2=0
+    term = 0
+    term2= 0
+    do g=1,map(rnk)%ngr  ! index of a given group
+         if(g.gt.1) cnt2=cnt2+map(rnk)%ntind(g-1)
+        !if(g .gt. 1 .and. rnk .eq. 2 .and. include_fc(rnk) .eq. 2) cnt2=cnt2-map(rnk)%ngr
+        !if (include_fc(2) .eq. 2) then
+        !   cnt2=cnt2-map(rnk-1)%ntind(g-1)
+        !endif
+        ! write in the log and fcn_fit.dat: cnt2+ti is the position of indep_fc of that rank
+      do ti=1,map(rnk)%ntind(g)  ! index of independent terms in that group g
+         iat(1:rnk)  = map(rnk)%gr(g)%iatind (:,ti)
+         ixyz(1:rnk) = map(rnk)%gr(g)%ixyzind(:,ti)
+         term = term+1
+         if (rnk.eq.2) then
+           rij = length(atompos(:,iat(1))-atompos(:,iat(2)))
+         else
+           rij = 0
+         endif
+     !    write(*,*) "The value of MAPERR is: ", cnt2+ti, g, ti
+     !    write(*,*) "The value of MAPERR is: ", map(rnk)%err(cnt2+ti)
+     !    write(ulog,goh) map(rnk)%err(cnt2+ti),g,ti,(iat(j),ixyz(j),j=1,rnk),  &
+     !    &     fcs(res+cnt2+ti),fcs(res+cnt2+ti)/ryd*ab**rnk,rij
+      !   write(ufit1-1+rnk,geh) ti,g,(iat(j),ixyz(j),j=1,rnk),  &
+      !   &     fcs(res+cnt2+ti),one,rij
+         write(ufit1_temp-1+rnk,geh) ti,g,(iat(j),ixyz(j),j=1,rnk),  &
+         &     fc(res+cnt2+ti),one,rij
+  
+      enddo
+  
+      ! write in the fcn.dat file
+      do t=1,map(rnk)%nt(g)  ! index of dependent terms in that group g
+         iat(1:rnk)  = map(rnk)%gr(g)%iat (:,t)
+         ixyz(1:rnk) = map(rnk)%gr(g)%ixyz(:,t)
+         term2= term2+1
+         fcd = 0
+         ! must find the corresponding index of the indep term t <-> ti
+         do ti=1,map(rnk)%ntind(g)
+            ! this is the index of the indep FC coming in the A*FC=b matrix product
+         !   fcd = fcd + fcs(res+cnt2+ti)*map(rnk)%gr(g)%mat(t,ti)
+            fcd = fcd + fc(res+cnt2+ti)*map(rnk)%gr(g)%mat(t,ti)
+         enddo
+         if( abs(fcd) .gt. margin) then
+            write(uf1_temp-1+rnk,geh)t,g, (iat(j),ixyz(j),j=1,rnk),fcd,one
+          !  k=1
+         endif
+      enddo
+    enddo
+  !  res = res+ndindp(rnk)
+    res = res+map(rnk)%ntotind
+    close(ufit1_temp-1+rnk)
+    close(uf1_temp-1+rnk)
+    endif
+   enddo
+  endif
+  ! Chaning for the case IF_INCLUDE_FC(2) IS EQUAL TO 2--VERY CRUDE NEED TO ALLOCATE TO PLAY WITH RANK HERE
+
+  write(ulog,*)'******* Trace for the harmonic FCs ********'
+   open(4562,file='trace_fc_temp.dat')
+  
+  ! write the trace of FC2
+   rnk=2
+    iloop: do i=1,natoms0
+    jloop: do j=1,natoms
+       rij = length(atompos(:,i)-atompos(:,j))
+       trace=0
+  !     rs=ndindp(1)
+       rs=map(1)%ntotind
+  !     rs=0   ! I HAVE JUST SWITCHED THIS TO ZERO TO CHECK IF THE VALUE OF RS IS THE ISSUE
+     !  if ( include_fc(rnk) .eq. 2 ) then
+     if ( include_fc(rnk) .ne. 2 ) then ! was if (include_fc(rnk) .ne. 0) then. I changed it to 2 because thats what we need to check for
+          ng=map(rnk)%ngr ! number of groups
+          cnt2=0
+          term2= 0
+    do g=1,map(rnk)%ngr  ! index of a given group
+         if(g.gt.1) cnt2=cnt2+map(rnk)%ntind(g-1)
+     !    write(*,*) "VALUE OF CNT2 AT START IS: ", cnt2
+      do t=1,map(rnk)%nt(g)  ! index of independent terms in that group g
+         iat(1:rnk)  = map(rnk)%gr(g)%iat (:,t)
+         ixyz(1:rnk) = map(rnk)%gr(g)%ixyz(:,t)
+    !    i=iat(1) ; j=iat(2)
+         if (iat(1).ne.i) cycle !iloop
+         if (iat(2).ne.j) cycle ! jloop
+  !      write(*,*)'i,j,term2,al,be=',i,j,term2,ixyz(1),ixyz(2)
+         fcd = 0
+         ! must find the corresponding index of the indep term t <-> ti
+         do ti=1,map(rnk)%ntind(g)
+     !       write(*,*) 'res,cnt2,ti,res+cnt2+ti=',res,cnt2,ti,res+cnt2+ti
+            ! this is the index of the indep FC coming in the A*FC=b matrix product
+        !    fcd = fcd + fcs(rs+cnt2+ti)*map(rnk)%gr(g)%mat(t,ti)
+            fcd = fcd + fc(cnt2+ti)*map(rnk)%gr(g)%mat(t,ti)
+         enddo
+         dij = length(atompos(:,iat(1))-atompos(:,iat(2)))
+         if (ixyz(1).eq.ixyz(2)) then
+            term2= term2+1
+            trace = trace+ fcd
+    !       write(*,*)'al,term2,trace=',ixyz(1),term2,trace
+         endif
+      enddo
+    enddo
+         if(trace.ne.0) then
+             write(ulog,8) i,j,dij,trace
+             write(4562,8) i,j,dij,trace
+         endif
+   !     if (term2.ne.3) write(456,*)'#ERROR: there are ',term2,' terms for rij=',dij
+  
+     endif
+  
+  enddo jloop
+  enddo iloop
+  
+   close(4562)
+  
+  write(ulog,*)'***************** END OF FC Trace ******************'
+  !----------------------------------------
+  ! 125  format(a)
+  
+   if (res.ne.ngr) then
+   !   write(ulog,*)'WRITE_OUTPUT: sum(nterms),ngr=',res,ngr
+   !   write(ulog,*)'WRITE_OUTPUT: they should be equal!'
+      k=2
+   endif
+end subroutine write_output_temp_fc2
+end program FC234
