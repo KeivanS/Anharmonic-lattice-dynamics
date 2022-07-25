@@ -4,9 +4,6 @@ Introduction
 What is ALADYN?
 ---------------
 
-test
-~~~~
-
 Anharmonic-LAttice-DYNamics (ALADYN) contains 5 sets of stand-alone codes:
 
 * **FOrce Constant EXtraction (FOCEX)** to extract force constants from force-displacements data, the output of which can be used as input to the following codes;
