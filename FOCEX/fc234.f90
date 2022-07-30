@@ -15,21 +15,22 @@ program FC234
 ! file for further use.
 !
 !------------------------------------------------
-! program to extract force constants from ab initio force-displacement data
-! eventually with (linear) constraints of symmetry
-! INPUT FILES : param.in, POSCAR, OUTCAR
-! in params.inp file user specifies the specifications of the primitive cell
-! what potential parameters will be kept how many shells are included,
-! whether or not transl and rot inv constraints are imposed
-! the tolerance for equating two coordinates
-! specifications(type mass name) of the atoms in prim cell and their red coord
-! In POSCAR file the same specifications but for the super cell are read.
-! Finally OUTCAR constains the force-displacements data
-! OUTPUT FILES: log.dat contains log of the runs and intermediate outputs
-! fcs.dat : contains the obtained force constants
-! amatrx.dat : is the matrix A and column b to be solved by SVD
-! svd-results.dat: contains the output of SVD algorithm, errors, array w
-! maps.dat: contains the map taking the oned array of terms to atom i,xyz
+!! program to extract force constants from ab initio force-displacement data
+!! eventually with (linear) constraints of symmetry
+!! INPUT FILES : param.in, POSCARi, OUTCARi  i=1,2,...
+!! in params.inp file user specifies the specifications of the primitive cell
+!! what potential parameters will be kept how many shells are included,
+!! whether or not transl and rot inv constraints are imposed
+!! the tolerance for equating two coordinates
+!! specifications(type mass name) of the atoms in prim cell and their red coord
+!! In POSCAR1 file the same specifications but for the super cell are read.
+!! Finally OUTCAR1 contains the force-displacements data
+!! OUTPUT FILES: log.dat contains log of the run and intermediate outputs
+!! fc2.dat fc3.dat fc4.dat : contain the full set of obtained force constants
+!! fc2_irr.dat fc3_irr.dat fc4_irr.dat : contain the irreducible set of obtained force constants
+!! amatrx.dat : is the matrix A and column b of the system A.phi=b to be solved by SVD
+!! svd-results.dat: contains the output of SVD algorithm, phi, and the error in the fitting, and array w
+!! maps.dat: contains the map taking the oned array of terms to atom i,xyz
 ! by K. Esfarjani December 2006
 !------------------------------------------------
 !* need to treat cases where equilibrium positions are not known but are
@@ -80,10 +81,10 @@ real tim
  open(umatrx,file='amatrx.dat',status='unknown')
  open(ucor  ,file='corresp.dat',status='unknown')
  open(ufco  ,file='lat_fc.dat',status='unknown')
- open(ufit1 ,file='fc1_fit.dat',status='unknown')
- open(ufit2 ,file='fc2_fit.dat',status='unknown')
- open(ufit3 ,file='fc3_fit.dat',status='unknown')
- open(ufit4 ,file='fc4_fit.dat',status='unknown')
+ open(ufit1 ,file='fc1_irr.dat',status='unknown')
+ open(ufit2 ,file='fc2_irr.dat',status='unknown')
+ open(ufit3 ,file='fc3_irr.dat',status='unknown')
+ open(ufit4 ,file='fc4_irr.dat',status='unknown')
 
  write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' Program FC234 was launched at ',today(1:4)//'/'  &
 &  //today(5:6)//'/'//today(7:8),now(1:2)//':'//now(3:4)//':'//now(5:10),zone
@@ -138,20 +139,20 @@ real tim
 ! reallocate atompos,iatomcell and iatomcell0
   allocate(auxi(3,natoms),aux1(3,natoms))
 
-      auxi(1:3,1:natoms)=iatomcell(1:3,1:natoms) 
+      auxi(1:3,1:natoms)=iatomcell(1:3,1:natoms)
       aux1(1:3,1:natoms)=atompos(1:3,1:natoms)
       deallocate(atompos,iatomcell)
       allocate(atompos(3,natoms),iatomcell(3,natoms))
       atompos=aux1; iatomcell=auxi
 
-      auxi(1,1:natoms)=iatomcell0(1:natoms) 
+      auxi(1,1:natoms)=iatomcell0(1:natoms)
       deallocate(iatomcell0)
       allocate(iatomcell0(natoms))
-      iatomcell0=auxi(1,:)             
+      iatomcell0=auxi(1,:)
       maxatoms=natoms
 
   deallocate(aux1,auxi)
-       
+
  call cpu_time(tim)
  write(utimes,'(a,f10.4)')' FC_INIT CALLED, TIME                          IS ',tim
  write(utimes,*)' FC_init called, atmpos, neighbs, iatmcell calculated'
@@ -470,7 +471,7 @@ do i=1,dim_al-3
    suml=maxval(abs(amat(i,:)))
       if (suml .gt. small) then
          rm_zero_energy(nz_index)=energy(i)
-         nz_index=nz_index+1      
+         nz_index=nz_index+1
       endif
 enddo
 endif
@@ -512,10 +513,10 @@ do i=1,dim_al-3
 enddo
 endif
 
-if (nconfigs .ne. 1 .and. include_fc(4) .eq. 1) then 
+if (nconfigs .ne. 1 .and. include_fc(4) .eq. 1) then
 do i=1,dim_al    !shape(amat,1)
    suml = maxval(abs(amat(i,:)))
-   if (suml .gt. small) then 
+   if (suml .gt. small) then
          nz_index=nz_index+1
    endif
 enddo
@@ -523,7 +524,7 @@ allocate(rm_zero_energy(nz_index))
 nz_index=1
 do i=1,dim_al
    suml=maxval(abs(amat(i,:)))
-      if (suml .gt. small) then 
+      if (suml .gt. small) then
          rm_zero_energy(nz_index)=energy(1)
          nz_index=nz_index+1
       endif
@@ -593,7 +594,7 @@ allocate(newamat(newdim_al,dim_ac),newbmat(newdim_al))
 !  allocate(newamat(newdim_al,map(2)%ngr:dim_ac),newbmat(map(2)%ngr:dim_al))
 !   write(*,*) "The value for newdiv_al, map(3).ntotind+map(4).ntotind is: ", map(3)%ntotind+map(4)%ntotind
 !   allocate(newamat(newdim_al,map(3)%ntotind+map(4)%ntotind),newbmat(map(2)%ngr:dim_al)) ! what is the dimension here map(2)%ngr:dim_al
-   ! or 1:dim_al-map(2)%ngr`  
+   ! or 1:dim_al-map(2)%ngr`
 !endif
   newamat(:,:) = amat(1:newdim_al,1:dim_ac)
   newbmat(:  ) = bmat(1:newdim_al)
@@ -773,22 +774,22 @@ enddo
 !   enddo
 !write(*,*) "VALUE OF SVDCUT IS: ",svdcut
    allocate(fc(dim_ac))
-   
-   if (nconfigs .eq. 1) then
-      call svd_set(dim_ac,dim_ac,mat,qmat,fc,sigma,svdcut,error,ermax,sig,'svd-all-new.dat') ! JUST SWITCH IT ON AND SEE THE RESULT
-     do i=1,dim_ac
-       write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
-     enddo
-     call write_output_temp_fc2(fc)
-   endif
 
-   if (nconfigs .ne. 1) then
+!   if (nconfigs .eq. 1) then
       call svd_set(dim_ac,dim_ac,mat,qmat,fc,sigma,svdcut,error,ermax,sig,'svd-all-new.dat') ! JUST SWITCH IT ON AND SEE THE RESULT
      do i=1,dim_ac
        write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
      enddo
      call write_output_temp_fc2(fc)
-   endif
+!   endif
+
+!   if (nconfigs .ne. 1) then
+!      call svd_set(dim_ac,dim_ac,mat,qmat,fc,sigma,svdcut,error,ermax,sig,'svd-all-new.dat') ! JUST SWITCH IT ON AND SEE THE RESULT
+!     do i=1,dim_ac
+!       write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
+!     enddo
+!     call write_output_temp_fc2(fc)
+!   endif
 
   call svd_set(dim_al,dim_ac,amat,bmat,fcs,sigma,svdcut,error,ermax,sig,'svd-all.dat')
 
@@ -835,11 +836,12 @@ deallocate(wts,qmat,mat,mat_inverse,rm_zero_energy,fc,amat_trans)
   close(umap)
   close(umatrx)
   close(utimes)
+
 contains
 !end program FC234
 !===========================================================
  subroutine remove_zeros(nl,nc, amatr, bmatr,j)
-! removes lines which are all zero from the amatrix
+!! removes lines which are all zero from the amatrix
  use ios
  use params
  use svd_stuff  !for itrans,irot,ihuang
@@ -927,7 +929,7 @@ contains
  end subroutine remove_zeros
 !===========================================================
  subroutine eliminate_fcs(sig)
-! try to recalculate using elimination
+!! try to recalculate using elimination
  use svd_stuff
  use params
  use ios
@@ -1017,7 +1019,7 @@ contains
  end subroutine eliminate_fcs
 !============================================================
  subroutine invsort(n,r,mcor)
-! sorts the first n elements of array r in descending order r(mcor(i)) is the ordered array
+!! sorts the first n elements of array r in descending order r(mcor(i)) is the ordered array
   implicit none
   integer n,i,j,temp
   real(8) r(n)
@@ -1037,7 +1039,7 @@ contains
   enddo
 !  r(mcor) is now the ordered array r(mcor(1)) > r(mcor(2)) > ... > r(mcor(n))
  end subroutine invsort
-
+!============================================================
  subroutine write_output_temp_fc2(fc)
    use svd_stuff
    use ios
@@ -1056,12 +1058,12 @@ contains
    uf1_temp=51
    bunit = ryd/ab/ab
    one =1d0
-  
+
   !6 format(2x,i5,1x,a2,2x,i5,9(2x,f19.10))
   !7 format(1(2x,i5),3(2x,f19.10),4(2x,i5),2x,f9.5)
   8 format(2(2x,i5),3(2x,f19.10),4(2x,i5),2x,f9.5)
   !9 format(9(2x,f19.10))
-  
+
   ! first write the crystal data
   ! nt=0; ni=0
   ! do i=1,4
@@ -1098,7 +1100,7 @@ contains
       !write(ulog,*)' FOR RANK=',rnk,' format=',frmt
       !write(*,*)' FOR RANK=',rnk,' format=',frmt
       write(uf1_temp-1+rnk,*)'# RANK ',rnk,' tensors :term,group,(iatom,ixyz)_2 d^nU/dx_{i,alpha}^n'
-  
+
     ng=map(rnk)%ngr ! number of groups
     cnt2=0
     term = 0
@@ -1127,9 +1129,9 @@ contains
       !   &     fcs(res+cnt2+ti),one,rij
          write(ufit1_temp-1+rnk,geh) ti,g,(iat(j),ixyz(j),j=1,rnk),  &
          &     fc(res+cnt2+ti),one,rij
-  
+
       enddo
-  
+
       ! write in the fcn.dat file
       do t=1,map(rnk)%nt(g)  ! index of dependent terms in that group g
          iat(1:rnk)  = map(rnk)%gr(g)%iat (:,t)
@@ -1159,7 +1161,7 @@ contains
 
   write(ulog,*)'******* Trace for the harmonic FCs ********'
    open(4562,file='trace_fc_temp.dat')
-  
+
   ! write the trace of FC2
    rnk=2
     iloop: do i=1,natoms0
@@ -1205,18 +1207,18 @@ contains
              write(4562,8) i,j,dij,trace
          endif
    !     if (term2.ne.3) write(456,*)'#ERROR: there are ',term2,' terms for rij=',dij
-  
+
      endif
-  
+
   enddo jloop
   enddo iloop
-  
+
    close(4562)
-  
+
   write(ulog,*)'***************** END OF FC Trace ******************'
   !----------------------------------------
   ! 125  format(a)
-  
+
    if (res.ne.ngr) then
    !   write(ulog,*)'WRITE_OUTPUT: sum(nterms),ngr=',res,ngr
    !   write(ulog,*)'WRITE_OUTPUT: they should be equal!'

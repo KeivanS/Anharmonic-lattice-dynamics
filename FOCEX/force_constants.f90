@@ -1,15 +1,15 @@
 !******************************************************************************
-!! initialize data
+!! initialize data related to force_constant arrays
       subroutine force_constants_init(lattparams,primlatt,natoms_in, &
      &     iatomtype,atompos_in)
 
-! arguments:
-!     lattparams(i) (input), lattice parameters a,b,c,alpha,beta,gamma
-!     primlatt(i,j) (input), ith dimensionless coordinate of jth basis vector
-!          of the primitive lattice
-!     natoms_in (input), number of atoms in the primitive unit cell
-!     iatomtype(i) (input), type of ith atom, numbered 1,2,3,etc.
-!     atompos_in(j,i) (input), jth dimensionless coordinate of the ith atom
+!! arguments:
+!!     lattparams(i) (input), lattice parameters a,b,c,alpha,beta,gamma
+!!     primlatt(i,j) (input), ith dimensionless coordinate of jth basis vector
+!!          of the primitive lattice
+!!     natoms_in (input), number of atoms in the primitive unit cell
+!!     iatomtype(i) (input), type of ith atom, numbered 1,2,3,etc.
+!!     atompos_in(j,i) (input), jth dimensionless coordinate of the ith atom
 
       use lattice
       use force_constants_module
@@ -24,9 +24,10 @@
      &     itype,isg,iatom0,icell(3), iop_matrix(3,3,48)
       logical foundone
       real(8) d2save(maxneighbors),r(3),d2, d2r,   &
-     &     conv_to_cart(3,3),prim_to_cart(3,3),cart_to_prim(3,3),   &
-     &     prim_to_conv(3,3),conv_to_prim(3,3), tempi(3,3),latp(6),    &
+     &     conv_to_cart(3,3),prim_to_conv(3,3),conv_to_prim(3,3), tempi(3,3),latp(6), &
      &     atomposconv(3,natoms_in),fract(3),v(3),v2(3),temp(3,3)
+     !,prim_to_cart(3,3),cart_to_prim(3,3),   &
+
 
 !k1
       maxshell = maxneighbors
@@ -81,12 +82,16 @@
 ! added by k1 --------
 ! prim_to_cart(i,j) is the ith cartesian coordinate of the jth translation
 ! vector of the primitive lattice.
-!     call write_out(ulog,'translationc ',3,3,prim_to_cart)
+! prim_to_cart has the translation vectors in real space in columns 1,2,3
+! cart_to_prim has the reciprocal vectors in lines 1,2,3
       r01 = prim_to_cart(:,1)
       r02 = prim_to_cart(:,2)
       r03 = prim_to_cart(:,3)
-!     call write_out(ulog,'transpose(g) ',3,3,cart_to_prim)
-      write(*,*)'transpose(g) ',cart_to_prim
+      call write_out(ulog,'r0= ',3,3,prim_to_cart)
+      g01 = cart_to_prim(1,:)
+      g02 = cart_to_prim(2,:)
+      g03 = cart_to_prim(3,:)
+      call write_out(ulog,'g0= ',3,3,transpose(cart_to_prim))
 ! added by k1 --------
 
 ! get atomic positions in cartesian coordinates
@@ -385,35 +390,35 @@
 ! where U is the total energy of the crystal and xi is a coordinate (x=x,y,z)
 ! of the ith atom.
 
-! arguments:
-!     nrank (input), order of derivative
-!     iatomd(i) (input), atom at ith location in denominator
-!     ixyzd(i) (input), coordinate (1,2,3=x,y,z) at ith location in denominator
-!     ntermsindep (output), number of independent terms
-!     iatomtermindep(i,j) (output), atom at ith location in denominator of
-!          jth independent term
-!     ixyztermindep(i,j) (output), coordinate at ith location in denomonitor
-!          of jth independent term
-!     nterm5 (output), total number of nonzero terms
-!     iatomtermall(i,j) (output), atom at ith location in denominator of
-!          jth nonzero term
-!     ixyztermall(i,j) (output), coordinate at ith location in denomonitor of
-!          jth nonzero term
-!     amat(i,j) (output), coefficient of jth independent term in equation for
-!          kth nonzero term
-!     ntermszero (output), number of zero terms generated
-!     iatomtermzero(i,j) (output), atom at ith location in denominator of
-!          jth zero term
-!     ixyztermzero(i,j) (output), coordinate at ith location in denomonitor
-!          of jth zero term
-!     maxrank (input), number of rows in arrays iatomtermindep, ixyztermindep,
-!          iatomtermall, ixyztermall, iatomtermzero and ixyztermzero
-!     maxterms (input), number of columns in arrays iatomtermall and
-!          ixyztermall
-!     maxtermsindep (input), number of columns in arrays iatomtermindep and
-!          ixyztermindep
-!     maxtermszero (input), number columns in arrays iatomtermzero and
-!          ixyztermzero
+!! arguments:
+!!     nrank (input), order of derivative
+!!     iatomd(i) (input), atom at ith location in denominator
+!!     ixyzd(i) (input), coordinate (1,2,3=x,y,z) at ith location in denominator
+!!     ntermsindep (output), number of independent terms
+!!     iatomtermindep(i,j) (output), atom at ith location in denominator of
+!!          jth independent term
+!!     ixyztermindep(i,j) (output), coordinate at ith location in denomonitor
+!!          of jth independent term
+!!     nterm5 (output), total number of nonzero terms
+!!     iatomtermall(i,j) (output), atom at ith location in denominator of
+!!          jth nonzero term
+!!     ixyztermall(i,j) (output), coordinate at ith location in denomonitor of
+!!          jth nonzero term
+!!     amat(i,j) (output), coefficient of jth independent term in equation for
+!!          kth nonzero term
+!!     ntermszero (output), number of zero terms generated
+!!     iatomtermzero(i,j) (output), atom at ith location in denominator of
+!!          jth zero term
+!!     ixyztermzero(i,j) (output), coordinate at ith location in denomonitor
+!!          of jth zero term
+!!     maxrank (input), number of rows in arrays iatomtermindep, ixyztermindep,
+!!          iatomtermall, ixyztermall, iatomtermzero and ixyztermzero
+!!     maxterms (input), number of columns in arrays iatomtermall and
+!!          ixyztermall
+!!     maxtermsindep (input), number of columns in arrays iatomtermindep and
+!!          ixyztermindep
+!!     maxtermszero (input), number columns in arrays iatomtermzero and
+!!          ixyztermzero
 
       use force_constants_module
       implicit none
@@ -772,12 +777,12 @@
 !! bring a force constant to a unique form: atoms
       subroutine unique_force_constant(nrank,iatomin,ixyzin,iatomout,ixyzout)
 
-! arguments:
-!     nrank (input), order of derivative
-!     iatomin(i) (input), atom at ith location in denominator
-!     ixyzin(i) (input), x,y,z coordinate of atom
-!     iatomout(i) (output), atom at ith location in denominator
-!     ixyzout(i) (output), x,y,z coordinate of atom
+!! arguments:
+!!     nrank (input), order of derivative
+!!     iatomin(i) (input), atom at ith location in denominator
+!!     ixyzin(i) (input), x,y,z coordinate of atom
+!!     iatomout(i) (output), atom at ith location in denominator
+!!     ixyzout(i) (output), x,y,z coordinate of atom
 
       use force_constants_module
       implicit none
@@ -856,12 +861,12 @@
 ! routines
       subroutine findatom(icell,icell0,iatom)
 !! find atom in data base
-! arguments:
-!     icell(i) (input), linear combination of basis vectors of the primitive
-!          lattice that takes us to the unit cell containing the ith atom
-!     icell0 (input), identity of equivalent atom in unit cell at origin
-!     iatom (output), location of atom in data base.  Returns zero if not found
-!          in data base
+!! arguments:
+!!     icell(i) (input), linear combination of basis vectors of the primitive
+!!          lattice that takes us to the unit cell containing the ith atom
+!!     icell0 (input), identity of equivalent atom in unit cell at origin
+!!     iatom (output), location of atom in data base.  Returns zero if not found
+!!          in data base
       use force_constants_module
       implicit none
       integer, intent(in):: icell(3),icell0
@@ -883,10 +888,10 @@
 !--------------------------------------------------------------------------------
       subroutine findatom2(pos,iatom)
 !! find atom in data base
-! arguments:
-!     pos(i) (input), ith cartesian coordinate of atomic position
-!     iatom (output), location of atom in data base.  Returns zero if not found
-!          in data base
+!! arguments:
+!!     pos(i) (input), ith cartesian coordinate of atomic position
+!!     iatom (output), location of atom in data base.  Returns zero if not found
+!!          in data base
       use force_constants_module
       implicit none
       integer iatom,i,j,ncmp
@@ -906,10 +911,10 @@
       function ncmp(x)
       implicit none
 !
-!	COMPARE X WITH ZERO
-!	NCMP=0 IF X IS CLOSE ENOUGH TO ZERO
-!	NCMP=1 OTHERWISE
-!	X IS REAL
+!!	COMPARE X WITH ZERO
+!!	NCMP=0 IF X IS CLOSE ENOUGH TO ZERO
+!!	NCMP=1 OTHERWISE
+!!	X IS REAL
 !
       integer ncmp
       real(8) x !,delta
@@ -1113,9 +1118,12 @@
 
       end subroutine xvmlt
 !------------------------------------------------------------------------------
-!! bring a point into the unit cell at the origin
-
       subroutine unitcell(cart_to_prim,prim_to_cart,v1,v2)
+
+!! bring a point v1 into v2 in the unit cell at the origin
+!! cart_to_prim has the reciprocal vectors in lines 1,2,3
+!! prim_to_cart has the translation vectors in real space in columns 1,2,3
+
       implicit none
       double precision cart_to_prim(3,3),prim_to_cart(3,3),v1(3),  &
      &     v2(3),buff(3)
@@ -1142,11 +1150,11 @@
 
 !! find symmetry matrices for a given lattice
 
-! arguments:
-!     cart(i,j) (input), ith cartesian component of jth basis vector
-!     eps (input), tolerance for length
-!     nmatrices (output), number of matrices
-!     matrices(i,j,k) (output), kth matrix
+!! arguments:
+!!     cart(i,j) (input), ith cartesian component of jth basis vector
+!!     eps (input), tolerance for length
+!!     nmatrices (output), number of matrices
+!!     matrices(i,j,k) (output), kth matrix
 
       implicit none
 
@@ -1154,10 +1162,10 @@
       parameter(nmax=400)
 
       real(8), intent(in)  :: cart(3,3),eps
-      integer, intent(out) :: nmatrices,matrices(3,3,48) 
+      integer, intent(out) :: nmatrices,matrices(3,3,48)
       integer n,i,j,j1,j2,j3,k,m,i1,i2,i3,nshort(3),ndet,itrans(3,3),  &
      &      ichoose(3),ishort(3,nmax,3)
-      real(8) vshort(3,nmax,3),v(3),xmax,vlength,x,d,abc(3,3),dshort(nmax,3)     
+      real(8) vshort(3,nmax,3),v(3),xmax,vlength,x,d,abc(3,3),dshort(nmax,3)
       logical foundone,tried(48,48)
 
 ! some initialization
@@ -1361,22 +1369,22 @@
       function ndet(mat)
       implicit none
 !
-!	FIND THE DETERMINANT OF A 3X3 MATRIX MAT
+!!	FIND THE DETERMINANT OF A 3X3 MATRIX MAT
 !
       integer ndet,mat(3,3)
       ndet=mat(1,1)*(mat(2,2)*mat(3,3)-mat(2,3)*mat(3,2))  &
      & -mat(1,2)*(mat(2,1)*mat(3,3)-mat(2,3)*mat(3,1))  &
      & +mat(1,3)*(mat(2,1)*mat(3,2)-mat(2,2)*mat(3,1))
-      
+
       end function ndet
 !------------------------------------------------------------------------------
       subroutine permutations(n,ipermutations,nr,nc)
-! find all permutations of n objects
-! arguments:
-!     n (input), number of objects
-!     ipermutations(i,j) (output), object in ith location of jth permutation
-!     nr (input), number of rows in ipermutations
-!     nc (input), number of columns in ipermutations
+!! find all permutations of n objects
+!! arguments:
+!!     n (input), number of objects
+!!     ipermutations(i,j) (output), object in ith location of jth permutation
+!!     nr (input), number of rows in ipermutations
+!!     nc (input), number of columns in ipermutations
 
       implicit none
       integer nr,nc
@@ -1446,7 +1454,7 @@
 
       end subroutine permutations
 !-------------------------------------------------------------------------------
-! factorial:  ifactorial = n!
+!! factorial:  ifactorial = n!
       function ifactorial(n)
       implicit none
       integer ifactorial,n,i,m
@@ -1461,14 +1469,14 @@
         enddo
         ifactorial=m
       endif
-      
+
       end function ifactorial
 !-------------------------------------------------------------------------------
       subroutine xrowop2(zna,nrow,ncol,nnrow,nncol)
       implicit none
 !
-!	DO ROW OPERATIONS ON MATRIX ZNA TO BRING IT TO UPPER TRIANGULAR FORM
-!	DOUBLE PRECISION NUMBERS
+!!	DO ROW OPERATIONS ON MATRIX ZNA TO BRING IT TO UPPER TRIANGULAR FORM
+!!	DOUBLE PRECISION NUMBERS
 !
       integer nnrow,nncol
       double precision zna(nnrow,nncol),zntemp
@@ -1508,16 +1516,16 @@
         zna(k,j+nout)=0.
       enddo
   enddo
-      
+
       end subroutine xrowop2
 !-------------------------------------------------------------------------------
       subroutine getstar(kvec,primlatt,narms,kvecstar,kvecop)
-! find atom in data base
-! arguments:
-!     kvec(i) (input), ith dimensionless component of k vector
-!     narms (output), number of star vectors associated with kvec
-!     kvecstar(3,1:narms), all the stars of kvec
-!     kvecop(i), the symmetry operation number for the star vecor i
+!! find atom in data base
+!! arguments:
+!!     kvec(i) (input), ith dimensionless component of k vector
+!!     narms (output), number of star vectors associated with kvec
+!!     kvecstar(3,1:narms), all the stars of kvec
+!!     kvecop(i), the symmetry operation number for the star vector i
       use force_constants_module
       implicit none
       integer, intent(out):: narms,kvecop(48)
@@ -1553,12 +1561,12 @@
 
       end subroutine getstar
 !****************************************************************************
-!! get force constants for a given rank out to a given nearest neighbor shell
       subroutine collect_force_constants(nrank,nshell,ngroups,  &
      &     ntermsindep,iatomtermindep,ixyztermindep,nterm6,  &
      &     iatomterm,ixyzterm,amat,ntermszero,iatomtermzero,  &
      &     ixyztermzero,maxrank,maxterms,maxtermsindep,maxtermszero,  &
      &     maxgroups,ierz,iert,ieri,ierg)
+!! get force constants for a given rank out to a given nearest neighbor shell
 ! arguments:
 !     nrank (input), order or derivative
 !     nshell (input), shell of nearest-neighbor atoms to be included
@@ -1595,7 +1603,7 @@
       use force_constants_module
       implicit none
       integer, intent(in) :: nrank,maxrank,maxterms,maxtermsindep,maxgroups,  &
-     &     maxtermszero,nshell(natoms0) 
+     &     maxtermszero,nshell(natoms0)
       integer, intent(out):: ierz,iert,ieri,ierg,ngroups,ntermszero,nterm6(maxgroups), &
      &     ntermsindep(maxgroups),iatomtermindep(maxrank,maxterms,maxgroups),  &
      &     ixyztermindep(maxrank,maxterms,maxgroups), &

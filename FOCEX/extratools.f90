@@ -1,4 +1,4 @@
- !=============================================================================
+!======================================================================
  subroutine findword(word,line,found)
 ! says if the string "word" exists in string "line"
  implicit none
@@ -14,7 +14,7 @@
     endif
  enddo
  end subroutine findword
-!======================================================================================
+!=======================================================================
       subroutine findatom_sc(n3,tau,iatom)
 ! finds the index of the atom in supercell with identity (n3[modulo supercell],tau)
 ! arguments:

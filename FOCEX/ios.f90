@@ -1,7 +1,7 @@
 !===========================================================
  subroutine read_input
-! reads the param.inp file containing info on the atom types masses
-! and coordinates within the primitive cell
+!! reads the param.inp file containing info on the atom types masses
+!! and coordinates within the primitive cell
  use ios
  use params
  use lattice
@@ -92,7 +92,7 @@ close(uparams)
  end subroutine read_input
 !===========================================================
  subroutine read_crystal(poscar)
-! the following reads the POSCAR file that is used by VASP
+!! the following reads the POSCAR file that is used by VASP
  use ios
  use params
  use lattice
@@ -206,8 +206,8 @@ close(uparams)
  end subroutine read_crystal
 !===========================================================
  subroutine check_input_poscar_consistency
-! see if all atoms in the supercell can be obtained from the
-! atoms in the input file using translations of the primitive lattice
+!! see if all atoms in the supercell can be obtained from the
+!! atoms in the input file using translations of the primitive lattice
  use atoms_force_constants
  use ios
  use geometry
@@ -352,8 +352,8 @@ close(uparams)
  end subroutine check_input_poscar_consistency
 !===========================================================
  subroutine check_input_poscar_consistency_new
-! see if all atoms in the supercell can be obtained from the
-! atoms in the input file using translations of the primitive lattice
+!! see if all atoms in the supercell can be obtained from the
+!! atoms in the input file using translations of the primitive lattice
  use atoms_force_constants
  use ios
  use geometry
@@ -596,7 +596,7 @@ real(8) en_nconfigs
  call allocate_pos(natom_super_cell,nconfigs)
 ! allocate(energy(nconfigs)) ! was this so I changed it to 3*nconfigs*natom_super_cell because the number of line dim_al=3*nconfigs*natom
 en_count=3*nconfigs*natom_super_cell
-allocate(energy(en_count)) 
+allocate(energy(en_count))
 ! now get the FORCES from OUTCAR file
  rewind(utraj)
  t=0
@@ -933,7 +933,7 @@ if (include_fc(2) .eq. 2) then
         write(ulog,*)' FOR RANK=',rnk,' format=',frmt
         write(*,*)' FOR RANK=',rnk,' format=',frmt
         write(ufc1-1+rnk,*)'# RANK ',rnk,' tensors :term,group,(iatom,ixyz)_2 d^nU/dx_{i,alpha}^n'
-    
+
       ng=map(rnk)%ngr ! number of groups
       cnt2=0
       term = 0
@@ -960,9 +960,9 @@ if (include_fc(2) .eq. 2) then
            &     fcs(res+cnt2+ti),fcs(res+cnt2+ti)/ryd*ab**rnk,rij
            write(ufit1-1+rnk,geh) ti,g,(iat(j),ixyz(j),j=1,rnk),  &
            &     fcs(res+cnt2+ti),one,rij
-    
+
         enddo
-    
+
         ! write in the fcn.dat file
         do t=1,map(rnk)%nt(g)  ! index of dependent terms in that group g
            iat(1:rnk)  = map(rnk)%gr(g)%iat (:,t)
@@ -1084,7 +1084,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
 !         write(456,8) i,j,dij,trace
 !     endif
 !!     if (term2.ne.3) write(456,*)'#ERROR: there are ',term2,' terms for rij=',dij
-!   res=res+map(rnk)%ntotind  
+!   res=res+map(rnk)%ntotind
 !!   enddo
 !endif
 
@@ -1108,10 +1108,10 @@ write(ulog,*)'***************** END OF FC Trace ******************'
 !*************************************************BIKASH************************************************************************
 !*************************************************BIKASH************************************************************************
 !*************************************************BIKASH************************************************************************
- 
 
 
- 
+
+
 !*************************************************BIKASH************************************************************************
 !*************************************************BIKASH************************************************************************
 !*************************************************BIKASH************************************************************************
@@ -1136,7 +1136,7 @@ write(ulog,*)'***************** END OF FC Trace ******************'
   !7 format(1(2x,i5),3(2x,f19.10),4(2x,i5),2x,f9.5)
   8 format(2(2x,i5),3(2x,f19.10),4(2x,i5),2x,f9.5)
   !9 format(9(2x,f19.10))
-  
+
   ! first write the crystal data
   ! nt=0; ni=0
   ! do i=1,4
@@ -1150,7 +1150,7 @@ write(ulog,*)'***************** END OF FC Trace ******************'
   !    endif
   ! enddo
   ! call write_lat_fc(ni,nt)  ! same as call write_lat_fc(map(:)%ntotind,map(:)%ntot)
-  
+
   !----------------------------------------
    res = 0
    do rnk=1,4
@@ -1171,7 +1171,7 @@ write(ulog,*)'***************** END OF FC Trace ******************'
                read(431,'(A)') line
                write(*,*) line
             endif
-         endif 
+         endif
       endif
      ! write(ufc1-1+rnk,*)'# RANK ',rnk,' tensors :term,group,(iatom,ixyz)_2 d^nU/dx_{i,alpha}^n'
   !write(*,*) "Outside if is valid..."
@@ -1198,7 +1198,7 @@ write(ulog,*)'***************** END OF FC Trace ******************'
       !   write(ufit1-1+rnk,geh) ti,g,(iat(j),ixyz(j),j=1,rnk),  &
       !   &     fcs(res+cnt2+ti),one,rij
       enddo
-! write(*,*) "Value for include_fc(rnk) is: ", include_fc(rnk) 
+! write(*,*) "Value for include_fc(rnk) is: ", include_fc(rnk)
       ! read in from the fcn.dat file
 if ( rnk .eq. 2) then
    if ( include_fc(rnk) .eq. 2) then
@@ -1227,10 +1227,10 @@ close(431)
     res = res+map(rnk)%ntotind
     endif
    enddo
-  
+
 !  write(ulog,*)'******* Trace for the harmonic FCs ********'
    open(456,file='trace_fc.dat')
-  
+
   ! write the trace of FC2
    rnk=2
     iloop: do i=1,natoms0
@@ -1271,17 +1271,17 @@ close(431)
              write(456,8) i,j,dij,trace
          endif
    !     if (term2.ne.3) write(456,*)'#ERROR: there are ',term2,' terms for rij=',dij
-  
+
        endif
     enddo jloop
     enddo iloop
-  
+
    close(456)
-  
+
   !write(ulog,*)'***************** END OF FC Trace ******************'
   !----------------------------------------
   ! 125  format(a)
-  
+
    !if (res.ne.ngr) then
    !   write(ulog,*)'WRITE_OUTPUT: sum(nterms),ngr=',res,ngr
    !   write(ulog,*)'WRITE_OUTPUT: they should be equal!'
