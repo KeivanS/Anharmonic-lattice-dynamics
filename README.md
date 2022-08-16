@@ -6,6 +6,7 @@ This repository contains 5 sets of stand-alone codes:
 - **ANharmonic FOrce-field MOlecular Dynamics (ANFOMOD)** to perform molecular dymics from the above-developed force field;
 - **INterface FOrce-field CONverter (INFOCON)** to convert extracted force constants by one of the codes FOCEX, ShengBTE, ALAMODE, and PHONOPY the format needed as input for the phonon calculation by another of these codes so that these codes become intercompatible.
 
-# Links
-[Documentation](https://aladyn.readthedocs.io)
-[Forum at matsci.org](https://matsci.org/aladyn)
+## Links
+
+- [Documentation](https://aladyn.readthedocs.io)
+- [Forum at matsci.org](https://matsci.org/aladyn)
