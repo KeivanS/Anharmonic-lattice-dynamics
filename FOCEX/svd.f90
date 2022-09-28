@@ -1,8 +1,8 @@
 !===========================================================
- subroutine svd_set(m3,n,a,b,x,sig,svdcut,error,ermax,sigma,fnsvd)
+ subroutine svd_set(m3,n,natsupercell,a,b,x,sig,svdcut,error,ermax,sigma,fnsvd)
 ! use mappings
  implicit none
- integer i,j,m3,n,k,uio
+ integer i,j,m3,n,k,uio,natsupercell,fcid,fctemp
  real(8), intent(in) :: a(m3,n),b(m3)
 ! real(8) u(m3,n),v(n,n),w(n)
  real(8), allocatable :: u(:,:),v(:,:),w(:)
@@ -20,10 +20,17 @@
 !    b(i) = 2*prod - 1
 ! enddo
  uio = 345
-
+ fcid=789
+ fctemp=567
 ! open(uio,file='svd-results.dat',status='unknown')
  open(uio,file=fnsvd,status='unknown')
-
+if (m3 .ne. n) then
+open(fcid,file='force-value.dat')
+write(fcid,*) natsupercell, n 
+endif
+if (m3 .eq. n) then
+open(fctemp,file='fc-temp-all.dat')
+endif
  write(uio,*)' Matrix A and vector b are '
 ! do i=1,m3
 !   write(uio,9)i,(a(i,j),j=1,n),b(i)
@@ -35,7 +42,7 @@
  write(uio,*)' A and b written, now doing the SVD '
 
  allocate( u(m3,n),v(n,n),w(n) )
-
+ 
  u = a
  call svdcmp(u,m3,n,m3,n,w,v)
 
@@ -100,6 +107,12 @@
      enddo
      sig(j) = sqrt(sig(j))
       write(uio,7) j,x(j),sig(j),sig(j)/sqrt(m3*1.)
+     if (m3 .ne. n) then
+      write(fcid,*) x(j)
+     endif
+     if (m3 .eq. n) then
+      write(fctemp,*) x(j)
+     endif
   enddo
 
  deallocate(u,v,w)
@@ -116,6 +129,9 @@
      denom=denom + b(i)*b(i)
      if ( ermax .lt. junk ) ermax = junk
       write(uio,6) i, prod,b(i), prod-b(i), (prod-b(i))/prod
+     if (m3 .ne. n) then
+      write(fcid,*) b(i), prod, prod-b(i)
+     endif
 !    if (prod.ne.0) then
 !       error = error + abs((prod-b(i))/prod)
 !    elseif(b(i).ne.0) then
@@ -130,7 +146,10 @@
 6 format(i6,3(1x,g13.6),3x,g11.4)
 3 format(a,3(1x,g13.6))
   close(uio)
-
+  close(fcid)
+  if (m3 .eq. n) then
+   close(fctemp)
+  endif
  end subroutine svd_set
 !===================================================
       SUBROUTINE svdcmp(a,m,n,mp,np,w,v)

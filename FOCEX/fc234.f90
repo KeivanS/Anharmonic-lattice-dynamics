@@ -15,22 +15,21 @@ program FC234
 ! file for further use.
 !
 !------------------------------------------------
-!! program to extract force constants from ab initio force-displacement data
-!! eventually with (linear) constraints of symmetry
-!! INPUT FILES : param.in, POSCARi, OUTCARi  i=1,2,...
-!! in params.inp file user specifies the specifications of the primitive cell
-!! what potential parameters will be kept how many shells are included,
-!! whether or not transl and rot inv constraints are imposed
-!! the tolerance for equating two coordinates
-!! specifications(type mass name) of the atoms in prim cell and their red coord
-!! In POSCAR1 file the same specifications but for the super cell are read.
-!! Finally OUTCAR1 contains the force-displacements data
-!! OUTPUT FILES: log.dat contains log of the run and intermediate outputs
-!! fc2.dat fc3.dat fc4.dat : contain the full set of obtained force constants
-!! fc2_irr.dat fc3_irr.dat fc4_irr.dat : contain the irreducible set of obtained force constants
-!! amatrx.dat : is the matrix A and column b of the system A.phi=b to be solved by SVD
-!! svd-results.dat: contains the output of SVD algorithm, phi, and the error in the fitting, and array w
-!! maps.dat: contains the map taking the oned array of terms to atom i,xyz
+! program to extract force constants from ab initio force-displacement data
+! eventually with (linear) constraints of symmetry
+! INPUT FILES : param.in, POSCAR, OUTCAR
+! in params.inp file user specifies the specifications of the primitive cell
+! what potential parameters will be kept how many shells are included,
+! whether or not transl and rot inv constraints are imposed
+! the tolerance for equating two coordinates
+! specifications(type mass name) of the atoms in prim cell and their red coord
+! In POSCAR file the same specifications but for the super cell are read.
+! Finally OUTCAR constains the force-displacements data
+! OUTPUT FILES: log.dat contains log of the runs and intermediate outputs
+! fcs.dat : contains the obtained force constants
+! amatrx.dat : is the matrix A and column b to be solved by SVD
+! svd-results.dat: contains the output of SVD algorithm, errors, array w
+! maps.dat: contains the map taking the oned array of terms to atom i,xyz
 ! by K. Esfarjani December 2006
 !------------------------------------------------
 !* need to treat cases where equilibrium positions are not known but are
@@ -64,7 +63,7 @@ implicit none
 integer i,j,n3,rank,iunit,tra,rot,hua,eliminate_fc,fcalloc, nz_index,l,lnew ! g, t
 character xt*1,fn*11,poscar*7,outcar*7
 logical ex
-real(8), allocatable:: mat(:,:),mat_inverse(:,:)
+real(8), allocatable:: mat(:,:)
 real(8), allocatable :: newamat(:,:),newbmat(:),afrc(:,:),bfrc(:),aux1(:,:),rm_zero_energy(:),fc(:),wts(:),qmat(:)
 real(8), allocatable :: amat_trans(:,:)
 integer, allocatable :: frc_constr(:),auxi(:,:)
@@ -81,10 +80,10 @@ real tim
  open(umatrx,file='amatrx.dat',status='unknown')
  open(ucor  ,file='corresp.dat',status='unknown')
  open(ufco  ,file='lat_fc.dat',status='unknown')
- open(ufit1 ,file='fc1_irr.dat',status='unknown')
- open(ufit2 ,file='fc2_irr.dat',status='unknown')
- open(ufit3 ,file='fc3_irr.dat',status='unknown')
- open(ufit4 ,file='fc4_irr.dat',status='unknown')
+ open(ufit1 ,file='fc1_fit.dat',status='unknown')
+ open(ufit2 ,file='fc2_fit.dat',status='unknown')
+ open(ufit3 ,file='fc3_fit.dat',status='unknown')
+ open(ufit4 ,file='fc4_fit.dat',status='unknown')
 
  write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' Program FC234 was launched at ',today(1:4)//'/'  &
 &  //today(5:6)//'/'//today(7:8),now(1:2)//':'//now(3:4)//':'//now(5:10),zone
@@ -453,137 +452,7 @@ real tim
 ! should still be kept, and not thrown away.
 ! the following removes lines=0 from amat (where all displacements are zero)
 
-! SINCE I HAVE TO CREATE EXPLICIT INTERFACE FOR SUBROUTINE REMOVE_ZEROS IN ORDER FOR ME TO ACCESS
-! AND REMOVE ENERGY WHERE THE LINES BMAT IS ZERO BUT I DONT WANT TO DO THAT BECAUSE I AM GOING TO ALTER
-! THE FORMULATION OF REMOVE_ZERO SUBROUTINE. ONE OF THE WAY I SEE IS CHECK FOR ZERO COLUMN DIRECTLY HERE.
-small=1d-7
-nz_index=0
-if (nconfigs .eq. 1 .and. include_fc(4) .ne. 1) then
-do i=1,dim_al-3    !shape(amat,1)
-   suml = maxval(abs(amat(i,:)))
-   if (suml .gt. small) then
-         nz_index=nz_index+1
-   endif
-enddo
-allocate(rm_zero_energy(nz_index))
-nz_index=1
-do i=1,dim_al-3
-   suml=maxval(abs(amat(i,:)))
-      if (suml .gt. small) then
-         rm_zero_energy(nz_index)=energy(i)
-         nz_index=nz_index+1
-      endif
-enddo
-endif
 
-if (nconfigs .eq. 1 .and. include_fc(4) .eq. 1) then
-do i=1,dim_al    !shape(amat,1)
-    suml = maxval(abs(amat(i,:)))
-    if (suml .gt. small) then
-          nz_index=nz_index+1
-    endif
-enddo
-allocate(rm_zero_energy(nz_index))
-nz_index=1
-do i=1,dim_al
-    suml=maxval(abs(amat(i,:)))
-       if (suml .gt. small) then
-          rm_zero_energy(nz_index)=energy(1)
-          nz_index=nz_index+1
-       endif
-enddo
-endif
-
-write(*,*) "value of dim_al is: ",dim_al
-if (nconfigs .ne. 1 .and. include_fc(4) .ne. 1) then
-do i=1,dim_al-3    !shape(amat,1)
-   suml = maxval(abs(amat(i,:)))
-   if (suml .gt. small) then
-         nz_index=nz_index+1
-   endif
-enddo
-allocate(rm_zero_energy(nz_index))
-nz_index=1
-do i=1,dim_al-3
-   suml=maxval(abs(amat(i,:)))
-      if (suml .gt. small) then
-         rm_zero_energy(nz_index)=energy(i)
-         nz_index=nz_index+1
-      endif
-enddo
-endif
-
-if (nconfigs .ne. 1 .and. include_fc(4) .eq. 1) then
-do i=1,dim_al    !shape(amat,1)
-   suml = maxval(abs(amat(i,:)))
-   if (suml .gt. small) then
-         nz_index=nz_index+1
-   endif
-enddo
-allocate(rm_zero_energy(nz_index))
-nz_index=1
-do i=1,dim_al
-   suml=maxval(abs(amat(i,:)))
-      if (suml .gt. small) then
-         rm_zero_energy(nz_index)=energy(1)
-         nz_index=nz_index+1
-      endif
-enddo
-endif
-
-!allocate(mat(dim_ac,dim_ac),mat_inverse(dim_ac,dim_ac),amat_trans(dim_ac,dim_al))
-!allocate(wts(dim_al),qmat(dim_ac))
-!V1=1.0d0
-!kB=0.00008617333262145d0
-!Temp=116040000.518120d0
-!kBT=kB*Temp
-!norm_wts=0.0d0
-!do i=1,dim_al
-!   do j=1,dim_ac
-!      amat_trans(j,i)=amat(i,j)
-!   enddo
-!enddo
-!do i=1,dim_al
-!   wts(i)=exp(-1.0d0*(abs(energy(i))-V1)/kBT)
-!   write(*,*) "NORMALIZED LOOP WTS: ", wts(i)
-!   norm_wts=norm_wts+wts(i)
-!enddo
-!write(*,*) "THE NORMALIZED VALUE FOR WTS IS: ", norm_wts
-!do i=1,dim_al
-!   wts(i)=wts(i)/norm_wts
-!enddo
-!wts=1.0d0
-!write(*,*) "THE VALUE OF WTS is: ", wts
-!qmat=0.0d0
-!mat=0.0d0
-!lnew=0
-!do i=1,dim_ac
-!   lnew=lnew+1
-!   do l=1,dim_al
-!      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat_trans(lnew,l)
-!      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat(l,i)
-!      do j=1,dim_ac
-!         mat(i,j)=mat(i,j)+wts(l)*amat_trans(j,l)*amat(l,i)
-!      enddo
-!   enddo
-!   do j=1,dim_ac
-!      mat(i,j)=0.0d0
-!      do l=1,dim_al
-!         mat(i,j)=mat(i,j)+wts(l)*amat(l,i)*amat(l,j)
-!      enddo
-!   enddo
-!enddo
-!mat_inverse=0.0d0
-!do i=1,dim_ac
-!   mat_inverse(i,i)=1.0d0
-!enddo
-!allocate(fc(dim_ac))
-!call inverse_real(mat,mat_inverse,dim_ac)
-!fc=matmul(mat_inverse,qmat)
-!do i=1,dim_ac
-!write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
-!enddo
-!  deallocate(wts,qmat,mat,mat_inverse)
 
 call remove_zeros(dim_al,dim_ac, amat, bmat,newdim_al)
 !if ( include_fc(2) .ne. 2) then
@@ -656,142 +525,22 @@ allocate(newamat(newdim_al,dim_ac),newbmat(newdim_al))
   endif
 17 format(999(1x,g9.2))
 
-! do the SVD decomposition
-!  HERE I TRY TO ADD THE WEIGHTED VALUE BASED ON TEMPERATURE IN THE BELOW LINES BEFORE CALLING TO SVD SET
-! SO THE AMAT WILL BE AT*A AND BMAT WILL BE AT*B
-if (nconfigs .eq. 1) then
-allocate(amat_trans(dim_ac,dim_al-3),wts(dim_al-3))
-endif
-if (nconfigs .ne. 1) then
-allocate(amat_trans(dim_ac,dim_al),wts(dim_al))
-endif
-allocate(mat(dim_ac,dim_ac),mat_inverse(dim_ac,dim_ac))
-allocate(qmat(dim_ac))
-!V1=1.0d0
-if (nconfigs .eq. 1) then
-V1=floor(minval(rm_zero_energy))
-endif
-if (nconfigs .ne. 1) then
-V1=minval(rm_zero_energy)
-endif
-kB=0.00008617333262145d0
-!Temp=116050000000.518120d0
-kBT=kB*temperature
-norm_wts=0.0d0
-if (nconfigs .eq. 1) then
-do i=1,dim_al-3
-   do j=1,dim_ac
-      amat_trans(j,i)=amat(i,j)
-   enddo
-enddo
-endif
+! **************************************************************************************************************************
+! **************************************************************************************************************************
+! MOVE THE TEMPERATURE DEPENDENT WEIGHT IN THE SUBROUTINE. MEMORY ALLOCATION OF ALL THE ARRAYS INSIDE SUBROUTINE
+! THE NEXT STEP IS TO DO SVD DECOMPOSITION BASED ON THE WEIGHTED MATRIX AND
+! Allocating the dimension of new force constant based on weight w*AT*A, w*B
+allocate(fc(dim_ac))
+! call treatment for temperature
+call temperature_treatment(nconfigs,inv_constraints,dim_ac,dim_al,amat,bmat,energy,rm_zero_energy,temperature,mat,qmat)
+! call to singular value decomposition afterwards
+call svd_set(dim_ac,dim_ac,natom_super_cell,mat,qmat,fc,sigma,svdcut,error,ermax,sig,'svd-all-new.dat')
+! write the data file as fc[1-4]_temp.dat and fc[1-4]_fit_temp.dat
+call write_output_temp_fc2(fc)
+!***************************************************************************************************************************
+!***************************************************************************************************************************
 
-if (nconfigs .ne. 1) then
-do i=1,dim_al
-   do j=1,dim_ac
-      amat_trans(j,i)=amat(i,j)
-   enddo
-enddo
-endif
-
-if (nconfigs .eq. 1) then
-norm_wts=0.0
-do i=1,dim_al-3
-   wts(i)=exp(-1.0d0*(abs(rm_zero_energy(i))-abs(V1))/kBT)
-   norm_wts=norm_wts+wts(i)
-enddo
-do i=1,dim_al-3
-   wts(i)=wts(i)/norm_wts
-enddo
-endif
-if (nconfigs .ne. 1) then
-norm_wts=0.0
-do i=1,dim_al
-   wts(i)=exp(-1.0d0*(abs(rm_zero_energy(i))-abs(V1))/kBT)
-   norm_wts=norm_wts+wts(i)
-enddo
-do i=1,dim_al
-   wts(i)=wts(i)/norm_wts
-enddo
-endif
-!write(*,*) "VALUE OF WTS IS: ", wts
-qmat=0.0d0
-mat=0.0d0
-lnew=0
-do i=1,dim_ac
-   lnew=lnew+1
-if (nconfigs .eq. 1) then
-   do l=1,dim_al-3
-      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat_trans(lnew,l)
-!      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat(l,i)
-      do j=1,dim_ac
-         mat(i,j)=mat(i,j)+wts(l)*amat_trans(j,l)*amat(l,i)
-      enddo
-   enddo
-endif
-
-if (nconfigs .ne. 1) then
-   do l=1,dim_al
-      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat_trans(lnew,l)
- !     qmat(i)=qmat(i)+wts(l)*bmat(l)*amat(l,i)
-      do j=1,dim_ac
-         mat(i,j)=mat(i,j)+wts(l)*amat_trans(j,l)*amat(l,i)
-      enddo
-   enddo
-endif
-!   do j=1,dim_ac
-!      mat(i,j)=0.0d0
-!      do l=1,dim_al
-!         mat(i,j)=mat(i,j)+wts(l)*amat(l,i)*amat(l,j)
-!      enddo
-!   enddo
-enddo
-mat_inverse=0.0d0
-do i=1,dim_ac
-   mat_inverse(i,i)=1.0d0
-enddo
-!allocate(fc(dim_ac))
-!call inverse_real(mat,mat_inverse,dim_ac)
-!fc=matmul(mat_inverse,qmat)
-!do i=1,dim_ac
-!write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
-!enddo
- !  deallocate(wts,qmat,mat,mat_inverse)
-!   do i=1,dim_al
-!      write(*,*) "AMAT NO SQ VAL: ",amat(i,:)
-!   enddo
-
-!   do i=1,dim_ac
-!      write(*,*) "AMAT SQ VAL: ", mat(i,:)
-!   enddo
-
-!   do i=1,dim_ac
-!      write(*,*) "BMAT VAL: ", bmat(i)
-!  enddo
-
-!   do i=1,dim_ac
-!      write(*,*) "QMAT VAL: ", qmat(i)
-!   enddo
-!write(*,*) "VALUE OF SVDCUT IS: ",svdcut
-   allocate(fc(dim_ac))
-
-!   if (nconfigs .eq. 1) then
-      call svd_set(dim_ac,dim_ac,mat,qmat,fc,sigma,svdcut,error,ermax,sig,'svd-all-new.dat') ! JUST SWITCH IT ON AND SEE THE RESULT
-     do i=1,dim_ac
-       write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
-     enddo
-     call write_output_temp_fc2(fc)
-!   endif
-
-!   if (nconfigs .ne. 1) then
-!      call svd_set(dim_ac,dim_ac,mat,qmat,fc,sigma,svdcut,error,ermax,sig,'svd-all-new.dat') ! JUST SWITCH IT ON AND SEE THE RESULT
-!     do i=1,dim_ac
-!       write(*,*) "THE VALUE OF FC_WEIGHTED IS: ", fc(i)
-!     enddo
-!     call write_output_temp_fc2(fc)
-!   endif
-
-  call svd_set(dim_al,dim_ac,amat,bmat,fcs,sigma,svdcut,error,ermax,sig,'svd-all.dat')
+  call svd_set(dim_al,dim_ac,natom_super_cell,amat,bmat,fcs,sigma,svdcut,error,ermax,sig,'svd-all.dat')
 
   write(ulog,*)'After svd, || F_dft-F_fit || / || F_dft || =',sig
 
@@ -811,7 +560,7 @@ enddo
 !    call eliminate_fcs(sig)
 !    write(ulog,*)'After ELIMINATE_FCS, sigma=',sig
 ! endif
-deallocate(wts,qmat,mat,mat_inverse,rm_zero_energy,fc,amat_trans)
+deallocate(qmat,mat,rm_zero_energy,fc)
 7 format(a,2(2x,g12.5),2x,4(1x,g11.4))
 
  write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' Program  FC234 ended at ',today(1:4)//'/'  &
@@ -836,12 +585,11 @@ deallocate(wts,qmat,mat,mat_inverse,rm_zero_energy,fc,amat_trans)
   close(umap)
   close(umatrx)
   close(utimes)
-
 contains
 !end program FC234
 !===========================================================
  subroutine remove_zeros(nl,nc, amatr, bmatr,j)
-!! removes lines which are all zero from the amatrix
+! removes lines which are all zero from the amatrix
  use ios
  use params
  use svd_stuff  !for itrans,irot,ihuang
@@ -929,7 +677,7 @@ contains
  end subroutine remove_zeros
 !===========================================================
  subroutine eliminate_fcs(sig)
-!! try to recalculate using elimination
+! try to recalculate using elimination
  use svd_stuff
  use params
  use ios
@@ -984,7 +732,7 @@ contains
 
  newd=newd-matmul(newc,matmul(ainv,newb))
 
- call svd_set(dim_al-n_elim,dim_ac-n_elim,newd,bmat_new,fc_new,  &
+ call svd_set(dim_al-n_elim,dim_ac-n_elim,natom_super_cell,newd,bmat_new,fc_new,  &
 &             sig_new,svdcut,error,ermax,sig,'svd-aux.out')
 
  deallocate(newa,newc,newd,bmat_new)
@@ -1019,7 +767,7 @@ contains
  end subroutine eliminate_fcs
 !============================================================
  subroutine invsort(n,r,mcor)
-!! sorts the first n elements of array r in descending order r(mcor(i)) is the ordered array
+! sorts the first n elements of array r in descending order r(mcor(i)) is the ordered array
   implicit none
   integer n,i,j,temp
   real(8) r(n)
@@ -1039,7 +787,7 @@ contains
   enddo
 !  r(mcor) is now the ordered array r(mcor(1)) > r(mcor(2)) > ... > r(mcor(n))
  end subroutine invsort
-!============================================================
+
  subroutine write_output_temp_fc2(fc)
    use svd_stuff
    use ios
@@ -1225,4 +973,82 @@ contains
       k=2
    endif
 end subroutine write_output_temp_fc2
+!******************************************* PUT IT IN THE SUBROUTINE ************************************************
+subroutine temperature_treatment(nconfigs,inv_constraints,dim_ac,dim_al,amat,bmat,energy,rm_zero_energy,temperature,mat,qmat)
+  integer(8) lnew, nz_index
+  integer nconfigs,dim_ac,dim_al,inv_constraints
+  real(8) kBT,kB,temperature,norm_wts,small,suml
+  real(8), allocatable :: amat_trans(:,:),energy(:)
+  real(8), allocatable :: rm_zero_energy(:),wts(:),bmat(:),amat(:,:)
+  real(8), intent(out), allocatable :: mat(:,:), qmat(:)
+  small=1d-7
+  nz_index=0
+  dim_al=dim_al-inv_constraints
+  do i=1,dim_al    !shape(amat,1)
+     suml = maxval(abs(amat(i+inv_constraints,:)))
+     if (suml .gt. small) then
+           nz_index=nz_index+1
+     endif
+  enddo
+  allocate(rm_zero_energy(nz_index))
+  nz_index=1
+  do i=1,dim_al
+     suml=maxval(abs(amat(i+inv_constraints,:)))
+        if (suml .gt. small) then
+           rm_zero_energy(nz_index)=energy(i)
+           nz_index=nz_index+1
+        endif
+  enddo
+
+  ! do the SVD decomposition
+  !  HERE I TRY TO ADD THE WEIGHTED VALUE BASED ON TEMPERATURE IN THE BELOW LINES BEFORE CALLING TO SVD SET
+  ! SO THE AMAT WILL BE AT*A AND BMAT WILL BE AT*B
+  allocate(amat_trans(dim_ac,dim_al),wts(dim_al))
+  allocate(mat(dim_ac,dim_ac))
+  allocate(qmat(dim_ac))
+  !V1=1.0d0
+  if (nconfigs .eq. 1) then
+  V1=floor(minval(rm_zero_energy))
+  endif
+  if (nconfigs .ne. 1) then
+  V1=minval(rm_zero_energy)
+  endif
+  kB=0.00008617333262145d0
+  !Temp=116050000000.518120d0
+  kBT=kB*temperature
+  norm_wts=0.0d0
+
+  do i=1,dim_al
+     do j=1,dim_ac
+        amat_trans(j,i)=amat(i+inv_constraints,j)
+     enddo
+  enddo
+
+  norm_wts=0.0
+  do i=1,dim_al
+     wts(i)=exp(1.0d0*(rm_zero_energy(i)-V1)/kBT)
+     norm_wts=norm_wts+wts(i)
+  enddo
+  do i=1,dim_al
+     wts(i)=wts(i)/norm_wts
+  enddo
+
+  !write(*,*) "VALUE OF WTS IS: ", wts
+  qmat=0.0d0
+  mat=0.0d0
+  lnew=0
+  do i=1,dim_ac
+     lnew=lnew+1
+     do l=1,dim_al
+        qmat(i)=qmat(i)+wts(l)*bmat(l+inv_constraints)*amat_trans(lnew,l)
+  !      qmat(i)=qmat(i)+wts(l)*bmat(l)*amat(l,i)
+        do j=1,dim_ac
+           mat(i,j)=mat(i,j)+wts(l)*amat_trans(j,l)*amat(l,i)
+        enddo
+     enddo
+  enddo
+deallocate(wts)
+deallocate(amat_trans)
+end subroutine temperature_treatment
+!******************************************* PUT IT IN THE SUBROUTINE ************************************************
 end program FC234
