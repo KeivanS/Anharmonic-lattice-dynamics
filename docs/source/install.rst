@@ -19,4 +19,4 @@ FOCEX
 
 ``FLAGS= -fcheck=all -fdec-math #-Wall #-fbounds-check #-fbacktrace #-ffpe-trap=invalid,zero,overflow,underflow,inexact #-inline-debug-info #-p #-pedantic #-std=f95``
 
-* From the **Anharmonic-lattice-dynamics/FOCEX/Makefile**, simply ``make`` and this will create the binary ``fc234-13``
+* From the **Anharmonic-lattice-dynamics/FOCEX/Makefile**, simply ``make`` and this will create the binary ``focex.x``

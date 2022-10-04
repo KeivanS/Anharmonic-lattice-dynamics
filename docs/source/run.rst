@@ -1,8 +1,13 @@
-Running ALADYN
+Running FOCEX
 ==============
 
-FOrce Constant EXtraction (FOCEX)
----------------------------------
+.. FOrce Constant EXtraction (FOCEX)
+.. ---------------------------------
+
+.. role:: raw-math(raw)
+	:format: latex html
+.. only:: html
+	:math:`\\require{mediawiki-texvc}`
 
 FOrce Constant Extraction (FOCEX) is a code to extract force constants from force-displacements data, the output of which can be used as input to the following codes.
 The installation of FOCEX has to be done before using it and is given in section :ref:`focex-install`. This code, FOCEX (FOrce Constant EXtraction) included in ALADYN (Anharmonic LAttice DYNamics) employs the
@@ -161,31 +166,57 @@ accepted by FOCEX code and its format for example in the case of Ge is given bel
 
 The first line in ``OUTCAR1`` is the header for position and force for each atom in :math:`x`, :math:`y` and :math:`z` direction. The second line
 consists of the energy of structure in electron volt and the lines after second are positions (first three columns, :math:`x`, :math:`y` and :math:`z`) and forces
-(the last three columns :math:`F_x`, :math:`F_y` and :math:`F_z`) respectively. If there are many force-displacement snapshots of the structure, then the ``OUTCAR1``
-file repeat for itself. For the input file of FOCEX, the ``params.inp`` is given below
+(the last three columns :math:`F_x`, :math:`F_y` and :math:`F_z` are in :math:`eV/{\\A}`) respectively. If there are many force-displacement snapshots of the structure, then the ``OUTCAR1``
+file repeat for itself. For the input file of FOCEX, the ``structure.params`` is given below
 
 .. code-block:: python
 
-  1 1 1 90 90 90 #crystal structure x,y,z, alpha, beta, gamma
-  0 0.5 0.5 0.5 0 0.5 0.5 0.5 0 #primitive lattice vector for example here in Ge
+  1 1 1 90 90 90 #conventional cell x,y,z, alpha, beta, gamma
+  0 0.5 0.5 0.5 0 0.5 0.5 0.5 0 #primitive lattice in terms of conventional cell, for example here in Ge
   5.762862 #lattice scale factor, must be consistent with POSCAR file
   9 #number of maximum shell to include in the force constant calculation from the supercell
   1 1 1 0 #1st, 2nd, 3rd and 4th order force constants, 1 is include and 0 is do not include in the fitting
   1 0 0 0 #flags for including translational and rotational and Huang invariance constraints, 1 is to include and 0 to not include
   0.0001 1.e-5 #tolerance for equating (two coordinates in general), margin for eliminating a FC
   1d-9 #svd cutoff for the smallest eigenvalue to be included
-  1 .TRUE.
+  1 .TRUE.  # 1--> number of different supercell file and, TRUE --> for verbosity
   1 #number of types of atom
   72.64 #Mass of each individual atom
   Ge #Name of atoms
-  2 #number of atoms in the primitive cell, coordinates are in reduced units (of cubic cell)
-  1 1
+  2 #number of atoms in the primitive cell, coordinates are in reduced units
+  1 1 # residual force for atom 1 and atom 2 for each atom in conventional cell 
   5 5 #number of neighbors for calculating force constants
-  1 1
-  1 1
-  1 1 0.00 0.00 0.00 #position of first atom in the primitive lattice
-  2 1 0.25 0.25 0.25 #position of second atom in the primitive lattice
+  1 1 #
+  1 1 #
+  1 1 0.00 0.00 0.00 #index of first atom, type of atom, position(x,y,z) of first atom in the conventional cell in reduced units
+  2 1 0.25 0.25 0.25 #index of second atom, type of atom, position(x,y,z) of second atom in the conventional cell in reduced units
   300.00 #Temperature to evaluate force constant
 
-Now, if the ``POSCAR1``, ``OUTCAR1`` and ``params.inp`` are in same directory, simply run ``./fc234-13`` within that directory to run FOCEX. After successful
-run following output file should be available
+The fitting is done using singular value decomposition based on the ``POSCAR1`` and ``OUTCAR1`` i.e. by creating the force displacement matrix. Based on the position difference from ``POSCAR1`` and ``OUTCAR1`` file, the harmonic, cubic and quartic displacement are created for each of the atomic position (x,y,z). Further, if symmetry is turned on the displacements are added on top of it. Forces from the ``OUTCAR1`` file is appended to the last column of this force displacement matrix. The snippet showing force displacement matrix, ``amatrx.dat`` in this code is given below:
+
+.. code-block:: python
+
+ **********************************************
+  Force-displ constraints part of amatrix size are          192
+ **********************************************
+  before call to svd: amat , bmat are:
+   1.0       4.0       0.0       8.0       0.0       0.0       4.0       4.0       2.0       4.0       0.0       8.0       0.0       8.0       0.0       0.0       4.0       0.0       0.0       0.0       0.0       0.0       0.0    
+   0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       1.0       0.0       0.0       0.0       4.0       0.0    
+   0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       1.0      -1.0       0.0       0.0    
+  0.12E-01  0.16E-04 -0.85E-21  0.31E-04 -0.85E-21   0.0      0.68E-05 -0.44E-05 -0.66E-05 -0.44E-05   0.0     -0.88E-05   0.0      0.14E-04   0.0     -0.85E-21  0.16E-04   0.0     -0.25E-07 -0.17E-10  0.51E-07 -0.56E-10  0.12    
+   0.0      0.11E-04 -0.85E-21  0.22E-04 -0.85E-21   0.0      0.11E-04   0.0     -0.44E-05   0.0       0.0     -0.18E-04   0.0      0.22E-04   0.0     -0.85E-21  0.11E-04 -0.13E-07 -0.18E-10  0.12E-10 -0.16E-26  0.18E-06   0.0    
+ -0.11E-05  0.16E-04 -0.17E-20  0.31E-04   0.0       0.0      0.68E-05 -0.44E-05 -0.66E-05 -0.44E-05   0.0     -0.88E-05   0.0      0.14E-04   0.0     -0.85E-21  0.16E-04   0.0      0.11E-10 -0.17E-10 -0.49E-11  0.13E-06   0.0    
+
+Here, in the first line provides the information for number of force displacement point. For example in the example taken here here for ``2x2x2`` supercell of `Ge`, the number ``192`` refers ``3*number of atoms in a supercell``. The number will increase accordingly if there are more than one snapshot in the ``POSCAR1`` file. Three lines below ``before call to svd: amat, bmat are:`` are the lines due to translation symmetry since only translation symmetry is turned on ``structure.params`` file. The remaining lines are each atomic displacements in a supercell of the given snapshot. Last column in all the line represent the force value from the ``OUTCAR1`` and all remaining columns are harmonic, cubic and quartic displacements.      
+
+Similarly other input file ``dielectric.params`` is required to get the phonon dispersion and thermal conductivity using ``THERMACOND``. It consists of dielectric constant tensor values which is written as follows
+
+.. code-block:: python
+
+ 16.2 0.0  0.0 # for example, dielectric constant of Ge
+  0.0 16.2 0.0
+  0.0 0.0 16.2
+
+Now, if the ``POSCAR1``, ``OUTCAR1`` and ``structure.params`` are in same directory, simply run ``./focex.x`` within that directory to run FOCEX. After successful
+run ``fc2.dat``, ``fc2_fit.dat``, ``fc3.dat``, ``fc3_fit.dat``, ``fc4.dat`` and ``fc4_fit.dat`` along with other output files and log file should be available. ``fc2.dat``, ``fc2_fit.dat`` are the fitted second order force constant and with symmetry reduced second order force constant. Similarly ``fc3.dat``, ``fc3_fit.dat`` and ``fc4.dat``, ``fc4_fit.dat`` are third order and fourth order force constant and symmetry reduced third order and fourth order force constant respectively. Users are advised to look for more information on the log file ``log.dat`` generated by ``focex.x``.
+ 
