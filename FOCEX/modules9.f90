@@ -1,176 +1,37 @@
-!==============================================
-! Modules here
-!==============================================
-
-module pre_matrix_elt
-complex(8), allocatable :: eiqr2(:,:), eivec2(:,:,:,:)
-
-contains
-
-subroutine allocate_eiqr2(num1,num2)
- allocate(eiqr2(num1,num2))
-end subroutine allocate_eiqr2
-subroutine allocate_eivec2(num1,num3,num4)
- allocate(eivec2(num1,3,num3,num4))
-end subroutine allocate_eivec2
-
-subroutine deallocate_eiqr2
- deallocate(eiqr2)
-end subroutine deallocate_eiqr2
-subroutine deallocate_eivec2
- deallocate(eivec2)
-end subroutine deallocate_eivec2
-
-end module pre_matrix_elt
-
-
-!===========================================================
-module mod_ksubset2
-integer num_pfiles
-integer, allocatable :: ksubset2(:,:)
-
-contains
-
- subroutine allocate_ksubset2(num)
-   allocate(ksubset2(num,2))
- end subroutine allocate_ksubset2
- subroutine deallocate_ksubset2
-   deallocate(ksubset2)
- end subroutine deallocate_ksubset2
-
-end module mod_ksubset2
-
-
-!==========================================================
- module phi3_sy
- complex(8), allocatable :: v33_md(:,:,:,:,:)
- real(8), allocatable :: v33sq1(:,:,:,:,:)
-! v3 : (nk1,nk2,la1,la2,la3)
-! integer nv3,readv3,writev3, iter, split, calk ! sy added iter,split, calk
-! real(8) v3_threshold,const33
-
- contains
-
-  subroutine allocate_v33_sy(n1,n2,l1,l2,l3)
-    allocate(v33_md(n1,n2,l1,l2,l3) )
-  end subroutine allocate_v33_sy
-  subroutine deallocate_v33_sy
-    deallocate(v33_md)
-  end subroutine deallocate_v33_sy
-  subroutine allocate_v33_sq(n1,n2,l1,l2,l3)
-    allocate(v33sq1(n1,n2,l1,l2,l3))
-  end subroutine allocate_V33_sq
-  subroutine deallocate_v33_sq
-    deallocate(v33sq1)
-  end subroutine
-  subroutine allocate_phi3_sy(nk,nl,ni)
-  integer nk,nl,ni
-!   allocate(delta3(nk,nl,nw),gamma3(nk,nl,nw),v3(nk,nk,nl,nl,nl))
-!   allocate(selfN(ni,nl,nw),selfU(ni,nl,nw))
-    allocate(v33_md(ni,nk,nl,nl,nl))
-  end subroutine allocate_phi3_sy
-
- end module phi3_sy
-
-
-!===========================================================
-module exactBTE2
-
-integer ncol,nlin
-real(8), allocatable:: F_RTA(:,:,:), F1(:,:,:), F2(:,:,:), Qvalue(:,:), iselfenergy(:,:), tau(:,:,:), error(:,:,:), diff(:,:,:)
-real(8), allocatable:: mval(:,:),qval(:),coll(:,:),rhs(:,:),rhsi(:,:),ne_dist(:,:),ne_dist_rta(:,:)
-real(8), allocatable:: Qvalue_N(:,:), Qvalue_U(:,:) !, tauinv_N(:,:), tauinv_U(:,:), tauinv_tot(:,:), tauinv_eff(:,:,:)
-real(8), allocatable:: diff_kap(:,:,:,:),kappa(:,:,:), kappa_k(:,:,:,:), kappa_RTA(:,:,:), kappa_k_RTA(:,:,:,:)
-! F1,F2: (kp1,la1,xyz)    , Qvalue,Avalue,iselfenergy: (kp,la)
-real(8), allocatable:: P1(:,:,:,:,:), P2(:,:,:,:,:)
-! P1,P2: (kp1,kp2,la1,la2,la3)   don't need kp3 since it is determined by momentum conservation.
-real(8), allocatable:: frequency(:,:) ,dist(:,:)   ! BE distribution function
-!real(8), allocatable:: v33sq(:,:,:,:,:)
-
-
-contains
-
-!subroutine allocate_v33sq(nk,ndn)
-!allocate(v33sq(nk,nk,ndn,ndn,ndn))
-!end subroutine allocate_v33sq
-
-subroutine allocate_iter_kap (nk,ndn)
- implicit none
- integer nk,ndn
-!allocate (F_RTA(nk,ndn,3),F1(nk,ndn,3),F2(nk,ndn,3),F1_old(nk,ndn,3),Qvalue(nk,ndn), &
-!&         iselfenergy(nk,ndn),tau(nk,ndn,3),error(nk,ndn,3),diff(nk,ndn,3))
- allocate (diff_kap(nk,ndn,3,3),kappa(ndn,3,3) ) !,kappa_k(nk,ndn,3,3),kappa_RTA(ndn,3,3), &
-!&         kappa_k_RTA(nk,ndn,3,3))    ! 3 for xyz
-!allocate (dist(nk,ndn),frequency(nk,ndn))
-!allocate(tauinv_N(nk,ndn),tauinv_U(nk,ndn),tauinv_tot(nk,ndn),tauinv_eff(nk,ndn,3))
-end subroutine allocate_iter_kap
-
-subroutine allocate_iter0 (ni,nk,ndn)
-allocate (Qvalue_N(ni,ndn),Qvalue_U(ni,ndn),qval(ni*ndn),mval(nk*ndn,ni*ndn))
-end subroutine allocate_iter0
-
-subroutine allocate_iter1 (ni,nk,ndn)
-allocate (rhs(ndn*nk,3),rhsi(ndn*ni,3),coll(ndn*ni,ndn*ni),ne_dist(ni*ndn,3),ne_dist_rta(ni*ndn,3))
-end subroutine allocate_iter1
-
-subroutine allocate_iter2 (n1,n2,l1,l2,l3)
-allocate (P1(n1,n2,l1,l2,l3),P2(n1,n2,l1,l2,l3))
-end subroutine allocate_iter2
-
-subroutine deallocate_iter_kap
-!deallocate(dist,frequency)
-!deallocate(F_RTA,F1,F2,Qvalue,iselfenergy,tau,error,diff,F1_old)
-deallocate(diff_kap,kappa) !,kappa_k,kappa_RTA,kappa_k_RTA)
-end subroutine deallocate_iter_kap
-
-subroutine deallocate_iter0
-deallocate(Qvalue_N,Qvalue_U,qval,mval)
-end subroutine deallocate_iter0
-
-subroutine deallocate_iter1
-deallocate(rhs,rhsi,coll) !tauinv_N,tauinv_U,tauinv_tot,tauinv_eff)
-end subroutine deallocate_iter1
-
-subroutine deallocate_iter2
-deallocate(P1,P2)
-end subroutine deallocate_iter2
-
-!subroutine deallocate_v33sq
-!deallocate(v33sq)
-!end subroutine deallocate_V33sq
-
-end module exactBTE2
-
 !==============================================================
  module constants
  implicit none
- real(8) :: pi=3.14159265358979323846d0
- complex(8) :: ci=dcmplx(0d0,1d0)
- real(8) :: h_plank= 6.62606896d-34
- real(8) :: n_avog= 6.023d23
- real(8) :: k_b = 1.3806504d-23       ! J/K:
- real(8) :: c_light = 2.99792458d+8   ! in (m/s)
- real(8) :: hbar = 1.054571628d-34  !h_plank/2/pi  !
- real(8) :: ee = 1.60217653d-19
- real(8) :: eps0 = 8.854187817d-12
- real(8) :: me = 9.1093826d-31
- real(8) :: uma = 1.66053878d-27 ! kg
-! real(8) :: cnst = sqrt(ee*1d20/uma)/pi/200/c_light ! converts sqrt(eV/A/A/uma) to cm^-1
-  real(8) :: cnst= 521.1098918
-! real(8) :: ryd= me*ee**4/2/pi/pi/hbar**2/16/pi/pi/eps0/eps0
-  real(8) :: ryd= 27.2116
-! real(8) :: ab = hbar*hbar/me/ee/ee*4*pi*eps0
-  real(8) :: ab = 0.529177
-! kbe=8.617343e-05
+!--! specific precisions, usually same as real and double precision
+integer, parameter :: r6 = selected_real_kind(6) 
+integer, parameter :: r15 = selected_real_kind(15) ! should work on any compiler
+ integer, parameter :: dp=8 !(for nag compilers use kd=2 for double precision; 8 for gfortran)
+ complex(kind=r15) :: ci=cmplx(0d0,1d0)
+! complex(8) :: ci=cmplx(0d0,1d0)
+ real(kind=r15) :: pi=3.14159265358979323846d0
+ real(r15) :: h_plank= 6.62606896d-34
+ real(r15) :: n_avog= 6.023d23
+ real(r15) :: k_b = 1.3806504d-23       ! J/K
+ real(r15) :: c_light = 2.99792458d+8   ! in (m/s)
+ real(r15) :: hbar = 1.054571628d-34  !h_plank/2/pi
+ real(r15) :: ee = 1.60217653d-19
+ real(r15) :: eps0 = 8.854187817d-12
+ real(r15) :: me = 9.1093826d-31
+ real(r15) :: uma = 1.66053878d-27 ! kg
+ real(r15) :: cnst= 521.1098918 ! sqrt(ee*1d20/uma)/pi/200/c_light ! converts sqrt(eV/A/A/uma) to cm^-1
+ real(r15) :: ryd= 27.2116  !me*ee**3/hbar**2/16/pi/pi/eps0/eps0 (in eV)
+ real(r15) :: ab = 0.529177  ! hbar*hbar/me/ee/ee*4*pi*eps0
+ real(r15) :: kbe=8.617343e-05  ! = value of 1 Kelvin in eV
+
  end module constants
 !==============================================
 module params
- real(8) tolerance,margin,scalelengths
- integer nconfigs,classical,ntemp,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,isvd
- integer nshells(4,10)   ! up to which shell to include for each rank of FC
+ real(8) tolerance,margin,scalelengths,alfaborn,tempk
+ integer nconfigs,classical,ntemp,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,itemp
+ integer nshells(4,20)  ! up to which shell to include for each rank of FC (read from input file)
  integer include_fc(4)  ! whether to include FCs of that rank
  real(8) rcut(4),tau0,wshift(3)
  real(8) tmin,tmax,qcros(3),svdc
+ real(8) rcutoff_ewa,gcutoff_ewa,eta  ! these are for ewaldsums
  logical verbose
 
 end module params
@@ -219,6 +80,14 @@ end module params
      module procedure bring_to_cell_dv,bring_to_cell_da
   end interface
 
+  interface calculate_volume
+     module procedure calvol_a, calvol_v
+  end interface
+
+  interface v2a
+     module procedure v2a_r,v2a_a
+  end interface
+
 ! interface cart_to_direct
 !    module procedure cart_to_direct_aa,cart_to_direct_av,cart_to_direct_v
 ! end interface
@@ -228,7 +97,11 @@ end module params
 ! end interface
 
   interface reduce
-     module procedure reduce_v,reduce_a
+     module procedure reduce_v,reduce_v2,reduce_a1,reduce_a4,reduce_a5
+  end interface
+
+  interface det
+     module procedure idet,rdet
   end interface
 
   interface bring_to_center
@@ -237,8 +110,51 @@ end module params
 
    contains
 
-!============================================================
 
+subroutine calvol_a(r1,r2,r3,om)
+implicit none
+real(8) om
+real(8) r1(3),r2(3),r3(3),cross12(3)
+
+cross12 = r1 .cross. r2
+om = abs(r3 .dot. cross12)
+
+end subroutine calvol_a
+!-----------------------------------
+subroutine calvol_v(r1,r2,r3,om)
+implicit none
+real(8) om
+type(vector) cross12,r1,r2,r3
+
+cross12 = r1 .cross. r2
+om = abs(r3 .dot. cross12)
+
+end subroutine calvol_v
+!------------------------------------------------------------------------------
+      function rdet(mat)
+      implicit none
+!
+!!	FIND THE DETERMINANT OF A 3X3 real MATRIX MAT
+!
+      real(8) rdet,mat(3,3)
+      rdet=mat(1,1)*(mat(2,2)*mat(3,3)-mat(2,3)*mat(3,2))  &
+     &  - mat(1,2)*(mat(2,1)*mat(3,3)-mat(2,3)*mat(3,1))  &
+     &  + mat(1,3)*(mat(2,1)*mat(3,2)-mat(2,2)*mat(3,1))
+
+      end function rdet
+!------------------------------------------------------------------------------
+      function idet(mat)
+      implicit none
+!
+!! FIND THE DETERMINANT OF A 3X3 integer MATRIX MAT
+!
+      integer idet,mat(3,3)
+      idet=mat(1,1)*(mat(2,2)*mat(3,3)-mat(2,3)*mat(3,2))  &
+     &   - mat(1,2)*(mat(2,1)*mat(3,3)-mat(2,3)*mat(3,1))  &
+     &   + mat(1,3)*(mat(2,1)*mat(3,2)-mat(2,2)*mat(3,1))
+
+      end function idet
+!------------------------------------------------------------------------------
    function crossproduct_v(v,w) result(cross)
      type(vector) cross !, intent(out) ::
      type(vector), intent(in) :: v,w
@@ -254,7 +170,6 @@ end module params
      cross(2) = v(3)*w(1)-v(1)*w(3)
      cross(3) = v(1)*w(2)-v(2)*w(1)
    end function crossproduct_a
-
 !-----------------------------------
    function dotproduct_v(v,w) result(dot)
      real(8) dot !, intent(out) ::
@@ -288,7 +203,7 @@ end module params
      real(8), intent(in)::  v,w
      logical eq !, intent(out) :: eq
 
-        if (abs(v-w) .lt. 1d-5) then
+        if (abs(v-w) .lt. tolerance) then
            eq=.true.
         else
            eq=.false.
@@ -399,24 +314,6 @@ end module params
      add%y = v%y + w(2)
      add%z = v%z + w(3)
    end function addition_avv
-!-----------------------------------
-!  function addition_vaa(v,w) result(add)
-!    real(8) add(3) !, intent(out) ::
-!    type(vector), intent(in) :: v
-!    real(8), intent(in) :: w(3)
-!    add(1) = v%x + w(1)
-!    add(2) = v%y + w(2)
-!    add(3) = v%z + w(3)
-!  end function addition_vaa
-!-----------------------------------
-!  function addition_ava(w,v) result(add)
-!    real(8) add(3) !, intent(out) ::
-!    type(vector), intent(in) :: v
-!    real(8), intent(in) :: w(3)
-!    add(1) = v%x + w(1)
-!    add(2) = v%y + w(2)
-!    add(3) = v%z + w(3)
-!  end function addition_ava
 !-----------------------------------
    function subtraction(v,w) result(dif)
      type(vector) dif !, intent(out) ::
@@ -551,9 +448,10 @@ end module params
    end function lengtha
 !-----------------------------------
  subroutine reduce_v(v,q1,q2,q3,w)
-! takes direct coordinates and returns direct coordinates
+!! takes cartesian coordinates and returns direct coordinates
  implicit none
- type(vector) v,q1,q2,q3,w
+ type(vector) , intent(in) :: v,q1,q2,q3
+ type(vector) , intent(out) :: w
  real(8) a1,a2,a3
 
  a1 = v .dot. q1
@@ -562,12 +460,41 @@ end module params
  w%x = a1 ; w%y = a2 ; w%z = a3
 
  end subroutine reduce_v
-!-----------------------------------------
- subroutine reduce_a(a,q1,q2,q3,w)
-! takes direct coordinates and returns direct coordinates
+!-----------------------------------
+ subroutine reduce_v1(v,q1,q2,q3,w)
+!! takes cartesian coordinates and returns direct coordinates
  implicit none
- type(vector) v,q1,q2,q3,w
- real(8) a1,a2,a3,a(3)
+ type(vector) , intent(in) :: v,q1,q2,q3
+ real(8) , intent(out) :: w(3)
+ real(8) a1,a2,a3
+
+ w(1) = v .dot. q1
+ w(2) = v .dot. q2
+ w(3) = v .dot. q3
+
+ end subroutine reduce_v1
+!-----------------------------------
+ subroutine reduce_v2(v,q1,q2,q3,w)
+!! takes cartesian coordinates and returns direct coordinates
+ implicit none
+ type(vector) , intent(in) :: q1,q2,q3
+ real(8) , intent(in) :: v(3)
+ real(8) , intent(out) :: w(3)
+ real(8) a1,a2,a3
+
+ w(1) = v .dot. q1
+ w(2) = v .dot. q2
+ w(3) = v .dot. q3
+
+ end subroutine reduce_v2
+!-----------------------------------------
+ subroutine reduce_a1(a,q1,q2,q3,w)
+! takes cartesian coordinates and returns direct coordinates
+ implicit none
+ type(vector) , intent(in) :: q1,q2,q3
+ type(vector) v,w
+ real(8), intent(in) :: a(3)
+ real(8) a1,a2,a3
 
  v%x = a(1);v%y = a(2);v%z = a(3)
  a1 = v .dot. q1
@@ -575,7 +502,33 @@ end module params
  a3 = v .dot. q3
  w%x = a1 ; w%y = a2 ; w%z = a3
 
- end subroutine reduce_a
+ end subroutine reduce_a1
+!-----------------------------------------
+ subroutine reduce_a4(a,q1,q2,q3,w)
+! takes cartesian coordinates and returns direct coordinates
+ implicit none
+ real(8) , intent(in) :: a(3),q1(3),q2(3),q3(3)
+ type(vector) w
+ real(8) a1,a2,a3
+
+ a1 = a .dot. q1
+ a2 = a .dot. q2
+ a3 = a .dot. q3
+ w%x = a1 ; w%y = a2 ; w%z = a3
+
+ end subroutine reduce_a4
+!-----------------------------------------
+ subroutine reduce_a5(a,q1,q2,q3,w)
+! takes cartesian coordinates and returns direct coordinates
+ implicit none
+ real(8), intent(in) :: a(3),q1(3),q2(3),q3(3)
+ real(8), intent(out) :: w(3)
+
+ w(1) = a .dot. q1
+ w(2) = a .dot. q2
+ w(3) = a .dot. q3
+
+ end subroutine reduce_a5
 !-----------------------------------------
  function bring_to_cell_dv(v) result(w)
 ! takes direct coordinates and returns direct coordinates
@@ -608,8 +561,11 @@ end module params
 ! takes cart coordinates and returns cart coordinates within the supercell
 ! assumes r_i.g_j=delta_ij (no factor of 2pi included)
  implicit none
- type(vector) v,w,g1,g2,g3,r1,r2,r3
- real(8) a1,a2,a3,a(3),b(3)
+ real(8), intent(in) :: a(3)
+ real(8), intent(out) :: b(3)
+ type(vector), intent(in) :: g1,g2,g3,r1,r2,r3
+ type(vector) v,w
+ real(8) a1,a2,a3
 
  v%x = a(1);v%y = a(2);v%z = a(3)
 ! get direct coordinates first
@@ -630,7 +586,8 @@ end module params
 ! takes cart coordinates and returns cart coordinates within the supercell
 ! assumes r_i.g_j=delta_ij (no factor of 2pi included)
  implicit none
- type(vector) v,g1,g2,g3,w,r1,r2,r3
+ type(vector), intent(in) :: v,g1,g2,g3,r1,r2,r3
+ type(vector), intent(out) :: w
  real(8) a1,a2,a3
 
 ! get direct coordinates first
@@ -654,7 +611,8 @@ end module params
  use constants
 ! takes cart coordinates and returns cart coordinates within the FBZ
  implicit none
- type(vector) v,g1,g2,g3,r1,r2,r3,w
+ type(vector), intent(in) :: v,g1,g2,g3,r1,r2,r3
+ type(vector), intent(out) :: w
  real(8) a1,a2,a3
 
 ! get direct coordinates first
@@ -679,8 +637,10 @@ end module params
  use constants
 ! takes cart coordinates and returns cart coordinates within the FBZ
  implicit none
- type(vector) g1,g2,g3,r1,r2,r3
- real(8) a1,a2,a3,v(3),w(3)
+ type(vector), intent(in) :: g1,g2,g3,r1,r2,r3
+ real(8), intent(in) :: v(3)
+ real(8), intent(out) :: w(3)
+ real(8) a1,a2,a3
 
 ! get direct coordinates first
  a1 = v .dot. g1
@@ -699,32 +659,72 @@ end module params
  w = a1*r1+a2*r2+a3*r3
 
  end subroutine bring_to_center_a
+!-----------------------------------------
+ function v2a_r(r0) result(rx)
+ implicit none
+ type(vector), intent(in):: r0
+ real(8) rx(3) !, intent(out)::
+ rx(1)=r0%x
+ rx(2)=r0%y
+ rx(3)=r0%z
+ end function v2a_r
+!-----------------------------------------
+ function v2a_a(r0) result(rx)
+ implicit none
+ type(vector), dimension(:), intent(in):: r0
+ real(8), dimension(3,size(r0)) :: rx !, intent(out)::
+ integer i
+
+ do i=1,size(r0)
+    rx(1,i)=r0(i)%x
+    rx(2,i)=r0(i)%y
+    rx(3,i)=r0(i)%z
+ enddo
+! rx(2)=r0%y
+! rx(3)=r0%z
+ end function v2a_a
+!-----------------------------------------
+ function a2v(r0) result(rx)
+ implicit none
+ type(vector) rx
+ real(8), intent(in):: r0(3)
+ rx%x=r0(1)
+ rx%y=r0(2)
+ rx%z=r0(3)
+ end function a2v
 
  end module geometry
 !==============================================
 module ios
  integer, parameter:: ulog=30,uposcar=10,uparams=11, utraj=40,ufco=20,  &
-&         umap=60,umatrx=50,utimes=70,ufc1=21,ufc2=22,ufc3=23,ufc4=24,   &
-&         ufc=80,ufit1=31,ufit2=32,ufit3=33,ufit4=34,ucor=93,uborn=12
-real(8) temperature
+&         umap=60,umatrx=50,utimes=70,ufc1=21,ufc2=22,ufc3=23,ufc4=24,  &
+&         ufc=80,ufit1=31,ufit2=32,ufit3=33,ufit4=34,ucor=93,uborn=12,  &
+&         ujunk=79,uibz=80,uibs=81,ugr=82
+
 
   interface write_out
-     module procedure write_outiv, write_outrv, write_outim, write_outrm &
-&    , write_outi, write_outr , write_outv
+     module procedure write_outim, write_outrm, write_outiv, write_outrv, write_outv &
+&    , write_outi, write_outr,write_outcv
   end interface
 
  contains
 
 !-----------------------------
-  subroutine write_outrm(unit,string,n,m,var)
+!  subroutine write_outrm(unit,string,n,m,var)
+  subroutine write_outrm(unit,string,var)
   implicit none
   character*(*) string
   integer n,m,unit,l,i,j
-  real(8) var(n,m)
+  real(8), dimension(:,:), intent(in) :: var
 
   l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',((var(i,j),i=1,n),j=1,m)
+  n=size(var(:,1)) ; m=size(var(1,:))
+  write(unit,4)string(1:l)//' is='
+  do i=1,n
+     write(unit,5)(var(i,j),j=1,m)
+  enddo
 4 format(a,99(1x,g13.6))
+5 format(199(1x,g12.5))
   end subroutine write_outrm
 !-----------------------------
   subroutine write_outim(unit,string,n,m,var)
@@ -749,6 +749,17 @@ real(8) temperature
   write(unit,4)string(1:l)//' is=',(var(i),i=1,size(var))
 4 format(a,99(1x,g13.6))
   end subroutine write_outrv
+!-----------------------------
+  subroutine write_outcv(unit,string,var)
+  implicit none
+  character*(*) string
+  integer unit,l,i
+  complex(8), dimension(:) :: var
+
+  l=len_trim(string)
+  write(unit,4)string(1:l)//' is=',(var(i),i=1,size(var))
+4 format(a,99(3x,g11.4,1x,g11.4))
+  end subroutine write_outcv
 !-----------------------------
   subroutine write_outiv(unit,string,var)
   implicit none
@@ -776,7 +787,7 @@ end subroutine write_outr
   subroutine write_outi(unit,string,var)
   implicit none
   character*(*) string
-  integer unit,l
+  integer n,unit,l
   integer var
 
   l=len_trim(string)
@@ -799,88 +810,14 @@ end subroutine write_outv
 
 end module ios
 !===========================================================
-! Module for saved data
-      module force_constants_module
-! maximum number of shells of nearest neighbors
-      integer maxneighbors
-!     parameter(maxneighbors=18 )
-! maximum number of atoms out to maxneighbors
-      integer maxatoms,imaxat
-!     parameter(maxatoms=2800 )
-! op_matrix(k,j,i), matrix for the ith point operator
-      double precision op_matrix(3,3,48)
-! op_kmatrix(k,j,i), matrix for the ith point operator acting on k vector
-      double precision op_kmatrix(3,3,48)
-      integer lattpgcount
-! isgopcount, number of operators in space group
-      integer isgopcount
-! isgop(i), point operation in ith space group operator
-      integer isgop(48)
-! sgfract(j,i), jth cartesian coordinate of fractional in ith space group operator
-      double precision sgfract(3,48)
-! iatomop(j,i), point operator that takes jth atom into ith atom
-      integer, allocatable :: iatomop(:,:)
-! atomopfract(k,j,i), kth cartesian coordinate of fractional to accompany iatomop
-      double precision, allocatable :: atomopfract(:,:,:)
-! natoms0, number of atoms in the primitive unit cell
-      integer natoms0
-! natoms, number of atoms out to maxneighbors
-      integer natoms
-! atompos(j,i), jth cartesian coordinate of ith atom
-!  double precision atompos(3,maxatoms)
-      real(8), allocatable :: atompos(:,:)
-! iatomcell(j,i), linear combination of basis vectors of the primitive lattice
-! that takes us to the unit cell containing the ith atom
-!  integer iatomcell(3,maxatoms)
-      integer, allocatable ::  iatomcell(:,:),iatomcell0(:)
-! iatomcell0(i), identity of atom in unit cell at origin equivalent to ith atom
-!  integer iatomcell0(maxatoms)
-! iatomneighbor(j,i), nearest neighbor shell of jth atom in primitive unit
-! cell at the origin that contains the ith atom
-      integer, allocatable:: iatomneighbor(:,:)
-!      allocatable iatomneighbor,iatomop,atomopfract
-      end module force_constants_module
-!============================================================
- module lattice
- use geometry
- use constants
- implicit none
- type(vector) r1,r2,r3,g1,g2,g3  ,rr1,rr2,rr3   ! translation vectors of the supercell
- type(vector) r01,r02,r03,g01,g02,g03  ! tr vect of prim cell and its recip spce
- real(8) volume_r,volume_g,lattice_parameter,latticeparameters(6),primitivelattice(3,3)
- real(8) box(3),boxg(3)
- real(8) r0g(3,3)
- integer n1min,n2min,n3min,n1max,n2max,n3max,NC(3),NF(3)
- integer nr1(3),nr2(3),nr3(3)
-
-! contains
-! subroutine get_components(q,n,i,j,k )  !,g1,g2,g3)
-!! for a given q-vector, it finds its integer components assuming it was
-!! created as: nk=0 do i=0,N(1)-1 ; do j=0,N(2)-1; do k=0,N(3)-1; nk=nk+1 ;q=i*G1/N1+j*G2/N2+k*G3/N3
-!! as the ones created in make_kp_reg with zero shift
-!! it works even if there's a shift less than 0.5
-! implicit none
-! real(8) q(3) !,g1(3),g2(3),g3(3),r1(3),r2(3),r3(3)
-!! type(vector) g1,g2,g3,r1,r2,r3
-! integer i,j,k,n(3)
-!
-!! call make_reciprocal_lattice(g1,g2,g3,r1,r2,r3)
-! i = nint(1+ n(1)* (q.dot.r1)/2/pi )
-! j = nint(1+ n(2)* (q.dot.r2)/2/pi )
-! k = nint(1+ n(3)* (q.dot.r3)/2/pi )
-!
-! end subroutine get_components
-
- end module lattice
-!===========================================================
  module atoms_force_constants
 ! the type atom_id0 concerns the properties of the primitive unit cell
 ! it s atoms, masses, neighbors, shells and force constants, whereas the
 ! type atomic refers to atoms in the supercell, their displacements and forces.
  use geometry
- use force_constants_module
  implicit none
- integer natom_prim_cell,natom_super_cell,maxshells
+ integer natom_super_cell,maxshells, fc2flag
+
 !-------------------------
  type cell_id         ! id of atoms: position within cell, and cell coordinates
     integer n(3)
@@ -901,12 +838,13 @@ end module ios
     type(cell_id) cell
     integer at_type
     real(8) mass
+    real(8) charge(3,3)
  end type
 !-------------------------
  type atom_id0   ! all characteristics of an atom in the primitive central cell
     integer at_type
     character name*2
-    real(8) mass,charge
+    real(8) mass,charge(3,3)
     integer nshells       ! how many shells are included=actual dim(shell)
     type(vector) equilibrium_pos
     type(shell), allocatable ::  shells(:)  !0:maxshells)
@@ -918,25 +856,67 @@ end module ios
 ! everything with 0 refers to the primitive cell
 
  integer  natom_type
- integer, allocatable:: natom(:),atom_type(:) !label_of_primitive_atoms(:),
-! integer, allocatable:: ncel1(:),ncel2(:),ncel3(:)
- real(8), allocatable:: atompos0(:,:),mas(:),force(:,:,:),displ(:,:,:)
- real(8), allocatable:: forc(:,:),disp(:,:),vel(:,:),cur(:,:)
+ integer, allocatable:: natom(:),atom_type(:), map_rtau_sc(:,:)!label_of_primitive_atoms(:),
+ real(8), allocatable:: atompos0(:,:),mas(:),force(:,:,:),displ(:,:,:),vel(:,:)
+ real(8), allocatable:: cur(:,:)
  character(2), allocatable:: atname(:)
  type (atom_id0), allocatable :: atom0(:)
  type (atomic), allocatable :: atom_sc(:),atom_shl(:)
+
+!---------------------------
+! Module for saved data
+!      module force_constants_module
+! maximum shells of nearest neighbors (along radial direction)
+      integer maxneighbors
+!     parameter(maxneighbors=18 )
+! maximum number of atoms out to maxneighbors
+      integer maxatoms,imaxat
+!     parameter(maxatoms=2800 )
+! op_matrix(k,j,i), matrix for the ith point operator
+      double precision op_matrix(3,3,48)
+! op_kmatrix(k,j,i), matrix for the ith point operator acting on k vector
+      double precision op_kmatrix(3,3,48)
+      integer lattpgcount
+! isgopcount, number of operators in space group
+      integer isgopcount
+! isgop(i), point operation in ith space group operator
+      integer isgop(48)
+! sgfract(j,i), jth cartesian coordinate of fractional in ith space group operator
+      double precision sgfract(3,48)
+! iatomop(j,i), point operator that takes jth atom into ith atom
+      integer iatomop(:,:)
+! atomopfract(k,j,i), kth cartesian coordinate of fractional to accompany iatomop
+      double precision atomopfract(:,:,:)
+! natom_prim_cell, number of atoms in the primitive unit cell
+      integer natom_prim_cell
+! natoms, number of atoms out to maxneighbors
+      integer natoms
+! atompos(j,i), jth cartesian coordinate of ith atom
+!  double precision atompos(3,maxatoms)
+      real(8), allocatable :: atompos(:,:)
+! iatomcell(j,i), linear combination of basis vectors of the primitive lattice
+! that takes us to the unit cell containing the ith atom
+!  integer iatomcell(3,maxatoms)
+      integer, allocatable ::  iatomcell(:,:),iatomcell0(:)
+! iatomcell0(i), identity of atom in unit cell at origin equivalent to ith atom
+!  integer iatomcell0(maxatoms)
+! iatomneighbor(j,i), nearest neighbor shell of jth atom in primitive unit
+! cell at the origin that contains the ith atom
+      integer iatomneighbor(:,:)
+      allocatable iatomneighbor,iatomop,atomopfract
+!      end module force_constants_module
+! -------------------------------------
 
 contains
 
  subroutine allocate_disp_forc(n)  ! needed for the md code
     integer n
 !   allocate( disp(3,n),forc(3,n),vel(3,n),cur(3,n),ncel1(n),ncel2(n),ncel3(n) )
-    allocate( disp(3,n),forc(3,n),vel(3,n),cur(3,n) )
+!    allocate( disp(3,n),forc(3,n),vel(3,n),cur(3,n) )
  end subroutine allocate_disp_forc
 
  subroutine allocate_pos(n,m)
     integer n,m
-!   allocate( pos(n,m),force(3,n,m) )
     allocate( displ(3,n,m),force(3,n,m) )
  end subroutine allocate_pos
 
@@ -957,25 +937,359 @@ contains
  end subroutine allocate_supercell
 
 !------------------------------------
- subroutine set_neighbor_list
+!subroutine set_neighbor_list (maxshell)
+!! Generates a set of neighbors to the primitive cell (up to maxshell, which should be large enough)
+!! and finds which shell corresponds to the cutoff rcut set by the WS cell
+!! this is needed in order to know what force constants to associate
+!! to a pair ij, or ijk or ijkl
+!! if a neighbor j is known then one can get the vect(i,j) between
+!! their equilibrium positions
+!! use atoms_force_constants , only : natom_prim_cell
+!use params
+!use lattice
+!use ios
+!use geometry
+!implicit none
+!! integer, parameter :: max=500
+!integer, intent(in) :: maxshell
+!real(8), intent(in) :: rcut
+!integer i0,j,shel_count,counter,msort(maxatoms),l
+!real(8) dist(maxatoms),d_old,d_min,rmax
+
+!! allocate( atom0(1:natom_prim_cell)%shells(maxshells) )
+!rmax = 0 ; dist = 1d10
+!i0loop: do i0=1,natom_prim_cell
+!   allocate( atom0(i0)%shells(0:maxshell) )
+!   do j=1,natoms
+!      call calculate_distance(i0,j,atompos,maxatoms,dist(j) )
+!!      if ( iatomneighbor(i0,j) .eq. nshells(2) .and. dist(j) .gt. rmax ) then
+!      if ( iatomneighbor(i0,j) .eq. nshells(2,i0) .and. dist(j) .gt. rmax ) then
+!           rmax = dist(j)
+!      endif
+!   enddo
+!   call sort(natoms,dist,msort,maxatoms)
+
+!   shel_count = -1
+!   d_old = 0
+!   write(ulog,*)' ========================================================='
+!   write(ulog,*)' neighborlist of atom i0 =',i0
+
+!   jloop: do j=1,min(500,natoms)
+!      d_min = dist(msort(j))  ! start with the shortest distance
+!      if ( (d_min .myeq. d_old) .and. (shel_count.ne.-1) ) then   ! same shell
+!         counter = counter + 1
+!      else    ! new shell
+!         shel_count = shel_count+1
+!         counter = 1
+!         if ( shel_count .gt. maxshell ) then
+!            write(ulog,*)maxshell,' shells completed'
+!            write(ulog,*)'shel_count=',shel_count,' exceeded it for j=',j
+!            exit jloop
+!         endif
+!         d_old = d_min
+!      endif
+!      if ( counter .gt. 296) then
+!         write(ulog,*) ' counter in neighbors exceeded 296 ', counter
+!         stop
+!      endif
+!      atom0(i0)%shells(shel_count)%no_of_neighbors = counter
+!      atom0(i0)%shells(shel_count)%rij = d_min
+!      atom0(i0)%shells(shel_count)%neighbors(counter)%tau = iatomcell0(msort(j))
+!      atom0(i0)%shells(shel_count)%neighbors(counter)%n   = iatomcell(:,msort(j))
+!      if(verbose) then
+!!       write(ulog,*)' ------------------------------------'
+!         write(ulog,5)' count, j, of tau,n1,n2,n3,shel#,nb#,dij,rj =',j,msort(j),iatomcell0(msort(j)),   &
+!                iatomcell(:,msort(j)),iatomneighbor(i0,msort(j)),counter,d_min,(atompos(l,msort(j)),l=1,3)
+!      endif
+!   enddo jloop
+
+!   do shel_count = 0 , maxshell
+!      write(ulog,*)'shell#, neigh#=',shel_count,atom0(i0)%shells(shel_count)%no_of_neighbors
+!   enddo
+!! also initialize atom0%equilibrium_pos
+
+!! shift the position of the first atom to the  origin
+!!do i=1,natom_prim_cell
+!!   atompos(:,i) = atompos(:,i)-atompos(:,1)
+!!    atom0(i0)%equilibrium_pos = atompos0(1,i0)*r01 + atompos0(2,i0)*r02  &
+!!&                             + atompos0(3,i0)*r03
+!   atom0(i0)%equilibrium_pos%x = atompos(1,i0)
+!   atom0(i0)%equilibrium_pos%y = atompos(2,i0)
+!   atom0(i0)%equilibrium_pos%z = atompos(3,i0)
+!!enddo
+!! they might not be inside the primitive cell
+
+!enddo i0loop
+! rcut(2) = rmax
+
+! format(a,8(2x,i4))
+! format(a,' (',i4,2(1x,i4),1x,')')
+! format(a,1x,i4,' (',f8.4,2(1x,f8.4),1x,')')
+! format(a,3(2x,i4),' (',i4,2(1x,i4),1x,')',2(1x,i3),1x,f10.7,2x,9(1x,f9.6))
+! format(a,1x,f10.7,2x,9(1x,f9.6))
+
+!end subroutine set_neighbor_list
+
+
+ end module atoms_force_constants
+!===========================================================
+ module lattice
+ use geometry
+ use constants
+ implicit none
+ type(vector) gs1,gs2,gs3,rs1,rs2,rs3  ! rri=translation vectors of the supercell
+ type(vector) r1conv,r2conv,r3conv,g1conv,g2conv,g3conv
+ type(vector) r01,r02,r03,g01,g02,g03  ! tr vect of prim cell and its recip spce
+ real(8) volume_r,volume_g,volume_r0,volume_g0
+ real(8) lattice_parameter,latticeparameters(6),primitivelattice(3,3)
+ real(8),dimension(3,3):: conv_to_cart,prim_to_conv,conv_to_prim,prim_to_cart,cart_to_prim
+ real(8) box(3),boxg(3),density
+ real(8) r0g(3,3)
+! real(8), allocatable:: rws_weights(:),gws_weights(:)
+ integer n1min,n2min,n3min,n1max,n2max,n3max !,nrgrid,nggrid
+! integer nr1(3),nr2(3),nr3(3)
+! real(8), allocatable:: rgrid(:,:),ggrid(:,:),xgrid(:,:)
+ real(8) gws26(3,26),rws26(3,26)  ! superlattice shells defining the WS of SL
+
+  interface make_rg
+     module procedure make_rga,make_rgv
+  end interface
+
+ contains
+
+!-----------------------------------------
+ subroutine transform_input_structure
+!! takes input variables latticeparameters(6),primitivelattice(3,3) to construct the primitive cell
+ use ios
+ implicit none
+ real(8) latp(6),temp(3,3),tempi(3,3)
+ integer ier
+
+!k1
+!      d2r = 4d0*datan(1d0)/180d0 ! 3.1415926535897932384626/180d0
+!k1
+      conv_to_cart=0
+      prim_to_conv=primitivelattice
+      call xmatinv(prim_to_conv,conv_to_prim,ier)
+      if(ier.ne.0) then
+         write(*,*)'prim_to_conv does not have an inverse!'
+         stop
+      endif
+      latp=latticeparameters ! for short
+!      latp(4:6) = latp(4:6)*d2r   ! convert angles from degree to radian
+      conv_to_cart(1,1)=latp(1)
+      conv_to_cart(1,2)=latp(2)*dcosd(latp(6))
+      conv_to_cart(2,2)=latp(2)*dsind(latp(6))
+      conv_to_cart(1,3)=latp(3)*dcosd(latp(5))
+      conv_to_cart(2,3)=latp(3)*(dcosd(latp(4))   &
+     &     -dcosd(latp(6))*dcosd(latp(5)))  /dsind(latp(6))
+      conv_to_cart(3,3)=sqrt(latp(3)**2-conv_to_cart(1,3)**2   &
+     &     -conv_to_cart(2,3)**2)
+      write(*,*)'conv_to_cart has conventional vectors in its columns='
+      call write_out(ulog,' conventional cell(1) =',conv_to_cart(:,1))
+      call write_out(ulog,' conventional cell(2) =',conv_to_cart(:,2))
+      call write_out(ulog,' conventional cell(3) =',conv_to_cart(:,3))
+      r1conv=conv_to_cart(:,1)
+      r2conv=conv_to_cart(:,2)
+      r3conv=conv_to_cart(:,3)
+
+      call make_reciprocal_lattice_2pi(r1conv,r2conv,r3conv,g1conv,g2conv,g3conv)
+      call write_out(ulog,' conventional recip(1) =',g1conv)
+      call write_out(ulog,' conventional recip(2) =',g2conv)
+      call write_out(ulog,' conventional recip(3) =',g3conv)
+
+! prim_to_cart(i,j) is the ith cartesian coordinate of the jth primitive translation vector
+      prim_to_cart=matmul(conv_to_cart,prim_to_conv)
+
+      r01 = prim_to_cart(:,1)
+      r02 = prim_to_cart(:,2)
+      r03 = prim_to_cart(:,3)
+      call write_out(ulog,'primitive lattice vector #1= ',prim_to_cart(:,1))
+      call write_out(ulog,'primitive lattice vector #2= ',prim_to_cart(:,2))
+      call write_out(ulog,'primitive lattice vector #3= ',prim_to_cart(:,3))
+
+      call make_reciprocal_lattice_2pi(r01,r02,r03,g01,g02,g03)
+      call write_out(ulog,' g01= ' ,g01)
+      call write_out(ulog,' g02= ' ,g02)
+      call write_out(ulog,' g03= ' ,g03)
+
+ end subroutine transform_input_structure
+!-----------------------------------------
+ subroutine make_unitcell
+!! lattice parameters and atompos0 read from structure.params, it
+!! constructs the primitive vectors r0i and reciprocal vectors g0i
+!! initializes the object atom0%equilibrium_pos, mass, name, type and charge
+!! finds the symmetry operations of the unit cell
+!! calculates number and position of the atoms within rcut(2)=15 of the primitive cell
+!! set maxneighbors=maxshells, the max number of shells for calculating FC2
+ use ios
+ use params
+ use geometry
+ use atoms_force_constants
+! use force_constants_module
+! use svd_stuff
+ use constants
+ implicit none
+ character line*90,name*2
+ integer i,j,tt,ttyp,natoms2,n1
+ real(8) mss ,x1,x2,x3
+ type(vector) tau1,vv
+
+! generate r0i and g0i rom latticeparameters, primitivelattice
+  call transform_input_structure
+  call calculate_volume(r01,r02,r03,volume_r0)
+  call calculate_volume(g01,g02,g03,volume_g0)
+
+  write(ulog,*)' PRIMITIVE CELL *************************'
+  call write_out(ulog,' r01=',r01)
+  call write_out(ulog,' r02=',r02)
+  call write_out(ulog,' r03=',r03)
+  call write_out(ulog,' Volume of primitive cell ',volume_r0)
+! call write_out(ulog,' g01=',g01)
+! call write_out(ulog,' g02=',g02)
+! call write_out(ulog,' g03=',g03)
+  call write_out(ulog,' Volume of reciprocal primitive cell ',volume_g0)
+
+
+  box(1) = length(r01)
+  box(2) = length(r02)
+  box(3) = length(r03)
+  boxg(1) = length(g01)
+  boxg(2) = length(g02)
+  boxg(3) = length(g03)
+  write(ulog,3)' box lengths = ',box
+  write(ulog,3)' boxg lengths = ',boxg
+  write(ulog,3)' volume_r0,volume_g0 = ',volume_r0,volume_g0
+
+  write(ulog,*)' Reduced Atomic positions, mass ====================== '
+  do i=1,natom_prim_cell
+     atom0(i)%equilibrium_pos=atompos0(:,i)
+     write(ulog,8)atom0(i)%name,atom0(i)%at_type,atompos0(:,i),atom0(i)%mass
+  enddo
+  write(ulog,*)' Cartesian Atomic positions,  ====================== '
+  do i=1,natom_prim_cell
+     x1=atom0(i)%equilibrium_pos%x
+     x2=atom0(i)%equilibrium_pos%y
+     x3=atom0(i)%equilibrium_pos%z
+     atom0(i)%equilibrium_pos%x = x1*r1conv%x + x2*r2conv%x + x3*r3conv%x
+     atom0(i)%equilibrium_pos%y = x1*r1conv%y + x2*r2conv%y + x3*r3conv%y
+     atom0(i)%equilibrium_pos%z = x1*r1conv%z + x2*r2conv%z + x3*r3conv%z
+     write(ulog,3)atom0(i)%name,atom0(i)%equilibrium_pos
+  enddo
+
+! generate neighbors in atompos up to a disctance rcut(2)=15 Ang
+  rcut(2)=15  ! this is enough for a supercell of length 30 Ang
+
+! get density of atoms
+  call get_upper_bounds(r01,r02,r03,rcut(2),maxatoms,maxneighbors)
+
+  maxshells = maxneighbors
+
+  write(ulog,*)'*****************************************************************'
+  write(ulog,6)'UPPER_BOUNDS for rcut(2)=',rcut(2),' maxatoms,maxshells=',maxatoms,maxneighbors
+  write(ulog,*)'*****************************************************************'
+
+  allocate(atompos(3,maxatoms), iatomcell(3,maxatoms),iatomcell0(maxatoms))
+
+! find symmetry operations; the above allocation is for this subroutine
+  call force_constants_init(natom_prim_cell,atom_type,atompos0)
+
+! cat_to_prim had reciprocal lattice vectors on its lines
+  call write_out(ulog,'reciprocal lattice vectors ',cart_to_prim)
+
+
+  density=sum(atom0(:)%mass)/volume_r0*uma*1d27
+  write(ulog,*)' density (uma/Ang^3)=',sum(atom0(:)%mass)/volume_r0
+  write(ulog,*)' density (  g/ cm^3)=',density
+  write(ulog,*)' COORDINATES read successfully '
+
+3 format(a,9(2x,g13.6))
+4 format(i6,3(2x,g12.5),4(3x,i4))
+6 format(a,(2x,g12.5),a,4(3x,i4))
+8 format(a2,i3,9(1x,g13.6))
+
+ end subroutine make_unitcell
+!-----------------------------------------
+! subroutine get_components(q,n,i,j,k )  !,g1,g2,g3)
+!! for a given q-vector, it finds its integer components assuming it was
+!! created as: nk=0 do i=0,N(1)-1 ; do j=0,N(2)-1; do k=0,N(3)-1; nk=nk+1 ;q=i*G1/N1+j*G2/N2+k*G3/N3
+!! as the ones created in make_kp_reg with zero shift
+!! it works even if there's a shift less than 0.5
+! implicit none
+! real(8) q(3) !,g1(3),g2(3),g3(3),r1(3),r2(3),r3(3)
+!! type(vector) g1,g2,g3,r1,r2,r3
+! integer i,j,k,n(3)
+!
+!! call make_reciprocal_lattice(g1,g2,g3,r1,r2,r3)
+! i = nint(1+ n(1)* (q.dot.r1)/2/pi )
+! j = nint(1+ n(2)* (q.dot.r2)/2/pi )
+! k = nint(1+ n(3)* (q.dot.r3)/2/pi )
+!
+! end subroutine get_components
+!-----------------------------------------
+ subroutine make_rga(x1,x2,x3,q1,q2,q3,n)   ! n(i,j)=xi.qj
+! matmul(r0g,n) gives the 3 reduced coordinates of the primcell of index n in units of the supercell ri's
+! matmul(r0g,v) gives the 3 reduced coordinates of an atom in the supercell if its
+! reduced coordinates in the primitive cell are given by v
+ use geometry
+ implicit none
+ real(8), intent(in ) :: x1(3),x2(3),x3(3),q1(3),q2(3),q3(3)
+ real(8), intent(out) :: n(3,3)
+
+ n(1,1) = x1 .dot. q1
+ n(1,2) = x1 .dot. q2
+ n(1,3) = x1 .dot. q3
+ n(2,1) = x2 .dot. q1
+ n(2,2) = x2 .dot. q2
+ n(2,3) = x2 .dot. q3
+ n(3,1) = x3 .dot. q1
+ n(3,2) = x3 .dot. q2
+ n(3,3) = x3 .dot. q3
+
+ end subroutine make_rga
+!-----------------------------------------
+ subroutine make_rgv(x1,x2,x3,q1,q2,q3,n)   ! n(i,j)=xi.qj
+! matmul(r0g,n) gives the 3 reduced coordinates of the primcell of index n in units of the supercell ri's
+! matmul(r0g,v) gives the 3 reduced coordinates of an atom in the supercell if its
+! reduced coordinates in the primitive cell are given by v
+ use geometry
+ implicit none
+ type(vector), intent(in) :: x1,x2,x3,q1,q2,q3
+ real(8), intent(out) :: n(3,3)
+
+ n(1,1) = x1 .dot. q1
+ n(1,2) = x1 .dot. q2
+ n(1,3) = x1 .dot. q3
+ n(2,1) = x2 .dot. q1
+ n(2,2) = x2 .dot. q2
+ n(2,3) = x2 .dot. q3
+ n(3,1) = x3 .dot. q1
+ n(3,2) = x3 .dot. q2
+ n(3,3) = x3 .dot. q3
+
+ end subroutine make_rgv
+!-----------------------------------------
+ subroutine set_neighbor_list (maxshell)
+!! Generates a set of neighbors to the primitive cell (up to maxshell, which should be large enough)
+!! and finds which shell corresponds to the cutoff rcut set by the WS cell
 ! this is needed in order to know what force constants to associate
 ! to a pair ij, or ijk or ijkl
 ! if a neighbor j is known then one can get the vect(i,j) between
 ! their equilibrium positions
- use force_constants_module
+ use atoms_force_constants !, only : natom_prim_cell, atom0,maxatoms
  use params
- use lattice
  use ios
  use geometry
  implicit none
-! integer, parameter :: max=500
+ integer, intent(in) :: maxshell
+! real(8), intent(in) :: rcut
  integer i0,j,shel_count,counter,msort(maxatoms),l
  real(8) dist(maxatoms),d_old,d_min,rmax
 
-! allocate( atom0(1:natoms0)%shells(maxshells) )
+! allocate( atom0(1:natom_prim_cell)%shells(maxshells) )
  rmax = 0 ; dist = 1d10
- do i0=1,natoms0
-    allocate( atom0(i0)%shells(0:maxshells) )
+ i0loop: do i0=1,natom_prim_cell
+    allocate( atom0(i0)%shells(0:maxshell) )
     do j=1,natoms
        call calculate_distance(i0,j,atompos,maxatoms,dist(j) )
 !      if ( iatomneighbor(i0,j) .eq. nshells(2) .and. dist(j) .gt. rmax ) then
@@ -988,17 +1302,17 @@ contains
     shel_count = -1
     d_old = 0
     write(ulog,*)' ========================================================='
-    write(ulog,*)' neighborlist j, of atom i0 in atompos array =',i0
+    write(ulog,*)' neighborlist of atom i0 =',i0
 
-    jloop: do j=1,min(500,natoms)  ! assign the first 500 neighbors
-       d_min = dist(msort(j))
+    jloop: do j=1,min(500,natoms)
+       d_min = dist(msort(j))  ! start with the shortest distance
        if ( (d_min .myeq. d_old) .and. (shel_count.ne.-1) ) then   ! same shell
           counter = counter + 1
        else    ! new shell
           shel_count = shel_count+1
           counter = 1
-          if ( shel_count .gt. maxshells ) then
-             write(ulog,*)maxshells,' shells completed'
+          if ( shel_count .gt. maxshell ) then
+             write(ulog,*)maxshell,' shells completed'
              write(ulog,*)'shel_count=',shel_count,' exceeded it for j=',j
              exit jloop
           endif
@@ -1012,21 +1326,20 @@ contains
        atom0(i0)%shells(shel_count)%rij = d_min
        atom0(i0)%shells(shel_count)%neighbors(counter)%tau = iatomcell0(msort(j))
        atom0(i0)%shells(shel_count)%neighbors(counter)%n   = iatomcell(:,msort(j))
-       write(ulog,*)' ------------------------------------'
-       write(ulog,5)' count, j, of tau =',j,msort(j),iatomcell0(msort(j)),   &
-&                                        iatomcell(:,msort(j))
-!      write(ulog,3)' cell (n1,n2,n3) ='
-       write(ulog,2)' shell# , neighb#, neighbdist =',shel_count,counter,(atompos(l,msort(j)),l=1,3),d_min
-!       write(ulog,6)' neighbor distance=',d_min
-!      write(ulog,4)' neighborshel,xyz =',iatomneighbor(i0,msort(j))
+       if(verbose) then
+!       write(ulog,*)' ------------------------------------'
+          write(ulog,5)' count, j, of tau,n1,n2,n3,shel#,nb#,dij,rj =',j,msort(j),iatomcell0(msort(j)),   &
+&                iatomcell(:,msort(j)),iatomneighbor(i0,msort(j)),counter,d_min,(atompos(l,msort(j)),l=1,3)
+       endif
     enddo jloop
-    do shel_count = 0 , maxshells
+
+    do shel_count = 0 , maxshell
        write(ulog,*)'shell#, neigh#=',shel_count,atom0(i0)%shells(shel_count)%no_of_neighbors
     enddo
 ! also initialize atom0%equilibrium_pos
 
 ! shift the position of the first atom to the  origin
-!do i=1,natoms0
+!do i=1,natom_prim_cell
 !   atompos(:,i) = atompos(:,i)-atompos(:,1)
 !    atom0(i0)%equilibrium_pos = atompos0(1,i0)*r01 + atompos0(2,i0)*r02  &
 !&                             + atompos0(3,i0)*r03
@@ -1036,18 +1349,19 @@ contains
 !enddo
 ! they might not be inside the primitive cell
 
- enddo
- rcut(2) = rmax
+ enddo i0loop
+! rcut(2) = rmax
 
-2 format(a,2(2x,i4),', (',3(1x,f8.4),') ,',3x,f10.5)
-!3 format(a,' (',i4,2(1x,i4),1x,')')
-!4 format(a,1x,i4,' (',f8.4,2(1x,f8.4),1x,')')
-5 format(a,3(2x,i4),' (',i4,2(1x,i4),1x,')')
-!6 format(a,2x,g16.7)
+2 format(a,8(2x,i4))
+3 format(a,' (',i4,2(1x,i4),1x,')')
+4 format(a,1x,i4,' (',f8.4,2(1x,f8.4),1x,')')
+5 format(a,3(2x,i4),' (',i4,2(1x,i4),1x,')',2(1x,i3),1x,f10.7,2x,9(1x,f9.6))
+6 format(a,1x,f10.7,2x,9(1x,f9.6))
 
  end subroutine set_neighbor_list
+!-------------------------------------
 
- end module atoms_force_constants
+ end module lattice
 !============================================================
   module svd_stuff
 ! stuff related to Harold's subroutines, mappings and the svd matrices
@@ -1058,17 +1372,18 @@ contains
  end type groupmatrix
  type fulldmatrix
     type(groupmatrix), allocatable :: gr(:)
-    integer, allocatable:: nt(:),ntind(:),igr(:)
+    integer, allocatable:: nt(:),ntind(:)  !,igr(:)
     character(1), allocatable:: err(:)
     integer ngr,ntotind,ntot  ! number of groups, total number of independent terms and full terms
  end type fulldmatrix
 
- integer maxrank,maxgroups,itrans,irot,ihuang,enforce_inv
- integer nterms(4),maxterms(4),maxtermsindep(4),ngroups(4)
+ integer maxrank,itrans,irot,ihuang,enforce_inv, size_kept_fc2,ngrnk(4)
+ integer, allocatable :: keep_grp2(:),nlines(:)
+ integer nterms(4),maxterms(4),maxtermsindep(4),ngroups(4),maxtermzero(4),maxgroups(4)
 ! integer ndindp(4),ndfull(4)
  parameter(maxrank=4)
  integer, allocatable :: nterm(:),ntermsindep(:)
- integer, allocatable :: iatomtermindep(:,:,:),ixyztermindep(:,:,:)
+ integer, allocatable :: iatmtermindp(:,:,:),ixyztermindp(:,:,:)
  integer, allocatable :: iatmtrm(:,:,:),ixyztrm(:,:,:)
  real(8), allocatable :: mapmat(:,:,:)
  real(8) svdcut,radius(4)
@@ -1078,224 +1393,330 @@ contains
  integer, allocatable:: iatomterm_4(:,:),ixyzterm_4(:,:),igroup_4(:),map_4(:)
  character(1), allocatable:: err_1(:),err_2(:),err_3(:),err_4(:)
  type(fulldmatrix) map(4)
+ real(8), allocatable:: fcrnk(:,:)
  real(8), allocatable:: ampterm_1(:),fcs_1(:)
  real(8), allocatable:: ampterm_2(:),fcs_2(:),grun_fc(:)
  real(8), allocatable:: ampterm_3(:),fcs_3(:)
  real(8), allocatable:: ampterm_4(:),fcs_4(:)
- real(8), allocatable:: amat(:,:),bmat(:),sigma(:),fcs(:),ahom(:,:),overl(:,:)
+ real(8), allocatable:: amat(:,:),bmat(:),sigma(:),fcs(:),ahom(:,:),kernelbasis(:,:)
  real(8), allocatable:: a11ia12(:,:),fc1(:)
- real(8), allocatable:: arot(:,:),brot(:),atransl(:,:),ahuang(:,:),aforce(:,:),bforce(:)
+ real(8), allocatable:: atransl(:,:),btransl(:),arot(:,:),brot(:),ahuang(:,:),bhuang(:), &
+ &                      aforce(:,:),bforce(:),energies(:)
  real(8), allocatable:: fc_ind(:) ! This is for getting force constant by reading FC2.dat file
  integer inv_constraints,force_constraints,dim_al,dim_ac,n_indep,newdim_al,dim_hom   &
-&        ,transl_constraints, rot_constraints, huang_constraints,ngr
-real(8), allocatable:: energy(:)
+&        ,transl_constraints, rot_constraints, huang_constraints,nindepfc
 contains
 
  subroutine set_maxterms
-   maxterms(1)=15
-   maxterms(2)=200
-   maxterms(3)=200
-   maxterms(4)=600
-   maxtermsindep(1)=5
-   maxtermsindep(2)=30
-   maxtermsindep(3)=30
-   maxtermsindep(4)=60
-   maxgroups=90
+   maxterms(1)=100
+   maxterms(2)=500
+   maxterms(3)=1800
+   maxterms(4)=2000
+   maxtermzero(1)=50
+   maxtermzero(2)=200
+   maxtermzero(3)=500
+   maxtermzero(4)=800
+   maxtermsindep(1)=10
+   maxtermsindep(2)=50
+   maxtermsindep(3)=70
+   maxtermsindep(4)=100
+   maxgroups(1)=10
+   maxgroups(2)=25
+   maxgroups(3)=45
+   maxgroups(4)=70
  end subroutine set_maxterms
 
+!--------------------------------------------
+ subroutine remove_zeros_all(nl,nc)
+! removes lines which are all zero from the amatrix
+ use ios
+ use params
+! use svd_stuff  !for itrans,irot,ihuang
+ implicit none
+ integer, intent(in) :: nc
+ integer, intent(inout) :: nl
+! real(8), dimension(:,:), intent(inout) :: amatr
+! real(8), dimension(:)  , intent(inout) :: bmatr
+! real(8), intent(inout) :: amatr(nl,nc)
+! real(8), intent(inout) :: bmatr(nl)
+ integer i,j,nz,tra,rot,hua,tra_out,rot_out,hua_out
+ real(8), allocatable:: at(:,:),bt(:),ar(:,:),br(:),ah(:,:),bh(:),aa(:,:),bb(:)
+ real(8) small,suml
+ integer, allocatable:: zz(:)
+
+ small=1d-7 !10  displacements or cos(t) are never that small
+
+ tra=0; rot=0; hua=0
+ if (itrans .ne. 0) tra= transl_constraints
+ if (irot   .ne. 0) rot= rot_constraints
+ if (ihuang .ne. 0) hua= huang_constraints
+
+ call remove_zeros(tra,nc,amat(1:tra,1:nc),bmat(1:tra),  &
+ &  tra_out,at(1:tra_out,1:nc),bt(1:tra_out))
+ call remove_zeros(rot,nc,amat(tra+1:tra+rot,1:nc),bmat(tra+1:tra+rot),  &
+ &  rot_out,ar(1:rot_out,1:nc),br(1:rot_out))
+ call remove_zeros(hua,nc,amat(tra+rot+1:tra+rot+hua,1:nc),bmat(tra+rot+1:tra+rot+hua), &
+ &  hua_out,ah(1:hua_out,1:nc),bh(1:hua_out))
+
+ nl=tra_out+rot_out+hua_out+force_constraints
+!  nl=tra    +rot    +hua    +force_constraints
+ allocate(aa(nl,nc),bb(nl))
+ aa(1:tra_out,1:nc)=at
+ bb(1:tra_out   )=bt
+ aa(tra_out+1:tra_out+rot_out,1:nc)=ar
+ bb(tra_out+1:tra_out+rot_out   )=br
+ aa(tra_out+rot_out+1:tra_out+rot_out+hua_out,1:nc)=ah
+ bb(tra_out+rot_out+1:tra_out+rot_out+hua_out   )=bh
+ aa(tra_out+rot_out+hua_out+1:nl,1:nc)=aforce
+ bb(tra_out+1:tra_out   )=bt
+
+! call remove_zeros(rot,nc,amat(tra+1:tra+rot,1:nc),bmat(tra+1:tra+rot), &
+! & rot_out,aa(tra_out+1:tra_out+rot_out,1:nc),bb(tra_out+1:tra_out+rot_out))
+! call remove_zeros(hua,nc,amat(tra+rot+1:tra+rot+hua,1:nc),bmat(tra+tro+1:tra+rot+hua), &
+! &  hua_out,aa(tra_out+rot_out+1:tra_out+rot_out+hua_out,1:nc), &
+! & bb(tra_out+rot_out+1:tra_out+rot_out+hua_out))
+
+ allocate(zz(nl))
+ zz = 1
+ nz = 0
+ do i=1,nl
+! get the norm1 of each line
+!   suml = 0
+!   do j=1,nc
+!      if ( abs(amatr(i,j)) .ge. suml ) suml = abs(amatr(i,j))
+!   enddo
+    suml = maxval(abs(amat(i,:)))     ! sqrt(sum(amatr(i,:)*amatr(i,:))/nc)
+    if (suml.lt.small) then
+       if (abs(bmat(i)) .lt. small) then
+          if(verbose) write(ulog,*)' line #',i,' of Amatrix and Bmatrix is zero; it will be removed!'
+       else
+          write(ulog,*)' Inconsistency in line i of Amatrix which is zero!',i,suml
+          write(ulog,*)' It will be removed; Corresponding line in bmatr is=',bmat(i)
+          write(ulog,*)' Need to increase your range of FCs'
+       endif
+! record the line index for later removal
+       zz(i) = 0
+       nz = nz + 1  ! nz counts the number of zero lines
+    endif
+ enddo
+ write(ulog,*)' number of lines=0 in amat are=',nz
+ allocate(aa(nl-nz,nc),bb(nl-nz))
+
+ j = 0
+ do i=1,nl
+    if (zz(i).ne.0) then
+       j = j+1
+       aa(j,:) = amat(i,:)
+       bb(j) = bmat(i)
+    elseif(i.le.transl_constraints) then
+       tra=tra - 1 !nsl_constraints=transl_constraints-1
+    elseif(i.le.transl_constraints+rot_constraints) then
+       rot=rot - 1 !_constraints=rot_constraints-1
+    elseif(i.le.transl_constraints+rot_constraints+huang_constraints) then
+       hua = hua-1 !ng_constraints=huang_constraints-1
+    else
+       force_constraints=force_constraints-1
+    endif
+ enddo
+ if (j.ne.nl-nz) then
+    write(ulog,*)'REMOVE ZEROS: Inconsistency! j.ne. nl.nz ',j,nl-nz
+    stop
+ endif
+
+ inv_constraints = tra+rot+hua !transl_constraints+rot_constraints+huang_constraints
+
+ write(ulog,4)'After remove_zeros: NEW tra,rot,hua,force_constaints=',tra,  &
+ &       rot,hua,force_constraints
+
+ nl=j
+ deallocate(amat,bmat)
+ allocate(amat(nl,nc),bmat(nl))
+ amat = aa
+ bmat = bb
+ write(ulog,*)'REMOVE ZEROS: new number of lines in amat=',nl
+ deallocate(aa,bb,zz)
+ 4 format(a,4(i9))
+
+ end subroutine remove_zeros_all
+
+!--------------------------------------------
+ subroutine remove_zeros(nl,nc,matin,vectin,nlout,matout,vectout)
+! removes lines which are all zero from the matrix mat and the vector v
+ use ios , only : ulog
+! use params
+ implicit none
+ integer, intent(out) :: nlout
+ integer, intent(in) :: nl,nc
+ real(8), dimension(nl,nc), intent(in) :: matin
+ real(8), dimension(nl)   , intent(in) :: vectin
+ real(8), dimension(nl,nc), intent(out) :: matout
+ real(8), dimension(nl   ), intent(out) :: vectout
+ integer i,j,nz
+! real(8), allocatable:: aa(:,:),bb(:)
+ real(8) small,suml
+ integer, allocatable:: zz(:)
+
+ small=1d-7 !10  displacements or cos(t) are never that small
+
+ allocate(zz(nl))
+ zz = 1
+ nz = 0
+ do i=1,nl
+    suml = maxval(abs(matin(i,:)))     ! sqrt(sum(amatr(i,:)*amatr(i,:))/nc)
+    if (suml.lt.small) then
+       if (abs(vectin(i)) .lt. small) then
+!         if(verbose) write(ulog,*)' line #',i,' of Amatrix and Bmatrix is zero; it will be removed!'
+       else
+          write(ulog,*)' Inconsistency in line i of Amatrix which is zero!',i,suml
+          write(ulog,*)' It will be removed; Corresponding line in bmatr is=',vectin(i)
+          write(ulog,*)' Need to increase your range of FCs, or include higher orders of FCs'
+       endif
+! record the line index for later removal
+       zz(i) = 0
+       nz = nz + 1  ! nz counts the number of zero lines
+    endif
+ enddo
+ write(ulog,*)' number of lines=0 in matin are=',nz
+ nlout=nl-nz
+ write(ulog,4)'After removing zeros: NEW # of lines=',nlout
+! if(allocated(matout)) deallocate (matout)
+! if(allocated(vectout)) deallocate (vectout)
+! allocate(matout(nlout,nc),vectout(nlout))
+! allocate(aa(nl-nz,nc),bb(nl-nz))
+
+ j = 0
+ do i=1,nl
+    if (zz(i).ne.0) then
+       j = j+1
+       matout(j,:) = matin(i,:)
+       vectout(j ) = vectin(i)
+    endif
+ enddo
+
+! deallocate(matin,vectin)
+! allocate(matout(nlout,nc),vectout(nlout))
+! matin = aa
+! vectin= bb
+
+ deallocate(zz)
+
+ 4 format(a,4(i9))
+
+ end subroutine remove_zeros
+
   end module svd_stuff
-!============================================================
- function bring_to_prim_cell_cav(a) result(w)
-! takes cartesian coordinates and returns cart coordinates within the primcell
- use lattice
- use geometry
- implicit none
- type(vector) v,w, bring_to_prim_cell_cv
- real(8) a(3)
-
- v%x = a(1) ; v%y = a(2) ; v%z = a(3)
- w =  bring_to_prim_cell_cv(v)
-
- end function bring_to_prim_cell_cav
-!-----------------------------------------
- function bring_to_super_cell_cav(a) result(w)
-! takes cart coordinates and returns cart coordinates within the supercell
- use lattice
- use geometry
- implicit none
- type(vector) v,w, bring_to_super_cell_cv
- real(8) a(3)
-
- v%x = a(1) ; v%y = a(2) ; v%z = a(3)
- w = bring_to_super_cell_cv(v)
-
- end function bring_to_super_cell_cav
-!-----------------------------------------
- function bring_to_prim_cell_caa(a) result(b)
-! takes cartesian coordinates and returns cart coordinates within the primcell
- use lattice
- use geometry
- implicit none
- type(vector) v,w, bring_to_prim_cell_cv
- real(8) a(3),b(3)
-
- v%x = a(1) ; v%y = a(2) ; v%z = a(3)
- w =  bring_to_prim_cell_cv(v)
- b(1) = w%x ; b(2) = w%y ; b(3) = w%z
-
- end function bring_to_prim_cell_caa
-!-----------------------------------------
- function bring_to_super_cell_caa(a) result(b)
-! takes cart coordinates and returns cart coordinates within the supercell
- use lattice
- use geometry
- implicit none
- type(vector) v,w, bring_to_super_cell_cv
- real(8) a(3),b(3)
-
- v%x = a(1) ; v%y = a(2) ; v%z = a(3)
- w = bring_to_super_cell_cv(v)
- b(1) = w%x ; b(2) = w%y ; b(3) = w%z
-
- end function bring_to_super_cell_caa
-!-----------------------------------------
- function bring_to_prim_cell_cv(v) result(w)
-! takes cartesian coordinates and returns cart coordinates within the primcell
- use lattice
- use geometry
- implicit none
- type(vector) v,w
- real(8) a1,a2,a3
-
-! get direct coordinates first
- a1 = v .dot. g01
- a2 = v .dot. g02
- a3 = v .dot. g03
-! bring into cell: between 0 and cell
- a1 = a1 - floor(a1)
- a2 = a2 - floor(a2)
- a3 = a3 - floor(a3)
-! convert to cartesian coordinates
- w = a1*r01+a2*r02+a3*r03
-
- end function bring_to_prim_cell_cv
-!-----------------------------------------
- function bring_to_super_cell_cv(v) result(w)
-! takes cart coordinates and returns cart coordinates within the supercell
- use lattice
- use geometry
- implicit none
- type(vector) v,w
- real(8) a1,a2,a3
-
-! get direct coordinates first
- a1 = v .dot. g1
- a2 = v .dot. g2
- a3 = v .dot. g3
-! bring into cell: between 0 and cell
- a1 = a1 - floor(a1)
- a2 = a2 - floor(a2)
- a3 = a3 - floor(a3)
-! convert to cartesian coordinates
- w = a1*r1+a2*r2+a3*r3
-
- end function bring_to_super_cell_cv
-!-----------------------------------
- subroutine cart_to_direct_v(v,w)
-! takes cart coordinates and returns cart coordinates within the supercell
- use lattice
- use geometry
- implicit none
- type(vector) v,w
-
- w%x = v .dot. g1
- w%y = v .dot. g2
- w%z = v .dot. g3
-
- end subroutine cart_to_direct_v
-!-----------------------------------
- subroutine cart_to_direct_av(a,w)
-! takes cart coordinates and returns cart coordinates within the supercell
- use lattice
- use geometry
- implicit none
- real(8) a(3)
- type(vector) v,w
-
- v%x = a(1) ; v%y = a(2) ; v%z = a(3)
- call cart_to_direct_v(v,w)
-
- end subroutine cart_to_direct_av
-!-----------------------------------
- subroutine cart_to_direct_aa(a,b)
-! takes cart coordinates and returns cart coordinates within the supercell
- use geometry
- use lattice
- implicit none
- real(8) a(3),b(3)
- type(vector) v,w
-
- v%x = a(1) ; v%y = a(2) ; v%z = a(3)
- call cart_to_direct_v(v,w)
- b(1) = w%x ; b(2) = w%y ; b(3) = w%z
-
- end subroutine cart_to_direct_aa
-!-----------------------------------
- subroutine direct_to_cart_v(v,w)
-! takes direct coordinates and returns cart coordinates
- use geometry
- use lattice
- implicit none
- type(vector) v,w
-
- w%x = v%x*r1%x + v%y*r2%x + v%z*r3%x
- w%y = v%x*r1%y + v%y*r2%y + v%z*r3%y
- w%z = v%x*r1%z + v%y*r2%z + v%z*r3%z
-
- end subroutine direct_to_cart_v
-!-----------------------------------
- subroutine direct_to_cart_av(a,w)
-! takes direct coordinates and returns cart coordinates
- use geometry
- use lattice
- implicit none
- real(8) a(3)
- type(vector) v,w
-
- v%x = a(1) ; v%y = a(2) ; v%z = a(3)
- call direct_to_cart_v(v,w)
-
- end subroutine direct_to_cart_av
-!-----------------------------------
- subroutine direct_to_cart_aa(a,b)
-! takes direct coordinates and returns cart coordinates
- use geometry
- use lattice
- implicit none
- real(8) a(3),b(3)
- type(vector) v,w
-
- v%x = a(1) ; v%y = a(2) ; v%z = a(3)
- call direct_to_cart_v(v,w)
- b(1) = w%x ; b(2) = w%y ; b(3) = w%z
-
- end subroutine direct_to_cart_aa
-!------------------------------------
- subroutine dir2cart_g(q,k)
-! takes q in direct coordinates and outputs k in cartesian
- use geometry
- use lattice
- real(8) q(3),k(3)
-
- k(:) = q(1)*g1 + q(2)*g2 + q(3)*g3
-
- end subroutine dir2cart_g
 !===========================================================
   module born
-  real(8) epsil(3,3)
-  real(8), allocatable:: zeu(:,:,:)
+  real(8) epsil(3,3),epsinv(3,3)
+!  real(8), allocatable:: zeu(:,:,:)
   real(8) rho
   integer born_flag
   end module born
+
+!===========================================================
+subroutine sort3(n1,n2,n3,mp)
+implicit none
+integer n1,n2,n3,mp(3)
+
+if( n2.ge.n1) then
+  if (n3.ge.n2) then
+     mp(1)=n1
+     mp(2)=n2
+     mp(3)=n3
+  elseif( n3.ge.n1) then
+     mp(1)=n1
+     mp(2)=n3
+     mp(3)=n2
+  else
+     mp(1)=n3
+     mp(2)=n1
+     mp(3)=n2
+  endif
+elseif( n3.ge.n1) then
+     mp(1)=n2
+     mp(2)=n1
+     mp(3)=n3
+ elseif(n3.ge.n2) then
+     mp(1)=n2
+     mp(2)=n3
+     mp(3)=n1
+ else
+     mp(1)=n3
+     mp(2)=n2
+     mp(3)=n1
+ endif
+end subroutine sort3
+!===========================================================
+ subroutine check_inside_fbz_old(q,g1,g2,g3,inside)
+ use geometry
+ use constants
+ implicit none
+ real(8), intent(in):: q(3)
+ type(vector), intent(in):: g1,g2,g3
+ integer, intent(out) :: inside
+ real(8) qdotg,gg,gt(3),sm
+ sm = -.000001  ! on the boundary is also counted as inside, but once only
+
+ inside = 0
+!------------------- along the diagonal 100
+       qdotg = ( q .dot. g1) + sm
+       gg = g1 .dot. g1
+       if(abs(qdotg) .gt. gg/2) return  ! this is the Bragg condition |q.G| < G.G/2
+       qdotg = ( q .dot. g2) + sm
+       gg = g2 .dot. g2
+       if(abs(qdotg) .gt. gg/2) return
+       qdotg = ( q .dot. g3) + sm
+       gg = g3 .dot. g3
+       if(abs(qdotg) .gt. gg/2) return
+!------------------- along the diagonal 110
+       gt = g1+g2
+       qdotg = ( q .dot. gt) + sm
+       gg = gt .dot. gt
+       if(abs(qdotg) .gt. gg/2) return
+       gt = g1-g2
+       qdotg = ( q .dot. gt) + sm
+       gg = gt .dot. gt
+       if(abs(qdotg) .gt. gg/2) return
+       gt = g1+g3
+       qdotg = ( q .dot. gt) + sm
+       gg = gt .dot. gt
+       if(abs(qdotg) .gt. gg/2) return
+       gt = g1-g3
+       qdotg = ( q .dot. gt) + sm
+       gg = gt .dot. gt
+       if(abs(qdotg) .gt. gg/2) return
+
+       gt = g3+g2
+       qdotg = ( q .dot. gt) + sm
+       gg = gt .dot. gt
+       if(abs(qdotg) .gt. gg/2) return
+       gt = g3-g2
+       qdotg = ( q .dot. gt) + sm
+       gg = gt .dot. gt
+       if(abs(qdotg) .gt. gg/2) return
+!------------------- along the diagonal 111
+       gt = g1+g2+g3
+       qdotg = ( q .dot. gt) + sm
+       gg = gt .dot. gt
+       if(abs(qdotg) .gt. gg/2) return
+       gt = g1+g2-g3
+       qdotg = ( q .dot. gt) + sm
+       gg = gt .dot. gt
+       if(abs(qdotg) .gt. gg/2) return
+       gt = g1-g2+g3
+       qdotg = ( q .dot. gt) + sm
+       gg = gt .dot. gt
+       if(abs(qdotg) .gt. gg/2) return
+       gt = g1-g2-g3
+       qdotg = ( q .dot. gt) + sm
+       gg = gt .dot. gt
+       if(abs(qdotg) .gt. gg/2) return
+!-------------------
+ inside = 1
+
+ end subroutine check_inside_fbz_old
+
+
+! end module kpoints
 !===========================================================
 
