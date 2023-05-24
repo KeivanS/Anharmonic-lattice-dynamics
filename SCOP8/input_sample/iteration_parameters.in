@@ -1,9 +1,9 @@
 .False. # whether start randomly
-.True. # whether inherit file <targetInitialize.dat> results for initial guess
+.False. # whether inherit file <targetInitialize.dat> results for initial guess
 .False. # whether include pressure factor
 0.0001 # no use legacy check
 54321 # if you want random start, this is the seed
-400 # max_iteration number note: add pmic here
+300 # max_iteration number note: add pmic here
 -0.006 # pmix parameter here, usually -0.006
 800 # temperature
 7.5 0.0 0.0
