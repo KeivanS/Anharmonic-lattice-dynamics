@@ -1,0 +1,2 @@
+   # temperature(K) ,alpha (1/K) , Cv (J/K/mol), gama , E_tot(J/mol) ,    E_free , Pressure(GPa) , P0 , Bulk_mod(GPa) , kappa/L(nm) 
+   380.0      0.1457E-05   21.69      0.3665      0.1083E+05   1439.      0.8734      0.4904       109.9      0.7855E+06  -.2741E-02  -.2741E-02  -.2741E-02  0.7855E+06  -.2741E-02  -.2741E-02  -.2741E-02  0.7855E+06
