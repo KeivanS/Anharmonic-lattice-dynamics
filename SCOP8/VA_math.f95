@@ -45,7 +45,8 @@ Module VA_math
     END TYPE omega_index
     TYPE(omega_index),DIMENSION(:),ALLOCATABLE :: soft
 
-    REAL(8) :: reserve !for fd vs. math check, frustrating but effective
+    REAL(8) :: reserve
+    REAL(8) :: bulk_test
 
     CONTAINS
 !=========================================FOR INITIAL GUESS=======================================================
@@ -200,6 +201,12 @@ Module VA_math
         REAL(8) :: negative_eivals,max_eivals,min_eivals
         INTEGER :: k_number
 
+        REAL(8),DIMENSION(d,d) :: identity
+
+        identity(:,1) = (/1d0,0d0,0d0/)
+        identity(:,2) = (/0d0,1d0,0d0/)
+        identity(:,3) = (/0d0,0d0,1d0/)
+
         !**** allocate an 1D array to record <eff_fc2> for L1 norm calculation ****
         IF(ALLOCATED(trialfc2_record)) DEALLOCATE(trialfc2_record)
         ALLOCATE(trialfc2_record(eff_fc2_terms))
@@ -225,12 +232,8 @@ Module VA_math
         !******************ENERGY CALCULATIONS************************
         !we have to diagonalize matrix here
         CALL initiate_yy(kvector)!calculate new <yy> for every time
-!CALL check_degeneracy
-!CALL special_check
-!CALL updatePhi !just for test
-!STOP
         CALL GetF0_and_V0 ! not really needed here
-        CALL GetV_avg_And_GradientV_avg2(kvector) ! translational invariant form that actually works
+        CALL GetV_avg_And_GradientV_avg(kvector) ! translational invariant form that actually works
 !        CALL TreatGradientV ! modify GradientV_utau GradientV_eta with a matrix
         F_trial=F0+V_avg-V0
 
@@ -286,6 +289,11 @@ WRITE(34,*) 'F=F0+V-V0:',REAL(F_trial)
 
             GradientF_trial(i)=GradientV_cor(tau1,atom2)%phi(direction1,direction2)-&
             &0.5*trialfc2_value(tau1,atom2)%phi(direction1,direction2)
+
+            !harmonic potential energy, update 2 test
+            GradientF_trial(i)=GradientV_cor(tau1,atom2)%phi(direction1,direction2)-&
+            &0.5*((identity(direction1,:)+strain(direction1,:)).dot.trialfc2_value(tau1,atom2)%phi&
+            &.dot.(identity(:,direction2)+strain(:,direction2)))
         END DO !i loop
  WRITE(*,*)       '***************************************************************************'
         !*************************************************************
@@ -667,15 +675,15 @@ WRITE(*,*)'minimum eigenvalue after shift:',MINVAL(MINVAL(eivals,DIM=2))
 
 
 !****Test the value of gamma point correction****
-!WRITE(47,6) get_letter(xyz1),atom1,get_letter(xyz2),atom2,&
-!&for_check,yy_value(atom1,atom2)%phi(xyz1,xyz2)
-!WRITE(47,*)
+WRITE(47,6) get_letter(xyz1),atom1,get_letter(xyz2),atom2,&
+&for_check,yy_value(atom1,atom2)%phi(xyz1,xyz2)
 !****Test if using <yy> can recover the trial fc2****
 !phi_test(xyz1,atom1,xyz2,atom2) = Get_phi_test(k_number,xyz1,atom1,xyz2,atom2)
+!WRITE(47,*) 'Test if using <yy> can recover the original FC2, discrepancy(last col.)'
 !WRITE(47,8) get_letter(xyz1),atom1,get_letter(xyz2),atom2,phi_test(xyz1,atom1,xyz2,atom2),&
 !&trialfc2_value(atom1,atom2)%phi(xyz1,xyz2),&
 !&ABS(REAL(phi_test(xyz1,atom1,xyz2,atom2))-trialfc2_value(atom1,atom2)%phi(xyz1,xyz2))
-
+!WRITE(47,*)
     END DO
 
 DEALLOCATE(phi_test)
@@ -1527,6 +1535,8 @@ WRITE(47,*) '========================================================'
             GradientV_cor(i,j)%phi=0
         END DO
     END DO
+
+    V0 = 0d0 !harmonic potential energy, update 2 test
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !----reference check for elastic constants rank 2-----
@@ -1584,7 +1594,7 @@ WRITE(47,*) '========================================================'
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-!---------------------------------------QUADRATIC TERMS-----------------------------------------------------------
+!---------------------------------------QUADRATIC TERMS, update 2 test inc.-----------------------------------------------------------
     DO i=1,atom_number
         tau1=every_atom(i)%type_tau
         tau1_vec=every_atom(i)%tau
@@ -1594,7 +1604,7 @@ WRITE(47,*) '========================================================'
         tau2_vec=every_atom(j)%tau
         R2_vec=every_atom(j)%R
 
-        !free energy, two terms
+        !real potential energy, two terms
         V_avg=V_avg+&
             &0.5*(myfc2_value(tau1,j)%phi.dot.((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))&
             -0.25*((S(:,j)-S(:,i)).dot.myfc2_value(tau1,j)%phi.dot.(S(:,j)-S(:,i)))
@@ -1602,6 +1612,10 @@ WRITE(47,*) '========================================================'
         !gradient w.r.t <YY>, one term
         GradientV_cor(tau1,j)%phi = GradientV_cor(tau1,j)%phi+&
                                     &0.5*((identity+strain).newdot.myfc2_value(tau1,j)%phi.newdot.(identity+strain))
+
+        !harmonic potential energy, update 2 test
+        V0=V0+&
+           &0.5*(trialfc2_value(tau1,j)%phi.dot.((identity+strain).newdot.Y_square(:,tau1,:,j).newdot.(identity+strain)))
 
         DO direction1=1,d
 
@@ -1630,6 +1644,12 @@ WRITE(47,*) '========================================================'
         &+0.5*(myfc2_value(tau1,j)%phi(:,direction1).dot.(identity+strain).dot.Y_square(:,tau1,direction2,j))&
         &+0.5*(myfc2_value(tau1,j)%phi(:,direction2).dot.(identity+strain).dot.Y_square(:,tau1,direction1,j))
 
+        !harmonic potential energy, update 2 test
+        GradientV_eta(direction1,direction2)=GradientV_eta(direction1,direction2)&
+        &-0.5*(trialfc2_value(tau1,j)%phi(direction1,:).dot.(identity+strain).dot.Y_square(direction2,tau1,:,j))&
+        &-0.5*(trialfc2_value(tau1,j)%phi(direction2,:).dot.(identity+strain).dot.Y_square(direction1,tau1,:,j))&
+        &-0.5*(trialfc2_value(tau1,j)%phi(:,direction1).dot.(identity+strain).dot.Y_square(:,tau1,direction2,j))&
+        &-0.5*(trialfc2_value(tau1,j)%phi(:,direction2).dot.(identity+strain).dot.Y_square(:,tau1,direction1,j))
 
         END DO !direction2
         END DO !direction1
@@ -2598,8 +2618,8 @@ subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,vg)
 
     END FUNCTION Get_phi_test
 !--------------------------------------------------------------------------------------------
-    FUNCTION Get_Y_square(k_number,direction1,atom1,direction2,atom2)
-    !!Major subroutine that calculate <YY> for specific indexes given
+    FUNCTION Get_Y_square(k_number,direction1,atom1,direction2,atom2) !MODIFIED gammapoint
+   !!Major subroutine that calculate <YY> for specific indexes given
     !!utilize analytical approximation for diverging terms
         IMPLICIT NONE
         INTEGER :: i,j,k,l,steps
@@ -2612,7 +2632,7 @@ subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,vg)
         REAL(8),DIMENSION(:,:),ALLOCATABLE :: arg,func,res
         REAL(8),DIMENSION(:,:),ALLOCATABLE :: n_qlambda !Bose-Einstein distribution
         REAL(8) :: coefficientA(6)
-        REAL(8) :: delta_cubic,denominator(3),term1,term2
+        REAL(8) :: delta_cubic,denominator(3),term1,term2,delta_square,interval_K
 !        REAL(8) :: Get_Y_square
         COMPLEX(8) :: Get_Y_square
 
@@ -2841,18 +2861,41 @@ END IF
         denominator(3) = (eivals(1,1)+eivals(1,3)-2*eivals(1,2))
 
         delta_cubic = 3d0*volume_g/(4*pi*k_number)
-        term1 = delta_cubic*(4d0/3/denominator(1)+2d0/3/denominator(2)+2d0/denominator(3))*1d-20*uma/ee
-        term2 = delta_cubic*(2d0/3/denominator(1)+4d0/3/denominator(2))*1d-20*uma/ee
+        delta_square = delta_cubic**(2.0/3.0)
+        interval_K = sqrt((kvector(2)%component(1)-kvector(1)%component(1))**2 + &
+                      &(kvector(2)%component(2)-kvector(1)%component(2))**2 + &
+                      & (kvector(2)%component(3)-kvector(1)%component(3))**2)
+        term1 = (1d0/3/denominator(1)+1d0/6/denominator(2)+1d0/2/denominator(3))*1d-20*uma/ee*interval_K*interval_K
+        term2 = (1d0/3/denominator(1)+2d0/3/denominator(2))*1d-20*uma/ee*interval_K*interval_K
 
         IF(direction1.eq.direction2) THEN
             IF(direction1.eq.1 .OR. direction1.eq.2) THEN
-                Get_Y_square = Get_Y_square + 2*pi*temperature*100*h_plank*c_light&
-                        &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20
+                Get_Y_square = Get_Y_square + temperature*100*h_plank*c_light/atom_number&
+                        &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20/delta_square*3
             ELSE
-                Get_Y_square = Get_Y_square + 4*pi*temperature*100*h_plank*c_light&
-                        &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20
+                Get_Y_square = Get_Y_square + temperature*100*h_plank*c_light/atom_number&
+                        &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20/delta_square*3
             END IF
         END IF !xx,yy,zz should be equal
+
+!--------------------------------------------------------------------
+!IF(isnan(Get_Y_square)) THEN
+!WRITE(34,*)'--------------POSITION2---------------'
+!WRITE(34,*)'term',term
+!STOP
+!END IF
+!***** check the contribution of this gamma point correction term *****
+for_check = (0d0,0d0)
+
+IF(direction1.eq.direction2) THEN
+    for_check = 2*pi*temperature*100*h_plank*c_light&
+                    &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20
+ELSE
+    for_check = 4*pi*temperature*100*h_plank*c_light&
+                    &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20
+END IF
+for_check = for_check / k_number
+!**********************************************************************
 
 !-------------------------------------------NEW----------------------------------------------------
         !correction term for those soft bands that get dropped at certain q
@@ -2887,40 +2930,27 @@ END IF
             END IF
 
             delta_cubic = 3d0*volume_g/(4*pi*k_number)
-            term1 = delta_cubic*(4d0/3/denominator(1)+2d0/3/denominator(2)+2d0/denominator(3))*1d-20*uma/ee
-            term2 = delta_cubic*(2d0/3/denominator(1)+4d0/3/denominator(2))*1d-20*uma/ee
+            delta_square = delta_cubic**(2.0/3.0) !not used, for test only
+            interval_K = sqrt((kvector(2)%component(1)-kvector(1)%component(1))**2 + &
+                          &(kvector(2)%component(2)-kvector(1)%component(2))**2 + &
+                          & (kvector(2)%component(3)-kvector(1)%component(3))**2)
+            term1 = (1d0/3/denominator(1)+1d0/6/denominator(2)+1d0/2/denominator(3))*1d-20*uma/ee*interval_K*interval_K
+            term2 = (1d0/3/denominator(1)+2d0/3/denominator(2))*1d-20*uma/ee*interval_K*interval_K
+            !------------------------------------------------------------------------------
 
             IF(direction1.eq.direction2) THEN
                 IF(direction1.eq.1 .OR. direction1.eq.2) THEN
-                    Get_Y_square = Get_Y_square + 2*pi*temperature*100*h_plank*c_light&
-                            &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20
+                    Get_Y_square = Get_Y_square + temperature*100*h_plank*c_light/atom_number&
+                            &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20/delta_square*3
                 ELSE
-                    Get_Y_square = Get_Y_square + 4*pi*temperature*100*h_plank*c_light&
-                            &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20
+                    Get_Y_square = Get_Y_square + temperature*100*h_plank*c_light/atom_number&
+                            &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20/delta_square*3
                 END IF
             END IF !xx,yy,zz should be equal
 
         END DO !soft loop
         END IF
 !--------------------------------------------------------------------------------------------------
-!IF(isnan(Get_Y_square)) THEN
-!WRITE(34,*)'--------------POSITION2---------------'
-!WRITE(34,*)'term',term
-!STOP
-!END IF
-!***** check the contribution of this gamma point correction term *****
-for_check = (0d0,0d0)
-
-IF(direction1.eq.direction2) THEN
-    for_check = 2*pi*temperature*100*h_plank*c_light&
-                    &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20
-ELSE
-    for_check = 4*pi*temperature*100*h_plank*c_light&
-                    &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20
-END IF
-!**********************************************************************
-
-
 !WRITE(*,*) 'Extra Term=:', 2*pi*temperature*100*h_plank*c_light&
 !                               &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term*1d20
 
@@ -5726,6 +5756,90 @@ END SUBROUTINE FixASR2
         CLOSE(checkF)
     END SUBROUTINE printGradients
 !-------------------------------------------------------------------------------------------------------
+     SUBROUTINE printFinalGradients(x)
+    !!output all gradients and variational parameters in a file 'GradientF.dat'
+    !!for every iteration
+        IMPLICIT NONE
+        INTEGER :: checkF, i, j
+        INTEGER :: atom1,xyz1,atom2,xyz2
+        REAL(8),DIMENSION(:),INTENT(in) :: x!all variational parameters
+        CHARACTER(10) :: flag
+
+        checkF = 199
+        OPEN(checkF,FILE='FinalGradientF.dat',STATUS='unknown',ACTION='write')
+        WRITE(checkF,*)'current interation #:',iter_rec
+        WRITE(checkF,*)'temperature=',temperature*c_light*h_plank*100/k_b
+        WRITE(checkF,*)'F0=', F0
+        WRITE(checkF,*)'V0=', V0
+        WRITE(checkF,*)'free energy=',REAL(F_trial)
+        WRITE(checkF,*)'=============GradientF:trial fc2===================='
+
+        WRITE(checkF,*)'largest gradient= ',MAXVAL(ABS(GradientF_trial))
+
+        WRITE(checkF,*) '||Atomic deviation u_tau(:)||'
+        DO i=1, variational_parameters_size(1)
+            IF(ANY(fixed_params.eq.i)) THEN
+                flag = '  FIXED'
+            ELSE
+                flag = '  FREE'
+            END IF
+            WRITE(checkF,*) (i-1)/3+1, get_letter(MOD(i-1,3)+1),&
+            &' variable=',x(i),' gradient=',REAL(GradientF_trial(i)),flag
+        END DO
+
+        WRITE(checkF,*) '||Strain Tensor||'
+        DO i=variational_parameters_size(1)+1,variational_parameters_size(1)+variational_parameters_size(2)
+            IF(ANY(fixed_params.eq.i)) THEN
+                flag = '  FIXED'
+            ELSE
+                flag = '  FREE'
+            END IF
+            j = i-variational_parameters_size(1)
+            WRITE(checkF,*) get_letter((j-1)/3+1), get_letter(MOD(j-1,3)+1),&
+            &' variable=',x(i),' gradient=',REAL(GradientF_trial(i)),flag
+        END DO
+
+        WRITE(checkF,*) '||Force Constants||'
+        DO i=variational_parameters_size(1)+variational_parameters_size(2)+1,SUM(variational_parameters_size)
+            IF(ANY(fixed_params.eq.i)) THEN
+                flag = '  FIXED'
+            ELSE
+                flag = '  FREE'
+            END IF
+
+            j = i-variational_parameters_size(1)-variational_parameters_size(2)
+            !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^old^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            atom1 = eff_fc2_index(j)%iatom_number
+            xyz1 = eff_fc2_index(j)%iatom_xyz
+            atom2 = eff_fc2_index(j)%jatom_number
+            xyz2 = eff_fc2_index(j)%jatom_xyz
+            !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            WRITE(checkF,*) atom1,get_letter(xyz1),atom2,get_letter(xyz2),&
+            &' variable=',x(i),' gradient=',REAL(GradientF_trial(i)),flag
+        END DO
+
+        WRITE(checkF,*)
+        CLOSE(checkF)
+    END SUBROUTINE printFinalGradients
+!-------------------------------------------------------------------------------------------------------
+    SUBROUTINE printTargetGradients(x,which)
+    !!output all gradients and variational parameters in a file 'GradientF.dat'
+    !!for every iteration
+        IMPLICIT NONE
+        INTEGER :: checkF, i, j
+        INTEGER :: atom1,xyz1,atom2,xyz2
+        INTEGER,INTENT(in) :: which
+        REAL(8),DIMENSION(:),INTENT(in) :: x!all variational parameters
+        CHARACTER(10) :: flag
+
+        checkF = 129
+        OPEN(checkF,FILE='SlopeCheck.txt',STATUS='unknown',ACTION='write',POSITION='append')
+
+        WRITE(checkF,*) iter_rec,',', x(which),',', REAL(GradientF_trial(which))
+
+        CLOSE(checkF)
+    END SUBROUTINE printTargetGradients
+!-------------------------------------------------------------------------------------------------------
     SUBROUTINE checkGradientYY
     !!check subroutine, not used
         IMPLICIT NONE
@@ -5973,7 +6087,7 @@ END SUBROUTINE FixASR2
         INTEGER :: i,j
         INTEGER,ALLOCATABLE :: mp(:)
         REAL(8),ALLOCATABLE :: sorted(:)
-        REAL(8) :: cv, gama
+        REAL(8) :: cv, gama, bulk, volume
 
         WRITE(*,*) 'running thermal calculation'
 
@@ -6028,7 +6142,6 @@ END SUBROUTINE FixASR2
 
         DEALLOCATE(dkc)
 
-
         !calculate average gruneisen
 !        CALL subst_eivecs(ndyn,nkc,eigenval,eigenvec,kpc,npos,mappos)
 
@@ -6039,9 +6152,14 @@ END SUBROUTINE FixASR2
         CALL calculate_thermal(nkc,wk,ndyn,eigenval,grun,tmin,tmax,646,veloc)
 
         CALL my_thermal(cv,gama)
+        CALL my_bulk(bulk)
+
+        CALL calculate_volume(r1,r2,r3,volume)
 
         WRITE(33,*) 'my calculated gruneisen:',gama
         WRITE(33,*) 'my calculated specific heat:',cv
+        WRITE(33,*) 'my calculated bulk modulus:',bulk
+        WRITE(33,*) 'calculated beta = ', cv*gama/bulk/volume/ee/n_avog*atom_number !because Cv is per mole
 
         CLOSE(646)
         DEALLOCATE(grun)
@@ -6063,20 +6181,201 @@ END SUBROUTINE FixASR2
         cv = 0d0; gama = 0d0
         DO k=1,nkc
         DO la=1,ndyn
-            x= SQRT(ABS(eivals(la,k)))*cnst*100*c_light*h_plank/k_b/temp
+            x= SQRT(ABS(eivals(la,k)))*cnst*100*c_light*h_plank/k_b/temp ! pure number
 
             nbx=nbe(x,1d0,0) ! use quantum one?
-            cv_nk = x*x*nbx*(1+nbx)
-            cv = cv + cv_nk*wk(k) !weighted?
+            cv_nk = x*x*nbx*(1+nbx) !also just a number
+            cv = cv + cv_nk*wk(k) !weighted
+            gama = gama + grun(la,k)*cv_nk*wk(k) !dimensionless(I forgot gama +=...
+        END DO
+        END DO
 
-            gama = grun(la,k)*cv_nk*wk(k) !unit?
-        END DO
-        END DO
-        gama = gama/cv
-        cv = cv/atom_number*n_avog*k_b
+        gama = gama/cv !forgot why, here it's still dimensionless
+        cv = cv/atom_number*n_avog*k_b !unit is Joule/K per mole
 
 
     END SUBROUTINE my_thermal
+!-------------------------------------------------------------------------------------------------------
+    SUBROUTINE my_bulk(bulk)
+        !should be in translational invariant form otherwise 0
+        IMPLICIT NONE
+        REAL(8),INTENT(out) :: bulk
+        REAL(8) :: volume
+        REAL(8),DIMENSION(3) :: R_i,R_j,R_k,tau_i,tau_j,tau_k, u0i, u0j, u0k
+        REAL(8),DIMENSION(3,3) :: Cij,temp,temp2
+        INTEGER :: i,j,k,l,alpha,beta
+        INTEGER :: new_j,new_k,new_l
+
+REAL(8) :: Check
+
+        CALL calculate_volume(r1,r2,r3,volume) !get volume, in angstrom^3
+
+        bulk = 0d0
+
+!OPEN(96,FILE='my_bulkCheck.txt')
+!OPEN(97,FILE='cumulativeCheckBulk.txt')
+!Check = 0d0
+
+        !order 2 part and Cij
+        DO i=1,atom_number
+        DO j=1,tot_atom_number
+            R_i = every_atom(i)%R
+            tau_i = every_atom(i)%tau
+            u0i = atomic_deviation(:,every_atom(i)%type_tau)
+            R_j = every_atom(j)%R
+            tau_j = every_atom(j)%tau
+            u0j = atomic_deviation(:,every_atom(j)%type_tau)
+
+            bulk = bulk + (trialfc2_value(i,j)%phi.dot.(R_j+tau_j-R_i-tau_i).dot.(R_j+tau_j-R_i-tau_i))*(-0.5)
+
+!WRITE(96,*)
+!WRITE(96,*) '(i,j)',i,j
+!WRITE(96,*) 'K_ij', trialfc2_value(i,j)%phi
+!WRITE(96,*)'(R_j+tau_j)',(R_j+tau_j)
+!WRITE(96,*)'(R_i+tau_i)',(R_i+tau_i)
+!WRITE(96,*) 'value', (trialfc2_value(i,j)%phi.dot.(R_j+tau_j-R_i-tau_i).dot.(R_j+tau_j-R_i-tau_i))*(-0.5)
+!Check = Check + (trialfc2_value(i,j)%phi.dot.(R_j+tau_j-R_i-tau_i).dot.(R_j+tau_j-R_i-tau_i))*(-0.5)
+!WRITE(97,*) 'Check after quadratic now=',Check
+
+            CALL dC_deta_simp(i,j,temp)
+
+            bulk = bulk - 3*(trialfc2_value(i,j)%phi.dot.temp)
+
+            DO alpha=1,3
+            DO beta=1,3
+                Cij(alpha,beta) = -0.5* &
+                &((strain(alpha,:).dot.(R_j+tau_j))+u0j(alpha)-(strain(alpha,:).dot.(R_i+tau_i))-u0i(alpha)) * &
+                &((strain(beta,:).dot.(R_j+tau_j))+u0j(beta)-(strain(beta,:).dot.(R_i+tau_i))-u0i(beta)) + &
+                & yy_value(i,j)%phi(alpha,beta)
+            END DO !beta loop
+            END DO !alpha loop
+        END DO !j loop
+        END DO !i loop
+
+        !order 3 part
+        DO i=1,atom_number
+        DO j=1,tot_atom_number
+            CALL dC_deta_simp(i,j,temp)
+            IF(.NOT.ANY(fc3_unique_idx==j)) CYCLE
+        DO k=1,tot_atom_number
+            IF(.NOT.ANY(fc3_unique_idx==k)) CYCLE
+            R_i = every_atom(i)%R
+            tau_i = every_atom(i)%tau
+
+            R_k = every_atom(k)%R
+            tau_k = every_atom(k)%tau
+            new_j=find_loc(fc3_unique_idx,j)
+            new_k=find_loc(fc3_unique_idx,k)
+
+            bulk = bulk + (myfc3_value(i,new_j,new_k)%psi.dot.(R_k+tau_k-R_i-tau_i).dot.temp)
+
+            bulk = bulk - 1.5*(myfc3_value(i,new_j,new_k)%psi.dot.(R_k+tau_k-R_i-tau_i).dot.Cij)
+
+        END DO !k loop
+        END DO !j loop
+        END DO !i loop
+
+!WRITE(97,*) 'Check after cubic now=',Check
+
+        !order 4 part
+        DO i=1,atom_number
+        DO j=1,tot_atom_number
+            CALL dC_deta_simp(i,j,temp)
+            IF(.NOT.ANY(fc4_unique_idx==j)) CYCLE
+        DO k=1,tot_atom_number
+            IF(.NOT.ANY(fc4_unique_idx==k)) CYCLE
+        DO l=1,tot_atom_number
+            CALL dC_deta_simp(k,l,temp2)
+            IF(.NOT.ANY(fc4_unique_idx==l)) CYCLE
+
+            new_j=find_loc(fc4_unique_idx,j)
+            new_k=find_loc(fc4_unique_idx,k)
+            new_l=find_loc(fc4_unique_idx,l)
+
+            bulk = bulk + 0.25*(myfc4_value(i,new_j,new_k,new_l)%chi.dot.temp2.dot.temp)
+
+        END DO !l loop
+        END DO !k loop
+        END DO !j loop
+        END DO !i loop
+
+        bulk = bulk/9/volume !unit is ev/A^3
+
+!WRITE(97,*)'final addup=',Check
+!CLOSE(96)
+!CLOSE(97)
+    END SUBROUTINE my_bulk
+!-------------------------------------------------------------------------------------------------------
+    SUBROUTINE dC_deta_simp(i,j,ans)
+        !! calculate dC_{i,j}^{alpha,beta}/deta in bulk modulus formula
+        !!if eta is a uniform number
+        !!return a rank 2 tensor (3x3)
+        IMPLICIT NONE
+        INTEGER,INTENT(in) :: i,j
+        INTEGER :: alpha,beta
+        REAL(8) :: eta
+        REAL(8),DIMENSION(3,3),INTENT(out) :: ans
+
+        REAL(8),DIMENSION(3) :: Ri,Rj,taui,tauj,u0i,u0j
+        Ri = every_atom(i)%R
+        taui = every_atom(i)%tau
+        u0i = atomic_deviation(:,every_atom(i)%type_tau)
+        Rj = every_atom(j)%R
+        tauj = every_atom(j)%tau
+        u0j = atomic_deviation(:,every_atom(j)%type_tau)
+
+        eta = strain(1,1)
+
+        DO alpha=1,3
+        DO beta=1,3
+
+            ans(alpha,beta) = -eta*(Rj(beta)+tauj(beta)-Ri(beta)-taui(beta))*(Rj(alpha)+tauj(alpha)-Ri(alpha)-taui(alpha)) + &
+            &(-0.5)*(u0j(alpha)-u0i(alpha))*(Rj(beta)+tauj(beta)-Ri(beta)-taui(beta)) + &
+            &(-0.5)*(u0j(beta)-u0i(beta))*(Rj(alpha)+tauj(alpha)-Ri(alpha)-taui(alpha))
+
+        IF(alpha.eq. beta) THEN
+            ans(alpha,beta) = 0.5*ans(alpha,beta)
+        END IF
+
+        END DO
+        END DO
+
+    END SUBROUTINE dC_deta_simp
+!-------------------------------------------------------------------------------------------------------
+    FUNCTION dC_deta(i,j,alpha,beta,x,y) RESULT(ans)
+        !! calculate dC_{i,j}^{alpha,beta}/deta^(x,y) in bulk modulus formula
+        !! if eta is a 3x3 tensor
+        !! return a number
+        IMPLICIT NONE
+        INTEGER,INTENT(in) :: i,j,alpha,beta,x,y
+        REAL(8) :: ans
+
+        REAL(8),DIMENSION(3) :: Ri,Rj,taui,tauj,u0i,u0j
+        Ri = every_atom(i)%R
+        taui = every_atom(i)%tau
+        u0i = atomic_deviation(:,every_atom(i)%type_tau)
+        Rj = every_atom(j)%R
+        tauj = every_atom(j)%tau
+        u0j = atomic_deviation(:,every_atom(j)%type_tau)
+
+        ans = (Kronecker(alpha,x)*(Ri(y)+taui(y))+Kronecker(alpha,y)*(Ri(x)+taui(x)))*&
+                            &(strain(beta,:).dot.(Rj+tauj)+u0j(beta))+&
+                            &(strain(alpha,:).dot.(Ri+taui)+u0i(alpha))*&
+               &(Kronecker(beta,x)*(Rj(y)+tauj(y))+Kronecker(beta,y)*(Rj(x)+tauj(x)))
+
+    END FUNCTION dC_deta
+!-------------------------------------------------------------------------------------------------------
+    FUNCTION Kronecker(i,j) RESULT(found)
+        IMPLICIT NONE
+        INTEGER,INTENT(in) :: i,j
+        INTEGER :: found
+        IF(i.eq.j) THEN
+            found = 1
+        ELSE
+            found = 0
+        END IF
+
+    END FUNCTION Kronecker
 !-------------------------------------------------------------------------------------------------------
 subroutine get_k_info3(q,nkt,ex) !,i1,j1,k1,gg1,gg2,gg3,inside)
 !! legacy code
@@ -6175,7 +6474,7 @@ subroutine get_k_info3(q,nkt,ex) !,i1,j1,k1,gg1,gg2,gg3,inside)
         !   write(ulog,6)'Starting gruneisen parameters for kpoint & band# ',ik,la,kp(:,ik)
         !   write(ulog,*)' i,la,t,fcs_3(t),term(2),6*eival(la,i),rr3(3),grun(la,i)'
         grn(la,ik) = 0
-        denom = 6 * eivl(la,ik)**2/cnst/cnst
+        denom = 6 * eivl(la,ik)**2/cnst/cnst !eivl is in the unit of sqrt(ev/A^2/uma)*cnst
         omk = eivl(la,ik)
         DO i0=1,natoms0
              mi = atom0(i0)%mass
@@ -6200,11 +6499,11 @@ subroutine get_k_info3(q,nkt,ex) !,i1,j1,k1,gg1,gg2,gg3,inside)
              zz = cdexp( ci * qdotr )
         !! term = - ampterm_3(t)*fcs_3(igroup_3(t))*zz*eivc(ta1,la,i)*conjg(eivc(ta2,la,i))*rr3(ga)/sqrt(mi*mj)
              term = - fcs_3(t) * zz * eivc(ta2,la,ik)*conjg(eivc(ta1,la,ik))*rx3(ga)/sqrt(mi*mj)
-             grn(la,ik) = grn(la,ik) + term
+             grn(la,ik) = grn(la,ik) + term !unit is ev/A^2/uma, same unit of omega^2
         !        write(ulog,7)i,la,t,fcs_3(t),rr2,qdotr,zz,rr3,grn(la,ik)
            ENDDO tloop
         ENDDO
-        grn(la,ik) = grn(la,ik)/denom
+        grn(la,ik) = grn(la,ik)/denom !grn is dimensionless
         IF (aimag(grn(la,ik)) .gt. 1d-4) then
 !           WRITE(ulog,*) 'GRUNEISEN: ... has large imaginary part!! for nk,la=',ik,la,grn(la,ik)
         !      stop
@@ -6343,12 +6642,14 @@ WRITE(*,*) 'CHECK MARK2'
     WRITE(ual,3)temp,alpha,cv,gama,etot,free,pres*1d-9,pres0*1d-9,bulk_modulus*1d-9,kapoverl
     ENDDO
 
+bulk_test = bulk_modulus
+
 !    CLOSE(ual)
 3 format(99(2x,g10.4))
 4 format(a,i3,9(2x,g11.5))
 
 END SUBROUTINE calculate_thermal
-
+!--------------------------------------------------------------
 subroutine mechanical(bulk,c11,c44,dlogv)
 !!calculate bulk modulus?
  implicit none
@@ -6383,6 +6684,7 @@ subroutine mechanical(bulk,c11,c44,dlogv)
 3 format(4(i4),9(2x,f10.5))
 
  end subroutine mechanical
+!--------------------------------------------------------------
 
  subroutine energies(nk,wk,ndyn,eival,grn,temp,etot,free,pres,pres0,cv)
  !!calculate specific heat?
@@ -6440,26 +6742,27 @@ subroutine mechanical(bulk,c11,c44,dlogv)
     INTEGER :: v1, v2, voigt
     REAL(8) :: Rij_ga,Rij_de,cell_volume
     REAL(8),DIMENSION(6,6) :: temp !call inverse matrix will destroy original matrix, so
+    REAL(8),DIMENSION(3,3,3,3) :: middle_term !if we were to keep the 4th rank tensor first
 
     CALL calculate_volume(r1,r2,r3,cell_volume)
 
     elastic = 0d0;compliance = 0d0!don't forget to initialize as 0
 
-    !4 nested xyz loop
+    middle_term = 0d0
+
+    !step1: do the full rank 4 tensor: 81 terms
     DO al=1,3
     DO be=1,3
     DO ga=1,3
     DO de=1,3
 
-    v1 = voigt(al,be)
-    v2 = voigt(ga,de)
-
     !atom ij sum
     DO i=1,atom_number
-    DO j=1,tot_atom_number
+    DO j=1,tot_atom_number ! K(R_j-R_i)^2/V
         Rij_ga = every_atom(j)%R(ga)+every_atom(j)%tau(ga)-every_atom(i)%R(ga)-every_atom(i)%tau(ga)
         Rij_de = every_atom(j)%R(de)+every_atom(j)%tau(de)-every_atom(i)%R(de)-every_atom(i)%tau(de)
-        elastic(v1,v2) = elastic(v1,v2) + trialfc2_value(i,j)%phi(al,be)*Rij_ga*Rij_de/cell_volume
+        middle_term(al,be,ga,de) = middle_term(al,be,ga,de) - 0.5*trialfc2_value(i,j)%phi(al,be)*Rij_ga*Rij_de
+
     END DO !atom i loop
     END DO !atom j loop
 
@@ -6468,13 +6771,36 @@ subroutine mechanical(bulk,c11,c44,dlogv)
     END DO !be loop
     END DO !al loop
 
+
+    !step2: convert to voigt notation
+    DO al=1,3
+    DO be=1,3
+    DO ga=1,3
+    DO de=1,3
+
+        v1 = voigt(al,be)
+        v2 = voigt(ga,de)
+
+        elastic(v1,v2) = 0.5*(middle_term(al,be,ga,de)+middle_term(ga,de,al,be))
+
+        IF(v1.ne.v2) elastic(v1,v2) = 0.5*elastic(v1,v2) !without this, C12 is doubled
+
+    END DO !de loop
+    END DO !ga loop
+    END DO !be loop
+    END DO !al loop
+
+    WRITE(*,*) 'middle_term1',middle_term(1,1,2,2)
+    WRITE(*,*) 'middle_term2',middle_term(2,2,1,1)
+    WRITE(*,*) 'C12',elastic(1,2)
+
     !get inverse elastic
     temp = elastic
     CALL invers_r(temp, compliance,6)
 
     WRITE(33,*)'elastic'
     DO i=1,6
-        WRITE(33,*) elastic(i,:)/cell_volume*100*SQRT(2d0)
+        WRITE(33,*) elastic(i,:)/cell_volume*1.6 !in Gpa
     END DO
     WRITE(33,*)
 
@@ -6483,6 +6809,7 @@ subroutine mechanical(bulk,c11,c44,dlogv)
         WRITE(33,*) compliance(i,:)
     END DO
     WRITE(33,*)
+
  END SUBROUTINE GetElastic_final
 !-------------------------------------------------------------------------------------------------------
  SUBROUTINE GetElastic2

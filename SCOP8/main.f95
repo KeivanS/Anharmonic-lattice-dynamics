@@ -1,38 +1,10 @@
-!zoom id: 931-799-30456
+!zoom id:https://virginia.zoom.us/j/4349248029
 !!main program
 Program SCOP8
-    USE VA_math
-    USE force_update
-    USE broy
-    USE CG
-    USE check
+
 
     IMPLICIT NONE
 
-!======================VARIABLES DECLARATION======================
-    INTEGER :: direction1, direction2,atom1
-    INTEGER i,j,k_number,k,l,m,eigen_number,n,ier,nv
-    INTEGER t_atom1, t_atom2, t_xyz1, t_xyz2
-    INTEGER mx,unit_number,unit_number2,unit_number3,unit_number4,unit_number5
-    !-----for reciprocal part use-------
-    INTEGER :: multiplier=4, nk,nband
-    REAL(8) wmin,dk, dq
-    REAL(8) err,ft, ft2, threshold
-    REAL(8),ALLOCATABLE:: eigen_temp(:,:),integrate_dos(:),total_dos(:),afunc_dos(:),junk(:)
-    !-----for iteration---------
-    INTEGER :: method=1 !0=simple update, 1=Broyden, 2=Conjugate Gradient(not working)
-    REAL(8) :: fret,fp,eps=1.e-10
-    REAL(8),DIMENSION(:),ALLOCATABLE :: x,f,g,h,f_ex,x2,f2
-    CHARACTER name*2
-    !-------------junk------------------
-    TYPE(fc2_index),DIMENSION(:),ALLOCATABLE :: ex_indiefc2_index
-    REAL(8) :: temp, temp_check,temp_check2,volume,start_F
-    REAL(8) :: step,step_1,step_2
-    INTEGER :: item
-    !------------really?------------
-    INTEGER :: guess
-    REAL(8) :: accept
-    REAL(8) :: cell_vol
 !---------test dot or newdot --------------
 !REAL(8),DIMENSION(3,3) :: a
 !REAL(8),DIMENSION(3,3) :: b
@@ -67,52 +39,95 @@ Program SCOP8
 !CALL testCG
 !CALL test_diagonalization(4)
 !STOP
-!--------------------------------
-!=====================OPEN OUTPUT AND LOG FILES=====================
-unit_number=33;unit_number2=34;unit_number3=35;unit_number4=36;unit_number5=37
-OPEN(unit_number,file='result.txt',status='unknown',action='write')
-OPEN(unit_number2,FILE='output.txt')
-OPEN(unit_number3,FILE='convergence.dat')
-OPEN(unit_number4,FILE='fc2_comparison.dat')
-!OPEN(unit_number5,FILE='cputime.dat',status='unknown',position='append',action='write')
-CALL CPU_TIME(cputime)
-WRITE(unit_number2,*)'=================================================================='
-WRITE(unit_number2,*)'Start time: ', cputime
-cputime_1 = cputime
-!======================READ LATTICE INFORMATIONS======================
+!----------big restructure-----------------
+
+    CALL ThreeVariableRoutine
+
+End Program SCOP8
+!===============================================================================================
+!===============================================================================================
+!===============================================================================================
+
+SUBROUTINE ThreeVariableRoutine
+    !!main subroutine
+    USE VA_math
+    USE force_update
+    USE broy
+    USE CG
+    USE check
+
+    IMPLICIT NONE
+    !~~~~~~~~~~~~~~~~~~~VARIABLES DECLARATION~~~~~~~~~~~~~~~~~~
+    INTEGER :: direction1, direction2,atom1
+    INTEGER i,j,k_number,k,l,m,eigen_number,n,ier,nv
+    INTEGER t_atom1, t_atom2, t_xyz1, t_xyz2
+    INTEGER mx,unit_number,unit_number2,unit_number3,unit_number4,unit_number5
+    !-----for reciprocal part use-------
+    INTEGER :: multiplier=4, nk,nband
+    REAL(8) wmin,dk, dq
+    REAL(8) err,ft, ft2, threshold
+    REAL(8),ALLOCATABLE:: eigen_temp(:,:),integrate_dos(:),total_dos(:),afunc_dos(:),junk(:)
+    !-----for iteration---------
+    INTEGER :: method=1 !0=simple update, 1=Broyden, 2=Conjugate Gradient(not working)
+    REAL(8) :: fret,fp,eps=1.e-10
+    REAL(8),DIMENSION(:),ALLOCATABLE :: x,f,g,h,f_ex,x2,f2
+    CHARACTER name*2
+    !-------------junk------------------
+    TYPE(fc2_index),DIMENSION(:),ALLOCATABLE :: ex_indiefc2_index
+    REAL(8) :: temp, temp_check,temp_check2,volume,start_F
+    REAL(8) :: step,step_1,step_2
+    INTEGER :: item
+    REAL(8),DIMENSION(3,3) :: dumb
+    !------------not needed------------
+    INTEGER :: guess
+    REAL(8) :: accept
+    REAL(8) :: cell_vol
+
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~OPEN OUTPUT AND LOG FILES~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    unit_number=33;unit_number2=34;unit_number3=35;unit_number4=36;unit_number5=37
+    OPEN(unit_number,file='result.txt',status='unknown',action='write')
+    OPEN(unit_number2,FILE='output.txt')
+    OPEN(unit_number3,FILE='convergence.dat')
+    OPEN(unit_number4,FILE='fc2_comparison.dat')
+    !OPEN(unit_number5,FILE='cputime.dat',status='unknown',position='append',action='write')
+    CALL CPU_TIME(cputime)
+    WRITE(unit_number2,*)'***************************************************************************'
+    WRITE(unit_number2,*)'Start time: ', cputime
+    cputime_1 = cputime
+    !~~~~~~~~~~~~~~~~~~~READ LATTICE INFORMATIONS~~~~~~~~~~~~~~~~~~~~~
+
     CALL read_force_constants
-WRITE(*,*)'======================Check Reading files======================'
-WRITE(unit_number2,*)'======================Check Reading files======================'
-WRITE(*,*) '======================Read lat_fc.dat======================'
-WRITE(unit_number2,*) '======================Read lat_fc.dat======================'
+
+WRITE(*,*)'*************************Check Reading files*************************'
+WRITE(unit_number2,*)'*************************Check Reading files*************************'
+WRITE(*,*) '*************************Read lat_fc.dat*************************'
+WRITE(unit_number2,*) '*************************Read lat_fc.dat*************************'
 WRITE(*,*) 'atom number in primitive cell=',atom_number
 WRITE(unit_number2,*) 'atom number in primitive cell=',atom_number
 WRITE(*,*) 'total atom number=',tot_atom_number
 WRITE(unit_number2,*) 'total atom number=',tot_atom_number
 WRITE(*,*) 'tranlational vector=',trans_vec
 WRITE(unit_number2,*) 'tranlational vector=',trans_vec
-
 WRITE(*,*) 'NUMBER of PRIMITIVE CELLS:',cell_number
 WRITE(unit_number2,*) 'NUMBER of PRIMITIVE CELLS:',cell_number
-WRITE(*,*) '======================End of lat_fc.dat check======================'
-WRITE(unit_number2,*) '======================End of lat_fc.dat check======================'
+WRITE(*,*) '*************************End of lat_fc.dat check*************************'
+WRITE(unit_number2,*) '*************************End of lat_fc.dat check*************************'
 WRITE(*,*)
 WRITE(unit_number2,*)
 
-!======================READ INDEPENDENT/NONINDEPENDENT FC MAP======================
+    !~~~~~~~~~~~~~~~~~~~~~READ INDEPENDENT/NONINDEPENDENT FC MAP~~~~~~~~~~~~~~~~~~
+
 !    CALL setup_maps !can be commented off
 !    CALL read_map !can be commented off
 !    CALL get_atoms_fcs !can be commented off
-!^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-variational_parameters_size(3)=eff_fc2_terms!^^^^
-!^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+    variational_parameters_size(3)=eff_fc2_terms
 
-
-!check and fix asr in real fcs
+    !check and fix asr in real fcs
     resolution = 1e-7 * max_fc2
     !resolution = 1e-4 * max_fc2 !resolution is a bit large
-!??? What if I don't force asr fix
+    !??? What if I don't force asr fix
     CALL fix_asr_fc2
     CALL fix_asr_fc3
     CALL fix_asr_fc4
@@ -120,15 +135,17 @@ variational_parameters_size(3)=eff_fc2_terms!^^^^
     CALL asr_fc2
     CALL asr_fc3
     CALL asr_fc4
-!get the max distance
-R_0 = MAX(lengtha(trans_vec(:,1)),lengtha(trans_vec(:,2)),lengtha(trans_vec(:,3)))*maxneighbors
+    !get the max distance
+    R_0 = MAX(lengtha(trans_vec(:,1)),lengtha(trans_vec(:,2)),lengtha(trans_vec(:,3)))*maxneighbors
 
-WRITE(unit_number2,*)"======================FORCE CONSTANTS INITIALIZATION======================"
+
+WRITE(unit_number2,*)"*************************FORCE CONSTANTS INITIALIZATION*************************"
 WRITE(unit_number2,*)'number of atoms within fc2 cutoff region: ', SIZE(atoms_fc2)
 WRITE(unit_number2,*)'number of atoms within fc3 cutoff region: ', SIZE(atoms_fc3)
 WRITE(unit_number2,*)'number of atoms within fc4 cutoff region: ', SIZE(atoms_fc4)
 
-!======================READ K POINT MESH SIZE AND GENERATE======================
+    !~~~~~~~~~~~~~~~~~READ K POINT MESH SIZE AND GENERATE~~~~~~~~~~~~~~~~~~
+
     ! read params.phon
     CALL read_params
     !------------setup k mesh----------
@@ -138,18 +155,21 @@ WRITE(unit_number2,*)'number of atoms within fc4 cutoff region: ', SIZE(atoms_fc
     dk=(length(g1)+length(g2)+length(g3))/(nc1+nc2+nc3)
     CALL kvector_Update(nband,nk)!don't forget to turn this on for tetrahedron k mesh
     !----------------------------------
+
 CALL CPU_TIME(cputime)
 WRITE(unit_number2,*)'Cputime after reading all the input:', cputime
 
-!======================GET THE FOURIER CONSTANTS LIST======================
+    !~~~~~~~~~~~~~~~~GET THE FOURIER CONSTANTS LIST~~~~~~~~~~~~~~~~~
+
     !read params.born
     CALL read_born
     CALL Allocate_FFC(k_number)
     CALL Fourier_Force_Constants_Calculation(k_number)
-!======================GET THE ITERATION && VARIATIONAL PARAMETERS======================
 
-WRITE(*,*) '======================Check of Iteration Parameters======================'
-WRITE(unit_number2,*) '======================Check of Iteration Parameters======================'
+    !~~~~~~~~~~~~~~~~~~~GET THE ITERATION && VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~~~~~~~
+
+WRITE(*,*) '*************************Check of Iteration Parameters*************************'
+WRITE(unit_number2,*) '*************************Check of Iteration Parameters*************************'
 
     CALL read_iteration_parameters_file
     CALL initiate_var
@@ -170,21 +190,25 @@ WRITE(*,*)
 WRITE(unit_number2,*)
 WRITE(*,*)'I use the real fc2 for the 1st set of trial fc2 value'
 WRITE(unit_number2,*)'I use the real fc2 for the 1st set of trial fc2 value'
-WRITE(*,*)'======================End of Iteration Parameters check======================'
-WRITE(unit_number2,*)'======================End of Iteration Parameters check======================'
+WRITE(*,*)'*************************End of Iteration Parameters check*************************'
+WRITE(unit_number2,*)'****************End of Iteration Parameters check*************************'
 WRITE(*,*)
 WRITE(unit_number2,*)
 
-!======================INITIALIZE MATRIX PARAMETERS======================
+    !~~~~~~~~~~~~~~~~~INITIALIZE MATRIX PARAMETERS~~~~~~~~~~~~~~~~~~
+
     YY_flag=.False.
     eigen_number=d*atom_number
     ndyn = eigen_number
     CALL allocate_eigen(eigen_number,k_number)
     CALL Allocate_Gradients
-!===============INITIALIZE THE VARIATIONAL PARAMETERS=============
+
+    !~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~
+
     IF(inherit) CALL target_update
     IF(rand_start) CALL test_update
-!==========TESTING SECTION, REMOVE IN THE FINAL VERSION===========
+
+    !~~~~~~~~~~~TESTING SECTION, REMOVE IN THE FINAL VERSION~~~~~~~~~~~
 !CALL make_rhombohedral
 
 !WRITE(*,*) 'F_trial = ', F_trial
@@ -199,7 +223,9 @@ WRITE(unit_number2,*)
 !END DO
 !        CALL initiate_guess
 !CALL updateK !change also the initial K and thus the <YY>
+!strain(1,1) = 2.5537946530129604d-3
 !CALL GetF_trial_And_GradientF_trial(kvector)
+!WRITE(*,*)'eta_xx= ', strain(1,1), 'f= ', GradientF_trial(7)
 !CALL check_yy_value
 !CALL check_fc2_value
 !CALL Get_Dispersion
@@ -210,13 +236,13 @@ WRITE(unit_number2,*)
 !CALL printResults
 !STOP
 
-!----------Free Energy Landscape test--------------
- !comment off guessloop and comment on that STOP for this part
+    !~~~~~~~~~~~~~Free Energy Landscape test~~~~~~~~~~~
+!!!!comment off guessloop and comment on that STOP for this part!!!!
 
 !step = 0.04
 !CALL small_test2(step) !general check
-!CALL small_test3(6,step,4) !compare with finite difference for given utau or eta
-!CALL small_test3_yy(18,step,4) !compare with finite difference for given yy
+!CALL small_test3(15,step,4) !compare with finite difference for given utau or eta
+!CALL small_test3_yy(9,step,4) !compare with finite difference for given yy
 
 !NOTICE: turn off <test_update> when doing this, so x can start from 0
 !NOTICE: turn off <make_rhombohedral> and <updateK> when doing this
@@ -230,10 +256,12 @@ WRITE(unit_number2,*)
 !CALL rhom_contour(4,8,step_1,step_2,20)
 !STOP
 !----------------------------------------------------------------
-!=========MAKE AN INITIAL GUESS BASED ON FC2 DIAGONALIZATION==============
+
+    !~~~~~~~~~~MAKE AN INITIAL GUESS BASED ON FC2 DIAGONALIZATION~~~~~~~~~~~~~~~~
+
 !first run a 0 starting point guess, then if the converged K still has negative eigen, run guess method
-accept = -1d-10
-min_eival = accept
+    accept = -1d-10
+    min_eival = accept
 
 guessloop: DO guess = 1,2
     IF(min_eival.lt.accept) THEN
@@ -244,9 +272,12 @@ guessloop: DO guess = 1,2
     ELSEIF(min_eival.gt.accept) THEN
         EXIT guessloop
     END IF
-!!=============================FIRST RUN======================================
-WRITE(*,*)'======================Check 1st Variational Approach calculation======================'
-WRITE(unit_number2,*)'======================Check 1st Variational Approach calculation======================'
+
+    !~~~~~~~~~~~~~~~~~~~~~~~FIRST RUN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+WRITE(*,*)'**********************Check 1st Variational Approach calculation**********************'
+WRITE(unit_number2,*)'*********************Check 1st Variational Approach calculation*********************'
+
     iter_rec = 0
     CALL asr_checkfc2(trialfc2_value)!this is just to check if input fc2/inherited trialfc2 satisfies asr
     CALL GetF_trial_And_GradientF_trial(kvector)
@@ -261,13 +292,13 @@ WRITE(*,*) 'first Corresponding Potential Energy V0=',V0
 WRITE(unit_number2,*) 'first Corresponding Potential Energy V0=',V0
 WRITE(*,*) 'first Trial Free Energy=F0+V_avg-V0=',F_trial
 WRITE(unit_number2,*) 'first Trial Free Energy=F0+V_avg-V0=',F_trial
-WRITE(*,*)'======================End of Variational Approach calculation Check======================'
-WRITE(unit_number2,*)'======================End of Variational Approach calculation Check======================'
+WRITE(*,*)'*********************End of Variational Approach calculation Check***********************'
+WRITE(unit_number2,*)'******************End of Variational Approach calculation Check********************'
 WRITE(*,*)
 WRITE(unit_number2,*)
 WRITE(unit_number2,*)'ITERATION#:',0
 WRITE(unit_number2,*) &
-&'================Variational Parameters Check After a Broyden iteration=================='
+&'*************************Variational Parameters Check After a Broyden iteration*************************'
 WRITE(unit_number2,*) '||Atomic deviation u_tau(:)||'
 DO j=1,atom_number
     WRITE(unit_number2,*)'atom: ', j
@@ -296,13 +327,15 @@ DO j=1,eff_fc2_terms
     WRITE(unit_number2,*)
 END DO
 
-WRITE(*,*)'=================================================================================='
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!=============================BROYDEN/CG ITERATION======================================
-WRITE(*,*)'======================Broyden/CG Iterations======================'
-WRITE(unit_number2,*)'======================Broyden/CG Iterations======================'
-WRITE(unit_number3,*)'=====iteration #, L1 norm of all gradients, free energy value====='
+WRITE(*,*)'****************************************************************************************************'
+
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~BROYDEN/CG ITERATION~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+WRITE(*,*)'*************************Broyden/CG Iterations*************************'
+WRITE(unit_number2,*)'*********************Broyden/CG Iterations*********************'
+WRITE(unit_number3,*)'*****iteration #, L1 norm of all gradients, free energy value*****'
 WRITE(unit_number3,*) 'iteration 0 free energy ', REAL(F_trial)
+
     !initialize loop control values
     iter = 0; ft=100;ft2=100;threshold=100;itmax=max_it_number
     pmix = my_pmix
@@ -324,7 +357,9 @@ WRITE(unit_number3,*) 'iteration 0 free energy ', REAL(F_trial)
     END IF
     CALL allocatebroy(mx,itmax)
     fp=F_trial;f=GradientF_trial;g=-f;h=g !initialize
-!-------------------------------enter Broyden/CG loop----------------------------------------
+
+    !~~~~~~~~~~~~~~~~~~~~ENTER Broyden/CG LOOP~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
     DO while ( iter<itmax .and. threshold>err )!*new*
 
           iter = iter+1
@@ -336,6 +371,7 @@ WRITE(unit_number2,*)'ITERATION#:',iter
 
           CALL printGradients(x)
 
+!CALL printTargetGradients(x,7)
 PRINT*,'f(:),x(:) constructed, iter=',iter
 
           IF(unleashed) THEN!*all free*, bypass <select_xy> and <release_x>
@@ -416,9 +452,10 @@ CALL asr_checkfc2(trialfc2_value) !check ASR in trial fc2
 
 
 
-!---------------Variational Parameters Check After a Broyden/CG iteration-----------------
+    !~~~~~~~~~~~~~~~~Variational Parameters Check After a Broyden/CG iteration~~~~~~~~~~~~~~~~~~~
+
 WRITE(unit_number2,*) &
-&'================Variational Parameters Check After a Broyden iteration=================='
+&'********************Variational Parameters Check After a Broyden iteration*********************'
 WRITE(unit_number2,*) '||Atomic deviation u_tau(:)||'
 DO j=1,atom_number
     WRITE(unit_number2,*)'atom: ', j
@@ -448,11 +485,8 @@ DO j=1,eff_fc2_terms
     WRITE(unit_number2,*)
 END DO
 
+WRITE(*,*)'***************************************************************************'
 
-WRITE(*,*)'=================================================================================='
-
-
-!------------------------------------------------------------------------
 WRITE(*,*) 'Translational Vector now is: ',trans_vec
 WRITE(unit_number2,*)'Translational Vector now is: ',trans_vec
 WRITE(*,*) 'Free Energy F=F0+<V-V0>=:', F_trial
@@ -462,45 +496,49 @@ WRITE(unit_number2,*)
 CALL CPU_TIME(cputime)
 WRITE(unit_number2,*) 'cputime at the',iter,'th iteration', cputime
 WRITE(unit_number3,*) iter,',',threshold,',',REAL(F_trial)
-!-----------------------------------------------------------------------
-!---------------Some subroutines to preserve / check ASR-----------------
-   !****************
+
+    !~~~~~~~~~~~~~~~~~Some subroutines to preserve / check ASR~~~~~~~~~~~~~~~~~~
+
 !    CALL FixASR2 !no need to turn on if use trialfc2 in Broyden?
-   !****************
 
-!        CALL asr_fc2
-!        CALL asr_fc3
-!        CALL asr_fc4
+!    CALL asr_fc2
+!    CALL asr_fc3
+!    CALL asr_fc4
     END DO !the do while loop
-!==========================exit from Broyden/CG loop===================================
 
-WRITE(*,*)'===============End of Broyden/CG Iterations================'
-WRITE(unit_number2,*)'===============End of Broyden/CG Iterations================'
+!~~~~~~~~~~~~~~~~~~~~~~~EXIT from Broyden/CG LOOP~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+WRITE(*,*)'*************************End of Broyden/CG Iterations*************************'
+WRITE(unit_number2,*)'********************End of Broyden/CG Iterations*********************'
 WRITE(unit_number2,*)''
 WRITE(unit_number2,*)''
 
 END DO guessloop !guess loop
 
-    CALL printGradients(x) !final gradients value and variational parameters value
+    CALL printGradients(x)
+    CALL printFinalGradients(x) !final gradients value and variational parameters value in a separate file
     !-----out put results for target initialization of next temperature(optional)-----
     CALL printResults
 
-!========================POST PROCESS && CHECK===========================
-    WRITE(*,*)'final translational vector =',trans_vec
-    WRITE(unit_number,*)'final translational vector =',trans_vec
-    WRITE(*,*) 'final F0 = ', F0
-    WRITE(unit_number,*) 'final F0 = ', F0
-    WRITE(*,*) 'final Free Energy F=F0+<V-V0> = ',F_trial
-    WRITE(unit_number,*) 'final Free Energy F=F0+<V-V0> = ',F_trial
-    WRITE(*,*)'Temperature',temperature*(100*h_plank*c_light)/k_b
-    WRITE(unit_number,*)'Temperature',temperature*(100*h_plank*c_light)/k_b
-    CALL asr_checkfc2(trialfc2_value) !check final ASR
+!CALL printTargetGradients(x,7)
+!-------------------------------------------------------------------------------------
+WRITE(*,*)'final translational vector =',trans_vec
+WRITE(unit_number,*)'final translational vector =',trans_vec
+WRITE(*,*) 'final F0 = ', F0
+WRITE(unit_number,*) 'final F0 = ', F0
+WRITE(*,*) 'final Free Energy F=F0+<V-V0> = ',F_trial
+WRITE(unit_number,*) 'final Free Energy F=F0+<V-V0> = ',F_trial
+WRITE(*,*)'Temperature',temperature*(100*h_plank*c_light)/k_b
+WRITE(unit_number,*)'Temperature',temperature*(100*h_plank*c_light)/k_b
+CALL asr_checkfc2(trialfc2_value) !check final ASR
 
-    CALL CPU_TIME(cputime)
-    cputime_2 = cputime
-    WRITE(unit_number2,*)'Total running time: ', cputime_2-cputime_1
-    WRITE(*,*)'Total running time: ', cputime_2-cputime_1
+CALL CPU_TIME(cputime)
+cputime_2 = cputime
+WRITE(unit_number2,*)'Total running time: ', cputime_2-cputime_1
+WRITE(*,*)'Total running time: ', cputime_2-cputime_1
+!-------------------------------------------------------------------------------------
 
+    !~~~~~~~~~~~~~~~~~~~~~~~POST PROCESS && CHECK~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     !------------thermal expansion test---------------
     CALL R_Update
@@ -531,30 +569,29 @@ END DO guessloop !guess loop
 !    WRITE(*,*) 'Time cost of self-energy part = ',cputime_2-cputime_1
 !CALL Get_Dispersion_SE
 
-    !-----final phonon DOS------
-    CALL calc_dos_gauss
-    CALL calc_dos_tet
+    !-----final phonon DOS------ !temporarily commented off for check
+!    CALL calc_dos_gauss
+!    CALL calc_dos_tet
 
-    !-----final gruneisen------
+    !-----final gruneisen------ !temporarily commented off for check
     CALL calc_gruneisen
     CALL GetElastic_final
 
     WRITE(unit_number2,*)'Start Free Energy = ', start_F
     WRITE(unit_number2,*)'Final Free Energy = ', REAL(F_trial)
     WRITE(*,*)'...Finish'
+
 CLOSE(unit_number)
 CLOSE(unit_number2)
 CLOSE(unit_number3)
 CLOSE(unit_number4)
 
-
-!********************************DEALLOCATE EVERYTHING***************************************
+    !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DEALLOCATE EVERYTHING~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     CALL deallocate_tetra
     DEALLOCATE(x,f)
     DEALLOCATE(g,h)
     IF(.not.unleashed) DEALLOCATE(x2,f2)
-!    DEALLOCATE(junk,kpc,wk,eigen_temp ,total_dos,integrate_dos,afunc_dos)
-!********************************************************************************************
+!   DEALLOCATE(junk,kpc,wk,eigen_temp ,total_dos,integrate_dos,afunc_dos)
 
 
 8 FORMAT(99(2x,g14.8))
@@ -562,5 +599,8 @@ CLOSE(unit_number4)
 10 FORMAT(2(I6.1),2(I6.1,I2.1),4x,F9.6)
 11 FORMAT(2(I2,A),3(A,F9.6))
 !15 format(99(2x,g14.8))
-End Program SCOP8
+
+END SUBROUTINE ThreeVariableRoutine
+
+!===============================================================================================
 

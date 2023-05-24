@@ -15,8 +15,14 @@ MODULE MatrixDiagonalize
     SUBROUTINE allocate_eigen(eigen_number,k_number)
         IMPLICIT NONE
         INTEGER,INTENT(IN) :: eigen_number,k_number
+
+        IF(ALLOCATED(eivecs)) DEALLOCATE(eivecs)
         ALLOCATE(eivecs(eigen_number,eigen_number,k_number))!(direction*atom type,lambda,q)
+
+        IF(ALLOCATED(eivecs_t)) DEALLOCATE(eivecs_t)
         ALLOCATE(eivecs_t(eigen_number,eigen_number,k_number))!(lambda,direction*atom,q)
+
+        IF(ALLOCATED(eivals)) DEALLOCATE(eivals)
         ALLOCATE(eivals(eigen_number,k_number))
         return
     END SUBROUTINE allocate_eigen

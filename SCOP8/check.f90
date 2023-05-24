@@ -339,7 +339,7 @@ MODULE check
 !            F1 = F_trial
 
             CALL GetV_avg_And_GradientV_avg2(kvector)
-            V1 = REAL(V_avg)
+            V1 = REAL(V_avg) - REAL(V0)
 
             !notice for strain, eta_xy and eta_yx should be simultaneously increased
             SELECTCASE(i)
@@ -372,7 +372,7 @@ MODULE check
 
 !            discrepancy = ABS(f_math-f_fd)
             CALL GetV_avg_And_GradientV_avg2(kvector)
-            V2 = REAL(V_avg)
+            V2 = REAL(V_avg) - REAL(V0)
             v_fd = (V2-V1)/(2*step)
             discrepancy = ABS(v_math-v_fd)
 

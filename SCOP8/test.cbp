@@ -35,7 +35,7 @@
 			<Option weight="6" />
 		</Unit>
 		<Unit filename="ConjugateGradient.f90">
-			<Option weight="7" />
+			<Option weight="9" />
 		</Unit>
 		<Unit filename="DFT_force_constants.f95">
 			<Option weight="4" />
@@ -77,7 +77,7 @@
 			<Option weight="4" />
 		</Unit>
 		<Unit filename="main.f95">
-			<Option weight="9" />
+			<Option weight="10" />
 		</Unit>
 		<Unit filename="mods9.f90">
 			<Option weight="2" />
@@ -86,7 +86,7 @@
 			<Option weight="3" />
 		</Unit>
 		<Unit filename="others3_nshells.f90">
-			<Option weight="2" />
+			<Option weight="5" />
 		</Unit>
 		<Unit filename="zhegv.f">
 			<Option weight="0" />
