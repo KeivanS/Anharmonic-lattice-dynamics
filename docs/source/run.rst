@@ -171,26 +171,23 @@ file repeat for itself. For the input file of FOCEX, the ``structure.params`` is
 
 .. code-block:: python
 
-  1 1 1 90 90 90 #conventional cell x,y,z, alpha, beta, gamma
-  0 0.5 0.5 0.5 0 0.5 0.5 0.5 0 #primitive lattice in terms of conventional cell, for example here in Ge
-  5.762862 #lattice scale factor, must be consistent with POSCAR file
-  9 #number of maximum shell to include in the force constant calculation from the supercell
-  1 1 1 0 #1st, 2nd, 3rd and 4th order force constants, 1 is include and 0 is do not include in the fitting
-  1 0 0 0 #flags for including translational and rotational and Huang invariance constraints, 1 is to include and 0 to not include
-  0.0001 1.e-5 #tolerance for equating (two coordinates in general), margin for eliminating a FC
-  1d-9 #svd cutoff for the smallest eigenvalue to be included
-  1 .TRUE.  # 1--> number of different supercell file and, TRUE --> for verbosity
-  1 #number of types of atom
-  72.64 #Mass of each individual atom
-  Ge #Name of atoms
-  2 #number of atoms in the primitive cell, coordinates are in reduced units
-  1 1 # residual force for atom 1 and atom 2 for each atom in conventional cell 
-  5 5 #number of neighbors for calculating force constants
-  1 1 #
-  1 1 #
-  1 1 0.00 0.00 0.00 #index of first atom, type of atom, position(x,y,z) of first atom in the conventional cell in reduced units
-  2 1 0.25 0.25 0.25 #index of second atom, type of atom, position(x,y,z) of second atom in the conventional cell in reduced units
-  300.00 #Temperature to evaluate force constant
+1 1 1 90 90 90          # a, b, c, alpha, beta, gamma
+0 .5 .5 .5 0 .5 .5 .5 0 # reduced coordinates of primitive lattice
+5.7628622055            # scale factor for lattice size
+1 1 1 1                 # include FC1234, 1st, 2nd, third and fourth order harmonic force constant(s), 1 is to include and 0 is to not include
+1 1 0 0                 # invariances to impose, (translational, rotational, Huang) last is enforce inv using elimination
+0 300                   # temperature and whether or not implement it (do not implement if 0,2, or ..)
+1 .true.                # number  of OUTCAR files, verbosity
+1                       # type of atoms
+72.64                   # masses of each type of atoms
+Ge                      # names of atom
+2                       # number of atoms in the primitive cell
+1                       # flag for setting the range of FC2s (if 0 take default; else use below)
+5 5                     # number of shells for rank 2 (harmonic) for each atom if not default
+1 1                     # number of shells for rank 3 (cubic) for each atom
+1 1                     # number of shells for rank 4 (quartic) for each atom
+1 1 0 0 0               # number of atom, type of atom, position x, position y, position z
+2 1 0.25 0.25 0.25      # number of atom, type of atom, position x, position y, position z
 
 The fitting is done using singular value decomposition based on the ``POSCAR1`` and ``OUTCAR1`` i.e. by creating the force displacement matrix. Based on the position difference from ``POSCAR1`` and ``OUTCAR1`` file, the harmonic, cubic and quartic displacement are created for each of the atomic position (x,y,z). Further, if symmetry is turned on the displacements are added on top of it. Forces from the ``OUTCAR1`` file is appended to the last column of this force displacement matrix. The snippet showing force displacement matrix, ``amatrx.dat`` in this code is given below:
 
