@@ -193,26 +193,26 @@ The fitting is done using singular value decomposition based on the ``POSCAR1`` 
 
 .. code-block:: python
 
+**********************************************
+  Force-displ constraints part of amatrix size is          192
  **********************************************
-  Force-displ constraints part of amatrix size are          192
- **********************************************
-  before call to svd: amat , bmat are:
-   1.0       4.0       0.0       8.0       0.0       0.0       4.0       4.0       2.0       4.0       0.0       8.0       0.0       8.0       0.0       0.0       4.0       0.0       0.0       0.0       0.0       0.0       0.0    
-   0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       1.0       0.0       0.0       0.0       4.0       0.0    
-   0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       1.0      -1.0       0.0       0.0    
-  0.12E-01  0.16E-04 -0.85E-21  0.31E-04 -0.85E-21   0.0      0.68E-05 -0.44E-05 -0.66E-05 -0.44E-05   0.0     -0.88E-05   0.0      0.14E-04   0.0     -0.85E-21  0.16E-04   0.0     -0.25E-07 -0.17E-10  0.51E-07 -0.56E-10  0.12    
-   0.0      0.11E-04 -0.85E-21  0.22E-04 -0.85E-21   0.0      0.11E-04   0.0     -0.44E-05   0.0       0.0     -0.18E-04   0.0      0.22E-04   0.0     -0.85E-21  0.11E-04 -0.13E-07 -0.18E-10  0.12E-10 -0.16E-26  0.18E-06   0.0    
- -0.11E-05  0.16E-04 -0.17E-20  0.31E-04   0.0       0.0      0.68E-05 -0.44E-05 -0.66E-05 -0.44E-05   0.0     -0.88E-05   0.0      0.14E-04   0.0     -0.85E-21  0.16E-04   0.0      0.11E-10 -0.17E-10 -0.49E-11  0.13E-06   0.0    
+  before call to svd, amat and bmat are:
+   1.0       4.0       0.0       8.0       0.0       0.0       4.0       4.0       2.0       4.0       0.0       8.0       0.0       8.0       0.0       0.0       4.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0    
+   0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       1.0       0.0       0.0       0.0       4.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0    
+   0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       1.0      -1.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0    
+   0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       1.0       0.0       4.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0    
+   0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       1.0       0.0       0.0       4.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0    
+   0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       1.0       0.0       0.0       0.0       0.0       0.0       1.0       0.0       0.0       0.0       0.0       0.0       0.0    
 
 Here, in the first line provides the information for number of force displacement point. For example in the example taken here here for ``2x2x2`` supercell of `Ge`, the number ``192`` refers ``3*number of atoms in a supercell``. The number will increase accordingly if there are more than one snapshot in the ``POSCAR1`` file. Three lines below ``before call to svd: amat, bmat are:`` are the lines due to translation symmetry since only translation symmetry is turned on ``structure.params`` file. The remaining lines are each atomic displacements in a supercell of the given snapshot. Last column in all the line represent the force value from the ``OUTCAR1`` and all remaining columns are harmonic, cubic and quartic displacements.      
 
-Similarly other input file ``dielectric.params`` is required to get the phonon dispersion and thermal conductivity using ``THERMACOND``. It consists of dielectric constant tensor values which is written as follows
+Similarly other input file ``dielectric.params`` is required to get the phonon dispersion and thermal conductivity using ``THERMACOND``. It consists of dielectric constant tensor values which is written as follows in the example folder inside ``FOCEX``
 
 .. code-block:: python
 
- 16.2 0.0  0.0 # for example, dielectric constant of Ge
-  0.0 16.2 0.0
-  0.0 0.0 16.2
+ 2.5078 0.0  0.0 # for example, dielectric constant of Ge
+  0.0 2.5078 0.0
+  0.0 0.0 2.5078
 
 Now, if the ``POSCAR1``, ``OUTCAR1`` and ``structure.params`` are in same directory, simply run ``./focex.x`` within that directory to run FOCEX. After successful
 run ``fc2.dat``, ``fc2_fit.dat``, ``fc3.dat``, ``fc3_fit.dat``, ``fc4.dat`` and ``fc4_fit.dat`` along with other output files and log file should be available. ``fc2.dat``, ``fc2_fit.dat`` are the fitted second order force constant and with symmetry reduced second order force constant. Similarly ``fc3.dat``, ``fc3_fit.dat`` and ``fc4.dat``, ``fc4_fit.dat`` are third order and fourth order force constant and symmetry reduced third order and fourth order force constant respectively. Users are advised to look for more information on the log file ``log.dat`` generated by ``focex.x``.
