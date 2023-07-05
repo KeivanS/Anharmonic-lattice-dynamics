@@ -186,8 +186,8 @@ file repeat for itself. For the input file of FOCEX, the ``structure.params`` is
   5 5                     # number of shells for rank 2 (harmonic) for each atom if not default
   1 1                     # number of shells for rank 3 (cubic) for each atom
   1 1                     # number of shells for rank 4 (quartic) for each atom
-  1 1 0 0 0               # number of atom, type of atom, position x, position y, position z
-  2 1 0.25 0.25 0.25      # number of atom, type of atom, position x, position y, position z
+  1 1 0 0 0               # number of atom, type of atom, position x, position y, position z in units of a,b,c
+  2 1 0.25 0.25 0.25      # number of atom, type of atom, position x, position y, position z in units of a,b,c
 
 The fitting is done using singular value decomposition based on the ``POSCAR1`` and ``OUTCAR1`` i.e. by creating the force displacement matrix. Based on the position difference from ``POSCAR1`` and ``OUTCAR1`` file, the harmonic, cubic and quartic displacement are created for each of the atomic position (x,y,z). Further, if symmetry is turned on the displacements are added on top of it. Forces from the ``OUTCAR1`` file is appended to the last column of this force displacement matrix. The snippet showing force displacement matrix, ``amatrx.dat`` in this code is given below:
 
