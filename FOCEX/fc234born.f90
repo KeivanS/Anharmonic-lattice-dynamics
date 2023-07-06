@@ -350,9 +350,14 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
 
   allocate(bfrc(dim_ac))  ! dummy for xout
   if (itemp.eq.1) then
-
+      
       write(*,*) ' Temperature of ',tempk,' will be implemented'
       allocate(mat(dim_ac,dim_ac),qmat(dim_ac))
+!      2023-07-03 16:24:12 ---> Checking the energy value as FOCEX code is not giving proper result (logged by Bikash. T.)
+      write(*,*) "Energy values from the OUTCAR1 are: ",energies
+      write(*,*) "Dimension of energies are: ",shape(energies)
+      write(*,*) "The value of nlines are: ",nlines
+      write(*,*) "The value of nconfigs is: ",nconfigs
       call implement_temperature(dim_al-n_hom,dim_ac,amat(n_hom+1:dim_al,1:dim_ac), &
 &         bmat(n_hom+1:dim_al),nconfigs,energies,nlines,tempk,mat,qmat)
       call solve_svd(dim_ac,dim_ac,mat,qmat,svdcut,bfrc,sigma,uio)
@@ -493,7 +498,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
  real(8), allocatable :: dsp(:,:,:),frc(:,:,:),energy(:),afrc(:,:),bfrc(:),aux3(:,:,:),aux4(:,:,:),aux(:)
  integer i,imax,ncfg,at,j,nfctot,n1,n2
  type(vector) as1,as2,as3
- character xt*1,poscar*7, outcar*7
+ character xt*1,poscar*7, outcar*10
  real tim
 
 ! this loop is to calculate # of force_constraints in order to allocate aforce
@@ -537,8 +542,8 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
            enddo
            write(ulog,*)' sum of gws_weights(j) ',sum(gws_weights)
         endif  
-
-        outcar='OUTCAR'//xt
+! was OUTCAR before and changed to FORCEDISP
+        outcar='FORCEDISP'//xt
  
         call count_configs(outcar,ncfg)
         nconfigs = nconfigs + ncfg
