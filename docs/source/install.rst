@@ -22,5 +22,4 @@ FOCEX
 * From the **Anharmonic-lattice-dynamics/FOCEX/Makefile**, simply ``make`` and this will create the binary ``focex.x``
 
 
-Thermacond
-^^^^^^^^^^
+
