@@ -3,11 +3,11 @@ DFLAGS= # -O3  #-C # to check everything O3 #g -p #for profiling with gprof
 FLAGS=  #-fbounds-check # -fbacktrace #g -inline-debug-info #-p #for profiling with gprof
 
 #SUB=modules9.f90 kpoints.f90 dyn_modules.f90 fourier_stuff.f90 ewald_born.f90 svd.f90 extratools.f90 ios.f90 others3_nshells.f90 new_amatrix.f90 force_constants_new.f90  dynamical.f90
-SUB=modules9.f90 kpoints.f90 ios.f90 fourier_stuff.f90 ewald_born.f90 svd.f90 extratools.f90 others3_nshells.f90 new_amatrix.f90 force_constants_new.f90
+SUB=fc_modules.f90 kpoints.f90 ios.f90 fourier_stuff.f90 ewald_born.f90 svd.f90 extratools.f90 others.f90 setup_amatrix.f90 force_constant_symmetries.f90
 MAIN=fc234born.f90
 
 # combine many of them into one name "ALL"
-ALL=$(SUB) $(MAIN) structure.params dielectric.params Makefile POSCAR1 OUTCAR1
+ALL=$(SUB) $(MAIN) structure.params dielectric.params Makefile POSCAR1 FORCEDISP1
 
 # declare the list of object files associated with the .f90 files
 SUBS=$(addsuffix .o, $(basename $(SUB)))
@@ -18,7 +18,7 @@ A=`date "+%F-%k_%M"`
 C=fcborn_`date "+%F_%T"`.tar
 #MYBIN=/Users/keivan/BIN/
 backup=FCBORN_$(A)
-ver=3
+ver=4
 exe=fcborn_$(ver).x 
 
 
