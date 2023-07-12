@@ -1,1 +1,4 @@
-Thermacond calculates lattice thermal conductivity of crystalline bulk materials
+Theory
+======
+
+Thermacond calculates the lattice thermal conductivity of crystalline bulk materials. 
