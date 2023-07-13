@@ -50,7 +50,7 @@ SCOP8
 
 THERMACOND
 ^^^^^^^^^^^
-* To compile the THERMACOND code, clone the repository `https://github.com/KeivanS/Anharmonic-lattice-dynamics.git` or download the ALADYN code and follow the instructions
+* To compile the THERMACOND code, clone the repository https://github.com/KeivanS/Anharmonic-lattice-dynamics.git or download the ALADYN code and follow the instructions
 * It is enough to run ``make`` in the main directory, but a suitable Makefile must be present in the directory. THERMACOND needs a gfortran compiler. After compilation succeeds, a binary file ``kap7_sy_tet`` will be created in the main directory. There is no need for input from the terminal. It can be invoked simply as ``./ kap7_sy_te``.
 * In order to compute collision matrices parallelly, there is a bash script file ``....`` that user can use to distribute k-mesh to many cores.
 
