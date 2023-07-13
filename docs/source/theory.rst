@@ -440,6 +440,7 @@ Eq.[`[eq:gammaFix] <#eq:gammaFix>`__] has been employed in the source
 code file ’VA_math.f95’ and the convergence has been verified by
 different k-mesh size choices.
 
+Comment: need to modify some custom.css for correct labelling format(?)
 
 .. [Ref] G. Leibfried and W. Ludwig, in Solid State Physics, edited by F. Seitz and D. Turnbull (Academic, New York, 1961), Vol. 12.
 
