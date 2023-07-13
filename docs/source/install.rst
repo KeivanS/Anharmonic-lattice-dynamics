@@ -47,3 +47,9 @@ SCOP8
   * Set up environment in code\:\:blocks: go to menu > settings > compiler > set **gnu fortran** as default and auto detect compilers (you may need to uncheck all the optional compiling options)
   * Load project in code\:\:blocks by double clicking *test.cbp*
   * Compile and run the code by pressing F9
+
+Thermacond
+^^^^^^^^^^
+* To compile the code, it is enough to run make in the main directory, but a suitable Makefile must be present in the directory. Thermacond needs a gfortran compiler. After compilation succeeds, a binary file “kap7_sy_tet” will be created in the main directory. There is no need for input from the terminal. It can be invoked simply as “./ kap7_sy_tet”.
+* In order to compute collision matrices parallelly, there is a bash script file “. . . ” that user can use to distribute k-mesh to many cores.
+
