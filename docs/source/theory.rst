@@ -150,7 +150,7 @@ Bogoliubov's inequality
 The sharp brackets in above equation mean thermal average with respect to the density matrix :math:`\rho_0` associated with the variational or trial harmonic Hamiltonian :math:`H_0`
 
 .. math::
-    \langle A \rangle_0=Tr \rho_0 A; \,\, \rho_0=e^{-H_0/kT} /Z ; \,\, Z={\rm Tr}\, e^{-\H_0/kT} ;\, F_0=-kT {\rm ln} Z 
+    \langle A \rangle_0=Tr \rho_0 A; \,\, \rho_0=e^{-H_0/kT} /Z ; \,\, Z={\rm Tr}\, e^{-H_0/kT} ;\, F_0=-kT {\rm ln} Z 
 
 As can be seen in above equations, :math:`\rho_0` is the trial density matrix and Z is the corresponding partition function. :math:`F_{trial}` is the effective or trial free energy that is optimized during iterations. :math:`F_0` and :math:`V_0` are the trial harmonic free energy and potential energy. :math:`V` is the (approximated) real or actual potential energy in a Taylor expansion form to describe the real crystal with force constants :math:`\Phi`,:math:`\Psi` and :math:`X` and selected variational parameters (strain, internal coordinates).
 
@@ -213,7 +213,7 @@ force constant :math:`K_{ij}`, although being a variational parameter,
 is implicit in the expression :math:`F_{trial}` because of the term
 :math:`\langle y_i y_j\rangle`. Refer to Eq.[`[yy] <#yy>`__], using the
 identity
-:math:`2 n_{\la}+1= {\rm coth} \frac{ \beta \hbar \omega_{\lambda} }{2}`,
+:math:`2 n_{\lambda}+1= {\rm coth} \frac{ \beta \hbar \omega_{\lambda} }{2}`,
 one can see that :math:`\langle y_i y_j\rangle` is a function of
 eigenvalues :math:`\omega_\lambda` and eigenvectors
 :math:`e_{i\alpha,\lambda}`, they both originated from diagonalization
@@ -331,7 +331,7 @@ the source code file ’force_update.f90’, are written as below:
     X_{i,j,j,l} = -\sum_{k,l\neq j, l\neq i, j\neq i,k\neq j}X_{i,j,k,l}, \; \forall i,j,l \nonumber \\
     X_{i,j,j,j} = -\sum_{l,j\neq i, l\neq j }X_{i,j,j,l}, \; \forall i,j \nonumber \\
     X_{i,i,k,l} = -\sum_{j,k\neq i, l\neq i, j\neq i}X_{i,j,k,l}, \; \forall i,k,l \nonumber \\
-    X_{i,i,i,i} = -\sum{l,l\neq i}X_{i,i,i,l}, \; \forall i 
+    X_{i,i,i,i} = -\sum_{l,l\neq i}X_{i,i,i,l}, \; \forall i 
     \end{cases}
 
 With this in mind, a translational form modification should also be
