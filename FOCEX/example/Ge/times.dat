@@ -1,15 +1,15 @@
- This program was launched at    2023/07/15   12:48:40.972   -0400
- At the start of the Program FC234 the  TIME IS     0.0055
- READ_INPUT CALLED, TIME                       IS     0.0062
- make_unitcell, TIME                          IS     0.0426
+ This program was launched at    2023/07/15   13:22:13.167   -0400
+ At the start of the Program FC234 the  TIME IS     0.0061
+ READ_INPUT CALLED, TIME                       IS     0.0070
+ make_unitcell, TIME                          IS     0.0496
   make_unitcell called, atmpos, neighbs, iatmcell calculated
- TIME after setup_maps and before write_correspondance IS     3.7786
- STRUCTURE   1 after read_force_position_data time IS     3.7945
- STRUCTURE   1 after subtract_coulomb time IS     3.7945
- TIME after read_snaps_set_aforce               IS     8.0316
- TIME after set_translational_inv_constraints IS     8.4492
- TIME after set_rotational_inv_constraints    IS    10.5242
- TIME after set_Huang_inv_constraints         IS    10.5255
- TIME after include_constraints and zero column   IS      10.5289
- ENDING TIME OF THE PROGRAM                   IS    10.8395
-       Program FC234 ended at    2023/07/15   12:48:51.815   -0400
+ TIME after setup_maps and before write_correspondance IS     3.8288
+ STRUCTURE   1 after read_force_position_data time IS     3.8451
+ STRUCTURE   1 after subtract_coulomb time IS     3.8451
+ TIME after read_snaps_set_aforce               IS     8.0779
+ TIME after set_translational_inv_constraints IS     8.4929
+ TIME after set_rotational_inv_constraints    IS    10.5653
+ TIME after set_Huang_inv_constraints         IS    10.5665
+ TIME after include_constraints and zero column   IS      10.5698
+ ENDING TIME OF THE PROGRAM                   IS    10.8845
+       Program FC234 ended at    2023/07/15   13:22:24.067   -0400
