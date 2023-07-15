@@ -1159,32 +1159,33 @@
 3 format(9(1x,f10.5))
  end subroutine make_grid
 !============================================================
- subroutine get_upper_bounds(x1,x2,x3,rcut,maxp,m)
+ subroutine get_upper_bounds(x1,x2,x3,rcut,maxatm,maxsh)
 !! finds maxp, the number of grid points in the sphere of radius rcut and m, the needed mesh
-!! outputs are m and maxp: upper bounds in 1D and in 3D (used for 3 loops and allocation)
+!! outputs are maxsh and maxatm: upper bounds in 1D and in 3D (used for 3 loops and allocation)
  use geometry
+ use ios, only : ulog
  implicit none
  type(vector),intent(in) :: x1,x2,x3
- integer,intent(out) :: m,maxp ! upper boundary in 1D and in 3D (used for 3 loops and allocation)
+ integer,intent(out) :: maxsh,maxatm ! upper boundary in 1D and in 3D (used for 3 loops and allocation)
  real(8),intent(in) :: rcut
  integer m1,m2
  real(8) om0,ls
 
  call calculate_volume(x1,x2,x3,om0)
  ls=om0**0.333333 ! typical unitcell size
- maxp=nint(12.56/3d0*(1.3*(rcut+ls))**3/om0)+1  ! upperbound to the number of unitcells in the sphere
+ maxatm=nint(12.56/3d0*(1.3*(rcut+ls))**3/om0)+1  ! upperbound to the number of unitcells in the sphere
 
 ! find shortest translation vector length
  ls=min(length(x1),length(x2))
  ls=min(ls,length(x3))
- write(*,3)'GET_UPPER_BOUNDS: shortest translation length=',ls
+ write(ulog,3)'GET_UPPER_BOUNDS: shortest translation length=',ls
 
  m1=nint(rcut/ls)+2
- m2=(nint((3*maxp/12.56)**0.33333)+1)
- m=max(m1,m2)
+ m2=(nint((3*maxatm/12.56)**0.33333)+1)
+ maxsh=max(m1,m2)
 ! maxp=(2*m+1)**3
 
- write(*,4)'GET_UPPER_BOUNDS:m1,m,max,rcut=',m1,m,maxp,rcut
+ write(ulog,4)'GET_UPPER_BOUNDS:m1,maxsh,max,rcut=',m1,maxsh,maxatm,rcut
 
 3 format(a,9(1x,g14.7))
 4 format(a,3i8,9(1x,g14.7))
@@ -1554,8 +1555,8 @@
     if (found) then
        t = t+1
        read(utraj,*) k,energy(t)  ! start with 1 since t=0
-       if(t.ne.j .or. t-1.ne.k) then
-          write(*,*)'Error in reading snapshot#s in OUTCAR?',k,j,t
+       if(t.ne.j ) then !.or. t-1.ne.k) then
+          write(*,*)'Error in reading snapshot#s in OUTCAR?',j,t
        endif
        do i=1,natom_super_cell
            read(utraj,*) dsp(1:3,i,t),frc(1:3,i,t)

@@ -829,7 +829,7 @@
        call check_inside_ws(rij,rws26,inside)
        if(verbose) then
 ! find which shell this rij corresponds to
-          do ishl=1,maxshells
+          do ishl=1,maxshell
              if ( abs(atom0(iatomcell0(i0))%shells(ishl)%rij - dij).lt.1d-4 .and. inside.eq.1) then
 !               write(ulog,4)'group,i0,j,inside,keep,rij=',g,i0,j,inside,keep,length(rij)
                 write(ulog,5)'In group ',g,' the ',ishl,' th shell corresponding to rij=',dij,' is kept'

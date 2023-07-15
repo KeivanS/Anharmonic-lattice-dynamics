@@ -136,7 +136,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
   call read_dielectric
   print*,' file dielectric.params read'
 
-  maxshells = maxneighbors
+ ! maxshells = maxneighbors
   call write_out(ulog,'latticeparameters',latticeparameters)
   call write_out(ulog,'primitive lattice',primitivelattice)
   write(ulog,*)'atompos0_d'
@@ -153,28 +153,29 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
 
 ! inputs: natom_prim_cell,latticeparameters,primitivelattice,atom_type,atompos0
   call make_unitcell
-! outputs: r0i, atompos (cart coord of atoms and natoms neighbor shells), maxshells
+! outputs: r0i, atompos (cart coord of atoms and natoms neighbor shells), 
 ! iatomcell, iatomcell0, iatomneighbor, iatomop, ... and symmetry operations
-! sets maxshells, according to the default range for fc2s, which is 15Ang
+! sets nsmax, according to the default range for fc2s, rcut(2) which is 15Ang
 
  call cpu_time(tim)
  write(utimes,'(a,f10.4)')' make_unitcell, TIME                          IS ',tim
  write(utimes,*)' make_unitcell called, atmpos, neighbs, iatmcell calculated'
  write(ulog,*)' ***************************************************************************** '
- write(ulog,*)' rcut(2) for FC2s set to be=',rcut(2),' corresponding to maxshells=',maxshells
+ write(ulog,*)' rcut(2) for FC2s set to be=',rcut(2),' corresponding to new maxneighbors=',maxneighbors
  write(ulog,*)' ************************* Writing the neighborlist ************************** '
  write(ulog,*)' Now the actual number of shells within the largest WS cell is set...'
 
 
-! inputs: maxshells (and atompos through module atoms_force_constants)
-  call set_neighbor_list(maxshells)
-! outpus: atom0%equilb_pos,shells%no_of_neighbors , rij, neighbors(:)%tau and n
+! inputs: rcut(2) (and atompos through module atoms_force_constants)
+  call set_neighbor_list(rcut(2),maxshell)
+! outputs: atom0%equilb_pos,shells%no_of_neighbors , rij, neighbors(:)%tau and n and maxshell
 
+ write(ulog,*)' After set_neighbors: maxshell=',maxshell,' corresponding to new maxneighbors=',maxneighbors
 
-  if (maxval(nshells(2,:)) .gt. maxneighbors) then
-     nshells(2,:)=maxneighbors
-     write(*   ,*)'nshells2 reduced from ',maxval(nshells(2,:)),' to ',maxneighbors
-     write(ulog,*)'nshells2 reduced from ',maxval(nshells(2,:)),' to ',maxneighbors
+  if (maxval(nshells(2,:)) .gt. maxshell) then
+     nshells(2,:)=maxshell
+     write(*   ,*)'nshells2 reduced from ',maxval(nshells(2,:)),' to ',maxshell
+     write(ulog,*)'nshells2 reduced from ',maxval(nshells(2,:)),' to ',maxshell
   endif
 
   call write_neighbors
@@ -262,7 +263,6 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
  enddo
 
  write(ulog,*)' MAIN: total # of independent FCs of all rank, nindepfc=',nindepfc
- write(ulog,*)'Now allocating aforce of dims=',force_constraints,nindepfc
 
  allocate(frc_constr(fdfiles))  ! for each of the supercell files
 
@@ -542,6 +542,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
            enddo
            write(ulog,*)' sum of gws_weights(j) ',sum(gws_weights)
         endif  
+
 ! was OUTCAR before and changed to FORCEDISP
         outcar='FORCEDISP'//xt
  

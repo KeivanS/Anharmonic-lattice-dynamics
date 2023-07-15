@@ -28,7 +28,7 @@ module params
  real(8) tolerance,margin,scalelengths,alfaborn,tempk
  integer nconfigs,classical,ntemp,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,itemp
  integer nshells(4,20)  ! up to which shell to include for each rank of FC (read from input file)
- integer include_fc(4)  ! whether to include FCs of that rank
+ integer include_fc(4),nsmax  ! whether to include FCs of that rank ,max# of shells looping
  real(8) rcut(4),tau0,wshift(3)
  real(8) tmin,tmax,qcros(3),svdc
  real(8) rcutoff_ewa,gcutoff_ewa,eta  ! these are for ewaldsums
@@ -719,6 +719,7 @@ module ios
 
   l=len_trim(string)
   n=size(var(:,1)) ; m=size(var(1,:))
+  write(unit,*)' write_outrm called;nl,nc=',n,m
   write(unit,4)string(1:l)//' is='
   do i=1,n
      write(unit,5)(var(i,j),j=1,m)
@@ -816,7 +817,7 @@ end module ios
 ! type atomic refers to atoms in the supercell, their displacements and forces.
  use geometry
  implicit none
- integer natom_super_cell,maxshells, fc2flag
+ integer natom_super_cell,nmax, fc2flag
 
 !-------------------------
  type cell_id         ! id of atoms: position within cell, and cell coordinates
@@ -847,7 +848,7 @@ end module ios
     real(8) mass,charge(3,3)
     integer nshells       ! how many shells are included=actual dim(shell)
     type(vector) equilibrium_pos
-    type(shell), allocatable ::  shells(:)  !0:maxshells)
+    type(shell), allocatable ::  shells(:) 
 !    type(tensor2r), pointer :: phi2(:)  ! refers to atom numbers neighbor of i
 !    type(tensor3), pointer :: phi3(:,:)
 !    type(tensor4), pointer :: phi4(:,:,:)
@@ -866,8 +867,8 @@ end module ios
 !---------------------------
 ! Module for saved data
 !      module force_constants_module
-! maximum shells of nearest neighbors (along radial direction)
-      integer maxneighbors
+! maximum shells of nearest neighbors (along radial direction) , and actual # of neighborshells
+      integer maxneighbors,maxshell
 !     parameter(maxneighbors=18 )
 ! maximum number of atoms out to maxneighbors
       integer maxatoms,imaxat
@@ -1121,7 +1122,6 @@ contains
 !! initializes the object atom0%equilibrium_pos, mass, name, type and charge
 !! finds the symmetry operations of the unit cell
 !! calculates number and position of the atoms within rcut(2)=15 of the primitive cell
-!! set maxneighbors=maxshells, the max number of shells for calculating FC2
  use ios
  use params
  use geometry
@@ -1180,18 +1180,18 @@ contains
 ! generate neighbors in atompos up to a disctance rcut(2)=15 Ang
   rcut(2)=15  ! this is enough for a supercell of length 30 Ang
 
-! get density of atoms
-  call get_upper_bounds(r01,r02,r03,rcut(2),maxatoms,maxneighbors)
+! get largest # of atoms within rcut; and nsmax=rcut/shortest translation+2 
+  call get_upper_bounds(r01,r02,r03,rcut(2),maxatoms,nsmax)
 
-  maxshells = maxneighbors
 
   write(ulog,*)'*****************************************************************'
-  write(ulog,6)'UPPER_BOUNDS for rcut(2)=',rcut(2),' maxatoms,maxshells=',maxatoms,maxneighbors
+  write(ulog,6)'UPPER_BOUNDS for rcut(2)=',rcut(2),' maxatoms,nsmax=',maxatoms,nsmax
   write(ulog,*)'*****************************************************************'
 
   allocate(atompos(3,maxatoms), iatomcell(3,maxatoms),iatomcell0(maxatoms))
 
 ! find symmetry operations; the above allocation is for this subroutine
+! requires maxneighbors to generate atoms within these shells 
   call force_constants_init(natom_prim_cell,atom_type,atompos0)
 
 ! cat_to_prim had reciprocal lattice vectors on its lines
@@ -1269,9 +1269,10 @@ contains
 
  end subroutine make_rgv
 !-----------------------------------------
- subroutine set_neighbor_list (maxshell)
-!! Generates a set of neighbors to the primitive cell (up to maxshell, which should be large enough)
-!! and finds which shell corresponds to the cutoff rcut set by the WS cell
+ subroutine set_neighbor_list (rcut2,mxshell)
+!! Generates a set of neighbors to the primitive cell up to rcut2
+!! and calculates the corresponding number of neighborshells
+!! maxshell = actual max number of neighbor shells  
 ! this is needed in order to know what force constants to associate
 ! to a pair ij, or ijk or ijkl
 ! if a neighbor j is known then one can get the vect(i,j) between
@@ -1281,22 +1282,30 @@ contains
  use ios
  use geometry
  implicit none
- integer, intent(in) :: maxshell
-! real(8), intent(in) :: rcut
+ integer, intent(out) :: mxshell
+ real(8), intent(in) :: rcut2
  integer i0,j,shel_count,counter,msort(maxatoms),l
  real(8) dist(maxatoms),d_old,d_min,rmax
 
-! allocate( atom0(1:natom_prim_cell)%shells(maxshells) )
- rmax = 0 ; dist = 1d10
+ mxshell=maxneighbors ! do not want to go beyond 50 shells, hopefully is large enough for rcut2
+
+! allocate( atom0(1:natom_prim_cell)%shells(mxshells) )
+ rmax = 0  ! is the largest radius among the natoms neighbors   
+ dist = 1d10
  i0loop: do i0=1,natom_prim_cell
-    allocate( atom0(i0)%shells(0:maxshell) )
+    allocate( atom0(i0)%shells(0:mxshell) )
     do j=1,natoms
        call calculate_distance(i0,j,atompos,maxatoms,dist(j) )
-!      if ( iatomneighbor(i0,j) .eq. nshells(2) .and. dist(j) .gt. rmax ) then
-       if ( iatomneighbor(i0,j) .eq. nshells(2,i0) .and. dist(j) .gt. rmax ) then
-            rmax = dist(j)
-       endif
+! this dist(j) is supposed to be less than rcut(2)
+!      if ( iatomneighbor(i0,j) .eq. nshells(2,i0) .and. dist(j) .gt. rmax ) then
+!      if ( dist(j) .gt. rcut2 ) then
+!           write(ulog,*)'SET_NEIGHBOR_LIST: dist(j)>rcut ',i0,j,dist(j),rcut2
+!      endif
     enddo
+!   if (rmax.lt.rcut2) then
+!      write(ulog,*)'rmax=',rmax,' is less than input cutoff of ',rcut2
+!      write(ulog,*)'need to increase mxshell from ',mxshell,' or decrease rcut=',rcut2
+!   endif
     call sort(natoms,dist,msort,maxatoms)
 
     shel_count = -1
@@ -1304,24 +1313,26 @@ contains
     write(ulog,*)' ========================================================='
     write(ulog,*)' neighborlist of atom i0 =',i0
 
-    jloop: do j=1,min(500,natoms)
+    jloop: do j=1,natoms
        d_min = dist(msort(j))  ! start with the shortest distance
        if ( (d_min .myeq. d_old) .and. (shel_count.ne.-1) ) then   ! same shell
-          counter = counter + 1
+          counter = counter + 1  ! counts atoms within a given shell 
        else    ! new shell
+          if (d_min.gt.rcut2) cycle
           shel_count = shel_count+1
           counter = 1
-          if ( shel_count .gt. maxshell ) then
-             write(ulog,*)maxshell,' shells completed'
+          if ( shel_count .gt. mxshell ) then
+             write(ulog,*)mxshell,' shells completed'
              write(ulog,*)'shel_count=',shel_count,' exceeded it for j=',j
+             write(ulog,*)'Need to increase maxneighbors from ',maxneighbors,' or decrease rcut from ',rcut2
              exit jloop
           endif
           d_old = d_min
        endif
-       if ( counter .gt. 296) then
-          write(ulog,*) ' counter in neighbors exceeded 296 ', counter
-          stop
-       endif
+!      if ( counter .gt. 296) then
+!         write(ulog,*) ' counter in neighbors exceeded 296 ', counter
+!         stop
+!      endif
        atom0(i0)%shells(shel_count)%no_of_neighbors = counter
        atom0(i0)%shells(shel_count)%rij = d_min
        atom0(i0)%shells(shel_count)%neighbors(counter)%tau = iatomcell0(msort(j))
@@ -1333,7 +1344,10 @@ contains
        endif
     enddo jloop
 
-    do shel_count = 0 , maxshell
+    mxshell=shel_count
+    maxshell=mxshell  ! to save it in the module atoms_force_constants
+    write(ulog,*)'largest#of shells=',mxshell,' compared to modified maxneighbors=',maxneighbors
+    do shel_count = 0 , mxshell
        write(ulog,*)'shell#, neigh#=',shel_count,atom0(i0)%shells(shel_count)%no_of_neighbors
     enddo
 ! also initialize atom0%equilibrium_pos
@@ -1350,7 +1364,6 @@ contains
 ! they might not be inside the primitive cell
 
  enddo i0loop
-! rcut(2) = rmax
 
 2 format(a,8(2x,i4))
 3 format(a,' (',i4,2(1x,i4),1x,')')

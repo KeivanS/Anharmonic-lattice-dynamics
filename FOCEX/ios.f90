@@ -45,7 +45,7 @@
  read(uparams,*) nshells(3,1:natom_prim_cell)
  read(uparams,*) nshells(4,1:natom_prim_cell)
 
- maxneighbors=50 ! default !maxval(nshells(2,:))
+ maxneighbors=50 ! default for largest number of neighbor shells !maxval(nshells(2,:))
  if (itemp.eq.0) then
     if(fc2flag.eq.0) then
        it='0'
@@ -87,7 +87,7 @@
  write(ulog,3)' 4 :', nshells(4,1:6)
  write(ulog,*) itrans,irot,ihuang,enforce_inv,'  transl, rot and Huang invce, enforcing inv'
  write(ulog,*) maxneighbors,'  default max neighbors  '
- write(ulog,*)' Reading ',fdfiles,' OUTCAR & POSCAR files'
+ write(ulog,*)' Reading ',fdfiles,' FORCEDISP & POSCAR files'
  write(ulog,*)' Included fcs and Imposed invariances: trans-rot-Huang=',invr
  write(ulog,*)'--------------------------------------------------'
  write(ulog,*)' Reading ',natom_type,' atom types with ',natom_prim_cell,'atoms in the primitive cell'
@@ -622,15 +622,11 @@
  integer i0,shel_count,j,nm(3),ta,nbmx
  real(8) dij
 
-! write(ulog,*)' ***************************************************************************** '
-! write(ulog,*)' rcut(2) for FC2s set to be=',rcut(2),' corresponding to maxshells=',maxshells
-! write(ulog,*)' ************************* Writing the neighborlist ************************** '
-
  do i0=1,natom_prim_cell
     write(ulog,*)' ******************************'
     write(ulog,*)' Neighbors of atom number ',i0
     write(ulog,*)' ******************************'
-    do shel_count=1,maxshells
+    do shel_count=1,maxshell
        nbmx = atom0(i0)%shells(shel_count)%no_of_neighbors
        dij  = atom0(i0)%shells(shel_count)%rij
        do j=1,min(nbmx,500)
@@ -1072,7 +1068,7 @@ stop
  implicit none
  integer i
  real(8) dr(3),dc(3)
-! checking consistency between POSCAR:atom_sc%equilibrium_pos and OUTCAR:displ(:,:,1)
+! checking consistency between POSCAR:atom_sc%equilibrium_pos and FORCEDISP:displ(:,:,1)
 
  do i=1,natom_super_cell
 
@@ -1087,11 +1083,11 @@ stop
     if ( abs(dc(1)).gt.tolerance .or. abs(dc(2)).gt.tolerance  &
     &                            .or. abs(dc(3)).gt.tolerance ) then
 !    if ( dc(1).gt.0.1 .or. dc(2).gt.0.1 .or. dc(3).gt.0.1 ) then
-       write(ulog,*)' atom # ',i,' in POSCAR and OUTCAR are different'
+       write(ulog,*)' atom # ',i,' in POSCAR and FORCEDISP are different'
        write(ulog,*)' POSCAR:atom_SC=',atom_sc(i)%equilibrium_pos
-       write(ulog,*)' OUTCAR: displ =',displ(:,i,1)
+       write(ulog,*)' FORCEDISP: displ =',displ(:,i,1)
        write(ulog,*)' check your input files '
-       write(*,*)' atom # ',i,' in POSCAR and OUTCAR are different'
+       write(*,*)' atom # ',i,' in POSCAR and FORCEDISP are different'
        write(*,*)' check your input files '
        stop
     endif
@@ -1119,8 +1115,8 @@ stop
  write(ulog,*)' Basically we describe the harmonic terms in the Taylor expansion'
  write(ulog,*)' Which atom pairs in the supercell are bridged by a FC element '
  write(ulog,*)' Below, ni refers to the translations of the supercell'
- write(ulog,*)'# iatom, [  taui(nsi) ],  alpha_i=1 ;  j, [  tauj(nsj) ], alpha_j=1  :   term group  rij    ampterm'
- write(ucor,*)'# iatom, [  taui(ni)  ],  alpha_i ;  jatom, [  tauj(nj), alpha_j  :   term group  rij    ampterm'
+ write(ulog,*)'# iatom, [  taui(nsi) ],  alpha_i=1 ;  j, [  tauj(nsj) ], alpha_j=1  :   term group  rij'
+ write(ucor,*)'# iatom, [  taui(ni)  ],  alpha_i ;  jatom, [  tauj(nj), alpha_j  :   term group  rij'
 
 ! do nat=1,natom_super_cell
   do nat=1,natom_prim_cell

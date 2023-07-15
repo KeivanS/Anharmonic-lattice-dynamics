@@ -11,13 +11,13 @@
 !     natoms_in (input), number of atoms in the primitive unit cell
 !     iatomtype(i) (input), type of ith atom, numbered 1,2,3,etc.
 !     atompos_in(j,i) (input), jth dimensionless coordinate of the ith atom
+! also uses nsmax for shell looping and rcut and maxneighbors and maxatoms
 
       use lattice
       use atoms_force_constants !force_constants_module
       use ios !, only : ulog
-      use params , only : rcut
+      use params , only : rcut,nsmax
       implicit none
-!      parameter(maxshell=10)
 
       integer, intent(in) :: natoms_in
       real(8), intent(in) :: atompos_in(3,natoms_in)
@@ -28,6 +28,7 @@
      &     itype,isg,iatom0,iop,icell(3),   &
      &     iop_matrix(3,3,48) , natneighbor
       logical foundit,foundone
+! maxneighbors= largest # of neighbor shells <  50 usually unless very low symmetry
       real(8) d2save(maxneighbors),r(3),d2, tempi(3,3),latp(6),   & !d2r,   &
      &     atomposconv(3,natoms_in),fract(3),v(3),v2(3),temp(3,3),junk
 !    &     lattparams(6),primlatt(3,3),
@@ -41,9 +42,7 @@
       natom_prim_cell=natoms_in
       atomposconv(1:3,1:natom_prim_cell)=atompos_in(1:3,1:natom_prim_cell)
       call write_out(6,'atompos_in(primcell)= ',atompos_in)
-!      do i=1,natom_prim_cell
-!         write(*,3)(atompos_in(j,i),j=1,3)
-!      enddo
+
 ! allocate memory
       if(allocated(iatomneighbor)) deallocate(iatomneighbor)
       if(allocated(atomopfract))   deallocate(atomopfract)
@@ -53,7 +52,6 @@
  &       atomopfract(3,natom_prim_cell,natom_prim_cell))
       iatomneighbor=maxneighbors+1
       iatomop=0
-
 
 
  3 format(3(1x,f10.5))
@@ -269,7 +267,7 @@
         m=0
 ! collect distances to nearest neighbors
 ! do one shell of unit cells at a time
-        do n=0,maxshells
+        do n=0,nsmax
           foundone=.false.
           do i1=-n,n
           do i2=-n,n
@@ -287,6 +285,10 @@
      &               +i2*prim_to_cart(j,2)+i3*prim_to_cart(j,3) -atompos(j,iatom0)
                 d2=d2+r(j)**2
               enddo
+
+! K1 reject if larger than rcut(2)
+              if (d2 .gt. rcut(2)*rcut(2)) cycle
+
 ! did we find any new ones in this shell?
               if(m.eq.0)then
                 foundone=.true.
@@ -311,6 +313,9 @@
               if(nd2save.lt.maxneighbors)then
                 nd2save=nd2save+1
                 d2save(nd2save)=d2
+              else
+                write(ulog,*)'nd2save >= maxneighbors; array d2save is going to overflow!!'
+                stop
               endif
             enddo iloop
           enddo
@@ -322,11 +327,11 @@
             exit
           endif
 ! list is filled
-          if(nd2save.eq.maxneighbors.and.m.eq.0)m=1  ! maxneighbors & maxshells are the same
+          if(nd2save.eq.maxneighbors.and.m.eq.0)m=1  
 ! we reached the last shell before we finished the list
-          if(n.eq.maxshells)then
-            write(*,*)'Error:  maxshells or rcut(2) not large enough ',maxshells,rcut(2)
-! K1        close(20)  ! do not recall ever opening it!!!
+! K1 below commented as maxshell is not used but rcut
+          if(n.eq.maxneighbors)then
+            write(*,*)'Error:  maxneighbors or rcut(2) not large enough ',maxneighbors,rcut(2)
             stop
           endif
         enddo
@@ -382,6 +387,8 @@
         enddo
 ! next inequivalent atom
       enddo
+      maxneighbors=nd2save
+      write(ulog,*) 'FC_INIT: maxneighbors now changed to ',maxneighbors
       imaxat=0
       end subroutine force_constants_init
       !******************************************************************************
