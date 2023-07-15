@@ -10,8 +10,8 @@
 Ge                      # names of atom
 2                       # number of atoms in the primitive cell
 1                       # flag for setting the range of FC2s (if 0 take default; else use below)
-5 5                     # number of shells for rank 2 (harmonic) for each atom if not default
-1 1                     # number of shells for rank 3 (cubic) for each atom
+7 7                     # number of shells for rank 2 (harmonic) for each atom if not default
+2 2                     # number of shells for rank 3 (cubic) for each atom
 1 1                     # number of shells for rank 4 (quartic) for each atom
 1 1 0 0 0               # number of atom, type of atom, position x, position y, position z
 2 1 0.25 0.25 0.25      # number of atom, type of atom, position x, position y, position z
