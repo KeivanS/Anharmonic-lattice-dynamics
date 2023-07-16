@@ -719,7 +719,7 @@ module ios
 
   l=len_trim(string)
   n=size(var(:,1)) ; m=size(var(1,:))
-  write(unit,*)' write_outrm called;nl,nc=',n,m
+!  write(unit,*)' write_outrm called;nl,nc=',n,m
   write(unit,4)string(1:l)//' is='
   do i=1,n
      write(unit,5)(var(i,j),j=1,m)
@@ -868,8 +868,7 @@ end module ios
 ! Module for saved data
 !      module force_constants_module
 ! maximum shells of nearest neighbors (along radial direction) , and actual # of neighborshells
-      integer maxneighbors,maxshell
-!     parameter(maxneighbors=18 )
+      integer maxneighbors,maxshell 
 ! maximum number of atoms out to maxneighbors
       integer maxatoms,imaxat
 !     parameter(maxatoms=2800 )
@@ -957,7 +956,7 @@ contains
 !integer i0,j,shel_count,counter,msort(maxatoms),l
 !real(8) dist(maxatoms),d_old,d_min,rmax
 
-!! allocate( atom0(1:natom_prim_cell)%shells(maxshells) )
+!  ! allocate( atom0(1:natom_prim_cell)%shells(maxshells) )
 !rmax = 0 ; dist = 1d10
 !i0loop: do i0=1,natom_prim_cell
 !   allocate( atom0(i0)%shells(0:maxshell) )

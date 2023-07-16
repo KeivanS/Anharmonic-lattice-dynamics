@@ -145,7 +145,7 @@
 !! K1 new change made on 2/13/23 ----------------
 
 ! if(map(rnk  )%ngr.gt.0) res  = res  + sum(map(rnk  )%ntind(:))
- if(map(rnk  )%ngr.gt.0) res  = res  +  size_kept_fc2
+ if(map(rnk)%ngr.gt.0) res  = res  +  size_kept_fc2
 
 !! K1 new change made on 2/13/23 ----------------
 
@@ -536,7 +536,7 @@
      if(map(rnk  )%ngr.gt.0) res  = res  +  size_kept_fc2
      if(map(rnk-1)%ngr.gt.0) res1 = res1 + sum(map(rnk-1)%ntind(:))
    elseif(include_fc(2) .eq. 2) then
-      if(map(rnk-1)%ngr.gt.0) then
+      if(map(rnk-1)%ngr.gt.0) then  ! this is for rank=1
 !         write(*,*) "RNK and RES1 are: ", rnk, res1
          !res1 = res1 + map(1)%ntotind(:)
       endif
@@ -1063,15 +1063,37 @@
                res  = res  +  size_kept_fc2
 
 !! K1 new change made on 2/13/23 ----------------
-
-
 !              res = res + ndindp(rnk)
-!          elseif ( include_fc(rnk) .eq. 2 ) then
-!             do l=1,map(rnk)%ngr
-!               t = map_2(l)
-!               bfrc(counter)=bfrc(counter)-fcs_2(igroup_2(t))*aux(igroup_2(t))
-! shouldn't this line simply be: bf = bf - fcs_2(j) * aux(j) ??
-!             enddo
+
+          elseif ( include_fc(rnk) .eq. 2 ) then
+
+             cnt2=0
+             do l=1,map(rnk)%ngr
+                  if(keep_grp2(l).ne.1) cycle 
+                  if(l.gt.1) cnt2 = cnt2 + map(rnk)%ntind(l-1)
+             do t=1,map(rnk)%nt(l) ! sum over all terms in that group
+                if ( taui.eq. map(rnk)%gr(l)%iat (1,t) .and.  &
+          &          al  .eq. map(rnk)%gr(l)%ixyz(1,t) )         then
+                   tauj = iatomcell0(map(rnk)%gr(l)%iat(2,t))
+                   nj(:)= iatomcell(:,map(rnk)%gr(l)%iat(2,t)) + ni(:) ! translate by ni
+                   be   = map(rnk)%gr(l)%ixyz(2,t)
+! Identify neighbor j within the SCell, and its images, find its displacement and add to ared
+                   call findatom_sc(nj,tauj,jatom)
+                   if (jatom.eq.0) then
+                      write(ulog,4)'SET_ARED:jatom not found: tau,n ',tauj,nj
+                      write(ulog,4)'for rank,term ',rnk,t
+                      write(ulog,4)'atom,xyz,cnfg ',nat,al,confg
+                      stop
+                   endif
+
+                   do ti=1,map(rnk)%ntind(l)
+                      ired = cnt2+ti ! this is the corresponding index of aux
+                      bfrc(counter)=bfrc(counter)-fcrnk(rnk,ired)*displ(be,jatom,confg) 
+                   enddo
+                endif
+             enddo 
+             enddo 
+
            endif
            deallocate(aux)
         endif

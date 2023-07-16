@@ -582,11 +582,7 @@
    enddo
    write(ulog,*) "rank, average error"
 
-!! k1 -----------------
- map(2)%ngr = size_kept_fc2
-!! k1 -----------------
-
-   write(ulog,*)' map(2)%ngr=',map(2)%ngr
+   write(ulog,*)' old and new # of groups =',map(2)%ngr,sum(keep_grp2)
    write(ulog,*)' dim_ac    =',dim_ac,n
 
    cnt2=0;sd=0
@@ -786,6 +782,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
 !============================================================
  subroutine read_fcs(iunit,fn,rank,fc,gr)
 !! reads force constants from a file if the file exists
+! gr is the number of independent fcs of given rank 
  use svd_stuff
  use ios
  use atoms_force_constants
@@ -808,15 +805,32 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
         stop
      endif
 
+     if (gr.ne.map(rank)%ntotind) then
+        write(ulog,*)' READ_FCS: rank=',rank
+        write(ulog,*)' number of groups ',gr,' is not the same as one by setup_maps ',map(rank)%ntotind
+        stop
+     endif
+
+!     res=0
+!     do i=1,rank
+!        res=res+map(i)%ngr
+!     enddo
+!     write(ulog,*)'READ_FCS: rank=',rank,' res=',res
+
+     cnt2=0
      term = 0;   
-     groups: do g=1,map(rank)%ntotind  ! index of a given group
-       map(rank)%gr(g)%iatind(:,:)=0
+     groups: do g=1,map(rank)%ngr   ! index of a given group
+       if (g.gt.1) cnt2=cnt2+map(rank)%ntind(g-1)*keep_grp2(g-1)
+       map(rank)%gr(g)%iatind(:,:)=0    ! initialized to zero in case that group is missing
        map(rank)%gr(g)%ixyzind(:,:)=0
        do ti=1,map(rank)%ntind(g)  ! index of independent terms in that group g
           term = term+1
           read(iunit,*,err=91) t,igr,(map(rank)%gr(igr)%iatind (j,t),  &
            &                          map(rank)%gr(igr)%ixyzind(j,t), j=1,rank), &
            &                          fc(term) 
+          if(igr.ne.g) write(ulog,*)'**** gr of loop=',g,' read gr=',igr 
+          if(ti .ne.t) write(ulog,*)'**** ti of loop=',ti,' read ti=',t 
+          if(term.ne.cnt2+ti) write(ulog,*)'**** term of loop=',cnt2+ti,' read term=',term 
        enddo
      enddo groups
 

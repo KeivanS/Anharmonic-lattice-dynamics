@@ -136,7 +136,6 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
   call read_dielectric
   print*,' file dielectric.params read'
 
- ! maxshells = maxneighbors
   call write_out(ulog,'latticeparameters',latticeparameters)
   call write_out(ulog,'primitive lattice',primitivelattice)
   write(ulog,*)'atompos0_d'
@@ -163,7 +162,6 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
  write(ulog,*)' ***************************************************************************** '
  write(ulog,*)' rcut(2) for FC2s set to be=',rcut(2),' corresponding to new maxneighbors=',maxneighbors
  write(ulog,*)' ************************* Writing the neighborlist ************************** '
- write(ulog,*)' Now the actual number of shells within the largest WS cell is set...'
 
 
 ! inputs: rcut(2) (and atompos through module atoms_force_constants)
@@ -228,7 +226,8 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
      iunit = ufco+rank
      if (include_fc(rank) .eq. 2 ) then   
 ! this rank is to be read and is not included in svd extraction
-        ngrnk(rank)=map(rank)%ntotind; allocate(fcrnk(rank,ngrnk(rank)))
+        ngrnk(rank)=map(rank)%ntotind; 
+        allocate(fcrnk(rank,ngrnk(rank)))
         call read_fcs(iunit,fn,rank,fcrnk(rank,:),ngrnk(rank))
      endif
   enddo
@@ -238,10 +237,12 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
 !--------------------------------------------------------------------
 
 ! before imposing the constraints, first define the number of columns in matrix A
- allocate(keep_grp2(map(2)%ngr)) ! which groups to keep based on the vectors rws26
-! keep_grp2(i)=1 is the list of FC2s within WS of supercell defined by 2ws26
-! find the FC2s within the SC and their number, which is size_kept_fc2
- call setup_FC2_in_supercell !(keep_grp2,size_kept_fc2)
+ allocate(keep_grp2(map(2)%ngr)) 
+! if keep_grp2(g)=1 : group g is kept since its atoms pair is within the RWS
+! size_kept_fc2=total number of indep fc2s kept
+ call setup_FC2_in_supercell 
+
+ map(2)%ntotind=size_kept_fc2   ! update the size of kept fc2 terms
 
 ! calculate the new nindepfc based on keep_grp2
 ! write(ulog,*)' new ngr(fc2) based size_kept_fc2=',map(2)%ngr-sum(map(2)%ntind)+size_kept_fc2
