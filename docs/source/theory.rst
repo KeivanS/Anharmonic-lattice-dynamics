@@ -168,11 +168,15 @@ For the trial harmonic Hamiltonian, the free energy can be calculated analytical
 where :math:`\beta=1/k_BT` and :math:` \omega_{\la} ` is the harmonic frequency of mode :math:`\lambda` obtained from diagonalizing the dynamical matrix associated with the trial force constants:  :math:`D(k) = \sum_R \frac{K_{ij}}{\sqrt {m_i m_j}}\, \epsilon^{i k \cdot (R_i-R_j)}`. :math:`k` refers to the k vector on a selected k mesh in reciprocal space. The matrix :math:`D` being Hermitian, it has real eigenvalues denoted by :math:`\omega_{\lambda}^2` and eigenvectors :math:`epsilon_{i\alpha,\lambda}` where :math:`\alpha` is the cartesian coordinate and :math:`\lambda` refers to the vibrational mode (:math:`i\alpha` can be understood as line index and :math:`\lambda` a the column index of the unitary eigenvector matrix :math:`e`). We also need the thermal averages of the trial and anharmonic potentials :math:`V_0` and :math:`V`. In terms of the eigenvalues  and eigenvectors of the above dynamical matrix, we have:
 
 .. math::
+    :label: yy
+
      \langle y_i^\alpha y_j^\beta \rangle= \frac{\hbar}{2} \sum_{k,\la}  \frac{ (2 n_{\lambda}+1) }{\omega_{k\lambda}} \,\frac{\epsilon_{i\alpha,\lambda} \, \epsilon_{j\beta,\lambda}^\dagger}{\sqrt{m_i m_j}}e^{i\vec{k}\cdot(\vec{R}_j-\vec{R}_i)}
 
 Thus the thermal averaged harmonic or trial potential :math:`\langle V_0\rangle` can be simply written into :math:`\langle V_0 \rangle = \sum_{ij} \,\frac{1}{2!} K_{ij}\, \langle y_i y_j \rangle `. Similarly, the thermal averaged actual potential :math:`\langle V\rangle` can be presented in Eq.[\ref{Vaverage}] as:
 
 .. math:: 
+    :label: Vaverage
+
     \langle V \rangle &= \frac{1}{2}\sum_{ij} \,  \Phi_{ij}\, \Big(( S_i S_j+ \langle y_i\, y_j \rangle \Big) 
     + \frac{1}{6}\sum_{ijk}  \Psi_{ijk}\,\Big(S_i S_j + 3 \langle y_i \,y_j \rangle \Big) \,S_k \nonumber\\
     &+\frac{1}{24} \sum_{ijkl}  X_{ijkl}\, \Big( S_i S_j S_k S_l + 6 S_i S_j \langle y_k \,y_l \rangle +  \langle y_i y_j y_k  y_l \rangle \Big)
@@ -192,26 +196,32 @@ Thus we have the following gradients formulas resulting from the
 minimization condition:
 
 .. math::
+   :label: dfdu
 
-   \begin{aligned}
-   \frac{\partial F_{trial} }{\partial u_i^0 } &=\frac{\partial  \langle V \rangle }{\partial u_i^0 } =0 
-   \label{dfdu}\\
-   \frac{\partial F_{trial} }{\partial \eta } &=\frac{\partial \langle V \rangle }{\partial \eta }=0 \label{dfdeta}\\
-   \frac{\partial F_{trial} }{\partial K_{ij} } & =0 
-   \label{dfdk}
-   \end{aligned}
+   \frac{\partial F_{trial} }{\partial u_i^0 } =\frac{\partial  \langle V \rangle }{\partial u_i^0 } =0
+
+.. math::
+   :label: dfdeta
+
+   \frac{\partial F_{trial} }{\partial \eta } =\frac{\partial \langle V \rangle }{\partial \eta }=0
+
+.. math::
+   :label: dfdk
+
+   \frac{\partial F_{trial} }{\partial K_{ij} }  =0 
+
 
 Same as before, cartesian related labelling and notations are overly
-symmetrized and omitted for better readability. Eq.[`[dfdu] <#dfdu>`__]
-and Eq.[`[dfdeta] <#dfdeta>`__] are straightforward and self-explanatory
+symmetrized and omitted for better readability. Eq. :eq:`dfdu` 
+and Eq. :eq:`dfdeta` are straightforward and self-explanatory
 equilibrium conditions; these are implemented in codes following the
 exact representations which are easy to understand and to maintain.
 However, these exact representations are omitted here as they could be
-easily formulated from Eq.[`[Vaverage] <#Vaverage>`__]. What worth
-mentioning is the third gradients Eq.[`[dfdk] <#dfdk>`__] since trial
+easily formulated from Eq. :eq:`Vaverage`. What worth
+mentioning is the third gradients Eq. :eq:`dfdk` since trial
 force constant :math:`K_{ij}`, although being a variational parameter,
 is implicit in the expression :math:`F_{trial}` because of the term
-:math:`\langle y_i y_j\rangle`. Refer to Eq.[`[yy] <#yy>`__], using the
+:math:`\langle y_i y_j\rangle`. Refer to Eq. :eq:`yy`, using the
 identity
 :math:`2 n_{\lambda}+1= {\rm coth} \frac{ \beta \hbar \omega_{\lambda} }{2}`,
 one can see that :math:`\langle y_i y_j\rangle` is a function of
@@ -219,31 +229,34 @@ eigenvalues :math:`\omega_\lambda` and eigenvectors
 :math:`e_{i\alpha,\lambda}`, they both originated from diagonalization
 of dynamical matrix D(k) while D(k) itself depends solely on the trial
 force constant :math:`K_{ij}`. So it’s not easy to write out
-Eq.[`[dfdk] <#dfdk>`__] in an explicit way that is necessary for code
+Eq. :eq:`dfdk` in an explicit way that is necessary for code
 implementation. However, by incorporating chain rule and
-Eq.[`[Haverage] <#Haverage>`__], we find a one to one equivalence
-between Eq.[`[dfdk] <#dfdk>`__] and the following equation:
+the free energy equation, we find a one to one equivalence
+between Eq. :eq:`dfdk` and the following equation:
 
-.. math:: \frac{\partial \langle V \rangle }{\partial \langle y_iy_j\rangle } - \frac{1}{2} K_{ij} =0 \label{dfdk2}
+.. math:: 
+    :label: dfdk2
 
-Apparently, Eq.[`[Vaverage] <#Vaverage>`__] shows that
+    \frac{\partial \langle V \rangle }{\partial \langle y_iy_j\rangle } - \frac{1}{2} K_{ij} =0 \label{dfdk2}
+
+Apparently, Eq. :eq:`Vaverage` shows that
 :math:`\langle V\rangle` is an explicit polynomial of
 :math:`\langle yy\rangle`, so this new equation can be easily translated
 into codes in a straightforward way. One should be aware that,
-Eq.[`[dfdk2] <#dfdk2>`__] is by no means a ’gradient’ formula of
+Eq. :eq:`dfdk2` is by no means a ’gradient’ formula of
 anything. It’s just a one to one correspondence to
-Eq.[`[dfdk] <#dfdk>`__], in other words, if Eq.[`[dfdk] <#dfdk>`__] is
+Eq. :eq:`dfdk`, in other words, if Eq. :eq:`dfdk` is
 satisfied (after fully optimizing the free energy), then
-Eq.[`[dfdk2] <#dfdk2>`__] will simultaneously be satisfied, and vice
+Eq. :eq:`dfdk2` will simultaneously be satisfied, and vice
 versa. There are no further physical significance behind
-Eq.[`[dfdk2] <#dfdk2>`__]. In fact, the trial force constants
+Eq. :eq:`dfdk2`. In fact, the trial force constants
 :math:`K_{ij}` and the thermally averaged dynamic displacement
 :math:`\langle y_i y_j \rangle` can be considered interchangeable from a
 mathematical standpoint. This provides two options when selecting the
 variational parameters for self-consistent computations. The advantage
 of using :math:`\langle y_i y_j \rangle` becomes more evident as it
 directly appears as explicit parameters in the potential energy
-expression in Eq.[`[Vaverage] <#Vaverage>`__], unlike the trial force
+expression in Eq. :eq:`Vaverage`, unlike the trial force
 constants :math:`K_{ij}`, which do not have a direct manifestation in
 energy or gradient formulas.
 
@@ -273,7 +286,7 @@ iterations. This eliminates the ability to assess the stability of
 phonons at each iteration, potentially leading to the computation
 becoming trapped in an unstable structure. Third, from a mathematical
 perspective, finding an appropriate way to update the
-:math:`K_{ij}`\ term in Eq.[`[dfdk2] <#dfdk2>`__] without falling into
+:math:`K_{ij}`\ term in Eq. :eq:`dfdk2` without falling into
 circular reasoning poses a challenge. In fact, it is analytically more
 feasible to calculate :math:`\langle y_i y_j \rangle` from trial force
 constants :math:`K_{ij}` than the other way around.
@@ -286,18 +299,19 @@ enforce it using real space Taylor series methods. Nevertheless, during
 the self-consistent calculation, it is unnecessary to enforce it if the
 initial input data already adheres to the acoustic sum rule (for the
 sake of simplicity, it will be referred as ASR henceforth), which can be
-found in Eq.[`[esfarjani2008method4] <#esfarjani2008method4>`__] since
+found in [Esfarjani2018]_ since
 it originates from translational invariance. The trial force constants
 :math:`K_{ij}` can be expressed as:
 
 .. math::
+    :label: trialFC
 
-   K_{i,j}^{\alpha,\beta} \approx\;\; \Phi_{i,j}^{\alpha,\beta} + \sum_{k}\Psi_{i,j,k}^{\alpha,\beta,\gamma}(S_k^\gamma- S_i^\gamma)+
+    K_{i,j}^{\alpha,\beta} \approx\;\; \Phi_{i,j}^{\alpha,\beta} + \sum_{k}\Psi_{i,j,k}^{\alpha,\beta,\gamma}(S_k^\gamma- S_i^\gamma)+
        \frac{1}{4}\sum_{k,l}X_{i,j,k,l}^{\alpha,\beta,\gamma,\delta} [(S_k-S_i)^\gamma(S_l-S_i)^\delta + \langle y_k^\gamma y_l^\delta \rangle]
        \label{eq:trialFC}
 
 which needs to preserve the ASR across the whole iterative procedures of
-Broyden method. Thus, each term in Eq.[`[eq:trialFC] <#eq:trialFC>`__]
+Broyden method. Thus, each term in Eq. :eq:`trialFC`
 needs to satisfy ASR independently. The first term is trivial as long as
 the input real force constant :math:`\Phi_{i,j}^{\alpha,\beta}`
 satisfies ASR. For the second term, we can switch the position of
@@ -305,7 +319,7 @@ indexes into
 :math:`\sum_{j}\,\sum_{k}\Psi_{i,j,k}^{\alpha,\beta,\gamma}S_k^{\gamma} = \sum_{k}S_{k}^\gamma\,\sum_{j}\Psi_{i,j,k}^{\alpha,\beta,\gamma}`,
 which means the only requirement is the same: input cubic force
 constants :math:`\Psi` has to satisfy ASR. A similar line of reasoning
-can be applied to the final term in Eq.[`[eq:trialFC] <#eq:trialFC>`__]
+can be applied to the final term in Eq. :eq:`trialFC`
 thus establishing that the trial force constant :math:`K_{i,j}` despite
 its lack of symmetry and unrestricted variability, automatically
 satisfies the acoustic sum rule (ASR) during the self-consistent
@@ -336,12 +350,12 @@ the source code file ’force_update.f90’, are written as below:
 
 With this in mind, a translational form modification should also be
 exerted on the potential energy formula
-Eq.[`[actualPotential] <#actualPotential>`__] and the free energy
-gradient formulas Eq.[`[dfdu] <#dfdu>`__], Eq.[`[dfdeta] <#dfdeta>`__]
-and Eq.[`[dfdk] <#dfdk>`__]. This can be done by replacing the every
+Eq. :eq:`Vaverage` and the free energy
+gradient formulas Eq. :eq:`dfdu`, Eq. :eq:`dfdeta`
+and Eq. :eq:`dfdk`. This can be done by replacing the every
 occurrence of statistic displacement product :math:`S_iS_j` with
 :math:`-\frac{1}{2}(S_j-S_i)^2` and etc, similar to
-Eq.[`[eq:trialFC] <#eq:trialFC>`__] which is already in this
+Eq. :eq:`trialFC` which is already in this
 translational invariant representation. This will inevitably lead to a
 more complicated expression especially for the gradient formulas, but it
 works the best with the input force constants data generated by
@@ -355,7 +369,7 @@ Divergence in dynamic displacement correlations
 In the numerical computation of dynamic displacements correlation
 :math:`\langle y_i^\alpha y_j^\beta\rangle`, certain divergences will
 happen, perforce, due to the gamma point (k=0) term in the sum in
-formula Eq.[`[yy] <#yy>`__]. The reason behind this is that
+formula Eq. :eq:`yy`. The reason behind this is that
 :math:`\omega_{k=0,\lambda=acoustic}` should be 0 determined by the ASR.
 Also notice that the Bose-Einstein coefficient
 :math:`n_\lambda = (e^{\beta\hbar\omega_{k\lambda)}}-1)^-1` will also
@@ -383,7 +397,7 @@ following set:
            \epsilon_{\perp2}=(-sin\phi,cos\phi)
        \end{cases}
 
-Taking that into consideration, now Eq.[`[yy] <#yy>`__] can be written
+Taking that into consideration, now Eq. :eq:`yy` can be written
 into:
 
 .. math:: <y_{0\tau_i}^\alpha y_{R\tau_j}^\beta> =  \frac{1}{N_k\sqrt{m_{\tau_i}m_{\tau_j}}} \sum_{\lambda,k\ne0}[\frac{\hbar}{2\omega_{k\lambda}}(2n_{k\lambda}+1)\epsilon_{k\lambda}^{\dagger\alpha}(\tau_i)\epsilon_{k\lambda}^{\beta}(\tau_j)cos(\vec{k}\cdot\vec{R}_j)]+\text{$\gamma$\;point fix}
@@ -423,11 +437,12 @@ As a result, we end up with the final gamma point approximation formula
 stated below:
 
 .. math::
+    :label: gammaFix
 
-   \begin{aligned}
+    \begin{aligned}
        \text{xx or yy direction   }I_{0\tau_i,R\tau_j}^{xx\text{ or }yy} &=\frac{1}{N_k\sqrt{m_{\tau_i}m_{\tau_j}}}\frac{3k_BT}{N_0K_{\Delta}^2}(\frac{1}{3C_{//}^2}+\frac{1}{6C_{\perp1}^2}+\frac{1}{2C_{\perp2}^2}) \nonumber \\
        \text{zz direction    }I_{0\tau_i,R\tau_j}^{zz} &=\frac{1}{N_k\sqrt{m_{\tau_i}m_{\tau_j}}}\frac{3k_BT}{N_0K_{\Delta}^2}(\frac{1}{3C_{//}^2}+\frac{2}{3C_{\perp1}^2})\label{eq:gammaFix}
-   \end{aligned}
+    \end{aligned}
 
 where :math:`C_\lambda` is the group velocity that could be inferred
 from
@@ -436,12 +451,13 @@ Notice that the ’k’ in :math:`C^2` should be calculate by interval
 :math:`K_{int}`\ (euclidean distance between neighbor k points on this
 k-mesh). This is different from the :math:`K_\Delta` calculate by
 cubic-root the BZ volume. The latest modification based on
-Eq.[`[eq:gammaFix] <#eq:gammaFix>`__] has been employed in the source
+Eq. :eq:`gammaFix` has been employed in the source
 code file ’VA_math.f95’ and the convergence has been verified by
 different k-mesh size choices.
 
-Comment: need to modify some custom.css for correct labelling format(?)
 
 .. [Ref] G. Leibfried and W. Ludwig, in Solid State Physics, edited by F. Seitz and D. Turnbull (Academic, New York, 1961), Vol. 12.
 
-    Broyden, C.G., 1965. A class of methods for solving nonlinear simultaneous equations. Mathematics of Computation 19, 577. 
+.. [Broyden] Broyden, C.G., 1965. A class of methods for solving nonlinear simultaneous equations. Mathematics of Computation 19, 577. 
+
+.. [Esfarjani2018] Ohno, K., Esfarjani, K., Kawazoe, Y., 2018. Computational materials science: From Ab Initio to Monte Carlo methods. 2nd ed., Springer Series in Solid-State Sciences, Berlin Heidelberg.
