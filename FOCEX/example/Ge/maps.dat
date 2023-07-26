@@ -1,7 +1,7 @@
 ************ rank 1, shell   0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0, groups        0
-************ rank 2, shell   7  7  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0, groups       28
-rank= 2 indepterms=    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1
-rank= 2 all  terms=    6   42   84   48   96  192  192  192  192   96   96   96  192   48   48   24   48  192   96   96   48  192   96   96   96   96  192   48
+************ rank 2, shell   9  9  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0, groups       38
+rank= 2 indepterms=    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1
+rank= 2 all  terms=    6   42   84   48   96  192  192  192  192   96   96   96  192   48   48   24   48  192   96   96   48  192   96   96   96   96  192   48   96  192  192   96  192   96   48  192   96   96
 ************ rank 3, shell   2  2  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0, groups       36
 rank= 3 indepterms=    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1
 rank= 3 all  terms=   12  126  504  252  252  144  576  288  288  288  576  576  288  576  288  180  720  720  720  360  360  720  432  864  864  144  432  864  288  432  864  864  144  432  864  288
@@ -20,7 +20,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dz2dz2                 1.000
  ============== RANK, GROUP ===============   2   2
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dx2           r12=    2.49539
+    d2U/dx1dx2           r12=    2.43158
  ---- # OF ALL TERMS, MAT   -------   42
     d2U/dx1dx2                 1.000
     d2U/dx2dx1                 1.000
@@ -66,7 +66,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dz2dz29                1.000
  ============== RANK, GROUP ===============   2   3
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dy2           r12=    2.49539
+    d2U/dx1dy2           r12=    2.43158
  ---- # OF ALL TERMS, MAT   -------   84
     d2U/dx1dy2                 1.000
     d2U/dy2dx1                 1.000
@@ -154,7 +154,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dy2dz29               -1.000
  ============== RANK, GROUP ===============   2   4
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dx4           r12=    7.48618
+    d2U/dx1dx4           r12=    7.29475
  ---- # OF ALL TERMS, MAT   -------   48
     d2U/dx1dx4                 1.000
     d2U/dx4dx1                 1.000
@@ -168,45 +168,45 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dz4dz1                 1.000
     d2U/dz53dz2                1.000
     d2U/dz2dz53                1.000
-    d2U/dx1dx113               1.000
-    d2U/dx113dx1               1.000
-    d2U/dx181dx2               1.000
-    d2U/dx2dx181               1.000
-    d2U/dy1dy113               1.000
-    d2U/dy113dy1               1.000
-    d2U/dy181dy2               1.000
-    d2U/dy2dy181               1.000
-    d2U/dz1dz113               1.000
-    d2U/dz113dz1               1.000
-    d2U/dz181dz2               1.000
-    d2U/dz2dz181               1.000
-    d2U/dx1dx125               1.000
-    d2U/dx125dx1               1.000
-    d2U/dx169dx2               1.000
-    d2U/dx2dx169               1.000
-    d2U/dy1dy125               1.000
-    d2U/dy125dy1               1.000
-    d2U/dy169dy2               1.000
-    d2U/dy2dy169               1.000
-    d2U/dz1dz125               1.000
-    d2U/dz125dz1               1.000
-    d2U/dz169dz2               1.000
-    d2U/dz2dz169               1.000
-    d2U/dx1dx204               1.000
-    d2U/dx204dx1               1.000
-    d2U/dx87dx2                1.000
-    d2U/dx2dx87                1.000
-    d2U/dy1dy204               1.000
-    d2U/dy204dy1               1.000
-    d2U/dy87dy2                1.000
-    d2U/dy2dy87                1.000
-    d2U/dz1dz204               1.000
-    d2U/dz204dz1               1.000
-    d2U/dz87dz2                1.000
-    d2U/dz2dz87                1.000
+    d2U/dx1dx118               1.000
+    d2U/dx118dx1               1.000
+    d2U/dx187dx2               1.000
+    d2U/dx2dx187               1.000
+    d2U/dy1dy118               1.000
+    d2U/dy118dy1               1.000
+    d2U/dy187dy2               1.000
+    d2U/dy2dy187               1.000
+    d2U/dz1dz118               1.000
+    d2U/dz118dz1               1.000
+    d2U/dz187dz2               1.000
+    d2U/dz2dz187               1.000
+    d2U/dx1dx130               1.000
+    d2U/dx130dx1               1.000
+    d2U/dx175dx2               1.000
+    d2U/dx2dx175               1.000
+    d2U/dy1dy130               1.000
+    d2U/dy130dy1               1.000
+    d2U/dy175dy2               1.000
+    d2U/dy2dy175               1.000
+    d2U/dz1dz130               1.000
+    d2U/dz130dz1               1.000
+    d2U/dz175dz2               1.000
+    d2U/dz2dz175               1.000
+    d2U/dx1dx214               1.000
+    d2U/dx214dx1               1.000
+    d2U/dx91dx2                1.000
+    d2U/dx2dx91                1.000
+    d2U/dy1dy214               1.000
+    d2U/dy214dy1               1.000
+    d2U/dy91dy2                1.000
+    d2U/dy2dy91                1.000
+    d2U/dz1dz214               1.000
+    d2U/dz214dz1               1.000
+    d2U/dz91dz2                1.000
+    d2U/dz2dz91                1.000
  ============== RANK, GROUP ===============   2   5
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dy4           r12=    7.48618
+    d2U/dx1dy4           r12=    7.29475
  ---- # OF ALL TERMS, MAT   -------   96
     d2U/dx1dy4                 1.000
     d2U/dy4dx1                 1.000
@@ -232,81 +232,81 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dy4dz1                 1.000
     d2U/dz53dy2                1.000
     d2U/dy2dz53                1.000
-    d2U/dx1dy113               1.000
-    d2U/dy113dx1               1.000
-    d2U/dx181dy2               1.000
-    d2U/dy2dx181               1.000
-    d2U/dx1dz113              -1.000
-    d2U/dz113dx1              -1.000
-    d2U/dx181dz2              -1.000
-    d2U/dz2dx181              -1.000
-    d2U/dy1dx113               1.000
-    d2U/dx113dy1               1.000
-    d2U/dy181dx2               1.000
-    d2U/dx2dy181               1.000
-    d2U/dy1dz113              -1.000
-    d2U/dz113dy1              -1.000
-    d2U/dy181dz2              -1.000
-    d2U/dz2dy181              -1.000
-    d2U/dz1dx113              -1.000
-    d2U/dx113dz1              -1.000
-    d2U/dz181dx2              -1.000
-    d2U/dx2dz181              -1.000
-    d2U/dz1dy113              -1.000
-    d2U/dy113dz1              -1.000
-    d2U/dz181dy2              -1.000
-    d2U/dy2dz181              -1.000
-    d2U/dx1dy125              -1.000
-    d2U/dy125dx1              -1.000
-    d2U/dx169dy2              -1.000
-    d2U/dy2dx169              -1.000
-    d2U/dx1dz125               1.000
-    d2U/dz125dx1               1.000
-    d2U/dx169dz2               1.000
-    d2U/dz2dx169               1.000
-    d2U/dy1dx125              -1.000
-    d2U/dx125dy1              -1.000
-    d2U/dy169dx2              -1.000
-    d2U/dx2dy169              -1.000
-    d2U/dy1dz125              -1.000
-    d2U/dz125dy1              -1.000
-    d2U/dy169dz2              -1.000
-    d2U/dz2dy169              -1.000
-    d2U/dz1dx125               1.000
-    d2U/dx125dz1               1.000
-    d2U/dz169dx2               1.000
-    d2U/dx2dz169               1.000
-    d2U/dz1dy125              -1.000
-    d2U/dy125dz1              -1.000
-    d2U/dz169dy2              -1.000
-    d2U/dy2dz169              -1.000
-    d2U/dx1dy204              -1.000
-    d2U/dy204dx1              -1.000
-    d2U/dx87dy2               -1.000
-    d2U/dy2dx87               -1.000
-    d2U/dx1dz204              -1.000
-    d2U/dz204dx1              -1.000
-    d2U/dx87dz2               -1.000
-    d2U/dz2dx87               -1.000
-    d2U/dy1dx204              -1.000
-    d2U/dx204dy1              -1.000
-    d2U/dy87dx2               -1.000
-    d2U/dx2dy87               -1.000
-    d2U/dy1dz204               1.000
-    d2U/dz204dy1               1.000
-    d2U/dy87dz2                1.000
-    d2U/dz2dy87                1.000
-    d2U/dz1dx204              -1.000
-    d2U/dx204dz1              -1.000
-    d2U/dz87dx2               -1.000
-    d2U/dx2dz87               -1.000
-    d2U/dz1dy204               1.000
-    d2U/dy204dz1               1.000
-    d2U/dz87dy2                1.000
-    d2U/dy2dz87                1.000
+    d2U/dx1dy118               1.000
+    d2U/dy118dx1               1.000
+    d2U/dx187dy2               1.000
+    d2U/dy2dx187               1.000
+    d2U/dx1dz118              -1.000
+    d2U/dz118dx1              -1.000
+    d2U/dx187dz2              -1.000
+    d2U/dz2dx187              -1.000
+    d2U/dy1dx118               1.000
+    d2U/dx118dy1               1.000
+    d2U/dy187dx2               1.000
+    d2U/dx2dy187               1.000
+    d2U/dy1dz118              -1.000
+    d2U/dz118dy1              -1.000
+    d2U/dy187dz2              -1.000
+    d2U/dz2dy187              -1.000
+    d2U/dz1dx118              -1.000
+    d2U/dx118dz1              -1.000
+    d2U/dz187dx2              -1.000
+    d2U/dx2dz187              -1.000
+    d2U/dz1dy118              -1.000
+    d2U/dy118dz1              -1.000
+    d2U/dz187dy2              -1.000
+    d2U/dy2dz187              -1.000
+    d2U/dx1dy130              -1.000
+    d2U/dy130dx1              -1.000
+    d2U/dx175dy2              -1.000
+    d2U/dy2dx175              -1.000
+    d2U/dx1dz130               1.000
+    d2U/dz130dx1               1.000
+    d2U/dx175dz2               1.000
+    d2U/dz2dx175               1.000
+    d2U/dy1dx130              -1.000
+    d2U/dx130dy1              -1.000
+    d2U/dy175dx2              -1.000
+    d2U/dx2dy175              -1.000
+    d2U/dy1dz130              -1.000
+    d2U/dz130dy1              -1.000
+    d2U/dy175dz2              -1.000
+    d2U/dz2dy175              -1.000
+    d2U/dz1dx130               1.000
+    d2U/dx130dz1               1.000
+    d2U/dz175dx2               1.000
+    d2U/dx2dz175               1.000
+    d2U/dz1dy130              -1.000
+    d2U/dy130dz1              -1.000
+    d2U/dz175dy2              -1.000
+    d2U/dy2dz175              -1.000
+    d2U/dx1dy214              -1.000
+    d2U/dy214dx1              -1.000
+    d2U/dx91dy2               -1.000
+    d2U/dy2dx91               -1.000
+    d2U/dx1dz214              -1.000
+    d2U/dz214dx1              -1.000
+    d2U/dx91dz2               -1.000
+    d2U/dz2dx91               -1.000
+    d2U/dy1dx214              -1.000
+    d2U/dx214dy1              -1.000
+    d2U/dy91dx2               -1.000
+    d2U/dx2dy91               -1.000
+    d2U/dy1dz214               1.000
+    d2U/dz214dy1               1.000
+    d2U/dy91dz2                1.000
+    d2U/dz2dy91                1.000
+    d2U/dz1dx214              -1.000
+    d2U/dx214dz1              -1.000
+    d2U/dz91dx2               -1.000
+    d2U/dx2dz91               -1.000
+    d2U/dz1dy214               1.000
+    d2U/dy214dz1               1.000
+    d2U/dz91dy2                1.000
+    d2U/dy2dz91                1.000
  ============== RANK, GROUP ===============   2   6
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dx5           r12=    7.05804
+    d2U/dx1dx5           r12=    6.87755
  ---- # OF ALL TERMS, MAT   -------  192
     d2U/dx1dx5                 1.000
     d2U/dx5dx1                 1.000
@@ -332,78 +332,78 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dz21dz1                1.000
     d2U/dz35dz1                1.000
     d2U/dz1dz35                1.000
-    d2U/dx1dx77                1.000
-    d2U/dx77dx1                1.000
-    d2U/dx213dx1               1.000
-    d2U/dx1dx213               1.000
-    d2U/dy1dy77                1.000
-    d2U/dy77dy1                1.000
+    d2U/dx1dx81                1.000
+    d2U/dx81dx1                1.000
+    d2U/dx223dx1               1.000
+    d2U/dx1dx223               1.000
+    d2U/dy1dy81                1.000
+    d2U/dy81dy1                1.000
+    d2U/dy223dy1               1.000
+    d2U/dy1dy223               1.000
+    d2U/dx1dx89                1.000
+    d2U/dx89dx1                1.000
+    d2U/dx215dx1               1.000
+    d2U/dx1dx215               1.000
+    d2U/dz1dz89                1.000
+    d2U/dz89dz1                1.000
+    d2U/dz215dz1               1.000
+    d2U/dz1dz215               1.000
+    d2U/dy1dy91                1.000
+    d2U/dy91dy1                1.000
     d2U/dy213dy1               1.000
     d2U/dy1dy213               1.000
-    d2U/dx1dx85                1.000
-    d2U/dx85dx1                1.000
-    d2U/dx205dx1               1.000
-    d2U/dx1dx205               1.000
-    d2U/dz1dz85                1.000
-    d2U/dz85dz1                1.000
-    d2U/dz205dz1               1.000
-    d2U/dz1dz205               1.000
-    d2U/dy1dy87                1.000
-    d2U/dy87dy1                1.000
-    d2U/dy203dy1               1.000
-    d2U/dy1dy203               1.000
-    d2U/dz1dz87                1.000
-    d2U/dz87dz1                1.000
-    d2U/dz203dz1               1.000
-    d2U/dz1dz203               1.000
-    d2U/dx1dx112               1.000
-    d2U/dx112dx1               1.000
-    d2U/dx181dx1               1.000
-    d2U/dx1dx181               1.000
-    d2U/dy1dy112               1.000
-    d2U/dy112dy1               1.000
-    d2U/dy181dy1               1.000
-    d2U/dy1dy181               1.000
-    d2U/dy1dy116               1.000
-    d2U/dy116dy1               1.000
-    d2U/dy177dy1               1.000
-    d2U/dy1dy177               1.000
-    d2U/dz1dz116               1.000
-    d2U/dz116dz1               1.000
-    d2U/dz177dz1               1.000
-    d2U/dz1dz177               1.000
-    d2U/dx1dx124               1.000
-    d2U/dx124dx1               1.000
-    d2U/dx169dx1               1.000
-    d2U/dx1dx169               1.000
-    d2U/dz1dz124               1.000
-    d2U/dz124dz1               1.000
-    d2U/dz169dz1               1.000
-    d2U/dz1dz169               1.000
-    d2U/dy1dy126               1.000
-    d2U/dy126dy1               1.000
-    d2U/dy167dy1               1.000
-    d2U/dy1dy167               1.000
-    d2U/dz1dz126               1.000
-    d2U/dz126dz1               1.000
-    d2U/dz167dz1               1.000
-    d2U/dz1dz167               1.000
-    d2U/dx1dx138               1.000
-    d2U/dx138dx1               1.000
-    d2U/dx156dx1               1.000
-    d2U/dx1dx156               1.000
-    d2U/dy1dy138               1.000
-    d2U/dy138dy1               1.000
-    d2U/dy156dy1               1.000
-    d2U/dy1dy156               1.000
-    d2U/dx1dx144               1.000
-    d2U/dx144dx1               1.000
-    d2U/dx150dx1               1.000
-    d2U/dx1dx150               1.000
-    d2U/dz1dz144               1.000
-    d2U/dz144dz1               1.000
-    d2U/dz150dz1               1.000
-    d2U/dz1dz150               1.000
+    d2U/dz1dz91                1.000
+    d2U/dz91dz1                1.000
+    d2U/dz213dz1               1.000
+    d2U/dz1dz213               1.000
+    d2U/dx1dx117               1.000
+    d2U/dx117dx1               1.000
+    d2U/dx187dx1               1.000
+    d2U/dx1dx187               1.000
+    d2U/dy1dy117               1.000
+    d2U/dy117dy1               1.000
+    d2U/dy187dy1               1.000
+    d2U/dy1dy187               1.000
+    d2U/dy1dy121               1.000
+    d2U/dy121dy1               1.000
+    d2U/dy183dy1               1.000
+    d2U/dy1dy183               1.000
+    d2U/dz1dz121               1.000
+    d2U/dz121dz1               1.000
+    d2U/dz183dz1               1.000
+    d2U/dz1dz183               1.000
+    d2U/dx1dx129               1.000
+    d2U/dx129dx1               1.000
+    d2U/dx175dx1               1.000
+    d2U/dx1dx175               1.000
+    d2U/dz1dz129               1.000
+    d2U/dz129dz1               1.000
+    d2U/dz175dz1               1.000
+    d2U/dz1dz175               1.000
+    d2U/dy1dy131               1.000
+    d2U/dy131dy1               1.000
+    d2U/dy173dy1               1.000
+    d2U/dy1dy173               1.000
+    d2U/dz1dz131               1.000
+    d2U/dz131dz1               1.000
+    d2U/dz173dz1               1.000
+    d2U/dz1dz173               1.000
+    d2U/dx1dx143               1.000
+    d2U/dx143dx1               1.000
+    d2U/dx161dx1               1.000
+    d2U/dx1dx161               1.000
+    d2U/dy1dy143               1.000
+    d2U/dy143dy1               1.000
+    d2U/dy161dy1               1.000
+    d2U/dy1dy161               1.000
+    d2U/dx1dx149               1.000
+    d2U/dx149dx1               1.000
+    d2U/dx155dx1               1.000
+    d2U/dx1dx155               1.000
+    d2U/dz1dz149               1.000
+    d2U/dz149dz1               1.000
+    d2U/dz155dz1               1.000
+    d2U/dz1dz155               1.000
     d2U/dx2dx6                 1.000
     d2U/dx6dx2                 1.000
     d2U/dx52dx2                1.000
@@ -428,81 +428,81 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dz22dz2                1.000
     d2U/dz36dz2                1.000
     d2U/dz2dz36                1.000
-    d2U/dx2dx78                1.000
-    d2U/dx78dx2                1.000
-    d2U/dx214dx2               1.000
-    d2U/dx2dx214               1.000
-    d2U/dy2dy78                1.000
-    d2U/dy78dy2                1.000
+    d2U/dx2dx82                1.000
+    d2U/dx82dx2                1.000
+    d2U/dx224dx2               1.000
+    d2U/dx2dx224               1.000
+    d2U/dy2dy82                1.000
+    d2U/dy82dy2                1.000
+    d2U/dy224dy2               1.000
+    d2U/dy2dy224               1.000
+    d2U/dx2dx90                1.000
+    d2U/dx90dx2                1.000
+    d2U/dx216dx2               1.000
+    d2U/dx2dx216               1.000
+    d2U/dz2dz90                1.000
+    d2U/dz90dz2                1.000
+    d2U/dz216dz2               1.000
+    d2U/dz2dz216               1.000
+    d2U/dy2dy92                1.000
+    d2U/dy92dy2                1.000
     d2U/dy214dy2               1.000
     d2U/dy2dy214               1.000
-    d2U/dx2dx86                1.000
-    d2U/dx86dx2                1.000
-    d2U/dx206dx2               1.000
-    d2U/dx2dx206               1.000
-    d2U/dz2dz86                1.000
-    d2U/dz86dz2                1.000
-    d2U/dz206dz2               1.000
-    d2U/dz2dz206               1.000
-    d2U/dy2dy88                1.000
-    d2U/dy88dy2                1.000
-    d2U/dy204dy2               1.000
-    d2U/dy2dy204               1.000
-    d2U/dz2dz88                1.000
-    d2U/dz88dz2                1.000
-    d2U/dz204dz2               1.000
-    d2U/dz2dz204               1.000
-    d2U/dx2dx113               1.000
-    d2U/dx113dx2               1.000
-    d2U/dx182dx2               1.000
-    d2U/dx2dx182               1.000
-    d2U/dy2dy113               1.000
-    d2U/dy113dy2               1.000
-    d2U/dy182dy2               1.000
-    d2U/dy2dy182               1.000
-    d2U/dy2dy117               1.000
-    d2U/dy117dy2               1.000
-    d2U/dy178dy2               1.000
-    d2U/dy2dy178               1.000
-    d2U/dz2dz117               1.000
-    d2U/dz117dz2               1.000
-    d2U/dz178dz2               1.000
-    d2U/dz2dz178               1.000
-    d2U/dx2dx125               1.000
-    d2U/dx125dx2               1.000
-    d2U/dx170dx2               1.000
-    d2U/dx2dx170               1.000
-    d2U/dz2dz125               1.000
-    d2U/dz125dz2               1.000
-    d2U/dz170dz2               1.000
-    d2U/dz2dz170               1.000
-    d2U/dy2dy127               1.000
-    d2U/dy127dy2               1.000
-    d2U/dy168dy2               1.000
-    d2U/dy2dy168               1.000
-    d2U/dz2dz127               1.000
-    d2U/dz127dz2               1.000
-    d2U/dz168dz2               1.000
-    d2U/dz2dz168               1.000
-    d2U/dx2dx139               1.000
-    d2U/dx139dx2               1.000
-    d2U/dx157dx2               1.000
-    d2U/dx2dx157               1.000
-    d2U/dy2dy139               1.000
-    d2U/dy139dy2               1.000
-    d2U/dy157dy2               1.000
-    d2U/dy2dy157               1.000
-    d2U/dx2dx145               1.000
-    d2U/dx145dx2               1.000
-    d2U/dx151dx2               1.000
-    d2U/dx2dx151               1.000
-    d2U/dz2dz145               1.000
-    d2U/dz145dz2               1.000
-    d2U/dz151dz2               1.000
-    d2U/dz2dz151               1.000
+    d2U/dz2dz92                1.000
+    d2U/dz92dz2                1.000
+    d2U/dz214dz2               1.000
+    d2U/dz2dz214               1.000
+    d2U/dx2dx118               1.000
+    d2U/dx118dx2               1.000
+    d2U/dx188dx2               1.000
+    d2U/dx2dx188               1.000
+    d2U/dy2dy118               1.000
+    d2U/dy118dy2               1.000
+    d2U/dy188dy2               1.000
+    d2U/dy2dy188               1.000
+    d2U/dy2dy122               1.000
+    d2U/dy122dy2               1.000
+    d2U/dy184dy2               1.000
+    d2U/dy2dy184               1.000
+    d2U/dz2dz122               1.000
+    d2U/dz122dz2               1.000
+    d2U/dz184dz2               1.000
+    d2U/dz2dz184               1.000
+    d2U/dx2dx130               1.000
+    d2U/dx130dx2               1.000
+    d2U/dx176dx2               1.000
+    d2U/dx2dx176               1.000
+    d2U/dz2dz130               1.000
+    d2U/dz130dz2               1.000
+    d2U/dz176dz2               1.000
+    d2U/dz2dz176               1.000
+    d2U/dy2dy132               1.000
+    d2U/dy132dy2               1.000
+    d2U/dy174dy2               1.000
+    d2U/dy2dy174               1.000
+    d2U/dz2dz132               1.000
+    d2U/dz132dz2               1.000
+    d2U/dz174dz2               1.000
+    d2U/dz2dz174               1.000
+    d2U/dx2dx144               1.000
+    d2U/dx144dx2               1.000
+    d2U/dx162dx2               1.000
+    d2U/dx2dx162               1.000
+    d2U/dy2dy144               1.000
+    d2U/dy144dy2               1.000
+    d2U/dy162dy2               1.000
+    d2U/dy2dy162               1.000
+    d2U/dx2dx150               1.000
+    d2U/dx150dx2               1.000
+    d2U/dx156dx2               1.000
+    d2U/dx2dx156               1.000
+    d2U/dz2dz150               1.000
+    d2U/dz150dz2               1.000
+    d2U/dz156dz2               1.000
+    d2U/dz2dz156               1.000
  ============== RANK, GROUP ===============   2   7
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dy5           r12=    7.05804
+    d2U/dx1dy5           r12=    6.87755
  ---- # OF ALL TERMS, MAT   -------  192
     d2U/dx1dy5                 1.000
     d2U/dy5dx1                 1.000
@@ -528,78 +528,78 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dy21dz1                1.000
     d2U/dz35dy1                1.000
     d2U/dy1dz35                1.000
-    d2U/dx1dy77               -1.000
-    d2U/dy77dx1               -1.000
-    d2U/dx213dy1              -1.000
-    d2U/dy1dx213              -1.000
-    d2U/dy1dx77               -1.000
-    d2U/dx77dy1               -1.000
-    d2U/dy213dx1              -1.000
-    d2U/dx1dy213              -1.000
-    d2U/dx1dz85               -1.000
-    d2U/dz85dx1               -1.000
-    d2U/dx205dz1              -1.000
-    d2U/dz1dx205              -1.000
-    d2U/dz1dx85               -1.000
-    d2U/dx85dz1               -1.000
-    d2U/dz205dx1              -1.000
-    d2U/dx1dz205              -1.000
-    d2U/dy1dz87                1.000
-    d2U/dz87dy1                1.000
-    d2U/dy203dz1               1.000
-    d2U/dz1dy203               1.000
-    d2U/dz1dy87                1.000
-    d2U/dy87dz1                1.000
-    d2U/dz203dy1               1.000
-    d2U/dy1dz203               1.000
-    d2U/dx1dy112               1.000
-    d2U/dy112dx1               1.000
-    d2U/dx181dy1               1.000
-    d2U/dy1dx181               1.000
-    d2U/dy1dx112               1.000
-    d2U/dx112dy1               1.000
-    d2U/dy181dx1               1.000
-    d2U/dx1dy181               1.000
-    d2U/dy1dz116              -1.000
-    d2U/dz116dy1              -1.000
-    d2U/dy177dz1              -1.000
-    d2U/dz1dy177              -1.000
-    d2U/dz1dy116              -1.000
-    d2U/dy116dz1              -1.000
-    d2U/dz177dy1              -1.000
-    d2U/dy1dz177              -1.000
-    d2U/dx1dz124               1.000
-    d2U/dz124dx1               1.000
-    d2U/dx169dz1               1.000
-    d2U/dz1dx169               1.000
-    d2U/dz1dx124               1.000
-    d2U/dx124dz1               1.000
-    d2U/dz169dx1               1.000
-    d2U/dx1dz169               1.000
-    d2U/dy1dz126              -1.000
-    d2U/dz126dy1              -1.000
-    d2U/dy167dz1              -1.000
-    d2U/dz1dy167              -1.000
-    d2U/dz1dy126              -1.000
-    d2U/dy126dz1              -1.000
-    d2U/dz167dy1              -1.000
-    d2U/dy1dz167              -1.000
-    d2U/dx1dy138              -1.000
-    d2U/dy138dx1              -1.000
-    d2U/dx156dy1              -1.000
-    d2U/dy1dx156              -1.000
-    d2U/dy1dx138              -1.000
-    d2U/dx138dy1              -1.000
-    d2U/dy156dx1              -1.000
-    d2U/dx1dy156              -1.000
-    d2U/dx1dz144              -1.000
-    d2U/dz144dx1              -1.000
-    d2U/dx150dz1              -1.000
-    d2U/dz1dx150              -1.000
-    d2U/dz1dx144              -1.000
-    d2U/dx144dz1              -1.000
-    d2U/dz150dx1              -1.000
-    d2U/dx1dz150              -1.000
+    d2U/dx1dy81               -1.000
+    d2U/dy81dx1               -1.000
+    d2U/dx223dy1              -1.000
+    d2U/dy1dx223              -1.000
+    d2U/dy1dx81               -1.000
+    d2U/dx81dy1               -1.000
+    d2U/dy223dx1              -1.000
+    d2U/dx1dy223              -1.000
+    d2U/dx1dz89               -1.000
+    d2U/dz89dx1               -1.000
+    d2U/dx215dz1              -1.000
+    d2U/dz1dx215              -1.000
+    d2U/dz1dx89               -1.000
+    d2U/dx89dz1               -1.000
+    d2U/dz215dx1              -1.000
+    d2U/dx1dz215              -1.000
+    d2U/dy1dz91                1.000
+    d2U/dz91dy1                1.000
+    d2U/dy213dz1               1.000
+    d2U/dz1dy213               1.000
+    d2U/dz1dy91                1.000
+    d2U/dy91dz1                1.000
+    d2U/dz213dy1               1.000
+    d2U/dy1dz213               1.000
+    d2U/dx1dy117               1.000
+    d2U/dy117dx1               1.000
+    d2U/dx187dy1               1.000
+    d2U/dy1dx187               1.000
+    d2U/dy1dx117               1.000
+    d2U/dx117dy1               1.000
+    d2U/dy187dx1               1.000
+    d2U/dx1dy187               1.000
+    d2U/dy1dz121              -1.000
+    d2U/dz121dy1              -1.000
+    d2U/dy183dz1              -1.000
+    d2U/dz1dy183              -1.000
+    d2U/dz1dy121              -1.000
+    d2U/dy121dz1              -1.000
+    d2U/dz183dy1              -1.000
+    d2U/dy1dz183              -1.000
+    d2U/dx1dz129               1.000
+    d2U/dz129dx1               1.000
+    d2U/dx175dz1               1.000
+    d2U/dz1dx175               1.000
+    d2U/dz1dx129               1.000
+    d2U/dx129dz1               1.000
+    d2U/dz175dx1               1.000
+    d2U/dx1dz175               1.000
+    d2U/dy1dz131              -1.000
+    d2U/dz131dy1              -1.000
+    d2U/dy173dz1              -1.000
+    d2U/dz1dy173              -1.000
+    d2U/dz1dy131              -1.000
+    d2U/dy131dz1              -1.000
+    d2U/dz173dy1              -1.000
+    d2U/dy1dz173              -1.000
+    d2U/dx1dy143              -1.000
+    d2U/dy143dx1              -1.000
+    d2U/dx161dy1              -1.000
+    d2U/dy1dx161              -1.000
+    d2U/dy1dx143              -1.000
+    d2U/dx143dy1              -1.000
+    d2U/dy161dx1              -1.000
+    d2U/dx1dy161              -1.000
+    d2U/dx1dz149              -1.000
+    d2U/dz149dx1              -1.000
+    d2U/dx155dz1              -1.000
+    d2U/dz1dx155              -1.000
+    d2U/dz1dx149              -1.000
+    d2U/dx149dz1              -1.000
+    d2U/dz155dx1              -1.000
+    d2U/dx1dz155              -1.000
     d2U/dx2dy6                 1.000
     d2U/dy6dx2                 1.000
     d2U/dx52dy2                1.000
@@ -624,81 +624,81 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dy22dz2                1.000
     d2U/dz36dy2                1.000
     d2U/dy2dz36                1.000
-    d2U/dx2dy78               -1.000
-    d2U/dy78dx2               -1.000
-    d2U/dx214dy2              -1.000
-    d2U/dy2dx214              -1.000
-    d2U/dy2dx78               -1.000
-    d2U/dx78dy2               -1.000
-    d2U/dy214dx2              -1.000
-    d2U/dx2dy214              -1.000
-    d2U/dx2dz86               -1.000
-    d2U/dz86dx2               -1.000
-    d2U/dx206dz2              -1.000
-    d2U/dz2dx206              -1.000
-    d2U/dz2dx86               -1.000
-    d2U/dx86dz2               -1.000
-    d2U/dz206dx2              -1.000
-    d2U/dx2dz206              -1.000
-    d2U/dy2dz88                1.000
-    d2U/dz88dy2                1.000
-    d2U/dy204dz2               1.000
-    d2U/dz2dy204               1.000
-    d2U/dz2dy88                1.000
-    d2U/dy88dz2                1.000
-    d2U/dz204dy2               1.000
-    d2U/dy2dz204               1.000
-    d2U/dx2dy113               1.000
-    d2U/dy113dx2               1.000
-    d2U/dx182dy2               1.000
-    d2U/dy2dx182               1.000
-    d2U/dy2dx113               1.000
-    d2U/dx113dy2               1.000
-    d2U/dy182dx2               1.000
-    d2U/dx2dy182               1.000
-    d2U/dy2dz117              -1.000
-    d2U/dz117dy2              -1.000
-    d2U/dy178dz2              -1.000
-    d2U/dz2dy178              -1.000
-    d2U/dz2dy117              -1.000
-    d2U/dy117dz2              -1.000
-    d2U/dz178dy2              -1.000
-    d2U/dy2dz178              -1.000
-    d2U/dx2dz125               1.000
-    d2U/dz125dx2               1.000
-    d2U/dx170dz2               1.000
-    d2U/dz2dx170               1.000
-    d2U/dz2dx125               1.000
-    d2U/dx125dz2               1.000
-    d2U/dz170dx2               1.000
-    d2U/dx2dz170               1.000
-    d2U/dy2dz127              -1.000
-    d2U/dz127dy2              -1.000
-    d2U/dy168dz2              -1.000
-    d2U/dz2dy168              -1.000
-    d2U/dz2dy127              -1.000
-    d2U/dy127dz2              -1.000
-    d2U/dz168dy2              -1.000
-    d2U/dy2dz168              -1.000
-    d2U/dx2dy139              -1.000
-    d2U/dy139dx2              -1.000
-    d2U/dx157dy2              -1.000
-    d2U/dy2dx157              -1.000
-    d2U/dy2dx139              -1.000
-    d2U/dx139dy2              -1.000
-    d2U/dy157dx2              -1.000
-    d2U/dx2dy157              -1.000
-    d2U/dx2dz145              -1.000
-    d2U/dz145dx2              -1.000
-    d2U/dx151dz2              -1.000
-    d2U/dz2dx151              -1.000
-    d2U/dz2dx145              -1.000
-    d2U/dx145dz2              -1.000
-    d2U/dz151dx2              -1.000
-    d2U/dx2dz151              -1.000
+    d2U/dx2dy82               -1.000
+    d2U/dy82dx2               -1.000
+    d2U/dx224dy2              -1.000
+    d2U/dy2dx224              -1.000
+    d2U/dy2dx82               -1.000
+    d2U/dx82dy2               -1.000
+    d2U/dy224dx2              -1.000
+    d2U/dx2dy224              -1.000
+    d2U/dx2dz90               -1.000
+    d2U/dz90dx2               -1.000
+    d2U/dx216dz2              -1.000
+    d2U/dz2dx216              -1.000
+    d2U/dz2dx90               -1.000
+    d2U/dx90dz2               -1.000
+    d2U/dz216dx2              -1.000
+    d2U/dx2dz216              -1.000
+    d2U/dy2dz92                1.000
+    d2U/dz92dy2                1.000
+    d2U/dy214dz2               1.000
+    d2U/dz2dy214               1.000
+    d2U/dz2dy92                1.000
+    d2U/dy92dz2                1.000
+    d2U/dz214dy2               1.000
+    d2U/dy2dz214               1.000
+    d2U/dx2dy118               1.000
+    d2U/dy118dx2               1.000
+    d2U/dx188dy2               1.000
+    d2U/dy2dx188               1.000
+    d2U/dy2dx118               1.000
+    d2U/dx118dy2               1.000
+    d2U/dy188dx2               1.000
+    d2U/dx2dy188               1.000
+    d2U/dy2dz122              -1.000
+    d2U/dz122dy2              -1.000
+    d2U/dy184dz2              -1.000
+    d2U/dz2dy184              -1.000
+    d2U/dz2dy122              -1.000
+    d2U/dy122dz2              -1.000
+    d2U/dz184dy2              -1.000
+    d2U/dy2dz184              -1.000
+    d2U/dx2dz130               1.000
+    d2U/dz130dx2               1.000
+    d2U/dx176dz2               1.000
+    d2U/dz2dx176               1.000
+    d2U/dz2dx130               1.000
+    d2U/dx130dz2               1.000
+    d2U/dz176dx2               1.000
+    d2U/dx2dz176               1.000
+    d2U/dy2dz132              -1.000
+    d2U/dz132dy2              -1.000
+    d2U/dy174dz2              -1.000
+    d2U/dz2dy174              -1.000
+    d2U/dz2dy132              -1.000
+    d2U/dy132dz2              -1.000
+    d2U/dz174dy2              -1.000
+    d2U/dy2dz174              -1.000
+    d2U/dx2dy144              -1.000
+    d2U/dy144dx2              -1.000
+    d2U/dx162dy2              -1.000
+    d2U/dy2dx162              -1.000
+    d2U/dy2dx144              -1.000
+    d2U/dx144dy2              -1.000
+    d2U/dy162dx2              -1.000
+    d2U/dx2dy162              -1.000
+    d2U/dx2dz150              -1.000
+    d2U/dz150dx2              -1.000
+    d2U/dx156dz2              -1.000
+    d2U/dz2dx156              -1.000
+    d2U/dz2dx150              -1.000
+    d2U/dx150dz2              -1.000
+    d2U/dz156dx2              -1.000
+    d2U/dx2dz156              -1.000
  ============== RANK, GROUP ===============   2   8
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dz1dx5           r12=    7.05804
+    d2U/dz1dx5           r12=    6.87755
  ---- # OF ALL TERMS, MAT   -------  192
     d2U/dz1dx5                 1.000
     d2U/dx5dz1                 1.000
@@ -724,78 +724,78 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dz21dx1                1.000
     d2U/dx35dz1                1.000
     d2U/dz1dx35                1.000
-    d2U/dx1dz77               -1.000
-    d2U/dz77dx1               -1.000
-    d2U/dx213dz1              -1.000
-    d2U/dz1dx213              -1.000
-    d2U/dy1dz77                1.000
-    d2U/dz77dy1                1.000
-    d2U/dy213dz1               1.000
-    d2U/dz1dy213               1.000
-    d2U/dx1dy85               -1.000
-    d2U/dy85dx1               -1.000
-    d2U/dx205dy1              -1.000
-    d2U/dy1dx205              -1.000
-    d2U/dz1dy85                1.000
-    d2U/dy85dz1                1.000
-    d2U/dz205dy1               1.000
-    d2U/dy1dz205               1.000
-    d2U/dy1dx87               -1.000
-    d2U/dx87dy1               -1.000
-    d2U/dy203dx1              -1.000
-    d2U/dx1dy203              -1.000
-    d2U/dz1dx87               -1.000
-    d2U/dx87dz1               -1.000
-    d2U/dz203dx1              -1.000
-    d2U/dx1dz203              -1.000
-    d2U/dz1dx112              -1.000
-    d2U/dx112dz1              -1.000
-    d2U/dz181dx1              -1.000
-    d2U/dx1dz181              -1.000
-    d2U/dz1dy112              -1.000
-    d2U/dy112dz1              -1.000
-    d2U/dz181dy1              -1.000
-    d2U/dy1dz181              -1.000
-    d2U/dx1dy116               1.000
-    d2U/dy116dx1               1.000
-    d2U/dx177dy1               1.000
-    d2U/dy1dx177               1.000
-    d2U/dx1dz116              -1.000
-    d2U/dz116dx1              -1.000
-    d2U/dx177dz1              -1.000
-    d2U/dz1dx177              -1.000
-    d2U/dy1dx124              -1.000
-    d2U/dx124dy1              -1.000
-    d2U/dy169dx1              -1.000
-    d2U/dx1dy169              -1.000
-    d2U/dy1dz124              -1.000
-    d2U/dz124dy1              -1.000
-    d2U/dy169dz1              -1.000
-    d2U/dz1dy169              -1.000
-    d2U/dx1dy126              -1.000
-    d2U/dy126dx1              -1.000
-    d2U/dx167dy1              -1.000
-    d2U/dy1dx167              -1.000
-    d2U/dx1dz126               1.000
-    d2U/dz126dx1               1.000
-    d2U/dx167dz1               1.000
-    d2U/dz1dx167               1.000
-    d2U/dx1dz138               1.000
-    d2U/dz138dx1               1.000
-    d2U/dx156dz1               1.000
-    d2U/dz1dx156               1.000
-    d2U/dy1dz138              -1.000
-    d2U/dz138dy1              -1.000
-    d2U/dy156dz1              -1.000
-    d2U/dz1dy156              -1.000
-    d2U/dy1dx144               1.000
-    d2U/dx144dy1               1.000
-    d2U/dy150dx1               1.000
-    d2U/dx1dy150               1.000
-    d2U/dy1dz144              -1.000
-    d2U/dz144dy1              -1.000
-    d2U/dy150dz1              -1.000
-    d2U/dz1dy150              -1.000
+    d2U/dx1dz81               -1.000
+    d2U/dz81dx1               -1.000
+    d2U/dx223dz1              -1.000
+    d2U/dz1dx223              -1.000
+    d2U/dy1dz81                1.000
+    d2U/dz81dy1                1.000
+    d2U/dy223dz1               1.000
+    d2U/dz1dy223               1.000
+    d2U/dx1dy89               -1.000
+    d2U/dy89dx1               -1.000
+    d2U/dx215dy1              -1.000
+    d2U/dy1dx215              -1.000
+    d2U/dz1dy89                1.000
+    d2U/dy89dz1                1.000
+    d2U/dz215dy1               1.000
+    d2U/dy1dz215               1.000
+    d2U/dy1dx91               -1.000
+    d2U/dx91dy1               -1.000
+    d2U/dy213dx1              -1.000
+    d2U/dx1dy213              -1.000
+    d2U/dz1dx91               -1.000
+    d2U/dx91dz1               -1.000
+    d2U/dz213dx1              -1.000
+    d2U/dx1dz213              -1.000
+    d2U/dz1dx117              -1.000
+    d2U/dx117dz1              -1.000
+    d2U/dz187dx1              -1.000
+    d2U/dx1dz187              -1.000
+    d2U/dz1dy117              -1.000
+    d2U/dy117dz1              -1.000
+    d2U/dz187dy1              -1.000
+    d2U/dy1dz187              -1.000
+    d2U/dx1dy121               1.000
+    d2U/dy121dx1               1.000
+    d2U/dx183dy1               1.000
+    d2U/dy1dx183               1.000
+    d2U/dx1dz121              -1.000
+    d2U/dz121dx1              -1.000
+    d2U/dx183dz1              -1.000
+    d2U/dz1dx183              -1.000
+    d2U/dy1dx129              -1.000
+    d2U/dx129dy1              -1.000
+    d2U/dy175dx1              -1.000
+    d2U/dx1dy175              -1.000
+    d2U/dy1dz129              -1.000
+    d2U/dz129dy1              -1.000
+    d2U/dy175dz1              -1.000
+    d2U/dz1dy175              -1.000
+    d2U/dx1dy131              -1.000
+    d2U/dy131dx1              -1.000
+    d2U/dx173dy1              -1.000
+    d2U/dy1dx173              -1.000
+    d2U/dx1dz131               1.000
+    d2U/dz131dx1               1.000
+    d2U/dx173dz1               1.000
+    d2U/dz1dx173               1.000
+    d2U/dx1dz143               1.000
+    d2U/dz143dx1               1.000
+    d2U/dx161dz1               1.000
+    d2U/dz1dx161               1.000
+    d2U/dy1dz143              -1.000
+    d2U/dz143dy1              -1.000
+    d2U/dy161dz1              -1.000
+    d2U/dz1dy161              -1.000
+    d2U/dy1dx149               1.000
+    d2U/dx149dy1               1.000
+    d2U/dy155dx1               1.000
+    d2U/dx1dy155               1.000
+    d2U/dy1dz149              -1.000
+    d2U/dz149dy1              -1.000
+    d2U/dy155dz1              -1.000
+    d2U/dz1dy155              -1.000
     d2U/dx2dz6                 1.000
     d2U/dz6dx2                 1.000
     d2U/dx52dz2                1.000
@@ -820,81 +820,81 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dx22dz2                1.000
     d2U/dz36dx2                1.000
     d2U/dx2dz36                1.000
-    d2U/dz2dx78               -1.000
-    d2U/dx78dz2               -1.000
-    d2U/dz214dx2              -1.000
-    d2U/dx2dz214              -1.000
-    d2U/dz2dy78                1.000
-    d2U/dy78dz2                1.000
-    d2U/dz214dy2               1.000
-    d2U/dy2dz214               1.000
-    d2U/dy2dx86               -1.000
-    d2U/dx86dy2               -1.000
-    d2U/dy206dx2              -1.000
-    d2U/dx2dy206              -1.000
-    d2U/dy2dz86                1.000
-    d2U/dz86dy2                1.000
-    d2U/dy206dz2               1.000
-    d2U/dz2dy206               1.000
-    d2U/dx2dy88               -1.000
-    d2U/dy88dx2               -1.000
-    d2U/dx204dy2              -1.000
-    d2U/dy2dx204              -1.000
-    d2U/dx2dz88               -1.000
-    d2U/dz88dx2               -1.000
-    d2U/dx204dz2              -1.000
-    d2U/dz2dx204              -1.000
-    d2U/dx2dz113              -1.000
-    d2U/dz113dx2              -1.000
-    d2U/dx182dz2              -1.000
-    d2U/dz2dx182              -1.000
-    d2U/dy2dz113              -1.000
-    d2U/dz113dy2              -1.000
-    d2U/dy182dz2              -1.000
-    d2U/dz2dy182              -1.000
-    d2U/dy2dx117               1.000
-    d2U/dx117dy2               1.000
-    d2U/dy178dx2               1.000
-    d2U/dx2dy178               1.000
-    d2U/dz2dx117              -1.000
-    d2U/dx117dz2              -1.000
-    d2U/dz178dx2              -1.000
-    d2U/dx2dz178              -1.000
-    d2U/dx2dy125              -1.000
-    d2U/dy125dx2              -1.000
-    d2U/dx170dy2              -1.000
-    d2U/dy2dx170              -1.000
-    d2U/dz2dy125              -1.000
-    d2U/dy125dz2              -1.000
-    d2U/dz170dy2              -1.000
-    d2U/dy2dz170              -1.000
-    d2U/dy2dx127              -1.000
-    d2U/dx127dy2              -1.000
-    d2U/dy168dx2              -1.000
-    d2U/dx2dy168              -1.000
-    d2U/dz2dx127               1.000
-    d2U/dx127dz2               1.000
-    d2U/dz168dx2               1.000
-    d2U/dx2dz168               1.000
-    d2U/dz2dx139               1.000
-    d2U/dx139dz2               1.000
-    d2U/dz157dx2               1.000
-    d2U/dx2dz157               1.000
-    d2U/dz2dy139              -1.000
-    d2U/dy139dz2              -1.000
-    d2U/dz157dy2              -1.000
-    d2U/dy2dz157              -1.000
-    d2U/dx2dy145               1.000
-    d2U/dy145dx2               1.000
-    d2U/dx151dy2               1.000
-    d2U/dy2dx151               1.000
-    d2U/dz2dy145              -1.000
-    d2U/dy145dz2              -1.000
-    d2U/dz151dy2              -1.000
-    d2U/dy2dz151              -1.000
+    d2U/dz2dx82               -1.000
+    d2U/dx82dz2               -1.000
+    d2U/dz224dx2              -1.000
+    d2U/dx2dz224              -1.000
+    d2U/dz2dy82                1.000
+    d2U/dy82dz2                1.000
+    d2U/dz224dy2               1.000
+    d2U/dy2dz224               1.000
+    d2U/dy2dx90               -1.000
+    d2U/dx90dy2               -1.000
+    d2U/dy216dx2              -1.000
+    d2U/dx2dy216              -1.000
+    d2U/dy2dz90                1.000
+    d2U/dz90dy2                1.000
+    d2U/dy216dz2               1.000
+    d2U/dz2dy216               1.000
+    d2U/dx2dy92               -1.000
+    d2U/dy92dx2               -1.000
+    d2U/dx214dy2              -1.000
+    d2U/dy2dx214              -1.000
+    d2U/dx2dz92               -1.000
+    d2U/dz92dx2               -1.000
+    d2U/dx214dz2              -1.000
+    d2U/dz2dx214              -1.000
+    d2U/dx2dz118              -1.000
+    d2U/dz118dx2              -1.000
+    d2U/dx188dz2              -1.000
+    d2U/dz2dx188              -1.000
+    d2U/dy2dz118              -1.000
+    d2U/dz118dy2              -1.000
+    d2U/dy188dz2              -1.000
+    d2U/dz2dy188              -1.000
+    d2U/dy2dx122               1.000
+    d2U/dx122dy2               1.000
+    d2U/dy184dx2               1.000
+    d2U/dx2dy184               1.000
+    d2U/dz2dx122              -1.000
+    d2U/dx122dz2              -1.000
+    d2U/dz184dx2              -1.000
+    d2U/dx2dz184              -1.000
+    d2U/dx2dy130              -1.000
+    d2U/dy130dx2              -1.000
+    d2U/dx176dy2              -1.000
+    d2U/dy2dx176              -1.000
+    d2U/dz2dy130              -1.000
+    d2U/dy130dz2              -1.000
+    d2U/dz176dy2              -1.000
+    d2U/dy2dz176              -1.000
+    d2U/dy2dx132              -1.000
+    d2U/dx132dy2              -1.000
+    d2U/dy174dx2              -1.000
+    d2U/dx2dy174              -1.000
+    d2U/dz2dx132               1.000
+    d2U/dx132dz2               1.000
+    d2U/dz174dx2               1.000
+    d2U/dx2dz174               1.000
+    d2U/dz2dx144               1.000
+    d2U/dx144dz2               1.000
+    d2U/dz162dx2               1.000
+    d2U/dx2dz162               1.000
+    d2U/dz2dy144              -1.000
+    d2U/dy144dz2              -1.000
+    d2U/dz162dy2              -1.000
+    d2U/dy2dz162              -1.000
+    d2U/dx2dy150               1.000
+    d2U/dy150dx2               1.000
+    d2U/dx156dy2               1.000
+    d2U/dy2dx156               1.000
+    d2U/dz2dy150              -1.000
+    d2U/dy150dz2              -1.000
+    d2U/dz156dy2              -1.000
+    d2U/dy2dz156              -1.000
  ============== RANK, GROUP ===============   2   9
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dz5           r12=    7.05804
+    d2U/dx1dz5           r12=    6.87755
  ---- # OF ALL TERMS, MAT   -------  192
     d2U/dx1dz5                 1.000
     d2U/dz5dx1                 1.000
@@ -920,78 +920,78 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dx21dz1                1.000
     d2U/dz35dx1                1.000
     d2U/dx1dz35                1.000
-    d2U/dz1dx77               -1.000
-    d2U/dx77dz1               -1.000
-    d2U/dz213dx1              -1.000
-    d2U/dx1dz213              -1.000
-    d2U/dz1dy77                1.000
-    d2U/dy77dz1                1.000
-    d2U/dz213dy1               1.000
-    d2U/dy1dz213               1.000
-    d2U/dy1dx85               -1.000
-    d2U/dx85dy1               -1.000
-    d2U/dy205dx1              -1.000
-    d2U/dx1dy205              -1.000
-    d2U/dy1dz85                1.000
-    d2U/dz85dy1                1.000
-    d2U/dy205dz1               1.000
-    d2U/dz1dy205               1.000
-    d2U/dx1dy87               -1.000
-    d2U/dy87dx1               -1.000
-    d2U/dx203dy1              -1.000
-    d2U/dy1dx203              -1.000
-    d2U/dx1dz87               -1.000
-    d2U/dz87dx1               -1.000
-    d2U/dx203dz1              -1.000
-    d2U/dz1dx203              -1.000
-    d2U/dx1dz112              -1.000
-    d2U/dz112dx1              -1.000
-    d2U/dx181dz1              -1.000
-    d2U/dz1dx181              -1.000
-    d2U/dy1dz112              -1.000
-    d2U/dz112dy1              -1.000
-    d2U/dy181dz1              -1.000
-    d2U/dz1dy181              -1.000
-    d2U/dy1dx116               1.000
-    d2U/dx116dy1               1.000
-    d2U/dy177dx1               1.000
-    d2U/dx1dy177               1.000
-    d2U/dz1dx116              -1.000
-    d2U/dx116dz1              -1.000
-    d2U/dz177dx1              -1.000
-    d2U/dx1dz177              -1.000
-    d2U/dx1dy124              -1.000
-    d2U/dy124dx1              -1.000
-    d2U/dx169dy1              -1.000
-    d2U/dy1dx169              -1.000
-    d2U/dz1dy124              -1.000
-    d2U/dy124dz1              -1.000
-    d2U/dz169dy1              -1.000
-    d2U/dy1dz169              -1.000
-    d2U/dy1dx126              -1.000
-    d2U/dx126dy1              -1.000
-    d2U/dy167dx1              -1.000
-    d2U/dx1dy167              -1.000
-    d2U/dz1dx126               1.000
-    d2U/dx126dz1               1.000
-    d2U/dz167dx1               1.000
-    d2U/dx1dz167               1.000
-    d2U/dz1dx138               1.000
-    d2U/dx138dz1               1.000
-    d2U/dz156dx1               1.000
-    d2U/dx1dz156               1.000
-    d2U/dz1dy138              -1.000
-    d2U/dy138dz1              -1.000
-    d2U/dz156dy1              -1.000
-    d2U/dy1dz156              -1.000
-    d2U/dx1dy144               1.000
-    d2U/dy144dx1               1.000
-    d2U/dx150dy1               1.000
-    d2U/dy1dx150               1.000
-    d2U/dz1dy144              -1.000
-    d2U/dy144dz1              -1.000
-    d2U/dz150dy1              -1.000
-    d2U/dy1dz150              -1.000
+    d2U/dz1dx81               -1.000
+    d2U/dx81dz1               -1.000
+    d2U/dz223dx1              -1.000
+    d2U/dx1dz223              -1.000
+    d2U/dz1dy81                1.000
+    d2U/dy81dz1                1.000
+    d2U/dz223dy1               1.000
+    d2U/dy1dz223               1.000
+    d2U/dy1dx89               -1.000
+    d2U/dx89dy1               -1.000
+    d2U/dy215dx1              -1.000
+    d2U/dx1dy215              -1.000
+    d2U/dy1dz89                1.000
+    d2U/dz89dy1                1.000
+    d2U/dy215dz1               1.000
+    d2U/dz1dy215               1.000
+    d2U/dx1dy91               -1.000
+    d2U/dy91dx1               -1.000
+    d2U/dx213dy1              -1.000
+    d2U/dy1dx213              -1.000
+    d2U/dx1dz91               -1.000
+    d2U/dz91dx1               -1.000
+    d2U/dx213dz1              -1.000
+    d2U/dz1dx213              -1.000
+    d2U/dx1dz117              -1.000
+    d2U/dz117dx1              -1.000
+    d2U/dx187dz1              -1.000
+    d2U/dz1dx187              -1.000
+    d2U/dy1dz117              -1.000
+    d2U/dz117dy1              -1.000
+    d2U/dy187dz1              -1.000
+    d2U/dz1dy187              -1.000
+    d2U/dy1dx121               1.000
+    d2U/dx121dy1               1.000
+    d2U/dy183dx1               1.000
+    d2U/dx1dy183               1.000
+    d2U/dz1dx121              -1.000
+    d2U/dx121dz1              -1.000
+    d2U/dz183dx1              -1.000
+    d2U/dx1dz183              -1.000
+    d2U/dx1dy129              -1.000
+    d2U/dy129dx1              -1.000
+    d2U/dx175dy1              -1.000
+    d2U/dy1dx175              -1.000
+    d2U/dz1dy129              -1.000
+    d2U/dy129dz1              -1.000
+    d2U/dz175dy1              -1.000
+    d2U/dy1dz175              -1.000
+    d2U/dy1dx131              -1.000
+    d2U/dx131dy1              -1.000
+    d2U/dy173dx1              -1.000
+    d2U/dx1dy173              -1.000
+    d2U/dz1dx131               1.000
+    d2U/dx131dz1               1.000
+    d2U/dz173dx1               1.000
+    d2U/dx1dz173               1.000
+    d2U/dz1dx143               1.000
+    d2U/dx143dz1               1.000
+    d2U/dz161dx1               1.000
+    d2U/dx1dz161               1.000
+    d2U/dz1dy143              -1.000
+    d2U/dy143dz1              -1.000
+    d2U/dz161dy1              -1.000
+    d2U/dy1dz161              -1.000
+    d2U/dx1dy149               1.000
+    d2U/dy149dx1               1.000
+    d2U/dx155dy1               1.000
+    d2U/dy1dx155               1.000
+    d2U/dz1dy149              -1.000
+    d2U/dy149dz1              -1.000
+    d2U/dz155dy1              -1.000
+    d2U/dy1dz155              -1.000
     d2U/dz2dx6                 1.000
     d2U/dx6dz2                 1.000
     d2U/dz52dx2                1.000
@@ -1016,81 +1016,81 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dz22dx2                1.000
     d2U/dx36dz2                1.000
     d2U/dz2dx36                1.000
-    d2U/dx2dz78               -1.000
-    d2U/dz78dx2               -1.000
-    d2U/dx214dz2              -1.000
-    d2U/dz2dx214              -1.000
-    d2U/dy2dz78                1.000
-    d2U/dz78dy2                1.000
-    d2U/dy214dz2               1.000
-    d2U/dz2dy214               1.000
-    d2U/dx2dy86               -1.000
-    d2U/dy86dx2               -1.000
-    d2U/dx206dy2              -1.000
-    d2U/dy2dx206              -1.000
-    d2U/dz2dy86                1.000
-    d2U/dy86dz2                1.000
-    d2U/dz206dy2               1.000
-    d2U/dy2dz206               1.000
-    d2U/dy2dx88               -1.000
-    d2U/dx88dy2               -1.000
-    d2U/dy204dx2              -1.000
-    d2U/dx2dy204              -1.000
-    d2U/dz2dx88               -1.000
-    d2U/dx88dz2               -1.000
-    d2U/dz204dx2              -1.000
-    d2U/dx2dz204              -1.000
-    d2U/dz2dx113              -1.000
-    d2U/dx113dz2              -1.000
-    d2U/dz182dx2              -1.000
-    d2U/dx2dz182              -1.000
-    d2U/dz2dy113              -1.000
-    d2U/dy113dz2              -1.000
-    d2U/dz182dy2              -1.000
-    d2U/dy2dz182              -1.000
-    d2U/dx2dy117               1.000
-    d2U/dy117dx2               1.000
-    d2U/dx178dy2               1.000
-    d2U/dy2dx178               1.000
-    d2U/dx2dz117              -1.000
-    d2U/dz117dx2              -1.000
-    d2U/dx178dz2              -1.000
-    d2U/dz2dx178              -1.000
-    d2U/dy2dx125              -1.000
-    d2U/dx125dy2              -1.000
-    d2U/dy170dx2              -1.000
-    d2U/dx2dy170              -1.000
-    d2U/dy2dz125              -1.000
-    d2U/dz125dy2              -1.000
-    d2U/dy170dz2              -1.000
-    d2U/dz2dy170              -1.000
-    d2U/dx2dy127              -1.000
-    d2U/dy127dx2              -1.000
-    d2U/dx168dy2              -1.000
-    d2U/dy2dx168              -1.000
-    d2U/dx2dz127               1.000
-    d2U/dz127dx2               1.000
-    d2U/dx168dz2               1.000
-    d2U/dz2dx168               1.000
-    d2U/dx2dz139               1.000
-    d2U/dz139dx2               1.000
-    d2U/dx157dz2               1.000
-    d2U/dz2dx157               1.000
-    d2U/dy2dz139              -1.000
-    d2U/dz139dy2              -1.000
-    d2U/dy157dz2              -1.000
-    d2U/dz2dy157              -1.000
-    d2U/dy2dx145               1.000
-    d2U/dx145dy2               1.000
-    d2U/dy151dx2               1.000
-    d2U/dx2dy151               1.000
-    d2U/dy2dz145              -1.000
-    d2U/dz145dy2              -1.000
-    d2U/dy151dz2              -1.000
-    d2U/dz2dy151              -1.000
+    d2U/dx2dz82               -1.000
+    d2U/dz82dx2               -1.000
+    d2U/dx224dz2              -1.000
+    d2U/dz2dx224              -1.000
+    d2U/dy2dz82                1.000
+    d2U/dz82dy2                1.000
+    d2U/dy224dz2               1.000
+    d2U/dz2dy224               1.000
+    d2U/dx2dy90               -1.000
+    d2U/dy90dx2               -1.000
+    d2U/dx216dy2              -1.000
+    d2U/dy2dx216              -1.000
+    d2U/dz2dy90                1.000
+    d2U/dy90dz2                1.000
+    d2U/dz216dy2               1.000
+    d2U/dy2dz216               1.000
+    d2U/dy2dx92               -1.000
+    d2U/dx92dy2               -1.000
+    d2U/dy214dx2              -1.000
+    d2U/dx2dy214              -1.000
+    d2U/dz2dx92               -1.000
+    d2U/dx92dz2               -1.000
+    d2U/dz214dx2              -1.000
+    d2U/dx2dz214              -1.000
+    d2U/dz2dx118              -1.000
+    d2U/dx118dz2              -1.000
+    d2U/dz188dx2              -1.000
+    d2U/dx2dz188              -1.000
+    d2U/dz2dy118              -1.000
+    d2U/dy118dz2              -1.000
+    d2U/dz188dy2              -1.000
+    d2U/dy2dz188              -1.000
+    d2U/dx2dy122               1.000
+    d2U/dy122dx2               1.000
+    d2U/dx184dy2               1.000
+    d2U/dy2dx184               1.000
+    d2U/dx2dz122              -1.000
+    d2U/dz122dx2              -1.000
+    d2U/dx184dz2              -1.000
+    d2U/dz2dx184              -1.000
+    d2U/dy2dx130              -1.000
+    d2U/dx130dy2              -1.000
+    d2U/dy176dx2              -1.000
+    d2U/dx2dy176              -1.000
+    d2U/dy2dz130              -1.000
+    d2U/dz130dy2              -1.000
+    d2U/dy176dz2              -1.000
+    d2U/dz2dy176              -1.000
+    d2U/dx2dy132              -1.000
+    d2U/dy132dx2              -1.000
+    d2U/dx174dy2              -1.000
+    d2U/dy2dx174              -1.000
+    d2U/dx2dz132               1.000
+    d2U/dz132dx2               1.000
+    d2U/dx174dz2               1.000
+    d2U/dz2dx174               1.000
+    d2U/dx2dz144               1.000
+    d2U/dz144dx2               1.000
+    d2U/dx162dz2               1.000
+    d2U/dz2dx162               1.000
+    d2U/dy2dz144              -1.000
+    d2U/dz144dy2              -1.000
+    d2U/dy162dz2              -1.000
+    d2U/dz2dy162              -1.000
+    d2U/dy2dx150               1.000
+    d2U/dx150dy2               1.000
+    d2U/dy156dx2               1.000
+    d2U/dx2dy156               1.000
+    d2U/dy2dz150              -1.000
+    d2U/dz150dy2              -1.000
+    d2U/dy156dz2              -1.000
+    d2U/dz2dy156              -1.000
  ============== RANK, GROUP ===============   2  10
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dz1dz5           r12=    7.05804
+    d2U/dz1dz5           r12=    6.87755
  ---- # OF ALL TERMS, MAT   -------   96
     d2U/dz1dz5                 1.000
     d2U/dz5dz1                 1.000
@@ -1104,42 +1104,42 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dx21dx1                1.000
     d2U/dx35dx1                1.000
     d2U/dx1dx35                1.000
-    d2U/dz1dz77                1.000
-    d2U/dz77dz1                1.000
-    d2U/dz213dz1               1.000
-    d2U/dz1dz213               1.000
-    d2U/dy1dy85                1.000
-    d2U/dy85dy1                1.000
-    d2U/dy205dy1               1.000
-    d2U/dy1dy205               1.000
-    d2U/dx1dx87                1.000
-    d2U/dx87dx1                1.000
-    d2U/dx203dx1               1.000
-    d2U/dx1dx203               1.000
-    d2U/dz1dz112               1.000
-    d2U/dz112dz1               1.000
-    d2U/dz181dz1               1.000
-    d2U/dz1dz181               1.000
-    d2U/dx1dx116               1.000
-    d2U/dx116dx1               1.000
-    d2U/dx177dx1               1.000
-    d2U/dx1dx177               1.000
-    d2U/dy1dy124               1.000
-    d2U/dy124dy1               1.000
-    d2U/dy169dy1               1.000
-    d2U/dy1dy169               1.000
-    d2U/dx1dx126               1.000
-    d2U/dx126dx1               1.000
-    d2U/dx167dx1               1.000
-    d2U/dx1dx167               1.000
-    d2U/dz1dz138               1.000
-    d2U/dz138dz1               1.000
-    d2U/dz156dz1               1.000
-    d2U/dz1dz156               1.000
-    d2U/dy1dy144               1.000
-    d2U/dy144dy1               1.000
-    d2U/dy150dy1               1.000
-    d2U/dy1dy150               1.000
+    d2U/dz1dz81                1.000
+    d2U/dz81dz1                1.000
+    d2U/dz223dz1               1.000
+    d2U/dz1dz223               1.000
+    d2U/dy1dy89                1.000
+    d2U/dy89dy1                1.000
+    d2U/dy215dy1               1.000
+    d2U/dy1dy215               1.000
+    d2U/dx1dx91                1.000
+    d2U/dx91dx1                1.000
+    d2U/dx213dx1               1.000
+    d2U/dx1dx213               1.000
+    d2U/dz1dz117               1.000
+    d2U/dz117dz1               1.000
+    d2U/dz187dz1               1.000
+    d2U/dz1dz187               1.000
+    d2U/dx1dx121               1.000
+    d2U/dx121dx1               1.000
+    d2U/dx183dx1               1.000
+    d2U/dx1dx183               1.000
+    d2U/dy1dy129               1.000
+    d2U/dy129dy1               1.000
+    d2U/dy175dy1               1.000
+    d2U/dy1dy175               1.000
+    d2U/dx1dx131               1.000
+    d2U/dx131dx1               1.000
+    d2U/dx173dx1               1.000
+    d2U/dx1dx173               1.000
+    d2U/dz1dz143               1.000
+    d2U/dz143dz1               1.000
+    d2U/dz161dz1               1.000
+    d2U/dz1dz161               1.000
+    d2U/dy1dy149               1.000
+    d2U/dy149dy1               1.000
+    d2U/dy155dy1               1.000
+    d2U/dy1dy155               1.000
     d2U/dz2dz6                 1.000
     d2U/dz6dz2                 1.000
     d2U/dz52dz2                1.000
@@ -1152,45 +1152,45 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dx22dx2                1.000
     d2U/dx36dx2                1.000
     d2U/dx2dx36                1.000
-    d2U/dz2dz78                1.000
-    d2U/dz78dz2                1.000
-    d2U/dz214dz2               1.000
-    d2U/dz2dz214               1.000
-    d2U/dy2dy86                1.000
-    d2U/dy86dy2                1.000
-    d2U/dy206dy2               1.000
-    d2U/dy2dy206               1.000
-    d2U/dx2dx88                1.000
-    d2U/dx88dx2                1.000
-    d2U/dx204dx2               1.000
-    d2U/dx2dx204               1.000
-    d2U/dz2dz113               1.000
-    d2U/dz113dz2               1.000
-    d2U/dz182dz2               1.000
-    d2U/dz2dz182               1.000
-    d2U/dx2dx117               1.000
-    d2U/dx117dx2               1.000
-    d2U/dx178dx2               1.000
-    d2U/dx2dx178               1.000
-    d2U/dy2dy125               1.000
-    d2U/dy125dy2               1.000
-    d2U/dy170dy2               1.000
-    d2U/dy2dy170               1.000
-    d2U/dx2dx127               1.000
-    d2U/dx127dx2               1.000
-    d2U/dx168dx2               1.000
-    d2U/dx2dx168               1.000
-    d2U/dz2dz139               1.000
-    d2U/dz139dz2               1.000
-    d2U/dz157dz2               1.000
-    d2U/dz2dz157               1.000
-    d2U/dy2dy145               1.000
-    d2U/dy145dy2               1.000
-    d2U/dy151dy2               1.000
-    d2U/dy2dy151               1.000
+    d2U/dz2dz82                1.000
+    d2U/dz82dz2                1.000
+    d2U/dz224dz2               1.000
+    d2U/dz2dz224               1.000
+    d2U/dy2dy90                1.000
+    d2U/dy90dy2                1.000
+    d2U/dy216dy2               1.000
+    d2U/dy2dy216               1.000
+    d2U/dx2dx92                1.000
+    d2U/dx92dx2                1.000
+    d2U/dx214dx2               1.000
+    d2U/dx2dx214               1.000
+    d2U/dz2dz118               1.000
+    d2U/dz118dz2               1.000
+    d2U/dz188dz2               1.000
+    d2U/dz2dz188               1.000
+    d2U/dx2dx122               1.000
+    d2U/dx122dx2               1.000
+    d2U/dx184dx2               1.000
+    d2U/dx2dx184               1.000
+    d2U/dy2dy130               1.000
+    d2U/dy130dy2               1.000
+    d2U/dy176dy2               1.000
+    d2U/dy2dy176               1.000
+    d2U/dx2dx132               1.000
+    d2U/dx132dx2               1.000
+    d2U/dx174dx2               1.000
+    d2U/dx2dx174               1.000
+    d2U/dz2dz144               1.000
+    d2U/dz144dz2               1.000
+    d2U/dz162dz2               1.000
+    d2U/dz2dz162               1.000
+    d2U/dy2dy150               1.000
+    d2U/dy150dy2               1.000
+    d2U/dy156dy2               1.000
+    d2U/dy2dy156               1.000
  ============== RANK, GROUP ===============   2  11
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dx6           r12=    4.77831
+    d2U/dx1dx6           r12=    4.65613
  ---- # OF ALL TERMS, MAT   -------   96
     d2U/dx1dx6                 1.000
     d2U/dx6dx1                 1.000
@@ -1290,7 +1290,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dy2dy13                1.000
  ============== RANK, GROUP ===============   2  12
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dy6           r12=    4.77831
+    d2U/dx1dy6           r12=    4.65613
  ---- # OF ALL TERMS, MAT   -------   96
     d2U/dx1dy6                 1.000
     d2U/dy6dx1                 1.000
@@ -1390,7 +1390,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dx2dy13               -1.000
  ============== RANK, GROUP ===============   2  13
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dz6           r12=    4.77831
+    d2U/dx1dz6           r12=    4.65613
  ---- # OF ALL TERMS, MAT   -------  192
     d2U/dx1dz6                 1.000
     d2U/dz6dx1                 1.000
@@ -1586,7 +1586,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dy2dz13                1.000
  ============== RANK, GROUP ===============   2  14
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dz1dz6           r12=    4.77831
+    d2U/dz1dz6           r12=    4.65613
  ---- # OF ALL TERMS, MAT   -------   48
     d2U/dz1dz6                 1.000
     d2U/dz6dz1                 1.000
@@ -1638,7 +1638,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dz2dz13                1.000
  ============== RANK, GROUP ===============   2  15
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dx7           r12=    5.76286
+    d2U/dx1dx7           r12=    5.61550
  ---- # OF ALL TERMS, MAT   -------   48
     d2U/dx1dx7                 1.000
     d2U/dx7dx1                 1.000
@@ -1690,7 +1690,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dz2dz38                1.000
  ============== RANK, GROUP ===============   2  16
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dz1dz7           r12=    5.76286
+    d2U/dz1dz7           r12=    5.61550
  ---- # OF ALL TERMS, MAT   -------   24
     d2U/dz1dz7                 1.000
     d2U/dz7dz1                 1.000
@@ -1718,7 +1718,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dx2dx38                1.000
  ============== RANK, GROUP ===============   2  17
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dx11           r12=    4.07496
+    d2U/dx1dx11           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------   48
     d2U/dx1dx11                1.000
     d2U/dx11dx1                1.000
@@ -1770,7 +1770,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dz2dz30                1.000
  ============== RANK, GROUP ===============   2  18
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dy11           r12=    4.07496
+    d2U/dx1dy11           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  192
     d2U/dx1dy11                1.000
     d2U/dy11dx1                1.000
@@ -1966,7 +1966,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dy2dz30               -1.000
  ============== RANK, GROUP ===============   2  19
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dy1dy11           r12=    4.07496
+    d2U/dy1dy11           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------   96
     d2U/dy1dy11                1.000
     d2U/dy11dy1                1.000
@@ -2066,7 +2066,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dy2dy30                1.000
  ============== RANK, GROUP ===============   2  20
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dy1dz11           r12=    4.07496
+    d2U/dy1dz11           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------   96
     d2U/dy1dz11                1.000
     d2U/dz11dy1                1.000
@@ -2166,7 +2166,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dx2dy30                1.000
  ============== RANK, GROUP ===============   2  21
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dx20           r12=    7.48618
+    d2U/dx1dx20           r12=    7.29475
  ---- # OF ALL TERMS, MAT   -------   48
     d2U/dx1dx20                1.000
     d2U/dx20dx1                1.000
@@ -2180,45 +2180,45 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dz50dz1                1.000
     d2U/dz7dz2                 1.000
     d2U/dz2dz7                 1.000
-    d2U/dz1dz68                1.000
-    d2U/dz68dz1                1.000
-    d2U/dz222dz2               1.000
-    d2U/dz2dz222               1.000
-    d2U/dy1dy84                1.000
-    d2U/dy84dy1                1.000
-    d2U/dy207dy2               1.000
-    d2U/dy2dy207               1.000
-    d2U/dx1dx88                1.000
-    d2U/dx88dx1                1.000
-    d2U/dx203dx2               1.000
-    d2U/dx2dx203               1.000
-    d2U/dz1dz107               1.000
-    d2U/dz107dz1               1.000
-    d2U/dz186dz2               1.000
-    d2U/dz2dz186               1.000
-    d2U/dy1dy119               1.000
-    d2U/dy119dy1               1.000
-    d2U/dy175dy2               1.000
-    d2U/dy2dy175               1.000
-    d2U/dx1dx166               1.000
-    d2U/dx166dx1               1.000
-    d2U/dx128dx2               1.000
-    d2U/dx2dx128               1.000
-    d2U/dy1dy170               1.000
-    d2U/dy170dy1               1.000
-    d2U/dy124dy2               1.000
-    d2U/dy2dy124               1.000
-    d2U/dx1dx174               1.000
-    d2U/dx174dx1               1.000
-    d2U/dx120dx2               1.000
-    d2U/dx2dx120               1.000
-    d2U/dz1dz182               1.000
-    d2U/dz182dz1               1.000
-    d2U/dz112dz2               1.000
-    d2U/dz2dz112               1.000
+    d2U/dz1dz72                1.000
+    d2U/dz72dz1                1.000
+    d2U/dz233dz2               1.000
+    d2U/dz2dz233               1.000
+    d2U/dy1dy88                1.000
+    d2U/dy88dy1                1.000
+    d2U/dy217dy2               1.000
+    d2U/dy2dy217               1.000
+    d2U/dx1dx92                1.000
+    d2U/dx92dx1                1.000
+    d2U/dx213dx2               1.000
+    d2U/dx2dx213               1.000
+    d2U/dz1dz112               1.000
+    d2U/dz112dz1               1.000
+    d2U/dz193dz2               1.000
+    d2U/dz2dz193               1.000
+    d2U/dy1dy124               1.000
+    d2U/dy124dy1               1.000
+    d2U/dy181dy2               1.000
+    d2U/dy2dy181               1.000
+    d2U/dx1dx172               1.000
+    d2U/dx172dx1               1.000
+    d2U/dx133dx2               1.000
+    d2U/dx2dx133               1.000
+    d2U/dy1dy176               1.000
+    d2U/dy176dy1               1.000
+    d2U/dy129dy2               1.000
+    d2U/dy2dy129               1.000
+    d2U/dx1dx180               1.000
+    d2U/dx180dx1               1.000
+    d2U/dx125dx2               1.000
+    d2U/dx2dx125               1.000
+    d2U/dz1dz188               1.000
+    d2U/dz188dz1               1.000
+    d2U/dz117dz2               1.000
+    d2U/dz2dz117               1.000
  ============== RANK, GROUP ===============   2  22
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dy20           r12=    7.48618
+    d2U/dx1dy20           r12=    7.29475
  ---- # OF ALL TERMS, MAT   -------  192
     d2U/dx1dy20                1.000
     d2U/dy20dx1                1.000
@@ -2268,153 +2268,153 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dy50dz1                1.000
     d2U/dz7dy2                 1.000
     d2U/dy2dz7                 1.000
-    d2U/dx1dz68               -1.000
-    d2U/dz68dx1               -1.000
-    d2U/dx222dz2              -1.000
-    d2U/dz2dx222              -1.000
-    d2U/dy1dz68                1.000
-    d2U/dz68dy1                1.000
-    d2U/dy222dz2               1.000
-    d2U/dz2dy222               1.000
-    d2U/dz1dx68               -1.000
-    d2U/dx68dz1               -1.000
-    d2U/dz222dx2              -1.000
-    d2U/dx2dz222              -1.000
-    d2U/dz1dy68                1.000
-    d2U/dy68dz1                1.000
-    d2U/dz222dy2               1.000
-    d2U/dy2dz222               1.000
-    d2U/dx1dy84               -1.000
-    d2U/dy84dx1               -1.000
-    d2U/dx207dy2              -1.000
-    d2U/dy2dx207              -1.000
-    d2U/dy1dx84               -1.000
-    d2U/dx84dy1               -1.000
-    d2U/dy207dx2              -1.000
-    d2U/dx2dy207              -1.000
-    d2U/dy1dz84                1.000
-    d2U/dz84dy1                1.000
-    d2U/dy207dz2               1.000
-    d2U/dz2dy207               1.000
-    d2U/dz1dy84                1.000
-    d2U/dy84dz1                1.000
-    d2U/dz207dy2               1.000
-    d2U/dy2dz207               1.000
+    d2U/dx1dz72               -1.000
+    d2U/dz72dx1               -1.000
+    d2U/dx233dz2              -1.000
+    d2U/dz2dx233              -1.000
+    d2U/dy1dz72                1.000
+    d2U/dz72dy1                1.000
+    d2U/dy233dz2               1.000
+    d2U/dz2dy233               1.000
+    d2U/dz1dx72               -1.000
+    d2U/dx72dz1               -1.000
+    d2U/dz233dx2              -1.000
+    d2U/dx2dz233              -1.000
+    d2U/dz1dy72                1.000
+    d2U/dy72dz1                1.000
+    d2U/dz233dy2               1.000
+    d2U/dy2dz233               1.000
     d2U/dx1dy88               -1.000
     d2U/dy88dx1               -1.000
-    d2U/dx203dy2              -1.000
-    d2U/dy2dx203              -1.000
-    d2U/dx1dz88               -1.000
-    d2U/dz88dx1               -1.000
-    d2U/dx203dz2              -1.000
-    d2U/dz2dx203              -1.000
+    d2U/dx217dy2              -1.000
+    d2U/dy2dx217              -1.000
     d2U/dy1dx88               -1.000
     d2U/dx88dy1               -1.000
-    d2U/dy203dx2              -1.000
-    d2U/dx2dy203              -1.000
-    d2U/dz1dx88               -1.000
-    d2U/dx88dz1               -1.000
-    d2U/dz203dx2              -1.000
-    d2U/dx2dz203              -1.000
-    d2U/dx1dz107               1.000
-    d2U/dz107dx1               1.000
-    d2U/dx186dz2               1.000
-    d2U/dz2dx186               1.000
-    d2U/dy1dz107              -1.000
-    d2U/dz107dy1              -1.000
-    d2U/dy186dz2              -1.000
-    d2U/dz2dy186              -1.000
-    d2U/dz1dx107               1.000
-    d2U/dx107dz1               1.000
-    d2U/dz186dx2               1.000
-    d2U/dx2dz186               1.000
-    d2U/dz1dy107              -1.000
-    d2U/dy107dz1              -1.000
-    d2U/dz186dy2              -1.000
-    d2U/dy2dz186              -1.000
-    d2U/dx1dy119               1.000
-    d2U/dy119dx1               1.000
-    d2U/dx175dy2               1.000
-    d2U/dy2dx175               1.000
-    d2U/dy1dx119               1.000
-    d2U/dx119dy1               1.000
-    d2U/dy175dx2               1.000
-    d2U/dx2dy175               1.000
-    d2U/dy1dz119              -1.000
-    d2U/dz119dy1              -1.000
-    d2U/dy175dz2              -1.000
-    d2U/dz2dy175              -1.000
-    d2U/dz1dy119              -1.000
-    d2U/dy119dz1              -1.000
-    d2U/dz175dy2              -1.000
-    d2U/dy2dz175              -1.000
-    d2U/dx1dy166              -1.000
-    d2U/dy166dx1              -1.000
-    d2U/dx128dy2              -1.000
-    d2U/dy2dx128              -1.000
-    d2U/dx1dz166               1.000
-    d2U/dz166dx1               1.000
-    d2U/dx128dz2               1.000
-    d2U/dz2dx128               1.000
-    d2U/dy1dx166              -1.000
-    d2U/dx166dy1              -1.000
-    d2U/dy128dx2              -1.000
-    d2U/dx2dy128              -1.000
-    d2U/dz1dx166               1.000
-    d2U/dx166dz1               1.000
-    d2U/dz128dx2               1.000
-    d2U/dx2dz128               1.000
-    d2U/dx1dy170              -1.000
-    d2U/dy170dx1              -1.000
-    d2U/dx124dy2              -1.000
-    d2U/dy2dx124              -1.000
-    d2U/dy1dx170              -1.000
-    d2U/dx170dy1              -1.000
-    d2U/dy124dx2              -1.000
-    d2U/dx2dy124              -1.000
-    d2U/dy1dz170              -1.000
-    d2U/dz170dy1              -1.000
-    d2U/dy124dz2              -1.000
-    d2U/dz2dy124              -1.000
-    d2U/dz1dy170              -1.000
-    d2U/dy170dz1              -1.000
-    d2U/dz124dy2              -1.000
-    d2U/dy2dz124              -1.000
-    d2U/dx1dy174               1.000
-    d2U/dy174dx1               1.000
-    d2U/dx120dy2               1.000
-    d2U/dy2dx120               1.000
-    d2U/dx1dz174              -1.000
-    d2U/dz174dx1              -1.000
-    d2U/dx120dz2              -1.000
-    d2U/dz2dx120              -1.000
-    d2U/dy1dx174               1.000
-    d2U/dx174dy1               1.000
-    d2U/dy120dx2               1.000
-    d2U/dx2dy120               1.000
-    d2U/dz1dx174              -1.000
-    d2U/dx174dz1              -1.000
-    d2U/dz120dx2              -1.000
-    d2U/dx2dz120              -1.000
-    d2U/dx1dz182              -1.000
-    d2U/dz182dx1              -1.000
-    d2U/dx112dz2              -1.000
-    d2U/dz2dx112              -1.000
-    d2U/dy1dz182              -1.000
-    d2U/dz182dy1              -1.000
-    d2U/dy112dz2              -1.000
-    d2U/dz2dy112              -1.000
-    d2U/dz1dx182              -1.000
-    d2U/dx182dz1              -1.000
-    d2U/dz112dx2              -1.000
-    d2U/dx2dz112              -1.000
-    d2U/dz1dy182              -1.000
-    d2U/dy182dz1              -1.000
-    d2U/dz112dy2              -1.000
-    d2U/dy2dz112              -1.000
+    d2U/dy217dx2              -1.000
+    d2U/dx2dy217              -1.000
+    d2U/dy1dz88                1.000
+    d2U/dz88dy1                1.000
+    d2U/dy217dz2               1.000
+    d2U/dz2dy217               1.000
+    d2U/dz1dy88                1.000
+    d2U/dy88dz1                1.000
+    d2U/dz217dy2               1.000
+    d2U/dy2dz217               1.000
+    d2U/dx1dy92               -1.000
+    d2U/dy92dx1               -1.000
+    d2U/dx213dy2              -1.000
+    d2U/dy2dx213              -1.000
+    d2U/dx1dz92               -1.000
+    d2U/dz92dx1               -1.000
+    d2U/dx213dz2              -1.000
+    d2U/dz2dx213              -1.000
+    d2U/dy1dx92               -1.000
+    d2U/dx92dy1               -1.000
+    d2U/dy213dx2              -1.000
+    d2U/dx2dy213              -1.000
+    d2U/dz1dx92               -1.000
+    d2U/dx92dz1               -1.000
+    d2U/dz213dx2              -1.000
+    d2U/dx2dz213              -1.000
+    d2U/dx1dz112               1.000
+    d2U/dz112dx1               1.000
+    d2U/dx193dz2               1.000
+    d2U/dz2dx193               1.000
+    d2U/dy1dz112              -1.000
+    d2U/dz112dy1              -1.000
+    d2U/dy193dz2              -1.000
+    d2U/dz2dy193              -1.000
+    d2U/dz1dx112               1.000
+    d2U/dx112dz1               1.000
+    d2U/dz193dx2               1.000
+    d2U/dx2dz193               1.000
+    d2U/dz1dy112              -1.000
+    d2U/dy112dz1              -1.000
+    d2U/dz193dy2              -1.000
+    d2U/dy2dz193              -1.000
+    d2U/dx1dy124               1.000
+    d2U/dy124dx1               1.000
+    d2U/dx181dy2               1.000
+    d2U/dy2dx181               1.000
+    d2U/dy1dx124               1.000
+    d2U/dx124dy1               1.000
+    d2U/dy181dx2               1.000
+    d2U/dx2dy181               1.000
+    d2U/dy1dz124              -1.000
+    d2U/dz124dy1              -1.000
+    d2U/dy181dz2              -1.000
+    d2U/dz2dy181              -1.000
+    d2U/dz1dy124              -1.000
+    d2U/dy124dz1              -1.000
+    d2U/dz181dy2              -1.000
+    d2U/dy2dz181              -1.000
+    d2U/dx1dy172              -1.000
+    d2U/dy172dx1              -1.000
+    d2U/dx133dy2              -1.000
+    d2U/dy2dx133              -1.000
+    d2U/dx1dz172               1.000
+    d2U/dz172dx1               1.000
+    d2U/dx133dz2               1.000
+    d2U/dz2dx133               1.000
+    d2U/dy1dx172              -1.000
+    d2U/dx172dy1              -1.000
+    d2U/dy133dx2              -1.000
+    d2U/dx2dy133              -1.000
+    d2U/dz1dx172               1.000
+    d2U/dx172dz1               1.000
+    d2U/dz133dx2               1.000
+    d2U/dx2dz133               1.000
+    d2U/dx1dy176              -1.000
+    d2U/dy176dx1              -1.000
+    d2U/dx129dy2              -1.000
+    d2U/dy2dx129              -1.000
+    d2U/dy1dx176              -1.000
+    d2U/dx176dy1              -1.000
+    d2U/dy129dx2              -1.000
+    d2U/dx2dy129              -1.000
+    d2U/dy1dz176              -1.000
+    d2U/dz176dy1              -1.000
+    d2U/dy129dz2              -1.000
+    d2U/dz2dy129              -1.000
+    d2U/dz1dy176              -1.000
+    d2U/dy176dz1              -1.000
+    d2U/dz129dy2              -1.000
+    d2U/dy2dz129              -1.000
+    d2U/dx1dy180               1.000
+    d2U/dy180dx1               1.000
+    d2U/dx125dy2               1.000
+    d2U/dy2dx125               1.000
+    d2U/dx1dz180              -1.000
+    d2U/dz180dx1              -1.000
+    d2U/dx125dz2              -1.000
+    d2U/dz2dx125              -1.000
+    d2U/dy1dx180               1.000
+    d2U/dx180dy1               1.000
+    d2U/dy125dx2               1.000
+    d2U/dx2dy125               1.000
+    d2U/dz1dx180              -1.000
+    d2U/dx180dz1              -1.000
+    d2U/dz125dx2              -1.000
+    d2U/dx2dz125              -1.000
+    d2U/dx1dz188              -1.000
+    d2U/dz188dx1              -1.000
+    d2U/dx117dz2              -1.000
+    d2U/dz2dx117              -1.000
+    d2U/dy1dz188              -1.000
+    d2U/dz188dy1              -1.000
+    d2U/dy117dz2              -1.000
+    d2U/dz2dy117              -1.000
+    d2U/dz1dx188              -1.000
+    d2U/dx188dz1              -1.000
+    d2U/dz117dx2              -1.000
+    d2U/dx2dz117              -1.000
+    d2U/dz1dy188              -1.000
+    d2U/dy188dz1              -1.000
+    d2U/dz117dy2              -1.000
+    d2U/dy2dz117              -1.000
  ============== RANK, GROUP ===============   2  23
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dy1dy20           r12=    7.48618
+    d2U/dy1dy20           r12=    7.29475
  ---- # OF ALL TERMS, MAT   -------   96
     d2U/dy1dy20                1.000
     d2U/dy20dy1                1.000
@@ -2440,81 +2440,81 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dy50dy1                1.000
     d2U/dy7dy2                 1.000
     d2U/dy2dy7                 1.000
-    d2U/dx1dx68                1.000
-    d2U/dx68dx1                1.000
-    d2U/dx222dx2               1.000
-    d2U/dx2dx222               1.000
-    d2U/dy1dy68                1.000
-    d2U/dy68dy1                1.000
-    d2U/dy222dy2               1.000
-    d2U/dy2dy222               1.000
-    d2U/dx1dx84                1.000
-    d2U/dx84dx1                1.000
-    d2U/dx207dx2               1.000
-    d2U/dx2dx207               1.000
-    d2U/dz1dz84                1.000
-    d2U/dz84dz1                1.000
-    d2U/dz207dz2               1.000
-    d2U/dz2dz207               1.000
-    d2U/dy1dy88                1.000
-    d2U/dy88dy1                1.000
-    d2U/dy203dy2               1.000
-    d2U/dy2dy203               1.000
+    d2U/dx1dx72                1.000
+    d2U/dx72dx1                1.000
+    d2U/dx233dx2               1.000
+    d2U/dx2dx233               1.000
+    d2U/dy1dy72                1.000
+    d2U/dy72dy1                1.000
+    d2U/dy233dy2               1.000
+    d2U/dy2dy233               1.000
+    d2U/dx1dx88                1.000
+    d2U/dx88dx1                1.000
+    d2U/dx217dx2               1.000
+    d2U/dx2dx217               1.000
     d2U/dz1dz88                1.000
     d2U/dz88dz1                1.000
-    d2U/dz203dz2               1.000
-    d2U/dz2dz203               1.000
-    d2U/dx1dx107               1.000
-    d2U/dx107dx1               1.000
-    d2U/dx186dx2               1.000
-    d2U/dx2dx186               1.000
-    d2U/dy1dy107               1.000
-    d2U/dy107dy1               1.000
-    d2U/dy186dy2               1.000
-    d2U/dy2dy186               1.000
-    d2U/dx1dx119               1.000
-    d2U/dx119dx1               1.000
-    d2U/dx175dx2               1.000
-    d2U/dx2dx175               1.000
-    d2U/dz1dz119               1.000
-    d2U/dz119dz1               1.000
-    d2U/dz175dz2               1.000
-    d2U/dz2dz175               1.000
-    d2U/dy1dy166               1.000
-    d2U/dy166dy1               1.000
-    d2U/dy128dy2               1.000
-    d2U/dy2dy128               1.000
-    d2U/dz1dz166               1.000
-    d2U/dz166dz1               1.000
-    d2U/dz128dz2               1.000
-    d2U/dz2dz128               1.000
-    d2U/dx1dx170               1.000
-    d2U/dx170dx1               1.000
-    d2U/dx124dx2               1.000
-    d2U/dx2dx124               1.000
-    d2U/dz1dz170               1.000
-    d2U/dz170dz1               1.000
-    d2U/dz124dz2               1.000
-    d2U/dz2dz124               1.000
-    d2U/dy1dy174               1.000
-    d2U/dy174dy1               1.000
-    d2U/dy120dy2               1.000
-    d2U/dy2dy120               1.000
-    d2U/dz1dz174               1.000
-    d2U/dz174dz1               1.000
-    d2U/dz120dz2               1.000
-    d2U/dz2dz120               1.000
-    d2U/dx1dx182               1.000
-    d2U/dx182dx1               1.000
-    d2U/dx112dx2               1.000
-    d2U/dx2dx112               1.000
-    d2U/dy1dy182               1.000
-    d2U/dy182dy1               1.000
-    d2U/dy112dy2               1.000
-    d2U/dy2dy112               1.000
+    d2U/dz217dz2               1.000
+    d2U/dz2dz217               1.000
+    d2U/dy1dy92                1.000
+    d2U/dy92dy1                1.000
+    d2U/dy213dy2               1.000
+    d2U/dy2dy213               1.000
+    d2U/dz1dz92                1.000
+    d2U/dz92dz1                1.000
+    d2U/dz213dz2               1.000
+    d2U/dz2dz213               1.000
+    d2U/dx1dx112               1.000
+    d2U/dx112dx1               1.000
+    d2U/dx193dx2               1.000
+    d2U/dx2dx193               1.000
+    d2U/dy1dy112               1.000
+    d2U/dy112dy1               1.000
+    d2U/dy193dy2               1.000
+    d2U/dy2dy193               1.000
+    d2U/dx1dx124               1.000
+    d2U/dx124dx1               1.000
+    d2U/dx181dx2               1.000
+    d2U/dx2dx181               1.000
+    d2U/dz1dz124               1.000
+    d2U/dz124dz1               1.000
+    d2U/dz181dz2               1.000
+    d2U/dz2dz181               1.000
+    d2U/dy1dy172               1.000
+    d2U/dy172dy1               1.000
+    d2U/dy133dy2               1.000
+    d2U/dy2dy133               1.000
+    d2U/dz1dz172               1.000
+    d2U/dz172dz1               1.000
+    d2U/dz133dz2               1.000
+    d2U/dz2dz133               1.000
+    d2U/dx1dx176               1.000
+    d2U/dx176dx1               1.000
+    d2U/dx129dx2               1.000
+    d2U/dx2dx129               1.000
+    d2U/dz1dz176               1.000
+    d2U/dz176dz1               1.000
+    d2U/dz129dz2               1.000
+    d2U/dz2dz129               1.000
+    d2U/dy1dy180               1.000
+    d2U/dy180dy1               1.000
+    d2U/dy125dy2               1.000
+    d2U/dy2dy125               1.000
+    d2U/dz1dz180               1.000
+    d2U/dz180dz1               1.000
+    d2U/dz125dz2               1.000
+    d2U/dz2dz125               1.000
+    d2U/dx1dx188               1.000
+    d2U/dx188dx1               1.000
+    d2U/dx117dx2               1.000
+    d2U/dx2dx117               1.000
+    d2U/dy1dy188               1.000
+    d2U/dy188dy1               1.000
+    d2U/dy117dy2               1.000
+    d2U/dy2dy117               1.000
  ============== RANK, GROUP ===============   2  24
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dy1dz20           r12=    7.48618
+    d2U/dy1dz20           r12=    7.29475
  ---- # OF ALL TERMS, MAT   -------   96
     d2U/dy1dz20                1.000
     d2U/dz20dy1                1.000
@@ -2540,81 +2540,81 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dx50dy1                1.000
     d2U/dy7dx2                 1.000
     d2U/dx2dy7                 1.000
-    d2U/dx1dy68               -1.000
-    d2U/dy68dx1               -1.000
-    d2U/dx222dy2              -1.000
-    d2U/dy2dx222              -1.000
-    d2U/dy1dx68               -1.000
-    d2U/dx68dy1               -1.000
-    d2U/dy222dx2              -1.000
-    d2U/dx2dy222              -1.000
-    d2U/dx1dz84               -1.000
-    d2U/dz84dx1               -1.000
-    d2U/dx207dz2              -1.000
-    d2U/dz2dx207              -1.000
-    d2U/dz1dx84               -1.000
-    d2U/dx84dz1               -1.000
-    d2U/dz207dx2              -1.000
-    d2U/dx2dz207              -1.000
-    d2U/dy1dz88                1.000
-    d2U/dz88dy1                1.000
-    d2U/dy203dz2               1.000
-    d2U/dz2dy203               1.000
-    d2U/dz1dy88                1.000
-    d2U/dy88dz1                1.000
-    d2U/dz203dy2               1.000
-    d2U/dy2dz203               1.000
-    d2U/dx1dy107              -1.000
-    d2U/dy107dx1              -1.000
-    d2U/dx186dy2              -1.000
-    d2U/dy2dx186              -1.000
-    d2U/dy1dx107              -1.000
-    d2U/dx107dy1              -1.000
-    d2U/dy186dx2              -1.000
-    d2U/dx2dy186              -1.000
-    d2U/dx1dz119              -1.000
-    d2U/dz119dx1              -1.000
-    d2U/dx175dz2              -1.000
-    d2U/dz2dx175              -1.000
-    d2U/dz1dx119              -1.000
-    d2U/dx119dz1              -1.000
-    d2U/dz175dx2              -1.000
-    d2U/dx2dz175              -1.000
-    d2U/dy1dz166              -1.000
-    d2U/dz166dy1              -1.000
-    d2U/dy128dz2              -1.000
-    d2U/dz2dy128              -1.000
-    d2U/dz1dy166              -1.000
-    d2U/dy166dz1              -1.000
-    d2U/dz128dy2              -1.000
-    d2U/dy2dz128              -1.000
-    d2U/dx1dz170               1.000
-    d2U/dz170dx1               1.000
-    d2U/dx124dz2               1.000
-    d2U/dz2dx124               1.000
-    d2U/dz1dx170               1.000
-    d2U/dx170dz1               1.000
-    d2U/dz124dx2               1.000
-    d2U/dx2dz124               1.000
-    d2U/dy1dz174              -1.000
-    d2U/dz174dy1              -1.000
-    d2U/dy120dz2              -1.000
-    d2U/dz2dy120              -1.000
-    d2U/dz1dy174              -1.000
-    d2U/dy174dz1              -1.000
-    d2U/dz120dy2              -1.000
-    d2U/dy2dz120              -1.000
-    d2U/dx1dy182               1.000
-    d2U/dy182dx1               1.000
-    d2U/dx112dy2               1.000
-    d2U/dy2dx112               1.000
-    d2U/dy1dx182               1.000
-    d2U/dx182dy1               1.000
-    d2U/dy112dx2               1.000
-    d2U/dx2dy112               1.000
+    d2U/dx1dy72               -1.000
+    d2U/dy72dx1               -1.000
+    d2U/dx233dy2              -1.000
+    d2U/dy2dx233              -1.000
+    d2U/dy1dx72               -1.000
+    d2U/dx72dy1               -1.000
+    d2U/dy233dx2              -1.000
+    d2U/dx2dy233              -1.000
+    d2U/dx1dz88               -1.000
+    d2U/dz88dx1               -1.000
+    d2U/dx217dz2              -1.000
+    d2U/dz2dx217              -1.000
+    d2U/dz1dx88               -1.000
+    d2U/dx88dz1               -1.000
+    d2U/dz217dx2              -1.000
+    d2U/dx2dz217              -1.000
+    d2U/dy1dz92                1.000
+    d2U/dz92dy1                1.000
+    d2U/dy213dz2               1.000
+    d2U/dz2dy213               1.000
+    d2U/dz1dy92                1.000
+    d2U/dy92dz1                1.000
+    d2U/dz213dy2               1.000
+    d2U/dy2dz213               1.000
+    d2U/dx1dy112              -1.000
+    d2U/dy112dx1              -1.000
+    d2U/dx193dy2              -1.000
+    d2U/dy2dx193              -1.000
+    d2U/dy1dx112              -1.000
+    d2U/dx112dy1              -1.000
+    d2U/dy193dx2              -1.000
+    d2U/dx2dy193              -1.000
+    d2U/dx1dz124              -1.000
+    d2U/dz124dx1              -1.000
+    d2U/dx181dz2              -1.000
+    d2U/dz2dx181              -1.000
+    d2U/dz1dx124              -1.000
+    d2U/dx124dz1              -1.000
+    d2U/dz181dx2              -1.000
+    d2U/dx2dz181              -1.000
+    d2U/dy1dz172              -1.000
+    d2U/dz172dy1              -1.000
+    d2U/dy133dz2              -1.000
+    d2U/dz2dy133              -1.000
+    d2U/dz1dy172              -1.000
+    d2U/dy172dz1              -1.000
+    d2U/dz133dy2              -1.000
+    d2U/dy2dz133              -1.000
+    d2U/dx1dz176               1.000
+    d2U/dz176dx1               1.000
+    d2U/dx129dz2               1.000
+    d2U/dz2dx129               1.000
+    d2U/dz1dx176               1.000
+    d2U/dx176dz1               1.000
+    d2U/dz129dx2               1.000
+    d2U/dx2dz129               1.000
+    d2U/dy1dz180              -1.000
+    d2U/dz180dy1              -1.000
+    d2U/dy125dz2              -1.000
+    d2U/dz2dy125              -1.000
+    d2U/dz1dy180              -1.000
+    d2U/dy180dz1              -1.000
+    d2U/dz125dy2              -1.000
+    d2U/dy2dz125              -1.000
+    d2U/dx1dy188               1.000
+    d2U/dy188dx1               1.000
+    d2U/dx117dy2               1.000
+    d2U/dy2dx117               1.000
+    d2U/dy1dx188               1.000
+    d2U/dx188dy1               1.000
+    d2U/dy117dx2               1.000
+    d2U/dx2dy117               1.000
  ============== RANK, GROUP ===============   2  25
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dx30           r12=    6.27993
+    d2U/dx1dx30           r12=    6.11935
  ---- # OF ALL TERMS, MAT   -------   96
     d2U/dx1dx30                1.000
     d2U/dx30dx1                1.000
@@ -2640,81 +2640,81 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dz46dz1                1.000
     d2U/dz11dz2                1.000
     d2U/dz2dz11                1.000
-    d2U/dy1dy76                1.000
-    d2U/dy76dy1                1.000
+    d2U/dy1dy80                1.000
+    d2U/dy80dy1                1.000
+    d2U/dy225dy2               1.000
+    d2U/dy2dy225               1.000
+    d2U/dz1dz80                1.000
+    d2U/dz80dz1                1.000
+    d2U/dz225dz2               1.000
+    d2U/dz2dz225               1.000
+    d2U/dx1dx82                1.000
+    d2U/dx82dx1                1.000
+    d2U/dx223dx2               1.000
+    d2U/dx2dx223               1.000
+    d2U/dz1dz82                1.000
+    d2U/dz82dz1                1.000
+    d2U/dz223dz2               1.000
+    d2U/dz2dz223               1.000
+    d2U/dx1dx90                1.000
+    d2U/dx90dx1                1.000
+    d2U/dx215dx2               1.000
+    d2U/dx2dx215               1.000
+    d2U/dy1dy90                1.000
+    d2U/dy90dy1                1.000
     d2U/dy215dy2               1.000
     d2U/dy2dy215               1.000
-    d2U/dz1dz76                1.000
-    d2U/dz76dz1                1.000
-    d2U/dz215dz2               1.000
-    d2U/dz2dz215               1.000
-    d2U/dx1dx78                1.000
-    d2U/dx78dx1                1.000
-    d2U/dx213dx2               1.000
-    d2U/dx2dx213               1.000
-    d2U/dz1dz78                1.000
-    d2U/dz78dz1                1.000
-    d2U/dz213dz2               1.000
-    d2U/dz2dz213               1.000
-    d2U/dx1dx86                1.000
-    d2U/dx86dx1                1.000
-    d2U/dx205dx2               1.000
-    d2U/dx2dx205               1.000
-    d2U/dy1dy86                1.000
-    d2U/dy86dy1                1.000
-    d2U/dy205dy2               1.000
-    d2U/dy2dy205               1.000
-    d2U/dx1dx137               1.000
-    d2U/dx137dx1               1.000
-    d2U/dx158dx2               1.000
-    d2U/dx2dx158               1.000
-    d2U/dz1dz137               1.000
-    d2U/dz137dz1               1.000
-    d2U/dz158dz2               1.000
-    d2U/dz2dz158               1.000
-    d2U/dy1dy139               1.000
-    d2U/dy139dy1               1.000
-    d2U/dy156dy2               1.000
-    d2U/dy2dy156               1.000
-    d2U/dz1dz139               1.000
-    d2U/dz139dz1               1.000
-    d2U/dz156dz2               1.000
-    d2U/dz2dz156               1.000
-    d2U/dx1dx147               1.000
-    d2U/dx147dx1               1.000
-    d2U/dx148dx2               1.000
-    d2U/dx2dx148               1.000
-    d2U/dy1dy147               1.000
-    d2U/dy147dy1               1.000
-    d2U/dy148dy2               1.000
-    d2U/dy2dy148               1.000
-    d2U/dy1dy151               1.000
-    d2U/dy151dy1               1.000
-    d2U/dy144dy2               1.000
-    d2U/dy2dy144               1.000
-    d2U/dz1dz151               1.000
-    d2U/dz151dz1               1.000
-    d2U/dz144dz2               1.000
-    d2U/dz2dz144               1.000
-    d2U/dx1dx168               1.000
-    d2U/dx168dx1               1.000
-    d2U/dx126dx2               1.000
-    d2U/dx2dx126               1.000
-    d2U/dy1dy168               1.000
-    d2U/dy168dy1               1.000
-    d2U/dy126dy2               1.000
-    d2U/dy2dy126               1.000
-    d2U/dx1dx178               1.000
-    d2U/dx178dx1               1.000
-    d2U/dx116dx2               1.000
-    d2U/dx2dx116               1.000
-    d2U/dz1dz178               1.000
-    d2U/dz178dz1               1.000
-    d2U/dz116dz2               1.000
-    d2U/dz2dz116               1.000
+    d2U/dx1dx142               1.000
+    d2U/dx142dx1               1.000
+    d2U/dx163dx2               1.000
+    d2U/dx2dx163               1.000
+    d2U/dz1dz142               1.000
+    d2U/dz142dz1               1.000
+    d2U/dz163dz2               1.000
+    d2U/dz2dz163               1.000
+    d2U/dy1dy144               1.000
+    d2U/dy144dy1               1.000
+    d2U/dy161dy2               1.000
+    d2U/dy2dy161               1.000
+    d2U/dz1dz144               1.000
+    d2U/dz144dz1               1.000
+    d2U/dz161dz2               1.000
+    d2U/dz2dz161               1.000
+    d2U/dx1dx152               1.000
+    d2U/dx152dx1               1.000
+    d2U/dx153dx2               1.000
+    d2U/dx2dx153               1.000
+    d2U/dy1dy152               1.000
+    d2U/dy152dy1               1.000
+    d2U/dy153dy2               1.000
+    d2U/dy2dy153               1.000
+    d2U/dy1dy156               1.000
+    d2U/dy156dy1               1.000
+    d2U/dy149dy2               1.000
+    d2U/dy2dy149               1.000
+    d2U/dz1dz156               1.000
+    d2U/dz156dz1               1.000
+    d2U/dz149dz2               1.000
+    d2U/dz2dz149               1.000
+    d2U/dx1dx174               1.000
+    d2U/dx174dx1               1.000
+    d2U/dx131dx2               1.000
+    d2U/dx2dx131               1.000
+    d2U/dy1dy174               1.000
+    d2U/dy174dy1               1.000
+    d2U/dy131dy2               1.000
+    d2U/dy2dy131               1.000
+    d2U/dx1dx184               1.000
+    d2U/dx184dx1               1.000
+    d2U/dx121dx2               1.000
+    d2U/dx2dx121               1.000
+    d2U/dz1dz184               1.000
+    d2U/dz184dz1               1.000
+    d2U/dz121dz2               1.000
+    d2U/dz2dz121               1.000
  ============== RANK, GROUP ===============   2  26
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dy30           r12=    6.27993
+    d2U/dx1dy30           r12=    6.11935
  ---- # OF ALL TERMS, MAT   -------   96
     d2U/dx1dy30                1.000
     d2U/dy30dx1                1.000
@@ -2740,81 +2740,81 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dy46dz1                1.000
     d2U/dz11dy2                1.000
     d2U/dy2dz11                1.000
-    d2U/dy1dz76                1.000
-    d2U/dz76dy1                1.000
-    d2U/dy215dz2               1.000
-    d2U/dz2dy215               1.000
-    d2U/dz1dy76                1.000
-    d2U/dy76dz1                1.000
-    d2U/dz215dy2               1.000
-    d2U/dy2dz215               1.000
-    d2U/dx1dz78               -1.000
-    d2U/dz78dx1               -1.000
-    d2U/dx213dz2              -1.000
-    d2U/dz2dx213              -1.000
-    d2U/dz1dx78               -1.000
-    d2U/dx78dz1               -1.000
-    d2U/dz213dx2              -1.000
-    d2U/dx2dz213              -1.000
-    d2U/dx1dy86               -1.000
-    d2U/dy86dx1               -1.000
-    d2U/dx205dy2              -1.000
-    d2U/dy2dx205              -1.000
-    d2U/dy1dx86               -1.000
-    d2U/dx86dy1               -1.000
-    d2U/dy205dx2              -1.000
-    d2U/dx2dy205              -1.000
-    d2U/dx1dz137               1.000
-    d2U/dz137dx1               1.000
-    d2U/dx158dz2               1.000
-    d2U/dz2dx158               1.000
-    d2U/dz1dx137               1.000
-    d2U/dx137dz1               1.000
-    d2U/dz158dx2               1.000
-    d2U/dx2dz158               1.000
-    d2U/dy1dz139              -1.000
-    d2U/dz139dy1              -1.000
-    d2U/dy156dz2              -1.000
-    d2U/dz2dy156              -1.000
-    d2U/dz1dy139              -1.000
-    d2U/dy139dz1              -1.000
-    d2U/dz156dy2              -1.000
-    d2U/dy2dz156              -1.000
-    d2U/dx1dy147               1.000
-    d2U/dy147dx1               1.000
-    d2U/dx148dy2               1.000
-    d2U/dy2dx148               1.000
-    d2U/dy1dx147               1.000
-    d2U/dx147dy1               1.000
-    d2U/dy148dx2               1.000
-    d2U/dx2dy148               1.000
-    d2U/dy1dz151              -1.000
-    d2U/dz151dy1              -1.000
-    d2U/dy144dz2              -1.000
-    d2U/dz2dy144              -1.000
-    d2U/dz1dy151              -1.000
-    d2U/dy151dz1              -1.000
-    d2U/dz144dy2              -1.000
-    d2U/dy2dz144              -1.000
-    d2U/dx1dy168              -1.000
-    d2U/dy168dx1              -1.000
-    d2U/dx126dy2              -1.000
-    d2U/dy2dx126              -1.000
-    d2U/dy1dx168              -1.000
-    d2U/dx168dy1              -1.000
-    d2U/dy126dx2              -1.000
-    d2U/dx2dy126              -1.000
-    d2U/dx1dz178              -1.000
-    d2U/dz178dx1              -1.000
-    d2U/dx116dz2              -1.000
-    d2U/dz2dx116              -1.000
-    d2U/dz1dx178              -1.000
-    d2U/dx178dz1              -1.000
-    d2U/dz116dx2              -1.000
-    d2U/dx2dz116              -1.000
+    d2U/dy1dz80                1.000
+    d2U/dz80dy1                1.000
+    d2U/dy225dz2               1.000
+    d2U/dz2dy225               1.000
+    d2U/dz1dy80                1.000
+    d2U/dy80dz1                1.000
+    d2U/dz225dy2               1.000
+    d2U/dy2dz225               1.000
+    d2U/dx1dz82               -1.000
+    d2U/dz82dx1               -1.000
+    d2U/dx223dz2              -1.000
+    d2U/dz2dx223              -1.000
+    d2U/dz1dx82               -1.000
+    d2U/dx82dz1               -1.000
+    d2U/dz223dx2              -1.000
+    d2U/dx2dz223              -1.000
+    d2U/dx1dy90               -1.000
+    d2U/dy90dx1               -1.000
+    d2U/dx215dy2              -1.000
+    d2U/dy2dx215              -1.000
+    d2U/dy1dx90               -1.000
+    d2U/dx90dy1               -1.000
+    d2U/dy215dx2              -1.000
+    d2U/dx2dy215              -1.000
+    d2U/dx1dz142               1.000
+    d2U/dz142dx1               1.000
+    d2U/dx163dz2               1.000
+    d2U/dz2dx163               1.000
+    d2U/dz1dx142               1.000
+    d2U/dx142dz1               1.000
+    d2U/dz163dx2               1.000
+    d2U/dx2dz163               1.000
+    d2U/dy1dz144              -1.000
+    d2U/dz144dy1              -1.000
+    d2U/dy161dz2              -1.000
+    d2U/dz2dy161              -1.000
+    d2U/dz1dy144              -1.000
+    d2U/dy144dz1              -1.000
+    d2U/dz161dy2              -1.000
+    d2U/dy2dz161              -1.000
+    d2U/dx1dy152               1.000
+    d2U/dy152dx1               1.000
+    d2U/dx153dy2               1.000
+    d2U/dy2dx153               1.000
+    d2U/dy1dx152               1.000
+    d2U/dx152dy1               1.000
+    d2U/dy153dx2               1.000
+    d2U/dx2dy153               1.000
+    d2U/dy1dz156              -1.000
+    d2U/dz156dy1              -1.000
+    d2U/dy149dz2              -1.000
+    d2U/dz2dy149              -1.000
+    d2U/dz1dy156              -1.000
+    d2U/dy156dz1              -1.000
+    d2U/dz149dy2              -1.000
+    d2U/dy2dz149              -1.000
+    d2U/dx1dy174              -1.000
+    d2U/dy174dx1              -1.000
+    d2U/dx131dy2              -1.000
+    d2U/dy2dx131              -1.000
+    d2U/dy1dx174              -1.000
+    d2U/dx174dy1              -1.000
+    d2U/dy131dx2              -1.000
+    d2U/dx2dy131              -1.000
+    d2U/dx1dz184              -1.000
+    d2U/dz184dx1              -1.000
+    d2U/dx121dz2              -1.000
+    d2U/dz2dx121              -1.000
+    d2U/dz1dx184              -1.000
+    d2U/dx184dz1              -1.000
+    d2U/dz121dx2              -1.000
+    d2U/dx2dz121              -1.000
  ============== RANK, GROUP ===============   2  27
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dx1dz30           r12=    6.27993
+    d2U/dx1dz30           r12=    6.11935
  ---- # OF ALL TERMS, MAT   -------  192
     d2U/dx1dz30                1.000
     d2U/dz30dx1                1.000
@@ -2864,153 +2864,153 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dx46dz1                1.000
     d2U/dz11dx2                1.000
     d2U/dx2dz11                1.000
-    d2U/dx1dy76               -1.000
-    d2U/dy76dx1               -1.000
-    d2U/dx215dy2              -1.000
-    d2U/dy2dx215              -1.000
-    d2U/dx1dz76               -1.000
-    d2U/dz76dx1               -1.000
+    d2U/dx1dy80               -1.000
+    d2U/dy80dx1               -1.000
+    d2U/dx225dy2              -1.000
+    d2U/dy2dx225              -1.000
+    d2U/dx1dz80               -1.000
+    d2U/dz80dx1               -1.000
+    d2U/dx225dz2              -1.000
+    d2U/dz2dx225              -1.000
+    d2U/dy1dx80               -1.000
+    d2U/dx80dy1               -1.000
+    d2U/dy225dx2              -1.000
+    d2U/dx2dy225              -1.000
+    d2U/dz1dx80               -1.000
+    d2U/dx80dz1               -1.000
+    d2U/dz225dx2              -1.000
+    d2U/dx2dz225              -1.000
+    d2U/dx1dy82               -1.000
+    d2U/dy82dx1               -1.000
+    d2U/dx223dy2              -1.000
+    d2U/dy2dx223              -1.000
+    d2U/dy1dx82               -1.000
+    d2U/dx82dy1               -1.000
+    d2U/dy223dx2              -1.000
+    d2U/dx2dy223              -1.000
+    d2U/dy1dz82                1.000
+    d2U/dz82dy1                1.000
+    d2U/dy223dz2               1.000
+    d2U/dz2dy223               1.000
+    d2U/dz1dy82                1.000
+    d2U/dy82dz1                1.000
+    d2U/dz223dy2               1.000
+    d2U/dy2dz223               1.000
+    d2U/dx1dz90               -1.000
+    d2U/dz90dx1               -1.000
     d2U/dx215dz2              -1.000
     d2U/dz2dx215              -1.000
-    d2U/dy1dx76               -1.000
-    d2U/dx76dy1               -1.000
-    d2U/dy215dx2              -1.000
-    d2U/dx2dy215              -1.000
-    d2U/dz1dx76               -1.000
-    d2U/dx76dz1               -1.000
+    d2U/dy1dz90                1.000
+    d2U/dz90dy1                1.000
+    d2U/dy215dz2               1.000
+    d2U/dz2dy215               1.000
+    d2U/dz1dx90               -1.000
+    d2U/dx90dz1               -1.000
     d2U/dz215dx2              -1.000
     d2U/dx2dz215              -1.000
-    d2U/dx1dy78               -1.000
-    d2U/dy78dx1               -1.000
-    d2U/dx213dy2              -1.000
-    d2U/dy2dx213              -1.000
-    d2U/dy1dx78               -1.000
-    d2U/dx78dy1               -1.000
-    d2U/dy213dx2              -1.000
-    d2U/dx2dy213              -1.000
-    d2U/dy1dz78                1.000
-    d2U/dz78dy1                1.000
-    d2U/dy213dz2               1.000
-    d2U/dz2dy213               1.000
-    d2U/dz1dy78                1.000
-    d2U/dy78dz1                1.000
-    d2U/dz213dy2               1.000
-    d2U/dy2dz213               1.000
-    d2U/dx1dz86               -1.000
-    d2U/dz86dx1               -1.000
-    d2U/dx205dz2              -1.000
-    d2U/dz2dx205              -1.000
-    d2U/dy1dz86                1.000
-    d2U/dz86dy1                1.000
-    d2U/dy205dz2               1.000
-    d2U/dz2dy205               1.000
-    d2U/dz1dx86               -1.000
-    d2U/dx86dz1               -1.000
-    d2U/dz205dx2              -1.000
-    d2U/dx2dz205              -1.000
-    d2U/dz1dy86                1.000
-    d2U/dy86dz1                1.000
-    d2U/dz205dy2               1.000
-    d2U/dy2dz205               1.000
-    d2U/dx1dy137              -1.000
-    d2U/dy137dx1              -1.000
-    d2U/dx158dy2              -1.000
-    d2U/dy2dx158              -1.000
-    d2U/dy1dx137              -1.000
-    d2U/dx137dy1              -1.000
-    d2U/dy158dx2              -1.000
-    d2U/dx2dy158              -1.000
-    d2U/dy1dz137              -1.000
-    d2U/dz137dy1              -1.000
-    d2U/dy158dz2              -1.000
-    d2U/dz2dy158              -1.000
-    d2U/dz1dy137              -1.000
-    d2U/dy137dz1              -1.000
-    d2U/dz158dy2              -1.000
-    d2U/dy2dz158              -1.000
-    d2U/dx1dy139              -1.000
-    d2U/dy139dx1              -1.000
-    d2U/dx156dy2              -1.000
-    d2U/dy2dx156              -1.000
-    d2U/dx1dz139               1.000
-    d2U/dz139dx1               1.000
-    d2U/dx156dz2               1.000
-    d2U/dz2dx156               1.000
-    d2U/dy1dx139              -1.000
-    d2U/dx139dy1              -1.000
-    d2U/dy156dx2              -1.000
-    d2U/dx2dy156              -1.000
-    d2U/dz1dx139               1.000
-    d2U/dx139dz1               1.000
-    d2U/dz156dx2               1.000
-    d2U/dx2dz156               1.000
-    d2U/dx1dz147              -1.000
-    d2U/dz147dx1              -1.000
-    d2U/dx148dz2              -1.000
-    d2U/dz2dx148              -1.000
-    d2U/dy1dz147              -1.000
-    d2U/dz147dy1              -1.000
-    d2U/dy148dz2              -1.000
-    d2U/dz2dy148              -1.000
-    d2U/dz1dx147              -1.000
-    d2U/dx147dz1              -1.000
-    d2U/dz148dx2              -1.000
-    d2U/dx2dz148              -1.000
-    d2U/dz1dy147              -1.000
-    d2U/dy147dz1              -1.000
-    d2U/dz148dy2              -1.000
-    d2U/dy2dz148              -1.000
-    d2U/dx1dy151               1.000
-    d2U/dy151dx1               1.000
-    d2U/dx144dy2               1.000
-    d2U/dy2dx144               1.000
-    d2U/dx1dz151              -1.000
-    d2U/dz151dx1              -1.000
-    d2U/dx144dz2              -1.000
-    d2U/dz2dx144              -1.000
-    d2U/dy1dx151               1.000
-    d2U/dx151dy1               1.000
-    d2U/dy144dx2               1.000
-    d2U/dx2dy144               1.000
-    d2U/dz1dx151              -1.000
-    d2U/dx151dz1              -1.000
-    d2U/dz144dx2              -1.000
-    d2U/dx2dz144              -1.000
-    d2U/dx1dz168               1.000
-    d2U/dz168dx1               1.000
-    d2U/dx126dz2               1.000
-    d2U/dz2dx126               1.000
-    d2U/dy1dz168              -1.000
-    d2U/dz168dy1              -1.000
-    d2U/dy126dz2              -1.000
-    d2U/dz2dy126              -1.000
-    d2U/dz1dx168               1.000
-    d2U/dx168dz1               1.000
-    d2U/dz126dx2               1.000
-    d2U/dx2dz126               1.000
-    d2U/dz1dy168              -1.000
-    d2U/dy168dz1              -1.000
-    d2U/dz126dy2              -1.000
-    d2U/dy2dz126              -1.000
-    d2U/dx1dy178               1.000
-    d2U/dy178dx1               1.000
-    d2U/dx116dy2               1.000
-    d2U/dy2dx116               1.000
-    d2U/dy1dx178               1.000
-    d2U/dx178dy1               1.000
-    d2U/dy116dx2               1.000
-    d2U/dx2dy116               1.000
-    d2U/dy1dz178              -1.000
-    d2U/dz178dy1              -1.000
-    d2U/dy116dz2              -1.000
-    d2U/dz2dy116              -1.000
-    d2U/dz1dy178              -1.000
-    d2U/dy178dz1              -1.000
-    d2U/dz116dy2              -1.000
-    d2U/dy2dz116              -1.000
+    d2U/dz1dy90                1.000
+    d2U/dy90dz1                1.000
+    d2U/dz215dy2               1.000
+    d2U/dy2dz215               1.000
+    d2U/dx1dy142              -1.000
+    d2U/dy142dx1              -1.000
+    d2U/dx163dy2              -1.000
+    d2U/dy2dx163              -1.000
+    d2U/dy1dx142              -1.000
+    d2U/dx142dy1              -1.000
+    d2U/dy163dx2              -1.000
+    d2U/dx2dy163              -1.000
+    d2U/dy1dz142              -1.000
+    d2U/dz142dy1              -1.000
+    d2U/dy163dz2              -1.000
+    d2U/dz2dy163              -1.000
+    d2U/dz1dy142              -1.000
+    d2U/dy142dz1              -1.000
+    d2U/dz163dy2              -1.000
+    d2U/dy2dz163              -1.000
+    d2U/dx1dy144              -1.000
+    d2U/dy144dx1              -1.000
+    d2U/dx161dy2              -1.000
+    d2U/dy2dx161              -1.000
+    d2U/dx1dz144               1.000
+    d2U/dz144dx1               1.000
+    d2U/dx161dz2               1.000
+    d2U/dz2dx161               1.000
+    d2U/dy1dx144              -1.000
+    d2U/dx144dy1              -1.000
+    d2U/dy161dx2              -1.000
+    d2U/dx2dy161              -1.000
+    d2U/dz1dx144               1.000
+    d2U/dx144dz1               1.000
+    d2U/dz161dx2               1.000
+    d2U/dx2dz161               1.000
+    d2U/dx1dz152              -1.000
+    d2U/dz152dx1              -1.000
+    d2U/dx153dz2              -1.000
+    d2U/dz2dx153              -1.000
+    d2U/dy1dz152              -1.000
+    d2U/dz152dy1              -1.000
+    d2U/dy153dz2              -1.000
+    d2U/dz2dy153              -1.000
+    d2U/dz1dx152              -1.000
+    d2U/dx152dz1              -1.000
+    d2U/dz153dx2              -1.000
+    d2U/dx2dz153              -1.000
+    d2U/dz1dy152              -1.000
+    d2U/dy152dz1              -1.000
+    d2U/dz153dy2              -1.000
+    d2U/dy2dz153              -1.000
+    d2U/dx1dy156               1.000
+    d2U/dy156dx1               1.000
+    d2U/dx149dy2               1.000
+    d2U/dy2dx149               1.000
+    d2U/dx1dz156              -1.000
+    d2U/dz156dx1              -1.000
+    d2U/dx149dz2              -1.000
+    d2U/dz2dx149              -1.000
+    d2U/dy1dx156               1.000
+    d2U/dx156dy1               1.000
+    d2U/dy149dx2               1.000
+    d2U/dx2dy149               1.000
+    d2U/dz1dx156              -1.000
+    d2U/dx156dz1              -1.000
+    d2U/dz149dx2              -1.000
+    d2U/dx2dz149              -1.000
+    d2U/dx1dz174               1.000
+    d2U/dz174dx1               1.000
+    d2U/dx131dz2               1.000
+    d2U/dz2dx131               1.000
+    d2U/dy1dz174              -1.000
+    d2U/dz174dy1              -1.000
+    d2U/dy131dz2              -1.000
+    d2U/dz2dy131              -1.000
+    d2U/dz1dx174               1.000
+    d2U/dx174dz1               1.000
+    d2U/dz131dx2               1.000
+    d2U/dx2dz131               1.000
+    d2U/dz1dy174              -1.000
+    d2U/dy174dz1              -1.000
+    d2U/dz131dy2              -1.000
+    d2U/dy2dz131              -1.000
+    d2U/dx1dy184               1.000
+    d2U/dy184dx1               1.000
+    d2U/dx121dy2               1.000
+    d2U/dy2dx121               1.000
+    d2U/dy1dx184               1.000
+    d2U/dx184dy1               1.000
+    d2U/dy121dx2               1.000
+    d2U/dx2dy121               1.000
+    d2U/dy1dz184              -1.000
+    d2U/dz184dy1              -1.000
+    d2U/dy121dz2              -1.000
+    d2U/dz2dy121              -1.000
+    d2U/dz1dy184              -1.000
+    d2U/dy184dz1              -1.000
+    d2U/dz121dy2              -1.000
+    d2U/dy2dz121              -1.000
  ============== RANK, GROUP ===============   2  28
  ---- # OF INDEPENDENT TERMS ------    1
-    d2U/dz1dz30           r12=    6.27993
+    d2U/dz1dz30           r12=    6.11935
  ---- # OF ALL TERMS, MAT   -------   48
     d2U/dz1dz30                1.000
     d2U/dz30dz1                1.000
@@ -3024,42 +3024,1378 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d2U/dx46dx1                1.000
     d2U/dx11dx2                1.000
     d2U/dx2dx11                1.000
-    d2U/dx1dx76                1.000
-    d2U/dx76dx1                1.000
-    d2U/dx215dx2               1.000
-    d2U/dx2dx215               1.000
-    d2U/dy1dy78                1.000
-    d2U/dy78dy1                1.000
-    d2U/dy213dy2               1.000
-    d2U/dy2dy213               1.000
-    d2U/dz1dz86                1.000
-    d2U/dz86dz1                1.000
+    d2U/dx1dx80                1.000
+    d2U/dx80dx1                1.000
+    d2U/dx225dx2               1.000
+    d2U/dx2dx225               1.000
+    d2U/dy1dy82                1.000
+    d2U/dy82dy1                1.000
+    d2U/dy223dy2               1.000
+    d2U/dy2dy223               1.000
+    d2U/dz1dz90                1.000
+    d2U/dz90dz1                1.000
+    d2U/dz215dz2               1.000
+    d2U/dz2dz215               1.000
+    d2U/dy1dy142               1.000
+    d2U/dy142dy1               1.000
+    d2U/dy163dy2               1.000
+    d2U/dy2dy163               1.000
+    d2U/dx1dx144               1.000
+    d2U/dx144dx1               1.000
+    d2U/dx161dx2               1.000
+    d2U/dx2dx161               1.000
+    d2U/dz1dz152               1.000
+    d2U/dz152dz1               1.000
+    d2U/dz153dz2               1.000
+    d2U/dz2dz153               1.000
+    d2U/dx1dx156               1.000
+    d2U/dx156dx1               1.000
+    d2U/dx149dx2               1.000
+    d2U/dx2dx149               1.000
+    d2U/dz1dz174               1.000
+    d2U/dz174dz1               1.000
+    d2U/dz131dz2               1.000
+    d2U/dz2dz131               1.000
+    d2U/dy1dy184               1.000
+    d2U/dy184dy1               1.000
+    d2U/dy121dy2               1.000
+    d2U/dy2dy121               1.000
+ ============== RANK, GROUP ===============   2  29
+ ---- # OF INDEPENDENT TERMS ------    1
+    d2U/dx1dx70           r12=    8.30544
+ ---- # OF ALL TERMS, MAT   -------   96
+    d2U/dx1dx70                1.000
+    d2U/dx70dx1                1.000
+    d2U/dx235dx2               1.000
+    d2U/dx2dx235               1.000
+    d2U/dy1dy74                1.000
+    d2U/dy74dy1                1.000
+    d2U/dy231dy2               1.000
+    d2U/dy2dy231               1.000
+    d2U/dx1dx78                1.000
+    d2U/dx78dx1                1.000
+    d2U/dx227dx2               1.000
+    d2U/dx2dx227               1.000
+    d2U/dy1dy84                1.000
+    d2U/dy84dy1                1.000
+    d2U/dy221dy2               1.000
+    d2U/dy2dy221               1.000
+    d2U/dz1dz98                1.000
+    d2U/dz98dz1                1.000
+    d2U/dz207dz2               1.000
+    d2U/dz2dz207               1.000
+    d2U/dz1dz100               1.000
+    d2U/dz100dz1               1.000
     d2U/dz205dz2               1.000
     d2U/dz2dz205               1.000
-    d2U/dy1dy137               1.000
-    d2U/dy137dy1               1.000
-    d2U/dy158dy2               1.000
-    d2U/dy2dy158               1.000
-    d2U/dx1dx139               1.000
-    d2U/dx139dx1               1.000
-    d2U/dx156dx2               1.000
-    d2U/dx2dx156               1.000
-    d2U/dz1dz147               1.000
-    d2U/dz147dz1               1.000
-    d2U/dz148dz2               1.000
-    d2U/dz2dz148               1.000
+    d2U/dy1dy110               1.000
+    d2U/dy110dy1               1.000
+    d2U/dy195dy2               1.000
+    d2U/dy2dy195               1.000
+    d2U/dx1dx114               1.000
+    d2U/dx114dx1               1.000
+    d2U/dx191dx2               1.000
+    d2U/dx2dx191               1.000
+    d2U/dz1dz120               1.000
+    d2U/dz120dz1               1.000
+    d2U/dz185dz2               1.000
+    d2U/dz2dz185               1.000
+    d2U/dz1dz122               1.000
+    d2U/dz122dz1               1.000
+    d2U/dz183dz2               1.000
+    d2U/dz2dz183               1.000
+    d2U/dx1dx128               1.000
+    d2U/dx128dx1               1.000
+    d2U/dx177dx2               1.000
+    d2U/dx2dx177               1.000
+    d2U/dy1dy132               1.000
+    d2U/dy132dy1               1.000
+    d2U/dy173dy2               1.000
+    d2U/dy2dy173               1.000
+    d2U/dy1dy140               1.000
+    d2U/dy140dy1               1.000
+    d2U/dy165dy2               1.000
+    d2U/dy2dy165               1.000
+    d2U/dx1dx146               1.000
+    d2U/dx146dx1               1.000
+    d2U/dx159dx2               1.000
+    d2U/dx2dx159               1.000
+    d2U/dz1dz148               1.000
+    d2U/dz148dz1               1.000
+    d2U/dz157dz2               1.000
+    d2U/dz2dz157               1.000
+    d2U/dz1dz150               1.000
+    d2U/dz150dz1               1.000
+    d2U/dz155dz2               1.000
+    d2U/dz2dz155               1.000
+    d2U/dx1dx160               1.000
+    d2U/dx160dx1               1.000
+    d2U/dx145dx2               1.000
+    d2U/dx2dx145               1.000
+    d2U/dy1dy162               1.000
+    d2U/dy162dy1               1.000
+    d2U/dy143dy2               1.000
+    d2U/dy2dy143               1.000
+    d2U/dz1dz204               1.000
+    d2U/dz204dz1               1.000
+    d2U/dz101dz2               1.000
+    d2U/dz2dz101               1.000
+    d2U/dz1dz206               1.000
+    d2U/dz206dz1               1.000
+    d2U/dz99dz2                1.000
+    d2U/dz2dz99                1.000
+    d2U/dy1dy212               1.000
+    d2U/dy212dy1               1.000
+    d2U/dy93dy2                1.000
+    d2U/dy2dy93                1.000
+    d2U/dx1dx216               1.000
+    d2U/dx216dx1               1.000
+    d2U/dx89dx2                1.000
+    d2U/dx2dx89                1.000
+    d2U/dy1dy222               1.000
+    d2U/dy222dy1               1.000
+    d2U/dy83dy2                1.000
+    d2U/dy2dy83                1.000
+    d2U/dx1dx224               1.000
+    d2U/dx224dx1               1.000
+    d2U/dx81dx2                1.000
+    d2U/dx2dx81                1.000
+ ============== RANK, GROUP ===============   2  30
+ ---- # OF INDEPENDENT TERMS ------    1
+    d2U/dx1dy70           r12=    8.30544
+ ---- # OF ALL TERMS, MAT   -------  192
+    d2U/dx1dy70                1.000
+    d2U/dy70dx1                1.000
+    d2U/dx235dy2               1.000
+    d2U/dy2dx235               1.000
+    d2U/dy1dx70                1.000
+    d2U/dx70dy1                1.000
+    d2U/dy235dx2               1.000
+    d2U/dx2dy235               1.000
+    d2U/dx1dy74                1.000
+    d2U/dy74dx1                1.000
+    d2U/dx231dy2               1.000
+    d2U/dy2dx231               1.000
+    d2U/dy1dx74                1.000
+    d2U/dx74dy1                1.000
+    d2U/dy231dx2               1.000
+    d2U/dx2dy231               1.000
+    d2U/dx1dz78                1.000
+    d2U/dz78dx1                1.000
+    d2U/dx227dz2               1.000
+    d2U/dz2dx227               1.000
+    d2U/dz1dx78                1.000
+    d2U/dx78dz1                1.000
+    d2U/dz227dx2               1.000
+    d2U/dx2dz227               1.000
+    d2U/dy1dz84               -1.000
+    d2U/dz84dy1               -1.000
+    d2U/dy221dz2              -1.000
+    d2U/dz2dy221              -1.000
+    d2U/dz1dy84               -1.000
+    d2U/dy84dz1               -1.000
+    d2U/dz221dy2              -1.000
+    d2U/dy2dz221              -1.000
+    d2U/dx1dz98                1.000
+    d2U/dz98dx1                1.000
+    d2U/dx207dz2               1.000
+    d2U/dz2dx207               1.000
+    d2U/dz1dx98                1.000
+    d2U/dx98dz1                1.000
+    d2U/dz207dx2               1.000
+    d2U/dx2dz207               1.000
+    d2U/dy1dz100              -1.000
+    d2U/dz100dy1              -1.000
+    d2U/dy205dz2              -1.000
+    d2U/dz2dy205              -1.000
+    d2U/dz1dy100              -1.000
+    d2U/dy100dz1              -1.000
+    d2U/dz205dy2              -1.000
+    d2U/dy2dz205              -1.000
+    d2U/dx1dy110               1.000
+    d2U/dy110dx1               1.000
+    d2U/dx195dy2               1.000
+    d2U/dy2dx195               1.000
+    d2U/dy1dx110               1.000
+    d2U/dx110dy1               1.000
+    d2U/dy195dx2               1.000
+    d2U/dx2dy195               1.000
+    d2U/dx1dy114               1.000
+    d2U/dy114dx1               1.000
+    d2U/dx191dy2               1.000
+    d2U/dy2dx191               1.000
+    d2U/dy1dx114               1.000
+    d2U/dx114dy1               1.000
+    d2U/dy191dx2               1.000
+    d2U/dx2dy191               1.000
+    d2U/dx1dz120               1.000
+    d2U/dz120dx1               1.000
+    d2U/dx185dz2               1.000
+    d2U/dz2dx185               1.000
+    d2U/dz1dx120               1.000
+    d2U/dx120dz1               1.000
+    d2U/dz185dx2               1.000
+    d2U/dx2dz185               1.000
+    d2U/dy1dz122              -1.000
+    d2U/dz122dy1              -1.000
+    d2U/dy183dz2              -1.000
+    d2U/dz2dy183              -1.000
+    d2U/dz1dy122              -1.000
+    d2U/dy122dz1              -1.000
+    d2U/dz183dy2              -1.000
+    d2U/dy2dz183              -1.000
+    d2U/dx1dz128               1.000
+    d2U/dz128dx1               1.000
+    d2U/dx177dz2               1.000
+    d2U/dz2dx177               1.000
+    d2U/dz1dx128               1.000
+    d2U/dx128dz1               1.000
+    d2U/dz177dx2               1.000
+    d2U/dx2dz177               1.000
+    d2U/dy1dz132              -1.000
+    d2U/dz132dy1              -1.000
+    d2U/dy173dz2              -1.000
+    d2U/dz2dy173              -1.000
+    d2U/dz1dy132              -1.000
+    d2U/dy132dz1              -1.000
+    d2U/dz173dy2              -1.000
+    d2U/dy2dz173              -1.000
+    d2U/dy1dz140               1.000
+    d2U/dz140dy1               1.000
+    d2U/dy165dz2               1.000
+    d2U/dz2dy165               1.000
+    d2U/dz1dy140               1.000
+    d2U/dy140dz1               1.000
+    d2U/dz165dy2               1.000
+    d2U/dy2dz165               1.000
+    d2U/dx1dz146              -1.000
+    d2U/dz146dx1              -1.000
+    d2U/dx159dz2              -1.000
+    d2U/dz2dx159              -1.000
+    d2U/dz1dx146              -1.000
+    d2U/dx146dz1              -1.000
+    d2U/dz159dx2              -1.000
+    d2U/dx2dz159              -1.000
+    d2U/dy1dz148               1.000
+    d2U/dz148dy1               1.000
+    d2U/dy157dz2               1.000
+    d2U/dz2dy157               1.000
+    d2U/dz1dy148               1.000
+    d2U/dy148dz1               1.000
+    d2U/dz157dy2               1.000
+    d2U/dy2dz157               1.000
+    d2U/dx1dz150              -1.000
+    d2U/dz150dx1              -1.000
+    d2U/dx155dz2              -1.000
+    d2U/dz2dx155              -1.000
+    d2U/dz1dx150              -1.000
+    d2U/dx150dz1              -1.000
+    d2U/dz155dx2              -1.000
+    d2U/dx2dz155              -1.000
+    d2U/dx1dy160              -1.000
+    d2U/dy160dx1              -1.000
+    d2U/dx145dy2              -1.000
+    d2U/dy2dx145              -1.000
+    d2U/dy1dx160              -1.000
+    d2U/dx160dy1              -1.000
+    d2U/dy145dx2              -1.000
+    d2U/dx2dy145              -1.000
+    d2U/dx1dy162              -1.000
+    d2U/dy162dx1              -1.000
+    d2U/dx143dy2              -1.000
+    d2U/dy2dx143              -1.000
+    d2U/dy1dx162              -1.000
+    d2U/dx162dy1              -1.000
+    d2U/dy143dx2              -1.000
+    d2U/dx2dy143              -1.000
+    d2U/dy1dz204               1.000
+    d2U/dz204dy1               1.000
+    d2U/dy101dz2               1.000
+    d2U/dz2dy101               1.000
+    d2U/dz1dy204               1.000
+    d2U/dy204dz1               1.000
+    d2U/dz101dy2               1.000
+    d2U/dy2dz101               1.000
+    d2U/dx1dz206              -1.000
+    d2U/dz206dx1              -1.000
+    d2U/dx99dz2               -1.000
+    d2U/dz2dx99               -1.000
+    d2U/dz1dx206              -1.000
+    d2U/dx206dz1              -1.000
+    d2U/dz99dx2               -1.000
+    d2U/dx2dz99               -1.000
+    d2U/dy1dz212               1.000
+    d2U/dz212dy1               1.000
+    d2U/dy93dz2                1.000
+    d2U/dz2dy93                1.000
+    d2U/dz1dy212               1.000
+    d2U/dy212dz1               1.000
+    d2U/dz93dy2                1.000
+    d2U/dy2dz93                1.000
+    d2U/dx1dz216              -1.000
+    d2U/dz216dx1              -1.000
+    d2U/dx89dz2               -1.000
+    d2U/dz2dx89               -1.000
+    d2U/dz1dx216              -1.000
+    d2U/dx216dz1              -1.000
+    d2U/dz89dx2               -1.000
+    d2U/dx2dz89               -1.000
+    d2U/dx1dy222              -1.000
+    d2U/dy222dx1              -1.000
+    d2U/dx83dy2               -1.000
+    d2U/dy2dx83               -1.000
+    d2U/dy1dx222              -1.000
+    d2U/dx222dy1              -1.000
+    d2U/dy83dx2               -1.000
+    d2U/dx2dy83               -1.000
+    d2U/dx1dy224              -1.000
+    d2U/dy224dx1              -1.000
+    d2U/dx81dy2               -1.000
+    d2U/dy2dx81               -1.000
+    d2U/dy1dx224              -1.000
+    d2U/dx224dy1              -1.000
+    d2U/dy81dx2               -1.000
+    d2U/dx2dy81               -1.000
+ ============== RANK, GROUP ===============   2  31
+ ---- # OF INDEPENDENT TERMS ------    1
+    d2U/dx1dz70           r12=    8.30544
+ ---- # OF ALL TERMS, MAT   -------  192
+    d2U/dx1dz70                1.000
+    d2U/dz70dx1                1.000
+    d2U/dx235dz2               1.000
+    d2U/dz2dx235               1.000
+    d2U/dz1dx70                1.000
+    d2U/dx70dz1                1.000
+    d2U/dz235dx2               1.000
+    d2U/dx2dz235               1.000
+    d2U/dy1dz74               -1.000
+    d2U/dz74dy1               -1.000
+    d2U/dy231dz2              -1.000
+    d2U/dz2dy231              -1.000
+    d2U/dz1dy74               -1.000
+    d2U/dy74dz1               -1.000
+    d2U/dz231dy2              -1.000
+    d2U/dy2dz231              -1.000
+    d2U/dx1dy78                1.000
+    d2U/dy78dx1                1.000
+    d2U/dx227dy2               1.000
+    d2U/dy2dx227               1.000
+    d2U/dy1dx78                1.000
+    d2U/dx78dy1                1.000
+    d2U/dy227dx2               1.000
+    d2U/dx2dy227               1.000
+    d2U/dx1dy84                1.000
+    d2U/dy84dx1                1.000
+    d2U/dx221dy2               1.000
+    d2U/dy2dx221               1.000
+    d2U/dy1dx84                1.000
+    d2U/dx84dy1                1.000
+    d2U/dy221dx2               1.000
+    d2U/dx2dy221               1.000
+    d2U/dy1dz98               -1.000
+    d2U/dz98dy1               -1.000
+    d2U/dy207dz2              -1.000
+    d2U/dz2dy207              -1.000
+    d2U/dz1dy98               -1.000
+    d2U/dy98dz1               -1.000
+    d2U/dz207dy2              -1.000
+    d2U/dy2dz207              -1.000
+    d2U/dx1dz100               1.000
+    d2U/dz100dx1               1.000
+    d2U/dx205dz2               1.000
+    d2U/dz2dx205               1.000
+    d2U/dz1dx100               1.000
+    d2U/dx100dz1               1.000
+    d2U/dz205dx2               1.000
+    d2U/dx2dz205               1.000
+    d2U/dy1dz110               1.000
+    d2U/dz110dy1               1.000
+    d2U/dy195dz2               1.000
+    d2U/dz2dy195               1.000
+    d2U/dz1dy110               1.000
+    d2U/dy110dz1               1.000
+    d2U/dz195dy2               1.000
+    d2U/dy2dz195               1.000
+    d2U/dx1dz114              -1.000
+    d2U/dz114dx1              -1.000
+    d2U/dx191dz2              -1.000
+    d2U/dz2dx191              -1.000
+    d2U/dz1dx114              -1.000
+    d2U/dx114dz1              -1.000
+    d2U/dz191dx2              -1.000
+    d2U/dx2dz191              -1.000
+    d2U/dy1dz120               1.000
+    d2U/dz120dy1               1.000
+    d2U/dy185dz2               1.000
+    d2U/dz2dy185               1.000
+    d2U/dz1dy120               1.000
+    d2U/dy120dz1               1.000
+    d2U/dz185dy2               1.000
+    d2U/dy2dz185               1.000
+    d2U/dx1dz122              -1.000
+    d2U/dz122dx1              -1.000
+    d2U/dx183dz2              -1.000
+    d2U/dz2dx183              -1.000
+    d2U/dz1dx122              -1.000
+    d2U/dx122dz1              -1.000
+    d2U/dz183dx2              -1.000
+    d2U/dx2dz183              -1.000
+    d2U/dx1dy128              -1.000
+    d2U/dy128dx1              -1.000
+    d2U/dx177dy2              -1.000
+    d2U/dy2dx177              -1.000
+    d2U/dy1dx128              -1.000
+    d2U/dx128dy1              -1.000
+    d2U/dy177dx2              -1.000
+    d2U/dx2dy177              -1.000
+    d2U/dx1dy132              -1.000
+    d2U/dy132dx1              -1.000
+    d2U/dx173dy2              -1.000
+    d2U/dy2dx173              -1.000
+    d2U/dy1dx132              -1.000
+    d2U/dx132dy1              -1.000
+    d2U/dy173dx2              -1.000
+    d2U/dx2dy173              -1.000
+    d2U/dx1dy140               1.000
+    d2U/dy140dx1               1.000
+    d2U/dx165dy2               1.000
+    d2U/dy2dx165               1.000
+    d2U/dy1dx140               1.000
+    d2U/dx140dy1               1.000
+    d2U/dy165dx2               1.000
+    d2U/dx2dy165               1.000
+    d2U/dx1dy146               1.000
+    d2U/dy146dx1               1.000
+    d2U/dx159dy2               1.000
+    d2U/dy2dx159               1.000
+    d2U/dy1dx146               1.000
+    d2U/dx146dy1               1.000
+    d2U/dy159dx2               1.000
+    d2U/dx2dy159               1.000
+    d2U/dx1dz148               1.000
+    d2U/dz148dx1               1.000
+    d2U/dx157dz2               1.000
+    d2U/dz2dx157               1.000
+    d2U/dz1dx148               1.000
+    d2U/dx148dz1               1.000
+    d2U/dz157dx2               1.000
+    d2U/dx2dz157               1.000
+    d2U/dy1dz150              -1.000
+    d2U/dz150dy1              -1.000
+    d2U/dy155dz2              -1.000
+    d2U/dz2dy155              -1.000
+    d2U/dz1dy150              -1.000
+    d2U/dy150dz1              -1.000
+    d2U/dz155dy2              -1.000
+    d2U/dy2dz155              -1.000
+    d2U/dx1dz160               1.000
+    d2U/dz160dx1               1.000
+    d2U/dx145dz2               1.000
+    d2U/dz2dx145               1.000
+    d2U/dz1dx160               1.000
+    d2U/dx160dz1               1.000
+    d2U/dz145dx2               1.000
+    d2U/dx2dz145               1.000
+    d2U/dy1dz162              -1.000
+    d2U/dz162dy1              -1.000
+    d2U/dy143dz2              -1.000
+    d2U/dz2dy143              -1.000
+    d2U/dz1dy162              -1.000
+    d2U/dy162dz1              -1.000
+    d2U/dz143dy2              -1.000
+    d2U/dy2dz143              -1.000
+    d2U/dx1dz204              -1.000
+    d2U/dz204dx1              -1.000
+    d2U/dx101dz2              -1.000
+    d2U/dz2dx101              -1.000
+    d2U/dz1dx204              -1.000
+    d2U/dx204dz1              -1.000
+    d2U/dz101dx2              -1.000
+    d2U/dx2dz101              -1.000
+    d2U/dy1dz206               1.000
+    d2U/dz206dy1               1.000
+    d2U/dy99dz2                1.000
+    d2U/dz2dy99                1.000
+    d2U/dz1dy206               1.000
+    d2U/dy206dz1               1.000
+    d2U/dz99dy2                1.000
+    d2U/dy2dz99                1.000
+    d2U/dx1dy212              -1.000
+    d2U/dy212dx1              -1.000
+    d2U/dx93dy2               -1.000
+    d2U/dy2dx93               -1.000
+    d2U/dy1dx212              -1.000
+    d2U/dx212dy1              -1.000
+    d2U/dy93dx2               -1.000
+    d2U/dx2dy93               -1.000
+    d2U/dx1dy216              -1.000
+    d2U/dy216dx1              -1.000
+    d2U/dx89dy2               -1.000
+    d2U/dy2dx89               -1.000
+    d2U/dy1dx216              -1.000
+    d2U/dx216dy1              -1.000
+    d2U/dy89dx2               -1.000
+    d2U/dx2dy89               -1.000
+    d2U/dy1dz222               1.000
+    d2U/dz222dy1               1.000
+    d2U/dy83dz2                1.000
+    d2U/dz2dy83                1.000
+    d2U/dz1dy222               1.000
+    d2U/dy222dz1               1.000
+    d2U/dz83dy2                1.000
+    d2U/dy2dz83                1.000
+    d2U/dx1dz224              -1.000
+    d2U/dz224dx1              -1.000
+    d2U/dx81dz2               -1.000
+    d2U/dz2dx81               -1.000
+    d2U/dz1dx224              -1.000
+    d2U/dx224dz1              -1.000
+    d2U/dz81dx2               -1.000
+    d2U/dx2dz81               -1.000
+ ============== RANK, GROUP ===============   2  32
+ ---- # OF INDEPENDENT TERMS ------    1
+    d2U/dy1dy70           r12=    8.30544
+ ---- # OF ALL TERMS, MAT   -------   96
+    d2U/dy1dy70                1.000
+    d2U/dy70dy1                1.000
+    d2U/dy235dy2               1.000
+    d2U/dy2dy235               1.000
+    d2U/dx1dx74                1.000
+    d2U/dx74dx1                1.000
+    d2U/dx231dx2               1.000
+    d2U/dx2dx231               1.000
+    d2U/dz1dz78                1.000
+    d2U/dz78dz1                1.000
+    d2U/dz227dz2               1.000
+    d2U/dz2dz227               1.000
+    d2U/dz1dz84                1.000
+    d2U/dz84dz1                1.000
+    d2U/dz221dz2               1.000
+    d2U/dz2dz221               1.000
+    d2U/dx1dx98                1.000
+    d2U/dx98dx1                1.000
+    d2U/dx207dx2               1.000
+    d2U/dx2dx207               1.000
+    d2U/dy1dy100               1.000
+    d2U/dy100dy1               1.000
+    d2U/dy205dy2               1.000
+    d2U/dy2dy205               1.000
+    d2U/dx1dx110               1.000
+    d2U/dx110dx1               1.000
+    d2U/dx195dx2               1.000
+    d2U/dx2dx195               1.000
+    d2U/dy1dy114               1.000
+    d2U/dy114dy1               1.000
+    d2U/dy191dy2               1.000
+    d2U/dy2dy191               1.000
+    d2U/dx1dx120               1.000
+    d2U/dx120dx1               1.000
+    d2U/dx185dx2               1.000
+    d2U/dx2dx185               1.000
+    d2U/dy1dy122               1.000
+    d2U/dy122dy1               1.000
+    d2U/dy183dy2               1.000
+    d2U/dy2dy183               1.000
+    d2U/dz1dz128               1.000
+    d2U/dz128dz1               1.000
+    d2U/dz177dz2               1.000
+    d2U/dz2dz177               1.000
+    d2U/dz1dz132               1.000
+    d2U/dz132dz1               1.000
+    d2U/dz173dz2               1.000
+    d2U/dz2dz173               1.000
+    d2U/dz1dz140               1.000
+    d2U/dz140dz1               1.000
+    d2U/dz165dz2               1.000
+    d2U/dz2dz165               1.000
+    d2U/dz1dz146               1.000
+    d2U/dz146dz1               1.000
+    d2U/dz159dz2               1.000
+    d2U/dz2dz159               1.000
+    d2U/dy1dy148               1.000
+    d2U/dy148dy1               1.000
+    d2U/dy157dy2               1.000
+    d2U/dy2dy157               1.000
+    d2U/dx1dx150               1.000
+    d2U/dx150dx1               1.000
+    d2U/dx155dx2               1.000
+    d2U/dx2dx155               1.000
+    d2U/dy1dy160               1.000
+    d2U/dy160dy1               1.000
+    d2U/dy145dy2               1.000
+    d2U/dy2dy145               1.000
+    d2U/dx1dx162               1.000
+    d2U/dx162dx1               1.000
+    d2U/dx143dx2               1.000
+    d2U/dx2dx143               1.000
+    d2U/dy1dy204               1.000
+    d2U/dy204dy1               1.000
+    d2U/dy101dy2               1.000
+    d2U/dy2dy101               1.000
+    d2U/dx1dx206               1.000
+    d2U/dx206dx1               1.000
+    d2U/dx99dx2                1.000
+    d2U/dx2dx99                1.000
+    d2U/dz1dz212               1.000
+    d2U/dz212dz1               1.000
+    d2U/dz93dz2                1.000
+    d2U/dz2dz93                1.000
+    d2U/dz1dz216               1.000
+    d2U/dz216dz1               1.000
+    d2U/dz89dz2                1.000
+    d2U/dz2dz89                1.000
+    d2U/dx1dx222               1.000
+    d2U/dx222dx1               1.000
+    d2U/dx83dx2                1.000
+    d2U/dx2dx83                1.000
+    d2U/dy1dy224               1.000
+    d2U/dy224dy1               1.000
+    d2U/dy81dy2                1.000
+    d2U/dy2dy81                1.000
+ ============== RANK, GROUP ===============   2  33
+ ---- # OF INDEPENDENT TERMS ------    1
+    d2U/dy1dz70           r12=    8.30544
+ ---- # OF ALL TERMS, MAT   -------  192
+    d2U/dy1dz70                1.000
+    d2U/dz70dy1                1.000
+    d2U/dy235dz2               1.000
+    d2U/dz2dy235               1.000
+    d2U/dz1dy70                1.000
+    d2U/dy70dz1                1.000
+    d2U/dz235dy2               1.000
+    d2U/dy2dz235               1.000
+    d2U/dx1dz74               -1.000
+    d2U/dz74dx1               -1.000
+    d2U/dx231dz2              -1.000
+    d2U/dz2dx231              -1.000
+    d2U/dz1dx74               -1.000
+    d2U/dx74dz1               -1.000
+    d2U/dz231dx2              -1.000
+    d2U/dx2dz231              -1.000
+    d2U/dy1dz78                1.000
+    d2U/dz78dy1                1.000
+    d2U/dy227dz2               1.000
+    d2U/dz2dy227               1.000
+    d2U/dz1dy78                1.000
+    d2U/dy78dz1                1.000
+    d2U/dz227dy2               1.000
+    d2U/dy2dz227               1.000
+    d2U/dx1dz84               -1.000
+    d2U/dz84dx1               -1.000
+    d2U/dx221dz2              -1.000
+    d2U/dz2dx221              -1.000
+    d2U/dz1dx84               -1.000
+    d2U/dx84dz1               -1.000
+    d2U/dz221dx2              -1.000
+    d2U/dx2dz221              -1.000
+    d2U/dx1dy98               -1.000
+    d2U/dy98dx1               -1.000
+    d2U/dx207dy2              -1.000
+    d2U/dy2dx207              -1.000
+    d2U/dy1dx98               -1.000
+    d2U/dx98dy1               -1.000
+    d2U/dy207dx2              -1.000
+    d2U/dx2dy207              -1.000
+    d2U/dx1dy100              -1.000
+    d2U/dy100dx1              -1.000
+    d2U/dx205dy2              -1.000
+    d2U/dy2dx205              -1.000
+    d2U/dy1dx100              -1.000
+    d2U/dx100dy1              -1.000
+    d2U/dy205dx2              -1.000
+    d2U/dx2dy205              -1.000
+    d2U/dx1dz110               1.000
+    d2U/dz110dx1               1.000
+    d2U/dx195dz2               1.000
+    d2U/dz2dx195               1.000
+    d2U/dz1dx110               1.000
+    d2U/dx110dz1               1.000
+    d2U/dz195dx2               1.000
+    d2U/dx2dz195               1.000
+    d2U/dy1dz114              -1.000
+    d2U/dz114dy1              -1.000
+    d2U/dy191dz2              -1.000
+    d2U/dz2dy191              -1.000
+    d2U/dz1dy114              -1.000
+    d2U/dy114dz1              -1.000
+    d2U/dz191dy2              -1.000
+    d2U/dy2dz191              -1.000
+    d2U/dx1dy120               1.000
+    d2U/dy120dx1               1.000
+    d2U/dx185dy2               1.000
+    d2U/dy2dx185               1.000
+    d2U/dy1dx120               1.000
+    d2U/dx120dy1               1.000
+    d2U/dy185dx2               1.000
+    d2U/dx2dy185               1.000
+    d2U/dx1dy122               1.000
+    d2U/dy122dx1               1.000
+    d2U/dx183dy2               1.000
+    d2U/dy2dx183               1.000
+    d2U/dy1dx122               1.000
+    d2U/dx122dy1               1.000
+    d2U/dy183dx2               1.000
+    d2U/dx2dy183               1.000
+    d2U/dy1dz128              -1.000
+    d2U/dz128dy1              -1.000
+    d2U/dy177dz2              -1.000
+    d2U/dz2dy177              -1.000
+    d2U/dz1dy128              -1.000
+    d2U/dy128dz1              -1.000
+    d2U/dz177dy2              -1.000
+    d2U/dy2dz177              -1.000
+    d2U/dx1dz132               1.000
+    d2U/dz132dx1               1.000
+    d2U/dx173dz2               1.000
+    d2U/dz2dx173               1.000
+    d2U/dz1dx132               1.000
+    d2U/dx132dz1               1.000
+    d2U/dz173dx2               1.000
+    d2U/dx2dz173               1.000
+    d2U/dx1dz140               1.000
+    d2U/dz140dx1               1.000
+    d2U/dx165dz2               1.000
+    d2U/dz2dx165               1.000
+    d2U/dz1dx140               1.000
+    d2U/dx140dz1               1.000
+    d2U/dz165dx2               1.000
+    d2U/dx2dz165               1.000
+    d2U/dy1dz146              -1.000
+    d2U/dz146dy1              -1.000
+    d2U/dy159dz2              -1.000
+    d2U/dz2dy159              -1.000
+    d2U/dz1dy146              -1.000
+    d2U/dy146dz1              -1.000
+    d2U/dz159dy2              -1.000
+    d2U/dy2dz159              -1.000
+    d2U/dx1dy148               1.000
+    d2U/dy148dx1               1.000
+    d2U/dx157dy2               1.000
+    d2U/dy2dx157               1.000
+    d2U/dy1dx148               1.000
+    d2U/dx148dy1               1.000
+    d2U/dy157dx2               1.000
+    d2U/dx2dy157               1.000
+    d2U/dx1dy150               1.000
+    d2U/dy150dx1               1.000
+    d2U/dx155dy2               1.000
+    d2U/dy2dx155               1.000
+    d2U/dy1dx150               1.000
+    d2U/dx150dy1               1.000
+    d2U/dy155dx2               1.000
+    d2U/dx2dy155               1.000
+    d2U/dy1dz160              -1.000
+    d2U/dz160dy1              -1.000
+    d2U/dy145dz2              -1.000
+    d2U/dz2dy145              -1.000
+    d2U/dz1dy160              -1.000
+    d2U/dy160dz1              -1.000
+    d2U/dz145dy2              -1.000
+    d2U/dy2dz145              -1.000
+    d2U/dx1dz162               1.000
+    d2U/dz162dx1               1.000
+    d2U/dx143dz2               1.000
+    d2U/dz2dx143               1.000
+    d2U/dz1dx162               1.000
+    d2U/dx162dz1               1.000
+    d2U/dz143dx2               1.000
+    d2U/dx2dz143               1.000
+    d2U/dx1dy204              -1.000
+    d2U/dy204dx1              -1.000
+    d2U/dx101dy2              -1.000
+    d2U/dy2dx101              -1.000
+    d2U/dy1dx204              -1.000
+    d2U/dx204dy1              -1.000
+    d2U/dy101dx2              -1.000
+    d2U/dx2dy101              -1.000
+    d2U/dx1dy206              -1.000
+    d2U/dy206dx1              -1.000
+    d2U/dx99dy2               -1.000
+    d2U/dy2dx99               -1.000
+    d2U/dy1dx206              -1.000
+    d2U/dx206dy1              -1.000
+    d2U/dy99dx2               -1.000
+    d2U/dx2dy99               -1.000
+    d2U/dx1dz212              -1.000
+    d2U/dz212dx1              -1.000
+    d2U/dx93dz2               -1.000
+    d2U/dz2dx93               -1.000
+    d2U/dz1dx212              -1.000
+    d2U/dx212dz1              -1.000
+    d2U/dz93dx2               -1.000
+    d2U/dx2dz93               -1.000
+    d2U/dy1dz216               1.000
+    d2U/dz216dy1               1.000
+    d2U/dy89dz2                1.000
+    d2U/dz2dy89                1.000
+    d2U/dz1dy216               1.000
+    d2U/dy216dz1               1.000
+    d2U/dz89dy2                1.000
+    d2U/dy2dz89                1.000
+    d2U/dx1dz222              -1.000
+    d2U/dz222dx1              -1.000
+    d2U/dx83dz2               -1.000
+    d2U/dz2dx83               -1.000
+    d2U/dz1dx222              -1.000
+    d2U/dx222dz1              -1.000
+    d2U/dz83dx2               -1.000
+    d2U/dx2dz83               -1.000
+    d2U/dy1dz224               1.000
+    d2U/dz224dy1               1.000
+    d2U/dy81dz2                1.000
+    d2U/dz2dy81                1.000
+    d2U/dz1dy224               1.000
+    d2U/dy224dz1               1.000
+    d2U/dz81dy2                1.000
+    d2U/dy2dz81                1.000
+ ============== RANK, GROUP ===============   2  34
+ ---- # OF INDEPENDENT TERMS ------    1
+    d2U/dz1dz70           r12=    8.30544
+ ---- # OF ALL TERMS, MAT   -------   96
+    d2U/dz1dz70                1.000
+    d2U/dz70dz1                1.000
+    d2U/dz235dz2               1.000
+    d2U/dz2dz235               1.000
+    d2U/dz1dz74                1.000
+    d2U/dz74dz1                1.000
+    d2U/dz231dz2               1.000
+    d2U/dz2dz231               1.000
+    d2U/dy1dy78                1.000
+    d2U/dy78dy1                1.000
+    d2U/dy227dy2               1.000
+    d2U/dy2dy227               1.000
+    d2U/dx1dx84                1.000
+    d2U/dx84dx1                1.000
+    d2U/dx221dx2               1.000
+    d2U/dx2dx221               1.000
+    d2U/dy1dy98                1.000
+    d2U/dy98dy1                1.000
+    d2U/dy207dy2               1.000
+    d2U/dy2dy207               1.000
+    d2U/dx1dx100               1.000
+    d2U/dx100dx1               1.000
+    d2U/dx205dx2               1.000
+    d2U/dx2dx205               1.000
+    d2U/dz1dz110               1.000
+    d2U/dz110dz1               1.000
+    d2U/dz195dz2               1.000
+    d2U/dz2dz195               1.000
+    d2U/dz1dz114               1.000
+    d2U/dz114dz1               1.000
+    d2U/dz191dz2               1.000
+    d2U/dz2dz191               1.000
+    d2U/dy1dy120               1.000
+    d2U/dy120dy1               1.000
+    d2U/dy185dy2               1.000
+    d2U/dy2dy185               1.000
+    d2U/dx1dx122               1.000
+    d2U/dx122dx1               1.000
+    d2U/dx183dx2               1.000
+    d2U/dx2dx183               1.000
+    d2U/dy1dy128               1.000
+    d2U/dy128dy1               1.000
+    d2U/dy177dy2               1.000
+    d2U/dy2dy177               1.000
+    d2U/dx1dx132               1.000
+    d2U/dx132dx1               1.000
+    d2U/dx173dx2               1.000
+    d2U/dx2dx173               1.000
+    d2U/dx1dx140               1.000
+    d2U/dx140dx1               1.000
+    d2U/dx165dx2               1.000
+    d2U/dx2dx165               1.000
+    d2U/dy1dy146               1.000
+    d2U/dy146dy1               1.000
+    d2U/dy159dy2               1.000
+    d2U/dy2dy159               1.000
+    d2U/dx1dx148               1.000
+    d2U/dx148dx1               1.000
+    d2U/dx157dx2               1.000
+    d2U/dx2dx157               1.000
+    d2U/dy1dy150               1.000
+    d2U/dy150dy1               1.000
+    d2U/dy155dy2               1.000
+    d2U/dy2dy155               1.000
+    d2U/dz1dz160               1.000
+    d2U/dz160dz1               1.000
+    d2U/dz145dz2               1.000
+    d2U/dz2dz145               1.000
+    d2U/dz1dz162               1.000
+    d2U/dz162dz1               1.000
+    d2U/dz143dz2               1.000
+    d2U/dz2dz143               1.000
+    d2U/dx1dx204               1.000
+    d2U/dx204dx1               1.000
+    d2U/dx101dx2               1.000
+    d2U/dx2dx101               1.000
+    d2U/dy1dy206               1.000
+    d2U/dy206dy1               1.000
+    d2U/dy99dy2                1.000
+    d2U/dy2dy99                1.000
+    d2U/dx1dx212               1.000
+    d2U/dx212dx1               1.000
+    d2U/dx93dx2                1.000
+    d2U/dx2dx93                1.000
+    d2U/dy1dy216               1.000
+    d2U/dy216dy1               1.000
+    d2U/dy89dy2                1.000
+    d2U/dy2dy89                1.000
+    d2U/dz1dz222               1.000
+    d2U/dz222dz1               1.000
+    d2U/dz83dz2                1.000
+    d2U/dz2dz83                1.000
+    d2U/dz1dz224               1.000
+    d2U/dz224dz1               1.000
+    d2U/dz81dz2                1.000
+    d2U/dz2dz81                1.000
+ ============== RANK, GROUP ===============   2  35
+ ---- # OF INDEPENDENT TERMS ------    1
+    d2U/dx1dx79           r12=    7.94152
+ ---- # OF ALL TERMS, MAT   -------   48
+    d2U/dx1dx79                1.000
+    d2U/dx79dx1                1.000
+    d2U/dx225dx1               1.000
+    d2U/dx1dx225               1.000
+    d2U/dy1dy83                1.000
+    d2U/dy83dy1                1.000
+    d2U/dy221dy1               1.000
+    d2U/dy1dy221               1.000
+    d2U/dz1dz99                1.000
+    d2U/dz99dz1                1.000
+    d2U/dz205dz1               1.000
+    d2U/dz1dz205               1.000
+    d2U/dy1dy141               1.000
+    d2U/dy141dy1               1.000
+    d2U/dy163dy1               1.000
+    d2U/dy1dy163               1.000
+    d2U/dx1dx145               1.000
+    d2U/dx145dx1               1.000
+    d2U/dx159dx1               1.000
+    d2U/dx1dx159               1.000
+    d2U/dz1dz151               1.000
+    d2U/dz151dz1               1.000
+    d2U/dz153dz1               1.000
+    d2U/dz1dz153               1.000
+    d2U/dx2dx80                1.000
+    d2U/dx80dx2                1.000
+    d2U/dx226dx2               1.000
+    d2U/dx2dx226               1.000
+    d2U/dy2dy84                1.000
+    d2U/dy84dy2                1.000
+    d2U/dy222dy2               1.000
+    d2U/dy2dy222               1.000
+    d2U/dz2dz100               1.000
+    d2U/dz100dz2               1.000
+    d2U/dz206dz2               1.000
+    d2U/dz2dz206               1.000
+    d2U/dy2dy142               1.000
+    d2U/dy142dy2               1.000
+    d2U/dy164dy2               1.000
+    d2U/dy2dy164               1.000
+    d2U/dx2dx146               1.000
+    d2U/dx146dx2               1.000
+    d2U/dx160dx2               1.000
+    d2U/dx2dx160               1.000
+    d2U/dz2dz152               1.000
+    d2U/dz152dz2               1.000
+    d2U/dz154dz2               1.000
+    d2U/dz2dz154               1.000
+ ============== RANK, GROUP ===============   2  36
+ ---- # OF INDEPENDENT TERMS ------    1
+    d2U/dx1dy79           r12=    7.94152
+ ---- # OF ALL TERMS, MAT   -------  192
+    d2U/dx1dy79                1.000
+    d2U/dy79dx1                1.000
+    d2U/dx225dy1               1.000
+    d2U/dy1dx225               1.000
+    d2U/dx1dz79                1.000
+    d2U/dz79dx1                1.000
+    d2U/dx225dz1               1.000
+    d2U/dz1dx225               1.000
+    d2U/dy1dx79               -1.000
+    d2U/dx79dy1               -1.000
+    d2U/dy225dx1              -1.000
+    d2U/dx1dy225              -1.000
+    d2U/dz1dx79               -1.000
+    d2U/dx79dz1               -1.000
+    d2U/dz225dx1              -1.000
+    d2U/dx1dz225              -1.000
+    d2U/dx1dy83               -1.000
+    d2U/dy83dx1               -1.000
+    d2U/dx221dy1              -1.000
+    d2U/dy1dx221              -1.000
+    d2U/dy1dx83                1.000
+    d2U/dx83dy1                1.000
+    d2U/dy221dx1               1.000
+    d2U/dx1dy221               1.000
+    d2U/dy1dz83               -1.000
+    d2U/dz83dy1               -1.000
+    d2U/dy221dz1              -1.000
+    d2U/dz1dy221              -1.000
+    d2U/dz1dy83                1.000
+    d2U/dy83dz1                1.000
+    d2U/dz221dy1               1.000
+    d2U/dy1dz221               1.000
+    d2U/dx1dz99               -1.000
+    d2U/dz99dx1               -1.000
+    d2U/dx205dz1              -1.000
+    d2U/dz1dx205              -1.000
+    d2U/dy1dz99                1.000
+    d2U/dz99dy1                1.000
+    d2U/dy205dz1               1.000
+    d2U/dz1dy205               1.000
+    d2U/dz1dx99                1.000
+    d2U/dx99dz1                1.000
+    d2U/dz205dx1               1.000
+    d2U/dx1dz205               1.000
+    d2U/dz1dy99               -1.000
+    d2U/dy99dz1               -1.000
+    d2U/dz205dy1              -1.000
+    d2U/dy1dz205              -1.000
+    d2U/dx1dy141              -1.000
+    d2U/dy141dx1              -1.000
+    d2U/dx163dy1              -1.000
+    d2U/dy1dx163              -1.000
+    d2U/dy1dx141               1.000
+    d2U/dx141dy1               1.000
+    d2U/dy163dx1               1.000
+    d2U/dx1dy163               1.000
+    d2U/dy1dz141               1.000
+    d2U/dz141dy1               1.000
+    d2U/dy163dz1               1.000
+    d2U/dz1dy163               1.000
+    d2U/dz1dy141              -1.000
+    d2U/dy141dz1              -1.000
+    d2U/dz163dy1              -1.000
+    d2U/dy1dz163              -1.000
+    d2U/dx1dy145               1.000
+    d2U/dy145dx1               1.000
+    d2U/dx159dy1               1.000
+    d2U/dy1dx159               1.000
+    d2U/dx1dz145              -1.000
+    d2U/dz145dx1              -1.000
+    d2U/dx159dz1              -1.000
+    d2U/dz1dx159              -1.000
+    d2U/dy1dx145              -1.000
+    d2U/dx145dy1              -1.000
+    d2U/dy159dx1              -1.000
+    d2U/dx1dy159              -1.000
+    d2U/dz1dx145               1.000
+    d2U/dx145dz1               1.000
+    d2U/dz159dx1               1.000
+    d2U/dx1dz159               1.000
+    d2U/dx1dz151              -1.000
+    d2U/dz151dx1              -1.000
+    d2U/dx153dz1              -1.000
+    d2U/dz1dx153              -1.000
+    d2U/dy1dz151              -1.000
+    d2U/dz151dy1              -1.000
+    d2U/dy153dz1              -1.000
+    d2U/dz1dy153              -1.000
+    d2U/dz1dx151               1.000
+    d2U/dx151dz1               1.000
+    d2U/dz153dx1               1.000
+    d2U/dx1dz153               1.000
+    d2U/dz1dy151               1.000
+    d2U/dy151dz1               1.000
+    d2U/dz153dy1               1.000
+    d2U/dy1dz153               1.000
+    d2U/dx2dy80               -1.000
+    d2U/dy80dx2               -1.000
+    d2U/dx226dy2              -1.000
+    d2U/dy2dx226              -1.000
+    d2U/dx2dz80               -1.000
+    d2U/dz80dx2               -1.000
+    d2U/dx226dz2              -1.000
+    d2U/dz2dx226              -1.000
+    d2U/dy2dx80                1.000
+    d2U/dx80dy2                1.000
+    d2U/dy226dx2               1.000
+    d2U/dx2dy226               1.000
+    d2U/dz2dx80                1.000
+    d2U/dx80dz2                1.000
+    d2U/dz226dx2               1.000
+    d2U/dx2dz226               1.000
+    d2U/dx2dy84                1.000
+    d2U/dy84dx2                1.000
+    d2U/dx222dy2               1.000
+    d2U/dy2dx222               1.000
+    d2U/dy2dx84               -1.000
+    d2U/dx84dy2               -1.000
+    d2U/dy222dx2              -1.000
+    d2U/dx2dy222              -1.000
+    d2U/dy2dz84                1.000
+    d2U/dz84dy2                1.000
+    d2U/dy222dz2               1.000
+    d2U/dz2dy222               1.000
+    d2U/dz2dy84               -1.000
+    d2U/dy84dz2               -1.000
+    d2U/dz222dy2              -1.000
+    d2U/dy2dz222              -1.000
+    d2U/dx2dz100               1.000
+    d2U/dz100dx2               1.000
+    d2U/dx206dz2               1.000
+    d2U/dz2dx206               1.000
+    d2U/dy2dz100              -1.000
+    d2U/dz100dy2              -1.000
+    d2U/dy206dz2              -1.000
+    d2U/dz2dy206              -1.000
+    d2U/dz2dx100              -1.000
+    d2U/dx100dz2              -1.000
+    d2U/dz206dx2              -1.000
+    d2U/dx2dz206              -1.000
+    d2U/dz2dy100               1.000
+    d2U/dy100dz2               1.000
+    d2U/dz206dy2               1.000
+    d2U/dy2dz206               1.000
+    d2U/dx2dy142               1.000
+    d2U/dy142dx2               1.000
+    d2U/dx164dy2               1.000
+    d2U/dy2dx164               1.000
+    d2U/dy2dx142              -1.000
+    d2U/dx142dy2              -1.000
+    d2U/dy164dx2              -1.000
+    d2U/dx2dy164              -1.000
+    d2U/dy2dz142              -1.000
+    d2U/dz142dy2              -1.000
+    d2U/dy164dz2              -1.000
+    d2U/dz2dy164              -1.000
+    d2U/dz2dy142               1.000
+    d2U/dy142dz2               1.000
+    d2U/dz164dy2               1.000
+    d2U/dy2dz164               1.000
+    d2U/dx2dy146              -1.000
+    d2U/dy146dx2              -1.000
+    d2U/dx160dy2              -1.000
+    d2U/dy2dx160              -1.000
+    d2U/dx2dz146               1.000
+    d2U/dz146dx2               1.000
+    d2U/dx160dz2               1.000
+    d2U/dz2dx160               1.000
+    d2U/dy2dx146               1.000
+    d2U/dx146dy2               1.000
+    d2U/dy160dx2               1.000
+    d2U/dx2dy160               1.000
+    d2U/dz2dx146              -1.000
+    d2U/dx146dz2              -1.000
+    d2U/dz160dx2              -1.000
+    d2U/dx2dz160              -1.000
+    d2U/dx2dz152               1.000
+    d2U/dz152dx2               1.000
+    d2U/dx154dz2               1.000
+    d2U/dz2dx154               1.000
+    d2U/dy2dz152               1.000
+    d2U/dz152dy2               1.000
+    d2U/dy154dz2               1.000
+    d2U/dz2dy154               1.000
+    d2U/dz2dx152              -1.000
+    d2U/dx152dz2              -1.000
+    d2U/dz154dx2              -1.000
+    d2U/dx2dz154              -1.000
+    d2U/dz2dy152              -1.000
+    d2U/dy152dz2              -1.000
+    d2U/dz154dy2              -1.000
+    d2U/dy2dz154              -1.000
+ ============== RANK, GROUP ===============   2  37
+ ---- # OF INDEPENDENT TERMS ------    1
+    d2U/dy1dy79           r12=    7.94152
+ ---- # OF ALL TERMS, MAT   -------   96
+    d2U/dy1dy79                1.000
+    d2U/dy79dy1                1.000
+    d2U/dy225dy1               1.000
+    d2U/dy1dy225               1.000
+    d2U/dz1dz79                1.000
+    d2U/dz79dz1                1.000
+    d2U/dz225dz1               1.000
+    d2U/dz1dz225               1.000
+    d2U/dx1dx83                1.000
+    d2U/dx83dx1                1.000
+    d2U/dx221dx1               1.000
+    d2U/dx1dx221               1.000
+    d2U/dz1dz83                1.000
+    d2U/dz83dz1                1.000
+    d2U/dz221dz1               1.000
+    d2U/dz1dz221               1.000
+    d2U/dx1dx99                1.000
+    d2U/dx99dx1                1.000
+    d2U/dx205dx1               1.000
+    d2U/dx1dx205               1.000
+    d2U/dy1dy99                1.000
+    d2U/dy99dy1                1.000
+    d2U/dy205dy1               1.000
+    d2U/dy1dy205               1.000
+    d2U/dx1dx141               1.000
+    d2U/dx141dx1               1.000
+    d2U/dx163dx1               1.000
+    d2U/dx1dx163               1.000
+    d2U/dz1dz141               1.000
+    d2U/dz141dz1               1.000
+    d2U/dz163dz1               1.000
+    d2U/dz1dz163               1.000
+    d2U/dy1dy145               1.000
+    d2U/dy145dy1               1.000
+    d2U/dy159dy1               1.000
+    d2U/dy1dy159               1.000
+    d2U/dz1dz145               1.000
+    d2U/dz145dz1               1.000
+    d2U/dz159dz1               1.000
+    d2U/dz1dz159               1.000
     d2U/dx1dx151               1.000
     d2U/dx151dx1               1.000
-    d2U/dx144dx2               1.000
-    d2U/dx2dx144               1.000
-    d2U/dz1dz168               1.000
-    d2U/dz168dz1               1.000
-    d2U/dz126dz2               1.000
-    d2U/dz2dz126               1.000
-    d2U/dy1dy178               1.000
-    d2U/dy178dy1               1.000
-    d2U/dy116dy2               1.000
-    d2U/dy2dy116               1.000
+    d2U/dx153dx1               1.000
+    d2U/dx1dx153               1.000
+    d2U/dy1dy151               1.000
+    d2U/dy151dy1               1.000
+    d2U/dy153dy1               1.000
+    d2U/dy1dy153               1.000
+    d2U/dy2dy80                1.000
+    d2U/dy80dy2                1.000
+    d2U/dy226dy2               1.000
+    d2U/dy2dy226               1.000
+    d2U/dz2dz80                1.000
+    d2U/dz80dz2                1.000
+    d2U/dz226dz2               1.000
+    d2U/dz2dz226               1.000
+    d2U/dx2dx84                1.000
+    d2U/dx84dx2                1.000
+    d2U/dx222dx2               1.000
+    d2U/dx2dx222               1.000
+    d2U/dz2dz84                1.000
+    d2U/dz84dz2                1.000
+    d2U/dz222dz2               1.000
+    d2U/dz2dz222               1.000
+    d2U/dx2dx100               1.000
+    d2U/dx100dx2               1.000
+    d2U/dx206dx2               1.000
+    d2U/dx2dx206               1.000
+    d2U/dy2dy100               1.000
+    d2U/dy100dy2               1.000
+    d2U/dy206dy2               1.000
+    d2U/dy2dy206               1.000
+    d2U/dx2dx142               1.000
+    d2U/dx142dx2               1.000
+    d2U/dx164dx2               1.000
+    d2U/dx2dx164               1.000
+    d2U/dz2dz142               1.000
+    d2U/dz142dz2               1.000
+    d2U/dz164dz2               1.000
+    d2U/dz2dz164               1.000
+    d2U/dy2dy146               1.000
+    d2U/dy146dy2               1.000
+    d2U/dy160dy2               1.000
+    d2U/dy2dy160               1.000
+    d2U/dz2dz146               1.000
+    d2U/dz146dz2               1.000
+    d2U/dz160dz2               1.000
+    d2U/dz2dz160               1.000
+    d2U/dx2dx152               1.000
+    d2U/dx152dx2               1.000
+    d2U/dx154dx2               1.000
+    d2U/dx2dx154               1.000
+    d2U/dy2dy152               1.000
+    d2U/dy152dy2               1.000
+    d2U/dy154dy2               1.000
+    d2U/dy2dy154               1.000
+ ============== RANK, GROUP ===============   2  38
+ ---- # OF INDEPENDENT TERMS ------    1
+    d2U/dy1dz79           r12=    7.94152
+ ---- # OF ALL TERMS, MAT   -------   96
+    d2U/dy1dz79                1.000
+    d2U/dz79dy1                1.000
+    d2U/dy225dz1               1.000
+    d2U/dz1dy225               1.000
+    d2U/dz1dy79                1.000
+    d2U/dy79dz1                1.000
+    d2U/dz225dy1               1.000
+    d2U/dy1dz225               1.000
+    d2U/dx1dz83               -1.000
+    d2U/dz83dx1               -1.000
+    d2U/dx221dz1              -1.000
+    d2U/dz1dx221              -1.000
+    d2U/dz1dx83               -1.000
+    d2U/dx83dz1               -1.000
+    d2U/dz221dx1              -1.000
+    d2U/dx1dz221              -1.000
+    d2U/dx1dy99               -1.000
+    d2U/dy99dx1               -1.000
+    d2U/dx205dy1              -1.000
+    d2U/dy1dx205              -1.000
+    d2U/dy1dx99               -1.000
+    d2U/dx99dy1               -1.000
+    d2U/dy205dx1              -1.000
+    d2U/dx1dy205              -1.000
+    d2U/dx1dz141               1.000
+    d2U/dz141dx1               1.000
+    d2U/dx163dz1               1.000
+    d2U/dz1dx163               1.000
+    d2U/dz1dx141               1.000
+    d2U/dx141dz1               1.000
+    d2U/dz163dx1               1.000
+    d2U/dx1dz163               1.000
+    d2U/dy1dz145              -1.000
+    d2U/dz145dy1              -1.000
+    d2U/dy159dz1              -1.000
+    d2U/dz1dy159              -1.000
+    d2U/dz1dy145              -1.000
+    d2U/dy145dz1              -1.000
+    d2U/dz159dy1              -1.000
+    d2U/dy1dz159              -1.000
+    d2U/dx1dy151               1.000
+    d2U/dy151dx1               1.000
+    d2U/dx153dy1               1.000
+    d2U/dy1dx153               1.000
+    d2U/dy1dx151               1.000
+    d2U/dx151dy1               1.000
+    d2U/dy153dx1               1.000
+    d2U/dx1dy153               1.000
+    d2U/dy2dz80                1.000
+    d2U/dz80dy2                1.000
+    d2U/dy226dz2               1.000
+    d2U/dz2dy226               1.000
+    d2U/dz2dy80                1.000
+    d2U/dy80dz2                1.000
+    d2U/dz226dy2               1.000
+    d2U/dy2dz226               1.000
+    d2U/dx2dz84               -1.000
+    d2U/dz84dx2               -1.000
+    d2U/dx222dz2              -1.000
+    d2U/dz2dx222              -1.000
+    d2U/dz2dx84               -1.000
+    d2U/dx84dz2               -1.000
+    d2U/dz222dx2              -1.000
+    d2U/dx2dz222              -1.000
+    d2U/dx2dy100              -1.000
+    d2U/dy100dx2              -1.000
+    d2U/dx206dy2              -1.000
+    d2U/dy2dx206              -1.000
+    d2U/dy2dx100              -1.000
+    d2U/dx100dy2              -1.000
+    d2U/dy206dx2              -1.000
+    d2U/dx2dy206              -1.000
+    d2U/dx2dz142               1.000
+    d2U/dz142dx2               1.000
+    d2U/dx164dz2               1.000
+    d2U/dz2dx164               1.000
+    d2U/dz2dx142               1.000
+    d2U/dx142dz2               1.000
+    d2U/dz164dx2               1.000
+    d2U/dx2dz164               1.000
+    d2U/dy2dz146              -1.000
+    d2U/dz146dy2              -1.000
+    d2U/dy160dz2              -1.000
+    d2U/dz2dy160              -1.000
+    d2U/dz2dy146              -1.000
+    d2U/dy146dz2              -1.000
+    d2U/dz160dy2              -1.000
+    d2U/dy2dz160              -1.000
+    d2U/dx2dy152               1.000
+    d2U/dy152dx2               1.000
+    d2U/dx154dy2               1.000
+    d2U/dy2dx154               1.000
+    d2U/dy2dx152               1.000
+    d2U/dx152dy2               1.000
+    d2U/dy154dx2               1.000
+    d2U/dx2dy154               1.000
  ============== RANK, GROUP ===============   3   1
  ---- # OF INDEPENDENT TERMS ------    1
     d3U/dx1dy1dz1           r12=    0.00000
@@ -8156,7 +9492,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dy2dz12dz12           -1.000
  ============== RANK, GROUP ===============   3  16
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dx2dx12           r12=    2.49539
+    d3U/dx1dx2dx12           r12=    2.43158
  ---- # OF ALL TERMS, MAT   -------  180
     d3U/dx1dx2dx12             1.000
     d3U/dx1dx12dx2             1.000
@@ -8340,7 +9676,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dx32dx2dx33           -1.000
  ============== RANK, GROUP ===============   3  17
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dx2dy12           r12=    2.49539
+    d3U/dx1dx2dy12           r12=    2.43158
  ---- # OF ALL TERMS, MAT   -------  720
     d3U/dx1dx2dy12             1.000
     d3U/dx1dy12dx2             1.000
@@ -9064,7 +10400,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dx32dz2dx33            1.000
  ============== RANK, GROUP ===============   3  18
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dy1dx2dy12           r12=    2.49539
+    d3U/dy1dx2dy12           r12=    2.43158
  ---- # OF ALL TERMS, MAT   -------  720
     d3U/dy1dx2dy12             1.000
     d3U/dy1dy12dx2             1.000
@@ -9788,7 +11124,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dx32dz2dz33           -1.000
  ============== RANK, GROUP ===============   3  19
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dy1dx2dz12           r12=    2.49539
+    d3U/dy1dx2dz12           r12=    2.43158
  ---- # OF ALL TERMS, MAT   -------  720
     d3U/dy1dx2dz12             1.000
     d3U/dy1dz12dx2             1.000
@@ -10512,7 +11848,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dx32dy2dz33            1.000
  ============== RANK, GROUP ===============   3  20
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dy2dy12           r12=    2.49539
+    d3U/dx1dy2dy12           r12=    2.43158
  ---- # OF ALL TERMS, MAT   -------  360
     d3U/dx1dy2dy12             1.000
     d3U/dx1dy12dy2             1.000
@@ -10876,7 +12212,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dz32dz2dx33           -1.000
  ============== RANK, GROUP ===============   3  21
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dy2dz12           r12=    2.49539
+    d3U/dx1dy2dz12           r12=    2.43158
  ---- # OF ALL TERMS, MAT   -------  360
     d3U/dx1dy2dz12             1.000
     d3U/dx1dz12dy2             1.000
@@ -11240,7 +12576,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dy32dz2dx33            1.000
  ============== RANK, GROUP ===============   3  22
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dy1dy2dz12           r12=    2.49539
+    d3U/dy1dy2dz12           r12=    2.43158
  ---- # OF ALL TERMS, MAT   -------  720
     d3U/dy1dy2dz12             1.000
     d3U/dy1dz12dy2             1.000
@@ -11964,7 +13300,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dy32dz2dz33            1.000
  ============== RANK, GROUP ===============   3  23
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dx11dx13           r12=    4.07496
+    d3U/dx1dx11dx13           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  432
     d3U/dx1dx11dx13            1.000
     d3U/dx1dx13dx11            1.000
@@ -12400,7 +13736,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dz32dz2dz34           -1.000
  ============== RANK, GROUP ===============   3  24
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dy11dy13           r12=    4.07496
+    d3U/dx1dy11dy13           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  864
     d3U/dx1dy11dy13            1.000
     d3U/dx1dy13dy11            1.000
@@ -13268,7 +14604,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dx32dz2dz34            1.000
  ============== RANK, GROUP ===============   3  25
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dy11dx13           r12=    4.07496
+    d3U/dx1dy11dx13           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  864
     d3U/dx1dy11dx13            1.000
     d3U/dx1dx13dy11            1.000
@@ -14136,7 +15472,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dy32dz2dz34            1.000
  ============== RANK, GROUP ===============   3  26
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dz1dy11dx13           r12=    4.07496
+    d3U/dz1dy11dx13           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  144
     d3U/dz1dy11dx13            1.000
     d3U/dz1dx13dy11            1.000
@@ -14284,7 +15620,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dy32dz2dx34           -1.000
  ============== RANK, GROUP ===============   3  27
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dy11dz13           r12=    4.07496
+    d3U/dx1dy11dz13           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  432
     d3U/dx1dy11dz13            1.000
     d3U/dx1dz13dy11            1.000
@@ -14720,7 +16056,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dy32dx2dz34           -1.000
  ============== RANK, GROUP ===============   3  28
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dx11dy13           r12=    4.07496
+    d3U/dx1dx11dy13           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  864
     d3U/dx1dx11dy13            1.000
     d3U/dx1dy13dx11            1.000
@@ -15588,7 +16924,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dz32dy2dz34            1.000
  ============== RANK, GROUP ===============   3  29
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dz11dy13           r12=    4.07496
+    d3U/dx1dz11dy13           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  288
     d3U/dx1dz11dy13            1.000
     d3U/dx1dy13dz11            1.000
@@ -15880,7 +17216,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dx32dy2dz34           -1.000
  ============== RANK, GROUP ===============   3  30
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dx11dx23           r12=    4.07496
+    d3U/dx1dx11dx23           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  432
     d3U/dx1dx11dx23            1.000
     d3U/dx1dx23dx11            1.000
@@ -16316,7 +17652,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dz30dz2dz34           -1.000
  ============== RANK, GROUP ===============   3  31
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dy11dy23           r12=    4.07496
+    d3U/dx1dy11dy23           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  864
     d3U/dx1dy11dy23            1.000
     d3U/dx1dy23dy11            1.000
@@ -17184,7 +18520,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dx30dz2dz34            1.000
  ============== RANK, GROUP ===============   3  32
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dy11dx23           r12=    4.07496
+    d3U/dx1dy11dx23           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  864
     d3U/dx1dy11dx23            1.000
     d3U/dx1dx23dy11            1.000
@@ -18052,7 +19388,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dy30dz2dz34           -1.000
  ============== RANK, GROUP ===============   3  33
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dz1dy11dx23           r12=    4.07496
+    d3U/dz1dy11dx23           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  144
     d3U/dz1dy11dx23            1.000
     d3U/dz1dx23dy11            1.000
@@ -18200,7 +19536,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dy30dx2dz34           -1.000
  ============== RANK, GROUP ===============   3  34
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dy11dz23           r12=    4.07496
+    d3U/dx1dy11dz23           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  432
     d3U/dx1dy11dz23            1.000
     d3U/dx1dz23dy11            1.000
@@ -18636,7 +19972,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dx30dy2dz34           -1.000
  ============== RANK, GROUP ===============   3  35
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dx11dy23           r12=    4.07496
+    d3U/dx1dx11dy23           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  864
     d3U/dx1dx11dy23            1.000
     d3U/dx1dy23dx11            1.000
@@ -19504,7 +20840,7 @@ rank= 4 all  terms=    6   36  168 1008 1008 1008  336 1008  126 1008  252  504 
     d3U/dz30dz2dy34           -1.000
  ============== RANK, GROUP ===============   3  36
  ---- # OF INDEPENDENT TERMS ------    1
-    d3U/dx1dz11dy23           r12=    4.07496
+    d3U/dx1dz11dy23           r12=    3.97076
  ---- # OF ALL TERMS, MAT   -------  288
     d3U/dx1dz11dy23            1.000
     d3U/dx1dy23dz11            1.000

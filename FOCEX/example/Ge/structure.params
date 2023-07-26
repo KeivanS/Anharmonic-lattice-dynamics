@@ -1,17 +1,18 @@
-1 1 1 90 90 90          # a, b, c, alpha, beta, gamma
-0 .5 .5 .5 0 .5 .5 .5 0 # reduced coordinates of primitive lattice
-5.7628622055            # scale factor for lattice size
-1 1 1 1                 # include FC1234, 1st, 2nd, third and fourth order harmonic force constant(s), 1 is to include and 0 is to not include
-1 1 0 0                 # invariances to impose, (translational, rotational, Huang) last is enforce inv using elimination
-0 300                   # temperature and whether or not implement it (do not implement if 0,2, or ..)
-1 .true.                # number  of OUTCAR files, verbosity
-1                       # type of atoms
-72.64                   # masses of each type of atoms
-Ge                      # names of atom
-2                       # number of atoms in the primitive cell
-1                       # flag for setting the range of FC2s (if 0 take default; else use below)
-7 7                     # number of shells for rank 2 (harmonic) for each atom if not default
-2 2                     # number of shells for rank 3 (cubic) for each atom
-1 1                     # number of shells for rank 4 (quartic) for each atom
-1 1 0 0 0               # number of atom, type of atom, position x, position y, position z
-2 1 0.25 0.25 0.25      # number of atom, type of atom, position x, position y, position z
+1 1 1 90 90 90
+0 .5 .5 .5 0 .5 .5 .5 0
+5.6155    scale factor 5.1015 #
+1 1 1 1  include FC1234
+1 1 1 0 invariances to impose
+0 300  whether to weight snapshots by Boltzmann factor, tempk
+1 .true.  number  of OUTCAR files, verbosity
+1  natom_type
+79.8 #15.9994 24.3050  #   masses 28.0855
+Ge  #O   Mg    names
+2          # of atoms in the primitive cell
+1 flag for setting the range of FC2s (if 0 take default)
+9 9   number of shells for rank 2 for each atom if not default
+2 2   number of shells for rank 3 for each atom
+1 1   number of shells for rank 4 for each atom
+1 1 0 0 0 
+2 1 0.25 0.25 0.25
+
