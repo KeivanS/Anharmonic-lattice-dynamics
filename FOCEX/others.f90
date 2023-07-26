@@ -483,7 +483,7 @@
  end subroutine estimate_inv_constraints
 ! ============================================
  subroutine get_dim(mapd,ndimindep,ndimfull)
-!! calculate the total number of in/dependent fcs for all groups
+! calculate the number of in/dependent fcs for all groups
  use svd_stuff
  implicit none
  integer g,ndimindep,ndimfull
@@ -812,11 +812,13 @@
  use params
  implicit none
 ! integer, intent(out) :: keep_grp2(:),size_kept_fc2
- integer g,ti,t,i0,j,l,taui,tauj,inside,keep,ishl
+ integer g,ti,t,i0,j,l,taui,tauj,cnt,inside,keep,ishl
  real(8) rij(3),dij
 
+ write(ulog,*)'SETUP_FC2: dimension of keep_grp2=',size(keep_grp2)
  keep_grp2=0
  size_kept_fc2=0  ! this is the size in amatrix of the FC2s not eliminated<map(2)%ntind.
+ cnt=0
  do g=1,map(2)%ngr
     keep=0
     do t=1,map(2)%nt(g)
@@ -838,9 +840,10 @@
        endif
        keep=keep+inside
     enddo
-
+    cnt=cnt+1
     if(keep.ne.0) then ! if at least, one of the has to be kept, we keep that group
-        keep_grp2(g)=1
+        keep_grp2(cnt)=1
+!        size_kept_fc2=size_kept_fc2+1  ! needed in case more than 1 indepfc in a group
         size_kept_fc2=size_kept_fc2+ map(2)%ntind(g)  
 !        do ti=1,map(2)%ntind(g)
 !!          if (map(2)%ntind(g).gt.1) size_kept_fc2=size_kept_fc2+1
@@ -853,10 +856,11 @@
 
 
  write(ulog,*)'size of kept FC2s=',size_kept_fc2, 'out of ',sum(map(2)%ntind)
- write(ulog,*)'old and new size of groups of FC2s=',map(2)%ngr,sum(keep_grp2)
- write(ulog,*)'# g, keep_grp2(g)'
- do g=1, map(2)%ngr 
-    write(ulog,*)g,keep_grp2(g)
+ write(ulog,*)'size of groups of FC2s=',map(2)%ngr,size(keep_grp2)
+ write(ulog,*)'# of groups kept =',sum(keep_grp2)
+ write(ulog,*)'# i, keep_grp2(i)'
+ do j=1, map(2)%ngr 
+    write(ulog,*)j,keep_grp2(j)
  enddo
 
 3 format(a,i3,1x,i3,1x,i5,3x,i3,1x,i4,f9.4,a,i4)

@@ -258,20 +258,22 @@
       enddo
 5 format(a,3i4,9(1x,g11.4))
       write(ulog,*)'--------------------------------------------------------- '
+      write(ulog,*)'nsmax=',nsmax
 
 !-------------------------------------------------------------------------------
-! collect nearest neighbor atoms up to a cutoff distance rcut(2)
+! collect nearest neighbor atoms (up to a cutoff distance rcut(2))
 ! do each atom in primitive unit cell
-      do iatom0=1,natom_prim_cell
+      primloop: do iatom0=1,natom_prim_cell
         nd2save=0
         m=0
 ! collect distances to nearest neighbors
 ! do one shell of unit cells at a time
-        do n=0,nsmax
+        shelloop: do n=0,nsmax
           foundone=.false.
           do i1=-n,n
           do i2=-n,n
           do i3=-n,n
+! walk only on the facets of the cube of length 2n+1
             if(iabs(i1).ne.n.and.iabs(i2).ne.n.and.iabs(i3).ne.n)cycle
 ! do each atom in unit cell
             iloop: do i=1,natom_prim_cell
@@ -286,8 +288,8 @@
                 d2=d2+r(j)**2
               enddo
 
-! K1 reject if larger than rcut(2)
-              if (d2 .gt. rcut(2)*rcut(2)) cycle
+! K1 reject if larger than rcut(2) .or. n > nshell
+     !        if (d2 .gt. rcut(2)*rcut(2)) cycle
 
 ! did we find any new ones in this shell?
               if(m.eq.0)then
@@ -304,37 +306,53 @@
                   do k=maxneighbors,j+1,-1
                     d2save(k)=d2save(k-1)
                   enddo
-                  if(nd2save.lt.maxneighbors)nd2save=nd2save+1
+                  if(nd2save.lt.maxneighbors) then
+                     nd2save=nd2save+1
+                  else
+                   !  write(ulog,*)'nd2save >= maxneighbors; array d2save is going to overflow!!',nd2save
+                   !  write(*,*)'nd2save >= maxneighbors; array d2save is going to overflow!!',nd2save
+                     !exit !stop
+                  endif
+
                   d2save(j)=d2
                   cycle iloop
                 endif
               enddo
 ! new distance: insert at end of list if list is not already full
               if(nd2save.lt.maxneighbors)then
+       !   the above is the cutoff, equivalent to  if(d2.lt.rcut(2)*rcut(2)) then
                 nd2save=nd2save+1
                 d2save(nd2save)=d2
+       write(*,*)'nd2save,d2save=',nd2save,d2save
               else
-                write(ulog,*)'nd2save >= maxneighbors; array d2save is going to overflow!!'
-                stop
+                nshell=n-1
+                exit shelloop  ! to avoid exceeding the size of d2save array
+       !        write(ulog,*)'nd2save >= maxneighbors; or d2 too large!!',nd2save,d2
+       !        write(*,*)'nd2save >= maxneighbors; or d2 too large!!',nd2save,d2
+          !     stop
               endif
             enddo iloop
           enddo
           enddo
           enddo
 ! no new atom found in shell:  save previous shell and exit loop
-          if(.not.foundone.and.nd2save.eq.maxneighbors)then
+          if(.not.foundone.and.(nd2save.eq.maxneighbors.or. d2.ge.rcut(2)*rcut(2))) then
             nshell=n-1
-            exit
+            exit shelloop
           endif
 ! list is filled
           if(nd2save.eq.maxneighbors.and.m.eq.0)m=1  
 ! we reached the last shell before we finished the list
 ! K1 below commented as maxshell is not used but rcut
-          if(n.eq.maxneighbors)then
+       !  if(n.eq.maxneighbors)then
+          if(n.eq.nsmax)then
             write(*,*)'Error:  maxneighbors or rcut(2) not large enough ',maxneighbors,rcut(2)
-            stop
+            write(*,*)'cutoff is imposed then by nsmax= ',nsmax
+            nshell=nsmax
+            write(*,*)'FORCE_CONSTANTS_INIT: nshell=',nshell
+            exit shelloop
           endif
-        enddo
+        enddo shelloop
         write(ulog,*)'FORCE_CONSTANTS_INIT: nshell=',nshell
 !-----------------------------------------------------------------------------
 ! generate positions of neighbors
@@ -386,7 +404,7 @@
           enddo
         enddo
 ! next inequivalent atom
-      enddo
+      enddo primloop
       maxneighbors=nd2save
       write(ulog,*) 'FC_INIT: maxneighbors now changed to ',maxneighbors
       imaxat=0

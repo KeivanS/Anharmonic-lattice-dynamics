@@ -30,7 +30,6 @@
 ! margin = 1d-5
  svdcut = 1d-9   ! default values
  read(uparams,*) itemp,tempk
- write(ulog,*)' itemp,tempk = ',itemp,tempk
  read(uparams,*) fdfiles , verbose ! number of force-displacement data files
 
  read(uparams,*) natom_type   ! # of different elements present in prim cell
@@ -45,7 +44,11 @@
  read(uparams,*) nshells(3,1:natom_prim_cell)
  read(uparams,*) nshells(4,1:natom_prim_cell)
 
- maxneighbors=50 ! default for largest number of neighbor shells !maxval(nshells(2,:))
+ maxneighbors=20 ! default for largest number of neighbor shells !maxval(nshells(2,:))
+! if it's too small for rcut, nothing will happen and this value imposes the cutoff
+! it it's large enough, we will go by rcut(2) in subroutine force_constants_init
+! so we basically go by the lowest of the two. We choose a large maxneighbors for
+! low-symmetry lattices
  if (itemp.eq.0) then
     if(fc2flag.eq.0) then
        it='0'
@@ -558,6 +561,272 @@
 
  end subroutine check_input_poscar_consistency_new
 !===========================================================
+ subroutine count_configs(outcar,ncfg)
+ use ios , only : ulog,utraj
+ use atoms_force_constants, only : natom_super_cell
+ implicit none
+ integer, intent(out) :: ncfg
+ character, intent(in):: outcar*(*)
+ integer t,j,i
+ character line*99
+ logical found,exst
+
+ write(*,*)' opening OUTCAR file'
+
+ inquire(file=outcar,exist=exst)
+ if(exst) then
+      open(utraj,file=outcar,status='old')
+ else
+      write(ulog,*)' outcar file ',outcar,' does not exist; check your files location and run again'
+      stop
+ endif
+
+! first find the number of configurations: ncfg
+ t=0
+ do j=1,11000000
+    read(utraj,'(a)',end=99)line
+    call findword('POSITION',line,found)
+    if (found) then
+       t = t+1
+    endif
+ enddo
+99 write(ulog,*)' reached the end of OUTCAR file; number of configurations= ',t
+ close(utraj)
+ ncfg = t
+ write(*,*)' reached the end of OUTCAR file which had ',ncfg,' configurations '
+ if(t.eq.0) then
+    write(ulog,*)' the word POSITION was not found in OUTCAR file, check it!'
+    stop
+ endif
+
+ i=(j-1)/t - 2  ! this is the number of atoms read from OUTCAR
+ if (i .ne. natom_super_cell ) then
+    write(ulog,*)' number of atoms read .ne. no of atoms in POSCAR file',i,natom_super_cell
+    write(ulog,*)' # of read lines in OUTCAR is=',j
+    write(ulog,*)' check your POSCAR and OUTCAR again '
+    write(ulog,*)' make sure the # of atoms is the same in both files'
+    write(ulog,*)' there should be no blank lines at the end of OUTCAR'
+    stop
+ endif
+
+ end subroutine count_configs
+!===========================================================
+ subroutine read_force_position_data(outcar,ncfg,energy,dsp,frc)
+!! reads contents of OUTCARi; second lines are energies, frc_constr=3*natom_super_cell*ncfg
+!! outputs are dsp(3,NSC,ncfg),frc(3,NSC,ncfg),energy(ncfg) for the OUTCARi file read
+ use ios
+ use atoms_force_constants
+ use geometry
+ use params
+ use lattice
+ use svd_stuff
+ implicit none
+ integer, intent(in) :: ncfg
+ character, intent(in):: outcar*(*)
+ integer n1,n2,i,t,j,k
+ type(vector) v
+ real(8) x1,x2,x3,x4,const,rr(3)
+ real(8), save :: emin
+ logical, save :: first_call=.true.
+! real(8), allocatable, intent(inout) :: energy(:),dsp(:,:,:),frc(:,:,:)
+ real(8), intent(out) :: energy(ncfg),dsp(3,natom_super_cell,ncfg),frc(3,natom_super_cell,ncfg)
+
+ character line*99
+ logical found,exst
+
+ write(*,*)' REopening OUTCAR file'
+
+ inquire(file=outcar,exist=exst)
+ if(exst) then
+    open(utraj,file=outcar,status='old')
+ else
+    write(ulog,*)' outcar file ',outcar,' does not exist; check your files location and run again'
+    stop
+ endif
+
+
+! now get the FORCES from OUTCAR file
+ t=0 ; energy=0
+ do j=1,ncfg
+    read(utraj,'(a)',end=88)line
+!    if (line(1:8) .eq. "POSITION" ) then
+    call findword('POSITION',line,found)
+    if (found) then
+       t = t+1
+       read(utraj,*) k,energy(t)  ! start with 1 since t=0
+       if(t.ne.j ) then !.or. t-1.ne.k) then
+          write(*,*)'Error in reading snapshot#s in OUTCAR?',j,t
+       endif
+       do i=1,natom_super_cell
+           read(utraj,*) dsp(1:3,i,t),frc(1:3,i,t)
+       enddo
+       write(*,*)'j,t,k=',j,t,k
+    endif
+ enddo
+88 write(ulog,*)' reached the end of OUTCAR file after ',t,' steps'
+ close(utraj)
+ write(ulog,*)' last line read was '
+ write(ulog,'(a)') line
+ close(utraj)
+ if (t .ne. ncfg) then
+    write(*,*)'ERROR in reading the force file OUTCAR'
+    write(*,*)'ncfg, # of read steps=',ncfg,t
+    stop
+ endif
+
+ write(*,*)'writing frc and dsp in the log file'
+ call write_out(ulog,' last force ',frc(:,:,t))
+ call write_out(ulog,' last coord ',dsp(:,:,t))
+
+
+! get energy per primitive unit cell so that it does not depend on supercell size
+ energy=energy/natom_super_cell*natom_prim_cell
+
+! subtract lowest energy value ! get it from OUTCAR1; it is arbitrary anyways
+ if( first_call ) then
+    emin=minval(energy)
+    first_call=.false.
+ endif
+ energy=energy-emin
+
+ write(*,9)'Energy/primcell assigned ',energy
+ write(*,*)'Calling calculate_and_write_displacements'
+ call calculate_and_write_displacements(ncfg,dsp,frc)
+! inputs: displ, including atom_sc%equilibrium_pos 
+! outputs: displ - atom_sc%equilibrium_pos  
+
+ write(*,*)'calling write_correspondance'
+ call write_correspondance
+
+ write(*,*)'exiting read_force_position_data '
+9 format(a,200(1x,f7.3))
+
+ end subroutine read_force_position_data
+!===========================================================
+ subroutine read_force_position_data2(outcar,frc_constr,ncfg,energy,dsp,frc)
+!! reads contents of OUTCARi; second lines are energies, frc_constr=3*natom_super_cell*ncfg
+!! outputs are nfcg,dsp(3,NSC,ncfg),frc(3,NSC,ncfg),energy(ncfg) for every outcar file read
+ use ios
+ use atoms_force_constants
+ use geometry
+ use params
+ use lattice
+ use svd_stuff
+ implicit none
+ integer, intent(out) :: frc_constr,ncfg
+ character, intent(in):: outcar*(*)
+ integer n1,n2,i,t,j,k
+ type(vector) v
+ real(8) x1,x2,x3,x4,const,rr(3),emin
+! real(8), intent(inout) :: energy(ncfg),dsp(3,natom_super_cell,ncfg),frc(3,natom_super_cell,ncfg)
+ real(8), allocatable, intent(inout) :: energy(:),dsp(:,:,:),frc(:,:,:)
+! integer, allocatable :: nlines(:)
+
+ character line*99
+ logical found,exst
+
+ inquire(file=outcar,exist=exst)
+ if(exst) then
+      open(utraj,file=outcar,status='old')
+ else
+      write(ulog,*)' outcar file ',outcar,' does not exist; check your files location and run again'
+      stop
+ endif
+
+ t=0
+ do j=1,11000000
+    read(utraj,'(a)',end=99)line
+    call findword('POSITION',line,found)
+    if (found) then
+       t = t+1
+    endif
+ enddo
+99 write(ulog,*)' reached the end of OUTCAR file; number of configurations= ',t
+ ncfg = t
+ if(t.eq.0) then
+    write(ulog,*)' the word POSITION was not found in OUTCAR file, check it!'
+    stop
+ endif
+
+! allocate( energy(ncfg),dsp(3,natom_super_cell,ncfg),frc(3,natom_super_cell,ncfg) )
+! if (ncfg.gt.5000) then
+!    write(*,*)'READ_FORCE_POSITION_DATA: reading more than 5000 configurations ',ncfg
+!    write(*,*)'either put in less than 5000 configurations or increase the size of energy in this subroutine'
+!    stop
+! endif
+
+ i=(j-1)/t - 2  ! this is the number of atoms read from OUTCAR
+ if (i .ne. natom_super_cell ) then
+    write(ulog,*)' number of atoms read .ne. no of atoms in POSCAR file',i,natom_super_cell
+    write(ulog,*)' # of read lines in OUTCAR is=',j
+    write(ulog,*)' check your POSCAR and OUTCAR again '
+    write(ulog,*)' make sure the # of atoms is the same in both files'
+    write(ulog,*)' there should be no blank lines at the end of OUTCAR'
+    stop
+ endif
+
+! allocates displ and force arrays
+ if ( allocated(dsp)) deallocate(dsp)
+ if ( allocated(frc)) deallocate(frc)
+ if ( allocated(energy)) deallocate(energy)
+! if ( allocated(nlines)) deallocate(nlines)
+
+! call allocate_pos(natom_super_cell,ncfg) ! for displ and force
+ allocate( energy(ncfg),dsp(3,natom_super_cell,ncfg),frc(3,natom_super_cell,ncfg) )
+! allocate( nlines(ncfg) )
+
+! now get the FORCES from OUTCAR file
+ rewind(utraj)
+ t=0 ; energy=0
+ do j=1,11000000
+    read(utraj,'(a)',end=88)line
+!    if (line(1:8) .eq. "POSITION" ) then
+    call findword('POSITION',line,found)
+    if (found) then
+       t = t+1
+       read(utraj,*) k,energy(t)  ! start with 1 since t=0
+       if(t.ne.j .or. t.ne.k) then
+          write(ulog,*)'Error in reading snapshot#s in OUTCAR?',k,j,t
+       endif
+       do i=1,natom_super_cell
+           read(utraj,*) dsp(1:3,i,t),frc(1:3,i,t)
+       enddo
+!       nlines(t)=natom_super_cell
+    endif
+ enddo
+88 write(ulog,*)' reached the end of OUTCAR file after steps= ',t
+ write(ulog,*)' last line read was '
+ write(ulog,'(a)') line
+ close(utraj)
+ if (t .ne. ncfg) then
+    write(ulog,*)'ERROR in reading the force file OUTCAR'
+    write(ulog,*)'ncfg, # of read steps=',ncfg,t
+    stop
+ endif
+
+ call write_out(ulog,' last force ',frc(:,natom_super_cell,t))
+ call write_out(ulog,' last coord ',dsp(:,natom_super_cell,t))
+
+ frc_constr = ncfg *natom_super_cell*3
+
+! get energy per unit cell so that it does not depend on supercell size
+ energy=energy/natom_super_cell*natom_prim_cell
+
+! subtract lowest energy value
+ emin=minval(energy)
+ energy=energy-emin
+
+ call calculate_and_write_displacements(ncfg,dsp,frc)
+! inputs: displ, including atom_sc%equilibrium_pos 
+! outputs: displ - atom_sc%equilibrium_pos  
+
+ call write_correspondance
+
+ write(*,*)'exiting read_force_position_data2'
+9 format(a,200(1x,f7.3))
+
+ end subroutine read_force_position_data2
+!===========================================================
  subroutine write_independent_fcs(n,sig,sd,ulog)
  use svd_stuff
  use atoms_force_constants
@@ -582,7 +851,11 @@
    enddo
    write(ulog,*) "rank, average error"
 
-   write(ulog,*)' old and new # of groups =',map(2)%ngr,sum(keep_grp2)
+!! k1 -----------------
+ map(2)%ngr = size_kept_fc2
+!! k1 -----------------
+
+   write(ulog,*)' map(2)%ngr=',map(2)%ngr
    write(ulog,*)' dim_ac    =',dim_ac,n
 
    cnt2=0;sd=0
@@ -782,7 +1055,6 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
 !============================================================
  subroutine read_fcs(iunit,fn,rank,fc,gr)
 !! reads force constants from a file if the file exists
-! gr is the number of independent fcs of given rank 
  use svd_stuff
  use ios
  use atoms_force_constants
@@ -805,32 +1077,15 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
         stop
      endif
 
-     if (gr.ne.map(rank)%ntotind) then
-        write(ulog,*)' READ_FCS: rank=',rank
-        write(ulog,*)' number of groups ',gr,' is not the same as one by setup_maps ',map(rank)%ntotind
-        stop
-     endif
-
-!     res=0
-!     do i=1,rank
-!        res=res+map(i)%ngr
-!     enddo
-!     write(ulog,*)'READ_FCS: rank=',rank,' res=',res
-
-     cnt2=0
      term = 0;   
-     groups: do g=1,map(rank)%ngr   ! index of a given group
-       if (g.gt.1) cnt2=cnt2+map(rank)%ntind(g-1)*keep_grp2(g-1)
-       map(rank)%gr(g)%iatind(:,:)=0    ! initialized to zero in case that group is missing
+     groups: do g=1,map(rank)%ntotind  ! index of a given group
+       map(rank)%gr(g)%iatind(:,:)=0
        map(rank)%gr(g)%ixyzind(:,:)=0
        do ti=1,map(rank)%ntind(g)  ! index of independent terms in that group g
           term = term+1
           read(iunit,*,err=91) t,igr,(map(rank)%gr(igr)%iatind (j,t),  &
            &                          map(rank)%gr(igr)%ixyzind(j,t), j=1,rank), &
            &                          fc(term) 
-          if(igr.ne.g) write(ulog,*)'**** gr of loop=',g,' read gr=',igr 
-          if(ti .ne.t) write(ulog,*)'**** ti of loop=',ti,' read ti=',t 
-          if(term.ne.cnt2+ti) write(ulog,*)'**** term of loop=',cnt2+ti,' read term=',term 
        enddo
      enddo groups
 

@@ -449,7 +449,7 @@
 ! deallocate(eivl,eivc,kg,grn)
  end subroutine gruneisen
 !============================================================
- subroutine mechanical_old(bulk,c11,c44,dlogv)
+ subroutine mechanical(bulk,c11,c44,dlogv)
  use ios
  use lattice
  use geometry
@@ -488,7 +488,7 @@
  write(ulog,*)'C11 in SI, Mbar ',c11,c11*1d-11
 3 format(4(i4),9(2x,f10.5))
 
- end subroutine mechanical_old
+ end subroutine mechanical
 !============================================================
  subroutine thermo(nk,wk,ndyn,eival,grn,temp,etot,free,pres,pres0,cv)
 ! calculate total and free energies within QHA, at a given temperature (temp in Kelvin)
@@ -923,7 +923,7 @@ deallocate(overlap,overlap_q)
 
 end subroutine band_sort_bs
 !==========================================================
- subroutine set_dynamical_matrix_old(kpt,dynmat,ndim,ddyn)
+ subroutine set_dynamical_matrix(kpt,dynmat,ndim,ddyn)
  use params
  use lattice
  use kpoints
@@ -1030,7 +1030,7 @@ end subroutine band_sort_bs
 !  enddo
 ! endif
 
- end subroutine set_dynamical_matrix_old
+ end subroutine set_dynamical_matrix
 !==========================================================
  subroutine diagonalize(n,mat,eival,nv,eivec,ier)
 ! n=size of mat; nv is the number of needed eigenvectors

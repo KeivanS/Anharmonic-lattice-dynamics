@@ -719,7 +719,7 @@ module ios
 
   l=len_trim(string)
   n=size(var(:,1)) ; m=size(var(1,:))
-!  write(unit,*)' write_outrm called;nl,nc=',n,m
+  write(unit,*)' write_outrm called;nl,nc=',n,m
   write(unit,4)string(1:l)//' is='
   do i=1,n
      write(unit,5)(var(i,j),j=1,m)
@@ -868,7 +868,8 @@ end module ios
 ! Module for saved data
 !      module force_constants_module
 ! maximum shells of nearest neighbors (along radial direction) , and actual # of neighborshells
-      integer maxneighbors,maxshell 
+      integer maxneighbors,maxshell
+!     parameter(maxneighbors=18 )
 ! maximum number of atoms out to maxneighbors
       integer maxatoms,imaxat
 !     parameter(maxatoms=2800 )
@@ -956,7 +957,7 @@ contains
 !integer i0,j,shel_count,counter,msort(maxatoms),l
 !real(8) dist(maxatoms),d_old,d_min,rmax
 
-!  ! allocate( atom0(1:natom_prim_cell)%shells(maxshells) )
+!! allocate( atom0(1:natom_prim_cell)%shells(maxshells) )
 !rmax = 0 ; dist = 1d10
 !i0loop: do i0=1,natom_prim_cell
 !   allocate( atom0(i0)%shells(0:maxshell) )
@@ -1345,7 +1346,7 @@ contains
 
     mxshell=shel_count
     maxshell=mxshell  ! to save it in the module atoms_force_constants
-    write(ulog,*)'largest#of shells=',mxshell,' compared to modified maxneighbors=',maxneighbors
+    write(ulog,*)'SET_NEIGHBOR_LIST: largest#of shells=',mxshell,' for modified maxneighbors=',maxneighbors
     do shel_count = 0 , mxshell
        write(ulog,*)'shell#, neigh#=',shel_count,atom0(i0)%shells(shel_count)%no_of_neighbors
     enddo
@@ -1424,18 +1425,18 @@ contains
    maxterms(2)=500
    maxterms(3)=1800
    maxterms(4)=2000
-   maxtermzero(1)=50
-   maxtermzero(2)=200
-   maxtermzero(3)=500
-   maxtermzero(4)=800
+   maxtermzero(1)=500
+   maxtermzero(2)=2000
+   maxtermzero(3)=5000
+   maxtermzero(4)=8000
    maxtermsindep(1)=10
-   maxtermsindep(2)=50
-   maxtermsindep(3)=70
-   maxtermsindep(4)=100
+   maxtermsindep(2)=70
+   maxtermsindep(3)=150
+   maxtermsindep(4)=300
    maxgroups(1)=10
-   maxgroups(2)=25
-   maxgroups(3)=45
-   maxgroups(4)=70
+   maxgroups(2)=52
+   maxgroups(3)=150
+   maxgroups(4)=300
  end subroutine set_maxterms
 
 !--------------------------------------------
