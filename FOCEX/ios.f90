@@ -8,9 +8,9 @@
  use atoms_force_constants
  use svd_stuff
  implicit none
- integer i,counter,label
+ integer i,counter,tau
  real(8) scal
- character fdf*1,r234*3,invr*4,incl*4,it*1,zone*5,now*10,today*8
+ character fdf*1,r234*3,r4*4,invr*4,incl*4,it*1,zone*5,now*10,today*8
  real tim
 
  open(uparams,file='structure.params',status='old')
@@ -39,12 +39,12 @@
  read(uparams,*) (atname(i),i=1,natom_type)  ! in the same order as in POTCAR
  read(uparams,*) natom_prim_cell        ! # of atoms in primitive cell
  read(uparams,*) fc2flag  ! if zero, take the default range from largest supercell
- nshells(1,1:natom_prim_cell)=0
+ nshells(1,1:natom_prim_cell)=1
  read(uparams,*) nshells(2,1:natom_prim_cell)
  read(uparams,*) nshells(3,1:natom_prim_cell)
  read(uparams,*) nshells(4,1:natom_prim_cell)
 
- maxneighbors=20 ! default for largest number of neighbor shells !maxval(nshells(2,:))
+ maxneighbors=500 ! default for largest number of neighbor shells !maxval(nshells(2,:))
 ! if it's too small for rcut, nothing will happen and this value imposes the cutoff
 ! it it's large enough, we will go by rcut(2) in subroutine force_constants_init
 ! so we basically go by the lowest of the two. We choose a large maxneighbors for
@@ -63,14 +63,22 @@
     endif
  endif
  write(fdf,'(i1)')fdfiles
- write(r234,'(3i1)')nshells(2,1),nshells(3,1),nshells(4,1)
+ if (nshells(2,1).le.9) then
+     write(r234,'(3i1)')nshells(2,1),nshells(3,1),nshells(4,1)
+ else
+     write(r4,'(i2,2i1)')nshells(2,1),nshells(3,1),nshells(4,1)
+ endif
  write(incl,'(4i1)')include_fc(:)
  invr='0000'
  if (itrans.ne.0) invr(1:1)='t'
  if (irot.ne.0) invr(2:2)='r'
  if (ihuang.ne.0) invr(3:3)='h'
  if (enforce_inv.ne.0) invr(4:4)='E'
- open(ulog  ,file='log'//fdf//it//'_'//r234//'_'//incl//invr//'.dat'   ,status='unknown')
+ if (nshells(2,1).le.9) then
+    open(ulog  ,file='log'//fdf//it//'_'//r234//'_'//incl//invr//'.dat'   ,status='unknown')
+ else
+    open(ulog  ,file='log'//fdf//it//'_'//r4//'_'//incl//invr//'.dat'   ,status='unknown')
+ endif
 
  call date_and_time(date=today,time=now,zone=zone)
  call cpu_time(tim)
@@ -106,28 +114,29 @@
  write(ulog,*)'List of atoms: tau (or label), name,type,mass,reduced coordinates in conventional cell '
  do i=1,natom_prim_cell
 ! positions here must be D format in conventional cell for use by fcs_init
-    read(uparams,*) label,atom_type(label),atompos0(:,label)
-    if (i.ne.label) then
-       print*,' positions must be sorted according to the labels ',i,label
-       write(ulog,*)' READ_structure: positions must be sorted like labels ',i,label
+    read(uparams,*) tau,atom_type(tau),atompos0(:,tau)
+    if (i.ne.tau) then
+       print*,' positions must be sorted according to the labels 1,2,3... ',i,tau
+       write(ulog,*)' READ_structure: positions must be sorted like labels tau=1,2,3.. ',i,tau
        write(ulog,*)' Check atomic coordinates in primitive cell'
        stop
     endif
-    atom0(i)%name = atname(atom_type(label))
-    atom0(i)%at_type  = atom_type(label)
-    atom0(i)%mass = mas(atom_type(label))
+    atom0(i)%name = atname(atom_type(tau))
+    atom0(i)%at_type = atom_type(tau)
+    atom0(i)%tau  = tau
+    atom0(i)%mass = mas(atom_type(tau))
     atom0(i)%charge = 0 ! charge is=0 by default unless defined in dielectric.params
 !   atom0(i)%nshells  ! actual no of neighbors shells < maxneighbors
 !   atom0(i)%shells   ! what is inside each shell
 ! Make sure the label tau is the same as the atom index in the array atompos
 ! this is useless because natom(:) is read from POSCAR
-    if (atom_type(label).eq.counter) then
-        natom(atom_type(label)) = natom(atom_type(label))+1
+    if (atom_type(tau).eq.counter) then
+        natom(atom_type(tau)) = natom(atom_type(tau))+1
     else
-        natom(atom_type(label)) = 1
+        natom(atom_type(tau)) = 1
     endif
-    counter = atom_type(label)
-    write(ulog,4)i,atom0(i)%name,atom0(i)%at_type,atom0(i)%mass,atompos0(:,i)
+    counter = atom_type(tau)
+    write(ulog,4)atom0(i)%tau,atom0(i)%name,atom0(i)%at_type,atom0(i)%mass,atompos0(:,i)
  enddo
 
 
@@ -274,7 +283,7 @@
 ! read equilibrium positions from POSCAR file and write in logfile ------------
 ! read(uposcar,'(a)') line
  read(uposcar,*) line
- if (line(1:1).eq.'s' .or. line(1:1).eq.'S' ) then
+ if (line(1:1).eq.'s' .or. line(1:1).eq.'S' ) then  ! this for selective dynamics
 !   read(uposcar,'(a)') line
     read(uposcar,*) line
  endif
@@ -337,6 +346,7 @@
  write(ulog,*)' n2min, n2max =',n2min,n2max
  write(ulog,*)' n3min, n3max =',n3min,n3max
  write(ulog,*)' ASSIGNMENTS WERE DONE FOR ATOMS IN THE SUPER CELL '
+ write(ulog,*)' i_sc , tau(i) , type(i) ,    n(i)    ,                r(i)               '
  do i=1,natom_super_cell
 !   write(ulog,*) '-----------------------  ATOM NUMBER, tau =',i,atom_sc(i)%cell%tau
 !   call write_out(ulog,'      type ', atom_sc(i)%atom_type)
@@ -398,7 +408,7 @@
  write(ulog,4)'checking r3 in units of r0s,ier=',a1,a2,a3,ier
  if (ier .eq. 1) stop
  nr3(1)=nint(a1); nr3(2)=nint(a2); nr3(3)=nint(a3)
- write(ulog,*)' COMMENSURABILITY CHECKED ---------------------------------'
+ write(ulog,*)' COMMENSURABILITY CHECKED - N vectors of the supercell are:'
  write(ulog,*)' nr1=',nr1
  write(ulog,*)' nr2=',nr2
  write(ulog,*)' nr3=',nr3
@@ -407,41 +417,27 @@
 7 format(a,2(1x,i4),9(2x,f9.4))
 8 format(a,3(1x,i4),9(2x,f9.4))
 
-! do i=1,natom_prim_cell
-!    tau1 = atom0(i)%at_type
-!    do j=1,natom_super_cell
-!       if (tau1 .eq. atom_sc(j)%cell%tau) then
-! see if they can be mapped onto one another by a primitive translation vector
-!          vec = atom_sc(j)%equilibrium_pos - atom0(i)%equilibrium_pos
-!          call check(vec,a1,a2,a3,ier,g01,g02,g03)
-!          if (ier .eq. 1) then  ! There might be a constant shift
-!              shift0 = (a1-floor(a1)) * r01 + (a2-floor(a2)) * r02 + (a3-floor(a3)) * r03
-!              write(ulog,8)'i,j,tau,shift=',i,j,tau1,shift0
-!          endif
-!       endif
-!    enddo
-! enddo
-
-! return
-
  write(ulog,*)'FINDING possible translation vectors, trying them on other atoms'
  write(ulog,*)'g01,g02,g03='
  write(ulog,*)g01
  write(ulog,*)g02
  write(ulog,*)g03
 
- checkloop: do i=1,natom_prim_cell  !,natom_super_cell
+ checkloop: do i=1,natom_prim_cell 
     shift0 = atom0(i)%equilibrium_pos - atom_sc(1)%equilibrium_pos
-    write(ulog,7)'atom in PRIMCELL:',i,atom0(i)%at_type,atom0(i)%equilibrium_pos
-    write(ulog,3)'trying shift vector=',shift0
+    write(ulog,7)'atoms in PRIMCELL & SC:',i,atom0(i)%at_type,atom0(i)%equilibrium_pos,atom_sc(1)%equilibrium_pos
+    write(ulog,3)'trying shift vector to match atom_sc(1)=',shift0
 
 ! try this shift see if all atoms in SC can be mapped to the PC by it.
     SC: do k = 1,natom_super_cell
        matched = .false.
        PRIM: do j = 1,natom_prim_cell  ! one of the prim-cell atoms has to match
           vec =  shift0 + atom_sc(k)%equilibrium_pos - atom0(j)%equilibrium_pos
+! find its direct coordinates on r01,r02,r03
           call check(vec,a1,a2,a3,ier,g01,g02,g03)
-          if(verbose) write(ulog,6)'* err,k_sc,r_sc,a1,a2,a3=',ier,k,atom_sc(k)%equilibrium_pos,a1,a2,a3
+          if(verbose .and. ier.eq.0) then
+              write(ulog,6)'* err,k_sc,xk,yk,zk,a1,a2,a3=',ier,k,atom_sc(k)%equilibrium_pos,a1,a2,a3
+          endif
           if (ier .eq. 0) then
              matched = .true.
 !            write(ulog,*)' atom ',i,' in primitice cell matched with atom ',k,' in supercell'
@@ -470,19 +466,6 @@
     stop
  endif
 
-! shift all the atoms in the primitive cell by -shift0 so that they fall
-! on the atoms in the supercell
-! write(ulog,*)'The shifted (cartesian) positions in the prim cell are now:'
-! do i=1,natom_prim_cell
-!    atom0(i)%equilibrium_pos = atom0(i)%equilibrium_pos-shift0
-!    call write_out(ulog,'shifted position ', atom0(i)%equilibrium_pos)
-! enddo
-! write(ulog,*)'The shifted (cartesian) positions for ATOMPOS are now:'
-! do i=1,natoms
-!    atompos(:,i) = atompos(:,i)- shift0
-!    call write_out(ulog,'shifted position ', atompos(:,i))
-! enddo
-
 ! shifting vector has been identified. We can now identify all atoms of the SC
       SC2: do k = 1,natom_super_cell
          counter = 0
@@ -490,12 +473,11 @@
          PRIM2: do j = 1,natom_prim_cell  ! one of the prim-cell atoms has to match
             vec =  atom_sc(k)%equilibrium_pos - atom0(j)%equilibrium_pos+shift0
             call check(vec,a1,a2,a3,ier,g01,g02,g03)
-            if(verbose) write(ulog,5)'ier,a1,a2,a3=',ier,a1,a2,a3
+!           if(verbose) write(ulog,5)'ier,a1,a2,a3=',ier,a1,a2,a3
             if (ier.eq.0) then ! found a matching vector
                 matched = .true.
                 counter = counter + 1
-                atom_sc(k)%cell%tau = iatomcell0(j)
-  if(verbose)  write(ulog,*)' k in SC has type tau,j=',k,atom_sc(k)%cell%tau,j
+!                atom_sc(k)%cell%tau = iatomcell0(j)
                 n1 = nint(a1)
                 n2 = nint(a2)
                 n3 = nint(a3)
@@ -508,20 +490,24 @@
                 atom_sc(k)%cell%n(1) = n1
                 atom_sc(k)%cell%n(2) = n2
                 atom_sc(k)%cell%n(3) = n3
-                atom_sc(k)%mass = atom0(j)%mass
-                atom_sc(k)%at_type = atom0(j)%at_type
-                atom_sc(k)%charge = atom0(j)%charge
-
+                atom_sc(k)%at_type   = atom0(j)%at_type
+                atom_sc(k)%cell%tau  = atom0(j)%tau
+                atom_sc(k)%mass      = atom0(j)%mass
+                atom_sc(k)%charge    = atom0(j)%charge
+!  if(verbose) write(ulog,*)' k in SC has type tau,n=',k,atom_sc(k)%cell%tau,atom_sc(k)%cell%n
+                cycle SC2  ! go to the next k
             endif
+! check k with the next j in primitive cell
          enddo PRIM2
 
          if (counter.eq. 0) then
-            call write_out(ulog,' ATOM which can not be mapped to the prim cell ',i)
+            call write_out(ulog,'SC ATOM which can not be mapped to the prim cell ',k)
             write(ulog,*)' check your coordinates '
-            write(ulog,3)atom_sc(i)%equilibrium_pos
+            write(ulog,3)atom_sc(k)%equilibrium_pos
             stop
          elseif ( counter .ge. 2) then
             write(ulog,*)' CHECK: more than one atom matched! check your coordinates'
+            write(*   ,*)' CHECK: more than one atom matched! check your coordinates'
             stop
          endif
        enddo SC2
@@ -532,7 +518,7 @@
 
 3 format(9(1x,g13.6))
 5 format(a,i2,9(2x,g11.4))
-6 format(a,i2,1x,i5,9(2x,g11.4))
+6 format(a,i2,1x,i5,9(1x,f9.4))
 
  open(173,file='poscar.xyz')
  write(173,*) natom_super_cell
@@ -542,11 +528,11 @@
       do i=1,natom_super_cell
            if(atom_sc(i)%at_type .eq. n1) then
     if(n1.eq.1)  then
-         write(173,9)'N ',atom_sc(i)%equilibrium_pos
+         write(173,9)'Ga',atom_sc(i)%equilibrium_pos
     elseif(n1.eq.2) then
-         write(173,9)'O ',atom_sc(i)%equilibrium_pos
+         write(173,9)'S ',atom_sc(i)%equilibrium_pos
     elseif(n1.eq.3) then
-         write(173,9)'C ',atom_sc(i)%equilibrium_pos
+         write(173,9)'P ',atom_sc(i)%equilibrium_pos
     elseif(n1.eq.4) then
          write(173,9)'Ge ',atom_sc(i)%equilibrium_pos
     elseif(n1.eq.5) then
@@ -634,7 +620,7 @@
  character line*99
  logical found,exst
 
- write(*,*)' REopening OUTCAR file'
+ write(*,*)' Re Opening FORCEDISP file'
 
  inquire(file=outcar,exist=exst)
  if(exst) then
@@ -660,7 +646,7 @@
        do i=1,natom_super_cell
            read(utraj,*) dsp(1:3,i,t),frc(1:3,i,t)
        enddo
-       write(*,*)'j,t,k=',j,t,k
+       write(*,*)'j,t,k,energy=',j,t,k,energy(t)
     endif
  enddo
 88 write(ulog,*)' reached the end of OUTCAR file after ',t,' steps'
@@ -674,7 +660,7 @@
     stop
  endif
 
- write(*,*)'writing frc and dsp in the log file'
+ write(ulog,*)'writing last snapshot frc and positions in the log file: 3xN_sc'
  call write_out(ulog,' last force ',frc(:,:,t))
  call write_out(ulog,' last coord ',dsp(:,:,t))
 
@@ -690,16 +676,18 @@
  energy=energy-emin
 
  write(*,9)'Energy/primcell assigned ',energy
+ write(ulog,9)'Energy/primcell assigned ',energy
  write(*,*)'Calling calculate_and_write_displacements'
+ write(ulog,*)'Now writing all snapshots force and displacement in the log file'
  call calculate_and_write_displacements(ncfg,dsp,frc)
-! inputs: displ, including atom_sc%equilibrium_pos 
-! outputs: displ - atom_sc%equilibrium_pos  
+! inputs: displ, including atom_sc%equilibrium_pos
+! outputs: displ - atom_sc%equilibrium_pos
 
  write(*,*)'calling write_correspondance'
  call write_correspondance
 
  write(*,*)'exiting read_force_position_data '
-9 format(a,200(1x,f7.3))
+9 format(a,200(1x,g11.4))
 
  end subroutine read_force_position_data
 !===========================================================
@@ -817,8 +805,8 @@
  energy=energy-emin
 
  call calculate_and_write_displacements(ncfg,dsp,frc)
-! inputs: displ, including atom_sc%equilibrium_pos 
-! outputs: displ - atom_sc%equilibrium_pos  
+! inputs: displ, including atom_sc%equilibrium_pos
+! outputs: displ - atom_sc%equilibrium_pos
 
  call write_correspondance
 
@@ -852,10 +840,13 @@
    write(ulog,*) "rank, average error"
 
 !! k1 -----------------
- map(2)%ngr = size_kept_fc2
+ if(fc2flag.eq.0) then
+     map(2)%ntotind = size_kept_fc2
+     write(ulog,*)' map(2)%ngr,sumkeep=',map(2)%ngr,sum(keep_grp2)
+     write(ulog,*)' map(2)%ntotind,size_kept_fc2=',map(2)%ntotind,size_kept_fc2
+ endif
 !! k1 -----------------
 
-   write(ulog,*)' map(2)%ngr=',map(2)%ngr
    write(ulog,*)' dim_ac    =',dim_ac,n
 
    cnt2=0;sd=0
@@ -863,11 +854,12 @@
       if(include_fc(i).ne.1) cycle
       cnt=0
       do g=1,map(i)%ngr
+        if(keep_grp2(g).ne.1) cycle
         do k=1,map(i)%ntind(g)
             cnt=cnt+1
-            cnt2=cnt2+1 !cnt
-            write(ulog,*)'rank,group,nind,cnt=',i,g,k,cnt
+            cnt2=cnt2+1 !cumulative counter over ranks
             sd(i)=sd(i)+sig(cnt2)/sqrt(1.*dim_al)
+            write(ulog,*)'rank,group,nind,cnt,sd(rnk)=',i,g,k,cnt,sd(i)
         enddo
       enddo
       if(cnt .ne. 0 ) sd(i)=sd(i)/cnt
@@ -893,7 +885,7 @@
 
  do i0=1,natom_prim_cell
     write(ulog,*)' ******************************'
-    write(ulog,*)' Neighbors of atom number ',i0
+    write(ulog,*)' Neighbors of atom number ',i0,' up to maxshell=',maxshell
     write(ulog,*)' ******************************'
     do shel_count=1,maxshell
        nbmx = atom0(i0)%shells(shel_count)%no_of_neighbors
@@ -901,15 +893,15 @@
        do j=1,min(nbmx,500)
           ta =  atom0(i0)%shells(shel_count)%neighbors(j)%tau
           nm =  atom0(i0)%shells(shel_count)%neighbors(j)%n
-          write(ulog,3)' shell,dij,nb#,tau,n=',shel_count,dij,j,ta,nm
+          write(ulog,3)'i0,shell,dij,nb#,tauj,nij=',i0,shel_count,dij,j,ta,nm
        enddo
-       write(ulog,2)'WRITE_NEIGHBORS: shel#,rij,nb#',shel_count,dij,j-1
+ !     write(ulog,2)'WRITE_NEIGHBORS: shel#,rij,nb#',shel_count,dij,j-1
     enddo
  enddo
 
- write(ulog,*)' ************ End of the neighborlist ************** '
+ write(ulog,*)' ************ End of the neighbors list ************** '
 2 format(a,i4,2x,f8.4,2x,i4)
-3 format(a,2x,i3,2x,f8.4,2x,i3,4x,i3,' (',3(1x,i4),')')
+3 format(a,2x,i3,2x,i3,2x,f8.4,2x,i3,4x,i3,' (',3(1x,i4),')')
  end subroutine write_neighbors
 !============================================================
  subroutine write_output_fcs
@@ -953,17 +945,17 @@
     cnt2=0
     term = 0
     term2= 0
-    groups: do g=1,map(rnk)%ntotind  ! index of a given group
+    groups: do g=1,map(rnk)%ngr  ! index of a given group ! shouldn't it be %ngr ?
 
 !! K1 new change made on 2/13/23 ----------------
        if(rnk.eq.2) then
-          if(keep_grp2(g).ne.1) cycle
+          if(fc2flag.eq.0 .and. keep_grp2(g).ne.1) cycle
        endif
 !! K1 new change made on 2/13/23 ----------------
 
-       if(g.gt.1) cnt2=cnt2+map(rnk)%ntind(g-1)
+       if(g.gt.1) cnt2=cnt2+map(rnk)%ntind(g-1)  ! counts the # of indep terms
 
-    ! write in the log and fcn_fit.dat: cnt2+ti is the position of indep_fc of that rank
+ ! write in the log and fcn_fit.dat: cnt2+ti is the position of indep_fc of that rank
        do ti=1,map(rnk)%ntind(g)  ! index of independent terms in that group g
           iat(1:rnk)  = map(rnk)%gr(g)%iatind (:,ti)
           ixyz(1:rnk) = map(rnk)%gr(g)%ixyzind(:,ti)
@@ -995,7 +987,13 @@
 !          endif
        enddo
   enddo groups
-  res = res+map(rnk)%ngr
+!  res = res+map(rnk)%ngr   ! shouldn't it be map(rnk)%ntotind ??
+  if (fc2flag.eq.0 .and. rnk.eq.2) then
+      res=res+ size_kept_fc2
+  else
+      res = res+map(rnk)%ntotind 
+  endif
+
   endif
  enddo ranks
 
@@ -1053,16 +1051,16 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
 
  end subroutine write_output_fcs
 !============================================================
- subroutine read_fcs(iunit,fn,rank,fc,gr)
-!! reads force constants from a file if the file exists
+ subroutine read_fcs(iunit,fn,rank,fc,nfc)
+!! reads irreducible force constants if given rank from file fn if the latter exists
  use svd_stuff
  use ios
  use atoms_force_constants
  use params
  implicit none
- integer, intent(in) :: rank,iunit,gr
+ integer, intent(in) :: rank,iunit,nfc
  integer t,ti,igr,res,i,a, b, c, d, e, f,reason,cnt2,term,g,j
- real amp, rijs,fc(gr)
+ real amp, rijs,fc(nfc)
  character line*99,fn*11
  logical ex
 
@@ -1077,19 +1075,26 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
         stop
      endif
 
-     term = 0;   
-     groups: do g=1,map(rank)%ntotind  ! index of a given group
+     if (nfc.ne.map(rank)%ntotind) then
+        write(ulog,*)' READ_FCS: rank=',rank
+        write(ulog,*)' number of groups ',nfc,' is not the same as one by setup_maps ',map(rank)%ntotind
+        stop
+     endif
+
+     term = 0;
+     groups: do g=1,map(rank)%ngr ! %ntotind  ! index of a given group
        map(rank)%gr(g)%iatind(:,:)=0
        map(rank)%gr(g)%ixyzind(:,:)=0
        do ti=1,map(rank)%ntind(g)  ! index of independent terms in that group g
-          term = term+1
-          read(iunit,*,err=91) t,igr,(map(rank)%gr(igr)%iatind (j,t),  &
-           &                          map(rank)%gr(igr)%ixyzind(j,t), j=1,rank), &
-           &                          fc(term) 
+            term=term+1
+            read(iunit,*,err=91) t,igr,(map(rank)%gr(igr)%iatind (j,t),  &
+            &                           map(rank)%gr(igr)%ixyzind(j,t), j=1,rank), &
+            &                           fc(term)
        enddo
      enddo groups
 
 91   write(ulog,*)'READ_FCS: rank=',rank,' reached end of file after ',term-1,' lines'
+     write(ulog,3)fc
      if (term.eq.1) then
         write(ulog,*)'READ_FCS: the file exists but is empty! rank=',rank
         write(*   ,*)'READ_FCS: the file exists but is empty! rank=',rank
@@ -1098,19 +1103,22 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
      endif
      close(iunit)
 
+3 format(99(1x,f9.5))
  end subroutine read_fcs
 !============================================================
- subroutine read_fcs_2(iunit,rank,fc2,gr)
+ subroutine read_fcs_2(iunit,fn,rank,fc2,nfc)
  use svd_stuff
  use ios
 ! use force_constants_module
  use atoms_force_constants
  use params
  implicit none
- integer rank,iunit,t,res,i,a, b, c, d, e, f,reason,cnt2,term,g,ti,j,gr
- real amp, rijs,fc2(gr)
- character line*99
+ integer rank,iunit,t,res,i,a, b, c, d, e, f,reason,cnt2,term,g,ti,j,nfc
+ real amp, rijs,fc2(nfc)
+ character line*99,fn
  logical ex
+
+ open(iunit,file=fn,status='old')
 
 ! read(iunit,'(a)') line
  t = 0
@@ -1142,7 +1150,7 @@ elseif ( rank .eq. 2) then
    if (ex) then
 !     open(473,file='fc2_irr.dat',status='old')
 
-     cnt2=0;   term = 0;   
+     cnt2=0;   term = 0;
      groups: do g=1,map(rank)%ngr  ! index of a given group
        map(2)%gr(g)%iatind(:,:)=0
        map(2)%gr(g)%ixyzind(:,:)=0
@@ -1157,11 +1165,11 @@ elseif ( rank .eq. 2) then
 
        do t=1,map(2)%ntind(g)  ! index of independent terms in that group g
           term = term+1
-           read(ufit2,*) ti,gr,map(2)%gr(gr)%iatind (1,ti),  &
-           &                   map(2)%gr(gr)%ixyzind(1,ti),  &
-           &                   map(2)%gr(gr)%iatind (2,ti),  &
-           &                   map(2)%gr(gr)%ixyzind(2,ti),  & 
-           &                   fc2(res+cnt2+ti),a,b 
+           read(ufit2,*) ti,nfc,map(2)%gr(nfc)%iatind (1,ti),  &
+           &                   map(2)%gr(nfc)%ixyzind(1,ti),  &
+           &                   map(2)%gr(nfc)%iatind (2,ti),  &
+           &                   map(2)%gr(nfc)%ixyzind(2,ti),  &
+           &                   fc2(res+cnt2+ti),a,b
        enddo
 
 !        do i=1, map(2)%ngr
@@ -1266,7 +1274,7 @@ stop
  real(8) dc(3),dr(3)
 
  write(ulog,*)' t , particle#, cartesian disp & forces u1,u2,u3,f1,f2,f3'
- write(ulog,*)' Number of onfigurations NCFG=',ncfg
+ write(ulog,*)' Number of configurations NCFG=',ncfg
 ! get displacements from positions
  do t=1,ncfg
     do i=1,natom_super_cell
@@ -1283,10 +1291,10 @@ stop
     enddo
  enddo
  step=ncfg-1
- if(verbose) step=1
+ if(verbose) step=1 ! every step, otherwise only the fist and last snapshots will be written
  do t=1,ncfg ,step           ! write first and last displ-force data
     do i=1,natom_super_cell
-       write(ulog,6)t,i,(dsp(j,i,t),j=1,3),(frc(j,i,t),j=1,3)
+       write(ulog,6)t,i,dsp(:,i,t),frc(:,i,t)
     enddo
  enddo
 
@@ -1338,10 +1346,10 @@ stop
  integer i
  real(8) dr(3),dc(3)
 ! checking consistency between POSCAR:atom_sc%equilibrium_pos and FORCEDISP:displ(:,:,1)
-
+! assumes 1st snapshot in FORCEDISP is actually POSCAR 
  do i=1,natom_super_cell
 
-    dc = atom_sc(i)%equilibrium_pos - displ(:,i,1)
+    dc = atom_sc(i)%equilibrium_pos - displ(:,i,1)  
     call cart_to_direct_aa(dc,dr)
     dr(1) = dr(1) - anint(dr(1))
     dr(2) = dr(2) - anint(dr(2))
@@ -1352,13 +1360,13 @@ stop
     if ( abs(dc(1)).gt.tolerance .or. abs(dc(2)).gt.tolerance  &
     &                            .or. abs(dc(3)).gt.tolerance ) then
 !    if ( dc(1).gt.0.1 .or. dc(2).gt.0.1 .or. dc(3).gt.0.1 ) then
-       write(ulog,*)' atom # ',i,' in POSCAR and FORCEDISP are different'
+       write(ulog,*)' atom # ',i,' in POSCAR and 1st snapshot of FORCEDISP are different'
        write(ulog,*)' POSCAR:atom_SC=',atom_sc(i)%equilibrium_pos
        write(ulog,*)' FORCEDISP: displ =',displ(:,i,1)
        write(ulog,*)' check your input files '
        write(*,*)' atom # ',i,' in POSCAR and FORCEDISP are different'
-       write(*,*)' check your input files '
-       stop
+!      write(*,*)' check your input files '
+!      stop
     endif
 
  enddo
@@ -1366,77 +1374,90 @@ stop
  end subroutine pos_out_consistency
 !============================================================
  subroutine write_correspondance
-!! write correspondance between supercell atoms and primitive structure
+!! writes correspondance between atompos pair assigned to a spring in the chosen model and supercell pair
+!! in which the first atom is in the primitive cell defined in structure.params, and the second one in poscar  
  use params
  use atoms_force_constants
  use svd_stuff
  use ios
  use geometry
-! use force_constants_module
  use lattice
  implicit none
- integer t,ired,nat,iatom,jatom,g,rnk
- integer al,be,taui,tauj,ni(3),nj(3),nsi(3),nsj(3)
+ integer t,ired,nat,iatom,j_sc,g,rnk
+ integer al,be,taui,tauj,ni(3),nj(3),j !,nsi(3),nsj(3)
  real(8) rij
 
  rnk = 2
  write(ulog,*)' HARMONIC FCs: correspondance between a given FC and all pairs '
  write(ulog,*)' Basically we describe the harmonic terms in the Taylor expansion'
  write(ulog,*)' Which atom pairs in the supercell are bridged by a FC element '
- write(ulog,*)' Below, ni refers to the translations of the supercell'
- write(ulog,*)'# iatom, [  taui(nsi) ],  alpha_i=1 ;  j, [  tauj(nsj) ], alpha_j=1  :   term group  rij'
- write(ucor,*)'# iatom, [  taui(ni)  ],  alpha_i ;  jatom, [  tauj(nj), alpha_j  :   term group  rij'
+! write(ulog,*)'# iatom, [  taui(nsi) ],  alpha_i=1 ;  j, [  tauj(nsj) ], alpha_j=1  :   term group  rij'
+ write(ulog,*)'# iatom0_x ;  jatom_x  ; j_sc   term  group  rij'
+ write(ucor,*)'# iatom0,[ taui(ni) ],alpha_i ; jatom,[ tauj(nj) ],alpha_j ; j_sc  term group  rij'
 
 ! do nat=1,natom_super_cell
   do nat=1,natom_prim_cell
   do al=1,3             ! this is how we order each line
 
-!    taui = atom_sc(nat)%cell%tau
-!    ni   = atom_sc(nat)%cell%n
-     taui = iatomcell0(nat)   ! taui should be = nat
-     ni(:)= iatomcell(:,nat)
-     call findatom_sc(ni,nat,iatom)  ! now iatom is the supercell index
-     nsi  = nint(matmul(r0g,dfloat(ni)))
+     taui = atom0(nat)%tau 
+     ni(:)= 0 ! atom0(nat)%n   ! should be zero
+     if (taui.ne.nat) then   ! .or. (ni.ne.0)
+        write(ulog,*)'Atom ',nat,' in the primitive cell does not have n=0!!'  
+        write(ulog,*)'its tau=',taui,' is not the same as the atom label in structure.params' 
+        write(ulog,*)'make sure atoms in structure.params are sorted according to their tau'
+        stop
+     endif
+     call findatom_sc(ni,taui,iatom)  ! now iatom is the atom index in the supercell 
+     if (iatom.ne.nat) then  ! Atom i OF PRIMCELL DOES NOT NEED TO MATCH ATOM i OF SUPERCELL
+        write(ulog,*)'WRITE_CORRESPONDANCE: iatom_sc .ne. nat or taui:',iatom,nat  
+        write(ulog,*)'this is not an error but it is unusual!'
+     endif
+!    nsi  = nint(matmul(r0g,dfloat(ni)))  ! should be zero!
 
      do g=1,map(rnk)%ngr  ! sum over groups
-!           if(l.gt.1) cnt2 = cnt2 + map(rnk)%ntind(l-1)
+if (keep_grp2(g).ne.1) then 
+   write(ulog,*)' CORRESP: this group was not included because its range exceeded WS:',g
+endif
      do t=1,map(rnk)%nt(g) ! sum over all terms in that group
            if ( taui.eq. map(rnk)%gr(g)%iat(1,t) .and.  &
            &    al  .eq. map(rnk)%gr(g)%ixyz(1,t) ) then
-              tauj = iatomcell0(map(rnk)%gr(g)%iat(2,t))
-              nj(:)= iatomcell(:,map(rnk)%gr(g)%iat(2,t))+ni(:) ! trnslte by ni
-              nsj  = nint(matmul(r0g,dfloat(nj)))
+! map()%gr% iat etc is the atom index from atompos, so we use iatomcell stuff to find (tau,n)
+              j = map(rnk)%gr(g)%iat(2,t)  
+              tauj = iatomcell0(j)
+!  Below, ni refers to the translations of the supercell'
+              nj(:)= iatomcell(:,j) + ni(:) ! translate by ni
+!             nsj  = nint(matmul(r0g,dfloat(nj)))
               be   = map(rnk)%gr(g)%ixyz(2,t)
 ! Identify neighbor j within the SCell,
-              call findatom_sc(nj,tauj,jatom)
-              if (jatom.eq.0) then
-                  write(ulog,4)'WRITE_CORRESPONDANCE2:jatom not found: tau,n ',tauj,nj
-                  write(ulog,4)'for rank,term ',rnk,t
-                  write(ulog,4)'atom,xyz,cnfg ',nat,al
+              call findatom_sc(nj,tauj,j_sc)
+              if (j_sc.eq.0) then
+                  write(ulog,4)'WRITE_CORRESPONDANCE:jatom_sc not found for j,tauj,beta,nj=',j,tauj,be,nj
+                  write(ulog,4)'for atom0(i),ixyz,group,term ',nat,al,g,t
                   stop
               endif
 ! if j and j+R(supercell) are in the same group but with opposite ampterms
 ! then their sum is cancelled in the force as they both have the same
-! displacement. This will lead to errors in evaluation of the FCs if all
+! displacement. This will lead to undetermination in evaluation of the FCs if all
 ! terms in the group cancel in this way, and the
 ! corresponding group in FC2 will be evaluated to be zero. That will also
-! affect the ASR and produce a violation of the sum rules.
-!              ired = igroup_2(t)  ! this is the corresponding index of ared
-              rij = length(atompos(:,nat)-atompos(:,jatom))
-!      write(ucor,5)iatom,taui,ni,al,jatom,tauj,nj,be,t,ired,rij,ampterm_2(t)
-              write(ucor,6)iatom,taui,ni,al,jatom,tauj,nj,be,t,g,rij
- if(al.eq.1 .and. be.eq.1)  write(ulog,5)iatom,taui,nsi,jatom,tauj,nsj,t,g,rij
+! affect the ASR and produce a violation of the sum rules, unless rotational invariances are imposed
+              rij = length(atom0(nat)%equilibrium_pos - atompos(:,j)) !  pos(:,jatom))
+              write(ucor,6)nat,taui,ni,al,j,tauj,nj,be,j_sc,t,g,rij
+ if(al.eq.1 .and. be.eq.1)  write(ulog,4)' ',iatom,taui,j,tauj,j_sc,t,g,rij
            endif
      enddo
      enddo
   enddo
   enddo
 
-  write(ulog,*)' Correspondance of harmonic FCs and pairs of atoms established'
+  write(ulog,*)' Correspondance of harmonic FCs and pairs of supercell atoms established'
+  write(ulog,*)' if chosen range in the model is too long-ranged, it is possible that more'
+  write(ulog,*)' than one term in the fc list (group,term) are associated with the same supercell pair'
+! this can be taken care of by setting to zero the extra terms of longer distance in keep_grp2 
 
-4 format(a,4(1x,i6))
+4 format(a,7(1x,i6),3x,f10.4)
 5 format(2(i4,1x,' [ ',i2,' (',i2,',',i2,',',i2,') ] ; ',1x),i6,1x,i4,2x,f7.3,2x,f7.3)
-6 format(2(i4,1x,' [ ',i2,' (',i2,',',i2,',',i2,') ] ',i1,1x,' ; '),i6,1x,i4,2x,f7.3,2x,f7.3)
+6 format(2(i4,1x,' [ ',i2,' (',i2,',',i2,',',i2,') ] ',i1,1x,' ; '),i6,1x,i6,1x,i4,2x,f7.3,2x,f7.3)
 
  end subroutine write_correspondance
 !============================================================
@@ -1516,6 +1537,45 @@ stop
 9 format(9(2x,f19.10))
  end subroutine write_lat_fc
 !============================================================
+ subroutine write_atompos
+ use svd_stuff
+ use ios
+ use atoms_force_constants
+ use params
+ use lattice
+ use constants
+ implicit none
+ real(8) rij
+ integer i,j,iunit
+
+
+ call read_crystal('POSCAR1')
+
+ iunit=123
+ open(iunit,file='atompos.xyz')
+
+! write(iunit,*)natom_prim_cell
+! do i=1,natom_prim_cell
+!   write(iunit,6)i,atom0(i)%name, atom0(i)%at_type,atom0(i)%equilibrium_pos,atom0(i)%mass
+! enddo
+ write(iunit,*)natoms + natom_super_cell
+ write(iunit,*)' natoms=',natoms,' natom_sc=',natom_super_cell
+! do i=1,natoms
+!   rij = length(atompos(:,i)) !-atompos(:,1))
+!   write(iunit,7)i,(atompos(j,i),j=1,3), iatomcell0(i),(iatomcell(j,i),j=1,3),rij
+! enddo
+
+ do i=1,natoms
+   write(iunit,8)atom0(iatomcell0(i))%name,(atompos(j,i),j=1,3)
+ enddo
+ do i=1,natom_super_cell
+   write(iunit,8)'Mg',atom_sc(i)%equilibrium_pos
+ enddo
+ close(iunit)
+
+8 format(a,6(2x,f19.10))
+ end subroutine write_atompos
+!============================================================
  subroutine write_invariance_violations(ulog,n,fcs)
  use svd_stuff, only : atransl,arot,brot,ahuang, amat,bmat,transl_constraints, &
  &  rot_constraints,huang_constraints,inv_constraints,dim_al,itrans,irot,ihuang
@@ -1543,6 +1603,7 @@ stop
       write(ulog,*)i,dot_product(arot(i,:),fcs(:)),brot(i)
    enddo
    write(ulog,3)'******* Violation of Huang invariance relations: enforced? ',ihuang
+   write(ulog,*)' if not=15, it means there were some that were exactly zero and removed'
    do i=1,huang_constraints
       write(ulog,*)i,dot_product(ahuang(i,:),fcs(:))
    enddo

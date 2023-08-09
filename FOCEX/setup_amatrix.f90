@@ -82,7 +82,7 @@
     if ( ared1d .myeqz. zero ) cycle
     call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
     if (new) then
-       counter = counter+1 
+       counter = counter+1
        atemp(counter,:) = ared1d(:)
        btemp(counter) = 0d0
 !      write(umatrx,7)(atemp(counter,dum),dum=1,ngr)
@@ -144,8 +144,8 @@
 
 !! K1 new change made on 2/13/23 ----------------
 
-! if(map(rnk  )%ngr.gt.0) res  = res  + sum(map(rnk  )%ntind(:))
- if(map(rnk  )%ngr.gt.0) res  = res  +  size_kept_fc2
+! if(map(rnk)%ngr.gt.0) res  = res  + sum(map(rnk  )%ntind(:))
+ if(map(rnk)%ngr.gt.0) res  = res  +  size_kept_fc2
 
 !! K1 new change made on 2/13/23 ----------------
 
@@ -929,7 +929,7 @@
  real(8) rij,rik,rjk,junk
  logical new
 
- write(*,*) 'entering set_force_displacements routine'
+ write(*,*) 'entering set_force_displacements routine',nindepfc
  write(ulog,*)' SETUP_AMATRICES : ************************************'
 ! l is group index, t: general term index, and ti: independent term index
 ! this convention is followed in all setting constraint or amat subroutines
@@ -1064,6 +1064,35 @@
 
 !! K1 new change made on 2/13/23 ----------------
 
+           elseif ( include_fc(rnk) .eq. 2 ) then
+
+               cnt2=0
+               do l=1,map(rnk)%ngr
+                    if(keep_grp2(l).ne.1) cycle
+                    if(l.gt.1) cnt2 = cnt2 + map(rnk)%ntind(l-1)
+               do t=1,map(rnk)%nt(l) ! sum over all terms in that group
+                  if ( taui.eq. map(rnk)%gr(l)%iat (1,t) .and.  &
+            &          al  .eq. map(rnk)%gr(l)%ixyz(1,t) )         then
+                     tauj = iatomcell0(map(rnk)%gr(l)%iat(2,t))
+                     nj(:)= iatomcell(:,map(rnk)%gr(l)%iat(2,t)) + ni(:) ! translate by ni
+                     be   = map(rnk)%gr(l)%ixyz(2,t)
+  ! Identify neighbor j within the SCell, and its images, find its displacement and add to ared
+                     call findatom_sc(nj,tauj,jatom)
+                     if (jatom.eq.0) then
+                        write(ulog,4)'SET_ARED:jatom not found: tau,n ',tauj,nj
+                        write(ulog,4)'for rank,term ',rnk,t
+                        write(ulog,4)'atom,xyz,cnfg ',nat,al,confg
+                        stop
+                     endif
+                     do ti=1,map(rnk)%ntind(l)
+                        ired = cnt2+ti ! this is the corresponding index of aux
+                        bfrc(counter)=bfrc(counter)-fcrnk(rnk,ired)*displ(be,jatom,confg)
+                     enddo
+                  endif
+               enddo
+               enddo
+
+           endif
 
 !              res = res + ndindp(rnk)
 !          elseif ( include_fc(rnk) .eq. 2 ) then
@@ -1072,7 +1101,6 @@
 !               bfrc(counter)=bfrc(counter)-fcs_2(igroup_2(t))*aux(igroup_2(t))
 ! shouldn't this line simply be: bf = bf - fcs_2(j) * aux(j) ??
 !             enddo
-           endif
            deallocate(aux)
         endif
 

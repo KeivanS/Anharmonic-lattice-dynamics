@@ -28,7 +28,7 @@
       write(udos,3)om(i),i,sumdos,(dos(la,i),la=0,min(10,ndyn2))
    enddo
    sumdos=sumdos-dos(0,1)*wmax/wmesh/2d0
-   
+
 3  format(g11.5,2x,i5,99(1x,g10.4))
    end subroutine write_dos
 
@@ -56,13 +56,13 @@
      if (nv.ne.0) then
       allocate( eigenval_bs(nb,nk),eigenvec_bs(nb,nv,nk), grun_bs(nb,nk) ,veloc(3,nb,nk) )
      else
-      allocate( eigenval_bs(nb,nk),eigenvec_bs(1,1,1), grun_bs(nb,nk)) 
+      allocate( eigenval_bs(nb,nk),eigenvec_bs(1,1,1), grun_bs(nb,nk))
      endif
     end subroutine allocate_eig_bs
 !---------------------------------
     subroutine deallocate_eig_bs ! nb for band, nk for band structure mesh
       if(allocated(veloc)) deallocate(veloc)
-      deallocate( eigenval_bs, eigenvec_bs, grun_bs ) 
+      deallocate( eigenval_bs, eigenvec_bs, grun_bs )
     end subroutine deallocate_eig_bs
 !---------------------------------
     subroutine deallocate_eig ! nb for band, nk for coarse mesh in FBZ
@@ -95,5 +95,15 @@
  integer nband,onedm,nb
  nband = mod(onedm-1,nb)+1
  end function nband
+!---------------------------------
+ function mysqrt(x)
+ implicit none
+ real(8) x,mysqrt
+ if(x.ge.0) then
+    mysqrt=sqrt(x)
+ else
+    mysqrt=-sqrt(-x)
+ endif
+ end function mysqrt
 
  end module eigen

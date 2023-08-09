@@ -41,7 +41,8 @@
 ! copy input arguments into global variables
       natom_prim_cell=natoms_in
       atomposconv(1:3,1:natom_prim_cell)=atompos_in(1:3,1:natom_prim_cell)
-      call write_out(6,'atompos_in(primcell)= ',atompos_in)
+      call write_out(6,' FC_INIT: maxneighbors= ',maxneighbors)
+      call write_out(6,' atompos_in(primcell)= ',atompos_in)
 
 ! allocate memory
       if(allocated(iatomneighbor)) deallocate(iatomneighbor)
@@ -85,11 +86,11 @@
       iatomcell(1:3,1:natoms)=0
       do i=1,natom_prim_cell
         write(*,*)'before xvmlt ',i
-        call xvmlt(conv_to_cart,atomposconv(1,i),atompos(1,i),3,3,3)
-!        atompos(:,i)=matmul(conv_to_cart,atomposconv(:,i))
+!       call xvmlt(conv_to_cart,atomposconv(1,i),atompos(1,i),3,3,3)
+        atompos(:,i)=matmul(conv_to_cart,atomposconv(:,i))
         write(*,*)'before unitcell ',i
         call unitcell(cart_to_prim,prim_to_cart,atompos(1,i), atompos(1,i))
-        iatomcell0(i)=i
+        iatomcell0(i)=i  ! this is essentially tau
         iatomneighbor(i,i)=0
       enddo
       write(*,*)'before dlatmat2'
@@ -159,12 +160,14 @@
       ipntoploop: do ipntop=1,lattpgcount
 ! operate on atom 1.  v contains the coordinates of the atom after
 ! the operation
-        call xvmlt(op_matrix(1,1,ipntop),atompos(1,1),v,3,3,3)
+!       call xvmlt(op_matrix(1,1,ipntop),atompos(1,1),v,3,3,3)
+        v=matmul(op_matrix(:,:,ipntop),atompos(:,1))
 ! try to map the rotated atom 1 onto every other atom of the same type
         iatomloop2: do iatom=1,natom_prim_cell
           if(iatomtype(iatom).eq.iatomtype(1))then
 ! find the fractional translation required in the space group element
-            call xvsub(atompos(1,iatom),v,fract,3)
+   !        call xvsub(atompos(1,iatom),v,fract,3)
+            fract=atompos(:,iatom)-v
             call unitcell(cart_to_prim,prim_to_cart, fract,fract)
 ! now try this space group element on every other atom
             iatom2loop2: do iatom2=1,natom_prim_cell
@@ -213,7 +216,7 @@
       do isg=1,isgopcount
          write(ulog,4)' isg, isgop, sgfract=',isg,isgop(isg),sgfract(:,isg)
       enddo
- 4    format(a,2i4,9(1x,g11.4))
+ 4    format(a,2i4,9(1x,f11.5))
 
 !----------------------------------------------------------------------------
 ! find operators that take atoms into atoms in the primitive unit cell
@@ -224,8 +227,11 @@
         do isg=1,isgopcount
           ipntop=isgop(isg)
 ! operate on position of atom iatom
-          call xvmlt(op_matrix(1,1,ipntop),atompos(1,iatom),v,3,3,3)
-          call xvadd(sgfract(1,isg),v,v2,3)
+   !      call xvmlt(op_matrix(1,1,ipntop),atompos(1,iatom),v,3,3,3)
+          v=matmul(op_matrix(:,:,ipntop),atompos(:,iatom))
+   !      call xvadd(sgfract(1,isg),v,v2,3)
+          v2 = sgfract(:,isg)+v
+
           call unitcell(cart_to_prim,prim_to_cart,v2,v2)
 ! look for atom
           iatom2loop3: do iatom2=1,natom_prim_cell
@@ -236,7 +242,8 @@
 ! found it.  save it if not already previously found
               if(iatomop(iatom,iatom2).eq.0)then
                 iatomop(iatom,iatom2)=ipntop
-                call xvsub(atompos(1,iatom),v, atomopfract(1,iatom,iatom2),3)
+!               call xvsub(atompos(1,iatom),v, atomopfract(1,iatom,iatom2),3)
+                atomopfract(:,iatom,iatom2)= atompos(:,iatom)-v
                 exit iatom2loop3
               endif
 ! try to match another atom (iatom2)
@@ -256,9 +263,10 @@
          endif
       enddo
       enddo
-5 format(a,3i4,9(1x,g11.4))
+5 format(a,3i4,9(1x,f11.4))
+
       write(ulog,*)'--------------------------------------------------------- '
-      write(ulog,*)'nsmax=',nsmax
+      call write_out(6,' FC_INIT: nsmax= ',nsmax)
 
 !-------------------------------------------------------------------------------
 ! collect nearest neighbor atoms (up to a cutoff distance rcut(2))
@@ -288,8 +296,8 @@
                 d2=d2+r(j)**2
               enddo
 
-! K1 reject if larger than rcut(2) .or. n > nshell
-     !        if (d2 .gt. rcut(2)*rcut(2)) cycle
+! K1 reject if larger than rcut(2) .or. n > nshell : below is not needed as it comes later
+         !    if (d2 .gt. rcut(2)*rcut(2)) cycle
 
 ! did we find any new ones in this shell?
               if(m.eq.0)then
@@ -323,10 +331,10 @@
        !   the above is the cutoff, equivalent to  if(d2.lt.rcut(2)*rcut(2)) then
                 nd2save=nd2save+1
                 d2save(nd2save)=d2
-       write(*,*)'nd2save,d2save=',nd2save,d2save
+       write(*,*)'i0,nd2save=',i,nd2save
               else
-                nshell=n-1
-                exit shelloop  ! to avoid exceeding the size of d2save array
+!               nshell=n-1
+!               exit shelloop  ! to avoid exceeding the size of d2save array
        !        write(ulog,*)'nd2save >= maxneighbors; or d2 too large!!',nd2save,d2
        !        write(*,*)'nd2save >= maxneighbors; or d2 too large!!',nd2save,d2
           !     stop
@@ -341,19 +349,20 @@
             exit shelloop
           endif
 ! list is filled
-          if(nd2save.eq.maxneighbors.and.m.eq.0)m=1  
+          if(nd2save.eq.maxneighbors.and.m.eq.0)m=1
 ! we reached the last shell before we finished the list
 ! K1 below commented as maxshell is not used but rcut
        !  if(n.eq.maxneighbors)then
           if(n.eq.nsmax)then
-            write(*,*)'Error:  maxneighbors or rcut(2) not large enough ',maxneighbors,rcut(2)
+!            write(*,*)'Error:  maxneighbors or rcut(2) not large enough ',maxneighbors,rcut(2)
             write(*,*)'cutoff is imposed then by nsmax= ',nsmax
             nshell=nsmax
-            write(*,*)'FORCE_CONSTANTS_INIT: nshell=',nshell
+            write(*   ,*)'FORCE_CONSTANTS_INIT: n=nsmax=; nshell=',nsmax,nshell
+            write(ulog,*)'FORCE_CONSTANTS_INIT: n=nsmax=; nshell=',nsmax,nshell
             exit shelloop
           endif
         enddo shelloop
-        write(ulog,*)'FORCE_CONSTANTS_INIT: nshell=',nshell
+        write(ulog,*)'FORCE_CONSTANTS_INIT: after shelloop:nshell=',nshell
 !-----------------------------------------------------------------------------
 ! generate positions of neighbors
 ! do each shell of unit cells
@@ -377,6 +386,8 @@
      &               +i2*prim_to_cart(j,2)+i3*prim_to_cart(j,3)
                 d2=d2+(r(j)-atompos(j,iatom0))**2
               enddo
+! K1 new addition to avoid exceeding maxatoms
+              if (d2 .gt. rcut(2)*rcut(2)) cycle
 ! find in list
               do m=1,nd2save
                 if(ncmp(d2-d2save(m)).eq.0)then
@@ -407,19 +418,21 @@
       enddo primloop
       maxneighbors=nd2save
       write(ulog,*) 'FC_INIT: maxneighbors now changed to ',maxneighbors
+      write(ulog,*) 'FC_INIT: generated ',natoms,' atoms in the neighborhood of primcell'
       imaxat=0
+
       end subroutine force_constants_init
-      !******************************************************************************
-!! get force constants
+!******************************************************************************
+! get force constants
       subroutine force_constants(nrank,amat,iatomd,ixyzd,   &
      &     ntermsindep,iatomtermindep,ixyztermindep,   &
      &     ntermall,iatomtermall,ixyztermall,   &
      &     ntermszero,iatomtermzero,ixyztermzero,   &
      &     maxrank,maxterms,maxtermsindep,maxtermszero, &
      &     ierz,iert,ieri) !,ierg)
-! find relationships between terms of the form d^nU/dxidxjdxk...
-! where U is the total energy of the crystal and xi is a coordinate (x=x,y,z)
-! of the ith atom.
+!! Find relationships between terms of the form d^nU/dxidxjdxk...
+!! where U is the total energy of the crystal and xi is a coordinate (x=x,y,z)
+!! of the ith atom.
 
 !! arguments:
 !!     nrank (input), order of derivative
@@ -451,13 +464,13 @@
 !!     maxtermszero (input), number columns in arrays iatomtermzero and
 !!          ixyztermzero
 
-!      use force_constants_module
       use atoms_force_constants
+      use lattice, only : cart_to_prim
       implicit none
       integer, intent(in):: nrank,maxrank,maxterms,maxtermsindep,maxtermszero
       integer, intent(out):: ierz,iert,ieri,ntermsindep,ntermall,ntermszero
       integer, intent(in):: iatomd(nrank),ixyzd(nrank)
-     integer, intent(out)::  &
+      integer, intent(out)::  &
      &   iatomtermindep(maxrank,maxterms)    ,ixyztermindep(maxrank,maxterms), &
      &   iatomtermall  (maxrank,maxterms)    ,ixyztermall  (maxrank,maxterms), &
      &   iatomtermzero (maxrank,maxtermszero),ixyztermzero (maxrank,maxtermszero)
@@ -522,15 +535,18 @@
         eqs(neqs,jterm)=1
 ! operate on each item in denominator
         do irank=1,nrank
-          call xvmlt(op_matrix(1,1,isgop(isg)),  &
-     &         atompos(1,iatomterm(irank,jterm)),v,3,3,3)
-          call xvadd(sgfract(1,isg),v,v,3)   ! K1: could be:  ! v=v+sgfract(:,isg)
+!         call xvmlt(op_matrix(1,1,isgop(isg)),  &
+!    &         atompos(1,iatomterm(irank,jterm)),v,3,3,3)
+!         call xvadd(sgfract(1,isg),v,v,3)   ! K1: could be:
+          v=matmul(op_matrix(:,:,isgop(isg)),atompos(:,iatomterm(irank,jterm)))
+          v=v+sgfract(:,isg)
+! can I first find the n,tau of this vector v?
 ! find atom
           call findatom2(v,iatom(irank))
           if(iatom(irank).eq.0)then
-            write(6,*)'Error0 in force_constants: atom not found'
-            write(6,*)'Increase the # of NN shells or check POSCAR-OUTCAR'
-            write(6,*)'noncorresponding vector=',v
+            write(6,*)'Error0 in force_constants: atom not found,for irank,iatom=',irank,iatom
+            write(6,*)'Increase maxneighbors & the # of NN shells'
+            write(6,9)'noncorresponding vector,in reduced=',v,matmul(cart_to_prim,v)
             stop
           endif
         enddo
@@ -804,6 +820,7 @@
       iert=0
       ieri=0
 
+9 format(a,2(3(1x,f11.5),3x))
       end subroutine force_constants
 !****************************************************************************
 !! bring a force constant to a unique form: atoms
@@ -817,7 +834,6 @@
 !!     ixyzout(i) (output), x,y,z coordinate of atom
 
       use atoms_force_constants
-!      use force_constants_module
       implicit none
       integer, intent(in):: nrank,iatomin(nrank),ixyzin(nrank)
       integer, intent(out):: iatomout(nrank),ixyzout(nrank)
@@ -927,20 +943,23 @@
 !!     iatom (output), location of atom in data base.  Returns zero if not found
 !!          in data base
       use atoms_force_constants
-!      use force_constants_module
       implicit none
       integer iatom,i,j,ncmp
       double precision pos(3)
+
+    ! write(*,5)'natoms,pos=',natoms,pos(:)
       do i=1,natoms
-        do j=1,3
-          if(ncmp(atompos(j,i)-pos(j)).ne.0)exit
+        jloop: do j=1,3
+          if(ncmp(atompos(j,i)-pos(j)).ne.0)exit jloop
           if(j.eq.3)then
+    !   write(*,5)'atompos(i)=',i,atompos(:,i)
             iatom=i
             return
           endif
-        enddo
+        enddo jloop
       enddo
       iatom=0
+5 format(a,i4,3(1x,f12.6))
       end subroutine findatom2
 !--------------------------------------------------------------------------------
       function ncmp(x)
@@ -956,7 +975,7 @@
 !     data delta/1.e-3/
       ncmp=0
 !     if(abs(x).gt.delta)ncmp=1
-      if(abs(x).gt.1d-5)ncmp=1  ! was originally 1d-6 ! K1
+      if(abs(x).gt.1d-4)ncmp=1  ! was originally 1d-6 ! K1
       return
       end function ncmp
 !--------------------------------------------------------------------------------
@@ -1154,7 +1173,6 @@
       end subroutine xvmlt
 !------------------------------------------------------------------------------
       subroutine unitcell(cart_to_prim,prim_to_cart,v1,v2)
-
 !! bring a point v1 into v2 in the unit cell at the origin, between 0 and R
 !! cart_to_prim has the reciprocal vectors in lines 1,2,3
 !! prim_to_cart has the translation vectors in real space in columns 1,2,3
@@ -1574,7 +1592,8 @@
 !      print*,'lattpgcount=',lattpgcount
       iloop: do i=1,lattpgcount
 ! apply symmetry operation to k to get v=kstar
-        call xvmlt(op_kmatrix(1,1,i),kvec,v,3,3,3)
+!        call xvmlt(op_kmatrix(1,1,i),kvec,v,3,3,3)
+        v=matmul(op_kmatrix(:,:,i),kvec)
 ! find the reduced coordinates of v and store in v2
         call xmatmlt(v,primlatt,v2,1,3,3,1,3,1)
 
@@ -1582,7 +1601,8 @@
 ! if so, skip; else store this v as a new star vector
         do j=1,narms
         ! subtract previous_v2(=kvecstarp) from v2; result is v3
-          call xvsub(v2,kvecstarp(1,j),v3,3)
+!         call xvsub(v2,kvecstarp(1,j),v3,3)
+          v3=v2-kvecstarp(:,j)
           do k=1,3
             n=nint(v3(k))
             if(ncmp(v3(k)-n).ne.0)exit
@@ -1669,7 +1689,7 @@
          write(*,*)' iatom,nshell(iatom)=',i,nshell(i)
       enddo
       write(*,*)' mxtrm,mxtrmindp,maxtermszero,maxgroups=',maxterms,maxtermsindep, &
-      &           maxtermszero,maxgroups 
+      &           maxtermszero,maxgroups
 
 ! check if input values are valid
       if(nrank.gt.maxrank)then

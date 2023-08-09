@@ -1,6 +1,6 @@
  module fourier
   integer nrgrid,nggrid
-  real(8), allocatable :: rgrid(:,:),ggrid(:,:)   
+  real(8), allocatable :: rgrid(:,:),ggrid(:,:)
   real(8), allocatable:: rws_weights(:),gws_weights(:)
 
   interface fourier_r2k
@@ -10,7 +10,7 @@
      module procedure fourier_k2r_r,fourier_k2r_c
   end interface
 
-  contains 
+  contains
 !-------------------------------------------
  subroutine fourier_r2k_r(fr,fk)
 !! for an array of size nk defined on a mesh rmesh(3,nr), this subroutine
@@ -135,7 +135,7 @@
  allocate(dynk(3*nat0,3*nat0,nkmesh),phi(3*nat0,3*nat0,nkmesh),d2(3*nat0,3*nat0))
 ! &        amatk(dimal,dimac,nkmesh),bmatk(dimal,nkmesh))
 
-! first need to group the kmesh vectors into arms of vectors within IBZ 
+! first need to group the kmesh vectors into arms of vectors within IBZ
 !    call get_weights4(nkmesh,kmesh,ngibz,mapibz,gibz,wgibz)
 
   ibzloop: do ik=1,nibz

@@ -80,7 +80,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
 ! for testing append....
   allocate(auxr(9)); auxr=10
   allocate(auxg(3)); auxg=3
-!  allocate(qmat(7)); 
+!  allocate(qmat(7));
   print*,'auxr=',auxr
   print*,'auxg=',auxg
 
@@ -136,13 +136,12 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
   call read_dielectric
   print*,' file dielectric.params read'
 
- ! maxshells = maxneighbors
   call write_out(ulog,'latticeparameters',latticeparameters)
   call write_out(ulog,'primitive lattice',primitivelattice)
-  write(ulog,*)'atompos0_d'
-  do i=1,natom_prim_cell
-     call write_out(ulog,'atompos0 ',atompos0(:,i))
-  enddo
+! write(ulog,*)'atompos0_d'
+! do i=1,natom_prim_cell
+!    call write_out(ulog,'atompos0 ',atompos0(:,i))
+! enddo
   call write_out(ulog,'# of different atom types ',natom_type)
   call write_out(ulog,'# of each type in primcel ',natom)
   call write_out(ulog,'# mass of different types ',mas)
@@ -153,24 +152,24 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
 
 ! inputs: natom_prim_cell,latticeparameters,primitivelattice,atom_type,atompos0
   call make_unitcell
-! outputs: r0i, atompos (cart coord of atoms and natoms neighbor shells), 
+! outputs: r0i, atompos (cart coord of atoms and natoms neighbor shells),
 ! iatomcell, iatomcell0, iatomneighbor, iatomop, ... and symmetry operations
 ! sets nsmax, according to the default range for fc2s, rcut(2) which is 15Ang
 
  call cpu_time(tim)
  write(utimes,'(a,f10.4)')' make_unitcell, TIME                          IS ',tim
  write(utimes,*)' make_unitcell called, atmpos, neighbs, iatmcell calculated'
+
+! inputs: rcut(2) (and atompos through module atoms_force_constants)
+  call set_neighbor_list(rcut(2),maxshell)
+! outputs: atom0%equilb_pos,shells%no_of_neighbors , rij, neighbors(:)%tau and n and maxshell
+! maxshell is the actual # of shells within rcut(2). It is not nsmax; maxshell < maxneighbors
+ write(ulog,*)' After set_neighbors: maxshell=',maxshell,' while maxneighbors=',maxneighbors
  write(ulog,*)' ***************************************************************************** '
  write(ulog,*)' rcut(2) for FC2s set to be=',rcut(2),' corresponding to new maxshell=',maxshell
  write(ulog,*)' ************************* Writing the neighborlist ************************** '
  write(ulog,*)' Now the actual number of shells within the largest WS cell is set...'
 
-
-! inputs: rcut(2) (and atompos through module atoms_force_constants)
-  call set_neighbor_list(rcut(2),maxshell)
-! outputs: atom0%equilb_pos,shells%no_of_neighbors , rij, neighbors(:)%tau and n and maxshell
-
- write(ulog,*)' After set_neighbors: maxshell=',maxshell,' while maxneighbors=',maxneighbors
 
   if (maxval(nshells(2,:)) .gt. maxshell) then
      nshells(2,:)=maxshell
@@ -180,18 +179,20 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
 
   call write_neighbors
 
+  call write_atompos
+
 
   if(fc2flag.eq.0) then  ! calculate the default # of shells of FC2 based on largest supercell
 
-! of available superells, takes the one with largest volume to set the range of FC2= largest 
+! of available superells, takes the one with largest volume to set the range of FC2= largest
 ! center to WS boundary distance; also collect all forces and displacements
 
      call find_WS_largest_SC(imax,volmax)
 ! output is the translation vectors of the largest supercell rsi
 
-! create a grid of primitive translations inside the WS cell of supercell, along with their weights
+! create a grid of primitive translations inside the WS cell of supercell, rgrid(3,nrgrid), along with their weights
      call make_grid_weights_WS(r01,r02,r03,rs1,rs2,rs3,nrgrid,'r',rws26)
-! rws26(output) are the 26 shortest vectors used to define the WS of the largest supercell 
+! rws26(output) are the 26 shortest vectors used to define the WS of the largest supercell
 ! in addition depending on 'r' or 'g' the grid of primitive translations inside the WS of supercell
 ! is calculated and stored in rgrid(3,nrgrid) or ggrid(3,nggrid) along with their weights rws_weights
 
@@ -199,6 +200,15 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
      write(ulog,*)'fc2flag=0; use largest WS; nshells2 updated to ',nshells(2,1:6)
 
   endif
+
+!!!!!
+
+!For each atompos in the loop for dynmat etc, we need to know to which supercell atom or its image it corresponds!!
+!So need to define somemap(natoms) =super_cell index of that atom (used for the displacement)
+
+!!!!!
+
+
 
 
 ! define the dimensions of the FC arrays, for each rank if include_fc.ne.0
@@ -212,21 +222,25 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
   call cpu_time(tim)
   write(utimes,'(a,f10.4)')' TIME after setup_maps and before write_correspondance IS ',tim
 
-  call write_lat_fc(map(:)%ntotind,map(:)%ntot) 
+  call write_lat_fc(map(:)%ntotind,map(:)%ntot)
 
 !--------------------------------------------------------------------
 ! read FCs from a file if already present
 
 ! outputs: ngrnk(rank), irreducible fcs:fcrnk(rank,ngrnk(rank))
   do rank=1,4
+  if (include_fc(rank) .eq. 2 ) then
      write(xt,'(i1)')rank
      fn = 'fc'//xt//'_irr.dat'
      iunit = ufco+rank
-     if (include_fc(rank) .eq. 2 ) then   
+     inquire ( file=fn, exist=ex)
+     if (ex) then
+        open(iunit,file=fn,status='old')
 ! this rank is to be read and is not included in svd extraction
         ngrnk(rank)=map(rank)%ntotind; allocate(fcrnk(rank,ngrnk(rank)))
-        call read_fcs(iunit,fn,rank,fcrnk(rank,:),ngrnk(rank))
+        call read_fcs_2(iunit,fn,rank,fcrnk(rank,:),ngrnk(rank))
      endif
+  endif
   enddo
 
 ! if read, may need to check compatibility with given supercells?!?
@@ -237,7 +251,12 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
  allocate(keep_grp2(map(2)%ngr)) ! which groups to keep based on the vectors rws26
 ! keep_grp2(i)=1 is the list of FC2s within WS of supercell defined by 2ws26
 ! find the FC2s within the SC and their number, which is size_kept_fc2
- call setup_FC2_in_supercell !(keep_grp2,size_kept_fc2)
+ if(fc2flag.eq.0) then
+     call setup_FC2_in_supercell !(keep_grp2,size_kept_fc2)
+ else  ! use the default values found by setup_maps
+     keep_grp2=1  ! keep everything
+     size_kept_fc2=map(2)%ntotind !sum(keep_grp2)  not sum of the groups but sum of all rnk2 indep terms
+ endif
 
 ! calculate the new nindepfc based on keep_grp2
 ! write(ulog,*)' new ngr(fc2) based size_kept_fc2=',map(2)%ngr-sum(map(2)%ntind)+size_kept_fc2
@@ -254,7 +273,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
        else
           nindepfc = nindepfc + map(rank)%ntotind
        endif
-
+       write(ulog,*)'nindep_rnk,nindep_tot=',map(rank)%ntotind,nindepfc
    endif
  enddo
 
@@ -262,9 +281,9 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
 
  allocate(frc_constr(fdfiles))  ! for each of the supercell files
 
- ! Read force-displacements fron OUTCARi and construct aforce,bforce matrices
+ ! Read force-displacements from FORCEDISPi (OUTCARi) and construct aforce,bforce matrices
  call read_snaps_set_aforce(frc_constr,nconfigs)
- 
+
   call cpu_time(tim)
   write(utimes,'(a,f10.4)')' TIME after read_snaps_set_aforce               IS ',tim
 
@@ -295,8 +314,8 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
 
   endif
 
-! now that aforce & bforce matrices are setup, we can do SVD and project on  
-! onto the kernel of homogeneous part of amatrix 
+! now that aforce & bforce matrices are setup, we can do SVD and project on
+! onto the kernel of homogeneous part of amatrix
 
 ! inputs: inv_constraints,force_constraints, aforce, bforce and invariance parts of amat
   call include_constraints_remove_zeros
@@ -305,7 +324,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
   write(ulog,*)'dim_al,dim_ac set to ',dim_al,dim_ac
 
 ! give warnings if any column in amat is totally zero
-  call check_zero_column(dim_al,dim_ac,amat) 
+  call check_zero_column(dim_al,dim_ac,amat)
 
 
   call cpu_time(tim)
@@ -335,7 +354,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
       write(ulog,*)'MAIN: Using kernel projection: enforce_inv and itemp are=',enforce_inv,itemp
       write(ulog,*)'MAIN: position of the first non-zero elt of bmat=',n_hom
       allocate(a_hom(n_hom,dim_ac),kernelbasis(dim_ac,dim_ac))
-      a_hom=amat(1:n_hom,1:dim_ac)  
+      a_hom=amat(1:n_hom,1:dim_ac)
       call write_out(uio,'#####     HOMOGENEOUS PART OF A ',a_hom)
       call get_kernel(n_hom,dim_ac,a_hom,svdcut,nkernel,kernelbasis,uio)
       write(ulog,*)' Kernel of A, of dim ',n_hom,'x',dim_ac,' is of dimension ',nkernel
@@ -346,7 +365,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
 
   allocate(bfrc(dim_ac))  ! dummy for xout
   if (itemp.eq.1) then
-      
+
       write(*,*) ' Temperature of ',tempk,' will be implemented'
       allocate(mat(dim_ac,dim_ac),qmat(dim_ac))
 !      2023-07-03 16:24:12 ---> Checking the energy value as FOCEX code is not giving proper result (logged by Bikash. T.)
@@ -393,9 +412,9 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
   if(include_fc(3).eq.1) open(ufc3 ,file='fc3.dat',status='unknown')
   if(include_fc(4).eq.1) open(ufc4 ,file='fc4.dat',status='unknown')
 
-  call write_independent_fcs(dim_ac,sigma,sd,ulog)
+   call write_independent_fcs(dim_ac,sigma,sd,ulog)
 
-  call write_output_fcs
+   call write_output_fcs
 
   close(ufit1)
   close(ufit2)
@@ -406,7 +425,15 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
   close(ufc3)
   close(ufc4)
 
-  deallocate(sigma,amat,bmat,bfrc,fcs)
+   deallocate(sigma,amat,bmat,bfrc) !,fcs)
+
+! calculate the phonon dispersion as output test: requires kpbs.in as input
+  open(ugrun,file='mode_grun.dat',status='unknown')
+  call set_dynmat !(map(2))
+
+  call cpu_time(tim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After band structure,               TIME IS ',tim
+
 
 
   call date_and_time(date=today,time=now,zone=zone)
@@ -438,7 +465,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
   close(umatrx)
   close(utimes)
 
-  contains 
+  contains
 
  subroutine test(new,n,m)
  integer n,m
@@ -476,7 +503,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
 
  end subroutine append_array2
 !========================================
- subroutine read_snaps_set_aforce(frc_cnstr,nconfigs) 
+ subroutine read_snaps_set_aforce(frc_cnstr,nconfigs)
 !! read all POSCARi/OUTCARi files and the force displacements as inputs to matrices aforce,bforce
 !! outputs: energies, aforce, bforce (and full displ & force arrays)
  use params, only : fdfiles
@@ -490,7 +517,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
  implicit none
  integer, intent(out) :: frc_cnstr(fdfiles),nconfigs
 ! real(8), intent(out) :: energies(nconfigs),disp(3,natom_super_cell,nconfigs),force(3,natom_super_cell,nconfigs)
-! real(8), allocatable, intent(out) :: energies(:) !,disp(:,:,:),force(:,:,:) 
+! real(8), allocatable, intent(out) :: energies(:) !,disp(:,:,:),force(:,:,:)
  real(8), allocatable :: dsp(:,:,:),frc(:,:,:),energy(:),afrc(:,:),bfrc(:),aux3(:,:,:),aux4(:,:,:),aux(:)
  integer i,imax,ncfg,at,j,nfctot,n1,n2
  type(vector) as1,as2,as3
@@ -502,13 +529,14 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
      structures: do i=1,fdfiles
 
         write(xt,'(i1)')i
+        write(ulog,*)'=================== Reading supercell #',i,'========================'
         poscar='POSCAR'//xt
         call read_crystal(poscar) ! equilibrium atomic positions in supercell from POSCARi
 
         call make_r0g
 
 ! make sure of consistency POSCAR with input structure
-        call identify_atoms_in_supercell  
+        call identify_atoms_in_supercell
 
 ! writing the coordinates of primitive cells in the supercell
 ! reference of each prim cell (n) is atom #1
@@ -537,31 +565,30 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
               write(ulog,9)j,ggrid(:,j),gws_weights(j)
            enddo
            write(ulog,*)' sum of gws_weights(j) ',sum(gws_weights)
-        endif  
+        endif
 
 ! was OUTCAR before and changed to FORCEDISP
         outcar='FORCEDISP'//xt
- 
+
         call count_configs(outcar,ncfg)
         nconfigs = nconfigs + ncfg
-         
+
         frc_cnstr(i)=3*natom_super_cell*ncfg
         allocate( energy(ncfg),displ(3,natom_super_cell,ncfg),force(3,natom_super_cell,ncfg) )
         write(*,*)' Allocation of energy, dsp and frc arrays DONE!'
         call read_force_position_data(outcar,ncfg,energy,displ,force)
-!        call read_force_position_data(outcar,frc_cnstr(i),ncfg,energy,dsp,frc)
 
-        if(frc_cnstr(i) .ne. ncfg*natom_super_cell*3) then
-           write(ulog,*)'READ_SNAPS: inconsistency in frc_cnstr ',frc_cnstr(i),ncfg*natom_super_cell*3
-           stop
-        endif
-         
+!       if(frc_cnstr(i) .ne. ncfg*natom_super_cell*3) then
+!          write(ulog,*)'READ_SNAPS: inconsistency in frc_cnstr ',frc_cnstr(i),ncfg*natom_super_cell*3
+!          stop
+!       endif
+
   call cpu_time(tim)
   write(utimes,'(a,i3,a,f10.4)')' STRUCTURE ',i,' after read_force_position_data time IS ',tim
 
-! 3 ways: if=0 ignore, if=1 use real space, if=2 use Fourier transforms
-        call subtract_coulomb_force(born_flag,ncfg,displ,force) 
-! now frc contains the short-range (Non-Coulomb) part of the force constants
+! 3 ways: if=0 ignore, if=1 use real space ewald, if=2 use Fourier transforms
+        call subtract_coulomb_force(born_flag,ncfg,displ,force)
+! now frc contains the short-range (Non-Coulomb) part of the force constants which we can fit
 
   call cpu_time(tim)
   write(utimes,'(a,i3,a,f10.4)')' STRUCTURE ',i,' after subtract_coulomb time IS ',tim
@@ -573,15 +600,15 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
             energies=energy
 !            force=frc
 !            displ=dsp
-            allocate( aforce(frc_cnstr(1),nindepfc),bforce(frc_cnstr(1)) )
-            call set_force_displacement_matrix(frc_cnstr(1),aforce,bforce)
+            allocate( aforce(frc_cnstr(i),nindepfc),bforce(frc_cnstr(i)) )
+            call set_force_displacement_matrix(frc_cnstr(i),aforce,bforce)
             if(nconfigs.ne.ncfg) print*,'APPENDING ERROR, ifile=',i
-        else ! append new arrays to the end of existing ones
+        else ! append new arrays for i.ge.2 to the end of existing ones: energies,force,disp
 !            call append_array(energies,energy(1:ncfg),energies)
              energies=reshape(energies,shape=(/size(energies)+size(energy)/),pad=energy)
 !             n1=size(energies); n2=size(energy)
 !             allocate(aux(n1+n2))
-!             aux(1:n1)=energies; 
+!             aux(1:n1)=energies;
 !             aux(1+n1:n2+n1)=energy
 !             deallocate(energies); allocate(energies(n1+n2))
 !             energies=aux
@@ -597,7 +624,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
 !               call append_array(force(j,at,:),frc(j,at,1:ncfg),force(j,at,:))
 !             n1=size(force(j,at,:)); n2=size(frc(j,at,:))
 !             allocate(aux(n1+n2))
-!             aux(1:n1)=force(1:n1); 
+!             aux(1:n1)=force(1:n1);
 !             aux(1+n1:n2+n1)=frc
 !             deallocate(force); allocate(force(n1+n2))
 !             force=aux
@@ -606,7 +633,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
 !               call append_array(displ(j,at,:),dsp(j,at,1:ncfg),displ(j,at,:))
 !             n1=size(displ); n2=size(dsp)
 !             allocate(aux(n1+n2))
-!             aux(1:n1)=displ; 
+!             aux(1:n1)=displ;
 !             aux(1+n1:n2+n1)=dsp
 !             deallocate(force); allocate(displ(n1+n2))
 !             displ=aux
@@ -637,7 +664,7 @@ type(vector) b01,b02,b03,as1,as2,as3,sx(26)
 
      enddo structures
 
-     write(ulog,*)'READ_SNAPS: total number of FD constraints(=dim_al)',nfctot 
+     write(ulog,*)'READ_SNAPS: total number of FD constraints(=dim_al)',nfctot
 
      force_constraints=sum(frc_cnstr)
 
@@ -673,7 +700,7 @@ end program FC234
 ! us = overl
 ! call svdcmp(us,n_constr,n_constr,n_constr,n_constr,ws,vs)
 
-! truncate and keep the highest eigenvalues of ws ! is that correct?? 
+! truncate and keep the highest eigenvalues of ws ! is that correct??
 ! call truncate(ngr,ws,n_kept,mw)
 ! write(ulog,*)' the largest  ws is=',ws(mw(1))
 ! write(ulog,*)' the smallest ws kept and its index is=',n_kept,ws(mw(n_kept))

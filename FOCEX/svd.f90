@@ -186,12 +186,12 @@
  write(uio,*)' Solution of the inhomogeneous part is=',x
 
  deallocate(ainhom)
- 
+
  write(uio,*)' After solving for the inhomogeneous part, now we project on the kernel of a_hom'
  call project_on(n,nkernel,x,kernelbasis(1:n,1:nkernel),x)
  write(uio,*)' Solution after kernel projection   is=',x
 
- deallocate(kernelbasis) 
+ deallocate(kernelbasis)
 
 ! this part can be removed
  write(uio,*)' SOLVE_BY_ELIMINATION: residual of SVD2 solution is: Ax,b,|Ax-b|,|Ax-b|/Ax'
@@ -613,7 +613,7 @@
     enddo
     nkernel = sum(r)
     write(uio,*)' Kernel of A has dimension=',nkernel
-    write(uio,*)' This is the number of independent variables or  equations ' 
+    write(uio,*)' This is the number of independent variables or  equations '
     write(uio,*)' The number of eliminated components is ',n-nkernel
 
 ! identify the Kernel of w

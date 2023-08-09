@@ -2,7 +2,7 @@
  module constants
  implicit none
 !--! specific precisions, usually same as real and double precision
-integer, parameter :: r6 = selected_real_kind(6) 
+integer, parameter :: r6 = selected_real_kind(6)
 integer, parameter :: r15 = selected_real_kind(15) ! should work on any compiler
  integer, parameter :: dp=8 !(for nag compilers use kd=2 for double precision; 8 for gfortran)
  complex(kind=r15) :: ci=cmplx(0d0,1d0)
@@ -699,7 +699,7 @@ module ios
  integer, parameter:: ulog=30,uposcar=10,uparams=11, utraj=40,ufco=20,  &
 &         umap=60,umatrx=50,utimes=70,ufc1=21,ufc2=22,ufc3=23,ufc4=24,  &
 &         ufc=80,ufit1=31,ufit2=32,ufit3=33,ufit4=34,ucor=93,uborn=12,  &
-&         ujunk=79,uibz=80,uibs=81,ugr=82
+&         ujunk=79,uibz=80,uibs=81,ugrun=82
 
 
   interface write_out
@@ -838,17 +838,17 @@ end module ios
     type(vector) equilibrium_pos
     type(cell_id) cell
     integer at_type
-    real(8) mass
-    real(8) charge(3,3)
+    character name*2
+    real(8) mass,charge(3,3)
  end type
 !-------------------------
  type atom_id0   ! all characteristics of an atom in the primitive central cell
-    integer at_type
+    integer at_type,tau !  (n1,n2,n3)=0 for atoms in the primitive cell
     character name*2
     real(8) mass,charge(3,3)
-    integer nshells       ! how many shells are included=actual dim(shell)
+    integer nshells       ! how many shells are included for that atom = actual dim(shell)
     type(vector) equilibrium_pos
-    type(shell), allocatable ::  shells(:) 
+    type(shell), allocatable ::  shells(:)  ! of dim atom0(i)%nshells
 !    type(tensor2r), pointer :: phi2(:)  ! refers to atom numbers neighbor of i
 !    type(tensor3), pointer :: phi3(:,:)
 !    type(tensor4), pointer :: phi4(:,:,:)
@@ -900,7 +900,7 @@ end module ios
 !  integer iatomcell(3,maxatoms)
       integer, allocatable ::  iatomcell(:,:),iatomcell0(:)
 ! iatomcell0(i), identity of atom in unit cell at origin equivalent to ith atom
-!  integer iatomcell0(maxatoms)
+!     integer iatomcell0(maxatoms)
 ! iatomneighbor(j,i), nearest neighbor shell of jth atom in primitive unit
 ! cell at the origin that contains the ith atom
       integer iatomneighbor(:,:)
@@ -945,7 +945,7 @@ contains
 !! to a pair ij, or ijk or ijkl
 !! if a neighbor j is known then one can get the vect(i,j) between
 !! their equilibrium positions
-!! use atoms_force_constants , only : natom_prim_cell
+! use atoms_force_constants , only : natom_prim_cell
 !use params
 !use lattice
 !use ios
@@ -1164,7 +1164,7 @@ contains
   write(ulog,*)' Reduced Atomic positions, mass ====================== '
   do i=1,natom_prim_cell
      atom0(i)%equilibrium_pos=atompos0(:,i)
-     write(ulog,8)atom0(i)%name,atom0(i)%at_type,atompos0(:,i),atom0(i)%mass
+     write(ulog,8)atom0(i)%name,atom0(i)%at_type,atom0(i)%tau,atompos0(:,i),atom0(i)%mass
   enddo
   write(ulog,*)' Cartesian Atomic positions,  ====================== '
   do i=1,natom_prim_cell
@@ -1178,9 +1178,9 @@ contains
   enddo
 
 ! generate neighbors in atompos up to a disctance rcut(2)=15 Ang
-  rcut(2)=15  ! this is enough for a supercell of length 30 Ang
+  rcut(2)=19  ! this is enough for a supercell of length 30 Ang
 
-! get largest # of atoms within rcut; and nsmax=rcut/shortest translation+2 
+! get largest # of atoms within rcut; and nsmax=rcut/shortest translation+2
   call get_upper_bounds(r01,r02,r03,rcut(2),maxatoms,nsmax)
 
 
@@ -1191,11 +1191,11 @@ contains
   allocate(atompos(3,maxatoms), iatomcell(3,maxatoms),iatomcell0(maxatoms))
 
 ! find symmetry operations; the above allocation is for this subroutine
-! requires maxneighbors to generate atoms within these shells 
+! requires maxneighbors to generate atoms within these shells
   call force_constants_init(natom_prim_cell,atom_type,atompos0)
 
 ! cat_to_prim had reciprocal lattice vectors on its lines
-  call write_out(ulog,'reciprocal lattice vectors ',cart_to_prim)
+! call write_out(ulog,'reciprocal lattice vectors ',cart_to_prim)
 
 
   density=sum(atom0(:)%mass)/volume_r0*uma*1d27
@@ -1206,7 +1206,7 @@ contains
 3 format(a,9(2x,g13.6))
 4 format(i6,3(2x,g12.5),4(3x,i4))
 6 format(a,(2x,g12.5),a,4(3x,i4))
-8 format(a2,i3,9(1x,g13.6))
+8 format(a2,2i3,9(1x,g13.6))
 
  end subroutine make_unitcell
 !-----------------------------------------
@@ -1272,7 +1272,7 @@ contains
  subroutine set_neighbor_list (rcut2,mxshell)
 !! Generates a set of neighbors to the primitive cell up to rcut2
 !! and calculates the corresponding number of neighborshells
-!! maxshell = actual max number of neighbor shells  
+!! mxshell = actual max number of neighbor shells
 ! this is needed in order to know what force constants to associate
 ! to a pair ij, or ijk or ijkl
 ! if a neighbor j is known then one can get the vect(i,j) between
@@ -1284,71 +1284,88 @@ contains
  implicit none
  integer, intent(out) :: mxshell
  real(8), intent(in) :: rcut2
- integer i0,j,shel_count,counter,msort(maxatoms),l
- real(8) dist(maxatoms),d_old,d_min,rmax
+ integer i0,j,s,l,shel_count,msort(natoms),cnt,nb(0:maxneighbors)
+ real(8) dist(natoms),d_old,d_min(0:maxneighbors),rmax,dij,d_new
 
- mxshell=maxneighbors ! do not want to go beyond 50 shells, hopefully is large enough for rcut2
+ mxshell=maxneighbors ! do not want to go beyond maxneighbors shells, hopefully it is large enough for rcut2
 
-! allocate( atom0(1:natom_prim_cell)%shells(mxshells) )
- rmax = 0  ! is the largest radius among the natoms neighbors   
- dist = 1d10
+! allocate( atom0(natom_prim_cell)%shells(0:mxshell)) !%neighbors(maxneighbors) )
+! allocate( atom0(natom_prim_cell)%shells(0:mxshell)%neighbors(maxneighbors) )
+ rmax = 0  ! is the largest radius among the natoms neighbors
+
  i0loop: do i0=1,natom_prim_cell
-    allocate( atom0(i0)%shells(0:mxshell) )
+    dist = 1d10
+! calculate pair i0-j distances, select those less than rcut2, and sort them
+    cnt=0
     do j=1,natoms
-       call calculate_distance(i0,j,atompos,maxatoms,dist(j) )
-! this dist(j) is supposed to be less than rcut(2)
-!      if ( iatomneighbor(i0,j) .eq. nshells(2,i0) .and. dist(j) .gt. rmax ) then
-!      if ( dist(j) .gt. rcut2 ) then
-!           write(ulog,*)'SET_NEIGHBOR_LIST: dist(j)>rcut ',i0,j,dist(j),rcut2
-!      endif
+       call calculate_distance(i0,j,atompos,natoms,dij)
+  !    if ( dij .gt. rcut2 ) cycle   ! skipping a j would be problematic
+  !    cnt=cnt+1   ! count the neighbors within rcut2
+  !    dist(cnt)=dij
+       dist(j)=dij
     enddo
-!   if (rmax.lt.rcut2) then
-!      write(ulog,*)'rmax=',rmax,' is less than input cutoff of ',rcut2
-!      write(ulog,*)'need to increase mxshell from ',mxshell,' or decrease rcut=',rcut2
-!   endif
-    call sort(natoms,dist,msort,maxatoms)
+  ! call sort(cnt,dist,msort,natoms)
+    call sort(natoms,dist,msort,natoms)
+!   write(ulog,*)'for atom0=',i0,' found ',cnt,' atoms within rcut=',rcut2
 
+! count the corresponding # of shells and nb, # of atoms within that shell, for each i0
     shel_count = -1
-    d_old = 0
+    d_old = 1e4
+    d_min=0
+    nb=1
     write(ulog,*)' ========================================================='
     write(ulog,*)' neighborlist of atom i0 =',i0
 
-    jloop: do j=1,natoms
-       d_min = dist(msort(j))  ! start with the shortest distance
-       if ( (d_min .myeq. d_old) .and. (shel_count.ne.-1) ) then   ! same shell
-          counter = counter + 1  ! counts atoms within a given shell 
-       else    ! new shell
-          if (d_min.gt.rcut2) cycle
+    jloop: do j=1,natoms !cnt ! among natoms only picked those with rij<rcut2
+       d_new = dist(msort(j))  ! start in order of increasing distances from d=0
+
+       if ( abs(d_new-d_old).gt.1d-5 ) then   ! new shell
           shel_count = shel_count+1
-          counter = 1
-          if ( shel_count .gt. mxshell ) then
+          nb(shel_count)=1
+          d_old = d_new
+          d_min(shel_count)=d_new
+          if ( shel_count .gt. mxshell .or. d_new.gt.rcut2) then
              write(ulog,*)mxshell,' shells completed'
              write(ulog,*)'shel_count=',shel_count,' exceeded it for j=',j
              write(ulog,*)'Need to increase maxneighbors from ',maxneighbors,' or decrease rcut from ',rcut2
              exit jloop
           endif
-          d_old = d_min
+       else  ! same shell
+          nb(shel_count)=nb(shel_count)+1
        endif
-!      if ( counter .gt. 296) then
-!         write(ulog,*) ' counter in neighbors exceeded 296 ', counter
-!         stop
-!      endif
-       atom0(i0)%shells(shel_count)%no_of_neighbors = counter
-       atom0(i0)%shells(shel_count)%rij = d_min
-       atom0(i0)%shells(shel_count)%neighbors(counter)%tau = iatomcell0(msort(j))
-       atom0(i0)%shells(shel_count)%neighbors(counter)%n   = iatomcell(:,msort(j))
-       if(verbose) then
-!       write(ulog,*)' ------------------------------------'
-          write(ulog,5)' count, j, of tau,n1,n2,n3,shel#,nb#,dij,rj =',j,msort(j),iatomcell0(msort(j)),   &
-&                iatomcell(:,msort(j)),iatomneighbor(i0,msort(j)),counter,d_min,(atompos(l,msort(j)),l=1,3)
-       endif
+
     enddo jloop
 
-    mxshell=shel_count
-    maxshell=mxshell  ! to save it in the module atoms_force_constants
+    atom0(i0)%nshells=shel_count
+    allocate( atom0(i0)%shells(0:shel_count) )   ! %neighbors dimension is fixed to 296
+    cnt=0  ! counts atoms from nearest to farthest, shell by shell
+    do s=0,shel_count
+       atom0(i0)%shells(s)%no_of_neighbors = nb(s)
+       atom0(i0)%shells(s)%rij = d_min(s)
+       do l=1,nb(s)
+          cnt=cnt+1  ! counts the total # of atoms
+          jl:do j=1,natoms
+             if(cnt.eq.msort(j)) then
+               atom0(i0)%shells(s)%neighbors(l)%tau = iatomcell0(cnt)
+               atom0(i0)%shells(s)%neighbors(l)%n   = iatomcell(:,cnt)
+    if(verbose) then
+!        write(ulog,*)' ------------------------------------'
+          write(ulog,5)'cnt,atomj,tauj,n1,n2,n3,shel#,nb#,dij,R =',cnt,j,iatomcell0(cnt),   &
+   &             iatomcell(:,cnt),iatomneighbor(i0,cnt),d_min(s),atompos(:,cnt) 
+    endif
+               exit jl
+             endif
+          enddo jl
+       enddo
+    enddo
+
+    if(mxshell.le.shel_count) then
+        mxshell=shel_count
+        write(ulog,*)'i0,mxshell,shel_count=',i0,mxshell,shel_count
+    endif
     write(ulog,*)'SET_NEIGHBOR_LIST: largest#of shells=',mxshell,' for modified maxneighbors=',maxneighbors
-    do shel_count = 0 , mxshell
-       write(ulog,*)'shell#, neigh#=',shel_count,atom0(i0)%shells(shel_count)%no_of_neighbors
+    do s = 0 , shel_count
+       write(ulog,*)'shell#, neigh#=',s,atom0(i0)%shells(s)%no_of_neighbors
     enddo
 ! also initialize atom0%equilibrium_pos
 
@@ -1364,11 +1381,12 @@ contains
 ! they might not be inside the primitive cell
 
  enddo i0loop
+ maxshell=shel_count  ! to save it in the module atoms_force_constants
 
 2 format(a,8(2x,i4))
 3 format(a,' (',i4,2(1x,i4),1x,')')
 4 format(a,1x,i4,' (',f8.4,2(1x,f8.4),1x,')')
-5 format(a,3(2x,i4),' (',i4,2(1x,i4),1x,')',2(1x,i3),1x,f10.7,2x,9(1x,f9.6))
+5 format(a,3(1x,i4),' (',i2,2(1x,i2),')',1x,i4,9(1x,f9.4))
 6 format(a,1x,f10.7,2x,9(1x,f9.6))
 
  end subroutine set_neighbor_list
@@ -1384,8 +1402,8 @@ contains
     integer, allocatable:: iat(:,:),ixyz(:,:),iatind(:,:),ixyzind(:,:)
  end type groupmatrix
  type fulldmatrix
-    type(groupmatrix), allocatable :: gr(:)
-    integer, allocatable:: nt(:),ntind(:)  !,igr(:)
+    type(groupmatrix), allocatable :: gr(:)  ! groups of fcs
+    integer, allocatable:: nt(:),ntind(:)  ! full and independent fc terms for each group
     character(1), allocatable:: err(:)
     integer ngr,ntotind,ntot  ! number of groups, total number of independent terms and full terms
  end type fulldmatrix
@@ -1457,7 +1475,7 @@ contains
  real(8) small,suml
  integer, allocatable:: zz(:)
 
- small=1d-7 !10  displacements or cos(t) are never that small
+ small=1d-6 !10  displacements or cos(t) are never that small
 
  tra=0; rot=0; hua=0
  if (itrans .ne. 0) tra= transl_constraints
@@ -1554,9 +1572,8 @@ contains
 
 !--------------------------------------------
  subroutine remove_zeros(nl,nc,matin,vectin,nlout,matout,vectout)
-! removes lines which are all zero from the matrix mat and the vector v
+!! removes lines which are all zero from the matrix mat and the vector v
  use ios , only : ulog
-! use params
  implicit none
  integer, intent(out) :: nlout
  integer, intent(in) :: nl,nc
@@ -1569,7 +1586,7 @@ contains
  real(8) small,suml
  integer, allocatable:: zz(:)
 
- small=1d-7 !10  displacements or cos(t) are never that small
+ small=1d-6 !10  displacements or cos(t) are never that small
 
  allocate(zz(nl))
  zz = 1
@@ -1628,6 +1645,7 @@ contains
 
 !===========================================================
 subroutine sort3(n1,n2,n3,mp)
+!! sorts the 3 integers n1,n2,n3 in increasing order!!
 implicit none
 integer n1,n2,n3,mp(3)
 

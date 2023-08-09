@@ -1,16 +1,18 @@
- subroutine set_dynmat(fcs,ngr,dyn)
-!! reads irreducible 2nd order force constants, and computes the dynamical matrix
+ subroutine set_dynmat !(map) !fcs,ngr) !,dyn)
+!! reads irreducible 2nd order force constants, and computes the phonon spectrum
  use svd_stuff, only : map
  use kpoints
  use atoms_force_constants, only : natom_prim_cell
  use ios, only : ulog
-  integer, intent(in) :: ngr
-  real(8), intent(in) :: fcs(ngr)
-  complex(8), allocatable, intent(inout) :: dyn(:,:)
-  integer ndyn
+ use eigen !, only : ndyn
+!  integer, intent(in) :: ngr
+!  real(8), intent(in) :: fcs(ngr)
+!  complex(8), allocatable, intent(inout) :: dyn(:,:)
 
   ndyn = 3*natom_prim_cell
 
+  write(*,*)'Entered set_dynmat '
+  write(ulog,*)'map(ntotind)=',map(:)%ntotind
 !---------------------------------------------------------------
 ! do a band structure calculation along the symmetry directions
 
@@ -20,7 +22,17 @@
   call allocate_eig_bs(ndyn,nkp_bs,ndyn) !3rd index is for eivecs needed for gruneisen
 
 ! now output eigenval is directly frequencies in 1/cm
-!  call get_frequencies(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,ndyn,eigenvec_bs,veloc)
+  call get_frequencies(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,ndyn,eigenvec_bs,veloc)
+
+!  call band_sort(nkp_bs,ndyn,kp_bs,dk_bs,eigenval_bs,eigenvec_bs,veloc)
+!
+!  call write_eigenvalues(nkp_bs,dk_bs,kp_bs,eigenval_bs,ndyn,uband)
+
+  call gruneisen(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,eigenvec_bs,ugrun,grun_bs)
+  close(ugrun)
+
+  call deallocate_eig_bs
+  deallocate(dk_bs)
 
  end subroutine set_dynmat
 !===========================================================
@@ -40,7 +52,7 @@
  real(8), allocatable :: eivl(:)
  real(8) absvec,om
  complex(8), allocatable:: dynmat(:,:),eivc(:,:),ddyn(:,:,:)
- real(8) khat(3),mysqrt
+ real(8) khat(3) !,mysqrt
  character ext*3
 
  integer, allocatable :: mp1(:,:) !Map for projection band sorting
@@ -62,51 +74,9 @@
  kloop: do i=1,nkp
 
 ! write(uio,*)'############ before setting up dynmat, kp number ',i
-    call finitedif_vel(kp(:,i),ndn,vg(:,:,i),eivl,eivc)
+    call finitedif_vel(kp(:,i),ndn,vg(:,:,i),eival(:,i),eivec(:,1:nv,i))
 
-!   call set_dynamical_matrix(kp(:,i),dynmat,ndn,ddyn)
-!
-!!JS: call nonanalytical term for born effective change
-!    if (kp(1,i)==0.d0 .AND. kp(2,i)==0.d0 .AND. kp(3,i)==0.d0) then
-!        khat=kp(:,i)+1.0D-10
-!    else
-!        khat=kp(:,i)
-!    endif
-!    call nonanal(khat,dynmat,ndn,ddyn)
-!
-!    if (verbose) then
-!       write(ulog,3)' ======================================================================'
-!       write(ulog,3)' THE DYNAMICAL MATRIX IS:',i,kp(:,i)
-!       do l=1,ndn
-!          write(ulog,4)(dynmat(l,j),j=1,nd2)
-!       enddo
-!    endif
-!
-!    call diagonalize(ndn,dynmat,eivl,nv,eivc,ier)
-!
-! sort eivals in ascending order
-!   call sort(ndn,eivl(:),mp,ndn)
 
-!   if (ier.ne.0 .or. verbose) then
-!     write(   *,*)' ier=',ier
-!     write(ulog,*)' ier=',ier, ' EIGENVALUES ARE...'
-!     write(ulog,*)
-!   endif
-
-    do j=1,ndn
-       eival(j,i) = eivl(j) !mp(j))
-       do l=1,nv
-          eivec(j,l,i) = eivc(j,l)  !mp(l))
-       enddo
-    enddo
-
-! if pure imaginary make eigenvectors real as they can be multiplied by any arbitrary number
-!    do l=1,nv
-!       absvec = sum(abs(real(eivec(:,l,i)))**2)
-!       if (absvec .lt. 1d-1) then
-!          eivec(:,l,i)=cmplx(0,1)*eivec(:,l,i)   ! this does not hurt anything
-!       endif
-!    enddo
 !
 !! put the acoustic bands in the first 3 branches 1:Ta 2:Ta 3:La
 !! eivl(mp(i)) is the properly sorted array
@@ -275,12 +245,12 @@
           write(ulog,8)(dynmat(l,j),j=1,nd2)
        enddo
        write(ulog,3)' ======================================================================'
-       do al=1,3
-          write(ulog,3)' THE k-DERIVATIVE OF THE DYNAMICAL MATRIX =',al
-          do l=1,ndn
-             write(ulog,8)(ddyn(l,j,al),j=1,nd2)
-          enddo
-       enddo
+!      do al=1,3
+!         write(ulog,3)' THE k-DERIVATIVE OF THE DYNAMICAL MATRIX =',al
+!         do l=1,ndn
+!            write(ulog,8)(ddyn(l,j,al),j=1,nd2)
+!         enddo
+!      enddo
     endif
 
 ! store dynmat in temp
@@ -335,7 +305,7 @@
 !      write(ulog,9)'al=',al, ddyn(j,:,al)
 !    enddo
 !    enddo
-  
+
   endif
 
 ! now calculate the group velocities from Hellman-Feynmann formula(for each component al=1,3)
@@ -350,7 +320,6 @@
 !         vg(al,l)=dynmat(mp(l),mp(l))/(2*sqrt(abs(eival(l))))*cnst*1d-10*100*2*pi !*c_light
 !      enddo
 
-
     do l=1,ndn
       vg(al,l)=0
       do k=1,ndn
@@ -364,6 +333,10 @@
       enddo
       vg(al,l)=vg(al,l)/2/sqrt(abs(eival(l)))*cnst*1d-10*100*2*pi
     enddo
+    enddo
+    write(ulog,*)' three components of the velocity in m/s are '
+    do al=1,3
+      write(ulog,5)'alpha,v_alpha=',al,vg(al,:)
     enddo
 
  deallocate(eivl,eivc,dynmat,mp,ddyn,temp)
@@ -386,66 +359,101 @@
  use lattice
  use geometry
  use atoms_force_constants
-! use force_constants_module
  use svd_stuff
  use eigen
  use constants
  implicit none
- integer ik,i0,nkp,la,al,be,ga,j,k,j0,k0,ta1,ta2,t,ugr2,ndn    ! ,i3,j3,k3
- real(8) mi,mj,rr3(3),rr2(3),qq(3),denom,qdotr,omk,mysqrt
- real(8) kp(3,nkp),dk(nkp),eivl(ndn,nkp)
+ integer, intent(in) :: nkp,ndn,ugr2
+ real(8), intent(in) :: kp(3,nkp),dk(nkp),eivl(ndn,nkp)
+ complex(8), intent(in) :: eivc(ndn,ndn,nkp)
+ complex(8), intent(out) :: grn(ndn,nkp)
+ integer ik,i0,la,al,be,ga,j,k,j0,k0,ta1,ta2,t,cnt2,cnt3,g,ti,ired
+ real(8) mi,mj,rr3(3),rr2(3),qq(3),qdotr,omk !,mysqrt
  complex(8) zz,one,term
- complex(8) grn(ndn,nkp), eivc(ndn,ndn,nkp)
 
  one = cmplx(1d0,0d0)
- write(ugr2,*)'# la,nk,dk(nk),kp(:,nk),om(la,nk),gruneisen(la,nk))'
+ write(ugr2,*)'# la, nk , dk(nk) ,     kp(1:3,nk)     , om(la,nk),Re(gruneisen(la,nk)), Im(gr))'
  do ik=1,nkp
     qq(:) = kp(:,ik)
  do la=1,ndn
 !   write(ulog,6)'Starting gruneisen parameters for kpoint & band# ',ik,la,kp(:,ik)
-!   write(ulog,*)' i,la,t,fcs_3(t),term(2),6*eival(la,i),rr3(3),grun(la,i)'
+!   write(ulog,*)' fcs_3(t),term(2),6*eival(la,i),rr3(3),grun(la,i)'
     grn(la,ik) = 0
-    denom = 6 * eivl(la,ik)
     omk = mysqrt(eivl(la,ik))*cnst
     do i0=1,natom_prim_cell
          mi = atom0(i0)%mass
-       tloop: do t=1,nterms(3)
+         cnt3=0
+         gloop: do g=1,map(3)%ngr
+            if(g.gt.1) cnt3=cnt3+map(3)%ntind(g-1)
+            tloop: do t=1,map(3)%nt(g)  !nterms(3)
 
-         if ( i0 .ne. iatomterm_3(1,t) ) cycle tloop
-         al = ixyzterm_3(1,t)
-         be = ixyzterm_3(2,t)
-         ga = ixyzterm_3(3,t)
-!        i0 = iatomcell0(iatomterm_3(1,t))
-         j  = iatomterm_3(2,t)  ;  j0 = iatomcell0(j) ; mj = atom0(j0)%mass
-         k  = iatomterm_3(3,t)  ;  k0 = iatomcell0(k)
-         ta1= al + 3*(i0-1)
-         ta2= be + 3*(j0-1)
-
-! rr2(:)=iatomcell(1,j)*r1+iatomcell(2,j)*r2+iatomcell(3,j)*r3
-!  be careful: it has to be the translations R not atompos!
-         rr2(:) = atompos(:,j) - atompos(:,j0)  ! R
-         rr3(:) = atompos(:,k)                  ! R+tau
-         qdotr =  ( qq .dot. rr2)
-         zz = cdexp( ci * qdotr )
+              if ( i0 .ne. map(3)%gr(g)%iat(1,t) ) cycle tloop
+              al = map(3)%gr(g)%ixyz(1,t)  !ixyzterm_3(1,t)
+              be = map(3)%gr(g)%ixyz(2,t)  !ixyzterm_3(2,t)
+              ga = map(3)%gr(g)%ixyz(3,t)  !ixyzterm_3(3,t)
+              j  = map(3)%gr(g)%iat(2,t)   ! this atompos index
+              j0 = iatomcell0(j)     ! atom_sc(j)%cell%tau  is incorrect
+              mj = atom0(j0)%mass
+              k  = map(3)%gr(g)%iat(3,t)
+              k0 = iatomcell0(k)     !atom_sc(k)%cell%tau is incorrect
+              ta1= al + 3*(i0-1)
+              ta2= be + 3*(j0-1)
+     !        rr2(:) = atompos(:,j) - atompos(:,j0)  ! R not consistent with dynmat which uses j-i0
+              rr3(:) = atompos(:,k)                  ! R+tau
+              rr2(:) = atompos(:,j) - atompos(:,i0)  ! R
+     !        rr3(:) = atompos(:,k) - atompos(:,i0)  ! R                 ! R+tau
+              qdotr =  ( qq .dot. rr2)
+              zz = cdexp( ci * qdotr )
+              do ti=1,map(3)%ntind(g)  ! index of independent terms in that group g
+                 ired=cnt3+ti + map(1)%ntotind + size_kept_fc2 !map(2)%ntotind
 !! term = - ampterm_3(t)*fcs_3(igroup_3(t))*zz*eivc(ta1,la,i)*conjg(eivc(ta2,la,i))*rr3(ga)/sqrt(mi*mj)
-         term = - fcs_3(t) * zz * eivc(ta2,la,ik)*conjg(eivc(ta1,la,ik))*rr3(ga)/sqrt(mi*mj)
-         grn(la,ik) = grn(la,ik) + term
-!        write(ulog,7)i,la,t,fcs_3(t),rr2,qdotr,zz,rr3,grn(la,ik)
-       enddo tloop
+                 term =  zz * eivc(ta2,la,ik)*conjg(eivc(ta1,la,ik))/sqrt(mi*mj) &
+         &             * (fcs(ired) * rr3(ga)*map(3)%gr(g)%mat(t,ti))
+                 grn(la,ik) = grn(la,ik) + term
+              enddo
+            enddo tloop
+         enddo gloop
+
+!        cnt2=0
+!        do g=1,map(2)%ngr
+!           if(g.gt.1) cnt2=cnt2+map(2)%ntind(g-1)
+!           do t=1,map(2)%nt(g)  !nterms(3)
+
+!             if ( i0 .ne. map(2)%gr(g)%iat(1,t) ) cycle 
+!             al = map(2)%gr(g)%ixyz(1,t)  !ixyzterm_3(1,t)
+!             be = map(2)%gr(g)%ixyz(2,t)  !ixyzterm_3(2,t)
+!             j  = map(2)%gr(g)%iat(2,t)   ! this atompos index
+!             j0 = iatomcell0(j)     ! atom_sc(j)%cell%tau  is incorrect
+!             mj = atom0(j0)%mass
+!             ta1= al + 3*(i0-1)
+!             ta2= be + 3*(j0-1)
+!             rr2(:) = atompos(:,j) - atompos(:,i0)  ! R not consistent with dynmat which uses j-i0
+!             qdotr =  ( qq .dot. rr2)
+!             zz = cdexp( ci * qdotr )
+!             do ti=1,map(2)%ntind(g)  ! index of independent terms in that group g
+!                ired=cnt2+ti + map(1)%ntotind 
+!                term =  zz * eivc(ta2,la,ik)*conjg(eivc(ta1,la,ik))/sqrt(mi*mj)* fcs(ired) 
+!                grn(la,ik) = grn(la,ik) + term*ci*qdotr
+!             enddo 
+
+!           enddo 
+!        enddo
     enddo
-    grn(la,ik) = grn(la,ik)/denom
+
+    grn(la,ik) = -grn(la,ik)/6/eivl(la,ik)
     if (aimag(grn(la,ik)) .gt. 1d-4) then
        write(ulog,*)' GRUNEISEN: ... has large imaginary part!! for nk,la=',ik,la,grn(la,ik)
 !      stop
     endif
-    write(ugr2,6)' ',la,ik,dk(ik),kp(:,ik),omk,real(grn(la,ik))
+    write(ugr2,6)' ',la,ik,dk(ik),kp(:,ik),omk,grn(la,ik)
  enddo
 !   write(ugr,8)ik,dk(ik),kp(:,ik),(real(grn(la,ik)),la=1,ndn)
  enddo
-5 format(4i7,9(1x,g10.4))
-6 format(a,2i5,99(1x,g10.4))
-7 format(i5,i5,i6,99(1x,g10.4))
-8 format(i8,99(1x,g10.4))
+
+5 format(4i7,9(1x,g11.4))
+6 format(a,2i5,99(1x,g11.4))
+7 format(i5,i5,i6,99(1x,g11.4))
+8 format(i8,99(1x,g11.4))
 ! deallocate(eivl,eivc,kg,grn)
  end subroutine gruneisen
 !============================================================
@@ -685,10 +693,12 @@ enddo
  do nb = 1,natom_prim_cell
    mb = atom0(nb)%mass
    rr = atompos(:,na)-atompos(:,nb)
-   do i=1,3
-      zag(i) = q(1)*zeu(1,i,na)+q(2)*zeu(2,i,na)+q(3)*zeu(3,i,na)
-      zbg(i) = q(1)*zeu(1,i,nb)+q(2)*zeu(2,i,nb)+q(3)*zeu(3,i,nb)
-   end do
+   zag = matmul(atom0(na)%charge,q)
+   zbg = matmul(atom0(nb)%charge,q)
+!   do i=1,3
+!      zag(i) = q(1)*zeu(1,i,na)+q(2)*zeu(2,i,na)+q(3)*zeu(3,i,na)
+!      zbg(i) = q(1)*zeu(1,i,nb)+q(2)*zeu(2,i,nb)+q(3)*zeu(3,i,nb)
+!   end do
    do i = 1,3
    do j = 1,3
 !write(*,*)
@@ -700,7 +710,8 @@ enddo
   !! ALSO NEED TO CORRECT THE GROUP VELOCITIES
      do al=1,3
         ddyn(i+3*(na-1),j+3*(nb-1),al) = ddyn(i+3*(na-1),j+3*(nb-1),al)+term/sqrt(ma*mb) *  &
- &          (zeu(al,i,na)*zbg(j)+zeu(al,j,nb)*zag(i)-dqeq(al)*zag(i)*zbg(j)/qeq)
+ &      (atom0(na)%charge(al,i)*zbg(j)+atom0(nb)%charge(al,j)*zag(i)-dqeq(al)*zag(i)*zbg(j)/qeq)
+! &          (zeu(al,i,na)*zbg(j)+zeu(al,j,nb)*zag(i)-dqeq(al)*zag(i)*zbg(j)/qeq)
      enddo
    end do
    end do
@@ -932,11 +943,11 @@ end subroutine band_sort_bs
  use svd_stuff
  implicit none
  integer, intent(in) :: ndim
- complex(8), intent(out) :: dynmat(ndim,ndim),ddyn(ndim,ndim,3)
+ complex(8), intent(out) :: dynmat(ndim,ndim) ,ddyn(ndim,ndim,3)
  real(8), intent(in) :: kpt(3)
  complex(8) junk
  real(8) mi,mj,all,rr(3),delt(3)
- integer i0,j,j0,al,be,i3,j3,t !,ired
+ integer i0,j,j0,al,be,i3,j3,t,cnt2,ti,ired,g
 
 4 format(a,4(1x,i5),9(2x,f9.4))
 9 format(i6,99(1x,f9.3))
@@ -949,50 +960,51 @@ end subroutine band_sort_bs
     i3 = al+3*(i0-1)
     mi = atom0(i0)%mass
 ! write(ulog,*) 'i,al,mass=',i0,al,i3,mi
-    tloop: do t=1,nterms(2)
-       if ( i0 .eq. iatomterm_2(1,t) .and. al .eq. ixyzterm_2(1,t) ) then
-          be =  ixyzterm_2(2,t)
-          j  = iatomterm_2(2,t)
-          j0 = iatomcell0(j)
+    cnt2=0   ! counter of ntotind, to find position of each term in the array fc2
+    gloop: do g=1,map(2)%ngr
+
+       if(keep_grp2(g).ne.1) cycle gloop
+       if(g.gt.1) cnt2=cnt2+map(2)%ntind(g-1) 
+       do ti=1,map(2)%ntind(g)  ! index of independent terms in that group g
+   !      cnt2=cnt2+1
+          ired=cnt2+ti + map(1)%ntotind  ! the latter is the size of fc1
+          if(cnt2+ti .gt. size_kept_fc2) then
+             write(*,*)'SET_DYNMAT: size of fc2 exceeded, ired=',ired
+             stop
+          endif
+
+       tloop: do t=1,map(2)%nt(g)
+          if ( i0 .ne. map(2)%gr(g)%iat(1,t) .or. al .ne. map(2)%gr(g)%ixyz(1,t) ) cycle tloop
+          be = map(2)%gr(g)%ixyz(2,t)
+          j  = map(2)%gr(g)%iat(2,t)
+          j0 = iatomcell0(j)    ! atom_sc(j)%cell%tau  is incorrect
           mj = atom0(j0)%mass
           j3 = be+3*(j0-1)
-          rr = atompos(:,j)-atompos(:,j0)
-!          ired = igroup_2(t)
-!          junk = fcs_2(ired)*ampterm_2(t)* exp(ci*(kpt .dot. rr))/sqrt(mi*mj)
-          junk = fcs_2(t)* exp(ci*(kpt .dot. rr))/sqrt(mi*mj)
-!  write(ulog,4) 't,j,be,mass,dyn=',t,j,be,j3,mj,junk
-          dynmat(i3,j3) = dynmat(i3,j3) + junk
-          ddyn(i3,j3,:) = ddyn(i3,j3,:) + junk*ci*rr(:)
-!         if (be.eq.al .and. j0.eq.i0 ) then
-!         if (be.eq.al .and. (length(rr-r1) .myeq. 0d0)) then
-! same type and same cartesian coord but not the same atom, just take the images
-!     write(ulog,5)'i0,j0,j,i3,j3,rij=',i0,j0,j,i3,j3,rr
-!            dynmat(i3,j3) = dynmat(i3,j3) - delt/2
-!         endif
-       endif
-    enddo tloop
-! this leaves  gamma eivals unchanged
-!   dynmat(i3,i3) = dynmat(i3,i3) + delt(al)*(1-cos(kpt .dot. r1))
-! but this one shifts everything up by delt=wshift
-    dynmat(i3,i3) = dynmat(i3,i3) + delt(al)
+          rr = atompos(:,j) - atom0(i0)%equilibrium_pos  ! Rij
+             junk = fcs(ired)* exp(ci*(kpt .dot. rr))/sqrt(mi*mj)*map(2)%gr(g)%mat(t,ti)
+             dynmat(i3,j3) = dynmat(i3,j3) + junk
+             ddyn(i3,j3,:) = ddyn(i3,j3,:) + junk*ci*rr(:)
+       enddo tloop
+       enddo
+    enddo gloop
  enddo
  enddo
 
- if (verbose) then
-  write(ulog,*)'SET_DYNAMICAL_MATRIX: d(dyn)/dk is:'
-  do t=1,3
-     write(ulog,*)'=======component of v ',t
-     do j=1,ndim
-        write(ulog,9) j, ddyn(j,:,t)
-     enddo
-  enddo
- endif
+! if (verbose) then
+!  write(ulog,*)'SET_DYNAMICAL_MATRIX: d(dyn)/dk is:'
+!  do t=1,3
+!     write(ulog,*)'=======component of v ',t
+!     do j=1,ndim
+!        write(ulog,9) j, ddyn(j,:,t)
+!     enddo
+!  enddo
+! endif
 
 5 format(a,5i5,9(f8.3))
- all = sum(cdabs(dynmat(:,:)))/(ndim*ndim)
+ all = maxval(cdabs(dynmat))  !sum(cdabs(dynmat(:,:)))/(ndim*ndim)
 ! make sure it is hermitian
  do t=1,ndim
-    if (abs(aimag(dynmat(t,t))) .gt. 9d-4*abs(real(dynmat(t,t))) ) then
+    if (abs(aimag(dynmat(t,t))) .gt. 1d-6*all) then !abs(real(dynmat(t,t))) ) then
        write(ulog,*)' dynmat is not hermitian on its diagonal'
        write(ulog,*)' diagonal element i=',t,dynmat(t,t)
 !      stop
@@ -1000,15 +1012,15 @@ end subroutine band_sort_bs
        dynmat(t,t) = cmplx(real(dynmat(t,t)),0d0)
     endif
   do j=t+1,ndim-1
-    if (abs(aimag(dynmat(t,j))+aimag(dynmat(j,t))) .gt. 9d-4*all ) then
+    if (abs(aimag(dynmat(t,j))+aimag(dynmat(j,t))) .gt. 1d-6*all ) then
        write(ulog,*)' dynmat is not hermitian in AIMAG of its off-diagonal elts'
        write(ulog,*)' off-diagonal element i,j=',t,j,dynmat(t,j),dynmat(j,t)
-       write(ulog,*)' comparing to avg(abs(dynmat))=',all
+       write(ulog,*)' comparing to max(abs(dynmat))=',all
 !      stop
-    elseif(abs(real(dynmat(t,j))-real(dynmat(j,t))) .gt. 9d-4*all ) then
+    elseif(abs(real(dynmat(t,j))-real(dynmat(j,t))) .gt. 1d-6*all ) then
        write(ulog,*)' dynmat is not hermitian in REAL of its off-diagonal elts'
        write(ulog,*)' off-diagonal element i,j=',t,j,dynmat(t,j),dynmat(j,t)
-       write(ulog,*)' comparing to avg(abs(dynmat))=',all
+       write(ulog,*)' comparing to max(abs(dynmat))=',all
 !      stop
     else
     endif
@@ -1023,11 +1035,7 @@ end subroutine band_sort_bs
 ! enforce it to be real if all imaginary componenents are very small
 ! all = sum(abs(aimag(dynmat(:,:))))/(ndim*ndim)
 ! if (all .lt. sum(abs(real(dynmat(:,:))))/(ndim*ndim)*1d-10) then
-!  do t=1,ndim
-!  do j=1,ndim
-!     dynmat(t,j)=(dynmat(t,j)+conjg(dynmat(t,j)))/2d0
-!  enddo
-!  enddo
+!    dynmat=(dynmat+conjg(transpose(dynmat)))/2d0
 ! endif
 
  end subroutine set_dynamical_matrix
@@ -1035,16 +1043,19 @@ end subroutine band_sort_bs
  subroutine diagonalize(n,mat,eival,nv,eivec,ier)
 ! n=size of mat; nv is the number of needed eigenvectors
  implicit none
- integer n,ier,zero,nv  !,i,j
- complex(8) mat(n,n),eivec(n,n)
- real(8)  eival(n),tol
+ integer, intent(in) :: n,nv
+ integer, intent(out) :: ier
+ complex(8), intent(in) :: mat(n,n)
+ complex(8), intent(out) :: eivec(n,n)
+ real(8), intent(out) :: eival(n)
 ! This is used by eigch
 ! real(8), allocatable :: w(:,:)
 ! integer, allocatable :: lw(:)
 ! This is used by ZHEGV
   real(8), allocatable :: rwork(:)
   complex(8), allocatable :: work(:)
-  integer lwork
+  integer lwork, zero
+  real(8) tol
 
 
 ! n = size(mat(:,1))
@@ -1076,11 +1087,12 @@ end subroutine band_sort_bs
 !==========================================================
  subroutine write_eigenvalues(i,dk,kp,eival,n,uio)
  use constants
+ use eigen, only : mysqrt
  implicit none
  integer i,j,n,uio
  integer sig(n)
  real(8), dimension(n) :: eival
- real(8) kp(3),dk,mysqrt
+ real(8) kp(3),dk !,mysqrt
 
 ! n = size(eival)
 ! write(ueiv,3)i-1,kp,(eival(j),j=1,n)
@@ -1133,7 +1145,7 @@ end subroutine band_sort_bs
  implicit none
  integer i,j,k,mx,mesh,udosj
  real(8) xp,xm,wkp(mx),delta_g,dsp,dsm,omega(mesh),eival(mx),iself,tmp,one
- complex(8) oc2,omz
+ complex(8) omz
 
 ! wkp=1d0/(nkx*nky*nkz)
  one = 1d0
@@ -1168,7 +1180,8 @@ end subroutine band_sort_bs
              dsm = dsm + delta_g(xm,width)*wkp(j)*wkp(k) !* width*sqrt(2*pi)
           endif
 
-          iself = aimag(oc2(tmp,omz,j,k))/pi*wkp(j)*wkp(k)*tmp
+!          iself = aimag(oc2(tmp,omz,j,k))/pi*wkp(j)*wkp(k)*tmp
+          iself = (dsp+dsm)/pi
        enddo
        enddo
        write(udosj,3) i,2*omega(i),dsm,dsp,iself
@@ -1193,7 +1206,7 @@ end subroutine band_sort_bs
  implicit none
  integer i,j,k,l,la,nq,i1,j1,k1,nq1,ip,jp,kp,im,jm,km,nqp,nqm,la1,la2,inside
  real(8) q(3),q1(3),qp(3),qm(3),dosp,dosm,om1,omp,omm,omq,delta_l
- complex(8) oc2,omz
+ complex(8) omz
 
  dosp=0; dosm=0
  do l=1,nkc

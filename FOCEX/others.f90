@@ -44,13 +44,13 @@
 ! -----------------------------------
  rankloop: do rnk=1,4 !,1,-1
   if ( include_fc(rnk) .ne. 0 ) then
-    
+
     ierz=1; iert=1;  ieri=1; ierg=0
-    mxgrps = maxgroups(rnk)    
+    mxgrps = maxgroups(rnk)
     mx     = maxterms(rnk)
     mxi    = maxtermsindep(rnk)
-    mxzero = maxtermzero(rnk)  
-  
+    mxzero = maxtermzero(rnk)
+
     write(ulog,4)' ******************** FOR rank *****************= ',rnk
     write(*   ,4)' ***** FOR rank = ',rnk
 
@@ -108,7 +108,7 @@
     !    ntia=ntermsindep
     !    nta=nterm
 !        mxgrps=max(ngroups(rnk),mxgrps)
-!        mx =max(maxval(nta (1:max(1,mxgrps))),mx) 
+!        mx =max(maxval(nta (1:max(1,mxgrps))),mx)
 !        mxi=max(maxval(ntia(1:max(1,mxgrps))),mxi)
 
      write(ulog,4)' collect_force_constants called with ier:ztig=',ierz,iert,ieri,ierg
@@ -483,7 +483,7 @@
  end subroutine estimate_inv_constraints
 ! ============================================
  subroutine get_dim(mapd,ndimindep,ndimfull)
-! calculate the number of in/dependent fcs for all groups
+!! calculate the number of in/dependent fcs for all groups
  use svd_stuff
  implicit none
  integer g,ndimindep,ndimfull
@@ -844,13 +844,13 @@
     if(keep.ne.0) then ! if at least, one of the has to be kept, we keep that group
         keep_grp2(cnt)=1
 !        size_kept_fc2=size_kept_fc2+1  ! needed in case more than 1 indepfc in a group
-        size_kept_fc2=size_kept_fc2+ map(2)%ntind(g)  
+        size_kept_fc2=size_kept_fc2+ map(2)%ntind(g)
 !        do ti=1,map(2)%ntind(g)
 !!          if (map(2)%ntind(g).gt.1) size_kept_fc2=size_kept_fc2+1
 !           write(ulog,3)' group,ti,count,i0,j,rij=',g,ti,cnt,i0,j,length(rij),' keep_grp2(count)=',keep_grp2(cnt)
 !       enddo
-       write(ulog,3)' kept group, # of elements in it, cumulative size_kep_fc2=',g, &
-   &                 map(2)%ntind(g),size_kept_fc2 
+       write(ulog,3)' kept group, # of elements in it, cumulative size_kept_fc2=',g, &
+   &                 map(2)%ntind(g),size_kept_fc2
     endif
  enddo
 
@@ -859,8 +859,8 @@
  write(ulog,*)'size of groups of FC2s=',map(2)%ngr,size(keep_grp2)
  write(ulog,*)'# of groups kept =',sum(keep_grp2)
  write(ulog,*)'# i, keep_grp2(i)'
- do j=1, map(2)%ngr 
-    write(ulog,*)j,keep_grp2(j)
+ do g=1, map(2)%ngr
+    write(ulog,*)g,keep_grp2(g)
  enddo
 
 3 format(a,i3,1x,i3,1x,i5,3x,i3,1x,i4,f9.4,a,i4)

@@ -20,11 +20,11 @@
  real(8) zqa(3),zqb(3),denom,q(3),coef
 
  coef=ee/(eps0*1d10) ! to convert 1/ang^2 to eV/ang , includes cancellation of 4pi
- q=ggrid(:,j) 
+ q=ggrid(:,j)
  zqa=matmul(atom0(tau)%charge,q)
  zqb=matmul(atom0(taup)%charge,q)
  denom=dot_product(q,matmul(epsil,q))
- 
+
  do al=1,3
  do be=1,3
     dyn(al,be)=zqa(al)*zqb(be)/denom/volume_r*coef
@@ -225,7 +225,7 @@
  integer, intent(in) :: n  ! number of atoms in the supercell will be used
  real(8), intent(in) :: dsp(3,n) ! displaced positions
  real(8), intent(out):: fewald(3,n)
- integer tau1,tau2 
+ integer tau1,tau2
  real(8) dpot(3),r12(3),z1(3,3),z2(3,3),f1(3),f2(3) ,coef
 
  coef=ee/(4*pi*eps0)*1d10
@@ -239,7 +239,7 @@
 !    r12=atom_sc(tau1)%equilibrium_pos+dsp(:,tau1)-atom_sc(tau2)%equilibrium_pos-dsp(:,tau2)
     r12=dsp(:,tau1)-dsp(:,tau2)
 ! force on tau1 from tau2 and all its images
-    call dewapot(r12,dpot)  ! has epsil-modified metric included 
+    call dewapot(r12,dpot)  ! has epsil-modified metric included
     f1=matmul(atom_sc(tau2)%charge,dpot)
     f2=matmul(atom_sc(tau1)%charge,f1)
     fewald(:,tau1)=fewald(:,tau1) + f2 * coef  ! to convert to eV/Ang
@@ -273,7 +273,7 @@
  use lattice
  use params
  use geometry
- use born 
+ use born
  implicit none
  real(8), intent(out) :: pot
  real(8), intent(in) :: x(3)
@@ -412,11 +412,11 @@
  integer nsc,n3(3),tau,taup,al,icfg,j
 
  write(*,*)'SUBTRACT_COULOMB_FORCE: size of force is 3,',size(frc(1,:,1)),size(frc(1,1,:))
- 
+
 ! Beginning of ewald part for deduction of ewald force in real space ------------------
-  if(born_flag.eq.0) then      ! skip if born_flag=0 
+  if(born_flag.eq.0) then      ! skip if born_flag=0
      return
-  elseif(born_flag.eq.1) then  !  use ewald sums if=1, -FT(Dyn(K)*disp(k)) if=2 
+  elseif(born_flag.eq.1) then  !  use ewald sums if=1, -FT(Dyn(K)*disp(k)) if=2
 
      write(ulog,*)'MAIN: going to call Ewaldforce '
 ! set cutoffs for Ewald sums ! this should come after the supercell is read!!!!
@@ -427,7 +427,7 @@
      gcutoff_ewa=10*eta*2/sqrt(deteps3)
 ! generate real space and reciprocal space translation vectors of the supercell for Ewald sums
      call make_grid_shell_ewald(rs1,rs2,rs3,rcutoff_ewa,gcutoff_ewa,epsil)
-! output is r_ewald(3,nr_ewald) and g_ewald(3,ng_ewald) 
+! output is r_ewald(3,nr_ewald) and g_ewald(3,ng_ewald)
 
      do icfg=1,ncfg
 
@@ -447,7 +447,7 @@
 
      deallocate(ewald_force)
 
-  elseif(born_flag.eq.2) then  !  use dynmat_ewald*u_k (in reciprocal space)  
+  elseif(born_flag.eq.2) then  !  use dynmat_ewald*u_k (in reciprocal space)
 
 ! fourier transform forces and displacements in the supercell, subtract the q=0 ewald term
 ! and fourier transform back before svd
@@ -458,19 +458,19 @@
 !    call find_map_rtau2sc(nrgrid,rgrid,map_rtau_sc)
 
 !  erfc(4)=1.5d-8  so if eps=4/vol**.333 the real space terms become negligible
-! exp(-18)=1.5d-8  so G larger than 5-6 shells will not contribute even if eps=4/vol^.3 
+! exp(-18)=1.5d-8  so G larger than 5-6 shells will not contribute even if eps=4/vol^.3
 
      allocate(frcr(3,nrgrid),frcg(3,nggrid))
      allocate(disr(3,nrgrid),disg(3,nggrid))
      do icfg=1,ncfg
         do tau=1,natom_prim_cell
-       
+
            do j=1,nrgrid
               rr(1)=(rgrid(:,j) .dot. g01)/2/pi
               rr(2)=(rgrid(:,j) .dot. g02)/2/pi
               rr(3)=(rgrid(:,j) .dot. g03)/2/pi
-              n3=nint(rr) 
-              call findatom_sc(n3,tau,nsc) 
+              n3=nint(rr)
+              call findatom_sc(n3,tau,nsc)
               frcr(:,j)=frc(:,nsc,icfg)
               disr(:,j)=dsp(:,nsc,icfg)
            enddo
@@ -482,7 +482,7 @@
 ! now subtract ewald force in the form -D(k)u(k); requires u(k)
            do taup=1,natom_prim_cell
               if(taup.eq.tau) cycle  ! tau and tau' must be different
-        
+
               do j=1,nggrid
 ! Long-range Coulomb dynamical matrix for G-vector labeled by j
                  call dyn_coulomb(tau,taup,j,dyn_coul)
@@ -499,9 +499,9 @@
               rr(1)=(rgrid(:,j) .dot. g01)/2/pi
               rr(2)=(rgrid(:,j) .dot. g02)/2/pi
               rr(3)=(rgrid(:,j) .dot. g03)/2/pi
-              n3=nint(rr) 
-              call findatom_sc(n3,tau,nsc) 
-! write into the original array 
+              n3=nint(rr)
+              call findatom_sc(n3,tau,nsc)
+! write into the original array
               frc(:,nsc,icfg)=frc(:,nsc,icfg)-frcr(:,j)
            enddo
 
@@ -515,7 +515,7 @@
 
  end subroutine subtract_coulomb_force
 !--------------------------------------------------
- 
- end module ewald 
+
+ end module ewald
 
 !==============================================

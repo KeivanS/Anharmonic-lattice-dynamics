@@ -38,6 +38,7 @@
       jloop: do j=1,natom_super_cell
          if (atom_sc(j)%cell%tau .eq. tau ) then
              m = atom_sc(j)%cell%n - n3
+! fold this m into the supercell if it exceeds it
 ! find direct coordinates of n3 - n(j) in the supercell and see if it is integer
 ! to do this form (sum_i m(i)*r0(i)).gsc(j) this should be integer
              a = matmul(r0g,dfloat(m))
@@ -57,7 +58,10 @@
 
          endif
       enddo jloop
-
+      if(iatom.eq.0) then
+         write(*,*)'FINDATOM_SC: no SC atom could be found for tau,n=',tau,n3
+         stop
+      endif
       end subroutine findatom_sc
 !======================================================================
  subroutine make_r0g
@@ -190,7 +194,7 @@
  subroutine sort(n,r,mcor,maxat)
 ! sorts the first n elements of array r in ascending order r(mcor(i)) is the ordered array
 ! make sure to initialize the array r to a huge number if n\=maxat
-! r(mcor(1)) < r(mcor(2)) < r(mcor(3)) < ... < r(mcor(n))  
+! r(mcor(1)) < r(mcor(2)) < r(mcor(3)) < ... < r(mcor(n))
   implicit none
   integer maxat,n,i,j,temp
   real(8) r(maxat)
@@ -521,7 +525,7 @@
 
  gg(:,1:nshell)=g5(:,1:nshell)
  if(verbose) then
-    write(ulog,*)' Sorted G vectors and their length' 
+    write(ulog,*)' Sorted G vectors and their length'
     do i=1,nshell
        write(ulog,3)i,g5(:,i),length(g5(:,i))
     enddo
@@ -664,7 +668,7 @@
 
  end subroutine get_components_g
 !============================================================
- subroutine get_components_g_centered(q,n,i,j,k,gg1,gg2,gg3,inside)
+ subroutine get_components_g_centered(q,n,i,j,k,inside) !gg1,gg2,gg3,inside)
 ! for a given q-vector, it finds its integer components assuming it was
 ! created as: q=(i-1-n1/2)/n1*g1 + (j-1-n2/2)/n2*g2 + (k-1-n3/2)/n3*g3;
 ! i=1,n1 j=1,n2 k=1,n3
@@ -676,7 +680,7 @@
  use constants, only : pi
  implicit none
  real(8), intent(in):: q(3)
- type(vector),intent(in):: gg1,gg2,gg3
+! type(vector),intent(in):: gg1,gg2,gg3
  integer, intent(in):: n(3)
  integer, intent(out):: i,j,k,inside
 ! real(8) w(3)
@@ -1163,6 +1167,7 @@
 !! finds maxp, the number of grid points in the sphere of radius rcut and m, the needed mesh
 !! outputs are maxsh and maxatm: upper bounds in 1D and in 3D (used for 3 loops and allocation)
  use geometry
+ use atoms_force_constants, only : natom_prim_cell
  use ios, only : ulog
  implicit none
  type(vector),intent(in) :: x1,x2,x3
@@ -1173,15 +1178,16 @@
 
  call calculate_volume(x1,x2,x3,om0)
  ls=om0**0.333333 ! typical unitcell size
- maxatm=nint(12.56/3d0*(1.3*(rcut+ls))**3/om0)+1  ! upperbound to the number of unitcells in the sphere
+ maxatm=(nint(12.56/3d0*(1.3*(rcut+ls))**3/om0)+1)*natom_prim_cell  ! upperbound to the number of unitcells in the sphere
 
 ! find shortest translation vector length
- ls=min(length(x1),length(x2))
- ls=min(ls,length(x3))
+ ls=min(ls,length(x3),length(x1),length(x2))
+! ls=min(ls,length(x3))
+! ls=min(ls,om0**0.33333)
  write(ulog,3)'GET_UPPER_BOUNDS: shortest translation length=',ls
 
  m1=nint(rcut/ls)+2
- m2=(nint((3*maxatm/12.56)**0.33333)+1)
+ m2=(nint((3/12.56*(maxatm/natom_prim_cell))**0.33333)+1)
  maxsh=max(m1,m2)
 ! maxp=(2*m+1)**3
 
@@ -1228,8 +1234,8 @@
  end subroutine apply_metric
 !============================================================
  subroutine make_grid_weights_WS(x01,x02,x03,x1,x2,x3,ngrd,space,sx)
-!! generates a grid of vectors "rgrid" or "ggrid" (depending on space) linear combinations
-!! of x0i but contained in the Wigner-Seitz cell of x1,x2,x3, with corresponding weights
+!! generates a grid "rgrid" or "ggrid" (depending on space) from primitive translation vectors
+!! x0i but contained in the Wigner-Seitz cell of x1,x2,x3, with corresponding weights
 !! works for fourier interpolation in the reciprocal space because get_stars works for q-points
 !! space is r (for real space) or g (for reciprocal space)
 !! the 26 shortest translation vectors sx for defining the WS cell of xi is also output
@@ -1286,6 +1292,7 @@
 ! see if v is in the WS cell; throw away v outside of WS cell
     call check_inside_ws(v,sx,insid)
 
+! skip if it is outside
     if (insid.eq.0) cycle i3loop
 
 ! take only those points inside or on the boundary of WS (corresponding to in=1)
@@ -1338,16 +1345,16 @@
 
  if(space.eq.'r' .or. space.eq.'R') then
     if (allocated(rgrid)) deallocate(rgrid)
-    if (allocated(rws_weights)) deallocate(rws_weights) 
+    if (allocated(rws_weights)) deallocate(rws_weights)
     allocate(rgrid(3,ngrd), rws_weights(ngrd))
     nrgrid=ngrd
     rgrid = grd
-    rws_weights = weig 
+    rws_weights = weig
     open(98,file='rgrid_raw.dat')
     open(99,file='rgridWS.xyz')
  elseif(space.eq.'g' .or. space.eq.'G') then
     if (allocated(ggrid)) deallocate(ggrid)
-    if (allocated(gws_weights)) deallocate(gws_weights) 
+    if (allocated(gws_weights)) deallocate(gws_weights)
     allocate(ggrid(3,ngrd), gws_weights(ngrd))
     nggrid=ngrd
     ggrid = grd
@@ -1367,7 +1374,7 @@
  deallocate(weig,grd,save_boundary)
 
  write(ulog,*) ' EXITING make_grid_weights_WS'
- 
+
 !weights=0d0; weights(1:ngrd)=1 ; grid(:,1:ngrd)=grd(:,ngrd)
 !do cnt=1,ngrd
 !   v=grd(:,cnt)
@@ -1473,9 +1480,9 @@
 ! type(vector), intent(in):: x01,x02,x03
  integer, intent(in):: ng
  real(8), intent(in):: grd(3,ng)
- integer i,shel_count,i0,m,i1,i2,i3,insid,cnt
+ integer i,shel_count,i0,m,i1,i2,i3,insid,cnt,shelmax(natom_prim_cell),smax
 ! type(vector) b01,b02,b03,b1,b2,b3
- real(8) lmax
+ real(8) lmax,rmx
 ! real(8), allocatable :: aux(:,:)
 
 ! allocate(sx(3,26),s0x(3,26))
@@ -1537,11 +1544,28 @@
  enddo
  write(ulog,4)' longest vector length in the grid=',lmax
 
+! include all the shells up to distance lmax
+ shelmax=0
+ do i0=1,natom_prim_cell
+    rmx=maxval(atom0(i0)%shells(:)%rij)
+! find shelmax, the largest shell
+    do shel_count=0,maxneighbors
+       if(rmx .myeq. atom0(i0)%shells(shel_count)%rij) then
+          shelmax(i0)=shel_count
+          exit
+       endif
+    enddo
+ enddo
+
  do i0=1,natom_prim_cell
     shell_loop: do shel_count = 0 , maxneighbors
+! we update nshells if lmax is reached, otherwise if lmax > rcut no update
        if(lmax .myeq. atom0(i0)%shells(shel_count)%rij) then
           nshells(2,i0) = shel_count
+          write(ulog,*)'UPDATE_NSHELLS: for atom ',i0,' the nshell is set to ',shel_count
           exit shell_loop
+       else ! take the farthest shell available within rcut
+          nshells(2,i0)=shelmax(i0)
        endif
     enddo shell_loop
  enddo
@@ -1551,7 +1575,7 @@
  write(ulog,5)' ****************************************'
 
 4 format(a,9(1x,f13.5))
-5 format(a,20(1x,i2))
+5 format(a,20(1x,i3))
 
  end subroutine update_nshells2
 !==========================================================
@@ -1887,7 +1911,7 @@
 !! corresponding to the argument j
 !! for i=1,nibz mapinv(i) gives the index k of the kpoints generated from
 ! n1,n2,n3 loops
- use lattice, only : primitivelattice,r01,r02,r03 
+ use lattice, only : primitivelattice,r01,r02,r03
  use kpoints, only : kibz, wibz
  use constants
  use geometry
@@ -2074,7 +2098,7 @@
 !! corresponding to the argument j
 !! for i=1,nibz mapinv(i) gives the index k of the kpoints generated from
 ! n1,n2,n3 loops
- use lattice, only : primitivelattice,r01,r02,r03 
+ use lattice, only : primitivelattice,r01,r02,r03
  use kpoints, only : kibz, wibz
  use constants
  use geometry
@@ -2646,11 +2670,21 @@
  k(:) = q(1)*g01 + q(2)*g02 + q(3)*g03
 
  end subroutine dir2cart_g
+!------------------------------------
+ subroutine dirconv2cart(q,k)
+! takes q in direct coordinates of the conventional cell and outputs k in cartesian
+ use geometry
+ use lattice
+ real(8) q(3),k(3)
+
+ k(:) = q(1)*g1conv + q(2)*g2conv + q(3)*g3conv
+
+ end subroutine dirconv2cart
 !-------------------------------------
  subroutine find_map_rtau2sc(nr,rmesh,map_rtau_sc)
 !! finds the index of the supercell atom corresponding to primitive translation vector
 !! defined in rmesh (modulo supercell translations) and primitive atom tau
-!! map_rtau_sc(tau,igrid)=k=atom index in supercell 
+!! map_rtau_sc(tau,igrid)=k=atom index in supercell
  use lattice , only : gs1,gs2,gs3 !rs1,rs2,rs3,
  use ios , only : ulog
  use geometry
@@ -2735,7 +2769,7 @@
  real(8), intent(out) :: vp(ndim)
  integer c,i,j
  real(8) res
- 
+
  ! make sure basis is orthonormal
   do i=1,nbasis
   do j=i,nbasis
@@ -2788,11 +2822,11 @@
        exit
     endif
  enddo
- 
+
  end subroutine find_first_nonzero
  !===================================================
  subroutine pad_array(na,a,nb,b,c)
-!! extends array a by appending array b to the end of it 
+!! extends array a by appending array b to the end of it
  implicit none
  integer, intent(in) :: na,nb
  real(8), intent(in) :: a(na)
@@ -2828,7 +2862,7 @@
  allocate(aux(ncc)) ! this is to allow calls like append_array(a,b,a)
  aux=reshape(a,shape=(/naa+nbb/),pad=b)
 ! aux=reshape(a,(/naa+nbb/),pad=b)
-! if (allocated(c)) 
+! if (allocated(c))
  deallocate (a)
  allocate(a(ncc))
  a=aux
@@ -2861,7 +2895,5 @@
  deallocate(aux)
 ! c=reshape(a,(/na+nb/),pad=b,order=(/1,1/))
 
-
  end subroutine append_array
- 
-
+!===================================================
