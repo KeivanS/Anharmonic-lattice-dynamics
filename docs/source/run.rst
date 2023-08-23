@@ -6,9 +6,56 @@ Running FOCEX
 
 .. role:: raw-math(raw)
 	:format: latex html
+
 .. only:: html
 	:math:`\\require{mediawiki-texvc}`
 
+Workflow of FOCEX
+-----------------
+The  workflow of the FOCEX code is shown below to give a general understanding of how the code is structured and executed as a black box. Many of the intermediate steps in this process flow may even not be necessary to actually run the code. The one which are important are highlighted on the workflow diagram and are later explained in detail. 
+
+.. image:: ./WorkFlow-FOCEX-Website.svg
+  :width: 600
+  :align: center
+
+General steps for running FOCEX to get the force constants are given below:
+
+* **Preparing FOCEX data files**
+
+    FOCEX code accepts DFT force displacement files prepared by any software like VASP, Quantum Espresso. It has a utility tools to convert VASP OUTCAR or Quantum Espresso output file. It requires the POSCAR like file which is similar to POSCAR. The POSCAR like file is unperturbed or relaxed POSCAR file without displacement of atoms. The FORCEDISP file is the position and force data file of the supercell structure.
+
+.. collapse:: utility tools
+
+    Something small enough to escape casual notice.
+
+* **Preparing input files**
+
+    The input file(s) required to run FOCEX are ``structure.params``, ``dielectric.params`` and ``born.params``. 
+
+.. collapse:: structure.params
+
+    something about structure.params file
+
+.. collapse:: dielectric.params
+
+    something about dielectric.params file
+
+.. collapse:: born.params
+
+    something about born.params file
+	
+* **output files**
+
+	* fc1.dat and fc2_irr.dat
+
+	* fc2.dat and fc2_irr.dat
+
+	* fc3.dat and fc3_irr.dat
+
+	* lat_fc.xyz 
+ 
+Example of Running Ge
+---------------------
 FOrce Constant Extraction (FOCEX) is a code to extract force constants from force-displacements data, the output of which can be used as input to the following codes.
 The installation of FOCEX has to be done before using it and is given in section :ref:`focex-install`. This code, FOCEX (FOrce Constant EXtraction) included in ALADYN (Anharmonic LAttice DYNamics) employs the
 force constant calculation, 2nd, 3rd and 4th order to be latter used for other thermodynamical properties. The installation of FOCEX is simple and just require the
