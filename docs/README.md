@@ -7,3 +7,5 @@ make html
 ```
 
 Open `build/html/index.html` in your browser.
+
+If you have any queries and want to know more about our code, please visit our forum at [MATSCI-ALADYN](https://matsci.org/c/aladyn/57) 
