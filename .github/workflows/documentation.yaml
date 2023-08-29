@@ -9,17 +9,16 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
       - name: Install dependencies
-      - name: Build HTML
         run: |
           pip install sphinx sphinx_rtd_theme
       - name: Sphinx build
         run: |
-          sphinx-build doc _build
+          sphinx-build /docs/source /docs/build
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         with:
           publish_branch: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/build/html
+          publish_dir: /docs/build
           force_orphan: true
