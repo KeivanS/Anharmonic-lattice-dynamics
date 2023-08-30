@@ -237,7 +237,7 @@ consists of the energy of structure in electron volt and the lines after second 
 
 .. code-block:: python
 
-``structure.params``
+:emphasize-lines: structure.params
 
   1 1 1 90 90 90          # a, b, c, alpha, beta, gamma of the conventional cell
   0 .5 .5   .5 0 .5   .5 .5 0 # reduced coordinates of primitive lattice (in this case FCC) in terms of conventional lattice (in this case cubic)
