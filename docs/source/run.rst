@@ -262,33 +262,33 @@ The fitting is done using singular value decomposition based on the requested sy
 
 The next input file is ``dielectric.params``. It is required to get the phonon dispersion (and eventually thermal conductivity using ``THERMACOND``). It consists of a flag which is zero if the Born charges are to be excluded. The second, third and fourth lines contain the dielectric constant tensor values which is written as follows in the example folder inside ``FOCEX``
 
-.. code-block:: python
 ``dielectric.params``
 
-0   # do not include Born charges in the fitting
-2.5078 0.0  0.0 # for example, dielectric constant (necessary but not used if flag is zero) 
+.. code-block:: python
+
+  0               # do not include Born charges in the fitting
+  2.5078 0.0  0.0 # for example, dielectric constant (necessary but not used if flag is zero) 
   0.0 2.5078 0.0
   0.0 0.0 2.5078
-0 0 0   # Born charge tensor of atom 1 in order it appears in the ``structure.params``
-0 0 0 
-0 0 0
-0 0 0   # Born charge tensor of atom 2 in order it appears in the ``structure.params``
-0 0 0
-0 0 0 
+  0 0 0           # Born charge tensor of atom 1 in order it appears in the ``structure.params``
+  0 0 0 
+  0 0 0
+  0 0 0           # Born charge tensor of atom 2 in order it appears in the ``structure.params``
+  0 0 0
+  0 0 0 
 
-.. code-block:: python
 ``kpbs.params``
 
-1  # use direct coordinates of the conventional reciprocal cell
-30 # number of kpoints along each direction
-4  # number of directions
-G 0 0 0 
-K 0.75 0.75 0
-X 1 1 0
-G 0 0 0
-L 0.5 0.5 0.5
+.. code-block:: python
 
-
+  1  # use direct coordinates of the conventional reciprocal cell
+  30 # number of kpoints along each direction
+  4  # number of directions
+  G 0 0 0 
+  K 0.75 0.75 0
+  X 1 1 0
+  G 0 0 0
+  L 0.5 0.5 0.5
 
 Now, put the ``POSCAR1``, ``FORCEDISP1`` , ``structure.params``, ``dielectric.params`` and ``kpbs.params`` in same directory, simply run ``focex.x``. After successful
 run ``fc2.dat``, ``fc2_irr.dat``, ``fc3.dat``, ``fc3_irr.dat``, ``fc4.dat`` and ``fc4_irr.dat`` along with other output files and log file should be available. ``fc2.dat``, ``fc2_irr.dat`` are the fitted second order force constants in eV/Ang^2. The former contains all the pairs regardless of symmetry, and the latter contains the irreducible ones from which all the rest is contructed using crystal symmetry. Likewise ``fc3.dat``, ``fc3_irr.dat`` and ``fc4.dat``, ``fc4_irr.dat`` contain the third order and fourth order full and irreducible force constants in eV/Ang^3 and eV/Ang^4 respectively. Users are advised to look for more information in the log file ``log***.dat`` to know more details about the run.
