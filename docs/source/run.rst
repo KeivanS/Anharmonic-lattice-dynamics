@@ -235,10 +235,9 @@ The first line in ``FORCEDISP1`` is the header and should contain the word POSIT
 consists of the energy of structure in electron volt and the lines after second are positions (first three columns, :math:`x`, :math:`y` and :math:`z`) and forces
 (the last three columns :math:`F_x`, :math:`F_y` and :math:`F_z` are in :math:`eV/{\\A}`) respectively. If there are many force-displacement snapshots of the structure, then the other snapshots follow these lines in the same format. There is a tool and a shell script for converting the VASP outcar or QE outputfile into the FORCEDISP1 format for the FOCEX code. It is available in **utility** folder inside FOCEX. To convert the VASP outcar into FORCEDISP1 user need to execute ``./process_dft.sh name_of_vasp_directory(s)`` or ``./process_dft.sh name_of_vasp_file`` shell script within utility folder. Here, ``name_of_vasp_directory(s)`` is the multiple directory containing VASP runs or QE runs or ``name_of_vasp_file`` is the OUTCAR file(s) for VASP or the outputfile for QE runs. This shell script will call the ``readoutcar.x`` or ``readpfpwscf.x`` taking as input the DFT output from VASP or QE. The shell script can be tailored as per your needs. As for the other inputs file of FOCEX, they are given below
 
-.. code-block:: python
+``structure.params``
 
-:emphasize-lines: 2
-structure.params
+.. code-block:: python
 
   1 1 1 90 90 90          # a, b, c, alpha, beta, gamma of the conventional cell
   0 .5 .5   .5 0 .5   .5 .5 0 # reduced coordinates of primitive lattice (in this case FCC) in terms of conventional lattice (in this case cubic)
