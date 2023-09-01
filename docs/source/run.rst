@@ -53,9 +53,20 @@ Description of input and output files
 
 .. collapse:: kpbs.params
 
-    The first line contains a flag. If 0, the kpoints are given in reduced units of the primitive vectors of the reciprocal space, else they should be in reduced coordinates of the conventional lattice vectors of the reciprocal space.
-The second line contains the number of kpoints along each direction, The third line contains the number of direction paths. The following lines contain the name of the special point followed by the 3 reduced components of the special kpoint in units of primitive (if flag=0) or conventional (if flag is non-zero) vectors of the reciprocal lattice. 
-	
+    The first line contains a flag. If 0, the kpoints are given in reduced units of the primitive vectors of the reciprocal space, else they should be in reduced coordinates of the conventional lattice vectors of the reciprocal space. The second line contains the number of kpoints along each direction, The third line contains the number of direction paths. The following lines contain the name of the special point followed by the 3 reduced components of the special kpoint in units of primitive (if flag=0) or conventional (if flag is non-zero) vectors of the reciprocal lattice. 
+    ``kpbs.params``
+
+    .. code-block:: python
+
+      1  # use direct coordinates of the conventional reciprocal cell
+      30 # number of kpoints along each direction
+      4  # number of directions
+      G 0 0 0
+      K 0.75 0.75 0
+      X 1 1 0
+      G 0 0 0
+      L 0.5 0.5 0.5
+
 * **output files**
 
 	* fc1.dat and fc2_irr.dat
