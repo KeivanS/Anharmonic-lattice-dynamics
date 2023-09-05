@@ -65,7 +65,6 @@ write:
 	echo $(A) $(C) $(backup) 
 clean:
 	rm  *.o *.mod
-	rm -rf $(DIR_ALADYN)
 archive:
 #	make clean
 #	rm -rf LASTBACKUP
