@@ -66,7 +66,7 @@ Description of input and output files
         0.5000000000000000    0.5000000000000000    0.5000000000000000
         0.7500000000000000    0.7500000000000000    0.7500000000000000
 
-   If there are other supercells, the equilibrium positions and displacement-force data should be stored in POSCAR2 and FORCEDISP2, etc... 
+   If there are other supercells, the equilibrium positions and displacement-force data should be stored in POSCAR2 and FORCEDISP2 ... etc. The detailed description of the ``FORCEDISP1`` file is given in the example section :ref:`example-focex` 
 
 .. collapse:: utility tools
 
@@ -120,8 +120,14 @@ Description of input and output files
 
 	* log***.dat
  
-Example of Running Ge
----------------------
+Example of Running FOCEX
+-----------------------
+
+.. _example-focex:
+
+Ge
+^^^^
+
 FOrce Constant Extraction (FOCEX) is a code to extract force constants from force-displacements data, the output of which can be used as input to the following codes.
 The installation of FOCEX has to be done before using it and is given in section :ref:`focex-install`. This code, FOCEX (FOrce Constant EXtraction) included in ALADYN (Anharmonic LAttice DYNamics) employs the
 force constant calculation, 2nd, 3rd and 4th order to be latter used for other thermodynamical properties. The installation of FOCEX is simple and just require the
