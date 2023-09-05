@@ -46,7 +46,7 @@ Description of input and output files
    	0.5000000000000000    0.5000000000000000    0.5000000000000000 Ge
    	0.7500000000000000    0.7500000000000000    0.7500000000000000 Ge 
 
-      Then then ``POSCAR1`` file is this:
+    Then then ``POSCAR1`` file is this:
 
       .. code-block:: python
 
@@ -66,7 +66,7 @@ Description of input and output files
         0.5000000000000000    0.5000000000000000    0.5000000000000000 Ge
         0.7500000000000000    0.7500000000000000    0.7500000000000000 Ge
 
-      If there are other supercells, the equilibrium positions and displacement-force data should be stored in POSCAR2 and FORCEDISP2, etc... 
+   If there are other supercells, the equilibrium positions and displacement-force data should be stored in POSCAR2 and FORCEDISP2, etc... 
 
 .. collapse:: utility tools
 
