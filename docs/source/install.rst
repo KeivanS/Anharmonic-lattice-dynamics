@@ -19,7 +19,7 @@ FOCEX
 
 ``FLAGS= -fcheck=all -fdec-math #-Wall #-fbounds-check #-fbacktrace #-ffpe-trap=invalid,zero,overflow,underflow,inexact #-inline-debug-info #-p #-pedantic #-std=f95``
 
-* From the **Anharmonic-lattice-dynamics/FOCEX/Makefile**, simply ``make`` and this will create the binary ``focex.x``
+Navigate to the FOCEX directory and simply make the executable by using ``make all``. This will create executable ``focex.x`` for FOCEX code and other two executable ``readoutcar.x`` and ``readpwscf.x``. The latter two executables are from the utility folder for creating ``FORCEDISP`` file using VASP outcar and Quantum Espresso output log file. Executables ``focex.x``, ``readoutcar.x`` and ``readpwscf.x`` will be moved in your home directory inside ``aladyn`` folder. User can export the path by ``export PATH=${PATH}:~/aladyn`` so that it become available for the current shell session and put it in the terminal shell profile such as ``.bashrc`` or ``.bash_profile`` so that it is available system wide. 
 
 
 
