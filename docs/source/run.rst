@@ -68,9 +68,9 @@ Description of input and output files
 
    If there are other supercells, the equilibrium positions and displacement-force data should be stored in POSCAR2 and FORCEDISP2 ... etc. The detailed description of the ``FORCEDISP1`` file is given in the example section :ref:`example-focex` 
 
-.. collapse:: utility tools
+.. collapse:: utility tool
 
-    Something small enough to escape casual notice.
+    To prepare the ``FORCEDISPi`` file there is a shell script inside ``utility`` folder.  The shell script ``process_dft.sh`` executes the ``readoutcar.x`` and ``readpwscf.x`` binary to generate force-displacement file for VASP and QE respectively.  
 
 * **Preparing input files**
 
