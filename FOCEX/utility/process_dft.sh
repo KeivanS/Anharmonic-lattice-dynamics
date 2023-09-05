@@ -1,50 +1,30 @@
 #!/bin/bash
-if [ -f "readoutcar.x" ];
+workdir=`pwd`
+if [ $# -ne 1 ];
 then
-rm -rf ./readoutcar.x
-fi
-if [ -f "readpfpwscf.x" ];
-then
-rm -rf ./readpfpwscf.x
-fi
-if [ $# -eq 0 ];
-then
-echo "Please provide the OUTCAR file or QE outputfile as an argument or" 
-echo "directory containing VASP outcars or directory containing QE runs"
+echo "To execute the script"
+echo "./process_dft.sh vasp_file_or_directory --> for VASP output"
+echo "./process_dft.sh qe_file_or_directory --> for QE output"
 fi
 if [ $# -eq 1 ];
 then
-make all
-if [ -d $1 ];
+count_outcar=`find $1 -name "OUTCAR"|wc -l`
+if [ ${count_outcar} -eq 0 ];
 then
-echo "Directory detected: directory name, $1"
-totaloutcars=`find $1 -name "OUTCAR*"|wc -l`
-echo "Number of OUTCARs present: $totaloutcars"
-if [ -f "FORCEDISP" ];
-then
-rm FORCEDISP
+echo "No OUTCAR file present or directory containing it"
 fi
-if [ -f "./OUTCAR" ];
+if [ ${count_outcar} -ne 0 ];
 then
-rm ./OUTCAR
-fi
-for (( i=1; i<=$totaloutcars; i++ )){
-eachoutcar=`find $1 -name "OUTCAR*"|sed -n ${i}p`
-cp $eachoutcar .
-./readoutcar.x
+echo "${count_outcar} OUTCAR file present"
+for (( i=1; i<=${count_outcar}; i++ )){
+each_outcar=`find $1 -name "OUTCAR"|sed -n ${i}p`
+each_outcar_dir=`find $1 -name "OUTCAR"|sed -n ${i}p|awk -F "OUTCAR" '{print $1}'`
+cd ${each_outcar_dir}
+~/aladyn/readoutcar.x
 wait $!
-cat pos-forc.dat >> ./FORCEDISP
+cat pos-forc.dat >> ${workdir}/FORCEDISP1
 rm pos-forc.dat
+cd ${workdir}
 }
-rm ./OUTCAR
-rm -rf *.x
-fi
-if [ -f $1 ];
-then
-echo "OUTCAR file provided"
-./readoutcar.x OUTCAR
-wait $!
-mv pos-forc.dat FORCEDISP
-rm -rf *.x
 fi
 fi
