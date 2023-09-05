@@ -1,10 +1,16 @@
-FF=/usr/local/gfortran/bin/gfortran #~/LIB/forcomp #gfortran #nagfor #/opt/homebrew/bin/gfortran #ifort
+FF=gfortran #~/LIB/forcomp #gfortran #nagfor #/opt/homebrew/bin/gfortran #ifort
 DFLAGS= # -O3  #-C # to check everything O3 #g -p #for profiling with gprof
 FLAGS=  #-fbounds-check # -fbacktrace #g -inline-debug-info #-p #for profiling with gprof
 
 #SUB=modules9.f90 kpoints.f90 dyn_modules.f90 fourier_stuff.f90 ewald_born.f90 svd.f90 extratools.f90 ios.f90 others3_nshells.f90 new_amatrix.f90 force_constants_new.f90  dynamical.f90
-SUB=fc_modules.f90 kpoints.f90 ios.f90 fourier_stuff.f90 ewald_born.f90 svd.f90 extratools.f90 others.f90 setup_amatrix.f90 force_constant_symmetries.f90
+SUB=fc_modules.f90 kpoints.f90 dyn_modules.f90 ios.f90 fourier_stuff.f90 ewald_born.f90 svd.f90 extratools.f90 others.f90 setup_amatrix.f90 force_constant_symmetries.f90 dynamical.f90 zhegv.f90
 MAIN=fc234main.f90
+
+FOUTCAR=./utility/readoutcar.f90
+FPWSCF=./utility/readpfpwscf.f90
+
+MKDIR_ALADYN := mkdir
+DIR_ALADYN := ~/aladyn
 
 # combine many of them into one name "ALL"
 ALL=$(SUB) $(MAIN) structure.params dielectric.params Makefile POSCAR1 FORCEDISP1
@@ -18,15 +24,28 @@ A=`date "+%F-%k_%M"`
 C=fcx`date "+%F_%T"`.tar
 #MYBIN=/Users/keivan/BIN/
 backup=FCX_$(A)
-ver=5
-exe=fcx_$(ver).x 
+#ver=5
+exe=focex.x 
 
+all: $(DIR_ALADYN) $(exe) readoutcar readpfpwscf
 
 # the use of the source file itself in the dependencies (1st line) is also necessary
+
+$(DIR_ALADYN):
+	$(MKDIR_ALADYN) $(DIR_ALADYN)
+
 $(exe): $(SUBS)  $(MAIN)
 	$(FF) $(FLAGS) $(SUBS) $(MAIN) -o $@ 
 	echo 'executable was made on' $A
-	mv $(exe)  ~/BIN
+	mv $(exe)  $(DIR_ALADYN)
+
+readoutcar: $(FOUTCAR)
+	$(FF) $(FOUTCAR) -o readoutcar.x
+	mv readoutcar.x $(DIR_ALADYN)
+
+readpfpwscf: $(FPWSCF)
+	$(FF) $(FPWSCF) -o readpfpwscf.x
+	mv readpfpwscf.x $(DIR_ALADYN)
 
 # rules to make the "simple" object files from sources
 .SUFFIXES: .f90
@@ -45,7 +64,8 @@ ec:
 write:
 	echo $(A) $(C) $(backup) 
 clean:
-	rm  *.o *.mod 
+	rm  *.o *.mod
+	rm -rf $(DIR_ALADYN)
 archive:
 #	make clean
 #	rm -rf LASTBACKUP
