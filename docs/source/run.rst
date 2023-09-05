@@ -25,7 +25,48 @@ Description of input and output files
 
 * **Preparing FOCEX data files**
 
-    FOCEX code accepts DFT force displacement files prepared by any software like VASP, or Quantum Espresso. We provide utility tools to extract forces and displacements in a supercell from VASP OUTCAR or Quantum Espresso output files. All the generated displacement-force data for each atomic snapshot are concatenated into a signle called FORCEDISP1. The equilibrium atomic positions in the supercell should be in a file called POSCAR1 which has the exact format of the VASP POSCAR file. If there are other supercells, the equilibrium positions and displacement-force data should be stored in POSCAR2 and FORCEDISP2, etc... 
+    FOCEX code accepts DFT force displacement files prepared by any software like VASP, or Quantum Espresso. We provide utility tools to extract forces and displacements in a supercell from VASP OUTCAR or Quantum Espresso output files. All the generated displacement-force data for each atomic snapshot are concatenated into a single file called FORCEDISP1. The equilibrium atomic positions in the supercell should be in a file called POSCAR1 which has the exact format of the VASP POSCAR file except atom type name. For example if the ``POSCAR`` file for Ge is this
+
+     .. code-block:: python
+
+        Ge8
+	1.0
+   	5.6748542148543777    0.0000000000000000    0.0000000000000003
+   	0.0000000000000009    5.6748542148543777    0.0000000000000003
+   	0.0000000000000000    0.0000000000000000    5.6748542148543777
+	Ge
+	8
+	direct
+   	0.0000000000000000    0.0000000000000000    0.5000000000000000 Ge
+   	0.2500000000000000    0.2500000000000000    0.7500000000000000 Ge
+   	0.0000000000000000    0.5000000000000000    0.0000000000000000 Ge
+   	0.2500000000000000    0.7500000000000000    0.2500000000000000 Ge
+   	0.5000000000000000    0.0000000000000000    0.0000000000000000 Ge
+   	0.7500000000000000    0.2500000000000000    0.2500000000000000 Ge
+   	0.5000000000000000    0.5000000000000000    0.5000000000000000 Ge
+   	0.7500000000000000    0.7500000000000000    0.7500000000000000 Ge 
+
+Then then ``POSCAR1`` file is this:
+
+     .. code-block:: python
+
+        Ge8
+        1.0
+        5.6748542148543777    0.0000000000000000    0.0000000000000003
+        0.0000000000000009    5.6748542148543777    0.0000000000000003
+        0.0000000000000000    0.0000000000000000    5.6748542148543777
+        8
+        direct
+        0.0000000000000000    0.0000000000000000    0.5000000000000000 Ge
+        0.2500000000000000    0.2500000000000000    0.7500000000000000 Ge
+        0.0000000000000000    0.5000000000000000    0.0000000000000000 Ge
+        0.2500000000000000    0.7500000000000000    0.2500000000000000 Ge
+        0.5000000000000000    0.0000000000000000    0.0000000000000000 Ge
+        0.7500000000000000    0.2500000000000000    0.2500000000000000 Ge
+        0.5000000000000000    0.5000000000000000    0.5000000000000000 Ge
+        0.7500000000000000    0.7500000000000000    0.7500000000000000 Ge
+
+If there are other supercells, the equilibrium positions and displacement-force data should be stored in POSCAR2 and FORCEDISP2, etc... 
 
 .. collapse:: utility tools
 
@@ -54,11 +95,11 @@ Description of input and output files
 .. collapse:: kpbs.params
 
     The first line contains a flag. If 0, the kpoints are given in reduced units of the primitive vectors of the reciprocal space, else they should be in reduced coordinates of the conventional lattice vectors of the reciprocal space. The second line contains the number of kpoints along each direction, The third line contains the number of direction paths. The following lines contain the name of the special point followed by the 3 reduced components of the special kpoint in units of primitive (if flag=0) or conventional (if flag is non-zero) vectors of the reciprocal lattice. 
+    
     ``kpbs.params``
 
     .. code-block:: python
 
-      1  # use direct coordinates of the conventional reciprocal cell
       30 # number of kpoints along each direction
       4  # number of directions
       G 0 0 0
@@ -239,7 +280,7 @@ accepted by FOCEX code and its format for example in the case of Ge is given bel
      1       -289.18629538 =t, Etot(eV)     # snapshot #2
    2.8929600000000000        0.0000000000000000        2.8814299999999999      -0.11758299999999999       -0.0000000000000000       -0.0000000000000000
    2.8814299999999999        0.0000000000000000        8.6442899999999998        4.9600000000000002E-004  -0.0000000000000000       -0.0000000000000000
-...
+   ...
 
 
 The first line in ``FORCEDISP1`` is the header and should contain the word POSITION. The second line
@@ -287,19 +328,6 @@ The next input file is ``dielectric.params``. It is required to get the phonon d
   0 0 0           # Born charge tensor of atom 2 in order it appears in the ``structure.params``
   0 0 0
   0 0 0 
-
-``kpbs.params``
-
-.. code-block:: python
-
-  1  # use direct coordinates of the conventional reciprocal cell
-  30 # number of kpoints along each direction
-  4  # number of directions
-  G 0 0 0 
-  K 0.75 0.75 0
-  X 1 1 0
-  G 0 0 0
-  L 0.5 0.5 0.5
 
 Now, put the ``POSCAR1``, ``FORCEDISP1`` , ``structure.params``, ``dielectric.params`` and ``kpbs.params`` in same directory, simply run ``focex.x``. After successful
 run ``fc2.dat``, ``fc2_irr.dat``, ``fc3.dat``, ``fc3_irr.dat``, ``fc4.dat`` and ``fc4_irr.dat`` along with other output files and log file should be available. ``fc2.dat``, ``fc2_irr.dat`` are the fitted second order force constants in eV/Ang^2. The former contains all the pairs regardless of symmetry, and the latter contains the irreducible ones from which all the rest is contructed using crystal symmetry. Likewise ``fc3.dat``, ``fc3_irr.dat`` and ``fc4.dat``, ``fc4_irr.dat`` contain the third order and fourth order full and irreducible force constants in eV/Ang^3 and eV/Ang^4 respectively. Users are advised to look for more information in the log file ``log***.dat`` to know more details about the run.
