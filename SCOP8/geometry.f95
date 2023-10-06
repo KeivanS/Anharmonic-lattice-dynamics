@@ -862,37 +862,6 @@ END FUNCTION voigtMap
  END FUNCTION inv_voigtMap
  !-----------------------------------------------------
  end module geometry
-!============================================================
- module lattice
- use geometry
- use constants
- implicit none
- type(vector) r1,r2,r3,g1,g2,g3  ,rr1,rr2,rr3   ! translation vectors of the supercell
- type(vector) r01,r02,r03,g01,g02,g03  ! tr vect of prim cell and its recip spce
- real(8) volume_r,volume_g,lattice_parameter,latticeparameters(6),primitivelattice(3,3)
- real(8) box(3),boxg(3)
- real(8) r0g(3,3)
- integer n1min,n2min,n3min,n1max,n2max,n3max,NC(3),NF(3)
-
-! contains
-! subroutine get_components(q,n,i,j,k )  !,g1,g2,g3)
-!! for a given q-vector, it finds its integer components assuming it was
-!! created as: nk=0 do i=0,N(1)-1 ; do j=0,N(2)-1; do k=0,N(3)-1; nk=nk+1 ;q=i*G1/N1+j*G2/N2+k*G3/N3
-!! as the ones created in make_kp_reg with zero shift
-!! it works even if there's a shift less than 0.5
-! implicit none
-! real(8) q(3) !,g1(3),g2(3),g3(3),r1(3),r2(3),r3(3)
-!! type(vector) g1,g2,g3,r1,r2,r3
-! integer i,j,k,n(3)
-!
-!! call make_reciprocal_lattice(g1,g2,g3,r1,r2,r3)
-! i = nint(1+ n(1)* (q.dot.r1)/2/pi )
-! j = nint(1+ n(2)* (q.dot.r2)/2/pi )
-! k = nint(1+ n(3)* (q.dot.r3)/2/pi )
-!
-! end subroutine get_components
-
- end module lattice
 !===========================================================
 module ios
  use geometry
@@ -1046,6 +1015,97 @@ subroutine warn(unt)
  end subroutine warn
 
 end module ios
+!============================================================
+ module lattice
+ use geometry
+ use constants
+ implicit none
+ type(vector) r1,r2,r3,g1,g2,g3  ,rr1,rr2,rr3   ! translation vectors of the supercell
+ type(vector) r01,r02,r03,g01,g02,g03  ! tr vect of prim cell and its recip spce
+ real(8) volume_r,volume_g,lattice_parameter,latticeparameters(6),primitivelattice(3,3)
+ real(8) box(3),boxg(3)
+ real(8) r0g(3,3)
+ type(vector) r1conv,r2conv,r3conv,g1conv,g2conv,g3conv
+ integer n1min,n2min,n3min,n1max,n2max,n3max,NC(3),NF(3)
+
+ contains
+ !-----------------------------------------
+ subroutine transform_input_structure
+!! takes input variables latticeparameters(6),primitivelattice(3,3) to construct the primitive cell
+ use ios
+ implicit none
+ real(8),dimension(3,3):: conv_to_cart,prim_to_conv,conv_to_prim,prim_to_cart,cart_to_prim
+ real(8) latp(6),temp(3,3),tempi(3,3)
+ integer ier
+
+!k1
+!      d2r = 4d0*datan(1d0)/180d0 ! 3.1415926535897932384626/180d0
+!k1
+      conv_to_cart=0
+      prim_to_conv=primitivelattice
+      call xmatinv(prim_to_conv,conv_to_prim,ier)
+      if(ier.ne.0) then
+         write(*,*)'prim_to_conv does not have an inverse!'
+         stop
+      endif
+      latp=latticeparameters ! for short
+!      latp(4:6) = latp(4:6)*d2r   ! convert angles from degree to radian
+      conv_to_cart(1,1)=latp(1)
+      conv_to_cart(1,2)=latp(2)*dcos(latp(6)*pi/180)
+      conv_to_cart(2,2)=latp(2)*dsin(latp(6)*pi/180)
+      conv_to_cart(1,3)=latp(3)*dcos(latp(5)*pi/180)
+      conv_to_cart(2,3)=latp(3)*(dcos(latp(4)*pi/180)   &
+     &     -dcos(latp(6)*pi/180)*dcos(latp(5)*pi/180))  /dsin(latp(6)*pi/180)
+      conv_to_cart(3,3)=sqrt(latp(3)**2-conv_to_cart(1,3)**2   &
+     &     -conv_to_cart(2,3)**2)
+      write(*,*)'conv_to_cart has conventional vectors in its columns='
+      call write_out(ulog,' conventional cell(1) =',conv_to_cart(:,1))
+      call write_out(ulog,' conventional cell(2) =',conv_to_cart(:,2))
+      call write_out(ulog,' conventional cell(3) =',conv_to_cart(:,3))
+      r1conv%component=conv_to_cart(:,1)
+      r2conv%component=conv_to_cart(:,2)
+      r3conv%component=conv_to_cart(:,3)
+
+      call make_reciprocal_lattice_2pi(r1conv,r2conv,r3conv,g1conv,g2conv,g3conv)
+      call write_out(ulog,' conventional recip(1) =',g1conv)
+      call write_out(ulog,' conventional recip(2) =',g2conv)
+      call write_out(ulog,' conventional recip(3) =',g3conv)
+
+! prim_to_cart(i,j) is the ith cartesian coordinate of the jth primitive translation vector
+      prim_to_cart=matmul(conv_to_cart,prim_to_conv)
+
+      r01%component = prim_to_cart(:,1)
+      r02%component = prim_to_cart(:,2)
+      r03%component = prim_to_cart(:,3)
+      call write_out(ulog,'primitive lattice vector #1= ',prim_to_cart(:,1))
+      call write_out(ulog,'primitive lattice vector #2= ',prim_to_cart(:,2))
+      call write_out(ulog,'primitive lattice vector #3= ',prim_to_cart(:,3))
+
+      call make_reciprocal_lattice_2pi(r01,r02,r03,g01,g02,g03)
+      call write_out(ulog,' g01= ' ,g01)
+      call write_out(ulog,' g02= ' ,g02)
+      call write_out(ulog,' g03= ' ,g03)
+
+ end subroutine transform_input_structure
+!-----------------------------------------
+! subroutine get_components(q,n,i,j,k )  !,g1,g2,g3)
+!! for a given q-vector, it finds its integer components assuming it was
+!! created as: nk=0 do i=0,N(1)-1 ; do j=0,N(2)-1; do k=0,N(3)-1; nk=nk+1 ;q=i*G1/N1+j*G2/N2+k*G3/N3
+!! as the ones created in make_kp_reg with zero shift
+!! it works even if there's a shift less than 0.5
+! implicit none
+! real(8) q(3) !,g1(3),g2(3),g3(3),r1(3),r2(3),r3(3)
+!! type(vector) g1,g2,g3,r1,r2,r3
+! integer i,j,k,n(3)
+!
+!! call make_reciprocal_lattice(g1,g2,g3,r1,r2,r3)
+! i = nint(1+ n(1)* (q.dot.r1)/2/pi )
+! j = nint(1+ n(2)* (q.dot.r2)/2/pi )
+! k = nint(1+ n(3)* (q.dot.r3)/2/pi )
+!
+! end subroutine get_components
+
+ end module lattice
 !===========================================================
  module atoms_force_constants
 ! the type atom_id0 concerns the properties of the primitive unit cell

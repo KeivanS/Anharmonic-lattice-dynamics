@@ -183,9 +183,10 @@
  integer, allocatable :: nb(:,:),nbk(:),mapbz(:) ,mapibz(:),mappos(:),mapinv(:)  ! nb_list of k
  real(8) shftx,shfty,shftz,shft(3),deltak,kcutnbf,kcutnbc   ! kcutnb for nbrlst and interpolation
  real(8), allocatable :: kpc(:,:),wk(:),wkf(:),kp_bs(:,:),gg(:,:),dk_bs(:),dkc(:)
- real(8), allocatable :: kbzf(:,:) ,kibz(:,:),wibz(:),kbz(:,:)
+ real(8), allocatable :: kbzf(:,:) ,kibz(:,:),wibz(:),kbz(:,:),kext_bs(:,:)
  integer nibz ! need to know the value
  logical dos_bs_only
+ character(LEN=3), allocatable :: kname_bs(:)
 
  contains
 
@@ -276,7 +277,205 @@ use lattice
 
   end subroutine make_kp_bs_fcc
 !-------------------------------------------
-   subroutine make_kp_bs2
+subroutine make_kp_bs
+!! this subroutine sets up the kpoints for the band structure from the
+!! list written in the file kpbs.params (given in direct coordinates of the CONVENTIONAL cell)
+  use ios
+  use geometry
+  use lattice , only : g01
+  use constants, only : pi
+    implicit none
+    integer :: i,j,nk,uio,nkdir,ubs,units ,ndir
+    real(8) lk,q(3),k2(3), k_prim(3),k_conv(3),qf(3)
+    real(8), allocatable :: ki(:,:),kf(:,:) !,kext_bs(:,:)
+    character(LEN=6), allocatable :: dk(:)
+
+    write(*,*)'entering MAKE_KP_BS'
+    uio = 67
+    ubs = 68
+    open(uio,file='kpbs.params',status='old')
+
+    read(uio,*) units  ! if 0 conventional, else primitive
+    write(*,*)'reading ',units,nkdir,ndir
+    read(uio,*) nkdir  ! number of kpoints along each direction
+    write(*,*)'reading ',units,nkdir,ndir
+    read(uio,*) ndir  ! number of directions for the band structure
+
+    nkp_bs = ndir*nkdir    ! +1 is for including the last point
+    write(*,*)'reading nkp_bs= ',nkp_bs
+    if(allocated(kp_bs))  deallocate(kp_bs)
+    if(allocated(dk_bs)) deallocate(dk_bs)
+    if(allocated(kname_bs))  deallocate(kname_bs)
+    if(allocated(kext_bs)) deallocate(kext_bs)
+    allocate(kp_bs(3,nkp_bs),ki(3,ndir),kf(3,ndir),dk_bs(nkp_bs),kname_bs(ndir+1),kext_bs(3,ndir+1),dk(ndir+1))
+
+    do i=1,ndir+1
+       read(uio,*) kname_bs(i)(2:2),kext_bs(:,i)   ! in direct coordinates of conventional
+       kname_bs(i)(1:1)='"'
+       kname_bs(i)(3:3)='"'
+       write(*,'(i5,1x,a3,9(1x,f9.4))')i,kname_bs(i),kext_bs(:,i)
+    enddo
+
+    do i=1,ndir
+       if(units.eq.0) then ! reading in units of conventional
+
+          q=kext_bs(1,i)*g1conv+kext_bs(2,i)*g2conv+kext_bs(3,i)*g3conv  ! this is in cartesian units
+          qf=kext_bs(1,i+1)*g1conv+kext_bs(2,i+1)*g2conv+kext_bs(3,i+1)*g3conv
+
+          ki(:,i)=q  ! ki should also be in cartesian
+          kf(:,i)=qf
+
+       else  ! reading in units of primitive
+! convert to units of conventional
+          k_prim=kext_bs(:,i)
+          q = k_prim(1)*g01+k_prim(2)*g02+k_prim(3)*g03   ! this is in cartesian units
+          k_prim=kext_bs(:,i+1)
+          qf = k_prim(1)*g01+k_prim(2)*g02+k_prim(3)*g03
+
+          ki(:,i)=q
+          kf(:,i)=qf
+
+       endif
+    enddo
+
+    close(uio)
+
+  9 format(a,i4,9(1x,f9.5))
+
+  write(ulog,*)' Kpoints for band structure generated from kpbs.params'
+  write(*,*)' Kpoints for band structure generated from kpbs.params'
+
+
+ open(ubs,file='KPOINT.BS',status='unknown')
+ write(ubs,*)'# k in cartesian and in direct units of primitive and conventional reciprocal lattice'
+ open(88,file='KTICS.BS',status='unknown')
+    nk = 0
+!    dk_bs(1) = 0
+! now for each direction set up the coordinates of the kpoints
+    kext_bs(1,1)=0    ! here using kext_bs(1,:) as a dummy variable
+    do i = 1,ndir !-1
+       q(:) = kf(:,i)-ki(:,i)  ! length of each section
+       lk = length(q)/length(g01)  ! length of each section
+       do j = 1,nkdir
+          nk = nk+1
+         if ( nk.ge.2) then
+            if (j.ge.2) then
+              dk_bs(nk) = dk_bs(nk-1) + lk/(nkdir-1+1d-8)
+            else
+              dk_bs(nk) = dk_bs(nk-1)
+            endif
+          else  ! nk = 1
+            dk_bs(nk) = 0 !dk_bs(nk-1)
+          endif
+          kp_bs(:,nk) = ki(:,i) + (j-1)*q(:)/(nkdir-1+1d-8)
+       enddo
+       kext_bs(1,i+1)=real(dk_bs(nk))   ! here using kext_bs(1,:) as a dummy variable
+    enddo
+!   kext_bs(1,ndir+1)=dk_bs(nk)
+
+    do i=1,ndir+1
+       write(dk(i),'(f6.3)') kext_bs(1,i)
+    enddo
+
+!   write(88,*)'set xtics ( ',(kname_bs(i),kext_bs(1,i),i=1,ndir+1),' )'
+    write(88,*)'set xtics ( ',(kname_bs(i),dk(i),",",i=1,ndir),kname_bs(ndir+1),dk(ndir+1),' )'
+    close(ubs)
+    close(88)
+
+    deallocate(ki,kf,kname_bs)
+3   format(9(2x,f10.4))
+7   format(i4,99(2x,f10.4))
+5   format(a,i4,9(2x,f10.4))
+
+    write(ulog,*)' MAKE_KP_BS: Done! with ',nkp_bs,' points'
+    write(*,*)' MAKE_KP_BS: Done! with ',nkp_bs,' points'
+
+  end subroutine make_kp_bs
+!-------------------------------------------
+   subroutine make_kp_bs2_new !MARK: format change, copied from FOCEX
+! this subroutine sets up the kpoints for the band structure from the
+! list written in the file kpbs.params (given in direct coordinates of the conventional cell)
+  use ios
+  use lattice , only : g01
+    implicit none
+    integer :: i,j,nk,uio,ndir,nkdir,ubs
+    real(8) ep,lk,q(3),q2(3)
+    real(8), allocatable :: ki(:,:),kf(:,:),kext_bs(:,:)
+    character(LEN=6), allocatable :: dk(:)
+    character(LEN=3), allocatable :: kname_bs(:)
+
+    write(*,*)'entering MAKE_KP_BS'
+    uio = 67
+    ubs = 68
+    open(uio,file='kpbs.params',status='old')
+
+    read(uio,*) nkdir  ! number of kpoints along each direction
+    read(uio,*) ndir  ! number of directions for the band structure
+    nkp_bs = ndir*nkdir    ! +1 is for including the last point
+    if(ALLOCATED(kp_bs)) DEALLOCATE(kp_bs)
+    IF(ALLOCATED(dk_bs)) DEALLOCATE(dk_bs)
+    allocate(kp_bs(3,nkp_bs),ki(3,ndir),kf(3,ndir),dk_bs(nkp_bs),kname_bs(ndir+1),kext_bs(3,ndir+1),dk(ndir+1))
+
+    do i=1,ndir+1
+!       read(uio,*) q(:),q2(:)   ! in direct coordinates
+       read(uio,*) kname_bs(i)(2:2),kext_bs(:,i)   ! in direct coordinates
+       kname_bs(i)(1:1)='"'
+       kname_bs(i)(3:3)='"'
+       write(*,'(i5,1x,a3)')i,kname_bs(i)
+    enddo
+
+    do i=1,ndir
+       call dir2cart_g(kext_bs(:,i),ki(:,i))
+       call dir2cart_g(kext_bs(:,i+1),kf(:,i))
+    enddo
+
+    close(uio)
+
+ open(ubs,file='KPOINT.BS',status='unknown')
+ open(88,file='KTICS.BS',status='unknown')
+    nk = 0
+!    dk_bs(1) = 0
+! now for each direction set up the coordinates of the kpoints
+    kext_bs(1,1)=0    ! here using kext_bs(1,:) as a dummy variable
+    do i = 1,ndir !-1
+       q(:) = kf(:,i)-ki(:,i)  ! length of each section
+       lk = length(q)/length(g01)  ! length of each section
+       do j = 1,nkdir
+          nk = nk+1
+         if ( nk.ge.2) then
+            if (j.ge.2) then
+              dk_bs(nk) = dk_bs(nk-1) + lk/(nkdir-1+1d-8)
+            else
+              dk_bs(nk) = dk_bs(nk-1)
+            endif
+          else  ! nk = 1
+            dk_bs(nk) = 0 !dk_bs(nk-1)
+          endif
+          kp_bs(:,nk) = ki(:,i) + (j-1)*q(:)/(nkdir-1+1d-8)
+          write(ubs,3) kp_bs(:,nk)
+       enddo
+       kext_bs(1,i+1)=real(dk_bs(nk))   ! here using kext_bs(1,:) as a dummy variable
+ !     write(88,'(f8.4)')dk_bs(nk)
+    enddo
+!   kext_bs(1,ndir+1)=dk_bs(nk)
+
+    do i=1,ndir+1
+       write(dk(i),'(f6.3)') kext_bs(1,i)
+    enddo
+
+!   write(88,*)'set xtics ( ',(kname_bs(i),kext_bs(1,i),i=1,ndir+1),' )'
+    write(88,*)'set xtics ( ',(kname_bs(i),dk(i),",",i=1,ndir+1),' )'
+    close(ubs)
+    close(88)
+
+    deallocate(ki,kf,kext_bs,kname_bs)
+3   format(9(2x,f10.4))
+
+    write(ulog,*)' MAKE_KP_BS: Done! with ',nkp_bs,' points'
+
+  end subroutine make_kp_bs2_new
+!-------------------------------------------
+subroutine make_kp_bs2 !original version
 ! this subroutine sets up the kpoints for the band structure from the
 ! list written in the file kpbs.in (given in direct coordinates)
  use io2
@@ -1114,6 +1313,202 @@ CALL make_sorted_gs(g1,g2,g3,nshell,gg)
 
  end subroutine get_weights2
 !===========================================================
+subroutine get_weights3(nk,kp,prim2cart,nibz) !,kibz,wibz)
+!! takes as input kp(3,nk) in cartesian and finds based on crystal symmetries, the
+!! weights associated with each kpoint, and then normalizes them
+!! nibz is the final number of kpoints stored in kibz in the irreducible BZ
+!! the other important output is the mapping of the full kmesh onto the ones
+!! folded in the irreducible zone : mapibz(j=1:nk) is the index of the k in the IBZ
+!! corresponding to the argument j
+!! for i=1,nibz mapinv(i) gives the index k of the kpoints generated from
+! n1,n2,n3 loops
+ use lattice, only : primitivelattice,r01,r02,r03
+! use kpoints, only : kibz, wibz
+! use constants
+! use geometry
+! use params
+! use ios
+
+ use io2
+
+ implicit none
+ integer, intent(in):: nk
+ real(8), intent(in):: kp(3,nk) ,prim2cart(3,3) !r1(3),r2(3),r3(3)
+ integer, intent(out):: nibz
+! real(8), intent(out), allocatable :: kibz(:,:) ,wibz(:)
+ integer, allocatable :: mcor(:),mapibz(:),mapinv(:)
+ real(8), allocatable :: k2(:,:),lg(:),w2(:)
+ real(8) zro,q(3),kvecstar(3,48),sw,skc(3),rr1(3),rr2(3),rr3(3)
+ integer nkibz,i,j,l,narms,kvecop(48),aux
+ logical exists,foundit
+ integer :: uibz
+ uibz = 56
+
+ rr1=r01%component(:)/2/pi
+ rr2=r02%component(:)/2/pi
+ rr3=r03%component(:)/2/pi
+
+ open(uibz,file='KPOINT.IBZ',status='unknown')
+
+ allocate(k2(3,nk),w2(nk),mapibz(nk),mapinv(nk))
+ zro=0d0  ! shift
+ write(ulog,*)'GET_WEIGHTS3: generating kpoints in the irreducible FBZ '
+ write(*,*)'MAKE_KP_IBZ: nk,wk(nk),k2(:,nk)'
+
+ nibz=0 ; mapibz=0; w2=1
+
+! initialize mapvinv with identity so that later elements can be switched
+ do i=1,nk
+    mapinv(i)=i
+ enddo
+
+! main loop to identify points in the FBZ
+ kploop: do i=1,nk
+!    q = kp(:,i)
+! kp is in cartesian coordinates, we need to convert it to reduced units:
+!    q(1)=(kp(:,i)  .dot. r1) /2/pi
+!    q(2)=(kp(:,i)  .dot. r2) /2/pi
+!    q(3)=(kp(:,i)  .dot. r3) /2/pi
+! below the cartesian components of kp are needed
+    call getstar(kp(:,i),primitivelattice,narms,kvecstar,kvecop)
+
+WRITE(*,*) 'narms=',narms
+WRITE(*,*) 'primitevelattice', primitivelattice
+WRITE(*,*) 'kvecstar',kvecstar
+
+! see if already exists among the previously assigned ones
+    exists=.False.
+    if(verbose) write(ulog,4)'list of kvecstar(l),l=1,narms for kp_red=',i,q
+
+    lloop: do l=1,narms
+
+        if(verbose)   write(ulog,4)'stars are:',l,kvecstar(:,l)
+
+! set weight for the first kpoint where nibz=0
+        jloop: do j=1,nibz
+          if (k2(:,j) .myeq. kvecstar(:,l)) then
+! first bring the star in the FBZ, then compare to the existing points
+             exists=.True.
+             w2(j)=w2(j)+1d0
+             mapibz(i)=j
+!            write(ulog,4)' this kpoint turned out to exist ',j,k2(:,j)
+             exit lloop
+          endif
+        enddo jloop
+    enddo lloop
+
+!   write(ulog,4)' kpoint, folded one  ',i,kp(:,i),exists,j,k2(:,j)
+    if(exists ) then
+       cycle kploop
+    else
+       nibz=nibz+1
+!  choose the kpoint star in the first quadrant: at least  works for cubic systems
+    !  call getstar(kp(:,i),primitivelattice,narms,kvecstar,kvecop)
+    !  foundit=.False.
+    !  strloop: do l=1,narms
+    !     q= kvecstar(:,l)
+    !     if ( q(1).ge.q(2) .and. q(2).ge.q(3) .and. q(3).ge.-1d-5) then
+    !        k2(:,nibz)=q
+    !        foundit=.True.
+    !        exit strloop
+    !     endif
+    !  enddo strloop
+
+       if (nibz.eq.1) w2(nibz) = 1
+       mapibz(i) = nibz
+
+! here need to switch two elements of mapinv; so we add this line
+       aux=mapinv(nibz)
+       mapinv(nibz)=i
+       mapinv(i)=aux
+
+    !  if (.not. foundit) then
+          k2(:,nibz)=kp(:,i)
+          write(ulog,4)'new vector*:',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz))
+          write(*,4)'new vector*:',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz))
+    !  else
+    !     write(ulog,4)'new vector :',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz))
+    !     write(*,4)'new vector :',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz))
+    !  endif
+    endif
+ ! test for FCC
+ !  q(:) = kp(:,i)
+ !  if ( q(1).ge.q(2) .and. q(2).ge.q(3) .and. q(3).ge.-1d-5) then
+ !     write(bzf,3)i,q
+ !  endif
+
+ enddo kploop
+ write(ulog,*)'GET_WEIGHTS3: generated ',nibz,' points in the irreducible FBZ'
+
+! define kibz and wibz ---------------------------------------------
+ if ( allocated(wibz)) deallocate(wibz)
+ if ( allocated(kibz)) deallocate(kibz)
+ allocate(wibz(nibz),kibz(3,nibz))
+ wibz(1:nibz) = w2(1:nibz)
+ kibz(:,1:nibz)=k2(:,1:nibz)
+! k2 is in reduced units
+! do j=1,nibz
+!    kibz(:,j)=k2(1,j)*g1+k2(2,j)*g2+k2(3,j)*g3
+! enddo
+
+ deallocate(k2,w2)
+ sw = sum(wibz(1:nibz))
+ wibz = wibz/sw
+
+! sort and write out the kpoints and their weights-------------------------
+ allocate(lg(nibz),mcor(nibz))
+ do i=1,nibz
+    lg(i)=length(kibz(:,i))
+ enddo
+ call sort(nibz,lg,mcor,nibz)
+
+!
+! this sorting and writing is donw in the main routine
+! if ( allocated(lg)) deallocate(lg)
+! if ( allocated(mcor)) deallocate(mcor)
+! allocate(lg(nk),mcor(nk))
+! do i=1,nk
+!    lg(i)=length(kp(:,i))
+! enddo
+! call sort(nk,lg,mcor,nk)
+! write(fbz,*)'#i,l,mapibz(l),kp(l),length(kp(l)),kibz(mapibz(l)),wibz(mapibz(l)) l=mcor(i)'
+! do i=1,nk
+!     j=mcor(i)
+!!    write(fbz,3)i,kp(:,mcor(i)),length(kp(:,mcor(i))),kibz(:,mapibz(mcor(i))),wibz(mapibz(mcor(i)))
+!    write(fbz,2)i,j,mapibz(j),kp(:,j),length(kp(:,j)),kibz(:,mapibz(j)),wibz(mapibz(j))
+! enddo
+! deallocate(mcor,lg)
+! close(fbz)
+
+ write(uibz,*)'#i,kibz(:,i),wibz(i),kibz_reduced,length(kibz(i))'
+ open(345,file='mapinv.dat')
+ open(346,file='NEWKP.dat')
+ write(345,*)'# i,mapinv(i)(i=1,nibz),mapibz(i)'
+ write(346,*)'# i,        newkp(i)         newkp_reduced(i)'
+ do i=1,nk !,nibz
+    if(i.le.nibz) then
+       j=mcor(i)
+!       q = matmul(transpose(prim2cart),kibz(:,j))
+!       call reduce(kibz(:,j),rr1,rr2,rr3,q)
+       write(uibz,3)i,kibz(:,j),wibz(j),q,length(kibz(:,j))
+    endif
+    write(345,*)i,mapinv(i),mapibz(i)
+!    skc = matmul(transpose(prim2cart),kp(:,i))
+!    call reduce(kp(:,i),gshells(:,1),gshells(:,2),gshells(:,3),skc)
+!    call reduce(kp(:,i),rr1,rr2,rr3,skc)
+    write(346,3)i,kp(:,i),skc
+ enddo
+ close(345)
+ close(346)
+ close(uibz)
+
+2 format(3i7,2x,3(1x,f9.4),2x,f9.4,2x,3(1x,f9.5),3x,f14.8)
+3 format(i7,2x,3(1x,f9.4),2x,f9.5,2x,3(1x,f9.5),3x,f9.5)
+4 format(a,i7,2x,f9.5,2x,99(1x,f9.5))
+5 format(a,2x,99(1x,f9.5))
+stop
+ end subroutine get_weights3
+!==========================================================
 subroutine sort3(n1,n2,n3,mp)
 implicit none
 integer n1,n2,n3,mp(3)

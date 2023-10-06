@@ -14,6 +14,7 @@
 
       use lattice
       use force_constants_module
+      use atoms_force_constants
       implicit none
       integer maxshell
 !      parameter(maxshell=10)
@@ -28,10 +29,15 @@
      &     lattparams(6),primlatt(3,3),      tempi(3,3),latp(6),   &
      &     conv_to_cart(3,3),prim_to_cart(3,3),cart_to_prim(3,3),   &
      &     prim_to_conv(3,3),conv_to_prim(3,3),atompos_in(3,natoms_in),   &
-     &     atomposconv(3,natoms_in),fract(3),v(3),v2(3),temp(3,3)
-
+     &     atomposconv(3,natoms_in),fract(3),v(3),v2(3),temp(3,3),  &
+     &     vol0
 !k1
-      maxshell = maxneighbors
+      integer nsmax
+!k1
+!      maxshell = maxneighbors
+!     maxshell = 27
+!     maxneighbors = 90 !0726
+
       d2r = 4d0*datan(1d0)/180d0 ! 3.1415926535897932384626/180d0
 !k1
 !-------------------------------------------------------------------------------
@@ -249,12 +255,23 @@
 !-------------------------------------------------------------------------------
 ! collect nearest neighbor atoms
 ! do each atom in primitive unit cell
+
+!K1 we define nsmax as the number of lattice constants in a cutoff radius of 15 Ang
+      call calculate_volume(r01,r02,r03,vol0)
+      nsmax=1+nint(15d0/vol0**0.333)
+      write(ulog,*)'nsmax=',nsmax  ! it should be larger than 5 or 6, on the order of 10
+!K1 but maxneighbor or maxshell is the largest number of neighbor shells within that
+!K1 cutoff. It can be much larger than nsmax especially for low-symmetry crystals
+!K1 for which there are a LARGE number of neighbor shells
+!K1 maxneighbors is used for the size of the array d2save which saves pair distances
+!K1 it can be set at the outset of the code as a large number, like 90
       do iatom0=1,natoms0
         nd2save=0
         m=0
 ! collect distances to nearest neighbors
 ! do one shell of unit cells at a time
-        do n=0,maxshell
+        shelloop: do n=0,nsmax
+   !    do n=0,maxshell
           foundone=.false.
           do i1=-n,n
           do i2=-n,n
@@ -296,25 +313,43 @@
               if(nd2save.lt.maxneighbors)then
                 nd2save=nd2save+1
                 d2save(nd2save)=d2
+!K1 I added this else statement to avoid exceeding the size of d2save which is maxneighbors
+              else
+                nshell=n-1
+                exit shelloop
               endif
             enddo iloop
           enddo
           enddo
           enddo
 ! no new atom found in shell:  save previous shell and exit loop
-          if(.not.foundone.and.nd2save.eq.maxneighbors)then
+
+!K1 Here I added the condition d2<15**2 to exit if the pair distances exceeds 15 Ang
+!K1 that could be the reason why the number of natoms is not the same as the one in lat_fc
+!K1 if you do not exclude d2>225, maybe you can recover the same numbers as in lat_fc
+!K1 provided maxshell is the same
+
+!         if(.not.foundone.and.nd2save.eq.maxneighbors)then
+          if(.not.foundone.and.(nd2save.eq.maxneighbors .or. d2.ge.225)) then
             nshell=n-1
-            exit
+            exit shelloop
           endif
 ! list is filled
           if(nd2save.eq.maxneighbors.and.m.eq.0)m=1
 ! we reached the last shell before we finished the list
-          if(n.eq.maxshell)then
-            write(6,*)'Error:  maxshell is not large enough ',maxshell
+!K1 since maxshell is not defined but nsmax is, we compare to nsmax
+!         if(n.eq.maxshell)then
+          if(n.eq.nsmax) then
+            nshell=nsmax
+  !         write(6,*)'Error:  maxshell is not large enough ',maxshell
             close(20)
             stop
           endif
-        enddo
+        enddo shelloop
+        write(ulog,*)'FC_INIT: nshell consistent with maxneighbor=90,rcut=15 '
+        write(ulog,*)'         and nsmax=',nsmax,' is=',nshell
+! Here I think it is safe to set maxshell to nshell
+        maxshell=nshell
 !-----------------------------------------------------------------------------
 ! generate positions of neighbors
 ! do each shell of unit cells
@@ -1280,7 +1315,7 @@
       integer i,j,k,nrow1,ncol1,ncol2,nr1,nr2,nr3
       double precision x1(nr1,ncol1),x2(nr2,ncol2),x3(nr3,ncol2)
       real(8), allocatable :: x(:,:)
-     
+
       allocate(x(nrow1,ncol2))
       do i=1,ncol2
       do j=1,nrow1
@@ -1314,7 +1349,7 @@
       integer nrow,ncol,nr,i,j
       double precision x(nr,ncol),v1(ncol),v2(nrow)
       real(8), allocatable :: v(:)
-     
+
       allocate(v(nrow))
       do i=1,nrow
         v(i)=0
@@ -1800,7 +1835,7 @@
      &     v2(3),v3(3),kvecstarp(3,48)
       narms=0
 !      print*,'lattpgcount=',lattpgcount
-      iloop: do i=1,lattpgcount
+      iloop: do i=1,lattpgcount !48
 ! apply symmetry operation to k to get v=kstar
         call xvmlt(op_kmatrix(1,1,i),kvec,v,3,3,3)
 ! find the reduced coordinates of v and store in v2

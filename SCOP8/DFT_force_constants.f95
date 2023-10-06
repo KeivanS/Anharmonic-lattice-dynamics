@@ -282,7 +282,7 @@ CONTAINS
 !WRITE(*,*) 'read_input_fit Ends Normally'
          CALL read_structure !it will only use one number: tot_atom_number
 !WRITE(*,*) 'read_structure Ends Normally'
-
+        CALL transform_input_structure !newly added 09/15/2023
          CALL make_reciprocal_lattice(r01,r02,r03,g01,g02,g03)
          CALL set_neighbor_list
          ! inputs: atompos,
@@ -332,9 +332,11 @@ CONTAINS
 
             eff_fc2_terms = eff_fc2_terms + 1
             myfc2_value(atom1,atom2)%phi(direction1,direction2)=myfc2_index(i)%phi_temp !give value to phi(:,:)
+
             IF(ABS(myfc2_value(atom1,atom2)%phi(direction1,direction2)).gt.max_fc2) THEN
                 max_fc2 = ABS(myfc2_value(atom1,atom2)%phi(direction1,direction2))
             END IF
+
          END DO
 
          !record all the fc2 that has atom 1 within primitive cell

@@ -18,7 +18,7 @@ MODULE Iteration_parameters
     LOGICAL :: unleashed = .false.
     LOGICAL :: inherit = .false.
     LOGICAL :: rand_start = .false.
-    LOGICAL :: pressure = .false.
+    LOGICAL :: pressure = .True.
     REAL(8) :: stress(d,d) !for pressure test
 
 CONTAINS
@@ -328,7 +328,7 @@ CONTAINS
         READ(unit_number,*) inherit !use results from last run to target initialize or not
         READ(unit_number,*) pressure !whether include pressure factor
         READ(unit_number,*) tolerance2
-        READ(unit_number,*)seed
+        READ(unit_number,*) seed
         READ(unit_number,*) max_it_number
         READ(unit_number,*) my_pmix
         READ(unit_number,*) temperature
@@ -336,7 +336,7 @@ CONTAINS
         DO i=1,3
             READ(unit_number,*) stress(i,:) !read stress tensor
         END DO
-        stress = stress*1d-21/ee !unify the unit
+        stress = stress*1d-21/ee !unify the unit, file is in GPa
 
         READ(unit_number,'(E5.0)') danger !used in this version
         READ(unit_number,*) n !number of fixed variational parameter

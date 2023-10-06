@@ -229,9 +229,18 @@ Module VA_math
 
         GradientF_trial=0
 
+WRITE(*,*)'TimeCheck Pos3'
+
         !******************ENERGY CALCULATIONS************************
         !we have to diagonalize matrix here
         CALL initiate_yy(kvector)!calculate new <yy> for every time
+!CALL check_degeneracy
+!CALL special_check
+!CALL updatePhi !just for test
+!STOP
+
+WRITE(*,*)'TimeCheck Pos4'
+
         CALL GetF0_and_V0 ! not really needed here
         CALL GetV_avg_And_GradientV_avg(kvector) ! translational invariant form that actually works
 !        CALL TreatGradientV ! modify GradientV_utau GradientV_eta with a matrix
@@ -250,6 +259,8 @@ WRITE(34,*) 'V=:',REAL(V_avg)
 WRITE(*,*) 'F=F0+V-V0:',REAL(F_trial)
 WRITE(34,*) 'F=F0+V-V0:',REAL(F_trial)
 !WRITE(unitnumber2,'(f10.4)') F_trial
+
+WRITE(*,*)'TimeCheck Pos5'
 
         !**************MAKE GradientF_trial AN ARRAY******************
         !force symmetry on strain gradients?
@@ -324,6 +335,7 @@ WRITE(34,*) 'F=F0+V-V0:',REAL(F_trial)
          INTEGER :: test_l,test_temp
          COMPLEX(8) :: test_sum
          REAL(8) :: test_diff_r,test_diff_i
+         REAL(8) :: time1, time2
          !--------------------------
 
          i=0;k=0;k_number=SIZE(kvector)
@@ -351,9 +363,12 @@ WRITE(34,*) 'F=F0+V-V0:',REAL(F_trial)
           End Do !k loop
 
           k=0;i=0
-
-outer:    Do while(k<k_number)
-            k=k+1
+          n=d*atom_number
+          nv=d*atom_number
+          ier=0
+CALL CPU_TIME(time1)
+!!$OMP PARALLEL DO
+        Do k=1,SIZE(kvector)
 !------------------------------my old codes, without born but faster------------------------------
 !            DO i=1,atom_number
 !                tau1=i
@@ -455,9 +470,7 @@ END DO !for test, no other uses
 !****************************
 
 !use module zhegv to diagonalize trialffc2_matrix for this k, and get eivecs(:,:,k), eivals(:,k)
-            n=d*atom_number
-            nv=d*atom_number
-            ier=0
+
 
             CALL diagonalize(n,trialffc2_matrix,eivals(:,k),nv,eivecs(:,:,k),ier)
 
@@ -498,7 +511,11 @@ END DO !for test, no other uses
 !CLOSE(71)
 !------------------------------------------------------------
 
-         End Do outer
+         End Do !k loop
+
+!!$OMP END PARALLEL DO
+CALL CPU_TIME(time2)
+WRITE(*,*) time1, time2, time2-time1
 
         DEALLOCATE(trialffc2_matrix)
         DEALLOCATE(trialffc2_value)
@@ -571,9 +588,9 @@ SUBROUTINE initiate_yy(kvector)
     WRITE(unitnumber,*) 'iteration # = ',iter_rec
     WRITE(gthb,*) 'iteration # = ', iter_rec
 
-    OPEN(47,FILE='Y_square.dat',STATUS='unknown',ACTION='write',POSITION='append')
-    WRITE(47,*)"This is Iteration #",iter_rec
-    WRITE(47,*)"xyz_1,atom_1,xyz_2,atom_2, gamma point correction, <YY> "
+!    OPEN(47,FILE='Y_square.dat',STATUS='unknown',ACTION='write',POSITION='append')
+!    WRITE(47,*)"This is Iteration #",iter_rec
+!    WRITE(47,*)"xyz_1,atom_1,xyz_2,atom_2, gamma point correction, <YY> "
 
     ALLOCATE(phi_test(d,atom_number,d,tot_atom_number))
 
@@ -589,6 +606,7 @@ SUBROUTINE initiate_yy(kvector)
     min_eival = min_eivals
     WRITE(unitnumber,*)'minimum eigenvalue = ', min_eival
     WRITE(*,*) 'minimum eigenvalue = ',min_eival
+    WRITE(*,*) SIZE(eivals)
     neg_lambda = 0; neg_k = 0 !don't forget to initialize them to be 0 as a flag(no too negative eival)
 outer:    DO k=1,SIZE(eivals,dim=2)
         DO l=1,SIZE(eivals,dim=1)
@@ -606,9 +624,9 @@ outer:    DO k=1,SIZE(eivals,dim=2)
             IF(eivals(l,k).le.0d0) THEN
                 counter = counter + 1 !find one more soft mode
                 negative_eivals=eivals(l,k)
-                WRITE(unitnumber,*)
-                WRITE(unitnumber,*)'lambda',l,'#kvector',k
-                WRITE(unitnumber,*)'eigenvalue=',eivals(l,k)
+!                WRITE(unitnumber,*)
+!                WRITE(unitnumber,*)'lambda',l,'#kvector',k
+!                WRITE(unitnumber,*)'eigenvalue=',eivals(l,k)
 
             END IF
             !print out gamma point eigenvectors record
@@ -625,24 +643,15 @@ outer:    DO k=1,SIZE(eivals,dim=2)
                 IF(eivals(6,1).eq.0d0) eivals(6,1) = 0.0001 * eivals(6,2)
             END IF
 
-            IF(min_eivals.lt.0d0) THEN
-!@@@@@@@@@@@@@@@@@@@@@@Below are how to deal with negative eigenvalues@@@@@@@@@@@@@@@@@@@@@@@@@
-            !****option.1 Simple shift method,the only method works stably****
-!                eivals(l,k) = eivals(l,k) - min_eivals*1.0001
-            !****option.2 The two step fix****
-!                IF(min_eivals.gt.-danger) THEN
-!                    eivals(l,k) = eivals(l,k) - min_eivals*1.0001
-!                ELSE
-!                    CALL CheckFixEigen
-!                    EXIT outer
-!                END IF
-            !****option.3 do nothing, but modify Get_Y_square****
-            END IF
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
         END DO
     END DO outer
 
+    IF(min_eivals.lt.0d0) THEN
+        WRITE(unitnumber,*)
+        WRITE(unitnumber,*) 'most negative eigenvalue=', min_eival
+        WRITE(unitnumber,*) 'lambda', neg_lambda, '#kvector', neg_k
+    END IF
+!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 !------------------------------------------NEW--------------------------------------------------
     !record all the negative eigenvalues index and shift those
     IF(ALLOCATED(soft)) DEALLOCATE(soft)
@@ -671,12 +680,12 @@ WRITE(*,*)'minimum eigenvalue after shift:',MINVAL(MINVAL(eivals,DIM=2))
         xyz1 = myfc2_index(i)%iatom_xyz
         xyz2 = myfc2_index(i)%jatom_xyz
 
-        yy_value(atom1,atom2)%phi(xyz1,xyz2) = Get_Y_square(k_number,xyz1,atom1,xyz2,atom2)/k_number
+        yy_value(atom1,atom2)%phi(xyz1,xyz2) = Get_Y_square2(k_number,xyz1,atom1,xyz2,atom2)/k_number
 
 
 !****Test the value of gamma point correction****
-WRITE(47,6) get_letter(xyz1),atom1,get_letter(xyz2),atom2,&
-&for_check,yy_value(atom1,atom2)%phi(xyz1,xyz2)
+!WRITE(47,6) get_letter(xyz1),atom1,get_letter(xyz2),atom2,&
+!&for_check,yy_value(atom1,atom2)%phi(xyz1,xyz2)
 !****Test if using <yy> can recover the trial fc2****
 !phi_test(xyz1,atom1,xyz2,atom2) = Get_phi_test(k_number,xyz1,atom1,xyz2,atom2)
 !WRITE(47,*) 'Test if using <yy> can recover the original FC2, discrepancy(last col.)'
@@ -688,7 +697,7 @@ WRITE(47,6) get_letter(xyz1),atom1,get_letter(xyz2),atom2,&
 
 DEALLOCATE(phi_test)
 !DEALLOCATE(yy_test)
-    CLOSE(47)
+!    CLOSE(47)
     CLOSE(unitnumber)
     CLOSE(gthb)
 
@@ -858,7 +867,7 @@ SUBROUTINE GetV_avg_And_GradientV_avg(kvector)
     INTEGER :: ntindp,rnk, voigt,g,t
     INTEGER :: counter1,counter2
 
-    REAL(8) :: dummy
+    REAL(8) :: dummy, time1, time2
 
 ALLOCATE(term1(atom_number,tot_atom_number),&
 &term2(atom_number,tot_atom_number),&
@@ -1035,10 +1044,10 @@ WRITE(47,*) '========================================================'
     END DO !j loop *atomic
     END DO !i loop *atomic
 
-WRITE(*,*) 'FINISH QUADRATIC TERMS CALCULATION'
+!WRITE(*,*) 'FINISH QUADRATIC TERMS CALCULATION'
 
 check = V_avg
-WRITE(*,*) 'check quadratic:', check
+!WRITE(*,*) 'check quadratic:', check
 
 coefficient(:) = 0d0
 !-------------------------------------------CUBIC TERMS------------------------------------------------------
@@ -1128,12 +1137,14 @@ coefficient(:) = 0d0
     END DO !j loop *atomic
     END DO !i loop *atomic
 
-WRITE(*,*) 'FINISH CUBIC TERMS CALCULATION'
+!WRITE(*,*) 'FINISH CUBIC TERMS CALCULATION'
 
 check = V_avg - check
-WRITE(*,*) 'check cubic:', check
+!WRITE(*,*) 'check cubic:', check
 
 !------------------------------------------------QUARTIC TERMS-----------------------------------------------------
+CALL CPU_TIME(time1)
+!!$OMP PARALLEL DO
     DO i=1,atom_number
         tau1=every_atom(i)%type_tau
         tau1_vec=every_atom(i)%tau
@@ -1230,10 +1241,13 @@ WRITE(*,*) 'check cubic:', check
     END DO !j loop *atomic
     END DO !i loop *atomic
 
-WRITE(*,*)'FINISH QUARTIC TERMS CALCULATION'
-
+!WRITE(*,*)'FINISH QUARTIC TERMS CALCULATION'
+!
+!!$OMP END PARALLEL DO
+CALL CPU_TIME(time2)
+WRITE(*,*) 'time:',time2-time1
 check = V_avg - check
-WRITE(*,*) 'check quartic:', check
+!WRITE(*,*) 'check quartic:', check
 
 !-------------fix the gradient of eta if direction1=direction2----------
 DO direction1=1,d
@@ -1657,7 +1671,7 @@ WRITE(47,*) '========================================================'
     END DO !j loop *atomic
     END DO !i loop *atomic
 
-WRITE(*,*) 'FINISH QUADRATIC TERMS CALCULATION'
+!WRITE(*,*) 'FINISH QUADRATIC TERMS CALCULATION'
 
 !-------------------------------------------CUBIC TERMS------------------------------------------------------
     DO i=1,atom_number
@@ -1751,7 +1765,7 @@ WRITE(*,*) 'FINISH QUADRATIC TERMS CALCULATION'
     END DO !j loop *atomic
     END DO !i loop *atomic
 
-WRITE(*,*) 'FINISH CUBIC TERMS CALCULATION'
+!WRITE(*,*) 'FINISH CUBIC TERMS CALCULATION'
 
 !------------------------------------------------QUARTIC TERMS-----------------------------------------------------
     DO i=1,atom_number
@@ -1901,10 +1915,10 @@ WRITE(*,*) 'FINISH CUBIC TERMS CALCULATION'
     END DO !j loop *atomic
     END DO !i loop *atomic
 
-WRITE(*,*)'FINISH QUARTIC TERMS CALCULATION'
+!WRITE(*,*)'FINISH QUARTIC TERMS CALCULATION'
 
 check = V_avg - check
-WRITE(*,*) 'check quartic:', check
+!WRITE(*,*) 'check quartic:', check
 
 !-------------fix the gradient of eta if direction1=direction2----------
 DO direction1=1,d
@@ -2618,8 +2632,9 @@ subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,vg)
 
     END FUNCTION Get_phi_test
 !--------------------------------------------------------------------------------------------
-    FUNCTION Get_Y_square(k_number,direction1,atom1,direction2,atom2) !MODIFIED gammapoint
-   !!Major subroutine that calculate <YY> for specific indexes given
+    FUNCTION Get_Y_square(k_number,direction1,atom1,direction2,atom2)
+    !!Minor mistakes, use ver.2 instead
+    !!Major subroutine that calculate <YY> for specific indexes given
     !!utilize analytical approximation for diverging terms
         IMPLICIT NONE
         INTEGER :: i,j,k,l,steps
@@ -2861,20 +2876,26 @@ END IF
         denominator(3) = (eivals(1,1)+eivals(1,3)-2*eivals(1,2))
 
         delta_cubic = 3d0*volume_g/(4*pi*k_number)
-        delta_square = delta_cubic**(2.0/3.0)
+!        term1 = delta_cubic*(4d0/3/denominator(1)+2d0/3/denominator(2)+2d0/denominator(3))*1d-20*uma/ee
+!        term2 = delta_cubic*(2d0/3/denominator(1)+4d0/3/denominator(2))*1d-20*uma/ee
+
+        !------------------------------------------------------------------------------
+        delta_square = delta_cubic**(2.0/3.0) !not used, for test only
         interval_K = sqrt((kvector(2)%component(1)-kvector(1)%component(1))**2 + &
                       &(kvector(2)%component(2)-kvector(1)%component(2))**2 + &
-                      & (kvector(2)%component(3)-kvector(1)%component(3))**2)
-        term1 = (1d0/3/denominator(1)+1d0/6/denominator(2)+1d0/2/denominator(3))*1d-20*uma/ee*interval_K*interval_K
-        term2 = (1d0/3/denominator(1)+2d0/3/denominator(2))*1d-20*uma/ee*interval_K*interval_K
+                      & (kvector(2)%component(3)-kvector(1)%component(3))**2) !not used, for test only
+        term1 = (4d0/3/denominator(1)+2d0/3/denominator(2)+2d0/denominator(3))*1d-20*uma/ee*interval_K*interval_K
+        term2 = (2d0/3/denominator(1)+4d0/3/denominator(2))*1d-20*uma/ee*interval_K*interval_K
+        !------------------------------------------------------------------------------
+
 
         IF(direction1.eq.direction2) THEN
             IF(direction1.eq.1 .OR. direction1.eq.2) THEN
-                Get_Y_square = Get_Y_square + temperature*100*h_plank*c_light/atom_number&
-                        &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20/delta_square*3
+                Get_Y_square = Get_Y_square + 2*pi*temperature*100*h_plank*c_light/3/atom_number&
+                        &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20/delta_square !<-test modified
             ELSE
-                Get_Y_square = Get_Y_square + temperature*100*h_plank*c_light/atom_number&
-                        &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20/delta_square*3
+                Get_Y_square = Get_Y_square + 4*pi*temperature*100*h_plank*c_light/3/atom_number&
+                        &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20/delta_square !<-test modified
             END IF
         END IF !xx,yy,zz should be equal
 
@@ -2930,21 +2951,25 @@ for_check = for_check / k_number
             END IF
 
             delta_cubic = 3d0*volume_g/(4*pi*k_number)
+!            term1 = delta_cubic*(4d0/3/denominator(1)+2d0/3/denominator(2)+2d0/denominator(3))*1d-20*uma/ee
+!            term2 = delta_cubic*(2d0/3/denominator(1)+4d0/3/denominator(2))*1d-20*uma/ee
+
+            !------------------------------------------------------------------------------
             delta_square = delta_cubic**(2.0/3.0) !not used, for test only
             interval_K = sqrt((kvector(2)%component(1)-kvector(1)%component(1))**2 + &
                           &(kvector(2)%component(2)-kvector(1)%component(2))**2 + &
-                          & (kvector(2)%component(3)-kvector(1)%component(3))**2)
-            term1 = (1d0/3/denominator(1)+1d0/6/denominator(2)+1d0/2/denominator(3))*1d-20*uma/ee*interval_K*interval_K
-            term2 = (1d0/3/denominator(1)+2d0/3/denominator(2))*1d-20*uma/ee*interval_K*interval_K
+                          & (kvector(2)%component(3)-kvector(1)%component(3))**2) !not used, for test only
+            term1 = (4d0/3/denominator(1)+2d0/3/denominator(2)+2d0/denominator(3))*1d-20*uma/ee*interval_K*interval_K
+            term2 = (2d0/3/denominator(1)+4d0/3/denominator(2))*1d-20*uma/ee*interval_K*interval_K
             !------------------------------------------------------------------------------
 
             IF(direction1.eq.direction2) THEN
                 IF(direction1.eq.1 .OR. direction1.eq.2) THEN
-                    Get_Y_square = Get_Y_square + temperature*100*h_plank*c_light/atom_number&
-                            &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20/delta_square*3
+                    Get_Y_square = Get_Y_square + 2*pi*temperature*100*h_plank*c_light/3/atom_number&
+                            &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20/delta_square !<-test modified!@!
                 ELSE
-                    Get_Y_square = Get_Y_square + temperature*100*h_plank*c_light/atom_number&
-                            &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20/delta_square*3
+                    Get_Y_square = Get_Y_square + 4*pi*temperature*100*h_plank*c_light/3/atom_number&
+                            &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20/delta_square !<-test modified!@!
                 END IF
             END IF !xx,yy,zz should be equal
 
@@ -3015,6 +3040,404 @@ for_check = for_check / k_number
         DEALLOCATE(n_qlambda)
 !        DEALLOCATE(res,arg,om,func,array)
     END FUNCTION Get_Y_square
+!--------------------------------------------------------------------------------------------
+    FUNCTION Get_Y_square2(k_number,direction1,atom1,direction2,atom2) !MODIFIED gammapoint
+   !!Major subroutine that calculate <YY> for specific indexes given
+    !!utilize analytical approximation for diverging terms
+        IMPLICIT NONE
+        INTEGER :: i,j,k,l,steps
+        INTEGER :: R1,tau1,R2,tau2,temp1,temp2,temp3,temp4
+        INTEGER, INTENT(IN) :: k_number,atom1,direction1,atom2,direction2
+        INTEGER :: unitnumber
+
+        REAL(8) :: om_max,term,nbe,check,limit,vgr(d,d*atom_number),evl0(d*atom_number),delta_k(d)
+        REAL(8),DIMENSION(:),ALLOCATABLE :: om,array!parameter omega; Y_square only sums lambda but not q
+        REAL(8),DIMENSION(:,:),ALLOCATABLE :: arg,func,res
+        REAL(8),DIMENSION(:,:),ALLOCATABLE :: n_qlambda !Bose-Einstein distribution
+        REAL(8) :: coefficientA(6)
+        REAL(8) :: delta_cubic,denominator(3),term1,term2,delta_square,interval_K
+!        REAL(8) :: Get_Y_square
+        COMPLEX(8) :: Get_Y_square2
+
+        COMPLEX(8) :: evc0(d*atom_number,d*atom_number)
+
+        INTEGER :: cutoff,cutoff_true
+        LOGICAL :: auxiliary,FLAG
+        LOGICAL :: match
+
+        !retrieve atomic indexes
+        R1=every_atom(atom1)%type_R
+        tau1=every_atom(atom1)%type_tau
+        R2=every_atom(atom2)%type_R
+        tau2=every_atom(atom2)%type_tau
+
+!        ALLOCATE(func(SIZE(eivals,DIM=1),k_number),array(k_number))
+        ALLOCATE(n_qlambda(SIZE(eivals,DIM=1),SIZE(eivals,DIM=2)))
+!******************************BELOW IS TETRAHEDRON METHOD*****************************
+!        array=0d0
+!        !get needed indexes
+!        IF(direction1.eq.d) THEN
+!            temp1=d*tau1
+!        ELSE
+!            temp1=d*(tau1-1)+direction1
+!        END IF
+!
+!        IF(direction2.eq.d) THEN
+!            temp2=d*tau2
+!        ELSE
+!            temp2=d*(tau2-1)+direction2
+!        END IF
+!
+!        !initialize func(k)
+!        func=0
+!        DO k=1,k_number ! k point loop
+!        DO l=1,3
+!
+!            !---------------------------CLASSICAL VERSION------------------------------
+!            !func(l,k)=func(l,k)+&
+!            !    &temperature/eivals(l,k)/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/&
+!            !    &(ee*1d20)*100*h_plank*c_light*&
+!            !    &REAL(eivecs_t(l,temp1,k)*eivecs(temp2,l,k))*COS(kvector(k).dot.cell_vec(:,R2))
+!            !IMPORTANT: updated k dot updated R
+!            !--------------------------------------------------------------------------
+!
+!            !---------------------------QUANTUM VERSION--------------------------------
+!            !IF(ABS(eivals(l,k)).lt.1E-10) THEN
+!            !    eivals(l,k)=ABS(eivals(l,k))
+!            !END IF
+!
+!            n_qlambda(l,k)=nbe(SQRT(eivals(l,k))*cnst,temperature,0) !0 for quantum ver.
+!
+!            !func is in S.I units
+!            func(l,k)=func(l,k)+&
+!                &hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
+!                &(2*n_qlambda(l,k)+1)*&
+!                & REAL(eivecs_t(l,temp1,k)*eivecs(temp2,l,k))*COS(kvector(k).dot.cell_vec(:,R2))*1d20 !angstrom^2
+!
+!        END DO !l loop for eigen index sum
+!        END DO !k loop for every k point
+
+        !initialize om(steps)
+!        steps=500
+!        ALLOCATE(om(steps))
+!        om_max=MAXVAL(MAXVAL(eivals,DIM=2)) !get the largest omega
+!        om_max=SQRT(om_max)
+!
+!        DO i=1,steps
+!            om(i)=om_max/steps*i
+!        END DO
+
+        !prepare arg(k)
+!        ALLOCATE(arg(SIZE(eivals,DIM=1),SIZE(eivals,DIM=2)))
+!        DO k=1,k_number
+!            DO l=1,3
+!                IF(ABS(eivals(l,k)).lt.1E-10) THEN
+!                    arg(l,k)=0d0
+!                ELSE
+!                    arg(l,k)=SQRT(SQRT(eivals(l,k)))
+!                    !arg(l,k)=SQRT(eivals(l,k))
+!                    !arg(l,k)=eivals(l,k)
+!                END IF
+!            END DO ! l loop
+!        END DO ! k loop
+
+
+
+!-------------------------find the minimum trust om(i) by group velocity. PREVIOUSLY------------------------------------
+!        temp1=tet(7)%p(1)%i;temp2=tet(7)%p(2)%i
+!        check=ABS(kvector(temp2)%component(1)-kvector(temp1)%component(1))
+!        delta_k=(/0d0,SQRT(5d0)*check,0d0/)
+!        CALL finitedif_vgr(delta_k,d*atom_number,vgr,evl0,evc0) !temp1-th corner
+!        cutoff=INT(SQRT(ABS(vgr(:,3)).dot.delta_k)*steps/om_max)
+!        WRITE(*,*) 'Group Velocity: the critical om is at:',cutoff
+!
+!        !get every F(om) after the cutoff for the 3 acoustic bands
+!        ALLOCATE(res(steps,SIZE(eivals,DIM=1)))
+!        DO l=1,3
+!        DO i=cutoff-1,steps
+!            CALL tet_sum(om(i),k_number,arg(l,:),func(l,:),res(i,l),array)
+!        END DO !i loop
+!        END DO !l loop
+!***********************check F(omega)***************************
+!IF(tau1.eq.1 .AND. direction1.eq.1 .AND. atom2.eq.1 .AND. direction2.eq.1) THEN
+!OPEN(44,FILE='F_om.dat',STATUS='unknown',ACTION='write')
+!check=0d0
+!DO i=1,steps
+!    WRITE(44,*)om(i),SUM(res(i,1:6)) !plot the F(om) for 3 acoustic bands
+    !check=check+SUM(res(i,:))*om_max/steps
+!END DO
+!CLOSE(44)
+!WRITE(*,*)'Integral of DOS=',check
+!WRITE(*,*)'Maximum Frequency=',om_max*cnst
+!ENDIF
+!*****************************************************************
+!---------------------------find the minimum trust om(i) from the graph--------------------------------------------------
+!        limit=(om_max-danger)/steps
+!        array=0
+!        cutoff_true=1
+!        DO i=cutoff,steps-1
+!            array(i)=ABS(SUM(res(i+1,:))-SUM(res(i,:)))
+!            IF(array(i).lt.limit) THEN
+!                cutoff_true=i+1
+!                !WRITE(*,*) 'From Graph: the critical om:',om(cutoff_true)
+!                WRITE(*,*)'From Graph: the critical om is at:',cutoff_true
+!                EXIT
+!            END IF
+!        END DO
+!--------------------------fix the found cutoff for the rest of the iterations--------------------------------------------
+!        cutoff=cutoff_true
+
+        !tweak the diverging part
+!        DO l=1,3
+!            CALL tet_sum(om(cutoff),k_number,arg(l,:),func(l,:),res(cutoff,l),array)
+!            coefficientA(l)=res(cutoff,l)/om(cutoff)**3 *TANH(om(cutoff)**2*cnst/2/temperature)
+!        END DO
+!
+!        DO i=1,cutoff
+!        DO l=1,3
+!            res(i,l)=coefficientA(l)*om(i)**3 / TANH(om(i)**2*cnst/2/temperature)
+!        END DO !l loop
+!        END DO!i loop
+
+
+!-----------------------------SUM UP THE ACOUSTIC MODES--------------------------------
+!        term=0d0
+!        DO l=1,3
+!        DO i=1,steps
+!            term=term+res(i,l)
+!        END DO !i loop
+!        END DO !l loop
+!
+!        Get_Y_square=term/steps*om_max*k_number !k_number=nk, which will be dividing outside this subroutine
+!*******************ABOVE IS TETRAHEDRON METHOD****************************
+
+!*******************CURRENT METHOD****************************
+        !re-get needed indexes
+        temp1 = d*(tau1-1)+direction1
+        temp2 = d*(tau2-1)+direction2
+
+        !initiate Get_Y_square
+        Get_Y_square2=CMPLX(0d0,0d0)
+
+        !Acoustic bands
+        DO l=1,3
+        DO k=2,SIZE(kvector) !drop gamma point region
+
+!-------------------------------------------NEW----------------------------------------------------
+            !skip if they were soft
+            match = .FALSE.
+            IF(min_eival.le.0d0) THEN
+           checksoft_a: DO i=1,SIZE(soft)
+                IF(l.eq.soft(i)%idx_la .AND. k.eq.soft(i)%idx_q) THEN
+                    match = .TRUE.
+                    EXIT checksoft_a
+                END IF
+            END DO checksoft_a
+            END IF
+
+            IF(match) CYCLE
+!--------------------------------------------------------------------------------------------------
+
+            !****DO THIS IF CHOOSE option.1 or option.2****
+            n_qlambda(l,k)=nbe(SQRT(eivals(l,k))*cnst,temperature,0)
+            Get_Y_square2=Get_Y_square2+&
+                &hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
+                &(2*n_qlambda(l,k)+1)*&
+                &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
+
+            !****ONLY DO THIS IF CHOOSE option.3 WHEN DEAL WITH NEGATIVE W****
+!            IF(eivals(l,k).gt.0d0) THEN
+!                n_qlambda(l,k)=nbe(SQRT(eivals(l,k))*cnst,temperature,0)
+!
+!                Get_Y_square=Get_Y_square+&
+!                &hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
+!                &(2*n_qlambda(l,k)+1)*&
+!                &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
+!            ELSE
+!                n_qlambda(l,k)=-nbe(SQRT(-eivals(l,k))*cnst,temperature,1) !keep it as it is so the negative sign in the front
+!
+!                Get_Y_square=Get_Y_square+&
+!                &hbar/2/SQRT(-eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
+!                &(2*n_qlambda(l,k)+1)*&
+!                &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
+!            ENDIF
+
+
+
+
+IF(isnan(REAL(Get_Y_square2))) THEN
+WRITE(34,*)'--------------POSITION1---------------'
+WRITE(34,*)'Get_Y_square', Get_Y_square2
+WRITE(34,*)'lambda',l,'#kvector',k
+WRITE(34,*)'eivals',eivals(l,k)
+WRITE(34,*)'n_qlambda',n_qlambda(l,k) !HERE COMES THE PROBLEM
+WRITE(34,*)'eivecs',eivecs(temp2,l,k),eivecs_t(l,temp1,k)
+WRITE(34,*)'cell_vec',cell_vec(:,R2)
+STOP
+END IF
+        END DO !k loop
+        END DO !l loop
+
+        !correction term for 3 acoustic bands at Gamma point
+        denominator(1) = (eivals(3,1)+eivals(3,3)-2*eivals(3,2))
+        denominator(2) = (eivals(2,1)+eivals(2,3)-2*eivals(2,2))
+        denominator(3) = (eivals(1,1)+eivals(1,3)-2*eivals(1,2))
+
+        delta_cubic = 3d0*volume_g/(4*pi*k_number)
+        delta_square = delta_cubic**(2.0/3.0)
+        interval_K = sqrt((kvector(2)%component(1)-kvector(1)%component(1))**2 + &
+                      &(kvector(2)%component(2)-kvector(1)%component(2))**2 + &
+                      & (kvector(2)%component(3)-kvector(1)%component(3))**2)
+        term1 = (1d0/3/denominator(1)+1d0/6/denominator(2)+1d0/2/denominator(3))*1d-20*uma/ee*interval_K*interval_K
+        term2 = (1d0/3/denominator(1)+2d0/3/denominator(2))*1d-20*uma/ee*interval_K*interval_K
+
+        IF(direction1.eq.direction2) THEN
+            IF(direction1.eq.1 .OR. direction1.eq.2) THEN
+                Get_Y_square2 = Get_Y_square2 + temperature*100*h_plank*c_light/atom_number&
+                        &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20/delta_square*3
+            ELSE
+                Get_Y_square2 = Get_Y_square2 + temperature*100*h_plank*c_light/atom_number&
+                        &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20/delta_square*3
+            END IF
+        END IF !xx,yy,zz should be equal
+
+!--------------------------------------------------------------------
+!IF(isnan(Get_Y_square)) THEN
+!WRITE(34,*)'--------------POSITION2---------------'
+!WRITE(34,*)'term',term
+!STOP
+!END IF
+!***** check the contribution of this gamma point correction term *****
+for_check = (0d0,0d0)
+
+IF(direction1.eq.direction2) THEN
+    for_check = 2*pi*temperature*100*h_plank*c_light&
+                    &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20
+ELSE
+    for_check = 4*pi*temperature*100*h_plank*c_light&
+                    &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20
+END IF
+for_check = for_check / k_number
+!**********************************************************************
+
+!-------------------------------------------NEW----------------------------------------------------
+        !correction term for those soft bands that get dropped at certain q
+        IF(min_eival.le.0d0) THEN !first make sure there IS any negative mode
+        DO i=1,SIZE(soft)
+            l=soft(i)%idx_la
+            k=soft(i)%idx_q
+
+            IF(k.eq.1) CYCLE !already fixed gamma point above
+
+            IF(l.le.3) THEN !acoustic?
+                IF(k.le. SIZE(eivals,DIM=2)-2) THEN
+                    denominator(1) = (eivals(3,k)+eivals(3,k+2)-2*eivals(3,k+1))
+                    denominator(2) = (eivals(2,k)+eivals(2,k+2)-2*eivals(2,k+1))
+                    denominator(3) = (eivals(1,k)+eivals(1,k+2)-2*eivals(1,k+1))
+                ELSE
+                    denominator(1) = (eivals(3,k-2)+eivals(3,k)-2*eivals(3,k-1))
+                    denominator(2) = (eivals(2,k-2)+eivals(2,k)-2*eivals(2,k-1))
+                    denominator(3) = (eivals(1,k-2)+eivals(1,k)-2*eivals(1,k-1))
+                END IF
+            ELSE
+                l=INT((l-1)/3)*3
+                IF(k.le. SIZE(eivals,DIM=2)-2) THEN
+                    denominator(1) = (eivals(l+3,k)+eivals(l+3,k+2)-2*eivals(l+3,k+1))
+                    denominator(2) = (eivals(l+2,k)+eivals(l+2,k+2)-2*eivals(l+2,k+1))
+                    denominator(3) = (eivals(l+1,k)+eivals(l+1,k+2)-2*eivals(l+1,k+1))
+                ELSE
+                    denominator(1) = (eivals(l+3,k-2)+eivals(l+3,k)-2*eivals(l+3,k-1))
+                    denominator(2) = (eivals(l+2,k-2)+eivals(l+2,k)-2*eivals(l+2,k-1))
+                    denominator(3) = (eivals(l+1,k-2)+eivals(l+1,k)-2*eivals(l+1,k-1))
+                END IF
+            END IF
+
+            delta_cubic = 3d0*volume_g/(4*pi*k_number)
+            delta_square = delta_cubic**(2.0/3.0) !not used, for test only
+            interval_K = sqrt((kvector(2)%component(1)-kvector(1)%component(1))**2 + &
+                          &(kvector(2)%component(2)-kvector(1)%component(2))**2 + &
+                          & (kvector(2)%component(3)-kvector(1)%component(3))**2)
+            term1 = (1d0/3/denominator(1)+1d0/6/denominator(2)+1d0/2/denominator(3))*1d-20*uma/ee*interval_K*interval_K
+            term2 = (1d0/3/denominator(1)+2d0/3/denominator(2))*1d-20*uma/ee*interval_K*interval_K
+            !------------------------------------------------------------------------------
+
+            IF(direction1.eq.direction2) THEN
+                IF(direction1.eq.1 .OR. direction1.eq.2) THEN
+                    Get_Y_square2 = Get_Y_square2 + temperature*100*h_plank*c_light/atom_number&
+                            &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20/delta_square*3
+                ELSE
+                    Get_Y_square2 = Get_Y_square2 + temperature*100*h_plank*c_light/atom_number&
+                            &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20/delta_square*3
+                END IF
+            END IF !xx,yy,zz should be equal
+
+        END DO !soft loop
+        END IF
+!--------------------------------------------------------------------------------------------------
+!WRITE(*,*) 'Extra Term=:', 2*pi*temperature*100*h_plank*c_light&
+!                               &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term*1d20
+
+        !Optic bands
+        DO l=4,SIZE(eivals,DIM=1)
+        DO k=1,SIZE(kvector)
+
+!-------------------------------------------NEW----------------------------------------------------
+            !skip if they were soft
+            match = .FALSE.
+            IF(min_eival.le.0d0) THEN
+           checksoft_o: DO i=1,SIZE(soft)
+                IF(l.eq.soft(i)%idx_la .AND. k.eq.soft(i)%idx_q) THEN
+                    match = .TRUE.
+                    EXIT checksoft_o
+                END IF
+            END DO checksoft_o
+            END IF
+
+            IF(match) CYCLE
+!--------------------------------------------------------------------------------------------------
+
+
+            !****DO THIS IF CHOOSE option.1 or option.2****
+            n_qlambda(l,k)=nbe(SQRT(eivals(l,k))*cnst,temperature,0)
+            Get_Y_square2=Get_Y_square2+&
+                 &hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
+                 &(2*n_qlambda(l,k)+1)*&
+                 &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
+
+            !****ONLY DO THIS IF CHOOSE option.3 WHEN DEAL WITH NEGATIVE W****
+!            IF(eivals(l,k).gt.0d0) THEN
+!                n_qlambda(l,k)=nbe(SQRT(eivals(l,k))*cnst,temperature,0)
+!
+!                Get_Y_square=Get_Y_square+&
+!                 &hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
+!                 &(2*n_qlambda(l,k)+1)*&
+!                 &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
+!            ELSE
+!                n_qlambda(l,k)=-nbe(SQRT(-eivals(l,k))*cnst,temperature,1) !keep it as it is so the negative sign in the front
+!
+!                Get_Y_square=Get_Y_square+&
+!                 &hbar/2/SQRT(-eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
+!                 &(2*n_qlambda(l,k)+1)*&
+!                 &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
+!            ENDIF
+
+
+
+!IF(isnan(Get_Y_square)) THEN
+!WRITE(34,*)'--------------POSITION3---------------'
+!WRITE(34,*)'lambda',l,'#kvector',k
+!WRITE(34,*)'eivals',eivals(l,k)
+!WRITE(34,*)'n_qlambda',n_qlambda(l,k)
+!WRITE(34,*)'eivecs',eivecs(temp2,l,k),eivecs_t(l,temp1,k)
+!WRITE(34,*)'cell_vec',cell_vec(:,R2)
+!STOP
+!END IF
+
+        END DO !k loop
+        END DO !l loop
+        DEALLOCATE(n_qlambda)
+!        DEALLOCATE(res,arg,om,func,array)
+    END FUNCTION Get_Y_square2
 !======================================================================================================================================
     SUBROUTINE Get_SKfreq(kpoint,freq)
     !!get omega^2 at a single k-point
@@ -3189,7 +3612,7 @@ for_check = for_check / k_number
             IF (SE) THEN
                 freq(:,i) = freq(:,i) + REAL(nself(:,i)) + REAL(uself(:,i))
             END IF
-            WRITE(unit_number,*) i,freq(:,i)/33.356
+            WRITE(unit_number,*) dk_bs(i),freq(:,i)/33.356
         END DO !i loop
         DEALLOCATE(freq)
         CLOSE(unit_number)
@@ -3203,7 +3626,7 @@ for_check = for_check / k_number
     SUBROUTINE Get_Dispersion
     !! for plot dispersion
         IMPLICIT NONE
-        CALL make_kp_bs2
+        CALL make_kp_bs
         CALL Get_AKfreq(kp_bs,.false.)
     END SUBROUTINE Get_Dispersion
 
@@ -5668,7 +6091,7 @@ END SUBROUTINE FixASR2
         REAL(8) :: norm
         INTEGER :: i,j,baffle
 
-        !calculate atomic deviation & strain related gradients norm
+        !count how many free variables belong to {u_0, eta}
         baffle=0
         DO i=1, SIZE(selected)
            IF(selected(i).gt.(variational_parameters_size(1)+variational_parameters_size(2))) THEN
@@ -5677,6 +6100,7 @@ END SUBROUTINE FixASR2
            baffle=baffle+1
         END DO
 
+        !calculate atomic deviation & strain related gradients norm
         norm = 0d0
         DO i=1,baffle
             norm=norm+ABS(f(i)*x(i))
@@ -6094,7 +6518,7 @@ END SUBROUTINE FixASR2
         CALL read_fc23
 
         !calculate mode gruneisen on the q path
-        CALL make_kp_bs2
+        CALL make_kp_bs !new kp_bs
         CALL allocate_eig_bs(ndyn,nkp_bs,ndyn)
         CALL get_frequencies(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,ndyn,eigenvec_bs,veloc)
         OPEN(644,file='path_grun.dat',status='unknown')
@@ -6111,7 +6535,7 @@ END SUBROUTINE FixASR2
             DO j=1,ndyn
                sorted(j) = REAL(grun_bs(mp(j),i))
             END DO
-            WRITE(106,*) i, sorted(:)
+            WRITE(106,*) dk_bs(i), sorted(:)
         END DO
         CLOSE(106)
 
@@ -6299,7 +6723,7 @@ REAL(8) :: Check
         END DO !j loop
         END DO !i loop
 
-        bulk = bulk/9/volume !unit is ev/A^3
+        bulk = bulk/9/volume !unit is ev/A^3, 1 ev/A^3 = 160 Gpa
 
 !WRITE(97,*)'final addup=',Check
 !CLOSE(96)
@@ -6750,6 +7174,10 @@ subroutine mechanical(bulk,c11,c44,dlogv)
 
     middle_term = 0d0
 
+    !stop0: Modify 0728
+    !update every_atom(:) using new strain and new u0
+
+
     !step1: do the full rank 4 tensor: 81 terms
     DO al=1,3
     DO be=1,3
@@ -6761,6 +7189,7 @@ subroutine mechanical(bulk,c11,c44,dlogv)
     DO j=1,tot_atom_number ! K(R_j-R_i)^2/V
         Rij_ga = every_atom(j)%R(ga)+every_atom(j)%tau(ga)-every_atom(i)%R(ga)-every_atom(i)%tau(ga)
         Rij_de = every_atom(j)%R(de)+every_atom(j)%tau(de)-every_atom(i)%R(de)-every_atom(i)%tau(de)
+
         middle_term(al,be,ga,de) = middle_term(al,be,ga,de) - 0.5*trialfc2_value(i,j)%phi(al,be)*Rij_ga*Rij_de
 
     END DO !atom i loop
@@ -6800,7 +7229,7 @@ subroutine mechanical(bulk,c11,c44,dlogv)
 
     WRITE(33,*)'elastic'
     DO i=1,6
-        WRITE(33,*) elastic(i,:)/cell_volume*1.6 !in Gpa
+        WRITE(33,*) elastic(i,:)/cell_volume*1.6 !final result is in 100Gpa
     END DO
     WRITE(33,*)
 
@@ -7098,5 +7527,676 @@ append:     IF(.not.ALLOCATED(x)) THEN
         END DO
         CLOSE(86)
     END SUBROUTINE check_fc2_value
+!-------------------------------------------------------------------------------------------------------
+SUBROUTINE single_2nd_deriv0(i,j,res)
+    USE broy
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: i, j
+    COMPLEX(8), INTENT(out) :: res
+    REAL(8) :: delta, F1, F2, F3, F4
+    REAL(8),DIMENSION(:),ALLOCATABLE :: x, x_backup
+
+    CALL combine_variants(x) !retrieve x
+    ALLOCATE(x_backup(SIZE(x)), source=x) !backup this final x
+
+    delta = 0.01
+
+!WRITE(*,*)'check x(i):', x(i)
+!WRITE(*,*)'check V_avg_h:',REAL(V_avg_h)
+
+    x(i) = x(i) + delta
+    x(j) = x(j) + delta
+    CALL decompose_variants(x) !group and distribute x(i) to each parameter
+    CALL GetV_avg_And_GradientV_avg(kvector) !get new V_avg
+    F1 = REAL(V_avg) !because F0 and V0 won't change, so F-><V>
+    x = x_backup !rollback
+
+!WRITE(*,*)'check F1:', F1
+
+    x(i) = x(i) - delta
+    x(j) = x(j) + delta
+    CALL decompose_variants(x) !group and distribute x(i) to each parameter
+    CALL GetV_avg_And_GradientV_avg(kvector) !get new V_avg
+    F2 = REAL(V_avg) !because F0 and V0 won't change, so F-><V>
+    x = x_backup !rollback
+
+!WRITE(*,*)'check F2:', F2
+
+    x(i) = x(i) + delta
+    x(j) = x(j) - delta
+    CALL decompose_variants(x) !group and distribute x(i) to each parameter
+    CALL GetV_avg_And_GradientV_avg(kvector) !get new V_avg
+    F3 = REAL(V_avg) !because F0 and V0 won't change, so F-><V>
+    x = x_backup !rollback
+
+!WRITE(*,*)'check F3:', F3
+
+    x(i) = x(i) - delta
+    x(j) = x(j) - delta
+    CALL decompose_variants(x) !group and distribute x(i) to each parameter
+    CALL GetV_avg_And_GradientV_avg(kvector) !get new V_avg
+    F4 = REAL(V_avg) !because F0 and V0 won't change, so F-><V>
+    x = x_backup !rollback
+
+!WRITE(*,*)'check F4:', F4
+
+    res = (F1-F2-F3+F4)/4d0/delta/delta
+
+    CALL decompose_variants(x_backup) !recover the variables
+    IF(ALLOCATED(x)) DEALLOCATE(x)
+    IF(ALLOCATED(x_backup)) DEALLOCATE(x_backup)
+
+END SUBROUTINE single_2nd_deriv0
+!-------------------------------------------------------------------------------------------------------
+! 2nd derivative related
+SUBROUTINE single_2nd_deriv(i, j, res)
+    USE broy
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: i, j
+    COMPLEX(8), INTENT(out) :: res
+    REAL(8) :: delta, f1, f2
+    REAL(8),DIMENSION(:),ALLOCATABLE :: x, x_backup
+
+    CALL combine_variants(x) !retrieve x
+    ALLOCATE(x_backup(SIZE(x)), source=x) !backup this final x
+
+!    delta = ABS(0.01*x(i))
+    delta = 0.001
+
+!WRITE(*,*) 'x_mid= ', atomic_deviation(1,2)
+!WRITE(*,*) 'f_mid= ', REAL(GradientV_utau(1,2))
+
+    x(i) = x(i) - delta
+    CALL decompose_variants(x)
+    CALL extract_f(j, f1)
+
+!WRITE(*,*) 'x1= ', x(i)
+!WRITE(*,*) 'f1= ', f1
+
+    x(i) = x(i) + delta*2
+    CALL decompose_variants(x)
+    CALL extract_f(j, f2)
+
+!WRITE(*,*) 'x2= ', x(i)
+!WRITE(*,*) 'f2= ', f2
+!WRITE(*,*) 'f2-f1=', f2-f1
+
+    res = (f2-f1)/2d0/delta
+
+    CALL decompose_variants(x_backup) !recover the variables
+    IF(ALLOCATED(x)) DEALLOCATE(x)
+    IF(ALLOCATED(x_backup)) DEALLOCATE(x_backup)
+END SUBROUTINE single_2nd_deriv
+!-------------------------------------------------------------------------------------------------------
+SUBROUTINE extract_f(j, res)
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: j
+    REAL(8), INTENT(OUT) :: res
+    INTEGER :: idx_eta, x, y
+    REAL(8) :: temp
+
+    temp = variational_parameters_size(1) + variational_parameters_size(2)
+
+    IF(j.gt.temp) THEN
+        CALL GetF_trial_And_GradientF_trial(kvector) !need recalculate <yy>
+        res = REAL(GradientF_trial(j))
+    ELSE
+        CALL GetV_avg_And_GradientV_avg(kvector) !no need to recalculate <yy>
+        CALL sym_strain
+        IF(j.gt.variational_parameters_size(1)) THEN
+            idx_eta = j - variational_parameters_size(1)
+            x = INT((idx_eta+2)/3d0)
+            y = idx_eta - 3 * (x-1)
+            res = REAL(GradientV_eta(x, y))
+        ELSE
+            y = INT((j+2)/3d0)  !atom0 index
+            x = j - 3 * (y-1) !cartesian component
+            res = REAL(GradientV_utau(x, y))
+        END IF
+    END IF
+
+END SUBROUTINE extract_f
+!-------------------------------------------------------------------------------------------------------
+SUBROUTINE matrix_2nd_deriv(vals, vecs)
+    !not include 1st atom
+    !matrix includes (atom_number-1)*3 + 6 dimension, eta is in voigt
+    !in the last Broyden
+    !if all vals are positive: exit
+    !else we have negative vals(i), find corresponding vecs(:, i)
+
+    IMPLICIT NONE
+
+    REAL(8), DIMENSION(:), INTENT(OUT), ALLOCATABLE :: vals
+    COMPLEX(8), DIMENSION(:,:), INTENT(OUT), ALLOCATABLE :: vecs
+    INTEGER :: i, j, n !index on matrix
+    INTEGER :: idx, jdx, eta_xy(2) !absolute index of x(i)
+    INTEGER :: ier
+    COMPLEX(8), DIMENSION(:,:), ALLOCATABLE :: matrix
+
+    n = (atom_number-1)*3+6
+
+    ALLOCATE(matrix(n, n), vals(n), vecs(n, n))
+
+    matrix = 0d0
+
+    DO i = 1, n
+        IF(i.le.((atom_number-1)*3)) THEN
+            idx = i + 3
+        ELSE
+            idx = i - (atom_number-1)*3
+            eta_xy = inv_voigtMap(idx)
+            idx = (eta_xy(1)-1)*3 + eta_xy(2)+variational_parameters_size(1)
+        END IF
+
+    DO j = 1, i
+        IF(j.le.((atom_number-1)*3)) THEN
+            jdx = j + 3
+        ELSE
+            jdx = j - (atom_number-1)*3
+            eta_xy = inv_voigtMap(jdx)
+            jdx = (eta_xy(1)-1)*3 + eta_xy(2)+variational_parameters_size(1)
+        END IF
+
+!        CALL single_2nd_deriv(idx, jdx, matrix(i,j)) !option1: from 1st-deriv
+        CALL single_2nd_deriv0(idx, jdx, matrix(i,j)) !option2: from free energy
+
+!IF(idx.eq.6 .and. jdx.eq.4) THEN
+!    WRITE(*,*)'i=', i, 'j=', j
+!    WRITE(*,*)'dumb=', REAL(matrix(i,j))
+!END IF
+
+    END DO
+    END DO
+
+!OPEN(117,FILE='dumbCheck.txt')
+!DO i=1,n
+!    WRITE(117,7) REAL(matrix(i, :))
+!END DO
+!WRITE(117,*)
+
+    !symmetrize
+    DO i=1, n-1
+    DO j=i+1, n
+        matrix(i, j) = CONJG(matrix(j, i))
+    END DO
+    END DO
+
+!DO i=1,n
+!    WRITE(117,7) REAL(matrix(i, :))
+!END DO
+!7 FORMAT(9(f8.5))
+!CLOSE(117)
+!-----check matrix-----
+!OPEN(55, FILE='matrix.txt')
+!DO i=1, SIZE(matrix,DIM=1)
+!WRITE(55,*) matrix(i,:)
+!END DO
+!WRITE(55, *)
+!DO i=1, SIZE(matrix,DIM=1)
+!DO j=1, SIZE(matrix, DIM=2)
+!    IF(REAL(matrix(i,j)).ne.REAL(matrix(j,i))) THEN
+!        WRITE(55,*)'real part not match:',i,j,matrix(i,j), matrix(j,i)
+!    ELSEIF(AIMAG(matrix(i,j)).ne.AIMAG(matrix(j,i))) THEN
+!        WRITE(55,*)'imaginary part not match:',i,j,matrix(i,j),matrix(j,i)
+!    END IF
+!END DO
+!END DO
+!CLOSE(55)
+!STOP
+!-------------------
+!    CALL map_2nd_deriv_K(REAL(matrix))
+    CALL map_2nd_deriv_C(REAL(matrix))
+    ier = 0
+    CALL diagonalize(n, matrix, vals, n, vecs, ier)
+
+    !------------test-------------------
+    DO i=1, n
+        IF(vals(i) .lt. 0d0) THEN
+            WRITE(*,*) 'neg vals: ', vals(i)
+        END IF
+    END DO
+
+    DEALLOCATE(matrix)
+
+END SUBROUTINE matrix_2nd_deriv
+!-------------------------------------------------------------------------------------------------------
+SUBROUTINE map_2nd_deriv_K(matrix)
+    !compare K_{i,j=2,atom0}%{x, y} matrix dimension
+    !with d^F / du0_i du0_j matrix dimension
+    !just a check
+    IMPLICIT NONE
+    REAL(8),DIMENSION(:,:),INTENT(in) :: matrix
+    INTEGER :: i,j !matrix indexes
+    INTEGER :: atom1, atom2, xyz1, xyz2 !K indexes
+
+WRITE(33,*)'=================2nd Derivative method to check Phi_22==================='
+WRITE(33,*)'atom1, ','xyz1, ','atom2, ','xyz2, ','2nd_deriv, ', 'K, ', 'difference'
+    DO i=1, (atom_number-1)*3
+        atom1 = INT((i+5)/3d0)
+        xyz1 = i - 3*(atom1-2)
+    DO j=1, (atom_number-1)*3
+        atom2 = INT((j+5)/3d0)
+        xyz2 = j - 3*(atom2-2)
+
+WRITE(33, *)atom1,get_letter(xyz1),atom2,get_letter(xyz2),&
+            &matrix(i,j),trialfc2_value(atom1,atom2)%phi(xyz1,xyz2),&
+            &ABS(matrix(i,j)-trialfc2_value(atom1,atom2)%phi(xyz1,xyz2))
+
+    END DO
+    END DO
+WRITE(33,*) '======================================================================='
+
+END SUBROUTINE map_2nd_deriv_K
+!-------------------------------------------------------------------------------------------------------
+SUBROUTINE map_2nd_deriv_C(matrix)
+    IMPLICIT NONE
+    REAL(8),DIMENSION(:,:),INTENT(in) :: matrix
+    REAL(8) :: temp(6,6),identity(3,3)
+    INTEGER :: i, j !matrix indexes
+    INTEGER :: voigt1, voigt2
+    REAL(8) :: cell_volume
+    TYPE(vector) :: nr1, nr2, nr3
+
+    identity(1,:) = (/1d0,0d0,0d0/)
+    identity(2,:) = (/0d0,1d0,0d0/)
+    identity(3,:) = (/0d0,0d0,1d0/)
+
+    nr1%component = (identity+strain).dot.r1%component
+    nr2%component = (identity+strain).dot.r2%component
+    nr3%component = (identity+strain).dot.r3%component
+
+    CALL calculate_volume(nr1,nr2,nr3,cell_volume) !the new volume
+
+WRITE(33,*) '===========2nd Derivative method to get elastic constants=============='
+WRITE(33,*)'voigt1, ','voigt2, ','2nd_deriv, ','C, ', 'difference'
+    DO i=(atom_number-1)*3+1,(atom_number-1)*3+6
+        voigt1 = i - (atom_number-1)*3
+    DO j=(atom_number-1)*3+1,(atom_number-1)*3+6
+        voigt2 = j - (atom_number-1)*3
+        temp(voigt1,voigt2) = matrix(i,j)
+WRITE(33,*) voigt1, voigt2, matrix(i,j),elastic(voigt1,voigt2),ABS(matrix(i,j)-elastic(voigt1,voigt2))
+
+    END DO
+    END DO
+
+WRITE(33, *) 'Matrix Form'
+WRITE(33, *) '===================2nd deriv================='
+    DO voigt1 = 1, 6
+        WRITE(33, 7) temp(voigt1, :)/cell_volume*1.6*100 !unit in Gpa
+    END DO
+
+WRITE(33, *) '===================from simple formula===================='
+    DO voigt1 = 1, 6
+        WRITE(33, 7) elastic(voigt1,:)/cell_volume*1.6*100 !unit in Gpa
+    END DO
+WRITE(33,*) '====================================================='
+7 Format(6(f10.5, 2X))
+END SUBROUTINE map_2nd_deriv_C
+!-------------------------------------------------------------------------------------------------------
+SUBROUTINE GetElastic_Wallace
+    IMPLICIT NONE
+    REAL(8),ALLOCATABLE,DIMENSION(:,:) :: gama
+    REAL(8),DIMENSION(6,6) :: Atilda,Ahat
+
+    CALL calculate_gamma(gama)
+    CALL calculate_Atilda(gama, Atilda, Ahat)
+
+END SUBROUTINE GetElastic_Wallace
+!-------------------------------------------------------------------------------------------------------
+SUBROUTINE calculate_gamma(gama)
+    !Wallce book formula (7.46),(7.48),(7.49)
+    IMPLICIT NONE
+    REAL(8),ALLOCATABLE,DIMENSION(:,:),INTENT(out) :: gama
+    REAL(8),ALLOCATABLE,DIMENSION(:,:) :: phi_sum
+    INTEGER :: i,n,atom1,atom2,tau2,xyz1,xyz2
+    INTEGER :: idx1,idx2 !matrix index
+
+    n = 3*(atom_number-1)
+
+    IF(ALLOCATED(gama)) DEALLOCATE(gama)
+    ALLOCATE(gama(n,n),phi_sum(n,n))
+    gama = 0d0; phi_sum = 0d0
+
+    !get phi sum w.r.t N
+    DO i=1, SIZE(myfc2_index)
+        atom1 = myfc2_index(i)%iatom_number
+        IF(atom1.gt.atom_number .OR. atom1.eq.1) CYCLE !atom type cannot be the 1st one and has to be 1st cell
+        xyz1 = myfc2_index(i)%iatom_xyz
+
+        atom2 = myfc2_index(i)%jatom_number !get the 2nd atom index
+        tau2 = every_atom(atom2)%type_tau
+        IF(tau2.eq.1) CYCLE !atom type cannot be the 1st one
+        xyz2 = myfc2_index(i)%jatom_xyz !get the xyz
+
+        idx1 = (atom1-2)*3 + xyz1 !atom1 is also tau1, mu
+        idx2 = (tau2-2)*3 + xyz2 !tau2 is the atom type of 2nd atom, nu
+        phi_sum(idx1,idx2) = phi_sum(idx1, idx2) + trialfc2_value(atom1,atom2)%phi(xyz1,xyz2)
+    END DO
+
+!    WRITE(33,*) 'matrix (phi_sum): '
+!    DO idx1=1,n
+!        WRITE(33, 8) phi_sum(idx1,:)
+!    END DO
+!    WRITE(33,*)
+
+    !get inverse phi sum which is Gamma
+    CALL invers_r(phi_sum,gama,n)
+
+    phi_sum = gama !use phi_sum to temporarily store gama
+
+    !extend dimension and symmetrize gamma
+    DEALLOCATE(gama)
+    ALLOCATE(gama(n+3, n+3))
+
+    gama = 0d0
+    DO idx1=1,n
+    DO idx2=1,n
+        gama(idx1+3,idx2+3) = phi_sum(idx1,idx2)
+    END DO
+    END DO
+
+    DO idx1=2,n
+    DO idx2=1,idx1-1
+        gama(idx1+3,idx2+3) = 0.5*(gama(idx1+3, idx2+3)+gama(idx2+3,idx1+3))
+        gama(idx2+3,idx1+3) = gama(idx1+3,idx2+3)
+    END DO
+    END DO
+
+!    WRITE(33,*) 'inverse matrix (Gamma): '
+!    DO idx1=1,n+3
+!        WRITE(33, 8) gama(idx1,:)
+!    END DO
+!    WRITE(33,*)
+
+8 Format(99(f10.5, 2X))
+
+    DEALLOCATE(phi_sum)
+END SUBROUTINE calculate_gamma
+!-------------------------------------------------------------------------------------------------------
+SUBROUTINE calculate_Atilda(gama,Atilda,Ahat)
+    !Wallce book formula (7.50), (7.58)
+    IMPLICIT NONE
+    REAL(8),DIMENSION(:,:),INTENT(in) :: gama
+    REAL(8),DIMENSION(6,6),INTENT(out) :: Atilda,Ahat
+    REAL(8),DIMENSION(:,:,:,:),ALLOCATABLE :: X,middle_term,Aijkl,Aikjl
+    REAL(8),DIMENSION(3) :: dR
+    REAL(8) :: cell_volume
+    INTEGER :: i,j,k,l,m,mu,nu,Npie,atom1,Nniu
+    INTEGER :: idx1,idx2,n,idx_fc,v1,v2,voigt
+
+
+    ALLOCATE(X(3,3,3,atom_number),middle_term(3,3,3,atom_number))
+
+    n = atom_number*3
+    X = 0d0; middle_term = 0d0
+
+    !calculate X, first sum up Npie
+    DO idx_fc=1,SIZE(myfc2_index)
+        atom1 = myfc2_index(idx_fc)%iatom_number
+        IF(atom1.gt.atom_number) CYCLE
+        nu = atom1 !atom type
+        l = myfc2_index(idx_fc)%iatom_xyz !xyz
+
+        Npie = myfc2_index(idx_fc)%jatom_number !atom index
+        j = myfc2_index(idx_fc)%jatom_xyz
+
+        middle_term(l,j,:,nu) = middle_term(l,j,:,nu) + &
+            & trialfc2_value(atom1,Npie)%phi(l,j)*(every_atom(Npie)%R(:)+every_atom(Npie)%tau(:)) !dummy index k
+    END DO
+
+    !calculate X, sum up the l,nu in the 'middle_term'
+    DO idx1=1,n
+        mu = INT((idx1+2)/3) !atom type
+        i = idx1 - (mu-1)*3 !xyz
+    DO idx2=1,n
+        nu = INT((idx2+2)/3) !atom type
+        l = idx2 - (nu-1)*3 !xyz
+        !negative sign
+        X(i,:,:,mu) = X(i,:,:,mu) - gama(idx1,idx2)*middle_term(l,:,:,nu) !the first dummy index is j, the second is k
+    END DO
+    END DO
+
+    !check the symmetry of X
+    WRITE(33,*) 'Check the Symmetry of X: '
+    DO i=1,3
+    DO mu=1,atom_number
+        DO j=1,3
+        DO k=1,3
+            WRITE(33,*)'The Actual X value:', X(i,j,k,mu) !Every X
+            IF(ABS(X(i,j,k,mu)-X(i,k,j,mu)).lt.3d-4) THEN
+                X(i,j,k,mu) = 0.5*(X(i,j,k,mu)+X(i,k,j,mu))
+                X(i,k,j,mu) = X(i,j,k,mu)
+            ELSE
+                WRITE(33,*)'differences are too big'
+                WRITE(33,*)'Not matching:','i,k,l,mu=',i,k,l,mu,'diff:',ABS(X(i,j,k,mu)-X(i,k,j,mu))
+!                STOP
+            END IF
+        END DO
+        END DO
+    END DO
+    END DO
+    WRITE(33,*)
+
+    !----------------------------------------A tilda(7.58)-----------------------------------------------------
+    ALLOCATE(Aijkl(3,3,3,3))
+    Aijkl = 0d0
+
+    !calculate Aijkl sum, second term
+    DO idx_fc=1,SIZE(myfc2_index)
+        atom1 = myfc2_index(idx_fc)%iatom_number
+        IF(atom1 .gt. atom_number) CYCLE
+        Nniu = myfc2_index(idx_fc)%jatom_number
+        i = myfc2_index(idx_fc)%iatom_xyz
+        k = myfc2_index(idx_fc)%jatom_xyz
+
+        DO j=1,3
+            Aijkl(i,j,k,:) = Aijkl(i,j,k,:) + trialfc2_value(atom1,Nniu)%phi(i,k) *&
+                            &(every_atom(atom1)%R(j)+every_atom(atom1)%tau(j))*&
+                            &(every_atom(Nniu)%R(:)+every_atom(Nniu)%tau(:)) ! the dummy index is l
+        END DO
+    END DO
+
+    !calculate Aijkl sum, first term
+    DO idx_fc=1,SIZE(myfc2_index)
+        atom1 = myfc2_index(idx_fc)%iatom_number
+        IF(atom1 .gt. atom_number) CYCLE
+        Nniu = myfc2_index(idx_fc)%jatom_number
+        mu = atom1
+        m = myfc2_index(idx_fc)%iatom_xyz
+        k = myfc2_index(idx_fc)%jatom_xyz
+
+        DO l=1,3
+            Aijkl(i,:,k,l) = Aijkl(i,:,k,l) + trialfc2_value(atom1, Nniu)%phi(m,k) *&
+                    &(every_atom(Nniu)%R(l)+every_atom(Nniu)%tau(l))*&
+                    &X(m,i,:,mu)*atom_number !the dummy index is j
+        END DO
+
+    END DO
+
+    !convert Aijkl into voigt notation
+    DO i=1,3
+    DO j=1,3
+        v1 = voigt(i,j)
+    DO k=1,3
+    DO l=1,3
+        v2 = voigt(k,l)
+
+!        Atilda(v1,v2) = Aijkl(i,j,k,l)
+        Atilda(v1,v2) = 0.5*(Aijkl(i,j,k,l)+Aijkl(k,l,i,j)) !is this necessary?
+        !according to Wallace (7.26), Atilda is essentially elastic constant C
+    END DO
+    END DO
+    END DO
+    END DO
+
+    !--------------------------------------A hat(7.60)------------------------------------------------------
+    ALLOCATE(Aikjl(3,3,3,3))
+    Aikjl = 0d0
+
+    !calculate Aikjl sum, second term
+    DO idx_fc=1,SIZE(myfc2_index)
+        atom1 = myfc2_index(idx_fc)%iatom_number
+        IF(atom1 .gt. atom_number) CYCLE
+        Nniu = myfc2_index(idx_fc)%jatom_number
+        i = myfc2_index(idx_fc)%iatom_xyz
+        k = myfc2_index(idx_fc)%jatom_xyz
+
+        dR= every_atom(Nniu)%R+every_atom(Nniu)%tau-every_atom(atom1)%R-every_atom(atom1)%tau
+
+        DO j=1,3
+            Aikjl(i,k,j,:) = Aikjl(i,k,j,:) - 0.5*trialfc2_value(atom1, Nniu)%phi(i,k)*dR(j)*dR ! the dummy index is l
+        END DO
+    END DO
+
+    !calculate Aikjl sum, first term
+    DO idx_fc=1,SIZE(myfc2_index)
+        atom1 = myfc2_index(idx_fc)%iatom_number
+        IF(atom1 .gt. atom_number) CYCLE
+        Nniu = myfc2_index(idx_fc)%jatom_number
+        mu = atom1
+        m = myfc2_index(idx_fc)%iatom_xyz
+        k = myfc2_index(idx_fc)%jatom_xyz
+
+        DO i=1,3
+        DO l=1,3
+            Aikjl(i,k,:,l) = Aikjl(i,k,:,l) + 0.5*trialfc2_value(atom1, Nniu)%phi(m,k)*&
+    &((every_atom(Nniu)%R(l)+every_atom(Nniu)%tau(l))*X(m,i,:,mu)+&
+    &(every_atom(Nniu)%R(:)+every_atom(Nniu)%tau(:))*X(m,i,l,mu))!the dummy index is j
+
+        END DO
+        END DO
+    END DO
+
+
+    !convert Aikjl into voigt notation
+    DO i=1,3
+    DO k=1,3
+        v1 = voigt(i,k)
+    DO j=1,3
+    DO l=1,3
+        v2 = voigt(j,l)
+
+!        Ahat(v1,v2) = Aikjl(i,k,j,l)
+        Ahat(v1,v2) = 0.5*(Aikjl(i,k,j,l)+Aikjl(j,l,i,k)) !is this necessary?
+        !what we were using before is actually part of Ahat, not Atilda
+    END DO
+    END DO
+    END DO
+    END DO
+
+    !-------------------------------------output-----------------------------------------------------
+    CALL calculate_volume(r1,r2,r3,cell_volume)
+
+    WRITE(33,*)'Atilda from (7.58):'
+    DO v1=1,6
+        WRITE(33,7) Atilda(v1,:)/cell_volume*1.6*100 ! in Gpa
+    END DO
+    WRITE(33,*)
+
+    WRITE(33,*)'Ahat:'
+    DO v1=1,6
+        WRITE(33,7) Ahat(v1,:)/cell_volume*1.6*100 ! in Gpa
+    END DO
+    WRITE(33,*)
+    !-----------------------------------how about (7.32)---------------------------------------------
+    DO i=1,3
+    DO j=1,3
+    DO l=1,3
+    DO k=1,3
+        !notice here the variable Aijkl is tilda, Aikjl is hat
+        Aijkl(i,j,k,l) = Aikjl(i,k,j,l) + Aikjl(j,k,i,l) - Aikjl(i,j,k,l)
+    END DO
+    END DO
+    END DO
+    END DO
+
+    !convert Aijkl into voigt notation, again
+    DO i=1,3
+    DO j=1,3
+        v1 = voigt(i,j)
+    DO k=1,3
+    DO l=1,3
+        v2 = voigt(k,l)
+
+!        Atilda(v1,v2) = Aijkl(i,j,k,l)
+        Atilda(v1,v2) = 0.5*(Aijkl(i,j,k,l)+Aijkl(k,l,i,j)) !is this necessary?
+        !according to Wallace (7.26), Atilda is essentially elastic constant C
+    END DO
+    END DO
+    END DO
+    END DO
+
+    WRITE(33,*)'Atilda from (7.32):'
+    DO v1=1,6
+        WRITE(33,7) Atilda(v1,:)/cell_volume*1.6*100 !in Gpa
+    END DO
+    WRITE(33,*)
+7 Format(6(f10.5, 2X))
+    DEALLOCATE(X,middle_term,Aijkl,Aikjl)
+END SUBROUTINE calculate_Atilda
+!-------------------------------------------------------------------------------------------------------
+SUBROUTINE GetElastic_velocity !get C11, C12, C44 from speed of sound along (1,1,0)
+    IMPLICIT NONE
+    REAL(8) :: C11, C12, C44
+    REAL(8) :: density, temp1, temp2, delta
+    REAL(8) :: speed(3), cell_volume
+    INTEGER :: i
+
+    CALL calculate_volume(r1,r2,r3,cell_volume)
+    density = SUM(iatom(:)%mass)/cell_volume !unit is a.u./A^3
+
+    delta = 0.001
+!    DO i=1,20
+        CALL get_velocity(delta,speed)
+        C44 = speed(1)*speed(1)*density !unit is (ev/A^3) which is 160 Gpa
+        temp1 = speed(2)*speed(2)*2d0*density !C11-C12
+        temp2 = speed(3)*speed(3)*2d0*density-2*C44 !C11+C12
+        C11 = (temp1+temp2)/2d0
+        C12 = (temp2-temp1)/2d0
+        WRITE(33,6) 'Elastic from speed of sound when delta= ',delta
+        WRITE(33,6) 'C11=',C11*160
+        WRITE(33,6) 'C12=',C12*160
+        WRITE(33,6) 'C44=',C44*160
+        WRITE(33,*)
+!        delta = delta*2d0
+!    END DO
+
+6 FORMAT(A,F10.5)
+END SUBROUTINE GetElastic_velocity
+!-------------------------------------------------------------------------------------------------------
+SUBROUTINE get_velocity(delta, speed) !use finite difference to approx. velocity at gamma point along (1,1,0)
+    IMPLICIT NONE
+    REAL(8),INTENT(in) :: delta
+    REAL(8),DIMENSION(3),INTENT(out) :: speed
+    REAL(8) :: omega1(3), omega2(3), k, dist
+    TYPE(vector) :: q(2) !
+    INTEGER :: step
+
+    dist = 0.01
+!    OPEN(59,FILE='v(k).txt')
+!    DO step=1,50
+
+        q(1)%component(:) = (/delta+dist, delta+dist, 0d0/) !the (1,1,0) direction q-vector
+        q(2)%component(:) = (/2*delta+dist, 2*delta+dist, 0d0/)
+        k = SQRT(2d0)*delta
+
+        CALL allocate_eigen(d*atom_number,2)
+        CALL GetEigen(q) !if there is born charge, turn it off
+        omega1(1) = SQRT(ABS(eivals(1,1))); omega2(1) = SQRT(ABS(eivals(1,2)))
+        omega1(2) = SQRT(ABS(eivals(2,1))); omega2(2) = SQRT(ABS(eivals(2,2)))
+        omega1(3) = SQRT(ABS(eivals(3,1))); omega2(3) = SQRT(ABS(eivals(3,2)))
+        CALL allocate_eigen(d*atom_number,SIZE(kvector)) !clear up the eivec, eivals
+
+        speed(:) = (omega2(:)-omega1(:))/k !k has unit 1/A, omega has unit of sqrt(eV/a.u.)/A
+!        WRITE(59,*) dist, ',', speed(1),',', speed(2),',',speed(3)
+
+!        dist = dist + 0.01
+!    END DO
+!    CLOSE(59)
+
+END SUBROUTINE get_velocity
 !-------------------------------------------------------------------------------------------------------
 End Module VA_math

@@ -323,6 +323,7 @@ enddo
     write(ulog2,*) "it is probably too large if natoms in fc_init is larger than in lat_fc"
     write(ulog2,*) "in which case the program will stop"
  endif
+ STOP
  deallocate(atompos, iatomcell,iatomcell0)
  allocate(atompos(3,natoms), iatomcell(3,natoms),iatomcell0(natoms))
  do j=1,natoms
@@ -446,35 +447,38 @@ end subroutine write_input_fit
     !use atoms_force_constants
     implicit none
     integer i,counter,label,unit_params
+    integer nouse1, nouse2, nouse3
     real(8) scal,junk
     character jjj*1
 
     unit_params=49
-    open(unit_params,file='params.inp',status='old')
+    open(unit_params,file='structure.params',status='old')
+
+    !---hard-coded params that used to be set in 'params.inp'
+    maxneighbors = 90 !I just default set it to 10 for now !Modify0726
+    tolerance = 0.001; margin = 0.00001
+    maxshells = 27 ! this is added from the fc234 main program to here !0726
 
     read(unit_params,*) latticeparameters   ! (a,b,c,alpha,beta,gamma)
     read(unit_params,*) primitivelattice     ! prim latt vectors(3:3) in terms of conventional above
     read(unit_params,*) lattice_parameter !scale factor for lattparams (must be consistent with POSCAR data)
     scal = lattice_parameter
-    read(unit_params,*) maxneighbors  !used in lat_fc.dat
+!    read(unit_params,*) maxneighbors  !omitted in the new file but what value should it be?
     read(unit_params,*) include_fc    ! if=1 include this rank
-! read(uparams,*) nshells       ! # of neigr-shells to use for each rank
     read(unit_params,*)  itrans,irot,ihuang,enforce_inv !not used? flags for including translational and rotational invce constraints.
-! read(uparams,*) junk
-! read(uparams,*) junk
-    read(unit_params,*) tolerance,margin  ! this really the flags...&
+
+    read(unit_params,*) nouse1, nouse2!skip the temperature line
+
+!    read(unit_params,*) tolerance,margin  ! this really the flags...&
                                !&tolerance for equating (two coordinates in general), margin for eliminating a FC
-    read(unit_params,*) svdcut   !svd cutoff for the smallest eigenvalue to be included
-    read(unit_params,*) fdfiles     !number of force-displacement files
+!    read(unit_params,*) svdcut   !svd cutoff for the smallest eigenvalue to be included
+    read(unit_params,*) fdfiles, verbose     !number of force-displacement files
     read(unit_params,*) natom_type   ! # of different elements present in prim cell, I call it 'atom_number'
-!read(uparams,*) jjj
-! allocate(natom(natom_type))
     write(ulog,*) 'READ_INPUT_FIT: natom_type ',natom_type
 
     call allocate_mass(natom_type) !subroutine in module [atom_force_constants]
     read(unit_params,*) (mas(i),i=1,natom_type)  ! in the same order as in POTCAR, declared in module [atoms_force_constants]
 
-    !fortran lmao
     IF(.not.at_name_got) THEN
         read(unit_params,*) (atname(i),i=1,natom_type)  ! in the same order as in POTCAR, declared in module [atoms_force_constants]
         at_name_got = .TRUE.
@@ -482,13 +486,17 @@ end subroutine write_input_fit
 
     read(unit_params,*) natoms0        ! # of atoms in primitive cell,coordinates are in reduced units (of cubic cell)
 
- !nshells(4,20) are declared in module[params]
-    read(unit_params,*) nshells(1,1:natoms0)       ! # of neigr-shells to use for each rank
+    read(unit_params,*) nouse3!skip the flag line
+
+!    read(unit_params,*) nshells(1,1:natoms0)       ! # of neigr-shells to use for rank 1 is omitted in the new file, default set to 1
+    do i=1, natoms0
+        nshells(1,i) = 1
+    end do
+
     read(unit_params,*) nshells(2,1:natoms0)       ! # of neigr-shells to use for each rank
     read(unit_params,*) nshells(3,1:natoms0)       ! # of neigr-shells to use for each rank
     read(unit_params,*) nshells(4,1:natoms0)       ! # of neigr-shells to use for each rank
     write(*,*)'reading ',natoms0,' atoms in the primitive cell'
-
 !-------------missed-------------------
  write(*,*) svdcut,'    cutoff for smallest eigenvalue w to be included'
  write(*,*) tolerance,'   tolerance for equating two coordinates '
@@ -534,8 +542,6 @@ if(.not.allocated(at_label)) allocate(at_label(natoms0))
         atompos0(:,i) = atom0(i)%equilibrium_pos%component(:)
     enddo
 
-    maxshells = maxneighbors ! this is added from the fc234 main program to here
-
     do i=1,4
         !if (nshells(i) .gt. maxshells) then
         if (maxval(nshells(i,:)) .gt. maxshells) then
@@ -555,7 +561,7 @@ end subroutine read_input_fit
 
         CHARACTER(LEN=90) :: line
         !CHARACTER(LEN=2) :: name
-        INTEGER :: unit_number,unit_log,i,j,direction
+        INTEGER :: unit_number,unit_log,i,j,direction, maxshell!MARK: 09/04/2023
         REAL(8) :: check(d)
         TYPE(vector) :: vv
         LOGICAL :: condition
@@ -593,6 +599,9 @@ r3%component=trans_vec(:,3)
   write(unit_log,3)' g1= ',g1
   write(unit_log,3)' g2= ',g2
   write(unit_log,3)' g3= ',g3
+  write(unit_log,3)' rr1= ',rr1
+  write(unit_log,3)' rr2= ',rr2
+  write(unit_log,3)' rr3= ',rr3
   write(unit_log,3)' boxg = ',boxg
   write(unit_log,3)' volume_r,volume_g = ',volume_r,volume_g
 !**********************************************************************
@@ -645,7 +654,7 @@ r3%component=trans_vec(:,3)
         READ(unit_number,*) line
         WRITE(unit_log,*) line
 
-        READ(unit_number,*) tot_atom_number
+        READ(unit_number,*) maxshell, tot_atom_number !MARK: 09/04/2023
         WRITE(unit_log,*)'Total Atom Number is', tot_atom_number
         ALLOCATE(every_atom(tot_atom_number))
 !**********************************************************

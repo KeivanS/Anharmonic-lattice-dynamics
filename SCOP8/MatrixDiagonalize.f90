@@ -53,7 +53,6 @@ MODULE MatrixDiagonalize
     lwork = max(1,2*n-1)
     ALLOCATE(work(lwork),rwork(max(1,3*n-2)))
 
-
     IF(nv.eq.0) THEN
         CALL zheev('N','U',n,mat,n,eival,work,lwork,rwork,ier)
     ELSE

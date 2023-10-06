@@ -2,7 +2,6 @@
 !!main program
 Program SCOP8
 
-
     IMPLICIT NONE
 
 !---------test dot or newdot --------------
@@ -49,7 +48,6 @@ End Program SCOP8
 !===============================================================================================
 
 SUBROUTINE ThreeVariableRoutine
-    !!main subroutine
     USE VA_math
     USE force_update
     USE broy
@@ -77,12 +75,14 @@ SUBROUTINE ThreeVariableRoutine
     REAL(8) :: temp, temp_check,temp_check2,volume,start_F
     REAL(8) :: step,step_1,step_2
     INTEGER :: item
-    REAL(8),DIMENSION(3,3) :: dumb
+    REAL(8),DIMENSION(:),ALLOCATABLE :: vals
+    COMPLEX(8),DIMENSION(:,:),ALLOCATABLE :: vecs
+    COMPLEX(8) :: dumb
     !------------not needed------------
     INTEGER :: guess
     REAL(8) :: accept
     REAL(8) :: cell_vol
-
+    INTEGER :: OMP_GET_THREAD_NUM
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~OPEN OUTPUT AND LOG FILES~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     unit_number=33;unit_number2=34;unit_number3=35;unit_number4=36;unit_number5=37
@@ -130,11 +130,11 @@ WRITE(unit_number2,*)
     !??? What if I don't force asr fix
     CALL fix_asr_fc2
     CALL fix_asr_fc3
-    CALL fix_asr_fc4
-
+!    CALL fix_asr_fc4 !memory exceed if too many atoms
+!
     CALL asr_fc2
     CALL asr_fc3
-    CALL asr_fc4
+!    CALL asr_fc4
     !get the max distance
     R_0 = MAX(lengtha(trans_vec(:,1)),lengtha(trans_vec(:,2)),lengtha(trans_vec(:,3)))*maxneighbors
 
@@ -155,7 +155,6 @@ WRITE(unit_number2,*)'number of atoms within fc4 cutoff region: ', SIZE(atoms_fc
     dk=(length(g1)+length(g2)+length(g3))/(nc1+nc2+nc3)
     CALL kvector_Update(nband,nk)!don't forget to turn this on for tetrahedron k mesh
     !----------------------------------
-
 CALL CPU_TIME(cputime)
 WRITE(unit_number2,*)'Cputime after reading all the input:', cputime
 
@@ -205,41 +204,16 @@ WRITE(unit_number2,*)
 
     !~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~
 
+    strain(1,1) = 2d0; strain(2,2) = strain(1,1); strain(3,3) = -1d0
     IF(inherit) CALL target_update
     IF(rand_start) CALL test_update
 
     !~~~~~~~~~~~TESTING SECTION, REMOVE IN THE FINAL VERSION~~~~~~~~~~~
-!CALL make_rhombohedral
-
-!WRITE(*,*) 'F_trial = ', F_trial
-!        CALL initiate_yy(kvector)
-!        CALL GetElastic_simple
-!        CALL updateK
-!        CALL GetElastic2
-!        CALL calculate_volume(r1,r2,r3,cell_vol)
-!WRITE(*,*)'cell_vol', cell_vol
-!DO i=1,6
-!    WRITE(*,*) elastic(i,:)/cell_vol*100*SQRT(2d0)
-!END DO
-!        CALL initiate_guess
-!CALL updateK !change also the initial K and thus the <YY>
-!strain(1,1) = 2.5537946530129604d-3
-!CALL GetF_trial_And_GradientF_trial(kvector)
-!WRITE(*,*)'eta_xx= ', strain(1,1), 'f= ', GradientF_trial(7)
-!CALL check_yy_value
-!CALL check_fc2_value
-!CALL Get_Dispersion
-!CALL calc_dos_gauss
-!CALL calc_dos_tet
-!CALL calc_gruneisen
-!CALL print_indieFC2
-!CALL printResults
-!STOP
 
     !~~~~~~~~~~~~~Free Energy Landscape test~~~~~~~~~~~
 !!!!comment off guessloop and comment on that STOP for this part!!!!
 
-!step = 0.04
+step = 0.005
 !CALL small_test2(step) !general check
 !CALL small_test3(15,step,4) !compare with finite difference for given utau or eta
 !CALL small_test3_yy(9,step,4) !compare with finite difference for given yy
@@ -247,14 +221,16 @@ WRITE(unit_number2,*)
 !NOTICE: turn off <test_update> when doing this, so x can start from 0
 !NOTICE: turn off <make_rhombohedral> and <updateK> when doing this
 !CALL small_test(6,0.01d0,30) !single var.
-!CALL small_test_ex(4,7,step,20) !contour two vars.
+!
+CALL initiate_yy(kvector)
+CALL small_test_ex(7,15,step,10) !contour two vars.
 
 !NOTICE: turn on inherit option for contour, by doing that you are only allowing
 !        two variables to change, while others are fixed at their optimized values
 !step_1 = 0.02; step_2 = 0.001
 !strain(1,2) = 0d0;atomic_deviation(1,2) = 0d0
 !CALL rhom_contour(4,8,step_1,step_2,20)
-!STOP
+STOP
 !----------------------------------------------------------------
 
     !~~~~~~~~~~MAKE AN INITIAL GUESS BASED ON FC2 DIAGONALIZATION~~~~~~~~~~~~~~~~
@@ -263,15 +239,15 @@ WRITE(unit_number2,*)
     accept = -1d-10
     min_eival = accept
 
-guessloop: DO guess = 1,2
-    IF(min_eival.lt.accept) THEN
-        CALL initiate_yy(kvector)
-        CALL GetElastic_simple
-        CALL initiate_guess
-        CALL updateK
-    ELSEIF(min_eival.gt.accept) THEN
-        EXIT guessloop
-    END IF
+!guessloop: DO guess = 1,2
+!    IF(min_eival.lt.accept) THEN
+!        CALL initiate_yy(kvector)
+!        CALL GetElastic_simple
+!        CALL initiate_guess
+!        CALL updateK
+!    ELSEIF(min_eival.gt.accept) THEN
+!        EXIT guessloop
+!    END IF
 
     !~~~~~~~~~~~~~~~~~~~~~~~FIRST RUN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -281,6 +257,20 @@ WRITE(unit_number2,*)'*********************Check 1st Variational Approach calcul
     iter_rec = 0
     CALL asr_checkfc2(trialfc2_value)!this is just to check if input fc2/inherited trialfc2 satisfies asr
     CALL GetF_trial_And_GradientF_trial(kvector)
+
+
+!IF(atom_number.eq.1) THEN
+!    CALL GetElastic_final
+!ELSE
+!    CALL GetElastic_Wallace
+!END IF
+!CALL GetElastic_velocity
+!CALL matrix_2nd_deriv(vals, vecs)
+!trialfc2_value = myfc2_value
+!CALL Get_dispersion
+!CALL calc_gruneisen
+!
+!STOP
 
     start_F = REAL(F_trial)
     WRITE(*,*)'start_F', start_F
@@ -513,7 +503,7 @@ WRITE(unit_number2,*)'********************End of Broyden/CG Iterations**********
 WRITE(unit_number2,*)''
 WRITE(unit_number2,*)''
 
-END DO guessloop !guess loop
+!END DO guessloop !guess loop
 
     CALL printGradients(x)
     CALL printFinalGradients(x) !final gradients value and variational parameters value in a separate file
@@ -573,9 +563,17 @@ WRITE(*,*)'Total running time: ', cputime_2-cputime_1
 !    CALL calc_dos_gauss
 !    CALL calc_dos_tet
 
+    !-----final elastic constants-----
+    IF(atom_number.eq.1) THEN
+        CALL GetElastic_final
+    ELSE
+        CALL GetElastic_Wallace
+    END IF
+    CALL GetElastic_velocity
+
     !-----final gruneisen------ !temporarily commented off for check
     CALL calc_gruneisen
-    CALL GetElastic_final
+
 
     WRITE(unit_number2,*)'Start Free Energy = ', start_F
     WRITE(unit_number2,*)'Final Free Energy = ', REAL(F_trial)
@@ -601,6 +599,39 @@ CLOSE(unit_number4)
 !15 format(99(2x,g14.8))
 
 END SUBROUTINE ThreeVariableRoutine
-
 !===============================================================================================
+SUBROUTINE dynamicSelect(limit)
+    USE CG
+    IMPLICIT NONE
 
+    LOGICAL, DIMENSION(:),ALLOCATABLE :: dynamicFlag
+    REAL(8), INTENT(in) :: limit
+    INTEGER :: i, counter, j
+
+    ALLOCATE(dynamicFlag(SIZE(GradientF_trial)))
+    counter = 0
+    DO i=1, SIZE(GradientF_trial)
+        IF(ABS(GradientF_trial(i)).le.limit) THEN
+            dynamicFlag(i) = .True.
+            counter = counter + 1
+        ELSE
+            dynamicFlag(i) = .False.
+        END IF
+    END DO
+
+    !reassign which parameters to fix
+    IF(ALLOCATED(fixed_params)) DEALLOCATE(fixed_params)
+    ALLOCATE(fixed_params(counter))
+    j=1
+    DO i=1, SIZE(GradientF_trial)
+        IF(dynamicFlag(i)) THEN
+            fixed_params(j) = i
+            j = j + 1
+        END IF
+    END DO
+
+    DEALLOCATE(dynamicFlag)
+    WRITE(*,*)'Total Free Variational Parameter Number this iteration: ', &
+                    &SIZE(GradientF_trial) - SIZE(fixed_params)
+END SUBROUTINE dynamicSelect
+!===============================================================================================

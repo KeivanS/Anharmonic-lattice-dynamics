@@ -33,6 +33,7 @@ MODULE check
 !---------------------------------------------------------------------------------------------------------
     !this test two variable x(i) and x(j) versus F and f(i), for many steps
     !this test subroutine should be run after <Allocate_Gradients>
+    !variable variation range (-many*step, many*step]
     SUBROUTINE small_test_ex(i,j,step,many)
         IMPLICIT NONE
         INTEGER,INTENT(IN):: many,i,j ! how many steps,x(i),x(j)
@@ -40,14 +41,17 @@ MODULE check
         REAL(8),INTENT(IN) :: step !incremental step value for x(i)
         REAL(8),DIMENSION(:),ALLOCATABLE :: x,f
         REAL(8) :: rollback
+        REAL(8) :: center_i, center_j
         CHARACTER name*8
 
         WRITE(name,'(i2,a,i2)') i,'_to_',j
         OPEN(517,FILE='gradient_vs_x_'//name//'.dat',POSITION='append')
         OPEN(518,FILE='energy_vs_x_'//name//'.dat',POSITION='append')
 
-        CALL assign_x(i,-many*step)
-        CALL assign_x(j,-many*step)
+        center_i = 0.03d0; center_j = -0.1d0 !usually both 0d0
+
+        CALL assign_x(i,-many*step + center_i)
+        CALL assign_x(j,-many*step + center_j)
 
         !outer loop: iterate x(i)
         DO idx=1,many*2
@@ -60,18 +64,25 @@ MODULE check
                 CALL assign_x(j,step)
                 rollback = rollback + step
 
-                CALL GetF_trial_And_GradientF_trial(kvector) !not accurate but more realistic
+                !eta_xx=eta_yy lock, comment off if not needed
+                if(i.eq.7 .or. j.eq.7) THEN
+                    strain(2,2) = strain(1,1)
+                ELSEIF(i.eq.11 .or. j.eq.11) THEN
+                    strain(1,1) = strain(2,2)
+                end if
+
+!                CALL GetF_trial_And_GradientF_trial(kvector) !not accurate but more realistic
                 !-------------this is too slow---------------
 !                IF(i.le.15 .AND. j.le.15) THEN
-!                    CALL GetF0_and_V0 !F0 and <V0>
 !                    CALL GetV_avg_And_GradientV_avg(kvector)!<V>
+!                    CALL GetF0_and_V0 !F0 and <V0>, these won't change in fact.
 !                ELSE
-!                    CALL GetV_avg_And_GradientV_avg(kvector)!<dV/d<YY>> and <V>
-!                    CALL UpdateTrialFC2 !update effective fc2
-!                    CALL GetEigen(kvector) !update eivals
-!                    CALL GetF0_and_V0 !F0 and <V0>
+                    CALL UpdateTrialFC2 !update effective fc2
+                    CALL GetEigen(kvector) !update eivals
+                    CALL GetF0_and_V0 !F0 and <V0>
+                    CALL GetV_avg_And_GradientV_avg(kvector)!<dV/d<YY>> and <V>
 !                END IF
-!                F_trial=F0+V_avg-V0
+                F_trial=F0+V_avg-V0
                 !--------------------------------------------
                 CALL collect_xf(x,f)
                 WRITE(517,*) x(i),x(j),f(i),f(j)

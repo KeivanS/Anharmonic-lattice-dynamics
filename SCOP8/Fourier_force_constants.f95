@@ -61,9 +61,11 @@ MODULE Fourier_force_constants
          integer i,j,k
          real(8) asr
 
-         open(uborn,file='params.born',status='old')
+!         open(uborn,file='params.born',status='old')
+         open(uborn,file='dielectric.params',status='old')
+
          allocate(zeu(3,3,natoms0)) !JS
-         read(uborn,*) rho,born_flag   ! if 0 use default
+         read(uborn,*) born_flag   ! if 0 use default
          do i=1,3
             read(uborn,*)(epsil(i,j),j=1,3)
          end do

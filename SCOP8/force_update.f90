@@ -3426,6 +3426,7 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         IMPLICIT NONE
         INTEGER,INTENT(in) :: nband,nk
         REAL(8),ALLOCATABLE:: eigen_temp(:,:),integrate_dos(:),total_dos(:),afunc_dos(:),junk(:)
+        REAL(8),DIMENSION(3,3) :: prim2cart
 
         CALL allocate_tetra(nc1,nc2,nc3,wmesh)
 
@@ -3444,6 +3445,12 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         CALL allocatek(nk)
         CALL tet_map(kvector)
         CALL get_weights(nk,kpc)
+
+        !Another get_weights method
+!        prim2cart(:, 1) = r01%component(:)
+!        prim2cart(:, 2) = r02%component(:)
+!        prim2cart(:, 3) = r03%component(:)
+!        CALL get_weights3(nk,kpc,prim2cart,nibz)
 
         kp_gamma = kpc(:,1)
 

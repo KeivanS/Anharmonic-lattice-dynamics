@@ -55,6 +55,9 @@
 		<Unit filename="VA_math.f95">
 			<Option weight="6" />
 		</Unit>
+		<Unit filename="VA_math2.f95">
+			<Option weight="7" />
+		</Unit>
 		<Unit filename="check.f90">
 			<Option weight="8" />
 		</Unit>
