@@ -95,6 +95,7 @@ SUBROUTINE ThreeVariableRoutine
     WRITE(unit_number2,*)'***************************************************************************'
     WRITE(unit_number2,*)'Start time: ', cputime
     cputime_1 = cputime
+
     !~~~~~~~~~~~~~~~~~~~READ LATTICE INFORMATIONS~~~~~~~~~~~~~~~~~~~~~
 
     CALL read_force_constants
@@ -203,17 +204,18 @@ WRITE(unit_number2,*)
     CALL Allocate_Gradients
 
     !~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~
-
-    strain(1,1) = 2d0; strain(2,2) = strain(1,1); strain(3,3) = -1d0
     IF(inherit) CALL target_update
     IF(rand_start) CALL test_update
 
     !~~~~~~~~~~~TESTING SECTION, REMOVE IN THE FINAL VERSION~~~~~~~~~~~
+        !----------test openmp here-----------------
+        CALL GetEigen(kvector)
+        STOP
 
     !~~~~~~~~~~~~~Free Energy Landscape test~~~~~~~~~~~
 !!!!comment off guessloop and comment on that STOP for this part!!!!
 
-step = 0.005
+!step = 0.005
 !CALL small_test2(step) !general check
 !CALL small_test3(15,step,4) !compare with finite difference for given utau or eta
 !CALL small_test3_yy(9,step,4) !compare with finite difference for given yy
@@ -222,15 +224,15 @@ step = 0.005
 !NOTICE: turn off <make_rhombohedral> and <updateK> when doing this
 !CALL small_test(6,0.01d0,30) !single var.
 !
-CALL initiate_yy(kvector)
-CALL small_test_ex(7,15,step,10) !contour two vars.
+!CALL initiate_yy(kvector)
+!CALL small_test_ex(7,15,step,10) !contour two vars.
 
 !NOTICE: turn on inherit option for contour, by doing that you are only allowing
 !        two variables to change, while others are fixed at their optimized values
 !step_1 = 0.02; step_2 = 0.001
 !strain(1,2) = 0d0;atomic_deviation(1,2) = 0d0
 !CALL rhom_contour(4,8,step_1,step_2,20)
-STOP
+!STOP
 !----------------------------------------------------------------
 
     !~~~~~~~~~~MAKE AN INITIAL GUESS BASED ON FC2 DIAGONALIZATION~~~~~~~~~~~~~~~~
