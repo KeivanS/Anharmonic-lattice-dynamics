@@ -209,8 +209,8 @@ WRITE(unit_number2,*)
 
     !~~~~~~~~~~~TESTING SECTION, REMOVE IN THE FINAL VERSION~~~~~~~~~~~
         !----------test openmp here-----------------
-        CALL GetEigen(kvector)
-        STOP
+!        CALL GetEigen(kvector)
+!        STOP
 
     !~~~~~~~~~~~~~Free Energy Landscape test~~~~~~~~~~~
 !!!!comment off guessloop and comment on that STOP for this part!!!!
