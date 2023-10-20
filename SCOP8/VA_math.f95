@@ -8,7 +8,6 @@ Module VA_math
     USE tetrahedron
     USE om_dos
     USE phi3
-
     IMPLICIT NONE
 
     ! To keep a track of updated fc number
@@ -321,6 +320,7 @@ WRITE(*,*)'TimeCheck Pos5'
     !!to Fourier transform trial force constant K into 'trialffc2_value'
     !!then diagonalize trial force constant K dynamic matrix 'trialffc2_matrix'
     !!call subroutines in MatrixDiagonalize module
+        USE OMP_LIB ! this might be not needed on Windows
         IMPLICIT NONE
          TYPE(vector),INTENT(IN) :: kvector(:)
          TYPE(ffc2_value),DIMENSION(:,:,:),ALLOCATABLE :: trialffc2_value
