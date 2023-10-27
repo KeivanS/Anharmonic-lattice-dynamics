@@ -1,8 +1,29 @@
 !zoom id:https://virginia.zoom.us/j/4349248029
 !!main program
+!Add for simple MPI
+
 Program SCOP8
 
+    use mpi
+    use mpi_params
+
     IMPLICIT NONE
+
+    call MPI_Init(mpi_err)
+    call MPI_Comm_size(MPI_COMM_WORLD,nprocs,mpi_err)
+    call MPI_Comm_rank(MPI_COMM_WORLD,mpi_rank,mpi_err)
+
+    ! For allgather
+    if (.not. allocated(vals_displs)) allocate(vals_displs(nprocs))
+    if (.not. allocated(vecs_displs)) allocate(vecs_displs(nprocs))
+    if (.not. allocated(offsets)) allocate(offsets(nprocs))
+    if (.not. allocated(vals_count)) allocate(vals_count(nprocs))
+    if (.not. allocated(vecs_count)) allocate(vecs_count(nprocs))
+
+    offsets=0
+    vals_displs=0
+    vecs_displs=0
+
 
 !---------test dot or newdot --------------
 !REAL(8),DIMENSION(3,3) :: a
@@ -41,6 +62,9 @@ Program SCOP8
 !----------big restructure-----------------
 
     CALL ThreeVariableRoutine
+
+ ! In "real" code this needs to be before every stop statement
+ !call MPI_Finalize(mpi_err)
 
 End Program SCOP8
 !===============================================================================================
@@ -82,7 +106,6 @@ SUBROUTINE ThreeVariableRoutine
     INTEGER :: guess
     REAL(8) :: accept
     REAL(8) :: cell_vol
-    INTEGER :: OMP_GET_THREAD_NUM
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~OPEN OUTPUT AND LOG FILES~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     unit_number=33;unit_number2=34;unit_number3=35;unit_number4=36;unit_number5=37
@@ -168,12 +191,18 @@ WRITE(unit_number2,*)'Cputime after reading all the input:', cputime
 
     !~~~~~~~~~~~~~~~~~~~GET THE ITERATION && VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~~~~~~~
 
+if (mpi_rank==0) then
+
 WRITE(*,*) '*************************Check of Iteration Parameters*************************'
 WRITE(unit_number2,*) '*************************Check of Iteration Parameters*************************'
 
+endif
+
+! Probably OK for all process to read same file
     CALL read_iteration_parameters_file
     CALL initiate_var
 
+if (mpi_rank==0) then
 WRITE(*,*) 'tolerance for convergence of f: ',tolerance2
 WRITE(unit_number2,*) 'tolerance for convergence of f: ',tolerance2
 WRITE(*,*) 'converted temperature: ',temperature*(100*h_plank*c_light)/k_b
@@ -195,6 +224,8 @@ WRITE(unit_number2,*)'****************End of Iteration Parameters check*********
 WRITE(*,*)
 WRITE(unit_number2,*)
 
+endif
+
     !~~~~~~~~~~~~~~~~~INITIALIZE MATRIX PARAMETERS~~~~~~~~~~~~~~~~~~
 
     YY_flag=.False.
@@ -210,6 +241,7 @@ WRITE(unit_number2,*)
     !~~~~~~~~~~~TESTING SECTION, REMOVE IN THE FINAL VERSION~~~~~~~~~~~
         !----------test openmp here-----------------
         CALL GetEigen(kvector)
+    call MPI_Finalize(mpi_err)
         STOP
 
     !~~~~~~~~~~~~~Free Energy Landscape test~~~~~~~~~~~
@@ -253,8 +285,12 @@ WRITE(unit_number2,*)
 
     !~~~~~~~~~~~~~~~~~~~~~~~FIRST RUN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+if (mpi_rank==0) then
+
 WRITE(*,*)'**********************Check 1st Variational Approach calculation**********************'
 WRITE(unit_number2,*)'*********************Check 1st Variational Approach calculation*********************'
+
+endif
 
     iter_rec = 0
     CALL asr_checkfc2(trialfc2_value)!this is just to check if input fc2/inherited trialfc2 satisfies asr
@@ -275,6 +311,9 @@ WRITE(unit_number2,*)'*********************Check 1st Variational Approach calcul
 !STOP
 
     start_F = REAL(F_trial)
+
+if (mpi_rank==0) then
+
     WRITE(*,*)'start_F', start_F
 
 WRITE(*,*) 'first Unpertubed Free Energy F0=',F0
@@ -328,6 +367,8 @@ WRITE(unit_number2,*)'*********************Broyden/CG Iterations****************
 WRITE(unit_number3,*)'*****iteration #, L1 norm of all gradients, free energy value*****'
 WRITE(unit_number3,*) 'iteration 0 free energy ', REAL(F_trial)
 
+endif
+
     !initialize loop control values
     iter = 0; ft=100;ft2=100;threshold=100;itmax=max_it_number
     pmix = my_pmix
@@ -356,15 +397,18 @@ WRITE(unit_number3,*) 'iteration 0 free energy ', REAL(F_trial)
 
           iter = iter+1
           iter_rec = iter
+if (mpi_rank==0) then
 WRITE(*,*)'ITERATION#:',iter
 WRITE(unit_number2,*)'ITERATION#:',iter
+endif
     !---------------update old x(:) for next loop-----------------
           CALL combine_variants(x)   !get x
 
           CALL printGradients(x)
 
 !CALL printTargetGradients(x,7)
-PRINT*,'f(:),x(:) constructed, iter=',iter
+!PRINT*,'f(:),x(:) constructed, iter=',iter
+PRINT*,'process ',mpi_rank,' f(:),x(:) constructed, iter=',iter
 
           IF(unleashed) THEN!*all free*, bypass <select_xy> and <release_x>
               IF(method.eq.0) THEN

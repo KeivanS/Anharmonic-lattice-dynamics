@@ -1,0 +1,49 @@
+ ***************************************************************************
+ Start time:   0.18442699999999998     
+ *************************Check Reading files*************************
+ *************************Read lat_fc.dat*************************
+ atom number in primitive cell=           2
+ total atom number=        1346
+ tranlational vector=   0.0000000000000000        2.8511282499999999        2.8511282499999999        2.8511282499999999        0.0000000000000000        2.8511282499999999        2.8511282499999999        2.8511282499999999        0.0000000000000000     
+ NUMBER of PRIMITIVE CELLS:         787
+ *************************End of lat_fc.dat check*************************
+
+ ===========ASR fix for fc2================
+ asr for atom1:            1     xyz1: x    xyz2: x
+   1.0608880000839184E-005
+ ...is broken, now fix it
+ asr for atom1:            1     xyz1: y    xyz2: y
+   1.0608880000839184E-005
+ ...is broken, now fix it
+ asr for atom1:            1     xyz1: z    xyz2: z
+   1.0608880000839184E-005
+ ...is broken, now fix it
+ asr for atom1:            2     xyz1: x    xyz2: x
+   1.0608880000839184E-005
+ ...is broken, now fix it
+ asr for atom1:            2     xyz1: y    xyz2: y
+   1.0608880000839184E-005
+ ...is broken, now fix it
+ asr for atom1:            2     xyz1: z    xyz2: z
+   1.0608880000839184E-005
+ ...is broken, now fix it
+ ===========ASR fix for fc3================
+ ===========ASR check for fc2================
+ ===========ASR check for fc3================
+ *************************FORCE CONSTANTS INITIALIZATION*************************
+ number of atoms within fc2 cutoff region:            1
+ number of atoms within fc3 cutoff region:            1
+ number of atoms within fc4 cutoff region:            1
+ kvector_Update successfully called
+ Cputime after reading all the input:  0.85077399999999992     
+ *************************Check of Iteration Parameters*************************
+ tolerance for convergence of f:    1.0000000000000000E-004
+ converted temperature:    800.00000000000000     
+ max iteration number:          300
+ Variationals type1: Atomic deviation in primitive cells; the number is:            6
+ Variationals type2: Strain; the number is:            9
+ Variationals type3: Trial Force Constants(RANK2); the number is:         2922
+
+ I use the real fc2 for the 1st set of trial fc2 value
+ ****************End of Iteration Parameters check*************************
+

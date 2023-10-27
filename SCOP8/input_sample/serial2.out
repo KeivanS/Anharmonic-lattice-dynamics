@@ -1,0 +1,304 @@
+ reading            2  atoms in the primitive cell
+   0.0000000000000000          cutoff for smallest eigenvalue w to be included
+   1.0000000474974513E-003    tolerance for equating two coordinates 
+           1           1           1           1   which ranks of FCs to include 
+           1           1           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0   how many shells to include for each rank 
+          12          12           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0   how many shells to include for each rank 
+           2           2           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0   how many shells to include for each rank 
+           1           1           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0   how many shells to include for each rank 
+           1           1           1           0   transl, rot and Huang invce, enforcing inv
+ reading  atom #           1           1
+ reading  atom #           2           1
+ reading done, closing the params.inp file
+  maxatoms=        2800
+ atompos_in=    0.0000000000000000        0.0000000000000000        0.0000000000000000       0.25000000000000000       0.25000000000000000       0.25000000000000000     
+ primlatt=   0.0000000000000000       0.50000000000000000       0.50000000000000000       0.50000000000000000        0.0000000000000000       0.50000000000000000       0.50000000000000000       0.50000000000000000        0.0000000000000000     
+ conv_to_cart=   5.7022564999999998        0.0000000000000000        0.0000000000000000        3.4916250853210945E-016   5.7022564999999998        0.0000000000000000        3.4916250853210945E-016   3.4916250853210945E-016   5.7022564999999998     
+ cart_to_prim= -0.17536917183574613       0.17536917183574613       0.17536917183574610       0.17536917183574607      -0.17536917183574607       0.17536917183574607       0.17536917183574613       0.17536917183574605      -0.17536917183574610     
+ transpose(g)  -0.17536917183574613       0.17536917183574613       0.17536917183574610       0.17536917183574607      -0.17536917183574607       0.17536917183574607       0.17536917183574613       0.17536917183574605      -0.17536917183574610     
+ before xvmlt            1
+ before unitcell            1
+ before xvmlt            2
+ before unitcell            2
+ before dlatmat2
+ after lattpgcount loop
+  NOW GENERATING THE STARS OF K; lattpgcount=           1
+  NOW GENERATING THE STARS OF K; lattpgcount=           2
+  NOW GENERATING THE STARS OF K; lattpgcount=           3
+  NOW GENERATING THE STARS OF K; lattpgcount=           4
+  NOW GENERATING THE STARS OF K; lattpgcount=           5
+  NOW GENERATING THE STARS OF K; lattpgcount=           6
+  NOW GENERATING THE STARS OF K; lattpgcount=           7
+  NOW GENERATING THE STARS OF K; lattpgcount=           8
+  NOW GENERATING THE STARS OF K; lattpgcount=           9
+  NOW GENERATING THE STARS OF K; lattpgcount=          10
+  NOW GENERATING THE STARS OF K; lattpgcount=          11
+  NOW GENERATING THE STARS OF K; lattpgcount=          12
+  NOW GENERATING THE STARS OF K; lattpgcount=          13
+  NOW GENERATING THE STARS OF K; lattpgcount=          14
+  NOW GENERATING THE STARS OF K; lattpgcount=          15
+  NOW GENERATING THE STARS OF K; lattpgcount=          16
+  NOW GENERATING THE STARS OF K; lattpgcount=          17
+  NOW GENERATING THE STARS OF K; lattpgcount=          18
+  NOW GENERATING THE STARS OF K; lattpgcount=          19
+  NOW GENERATING THE STARS OF K; lattpgcount=          20
+  NOW GENERATING THE STARS OF K; lattpgcount=          21
+  NOW GENERATING THE STARS OF K; lattpgcount=          22
+  NOW GENERATING THE STARS OF K; lattpgcount=          23
+  NOW GENERATING THE STARS OF K; lattpgcount=          24
+  NOW GENERATING THE STARS OF K; lattpgcount=          25
+  NOW GENERATING THE STARS OF K; lattpgcount=          26
+  NOW GENERATING THE STARS OF K; lattpgcount=          27
+  NOW GENERATING THE STARS OF K; lattpgcount=          28
+  NOW GENERATING THE STARS OF K; lattpgcount=          29
+  NOW GENERATING THE STARS OF K; lattpgcount=          30
+  NOW GENERATING THE STARS OF K; lattpgcount=          31
+  NOW GENERATING THE STARS OF K; lattpgcount=          32
+  NOW GENERATING THE STARS OF K; lattpgcount=          33
+  NOW GENERATING THE STARS OF K; lattpgcount=          34
+  NOW GENERATING THE STARS OF K; lattpgcount=          35
+  NOW GENERATING THE STARS OF K; lattpgcount=          36
+  NOW GENERATING THE STARS OF K; lattpgcount=          37
+  NOW GENERATING THE STARS OF K; lattpgcount=          38
+  NOW GENERATING THE STARS OF K; lattpgcount=          39
+  NOW GENERATING THE STARS OF K; lattpgcount=          40
+  NOW GENERATING THE STARS OF K; lattpgcount=          41
+  NOW GENERATING THE STARS OF K; lattpgcount=          42
+  NOW GENERATING THE STARS OF K; lattpgcount=          43
+  NOW GENERATING THE STARS OF K; lattpgcount=          44
+  NOW GENERATING THE STARS OF K; lattpgcount=          45
+  NOW GENERATING THE STARS OF K; lattpgcount=          46
+  NOW GENERATING THE STARS OF K; lattpgcount=          47
+  NOW GENERATING THE STARS OF K; lattpgcount=          48
+ conv_to_cart has conventional vectors in its columns=
+ dimension=           3
+ total atom number=        1346
+ # RANK            2  tensors :term,group,(iatom,ixyz)_2 d^nU/dx_{i,alpha}^n                       
+ ********** FCs for rank=2:        5820   ************
+ # RANK            3  tensors :term,group,(iatom,ixyz)_2 d^nU/dx_{i,alpha}^n                       
+ ********** FCs for rank=3:       16590 ***************
+ # RANK            4  tensors :term,group,(iatom,ixyz)_2 d^nU/dx_{i,alpha}^n                       
+ ********** FCs for rank=4:        7980 ***************
+ **********End of check read_force_constants**************
+
+
+
+
+
+ *************************Check Reading files*************************
+ *************************Read lat_fc.dat*************************
+ atom number in primitive cell=           2
+ total atom number=        1346
+ tranlational vector=   0.0000000000000000        2.8511282499999999        2.8511282499999999        2.8511282499999999        0.0000000000000000        2.8511282499999999        2.8511282499999999        2.8511282499999999        0.0000000000000000     
+ NUMBER of PRIMITIVE CELLS:         787
+ *************************End of lat_fc.dat check*************************
+
+ READ_PARAMS: opening params.phon
+ MAKE_KP_IBZ: nk,wk(nk),k2(:,nk)
+new vector*:      1    1.00000     0.00000   0.00000   0.00000   0.00000
+new vector*:      2    1.00000     0.06122   0.06122  -0.06122   0.10603
+new vector*:      3    1.00000     0.12243   0.12243  -0.12243   0.21206
+new vector*:      4    1.00000     0.18365   0.18365  -0.18365   0.31808
+new vector*:      5    1.00000     0.24486   0.24486  -0.24486   0.42411
+new vector*:      6    1.00000     0.30608   0.30608  -0.30608   0.53014
+new vector*:      7    1.00000     0.36729   0.36729  -0.36729   0.63617
+new vector*:      8    1.00000     0.42851   0.42851  -0.42851   0.74220
+new vector*:      9    1.00000     0.48972   0.48972  -0.48972   0.84823
+new vector*:     10    1.00000     0.55094   0.55094  -0.55094   0.95425
+new vector*:     11    1.00000     0.12243   0.00000   0.00000   0.12243
+new vector*:     12    1.00000     0.18365   0.06122  -0.06122   0.20303
+new vector*:     13    1.00000     0.24486   0.12243  -0.12243   0.29989
+new vector*:     14    1.00000     0.30608   0.18365  -0.18365   0.40142
+new vector*:     15    1.00000     0.36729   0.24486  -0.24486   0.50480
+new vector*:     16    1.00000     0.42851   0.30608  -0.30608   0.60909
+new vector*:     17    1.00000     0.48972   0.36729  -0.36729   0.71389
+new vector*:     18    1.00000     0.55094   0.42851  -0.42851   0.81901
+new vector*:     19    1.00000     0.61215   0.48972  -0.48972   0.92433
+new vector*:     20    1.00000     0.67337   0.55094  -0.55094   1.02980
+new vector*:     21    1.00000     0.73458   0.61215  -0.61215   1.13538
+new vector*:     22    1.00000     0.79580   0.67337  -0.67337   1.24103
+new vector*:     23    1.00000     0.85702   0.73458  -0.73458   1.34674
+new vector*:     24    1.00000     0.91823   0.79580  -0.79580   1.45250
+new vector*:     25    1.00000     0.97945   0.85702  -0.85702   1.55829
+new vector*:     26    1.00000     1.04066   0.91823  -0.91823   1.66411
+new vector*:     27    1.00000     1.10188   0.97945  -0.97945   1.76996
+new vector*:     28    1.00000     0.24486   0.00000   0.00000   0.24486
+new vector*:     29    1.00000     0.30608   0.06122  -0.06122   0.31808
+new vector*:     30    1.00000     0.36729   0.12243  -0.12243   0.40606
+new vector*:     31    1.00000     0.42851   0.18365  -0.18365   0.50107
+new vector*:     32    1.00000     0.48972   0.24486  -0.24486   0.59979
+new vector*:     33    1.00000     0.55094   0.30608  -0.30608   0.70064
+new vector*:     34    1.00000     0.61215   0.36729  -0.36729   0.80283
+new vector*:     35    1.00000     0.67337   0.42851  -0.42851   0.90591
+new vector*:     36    1.00000     0.73458   0.48972  -0.48972   1.00959
+new vector*:     37    1.00000     0.79580   0.55094  -0.55094   1.11372
+new vector*:     38    1.00000     0.85702   0.61215  -0.61215   1.21817
+new vector*:     39    1.00000     0.91823   0.67337  -0.67337   1.32288
+new vector*:     40    1.00000     0.97945   0.73458  -0.73458   1.42778
+new vector*:     41    1.00000     1.04066   0.79580  -0.79580   1.53283
+new vector*:     42    1.00000     1.10188   0.85702  -0.85702   1.63801
+new vector*:     43    1.00000     0.36729   0.00000   0.00000   0.36729
+new vector*:     44    1.00000     0.42851   0.06122  -0.06122   0.43717
+new vector*:     45    1.00000     0.48972   0.12243  -0.12243   0.51943
+new vector*:     46    1.00000     0.55094   0.18365  -0.18365   0.60909
+new vector*:     47    1.00000     0.61215   0.24486  -0.24486   0.70331
+new vector*:     48    1.00000     0.67337   0.30608  -0.30608   0.80050
+new vector*:     49    1.00000     0.73458   0.36729  -0.36729   0.89968
+new vector*:     50    1.00000     0.79580   0.42851  -0.42851   1.00027
+new vector*:     51    1.00000     0.85702   0.48972  -0.48972   1.10188
+new vector*:     52    1.00000     0.91823   0.55094  -0.55094   1.20425
+new vector*:     53    1.00000     0.97945   0.61215  -0.61215   1.30720
+new vector*:     54    1.00000     1.04066   0.67337  -0.67337   1.41061
+new vector*:     55    1.00000     1.10188   0.73458  -0.73458   1.51439
+new vector*:     56    1.00000     0.48972   0.00000   0.00000   0.48972
+new vector*:     57    1.00000     0.55094   0.06122  -0.06122   0.55770
+new vector*:     58    1.00000     0.61215   0.12243  -0.12243   0.63617
+new vector*:     59    1.00000     0.67337   0.18365  -0.18365   0.72172
+new vector*:     60    1.00000     0.73458   0.24486  -0.24486   0.81211
+new vector*:     61    1.00000     0.79580   0.30608  -0.30608   0.90591
+new vector*:     62    1.00000     0.85702   0.36729  -0.36729   1.00214
+new vector*:     63    1.00000     0.91823   0.42851  -0.42851   1.10018
+new vector*:     64    1.00000     0.97945   0.48972  -0.48972   1.19957
+new vector*:     65    1.00000     1.04066   0.55094  -0.55094   1.30002
+new vector*:     66    1.00000     1.10188   0.61215  -0.61215   1.40128
+new vector*:     67    1.00000     0.61215   0.00000   0.00000   0.61215
+new vector*:     68    1.00000     0.67337   0.06122  -0.06122   0.67891
+new vector*:     69    1.00000     0.73458   0.12243  -0.12243   0.75471
+new vector*:     70    1.00000     0.79580   0.18365  -0.18365   0.83711
+new vector*:     71    1.00000     0.85702   0.24486  -0.24486   0.92433
+new vector*:     72    1.00000     0.91823   0.30608  -0.30608   1.01514
+new vector*:     73    1.00000     0.97945   0.36729  -0.36729   1.10866
+new vector*:     74    1.00000     1.04066   0.42851  -0.42851   1.20425
+new vector*:     75    1.00000     1.10188   0.48972  -0.48972   1.30146
+new vector*:     76    1.00000     0.73458   0.00000   0.00000   0.73458
+new vector*:     77    1.00000     0.79580   0.06122  -0.06122   0.80050
+new vector*:     78    1.00000     0.85702   0.12243  -0.12243   0.87433
+new vector*:     79    1.00000     0.91823   0.18365  -0.18365   0.95425
+new vector*:     80    1.00000     0.97945   0.24486  -0.24486   1.03886
+new vector*:     81    1.00000     1.04066   0.30608  -0.30608   1.12709
+new vector*:     82    1.00000     1.10188   0.36729  -0.36729   1.21817
+new vector*:     83    1.00000     0.85702   0.00000   0.00000   0.85702
+new vector*:     84    1.00000     0.91823   0.06122  -0.06122   0.92230
+new vector*:     85    1.00000     0.97945   0.12243  -0.12243   0.99463
+new vector*:     86    1.00000     1.04066   0.18365  -0.18365   1.07258
+new vector*:     87    1.00000     1.10188   0.24486  -0.24486   1.15501
+new vector*:     88    1.00000     0.97945   0.00000   0.00000   0.97945
+new vector*:     89    1.00000     1.04066   0.06122  -0.06122   1.04426
+new vector*:     90    1.00000     1.10188   0.12243  -0.12243   1.11540
+new vector*:     91    1.00000     1.10188   0.00000   0.00000   1.10188
+new vector*:     92    1.00000     0.24486   0.12243   0.00000   0.27376
+new vector*:     93    1.00000     0.30608   0.18365  -0.06122   0.36216
+new vector*:     94    1.00000     0.36729   0.24486  -0.12243   0.45809
+new vector*:     95    1.00000     0.42851   0.30608  -0.18365   0.55770
+new vector*:     96    1.00000     0.48972   0.36729  -0.24486   0.65931
+new vector*:     97    1.00000     0.55094   0.42851  -0.30608   0.76213
+new vector*:     98    1.00000     0.61215   0.48972  -0.36729   0.86572
+new vector*:     99    1.00000     0.67337   0.55094  -0.42851   0.96983
+new vector*:    100    1.00000     0.36729   0.12243   0.00000   0.38716
+new vector*:    101    1.00000     0.42851   0.18365  -0.06122   0.47020
+new vector*:    102    1.00000     0.48972   0.24486  -0.12243   0.56105
+new vector*:    103    1.00000     0.55094   0.30608  -0.18365   0.65646
+new vector*:    104    1.00000     0.61215   0.36729  -0.24486   0.75471
+new vector*:    105    1.00000     0.67337   0.42851  -0.30608   0.85483
+new vector*:    106    1.00000     0.73458   0.48972  -0.36729   0.95621
+new vector*:    107    1.00000     0.79580   0.55094  -0.42851   1.05851
+new vector*:    108    1.00000     0.85702   0.61215  -0.48972   1.16148
+new vector*:    109    1.00000     0.91823   0.67337  -0.55094   1.26495
+new vector*:    110    1.00000     0.97945   0.73458  -0.61215   1.36882
+new vector*:    111    1.00000     1.04066   0.79580  -0.67337   1.47299
+new vector*:    112    1.00000     1.10188   0.85702  -0.73458   1.57741
+new vector*:    113    1.00000     0.48972   0.12243   0.00000   0.50480
+new vector*:    114    1.00000     0.55094   0.18365  -0.06122   0.58396
+new vector*:    115    1.00000     0.61215   0.24486  -0.12243   0.67058
+new vector*:    116    1.00000     0.67337   0.30608  -0.18365   0.76213
+new vector*:    117    1.00000     0.73458   0.36729  -0.24486   0.85702
+new vector*:    118    1.00000     0.79580   0.42851  -0.30608   0.95425
+new vector*:    119    1.00000     0.85702   0.48972  -0.36729   1.05319
+new vector*:    120    1.00000     0.91823   0.55094  -0.42851   1.15339
+new vector*:    121    1.00000     0.97945   0.61215  -0.48972   1.25454
+new vector*:    122    1.00000     1.04066   0.67337  -0.55094   1.35644
+new vector*:    123    1.00000     1.10188   0.73458  -0.61215   1.45893
+new vector*:    124    1.00000     0.61215   0.12243   0.00000   0.62428
+new vector*:    125    1.00000     0.67337   0.18365  -0.06122   0.70064
+new vector*:    126    1.00000     0.73458   0.24486  -0.12243   0.78394
+new vector*:    127    1.00000     0.79580   0.30608  -0.18365   0.87219
+new vector*:    128    1.00000     0.85702   0.36729  -0.24486   0.96402
+new vector*:    129    1.00000     0.91823   0.42851  -0.30608   1.05851
+new vector*:    130    1.00000     0.97945   0.48972  -0.36729   1.15501
+new vector*:    131    1.00000     1.04066   0.55094  -0.42851   1.25305
+new vector*:    132    1.00000     1.10188   0.61215  -0.48972   1.35229
+new vector*:    133    1.00000     0.73458   0.12243   0.00000   0.74472
+new vector*:    134    1.00000     0.79580   0.18365  -0.06122   0.81901
+new vector*:    135    1.00000     0.85702   0.24486  -0.12243   0.89968
+new vector*:    136    1.00000     0.91823   0.30608  -0.18365   0.98517
+new vector*:    137    1.00000     0.97945   0.36729  -0.24486   1.07433
+new vector*:    138    1.00000     1.04066   0.42851  -0.30608   1.16631
+new vector*:    139    1.00000     1.10188   0.48972  -0.36729   1.26050
+new vector*:    140    1.00000     0.85702   0.12243   0.00000   0.86572
+new vector*:    141    1.00000     0.91823   0.18365  -0.06122   0.93841
+new vector*:    142    1.00000     0.97945   0.24486  -0.12243   1.01699
+new vector*:    143    1.00000     1.04066   0.30608  -0.18365   1.10018
+new vector*:    144    1.00000     1.10188   0.36729  -0.24486   1.18701
+new vector*:    145    1.00000     0.97945   0.12243   0.00000   0.98707
+new vector*:    146    1.00000     1.04066   0.18365  -0.06122   1.05851
+new vector*:    147    1.00000     1.10188   0.24486  -0.12243   1.13538
+new vector*:    148    1.00000     1.10188   0.12243   0.00000   1.10866
+new vector*:    149    1.00000     0.48972   0.24486   0.00000   0.54753
+new vector*:    150    1.00000     0.55094   0.30608  -0.06122   0.63322
+new vector*:    151    1.00000     0.61215   0.36729  -0.12243   0.72431
+new vector*:    152    1.00000     0.67337   0.42851  -0.18365   0.81901
+new vector*:    153    1.00000     0.73458   0.48972  -0.24486   0.91619
+new vector*:    154    1.00000     0.79580   0.55094  -0.30608   1.01514
+new vector*:    155    1.00000     0.61215   0.24486   0.00000   0.65931
+new vector*:    156    1.00000     0.67337   0.30608  -0.06122   0.74220
+new vector*:    157    1.00000     0.73458   0.36729  -0.12243   0.83037
+new vector*:    158    1.00000     0.79580   0.42851  -0.18365   0.92230
+new vector*:    159    1.00000     0.85702   0.48972  -0.24486   1.01699
+new vector*:    160    1.00000     0.91823   0.55094  -0.30608   1.11372
+new vector*:    161    1.00000     0.97945   0.61215  -0.36729   1.21200
+new vector*:    162    1.00000     1.04066   0.67337  -0.42851   1.31150
+new vector*:    163    1.00000     1.10188   0.73458  -0.48972   1.41194
+new vector*:    164    1.00000     0.73458   0.24486   0.00000   0.77432
+new vector*:    165    1.00000     0.79580   0.30608  -0.06122   0.85483
+new vector*:    166    1.00000     0.85702   0.36729  -0.12243   0.94041
+new vector*:    167    1.00000     0.91823   0.42851  -0.18365   1.02980
+new vector*:    168    1.00000     0.97945   0.48972  -0.24486   1.12210
+new vector*:    169    1.00000     1.04066   0.55094  -0.30608   1.21663
+new vector*:    170    1.00000     1.10188   0.61215  -0.36729   1.31292
+new vector*:    171    1.00000     0.85702   0.24486   0.00000   0.89131
+new vector*:    172    1.00000     0.91823   0.30608  -0.06122   0.96983
+new vector*:    173    1.00000     0.97945   0.36729  -0.12243   1.05319
+new vector*:    174    1.00000     1.04066   0.42851  -0.18365   1.14032
+new vector*:    175    1.00000     1.10188   0.48972  -0.24486   1.23041
+new vector*:    176    1.00000     0.97945   0.24486   0.00000   1.00959
+new vector*:    177    1.00000     1.04066   0.30608  -0.06122   1.08647
+new vector*:    178    1.00000     1.10188   0.36729  -0.12243   1.16792
+new vector*:    179    1.00000     1.10188   0.24486   0.00000   1.12876
+new vector*:    180    1.00000     0.73458   0.36729   0.00000   0.82129
+new vector*:    181    1.00000     0.79580   0.42851  -0.06122   0.90591
+new vector*:    182    1.00000     0.85702   0.48972  -0.12243   0.99463
+new vector*:    183    1.00000     0.91823   0.55094  -0.18365   1.08647
+new vector*:    184    1.00000     0.85702   0.36729   0.00000   0.93241
+new vector*:    185    1.00000     0.91823   0.42851  -0.06122   1.01514
+new vector*:    186    1.00000     0.97945   0.48972  -0.12243   1.10188
+new vector*:    187    1.00000     1.04066   0.55094  -0.18365   1.19174
+new vector*:    188    1.00000     1.10188   0.61215  -0.24486   1.28406
+new vector*:    189    1.00000     0.97945   0.36729   0.00000   1.04605
+new vector*:    190    1.00000     1.04066   0.42851  -0.06122   1.12709
+new vector*:    191    1.00000     1.10188   0.48972  -0.12243   1.21200
+new vector*:    192    1.00000     1.10188   0.36729   0.00000   1.16148
+new vector*:    193    1.00000     0.97945   0.48972   0.00000   1.09505
+new vector*:    194    1.00000     1.04066   0.55094  -0.06122   1.17909
+new vector*:    195    1.00000     1.10188   0.48972   0.00000   1.20580
+ *************************Check of Iteration Parameters*************************
+ tolerance for convergence of f:    1.0000000000000000E-004
+ converted temperature:    800.00000000000000     
+ max iteration number:          300
+ Variationals type1: Atomic deviation in primitive cells; the number is:            6
+ Variationals type2: Strain; the number is:            9
+ Variationals type3: Trial Force Constants(RANK2); the number is:         2922
+
+ I use the real fc2 for the 1st set of trial fc2 value
+ *************************End of Iteration Parameters check*************************
+
+   1.3331530000000000        3.9133260000000001        2.5801730000000003     
