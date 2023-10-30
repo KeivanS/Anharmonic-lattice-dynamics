@@ -9,10 +9,9 @@
  use geometry
  implicit none
  character lineout*80
- integer i0,j,is,i,t,n,m,mxzero,mx,mxi,ired,k,l,counter,rnk,tauj,nj(3),ichkloop   &
- &      ,ntermszero,ntermszerosave,nd,ntindp,ierz,iert,ieri,ierg,mzero(4),mxgrps
+ integer i0,j,i,n,m,mxzero,mx,mxi,l,rnk,ichkloop   &
+ &      ,ntermszero,nd,ntindp,ierz,iert,ieri,ierg,mzero(4),mxgrps
  integer, allocatable:: iatmtermzero(:,:),ixyztermzero(:,:)
- real(8) r12
 ! type arraysize
 !    integer rnk
 ! end type arraysize
@@ -62,8 +61,7 @@
      write(*   ,4) 'maxtrmzero,maxgrp=',mxzero,mxgrps
 !     write(*   ,4) 'ntermsindep=',ntermsindep
 !     write(*   ,4) 'nterms     =',nterms
-     write(ulog,4) 'Checkloop: icheckloop , rank =',ichkloop,rnk
-     write(ulog,4) 'maxtrmzero,maxgrp,maxternindep,maxterms=',mxzero,mxgrps,mxi,mx
+     write(ulog,4) 'iteration,maxtrmzero,maxgrp,maxternindep,maxterms=',ichkloop,mxzero,mxgrps,mxi,mx
 !     write(ulog,4) 'ntermsindp=',ntia
 !     write(ulog,4) 'nterms    =',nta
 !     mx=maxval(nta) ; mxi=maxval(ntia)
@@ -87,15 +85,8 @@
 !     if(.not.allocated(iatmtermzero)) allocate(iatmtermzero(rnk,mzero(rnk)))
 !     if(.not.allocated(ixyztermzero )) allocate( ixyztermzero(rnk,mzero(rnk)))
 ! k2 2/12/23
-     write(ulog,4)' calling collect_force_constants for rank,ier:ztig=',rnk,ierz,iert,ieri,ierg
+     write(ulog,4)' calling collect_force_constants ier:ztig=',ierz,iert,ieri,ierg
 
-!     call collect_force_constants(rnk,nshells(rnk,:),  &
-!     &       maxrank,mx,mxi,mxzero,mxgrps,   &
-!     &       ngroups(rnk),mapmat,  &
-!     &       ntermsindep,iatmtermindp,ixyztermindp,  &
-!     &       nterm,iatmtrm,ixyztrm,   &
-!     &       ntermszero,iatmtermzero,ixyztermzero,   &
-!     &       ierz,iert,ieri,ierg)
      call collect_force_constants(rnk,nshells(rnk,:),  &
      &       rnk,mx,mxi,mxzero,mxgrps,   &
      &       ngroups(rnk),mapmat,  &
@@ -104,68 +95,58 @@
      &       ntermszero,iatmtermzero,ixyztermzero,   &
      &       ierz,iert,ieri,ierg)
 
-!        mxzero=max(mxzero,ntermszero)
-    !    ntia=ntermsindep
-    !    nta=nterm
-!        mxgrps=max(ngroups(rnk),mxgrps)
-!        mx =max(maxval(nta (1:max(1,mxgrps))),mx)
-!        mxi=max(maxval(ntia(1:max(1,mxgrps))),mxi)
-
      write(ulog,4)' collect_force_constants called with ier:ztig=',ierz,iert,ieri,ierg
-!     write(ulog,4)' collect_force_constants exited with ntermszero=',ntermszero
-!     write(ulog,*)' iatmtermzero(nt0) will be allocated in the next iteration'
+     write(ulog,*)' ntermszero,ngroups,ntindep,nt=',ntermszero,ngroups,sum(ntermsindep(1:ngroups(rnk))),sum(nterm(1:ngroups(rnk)))
 
  4 format(a,9(i5))
 
      if (ierz.ne.0) then
-         write(ulog,*)' before mxtermszero, nterms0=',mxzero !,ntermszero
+   !      write(ulog,*)' before mxtermszero, nterms0=',mxzero ,ntermszero
 !       if(ichkloop.eq.1) then
           mxzero = mxzero*2 !+ 50*rnk !,ntermszero)
 !       else
 !          mxzero=mxzero+ntermszero
 !       endif
-         write(ulog,*)' loop,mxtermszero   increased to ',ichkloop,mxzero
          if (allocated(iatmtermzero)) deallocate(iatmtermzero)
          if (allocated(ixyztermzero)) deallocate(ixyztermzero)
      endif
+     write(ulog,*)' mxtermszero  is now ',mxzero
      if (iert.ne.0) then
-         write(ulog,*)' before mxterms=',mx,sum(nterm)
+    !     write(ulog,*)' before mxterms,sum(nterms)=',mx,sum(nterm)
 !       if(ichkloop.eq.1) then
          mx = mx*2 !+100*natom_prim_cell*nshells(rnk,1)**(rnk-1) !,sum(nterm(1:ngroups(rnk))))
 !       else
 !          mx=mx+sum(nterm(1:ngroups(rnk)))
 !       endif
          write(ulog,*)' ntermall=',sum(nterm)
-         write(ulog,*)' maxterms increased to ',mx
          if (allocated(mapmat)) deallocate(mapmat)
          if (allocated(iatmtrm)) deallocate(iatmtrm)
          if (allocated(ixyztrm)) deallocate(ixyztrm)
          if (allocated(iatmtermindp)) deallocate(iatmtermindp)
          if (allocated(ixyztermindp)) deallocate(ixyztermindp)
      endif
-         write(ulog,*)' before mxtermsindep=',mxi,sum(ntermsindep)
+     write(ulog,*)' maxterms      is now ',mx
+   !  write(ulog,*)' before mxtermsindep,sum(ntermsindep)=',mxi,sum(ntermsindep)
      if (ieri.ne.0) then
 !       if(ichkloop.eq.1) then
          mxi= mxi*2 !+5*natom_prim_cell*nshells(rnk,1)**(rnk-1) !,sum(ntermsindep(1:ngroups(rnk))))
 !       else
 !          mxi=mxi+sum(ntermsindep(1:ngroups(rnk)))
 !       endif
-         write(ulog,*)' ntermsindep=',sum(ntermsindep)
-         write(ulog,*)' maxtermsindep increased to ',mxi
          if (allocated(mapmat)) deallocate(mapmat)
 !         if (allocated(iatmtrm)) deallocate(iatmtrm)
 !         if (allocated(ixyztrm)) deallocate(ixyztrm)
 !         if (allocated(iatmtermindp)) deallocate(iatmtermindp)
 !         if (allocated(ixyztermindp)) deallocate(ixyztermindp)
      endif
+     write(ulog,*)' maxtermsindep is now ',mxi
      if (ierg.ne.0) then
-         write(ulog,*)' before maxgroups, ngroups=',mxgrps,ngroups(rnk)
+    !     write(ulog,*)' before maxgroups, ngroups=',mxgrps,ngroups(rnk)
 !       if(ichkloop.eq.1) then
          mxgrps= mxgrps*2 !+2**(rnk-1)*natom_prim_cell*nshells(rnk,1) !,ngroups(rnk))
 !       else
 !         mxgrps=ngroups(rnk)
 !       endif
-         write(ulog,*)' maxgroups     increased to ',mxgrps
          if (allocated(nterm)) deallocate(nterm)
          if (allocated(ntermsindep)) deallocate(ntermsindep)
          if (allocated(mapmat)) deallocate(mapmat)
@@ -175,6 +156,7 @@
          if (allocated(ixyztermindp)) deallocate(ixyztermindp)
       !   if (allocated(nterm)) deallocate(ixyztermindp)
      endif
+     write(ulog,*)' maxgroups     is now ',mxgrps
 
   enddo checkloop
 
@@ -229,15 +211,15 @@
         enddo
 
         m=0
-        do i=0,nshells(rnk,1)
+        do i=0,nshells(2,1)
            m = m + atom0(1)%shells(i)%no_of_neighbors
         enddo
-        write(ulog,*)'For rank=',rnk,' atm 1 has ',m,'inclusive nghbrs within ',nshells(rnk,1),' shell'
+        write(ulog,*)'For rank=2 atm 1 has ',m,'inclusive nghbrs within ',nshells(rnk,1),' shell'
         inv_constraints = inv_constraints + natom_prim_cell*12*m
         write(ulog,*)' rank=',rnk,' # of groups=',map(rnk)%ngr
         write(ulog,9)' ntind=',map(rnk)%ntind(:)
         write(ulog,9)' nterm=',map(rnk)%nt(:)
-        write(ulog,*)' Cumulative invce_cnstrnts for this shell ', inv_constraints
+        write(ulog,*)' Cumulative invce_cnstrnts for this shell estimated to be ', inv_constraints
 
      endif
 
@@ -272,8 +254,10 @@
 !           write(ulog,*) 'ixy=',map(rnk)%gr(j)%ixyzind(1:rnk,i)
             call ustring(m,lineout,rnk,map(rnk)%gr(j)%iatind(:,i),map(rnk)%gr(j)%ixyzind(:,i))
             i0=map(rnk)%gr(j)%iatind(1,i)
-            l=map(rnk)%gr(j)%iatind(2,i)
-            write(umap,'(4x,a,f11.5)') lineout(1:m)//'           r12=',length(atompos(:,l)-atompos(:,i0))
+            if(rnk.ge.2) then
+               l=map(rnk)%gr(j)%iatind(2,i)
+               write(umap,'(4x,a,f11.5)') lineout(1:m)//'       r12=',length(atompos(:,l)-atompos(:,i0))
+            endif
          enddo
          write(umap,'(a,i4)')' ---- # OF ALL TERMS, MAT   ------- ',map(rnk)%nt(j)
          ntindp = map(rnk)%ntind(j)
@@ -315,11 +299,22 @@
  use svd_stuff
  use params
  use ios
+ use linalgb
  implicit none
- integer i,j,l,n_constr,counter,nlout,tra,rot,hua
+ integer nlout,ierr
  real(8), allocatable:: bout(:),aout(:,:)
 ! real(8), allocatable:: a11(:,:),b1(:),a12(:,:),a11i(:,:),b2(:)
 
+!  dim_al = force_constraints
+!  allocate(amat(dim_al,dim_ac),bmat(dim_al))
+!  amat=aforce ; bmat=bforce
+!  deallocate(aforce,bforce,stat=ierr)
+!  if(ierr.ne.0) then
+!     write(*,*)'translation deallocation error in remove_zeros'
+!     stop
+!  endif 
+
+! start with translational invariance matrix
    dim_al=transl_constraints+rot_constraints+huang_constraints+force_constraints
    dim_ac = nindepfc
    allocate(amat(dim_al,dim_ac),bmat(dim_al))
@@ -327,18 +322,48 @@
 
 !-----------------------------------------------------------------------
 ! in this case, invariances are obtained in a rms sense and are not exact.
+! in principle zero lines have already been removed from the invariance part 
+! of amat, and the call to remove zeros in not necessary!
+
+ 
    dim_al=0
    if (itrans .ne. 0) then
       allocate(aout(transl_constraints,dim_ac),bout(transl_constraints))
       call remove_zeros(transl_constraints,dim_ac,atransl,btransl,  &
       &        nlout,aout,bout)
+
       amat(dim_al+1:dim_al+nlout,1:dim_ac)=aout(1:nlout,1:dim_ac)
       bmat(dim_al+1:dim_al+nlout)=bout(1:nlout)
       dim_al= dim_al+ nlout
       write(ulog,*)'INCLUDE_CONSTRAINTS :c(transl),dim_hom(A)=',nlout,dim_al
-      deallocate(aout,bout)
+      deallocate(aout,bout,stat=ierr)
+      if(ierr.ne.0) then
+         write(*,*)'rotation deallocation error in remove_zeros'
+         stop
+      endif 
       transl_constraints=nlout
+ 
+      write(ulog,*)'After remove_zeros from transl: NEW # of lines=',nlout
+      write(*   ,*)'After remove_zeros from transl: NEW # of lines=',nlout
+
    endif
+!     write(*,*)' going to call append_array 0'
+!     call append_array(amat,aout,amat)
+!     call append_array(bmat,bout,bmat)
+
+!      deallocate(atransl,btransl)
+!     allocate(amat(dim_al,dim_ac),bmat(dim_al))
+!     amat(1:dim_al,1:dim_ac)=aout(1:nlout,1:dim_ac)
+!     bmat(1:dim_al)=bout(1:nlout)
+!     transl_constraints=nlout
+!     write(ulog,*)'INCLUDE_CONSTRAINTS :c(transl),dim_hom(A)=',nlout,dim_al
+!     write(*   ,*)'INCLUDE_CONSTRAINTS :c(transl),dim_hom(A)=',nlout,dim_al
+!     deallocate(aout,bout,stat=ierr)
+!     if(ierr.ne.0) then
+!        write(*,*)'translation deallocation error in remove_zeros'
+!        stop
+!     endif 
+!  endif
    if (ihuang .ne. 0) then
       allocate(aout(huang_constraints,dim_ac),bout(huang_constraints))
       call remove_zeros(huang_constraints,dim_ac,ahuang,bhuang,   &
@@ -347,7 +372,23 @@
       bmat(dim_al+1:dim_al+nlout)=bout(1:nlout)
       dim_al= dim_al+  nlout
       write(ulog,*)'INCLUDE_CONSTRAINTS :c(huang ),dim_hom(A)=',nlout,dim_al
-      deallocate(aout,bout)
+      deallocate(aout,bout,stat=ierr)
+      if(ierr.ne.0) then
+         write(*,*)'Huang deallocation error in remove_zeros'
+         stop
+      endif 
+
+ write(ulog,*)'After remzeros from Huang: NEW # of lines=',nlout
+!     deallocate(ahuang,bhuang)
+
+! amat=reshape(transpose(amat),shape=(/size(amat,2),size(amat,1)+size(aout,1)/),pad=    transpose(aout),order=(/1,2/))
+! amat=transpose(amat)
+! bmat=reshape(bmat,shape=(/size(bmat)+size(bout)/),pad=bout)
+
+!     write(*,*)' going to call append_array 1'
+!     call append_array(amat,aout,amat)
+!     call append_array(bmat,bout,bmat)
+
       huang_constraints=nlout
    endif
 ! we do rotations last as it might be inhomogeneous, and will be combined with afroce
@@ -355,11 +396,28 @@
       allocate(aout(rot_constraints,dim_ac),bout(rot_constraints))
       call remove_zeros(rot_constraints,dim_ac,arot,brot,  &
       &        nlout,aout,bout)
+      
+
+!write(ulog,*)'After remzeros from rot: NEW # of lines=',nlout
+!      deallocate(arot,brot)
+
+! amat=reshape(transpose(amat),shape=(/size(amat,2),size(amat,1)+size(aout,1)/),pad=    transpose(aout),order=(/1,2/))
+! amat=transpose(amat)
+! bmat=reshape(bmat,shape=(/size(bmat)+size(bout)/),pad=bout)
+
+!     write(*,*)' going to call append_array 2'
+!     call append_array(amat,aout,amat)
+!     call append_array(bmat,bout,bmat)
+
       amat(dim_al+1:dim_al+nlout,1:dim_ac)=aout(1:nlout,1:dim_ac)
       bmat(dim_al+1:dim_al+nlout)=bout(1:nlout)
       dim_al= dim_al+ nlout
       write(ulog,*)'INCLUDE_CONSTRAINTS :c(rotatn),dim_hom(A)=',nlout,dim_al
-      deallocate(aout,bout)
+      deallocate(aout,bout,stat=ierr)
+      if(ierr.ne.0) then
+         write(*,*)'rotation deallocation error in remove_zeros'
+         stop
+      endif 
       rot_constraints=nlout
    endif
 
@@ -368,20 +426,42 @@
    write(ulog,*)' Total # of invariance constraints=',inv_constraints
 
       allocate(aout(force_constraints,dim_ac),bout(force_constraints))
+   ! no need to remove zeros for forces
       call remove_zeros(force_constraints,dim_ac,aforce,bforce,   &
       &        nlout,aout,bout)
+!     deallocate(aforce,bforce)
+
+
+!     write(*,*)' force_constraints, before appending ',force_constraints 
+!     write(*,*)' force_constraints, after  appending ',force_constraints 
+      
+!     write(*,*)' number of lines before appending forces=',size(amat,1),size(aout,1)
+!     write(*,*)' going to call append_array 3'
+!     call append_array(amat,aout,amat)
+!     call append_array(bmat,bout,bmat)
+!     call append_array(amat,aforce,amat)
+!     call append_array(bmat,bforce,bmat)
       amat(dim_al+1:dim_al+nlout,1:dim_ac)=aout(1:nlout,1:dim_ac)
       bmat(dim_al+1:dim_al+nlout)=bout(1:nlout)
       dim_al= dim_al+  nlout
       write(ulog,*)'INCLUDE_CONSTRAINTS :c(force ),dim_tot(A)=',nlout,dim_al
       force_constraints=nlout
-      deallocate(aout,bout)
+      deallocate(aout,bout,stat=ierr)
+      if(ierr.ne.0) then
+         write(*,*)'force deallocation error in remove_zeros'
+         stop
+      endif 
 
 
-! we put the invariance constraints into A
    write(ulog,*)' size(a) nlines,ncolumn=(dim(a1d))=',dim_al,dim_ac
-   deallocate (aforce,bforce)
-   allocate (aforce(dim_al,dim_ac),bforce(dim_al))  ! aforce bforce used here as dummy vars
+   write(*,*)' Exiting include_constraints: size(a) nlines,ncolumn=(dim(a1d))=',dim_al,dim_ac
+   deallocate (aforce,bforce,stat=ierr)
+   if(ierr.ne.0) then
+      write(*,*)'aforce,bforce deallocation error in remove_zeros'
+      stop
+   endif 
+! aforce bforce used here as dummy vars to remove deleted lines from amat and bmat
+   allocate (aforce(dim_al,dim_ac),bforce(dim_al))  
    aforce=amat(1:dim_al,1:dim_ac)
    bforce=bmat(1:dim_al)
 
@@ -391,6 +471,9 @@
    allocate(amat(dim_al,dim_ac),bmat(dim_al))
    amat = aforce ; bmat = bforce
    deallocate (aforce,bforce)
+
+!  call write_out(123,' amatrix ',amat)
+!  call write_out(124,' bmatrix ',bmat)
 
 3 format(a,9(i4))
 
@@ -404,7 +487,7 @@
  use params
  use ios
  implicit none
- integer i,j,l,n_constr,counter
+ integer n_constr
 
 !-----------------------------------------------------------------------
 ! in this case, invariances are obtained in a rms sense and are not exact.
@@ -461,6 +544,7 @@
  end function voigt
 ! ============================================
  subroutine estimate_inv_constraints
+!! there are 3+9n0+27n0*N3+81n0*N4^2 translational and also rotational invce constraints+15 Huang
  use atoms_force_constants
  use ios
  use geometry
@@ -469,16 +553,30 @@
  implicit none
  integer i,m,rnk
 
- do rnk=1,4
+ transl_constraints=3; rot_constraints=3; huang_constraints=0  ! 3 is for safety and for rank=1
+ do rnk=2,4
 ! count the neighbors within a shell to get an estimate of invariance constraints
    m=0
    do i=0,nshells(rnk,1)
       m = m + atom0(1)%shells(i)%no_of_neighbors
    enddo
-   write(ulog,*)'atm 1 has ',m,'inclusve nghbrs within ',nshells(rnk,1),' shell'
-   inv_constraints = inv_constraints + natom_prim_cell*6*m
-   write(ulog,*)' Cumulative invce_cnstrnts for this shell ', inv_constraints
+   write(ulog,*)' ESTIMATE_CONSTR:atm 1 has ',m,'inclusve nghbrs within ',nshells(rnk,1),' th shell'
+!  if(itrans.eq.1)then
+     if(include_fc(rnk).eq.1) transl_constraints= transl_constraints + (3**rnk)*natom_prim_cell*(m**(rnk-2))
+!  endif
+!  if(irot.eq.1)then
+     if(include_fc(rnk).eq.1) rot_constraints = rot_constraints +  3**rnk*natom_prim_cell*m**(rnk-2)
+!  endif
  enddo
+!if(ihuang.eq.1)then
+    huang_constraints = 15 
+!endif
+ write(ulog,*)' Cumulative transl_cnstrnts estimated to be ', transl_constraints
+ write(ulog,*)' Cumulative    rot_cnstrnts estimated to be ', rot_constraints
+
+ inv_constraints=transl_constraints+rot_constraints+huang_constraints
+ write(ulog,*)' Cumulative invce_cnstrnts  estimated to be ', inv_constraints
+
 
  end subroutine estimate_inv_constraints
 ! ============================================
@@ -502,7 +600,7 @@
  use params
  use svd_stuff
  implicit none
- integer line,col,i,j,noforc,nosym,rnk,dum,t
+ integer line,col,i,j,noforc,nosym,rnk,dum
  real(8) afrc(line,col)
 
  write(ulog,*)'==== CHECK_ZERO_COLUMN: lines and columns are:',line,col
@@ -511,12 +609,18 @@
 ! nosym counts the number of non-zero symmetry constraints
     nosym = 0
     col_loop: do j=1,line-force_constraints
-       write(*,*)'j=',j,line-force_constraints
+!      write(*,*)'j=',j,line-force_constraints
        if (abs(afrc(j,i)) .gt. 1d-8) then
           nosym = 1+nosym
           exit col_loop
        endif
     enddo col_loop
+    if (nosym .eq. 0) then  ! column i was all = zero in the symmetry constraints
+       write(6,*)' The FC #',i,' is not involved in the symmetry constraints'
+       write(6,*)' Thus it might only be fixed from the force-displacements'
+       write(ulog,*)' The FC #',i,' is not involved in the symmetry constraints'
+       write(ulog,*)' Thus it might only be fixed from the force-displacements'
+    endif
 
 ! now the contribution of force-displacements
 ! noforc counts the number of non-zero force-displacement lines
@@ -527,18 +631,14 @@
           exit col_loop2
        endif
     enddo col_loop2
-
-!   if (nosym .eq. 0) then  ! column i was all = zero in the symmetry constraints
-!      write(6,*)' The FC #',i,' is not involved in the symmetry constraints'
-!      write(ulog,*)' The FC #',i,' is not involved in the symmetry constraints'
-!   endif
     if (noforc .eq. 0) then  ! column i was all = zero in the symmetry constraints
        write(6,*)' The FC #',i,' is not involved in the force-displacements data'
        write(6,*)' Thus it might only be fixed from the enforced symmetry constraints'
        write(ulog,*)' The FC #',i,' is not involved in the force-displacements data'
        write(ulog,*)' Thus it might only be fixed from the enforced symmetry constraints'
     endif
-    if ((noforc .eq. 0) .and. (nosym .eq. 0)) then  ! column i was all = zero in the symmetry constraints
+
+    if ((noforc .eq. 0) .and. (nosym .eq. 0)) then  ! column i was all = zero 
        call warn(6)
        write(6,*)' The column no. ',i,' of Amatrix is 0, the corresponding '// &
 &                ' FC will not be evaluated correctly because it does not appear in' // &
@@ -550,7 +650,7 @@
            write(ulog,*)'ARE YOU SURE THIS RANK WAS INCLUDED?! col,rnk,gr=',i,rnk,dum
        endif
        map(rnk)%err(dum) = '*'
-       write(ulog,*)' WARNINIG: column no. ',i,' of Amatrix is 0, the corresponding '// &
+       write(ulog,*)' WARNING: column no. ',i,' of Amatrix is 0, the corresponding '// &
 &                ' FC will not be evaluated correctly because it does not appear in' // &
 &                ' any of the constraints or force-displacement data '// &
 &                ' perhaps a larger supercell or one of different symmetry is needed', &
@@ -563,7 +663,7 @@
  end subroutine check_zero_column
 !=============================================================================
  subroutine find_t(t,rnk,nti)
-! for a given t in {1,...,ngr} find its corresponding rank and ntindp number nti
+!! for a given column index t in {1,...,ngr} find its corresponding rank and ntindp number nti
  use svd_stuff
  use ios  ! for the ulog file
  implicit none
@@ -577,7 +677,7 @@
        m(i)=m(i)+map(i)%ntind(gr)
     enddo
  enddo
- write(ulog,*)'FIND_T: ntindep(rnk)=',m
+! write(ulog,*)'FIND_T: ntindep(rnk)=',m
 
  if (t.ge.1 .and. t.le.m(1) ) then   ! because by default nterms(1)=1
     rnk=1
@@ -629,7 +729,7 @@
  use params
  use ios
  implicit none
- integer j,t,rnk,counter,m,n,j0,i
+ integer j,t,counter,m,n,j0,i
  logical new
  real(8) junk,zero
  real(8), dimension(n) :: a1d,b
@@ -812,60 +912,65 @@
  use params
  implicit none
 ! integer, intent(out) :: keep_grp2(:),size_kept_fc2
- integer g,ti,t,i0,j,l,taui,tauj,cnt,inside,keep,ishl
- real(8) rij(3),dij
+ integer g,t,i0,j,inside,keep,ishl
+ real(8) rij(3),dij(999)
 
  write(ulog,*)'SETUP_FC2: dimension of keep_grp2=',size(keep_grp2)
  keep_grp2=0
  size_kept_fc2=0  ! this is the size in amatrix of the FC2s not eliminated<map(2)%ntind.
- cnt=0
+!cnt=0
  do g=1,map(2)%ngr
     keep=0
-    do t=1,map(2)%nt(g)
+    ! do t=1,map(2)%nt(g)
+    do t=1,map(2)%ntind(g)
 ! find the pairs in that group and see if they fit in the WS cell
-       i0=map(2)%gr(g)%iat(1,t)
-       j =map(2)%gr(g)%iat(2,t)  ! this j is for atompos
+    !  i0=map(2)%gr(g)%iat(1,t)
+    !  j =map(2)%gr(g)%iat(2,t)  ! this j is for atompos
+       i0=map(2)%gr(g)%iatind(1,t)
+       j =map(2)%gr(g)%iatind(2,t)  ! this j is for atompos
        rij=atompos(:,j)-atompos(:,i0) ! is this within the WS cell?
-       dij=length(rij)
+!      dij(cnt+1)=length(rij)
        call check_inside_ws(rij,rws26,inside)
-       if(verbose) then
-! find which shell this rij corresponds to
-          do ishl=1,maxshell
-             if ( abs(atom0(iatomcell0(i0))%shells(ishl)%rij - dij).lt.1d-4 .and. inside.eq.1) then
-!               write(ulog,4)'group,i0,j,inside,keep,rij=',g,i0,j,inside,keep,length(rij)
-                write(ulog,5)'In group ',g,' the ',ishl,' th shell corresponding to rij=',dij,' is kept'
-                exit
-             endif
-          enddo
-       endif
        keep=keep+inside
     enddo
-    cnt=cnt+1
+!   cnt=cnt+1
+    dij(g)=length(rij)
     if(keep.ne.0) then ! if at least, one of the has to be kept, we keep that group
-        keep_grp2(cnt)=1
-!        size_kept_fc2=size_kept_fc2+1  ! needed in case more than 1 indepfc in a group
-        size_kept_fc2=size_kept_fc2+ map(2)%ntind(g)
+        keep_grp2(g)=1
+        size_kept_fc2=size_kept_fc2 + map(2)%ntind(g)
+        write(ulog,5)'In group ',g,' the shell corresponding to rij=',dij(g),' is kept nt_ind,sizekeptfc2 ', &
+&                     map(2)%ntind(g),size_kept_fc2
+
 !        do ti=1,map(2)%ntind(g)
 !!          if (map(2)%ntind(g).gt.1) size_kept_fc2=size_kept_fc2+1
 !           write(ulog,3)' group,ti,count,i0,j,rij=',g,ti,cnt,i0,j,length(rij),' keep_grp2(count)=',keep_grp2(cnt)
 !       enddo
-       write(ulog,3)' kept group, # of elements in it, cumulative size_kept_fc2=',g, &
-   &                 map(2)%ntind(g),size_kept_fc2
+! find which shell this rij corresponds to
+     !  if ( abs(atom0(iatomcell0(i0))%shells(ishl)%radius - dij).lt.1d-4 .and. inside.eq.1) then
+     !      write(ulog,5)'In group ',g,' the ',ishl,' th shell corresponding to rij=',dij,' is kept'
+     !      exit
+     !  endif
+!        write(ulog,3)' kept group, # of elements in it, cumulative size_kept_fc2=',g, &
+!   &                 map(2)%ntind(g),size_kept_fc2
+    else
+        write(ulog,6)'In group ',g,' the shell corresponding to rij,dij=',rij,dij(g),' is NOT kept'
+
     endif
  enddo
 
 
- write(ulog,*)'size of kept FC2s=',size_kept_fc2, 'out of ',sum(map(2)%ntind)
+ write(ulog,*)'size of kept FC2 indep terms=',size_kept_fc2, 'out of ',sum(map(2)%ntind)
  write(ulog,*)'size of groups of FC2s=',map(2)%ngr,size(keep_grp2)
  write(ulog,*)'# of groups kept =',sum(keep_grp2)
  write(ulog,*)'# i, keep_grp2(i)'
  do g=1, map(2)%ngr
-    write(ulog,*)g,keep_grp2(g)
+    write(ulog,*)g,keep_grp2(g),dij(g)
  enddo
 
 3 format(a,i3,1x,i3,1x,i5,3x,i3,1x,i4,f9.4,a,i4)
 4 format(a,i4,1x,2i4,3x,i4,2x,i4,2x,f9.4)
-5 format(a,i4,a,i4,a,f9.4,a)
+5 format(a,i4,a,f9.4,a,2i5)
+6 format(a,i4,a,4f9.4,a,2i5)
 
  end subroutine setup_FC2_in_supercell
 !==============================================

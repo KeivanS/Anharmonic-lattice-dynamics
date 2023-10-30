@@ -4,34 +4,6 @@
 
  contains
 
- subroutine dyn_coulomb(tau,taup,j,dyn)
-!! calculates the q component of the Coulomb force to subtract from fourier transform of total force
-! sdyn(tau,taup) = z(tau)^al,ga.q^ga  z(taup)^be.de.q^de  &
-!    &          1/eps0/(q.epsr.q)/volume_r q * u(qtaup,de)
- use atoms_force_constants
- use lattice, only : volume_r
- use fourier, only : ggrid
- use born, only : epsil
- use constants , only : eps0,ee
- implicit none
- integer, intent(in) :: tau,taup,j
- real(8), intent(out) :: dyn(3,3)  ! element (tau,taup)(ggrid(:,j)) of the Coulomb dynamical mat
- integer al,be
- real(8) zqa(3),zqb(3),denom,q(3),coef
-
- coef=ee/(eps0*1d10) ! to convert 1/ang^2 to eV/ang , includes cancellation of 4pi
- q=ggrid(:,j)
- zqa=matmul(atom0(tau)%charge,q)
- zqb=matmul(atom0(taup)%charge,q)
- denom=dot_product(q,matmul(epsil,q))
-
- do al=1,3
- do be=1,3
-    dyn(al,be)=zqa(al)*zqb(be)/denom/volume_r*coef
- enddo
- enddo
-
- end subroutine dyn_coulomb
 !============================================================
  subroutine make_grid_shell_ewald(x1,x2,x3,rcut,gcut,epsilo)
 !! generates a grid of vectors "grid" linear combinations of xi within a
@@ -48,10 +20,10 @@
 ! real(8), intent(inout):: grid(:,:)
 ! real(8), allocatable, intent(inout):: grid(:,:)
  integer i1,i2,i3,m,cnt,max
- real(8) v(3),rr,om0,aux2(3,3),epsinv(3,3)
+ real(8) v(3),rr,aux2(3,3),epsinv(3,3)
  real(8), allocatable :: aux(:,:),lengths(:)
  integer, allocatable :: msort(:)
- type(vector) y1,y2,y3,t1,t2,t3
+ type(vector) y1,y2,y3
 
 ! call apply_metric(x1,x2,x3,epsilo,t1,t2,t3)
  aux2=epsilo
@@ -200,7 +172,7 @@
        geg=dot_product(qpg,matmul(epsil,qpg))
        if (geg.gt.100*eta*eta) exit
        termg=exp(-geg/4/eta/eta)/geg
-       dpot=dpot + termg * qpg*sin(qpg .dot. x) *4*pi/volume_r
+       dpot=dpot + termg * qpg*sin(qpg .dot. x) *4*pi/volume_r  ! this is supercell volume
     enddo
 
 ! write(*,3)'dpotg=',dpot
@@ -269,9 +241,9 @@
 !===========================================================
  subroutine ewapot(x,pot)
 ! calculates the sum_R 1/|R+x| -background = pot (in 1/Ang no epsil)
- use constants
- use lattice
- use params
+ use constants , only: pi
+ use lattice , only: volume_r
+ use params, only : eta
  use geometry
  use born
  implicit none
@@ -323,7 +295,7 @@
  real(8), intent(in) :: dsp(3,n)
  real(8), intent(out) :: e_coul
  integer j
- real(8) x(3),pot,zi(3,3),zj(3,3),trace,emad
+ real(8) x(3),pot,zi(3,3),zj(3,3),emad,prod(3,3),trp
 
  call madelung2(emad)   ! sum'_R 1/R
 ! eps=trace(3,epsil)/3d0
@@ -333,12 +305,16 @@
     do j=1,n
        zj=atoms(j)%charge
        if(i.eq.j) then
-          e_coul=e_coul+emad*trace(matmul(zi,transpose(zi)))/3d0
+          prod=matmul(zi,transpose(zi))
+          trp=sum( (/ (prod(i,i),i=1,3)/) )   ! this is the trace function
+          e_coul=e_coul+emad*trp/3d0
        else
 !          x=atoms(i)%equilibrium_pos+dsp(:,i)-atoms(j)%equilibrium_pos-dsp(:,j)
           x=dsp(:,i)-dsp(:,j)
+          prod=matmul(zi,transpose(zj))
+          trp=sum( (/ (prod(i,i),i=1,3)/) )   ! this is the trace function
           call ewapot(x,pot)   ! sum_R 1/|R+x|
-          e_coul=e_coul+pot*trace(matmul(zi,transpose(zj)))/3d0
+          e_coul=e_coul+pot*trp/3d0
        endif
     enddo
 
@@ -371,7 +347,7 @@
 ! use born
  use ios , only : ulog
  implicit none
- integer tau1,tau2,al
+ integer al
  real(8) x(3),dpot(3),r12(3),potp,potm,force1,pot0
 
  write(ulog,*)'**************** TEST OF COULOMB FORCE *********************'
@@ -400,27 +376,32 @@
  use atoms_force_constants
  use constants, only : pi
  use fourier
- use lattice, only : rs1,rs2,rs3,g01,g02,g03 , volume_r
- use ios , only : ulog
- use params, only : verbose
+ use lattice, only : rs1,rs2,rs3,g01,g02,g03 , volume_r0, volume_r
+ use ios , only : ulog,write_out
+ use params, only : verbose, tolerance
  use born , only : epsil
  implicit none
  integer, intent(in):: born_flag,ncfg
- real(8), intent(inout) :: dsp(3,natom_super_cell,ncfg),frc(3,natom_super_cell,ncfg) ! dsp(:,:,:),frc(:,:,:)
- real(8), allocatable :: ewald_force(:,:),frcr(:,:),frcg(:,:),disr(:,:),disg(:,:)
- real(8) rr(3),dyn_coul(3,3),rcutoff_ewa,eta,gcutoff_ewa,deteps3
- integer nsc,n3(3),tau,taup,al,icfg,j
+ real(8), intent(inout) :: dsp(3,natom_super_cell,ncfg),frc(3,natom_super_cell,ncfg) 
+! automatic arrays here (lost after the call, memory released)
+ real(8) frcr(3,natom_prim_cell,nrgrid),frcg(3,natom_prim_cell,nggrid)
+ real(8) disr(3,natom_prim_cell,nrgrid),disg(3,natom_prim_cell,nggrid)
+ real(8) fcoulg(3,natom_prim_cell,nggrid),fcoulr(3,natom_prim_cell,nrgrid)
+ real(8) ewald_force(3,natom_super_cell),auxr(nrgrid),auxg(nggrid)
+! real(8), allocatable :: frcr(:,:,:),frcg(:,:,:),disr(:,:,:),disg(:,:,:)
+ real(8) rr(3),dyn_coul(3,3),ddn(3,3,3),rcutoff_ewa,eta,gcutoff_ewa,deteps3,asr(3,3)
+ integer nsc,n3(3),tau,taup,al,icfg,i,j
 
  write(*,*)'SUBTRACT_COULOMB_FORCE: size of force is 3,',size(frc(1,:,1)),size(frc(1,1,:))
 
 ! Beginning of ewald part for deduction of ewald force in real space ------------------
   if(born_flag.eq.0) then      ! skip if born_flag=0
      return
-  elseif(born_flag.eq.1) then  !  use ewald sums if=1, -FT(Dyn(K)*disp(k)) if=2
+  elseif(born_flag.eq.1) then  !  sums if=1, -FT(Dyn(K)*disp(k)) if=2
 
      write(ulog,*)'MAIN: going to call Ewaldforce '
 ! set cutoffs for Ewald sums ! this should come after the supercell is read!!!!
-     allocate(ewald_force(3,natom_super_cell))
+!     allocate(ewald_force(3,natom_super_cell))
      deteps3=det(epsil)**0.3333
      eta=sqrt(pi*deteps3)/(volume_r**0.3333)
      rcutoff_ewa=10*sqrt(deteps3)/eta
@@ -445,9 +426,9 @@
 
      enddo
 
-     deallocate(ewald_force)
+!     deallocate(ewald_force)
 
-  elseif(born_flag.eq.2) then  !  use dynmat_ewald*u_k (in reciprocal space)
+  elseif(born_flag.eq.2) then  ! use non-analytical subtraction (in reciprocal space)
 
 ! fourier transform forces and displacements in the supercell, subtract the q=0 ewald term
 ! and fourier transform back before svd
@@ -460,54 +441,105 @@
 !  erfc(4)=1.5d-8  so if eps=4/vol**.333 the real space terms become negligible
 ! exp(-18)=1.5d-8  so G larger than 5-6 shells will not contribute even if eps=4/vol^.3
 
-     allocate(frcr(3,nrgrid),frcg(3,nggrid))
-     allocate(disr(3,nrgrid),disg(3,nggrid))
-     do icfg=1,ncfg
-        do tau=1,natom_prim_cell
+5 format(a,3(i4),3(1x,f10.5))
 
+!    allocate(frcr(3,natom_prim_cell,nrgrid),frcg(3,natom_prim_cell,nggrid))
+!    allocate(disr(3,natom_prim_cell,nrgrid),disg(3,natom_prim_cell,nggrid))
+     config: do icfg=1,ncfg
+
+! can also loop over SC atoms and identify their (n,tau) and map n to j(rgrid)
+        do tau=1,natom_prim_cell
            do j=1,nrgrid
+! find reduced coordinates of rgrid
               rr(1)=(rgrid(:,j) .dot. g01)/2/pi
               rr(2)=(rgrid(:,j) .dot. g02)/2/pi
               rr(3)=(rgrid(:,j) .dot. g03)/2/pi
               n3=nint(rr)
+              if(length(rr-n3).gt.1d-4) then
+                  write(*,5)' SUBTRACT_COULOMB:n3.ne.rr ',n3,rr
+                  stop
+              endif
               call findatom_sc(n3,tau,nsc)
-              frcr(:,j)=frc(:,nsc,icfg)
-              disr(:,j)=dsp(:,nsc,icfg)
+              frcr(:,tau,j)=frc(:,nsc,icfg)
+              disr(:,tau,j)=dsp(:,nsc,icfg)
            enddo
+        enddo
+        do tau=1,natom_prim_cell
            do al=1,3
-              call fourier_r2k(frcr(al,:),frcg(al,:))
-              call fourier_r2k(disr(al,:),disg(al,:))
+!              call fr2k_5(nrgrid,frcr(al,tau,:),rws_weights,nggrid,frcg(al,tau,:))
+!              call fr2k_5(nrgrid,disr(al,tau,:),gws_weights,nggrid,disg(al,tau,:))
+               auxr=frcr(al,tau,:)
+               call fourier_r2k(auxr,auxg)
+               frcg(al,tau,:)=auxg
+               auxr=disr(al,tau,:) 
+               call fourier_r2k(auxr,auxg)
+               disg(al,tau,:)=auxg
+!              call fourier_r2k(disr(al,tau,:),disg(al,tau,:))
+!              call fourier_r2k(frcr(al,tau,:),frcg(al,tau,:))
+              write(*,*)'frcg&disg(29)=',al,tau,frcg(al,tau,29),disg(al,tau,29)
+! call write_out(6,' frcg ',frcg)
+! call write_out(6,' disg ',disg)
            enddo
+        enddo
 
-! now subtract ewald force in the form -D(k)u(k); requires u(k)
+!write(*,*)' nggrid,nrgrid=',nggrid,nrgrid
+!call write_out(6,' ggrid',ggrid)
+
+! now subtract non-analytical force in the form -D(k)u(k); requires u(k)
+        fcoulg=0
+        do tau=1,natom_prim_cell
+           asr=0
            do taup=1,natom_prim_cell
-              if(taup.eq.tau) cycle  ! tau and tau' must be different
-
               do j=1,nggrid
 ! Long-range Coulomb dynamical matrix for G-vector labeled by j
-                 call dyn_coulomb(tau,taup,j,dyn_coul)
+                 call dyn_coulomb(tau,taup,ggrid(:,j),dyn_coul,ddn)
+! call write_out(ulog,' SUBTRACT: dyn_coul ',dyn_coul)
+                 if (length(ggrid(:,j)).lt.tolerance) then
+                    asr=asr+dyn_coul
+                 endif
 ! subtract coulomb
-                 frcg(:,j)=frcg(:,j)+matmul(dyn_coul,disg(:,j))  ! + because -grad(force)=phi
+                 fcoulg(:,tau,j)=fcoulg(:,tau,j)-matmul(dyn_coul,disg(:,taup,j))/  &
+                 &             sqrt(atom0(tau)%mass*atom0(taup)%mass)
               enddo
            enddo
-! fourier transform back
-           do al=1,3
-              call fourier_k2r(frcg(al,:),frcr(al,:))
-              call fourier_k2r(disg(al,:),disr(al,:))
+           call write_out(6,' asr ',asr)
+! check asr on added term
+           do i=1,3
+           do j=1,3
+              if(abs(asr(i,j)).gt.tolerance)  write(ulog,*)'ASR in dyn_coul broken ',tau,i,j,asr(i,j)
            enddo
-           do j=1,nrgrid
-              rr(1)=(rgrid(:,j) .dot. g01)/2/pi
-              rr(2)=(rgrid(:,j) .dot. g02)/2/pi
-              rr(3)=(rgrid(:,j) .dot. g03)/2/pi
-              n3=nint(rr)
-              call findatom_sc(n3,tau,nsc)
-! write into the original array
-              frc(:,nsc,icfg)=frc(:,nsc,icfg)-frcr(:,j)
            enddo
-
         enddo
-     enddo
-     deallocate(frcr,frcg,disr,disg)
+! fourier transform back
+        do tau=1,natom_prim_cell
+        do al=1,3
+!           call fk2r_5(nggrid,frcg(al,tau,:),gws_weights,nrgrid,frcr(al,tau,:))
+!           call fk2r_5(nggrid,disg(al,tau,:),gws_weights,nrgrid,disr(al,tau,:))
+            auxg=fcoulg(al,tau,:)
+            call fourier_k2r(auxg,auxr)
+            fcoulr(al,tau,:)=auxr
+    !       auxg=disg(al,tau,:)
+    !       call fourier_k2r(auxg,auxr)
+    !       disr(al,tau,:)=auxr
+!           call fourier_k2r(frcg(al,tau,:),frcr(al,tau,:))
+!           call fourier_k2r(disg(al,tau,:),disr(al,tau,:))
+        enddo
+        enddo
+        call write_out(ulog,' Coulomb force',fcoulr)
+! from grid indices go back to supercell indices
+        do j=1,nrgrid
+           rr(1)=(rgrid(:,j) .dot. g01)/2/pi
+           rr(2)=(rgrid(:,j) .dot. g02)/2/pi
+           rr(3)=(rgrid(:,j) .dot. g03)/2/pi
+           n3=nint(rr)
+           do tau=1,natom_prim_cell
+              call findatom_sc(n3,tau,nsc)
+! write into the original array (no need for dsp since it was not changed)
+              frc(:,nsc,icfg)=frc(:,nsc,icfg)-fcoulr(:,tau,j)
+           enddo
+        enddo
+     enddo config
+!    deallocate(frcr,frcg,disr,disg)
 
   endif
 

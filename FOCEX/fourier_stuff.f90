@@ -2,15 +2,60 @@
   integer nrgrid,nggrid
   real(8), allocatable :: rgrid(:,:),ggrid(:,:)
   real(8), allocatable:: rws_weights(:),gws_weights(:)
+  integer, allocatable :: i1r(:),i2r(:),i3r(:),i1g(:),i2g(:),i3g(:)
 
   interface fourier_r2k
-     module procedure fourier_r2k_r,fourier_r2k_c
+     module procedure fourier_r2k_r,fourier_r2k_c,fr2k_5
   end interface
   interface fourier_k2r
-     module procedure fourier_k2r_r,fourier_k2r_c
+     module procedure fourier_k2r_r,fourier_k2r_c,fk2r_5
   end interface
 
   contains
+!-------------------------------------------
+ subroutine fr2k_5(nr,fr,wei,ng,fk)
+!! for an array of size nk defined on a mesh rmesh(3,nr), this subroutine
+!! calculates its cosine Fourier transform on the kmesh, conjugate to rmesh
+! a cosine transform is enough for even functions, otherwise R,-R must be symmetrized
+! from r to k all weights are =1
+
+ use geometry
+ implicit none
+ integer, intent(in) :: nr,ng
+ real(8), intent(in) :: fr(nr),wei(nr)
+ real(8), intent(out) :: fk(ng)
+ integer ik,ir
+
+ fk=0
+ do ik=1,size(fk) !ng
+    do ir=1,size(fr) !nr
+       fk(ik)=fk(ik)+cos(ggrid(:,ik).dot.rgrid(:,ir)) * fr(ir) * wei(ir)
+    enddo
+ enddo
+
+ end subroutine fr2k_5
+!-------------------------------------------
+ subroutine fk2r_5(nk,fk,wei,nr,fr)
+!! for an array of size nk defined on a mesh rmesh(3,nr), this subroutine
+!! calculates its cosine Fourier transform on the kmesh, conjugate to rmesh
+! a cosine transform is enough for even functions, otherwise R,-R must be symmetrized
+! from r to k all weights are =1
+
+ use geometry
+ implicit none
+ integer, intent(in) :: nr,nk
+ real(8), intent(in) :: fk(nk),wei(nk)
+ real(8), intent(out) :: fr(nr)
+ integer ik,ir
+
+ fr=0
+ do ir=1,size(fr) !nr
+    do ik=1,size(fk) !nk
+       fr(ir)=fr(ir)+cos(ggrid(:,ik).dot.rgrid(:,ir)) * fk(ik) * wei(ik)
+    enddo
+ enddo
+
+ end subroutine fk2r_5
 !-------------------------------------------
  subroutine fourier_r2k_r(fr,fk)
 !! for an array of size nk defined on a mesh rmesh(3,nr), this subroutine
@@ -20,14 +65,13 @@
 
  use geometry
  implicit none
-! integer, intent(in) :: nr,nk
- real(8), intent(in) :: fr(nrgrid)  !,rmesh(3,nr),kmesh(3,nk),  wr(nr)
- real(8), intent(out) :: fk(nggrid)
+ real(8), intent(in) :: fr(:) !nrgrid)
+ real(8), intent(out) :: fk(:) !nggrid)
  integer ik,ir
 
  fk=0
- do ik=1,nggrid
-    do ir=1,nrgrid
+ do ik=1,size(fk) !nggrid
+    do ir=1,size(fr) !nrgrid
        fk(ik)=fk(ik)+cos(ggrid(:,ik).dot.rgrid(:,ir)) * fr(ir) * rws_weights(ir)
     enddo
  enddo
@@ -40,14 +84,13 @@
 ! there is k,-k symmetry from time reversal, so a cosine transform is enough
  use geometry
  implicit none
-! integer, intent(in) :: nk,nr
- real(8), intent(in) ::  fk(nggrid) !rmesh(3,nr),kmesh(3,nk),wk(nk),
- real(8), intent(out) :: fr(nrgrid)
+ real(8), intent(in) ::  fk(:) !nggrid)
+ real(8), intent(out) :: fr(:) !nrgrid)
  integer ik,ir
 
  fr=0
- do ir=1,nrgrid
-    do ik=1,nggrid
+ do ir=1,size(fr) !nrgrid
+    do ik=1,size(fk) !nggrid
        fr(ir)=fr(ir)+cos(ggrid(:,ik).dot.rgrid(:,ir)) * fk(ik) * gws_weights(ik)
     enddo
  enddo
@@ -56,21 +99,20 @@
 !-------------------------------------------
  subroutine fourier_r2k_c(fr,fk)
 !! for an array of size nk defined on a mesh rmesh(3,nr), this subroutine
-!! calculates its cosine Fourier transform on the kmesh, conjugate to rmesh
+!! calculates its complex Fourier transform on the kgrid, conjugate to rgrid
 ! a cosine transform is enough for even functions, otherwise R,-R must be symmetrized
 ! from r to k all weights are =1
 
  use geometry
  use constants, only : ci
  implicit none
-! integer, intent(in) :: nr,nk
- complex(8), intent(in) :: fr(nrgrid)  !,rmesh(3,nr),kmesh(3,nk),  wr(nr)
- complex(8), intent(out) :: fk(nggrid)
+ complex(8), intent(in) :: fr(:) !nrgrid)
+ complex(8), intent(out) :: fk(:) !nggrid)
  integer ik,ir
 
  fk=0
- do ik=1,nggrid
-    do ir=1,nrgrid
+ do ik=1,size(fk) !nggrid
+    do ir=1,size(fr) !nrgrid
        fk(ik)=fk(ik)+cdexp(ci*(ggrid(:,ik).dot.rgrid(:,ir))) * fr(ir) * rws_weights(ir)
     enddo
  enddo
@@ -84,23 +126,23 @@
  use geometry
  use constants, only : ci
  implicit none
-! integer, intent(in) :: nk,nr
- complex(8), intent(in) ::  fk(nggrid) !rmesh(3,nr),kmesh(3,nk),wk(nk),
- complex(8), intent(out) :: fr(nrgrid)
+ complex(8), intent(in) ::  fk(:) !nggrid) 
+ complex(8), intent(out) :: fr(:) !nrgrid)
  integer ik,ir
 
  fr=0
- do ir=1,nrgrid
-    do ik=1,nggrid
+ do ir=1,size(fr) !nrgrid
+    do ik=1,size(fk) !nggrid
        fr(ir)=fr(ir)+cdexp(-ci*(ggrid(:,ik).dot.rgrid(:,ir))) * fk(ik) * gws_weights(ik)
     enddo
  enddo
 
  end subroutine fourier_k2r_c
 !-------------------------------------------
- subroutine extract_fourier(ncfg,nat,dsp,frc,nrmesh,rmesh,wr,nkmesh,kmesh,wk,maprtausc)
+ subroutine extract_fourier(ncfg,nat,dsp,frc,nrmesh,rmesh,nkmesh,kmesh,maprtausc)
 !! this subroutine takes force-displacements data X(r,tau,s), Fourier transforms to get f(k,tau,s)
-!! and u(k,tau,s) for tau in the primitive cell, and s=snapshot#, and k a supercell translation vector.
+!! and u(k,tau,s) for tau in the primitive cell, and s=snapshot#, and a supercell translation vector
+!! k (+ its stars) .
 !! Then extracts D(k;tau,tau') defined by F(k,tau,s)=-D(k,tau,tau')*u(k,tau',s) using data from all
 !! snapshots "s" by direct SVD inversion and enforcing group symmetry relations on D(k) and its stars
 !! then calculates phonon dipersion by diagonalization, and also calculates phi(tau,tau'+R) by inverse
@@ -112,18 +154,17 @@
  use kpoints, only : kibz,wibz,nibz
  use ios !, only : ulog,umatrx,ufc2,utimes,write_out
  use geometry
+ use params, only : verbose
  use atoms_force_constants
  implicit none
  integer, intent(in) :: ncfg,nat,nrmesh,nkmesh,maprtausc(natom_prim_cell,nrmesh)
  real(8), intent(in) :: dsp(3,nat,ncfg),frc(3,nat,ncfg)
- real(8), intent(in) :: rmesh(3,nrmesh),wr(nrmesh),kmesh(3,nkmesh),wk(nkmesh)
- real(8), allocatable:: ur(:,:),uk(:,:),fr(:,:),fk(:,:),amatk(:,:),bmatk(:),coefs(:,:),sigm(:),eye(:,:)
+ real(8), intent(in) :: rmesh(3,nrmesh),kmesh(3,nkmesh)
+ real(8), allocatable:: ur(:,:),uk(:,:),fr(:,:),fk(:,:),amatk(:,:),bmatk(:),coefs(:,:),sigm(:)
  complex(8), allocatable:: dynk(:,:,:) ,aux(:) ,d2(:,:),phi(:,:,:)
- integer nat0,icfg,ik,iarm,narm,l,iat,i,j,tau,ir,iatom,nu,cnt,nkstar,dim_l,dimdyn, &
+ integer nat0,icfg,ik,iarm,l,i,j,tau,ir,iatom,nu,nkstar,dim_l,dimdyn, &
  &       kvecop(48),narms,nsym,dim_c,n2,iop
  real(8) error,ermax,sig,kvecstar(3,48),sk(3),s3(3,3)
- integer, allocatable :: mcor(:)
- real(8) zro,q(3)
  real tim
 
 ! nat0=nat/nrmesh
@@ -180,7 +221,8 @@
          amatk((iarm-2)*dimdyn+1:(iarm-1)*dimdyn,(iarm-1)*dimdyn+1:iarm*dimdyn)=coefs
 
 ! amatk((iarm-2)*dimdyn+1:(iarm-1)*dimdyn,1:dimdyn)  obtained by symmetry
-         call get_relation_dynstar(nat0,kibz(:,ik),iarm,kvecstar,iop,op_kmatrix(:,:,iop),dimdyn,coefs)
+!         call get_relation_dynstar(nat0,kibz(:,ik),iarm,kvecstar,iop,op_kmatrix(:,:,iop),dimdyn,coefs)
+         call get_relation_dynstar(nat0,iop,op_kmatrix(:,:,iop),dimdyn,coefs)
          amatk((iarm-2)*dimdyn+1:(iarm-1)*dimdyn,1:dimdyn)=coefs(1:dimdyn,1:dimdyn)
 
          bmatk((iarm-2)*dimdyn+1:(iarm-1)*dimdyn)=0d0
@@ -225,11 +267,12 @@
               amatk(n2+i , (iarm-1)*dimdyn+nu )=uk(i,nkstar)
            enddo
 
-           write(umatrx,*)'***** Configuration # ',icfg,' for kibz=',ik
-           do j=1,3*nat0
-              write(umatrx,3)amatk(n2+j,:),bmatk(n2+j)
-           enddo
-
+           if(verbose) then
+             write(umatrx,*)'***** Configuration # ',icfg,' for kibz=',ik
+             do j=1,3*nat0
+                write(umatrx,3)amatk(n2+j,:),bmatk(n2+j)
+             enddo
+           endif
         enddo snaploop
      enddo armloop
 
@@ -316,7 +359,7 @@
 
 ! end subroutine rotate
 !===================================================================
- subroutine get_relation_dynstar(nat,kibz,iarm,kstar,iop,s3,ndim,coefs)
+ subroutine get_relation_dynstar(nat,iop,s3,ndim,coefs)
 ! Relates the "rotated" dynamical matrices D(k*) to and D(k)
 ! if D is stored in 1D array (1:ndim) where ndim=3N(3N+1)/2, then D(k*) = coeff*D(k)
 ! The relation is: D^al,be (tau,tau',S(k))=S^al,al' S^be,be' D^al',be' (iS(tau),iS(tau'),k)
@@ -329,12 +372,10 @@
  use geometry
  use atoms_force_constants
  implicit none
- integer, intent(in) :: iarm,ndim,nat,iop
- real(8), intent(in) :: kibz(3),kstar(3),s3(3,3)
+ integer, intent(in) :: ndim,nat,iop
+ real(8), intent(in) :: s3(3,3)
  real(8), intent(out):: coefs(ndim,ndim)
- real(8) rttp(3),rtstps(3)
  integer l,c,tau,taup,i,j,ic,jc,al,be,als,bes,taus,taups
- logical matched
 
  if(ndim .ne. (3*nat*(3*nat+1))/2 ) then
      write(*,*)'ERROR in get_relation_dynstar: nat, ndim=',nat,ndim

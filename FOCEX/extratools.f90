@@ -1,5 +1,5 @@
-!=============================================================================
- subroutine findword(word,line,found)
+!=======================================================================
+ subroutine findword(word,line,found,i)
 ! says if the string "word" exists in string "line"
  implicit none
  logical found
@@ -14,8 +14,8 @@
     endif
  enddo
  end subroutine findword
-!======================================================================================
-      subroutine findatom_sc(n3,tau,iatom)
+!=======================================================================
+ subroutine findatom_sc(n3,tau,iatom)
 !! finds the index of the atom in supercell with identity (n3[modulo supercell],tau)
 !! arguments:
 !!     n3(3) (input), linear combination of basis vectors of the primitive
@@ -26,144 +26,183 @@
       use lattice
       use ios
       use atoms_force_constants
+      use constants , only:pi
       implicit none
       integer, intent(in) :: n3(3),tau
       integer, intent(out) :: iatom
-      integer j,m(3),l,isin
-      real(8) a(3),b(3),zero(3)
+      integer j,m(3),al
+      real(8) mi(3),b(3)
 
-! first check to see if it is one of the sc atoms
-      zero = 0d0
       iatom = 0
+! write(*,*) '************** entering findatom_sc with tau,n=',tau,n3
       jloop: do j=1,natom_super_cell
+! write(*,*)'FINDATOM_SC:j_sc,tauj_sc,nj_sc=',j,atom_sc(j)%cell%tau,atom_sc(j)%cell%n
          if (atom_sc(j)%cell%tau .eq. tau ) then
              m = atom_sc(j)%cell%n - n3
-! fold this m into the supercell if it exceeds it
-! find direct coordinates of n3 - n(j) in the supercell and see if it is integer
-! to do this form (sum_i m(i)*r0(i)).gsc(j) this should be integer
-             a = matmul(r0g,dfloat(m))
-! if the 3 components of a are integer, then iatom=j
-!             m = floor(a+0.00001)
-!             b = a - m
-!             if (b .myeq. zero ) then
-!                iatom = j
-!                return
-!             endif
-              if(abs(a(1)-nint(a(1))).lt.0.0001 .and.  &
-    &            abs(a(2)-nint(a(2))).lt.0.0001 .and.  &
-    &            abs(a(3)-nint(a(3))).lt.0.0001) then
-                  iatom=j
-                  exit jloop
-              endif
-
+             mi=matmul(r0g,m)
+             if (is_integer(mi)) then
+                 iatom=j
+                 return
+             endif
          endif
+
+!            m=floor(mi+0.001)
+!            b=mi-m
+!            if(length(b).lt.1d-3) then
+!                iatom=j
+!                return
+!            endif
+!        endif
       enddo jloop
+
       if(iatom.eq.0) then
          write(*,*)'FINDATOM_SC: no SC atom could be found for tau,n=',tau,n3
          stop
       endif
-      end subroutine findatom_sc
-!======================================================================
- subroutine make_r0g
-! matmul(r0g,n) gives the 3 reduced coordinates of the primcell of index n in units of the supercell ri's
-! matmul(r0g,v) gives the 3 reduced coordinates of an atom in the supercell if its
-! coordinates are v(1)*r01+v(2)*r02+v(3)*r03
- use lattice
- use constants , only : pi
- implicit none
 
- r0g(1,1) = r01 .dot. gs1
- r0g(2,1) = r01 .dot. gs2
- r0g(3,1) = r01 .dot. gs3
- r0g(1,2) = r02 .dot. gs1
- r0g(2,2) = r02 .dot. gs2
- r0g(3,2) = r02 .dot. gs3
- r0g(1,3) = r03 .dot. gs1
- r0g(2,3) = r03 .dot. gs2
- r0g(3,3) = r03 .dot. gs3
- r0g=r0g/(2*pi)
+4 format(a,9(1x,i3))
+5 format(a,9(1x,f9.4))
 
- end subroutine make_r0g
-!======================================================================
- subroutine make_rg(x1,x2,x3,q1,q2,q3,n)
-! matmul(r0g,n) gives the 3 reduced coordinates of the primcell of index n in units of the supercell ri's
-! matmul(r0g,v) gives the 3 reduced coordinates of an atom in the supercell if its
-! reduced coordinates in the primitive cell are given by v
- use geometry
- implicit none
- real(8) x1(3),x2(3),x3(3),q1(3),q2(3),q3(3),n(3,3)
+ end subroutine findatom_sc
+!=======================================================================
+ subroutine findatom_sc2(n3,tau,iatom)
+!! finds the index of the atom in supercell with identity (n3[modulo supercell],tau)
+!! arguments:
+!!     n3(3) (input), linear combination of basis vectors of the primitive
+!!          lattice that takes us to the unit cell containing the ith atom
+!!     tau (input), identity of equivalent atom in unit cell at origin
+!!     iatom (output), index of equivalent atom in supercell. Returns zero if not found
+      use geometry
+      use lattice
+      use ios
+      use atoms_force_constants
+      use constants , only:pi
+      implicit none
+      integer, intent(in) :: n3(3),tau
+      integer, intent(out) :: iatom
+      integer j,m(3),al
+      real(8) mi(3)
+      logical is_integer
 
- n(1,1) = x1 .dot. q1
- n(1,2) = x1 .dot. q2
- n(1,3) = x1 .dot. q3
- n(2,1) = x2 .dot. q1
- n(2,2) = x2 .dot. q2
- n(2,3) = x2 .dot. q3
- n(3,1) = x3 .dot. q1
- n(3,2) = x3 .dot. q2
- n(3,3) = x3 .dot. q3
+      iatom = 0
+ write(*,*) '************** entering findatom_sc with tau,n=',tau,n3
+!call write_out(6,'n_sc ',dble(n_sc))
+!call write_out(6,'invn_sc ',invn_sc)
+      jloop: do j=1,natom_super_cell
+ write(*,*)'FINDATOM_SC:j_sc,tauj_sc,nj_sc=',j,atom_sc(j)%cell%tau,atom_sc(j)%cell%n
+     !   cycle jloop
+! find n,tau of atom j and compare to the input n3,tau, modulo nr
+         if (atom_sc(j)%cell%tau .eq. tau ) then
+             m = atom_sc(j)%cell%n - n3
+!write(*,4) ' j,tau,m=',j,tau,m
+! bring it to the supercell i.e. make it modulo n_sc : use invn_sc matrix
+             mi=matmul(invn_sc,m)
+ write(*,*)'   FINDATOM_SC:m,mi=',m,mi
+!write(*,5) ' invrsem=',mi 
+! mi are the coeffs of m vector in units or n_sc, 
+! if it has integer components then n3 is good
+            do al=1,3
+               if(is_integer(mi(al))) then
+ write(*,*)'   FINDATOM_SC:OK for al,mi(al) =',al,mi(al)
+                  cycle
+               else
+                  cycle jloop  ! this mi is no good, try the next atom
+               endif
+            enddo   ! if we exit the loop here, then mi is good
+            iatom=j
+ write(*,*)'   FINDATOM_SC:OK for atom j, exiting ',j
+            exit jloop
+         endif
+      enddo jloop
 
- end subroutine make_rg
-!============================================================
- subroutine check(r,a1,a2,a3,ier,g1,g2,g3)
-!! subroutine to check whether r is an integer multiple of (r01,r02,r03)
-!! output ai are the coefficients of its linear combination on this basis
-!! ier=0 means r is an integer multiple of the basis
- use geometry
- use params
- use constants
- use ios
- implicit none
+      if(iatom.eq.0) then
+         write(*,*)'FINDATOM_SC: no SC atom could be found for tau,n=',tau,n3
+         stop
+      endif
 
- type(vector) :: r,g1,g2,g3
- real(8) a1,a2,a3,ep
- integer ier
+4 format(a,9(1x,i3))
+5 format(a,9(1x,f9.4))
 
- ep = tolerance ! 0.001 ! displacements larger than 0.001 A are not tolerated
-!call write_out(ulog,'CHECK: R ',r)
- a1 = (r .dot. g1)/(2*pi)  ! g's have a 2 pi
- a2 = (r .dot. g2)/(2*pi)
- a3 = (r .dot. g3)/(2*pi)
- if(abs(a1-nint(a1)).ge.ep .or.abs(a2-nint(a2)).ge.ep   &
-&   .or.abs(a3-nint(a3)).ge.ep ) then
-!  write(ulog,*) ' R is not a multiple of r0s , check your inputs '
-!  write(ulog,*) ' R.r0i=',a1,a2,a3
-   ier = 1
-!  stop
- else
-!  write(ulog,*) ' R is a multiple of r0s'
-!  write(ulog,3) ' n1,n2,n3  =',a1,a2,a3
-   ier = 0
- endif
-3 format(a,3(1x,g13.6))
+ end subroutine findatom_sc2
+!===================================================
+ subroutine get_n_tau_r(r,n,tau)
+!! for a vector position r, finds the (tau,n) FROM ATOMPOS list
+!! if r(3) is not in the atompos list, then tau=0
+ use atoms_force_constants 
+ use params, only : tolerance
+ integer, intent(out) :: n(3),tau
+ real(8), intent(in) :: r(3)
+ integer i
 
- end subroutine check
-!============================================================
- subroutine check_d(r,a1,a2,a3,ier)
-! subroutine to check whether r is an integer vector
-! output ai are the coefficients of its linear combination on this basis
-! ier=0 means r is an integer multiple of the basis
- use geometry
- use params
- use ios
- implicit none
- type(vector) :: r
- real(8) a1,a2,a3,ep
- integer ier
+ tau=0
+ do  i=1,natoms
+     if(length(r-atompos(:,i)) .lt. tolerance) then
+        tau=iatomcell0(i)
+        n  =iatomcell(:,i)
+        exit
+     endif
+ enddo
 
- ep = tolerance ! 1d-3
-!call write_out(ulog,'CHECK: R ',r)
- a1 = r%x
- a2 = r%y
- a3 = r%z
- if(abs(a1-nint(a1)).ge.ep .or.abs(a2-nint(a2)).ge.ep   &
-&   .or.abs(a3-nint(a3)).ge.ep ) then
-   ier = 1
- else
-   ier = 0
- endif
+ end subroutine get_n_tau_r
+!===================================================
+ subroutine get_n_tau_r_mod(r,n,tau)
+!! for a vector position r, finds the (tau,n) regardless of ATOMPOS list
+! just brings it to the primcell and finds the tau. 
+! It is not the (tau,n) defining atompos!! or is it??
+ use atoms_force_constants 
+ use params, only : tolerance
+ use lattice , only : g01,g02,g03,check_int,r01,r02,r03,prim_to_cart,cart_to_prim
+ integer, intent(out) :: n(3),tau
+ real(8), intent(in) :: r(3)
+ integer i0,ier
+ real(8) a(3),lv,v(3),p(3)
 
- end subroutine check_d
+! bring it to unitcell
+ call unitcell(cart_to_prim,prim_to_cart,r,p)
+ v=r-p 
+ n = nint(matmul(cart_to_prim,v))
+ tau=0
+ do  i0=1,natom_prim_cell
+     if( length(p-atompos(:,i0)) .lt. tolerance) then
+        tau=i0  ! i=iatomcell0(i) for i =< natom_prim_cell 
+        return
+!    else
+!       write(*,5)'i0,r_cell,pos(i)=',dble(i0),p,atompos(:,i0)
+     endif
+ enddo 
+ write(*,4)'GET_N_TAU_R_MOD: atom not found; tau,n,r=',tau,n,r
+ return
+
+ call check_int(a2v(r),a,ier,g01,g02,g03)  !  a is r in reduced units 
+ n=floor(a) 
+ v=a-n  ! v components are in [0,1[
+
+ tau=0
+ iloop:do  i0=1,natom_prim_cell
+     p=matmul(cart_to_prim,v2a(atom0(i0)%equilibrium_pos))  ! reduced coordinates of i0
+     lv= length(v-p)
+     if( lv .lt. tolerance) then
+        tau=i0  ! i=iatomcell0(i) for i =< natom_prim_cell 
+        exit iloop
+     else
+        write(*,5)'i0,r_red,pos(i0)_red,diff,n=',dble(i0),a,p,a-p,dble(n) 
+     endif
+ enddo iloop
+
+4 format(a,4i4,99(1x,f9.3))
+5 format(a,99(1x,f9.3))
+ end subroutine get_n_tau_r_mod
+!===================================================
+ subroutine get_n_tau(j_sc,n,tau)
+!! for a supercell atom j_sc, finds the (tau,n) 
+ use atoms_force_constants 
+ integer, intent(out) :: n(3),tau
+ integer, intent(in) :: j_sc
+
+ n=atom_sc(j_sc)%cell%n
+ tau=atom_sc(j_sc)%cell%tau
+
+ end subroutine get_n_tau
 !======================================================================
   function fcut(x,x1,x2) result(y)
   implicit none
@@ -503,8 +542,7 @@
  type(vector), intent(in) :: g1,g2,g3
  real(8), intent(out) :: gg(3,nshell)
  integer i,j,k,n5,ik,ns
- real(8), allocatable :: g5(:,:),gs(:)
- integer, allocatable :: xmap(:)
+ real(8), allocatable :: g5(:,:)
 
  ns = (2*nshell+1)**(0.3333) ! this is larger than the radius corresponding to nshell points
  n5 = (2*ns+1)**3 ! this therefore an upper bound to the needed number
@@ -540,7 +578,7 @@
 ! from the basis (g1,g2,g3) generate the nshell shortest linear combinations including 0
  use geometry
  implicit none
- integer nshell,i,j,k,n5,ik,ns
+ integer nshell,i
  real(8) gg(3,nshell)
  real(8) g5(3,nshell),gs(nshell)
  integer xmap(nshell)
@@ -618,7 +656,7 @@
 ! inside would be =1 if -0.5<q<0.5
  use geometry
  implicit none
- real(8) q(3),aux,qdr,epsl
+ real(8) q(3),aux,qdr
  type(vector) rr
  integer n,i,insid
 
@@ -823,9 +861,12 @@
  subroutine inverse_real(a,b,n)
 !! inverts a real matrix a(nxn)
       implicit none
-      integer n,imax,k,j,i,ii
-      real(8) ::  amax
-      real(8) a(n,n),b(n,n),atmp,btmp,amult,div
+      integer, intent(in) :: n
+      integer imax,k,j,i,ii
+      real(8), intent(inout) :: a(n,n)
+      real(8), intent(out) :: b(n,n)
+      real(8) amax,atmp,btmp,amult,div
+
 
       b=0d0
       do i=1,n
@@ -885,7 +926,7 @@
 !===============================================================
   subroutine mean_sd(x,mean,sd)
   implicit none
-  integer n,i
+  integer n
   real(8) x(:),mean,sd,sd2
 
   n=size(x)
@@ -902,7 +943,7 @@
   integer, intent(in):: m,mesh
   real(8), intent(in):: x(m)
   integer i,j,cnt,unit
-  real(8) xmin,xmax,dx,sume,cume,e(mesh)
+  real(8) xmin,xmax,dx,e(mesh)
 
   unit=123
   open(unit,file='histo.dat')
@@ -932,14 +973,17 @@
 
   end subroutine histogram
 !============================================================
- function trace(mat)
+ function trace(mat) result(tr)
  implicit none
- integer i
- real(8) trace,mat(:,:)
+ integer i,n
+ real(8), dimension(:,:), intent(in) :: mat
+ real(8) tr !, intent(out) ::  tr
 
- trace=0
- do i=1,size(mat(1,:))
-    trace=trace+mat(i,i)
+ n=size(mat,1); write(*,*)'TRACE: n=',n
+ write(*,*)'TRACE: mat=',mat
+ tr=0
+ do i=1,n
+    tr=tr+mat(i,i)
  enddo
 
  end function trace
@@ -1163,38 +1207,38 @@
 3 format(9(1x,f10.5))
  end subroutine make_grid
 !============================================================
- subroutine get_upper_bounds(x1,x2,x3,rcut,maxatm,maxsh)
+ subroutine get_upper_bounds(x1,x2,x3,rcut,maxatm,nsmx)
 !! finds maxp, the number of grid points in the sphere of radius rcut and m, the needed mesh
-!! outputs are maxsh and maxatm: upper bounds in 1D and in 3D (used for 3 loops and allocation)
+!! outputs are nsmx and maxatm: upper bounds in 1D and in 3D (used for 3 loops and allocation)
  use geometry
  use atoms_force_constants, only : natom_prim_cell
  use ios, only : ulog
  implicit none
  type(vector),intent(in) :: x1,x2,x3
- integer,intent(out) :: maxsh,maxatm ! upper boundary in 1D and in 3D (used for 3 loops and allocation)
+ integer,intent(out) :: nsmx,maxatm ! upper boundary in 1D and in 3D (used for 3 loops and allocation)
  real(8),intent(in) :: rcut
  integer m1,m2
- real(8) om0,ls
+ real(8) om0,ls,lmax
 
  call calculate_volume(x1,x2,x3,om0)
  ls=om0**0.333333 ! typical unitcell size
- maxatm=(nint(12.56/3d0*(1.3*(rcut+ls))**3/om0)+1)*natom_prim_cell  ! upperbound to the number of unitcells in the sphere
+ maxatm=(nint(12.56/3d0*(1.3*(rcut+ls))**3/om0)+1)*natom_prim_cell  ! upperbound to the number of atoms in the sphere
 
+ lmax= max(length(x3),length(x1),length(x2))
 ! find shortest translation vector length
+ ls=om0/lmax/lmax
  ls=min(ls,length(x3),length(x1),length(x2))
-! ls=min(ls,length(x3))
-! ls=min(ls,om0**0.33333)
- write(ulog,3)'GET_UPPER_BOUNDS: shortest translation length=',ls
+ write(ulog,3)'GET_UPPER_BOUNDS: lower bound to translation vectors length=',ls
 
  m1=nint(rcut/ls)+2
  m2=(nint((3/12.56*(maxatm/natom_prim_cell))**0.33333)+1)
- maxsh=max(m1,m2)
+ nsmx=max(m1,m2)
 ! maxp=(2*m+1)**3
 
- write(ulog,4)'GET_UPPER_BOUNDS:m1,maxsh,max,rcut=',m1,maxsh,maxatm,rcut
+ write(ulog,4)'GET_UPPER_BOUNDS:rcut,(rcut+ls)/2,nsmx,maxatom=',rcut,m1,nsmx,maxatm
 
 3 format(a,9(1x,g14.7))
-4 format(a,3i8,9(1x,g14.7))
+4 format(a,f9.4,1x,3i8)
 
  end subroutine get_upper_bounds
 !============================================================
@@ -1233,7 +1277,7 @@
 
  end subroutine apply_metric
 !============================================================
- subroutine make_grid_weights_WS(x01,x02,x03,x1,x2,x3,ngrd,space,sx)
+ subroutine make_grid_weights_WS(x01,x02,x03,x1,x2,x3,ngrd,space,sx) !,weig)
 !! generates a grid "rgrid" or "ggrid" (depending on space) from primitive translation vectors
 !! x0i but contained in the Wigner-Seitz cell of x1,x2,x3, with corresponding weights
 !! works for fourier interpolation in the reciprocal space because get_stars works for q-points
@@ -1243,17 +1287,19 @@
  use ios, only : ulog
  use lattice
  use params
- use fourier
+ use fourier   ! grid points and their weights defined in module Fourier
  implicit none
  type(vector), intent(in):: x01,x02,x03,x1,x2,x3
  real(8), intent(out):: sx(3,26)
  integer, intent(out):: ngrd
  character(len=1), intent(in) :: space
- integer i1,i2,i3,m,cnt,j,in,n,k,nb,jmax,narms,j2,nboundary,insid,nbtot
+ integer i1,i2,i3,m,cnt,n,nboundary,insid,nbtot
  type(vector) b01,b02,b03,b1,b2,b3
- real(8) v(3),vred(3),w(3),wred(3),s0x(3,26),a1,a2,a3,t1,t2,t3,omx,omx0,prev,minleng,tol
+ real(8) v(3),s0x(3,26),omx,omx0,tol !,weig(ngrd)
  integer, allocatable :: save_boundary(:)
- real(8), allocatable :: aux(:,:),grd(:,:),weig(:)
+ real(8), allocatable :: aux(:,:),grd(:,:)
+ real(8), allocatable :: weig(:)
+! integer, pointer::i1p(:),i2p(:),i3p(:)
 ! type(vector) y1,y2,y3
 
 ! find the shortest basis bi among xi and the corresponding 26 shortest vectors
@@ -1276,6 +1322,7 @@
 
 ! aux contains the grid vectors inside or on the boundary
  allocate(aux(3,n))
+! allocate(i1p(2),i2p(2),i3p(2))
  write(ulog,*)' allocated grid size, including boundary points=',n
 
 ! create the grid within the WS supercell xi
@@ -1299,15 +1346,26 @@
     cnt=cnt+1
     write(*,4)'new vector ',cnt,v
     aux(:,cnt)=v
-
+  !  i1p(cnt)=i1
+  !  i2p(cnt)=i2
+  !  i3p(cnt)=i3
+ 
  enddo i3loop
  enddo
  enddo
 
  ngrd=cnt
- write(ulog,4)' actual grid size=',ngrd
+! write(ulog,4)' actual grid size=',cnt
+! if(ngrd.ne.cnt) then
+!    write(*,*)'grid size is not matching actual number ',ngrd,cnt
+!    stop
+! endif
+
 ! write(ulog,4)' Number of vectors defining the boundary=',nboundary
 
+ if(allocated(grd)) deallocate(grd)
+ if(allocated(weig)) deallocate(weig)
+ if(allocated(save_boundary)) deallocate(save_boundary)
  allocate(grd(3,ngrd),save_boundary(ngrd),weig(ngrd))
  save_boundary=0
  grd(:,1:ngrd)=aux(:,1:ngrd)
@@ -1320,11 +1378,10 @@
  do cnt=1,ngrd
 
 ! identify vectors on the boundary
-    call is_on_boundary(grd(:,cnt), sx,nboundary,tol)
+    call is_on_boundary(grd(:,cnt), sx,nboundary,tol)  ! nboundary=on how many facets
     if(nboundary.ne.0) then
        save_boundary(cnt)=nboundary
        nbtot=nbtot+1
-!       weig(cnt)=1d0/nboundary ! vectors on many boundaries have a smaller weight
     endif
     write(ulog,6)'i,grid(i), on how many boundaries ',cnt,nboundary,grd(:,cnt)
  enddo
@@ -1333,45 +1390,67 @@
 
  call find_ws_weights(ngrd,grd,save_boundary,sx,weig)
 
-! normalize weig (should normalize to 1)
- weig=weig*omx0/omx
-
- write(ulog,*)'sum of the weights=',sum(weig(1:ngrd))
- if(abs(sum(weig)-1).gt.tolerance) then
-    write(*,*)'WARNING: weights not normalized to 1 ',sum(weig(1:ngrd))
-    write(ulog,*)'WARNING: weights not normalized to 1 ',sum(weig(1:ngrd))
- endif
 
 
  if(space.eq.'r' .or. space.eq.'R') then
     if (allocated(rgrid)) deallocate(rgrid)
     if (allocated(rws_weights)) deallocate(rws_weights)
-    allocate(rgrid(3,ngrd), rws_weights(ngrd))
+    allocate(rgrid(3,ngrd), rws_weights(ngrd),i1r(ngrd),i2r(ngrd),i3r(ngrd))
     nrgrid=ngrd
     rgrid = grd
+!    i1r=i1p(1:ngrd); i2r=i2p(1:ngrd); i3r=i3p(1:ngrd)
+! normalize weights (should normalize to 1)
+    weig = weig*omx0/omx
     rws_weights = weig
+ write(ulog,*)'sum of the weights=',sum(weig) !(1:ngrd))
+ if(abs(sum(weig)-1).gt.tolerance) then
+    write(*,*)'WARNING: Rweights not normalized to 1 ',sum(weig) !(1:ngrd))
+    write(ulog,*)'WARNING: Rweights not normalized to 1 ',sum(weig) !(1:ngrd))
+ endif
     open(98,file='rgrid_raw.dat')
     open(99,file='rgridWS.xyz')
+
  elseif(space.eq.'g' .or. space.eq.'G') then
     if (allocated(ggrid)) deallocate(ggrid)
     if (allocated(gws_weights)) deallocate(gws_weights)
     allocate(ggrid(3,ngrd), gws_weights(ngrd))
     nggrid=ngrd
     ggrid = grd
-    gws_weights = weig / (volume_r/volume_r0) ! introduce 1/N since used for Fourier transforms
+! normalize weights (should normalize to 1)
+ !  weig = weig*omx/omx0
+    gws_weights = weig ! / (volume_r/volume_r0) ! introduce 1/N since used for Fourier transforms
+ write(ulog,*)'sum of the weights=',sum(weig) !(1:ngrd))
+ if(abs(sum(weig)-1).gt.tolerance) then
+    write(*,*)' Gweights normalization is  ',sum(weig) !(1:ngrd))
+    write(ulog,*)'Gweights normalizartion is ',sum(weig) !(1:ngrd))
+ endif
     open(98,file='ggrid_raw.dat')
     open(99,file='ggridWS.xyz')
+
  endif
 
  write(99,*)ngrd
  write(99,*)" "
+ write(98,*)" i , save_boundary(i), grid(3,i) , weight(i) "
  do cnt=1,ngrd
     write(98,6)" ",cnt,save_boundary(cnt),grd(:,cnt),weig(cnt)
     write(99,7)"Si ",grd(:,cnt)
  enddo
  close(98)
+ do cnt=1,26
+    write(99,7)"Bi ",sx(:,cnt)
+ enddo
+ write(99,*)'Ge   0 0 0 '
+ write(99,7)'Ge ',x01
+ write(99,7)'Ge ',x02
+ write(99,7)'Ge ',x03
+ write(99,7)'Ge ',x01+x02
+ write(99,7)'Ge ',x03+x01
+ write(99,7)'Ge ',x03+x02
+ write(99,7)'Ge ',x03+x01+x02
  close(99)
- deallocate(weig,grd,save_boundary)
+
+ deallocate(grd,save_boundary,weig)
 
  write(ulog,*) ' EXITING make_grid_weights_WS'
 
@@ -1450,7 +1529,7 @@
         write(xt,'(i1)')i
         poscar='POSCAR'//xt
 ! read the atomic coordinates of atoms in supercell (at equilibrium) from POSCAR
-        call read_crystal(poscar)
+        call read_supercell(poscar)
         write(ulog,*) 'supercell ',i,' read, volume=',volume_r
 
 ! find the largest volume
@@ -1465,7 +1544,8 @@
 ! work with this POSCAR
      write(xt,'(i1)')imax
      poscar='POSCAR'//xt
-     call read_crystal(poscar)
+     call read_supercell(poscar)
+     call check_input_poscar_consistency_new
 
  end subroutine find_WS_largest_SC
 !========================================
@@ -1475,92 +1555,49 @@
  use ios
 ! use lattice, only : volume_r,volume_r0
  use atoms_force_constants
- use params, only : nshells
+ use params, only : nshells,lmax
  implicit none
 ! type(vector), intent(in):: x01,x02,x03
  integer, intent(in):: ng
  real(8), intent(in):: grd(3,ng)
- integer i,shel_count,i0,m,i1,i2,i3,insid,cnt,shelmax(natom_prim_cell),smax
+ integer i,shel_count,i0,shelmax(natom_prim_cell),shlmx
 ! type(vector) b01,b02,b03,b1,b2,b3
- real(8) lmax,rmx
-! real(8), allocatable :: aux(:,:)
-
-! allocate(sx(3,26),s0x(3,26))
-
-! find the shortest basis bi among xi and the corresponding 26 shortest vectors
-! call get_26shortest_shell(x01,x02,x03,s0x,b01,b02,b03)! s0x for WS of primcell
-! call get_26shortest_shell(x1 ,x2 ,x3 ,sx ,b1 ,b2 ,b3) ! sx for WS of supercell
-
-! y's are used to find the reduced coordinates on the basis xi
-! call make_reciprocal_lattice_v(x1,x2,x3,y1,y2,y3)
-
-      ! find the number of grid points inside the supercell
-!      n=nint(volume_r/volume_r0)
-!      write(ulog,4)' grid size,vol0,vol_sc=',n,volume_r,volume_r0
-
-      ! this is an upperbound to the points inside and on the WS boundaries
-!      nmax=n+nint(8*n**0.67+12*n**0.3333+24)
-
-      ! aux contains the grid vectors inside or on the boundary
-!      allocate(aux(3,nmax))
-!      write(ulog,*)' allocated grid size, including boundary points=',nmax
-
-      ! create the grid within the WS supercell xi
-!      m=nint(nmax**0.3333) !1+floor(length(sx(:,26))/length(sx(:,1))/2) ! ratio of the longest to smallest lengths
-!      cnt=0
-!      lmax=0
-!      write(ulog,*)' upper index to loop over to create grid =',m
-!      do i1=-m,m
-!      do i2=-m,m
-!      i3loop: do i3=-m,m
-
-      ! generate a grid of vectors from primitive translations x0i
-!       v = v2a(dble(i1)*x01 + dble(i2)*x02 + dble(i3)*x03)
-
-      ! see if v is in the WS cell; throw away v outside of WS cell
-!       call check_inside_ws(v,v2a(sx),insid)
-
-!       if (insid.eq.0) cycle i3loop
-
-      ! take only those points inside or on the boundary of WS (corresponding to in=1)
-!       cnt=cnt+1
-!       write(*,4)'new vector ',cnt,v
-!       aux(:,cnt)=v
-!       if(length(v).gt.lmax) lmax=length(v)
-!      enddo i3loop
-!      enddo
-!      enddo
-
-!      write(ulog,4)' actual grid size=',cnt
-! write(ulog,4)' Number of vectors defining the boundary=',nboundary
-!      deallocate(aux)
+ real(8) rmx
 
 
-
-! find lamx, length of the longest vector in grid defined by grd
+! find lmax, length of the longest vector in grid defined by grd
  lmax=0
  do i=1,ng
     if( length(grd(:,i)) .gt. lmax  ) lmax = length(grd(:,i))
  enddo
- write(ulog,4)' longest vector length in the grid=',lmax
+ write(ulog,4)' LMAX=longest vector length in the grid is ',lmax
 
-! include all the shells up to distance lmax
+! find shelmax, the largest shell
  shelmax=0
  do i0=1,natom_prim_cell
-    rmx=maxval(atom0(i0)%shells(:)%rij)
-! find shelmax, the largest shell
-    do shel_count=0,maxneighbors
-       if(rmx .myeq. atom0(i0)%shells(shel_count)%rij) then
+    rmx=maxval(atom0(i0)%shells(:)%radius)
+    shlmx=atom0(i0)%nshells
+    write(*,*)'i0,shlmx,rmx=',i0,shlmx,rmx
+    write(ulog,*)'i0,shlmx,rmx=',i0,shlmx,rmx
+    shloop: do shel_count=0,shlmx
+!      if(rmx .myeq. atom0(i0)%shells(shel_count)%radius) then
+          write(ulog,*)'i0, shell_count,radius=',i0,shel_count,atom0(i0)%shells(shel_count)%radius
+       if( atom0(i0)%shells(shel_count)%radius .gt. lmax ) then
           shelmax(i0)=shel_count
-          exit
+!         write(ulog,*)'i0, lcutoff shell=',i0,shel_count
+          exit shloop
        endif
-    enddo
+! did not reach lmax
+       shelmax(i0)=shlmx
+    enddo shloop
+    write(ulog,*)'i0,shelmax(i0)=',i0,shelmax(i0)
  enddo
 
+! include all the shells up to distance lmax
  do i0=1,natom_prim_cell
-    shell_loop: do shel_count = 0 , maxneighbors
+    shell_loop: do shel_count = 0 , shelmax(i0) ! maxneighbors
 ! we update nshells if lmax is reached, otherwise if lmax > rcut no update
-       if(lmax .myeq. atom0(i0)%shells(shel_count)%rij) then
+       if(lmax .myeq. atom0(i0)%shells(shel_count)%radius) then
           nshells(2,i0) = shel_count
           write(ulog,*)'UPDATE_NSHELLS: for atom ',i0,' the nshell is set to ',shel_count
           exit shell_loop
@@ -1568,6 +1605,7 @@
           nshells(2,i0)=shelmax(i0)
        endif
     enddo shell_loop
+    atom0(i0)%nshells=shel_count
  enddo
 
  write(ulog,5)' ****************************************'
@@ -1594,7 +1632,7 @@
  weight=1
 ! if grid is on the boundary, find to how many boundary points it is mapped by a transl vector
  do i=1,ngrd
-    if (save_boundary(i).ne.0) then
+    if (save_boundary(i).ne.0) then  ! i is on the boundary
        do t=1,26
           x=grd(:,i)+transl(:,t)
           gloop: do j=1,ngrd  ! is x on the boundary? if so add +1 to the weight of i
@@ -1608,9 +1646,10 @@
     endif
  enddo
  weight=1d0/weight
- do i=1,ngrd
-    write(*,*)i,' th grid point has weight=',weight(i)
- enddo
+! do i=1,ngrd
+!    write(*,*)i,' th grid point has weight=',weight(i)
+! enddo
+ write(*,*)' sum of the weights=om/om0=',sum(weight)
 
  end subroutine find_ws_weights
 !===========================================================
@@ -1727,7 +1766,7 @@
       use atoms_force_constants
 !      use force_constants_module
       implicit none
-      integer i,j,k,m,n,narms,kvecop(48),ier,ncmp
+      integer i,j,k,narms,kvecop(48)
       double precision kvec(3),kvecstar(3,48),primlatt(3,3),v(3),  &
      &     v2(3),v3(3),kvecstarp(3,48),sum
       narms=0
@@ -1801,20 +1840,172 @@
 4 format(i6,2(3x,3(1x,f9.4)))
 
 ! Now calculate the weigths
- call get_weights3(nk,foldedk,prim2cart,nibz)
+ call get_weights3(nk,foldedk,nibz)
 
  end subroutine fold_in_WS_BZ
 !========================================
- subroutine get_kpfbz(gg1,gg2,gg3,gshel,kpfull)
+ subroutine fold_in_bz_new(q,gshel,qin)
+!! folds the vector q into the FBZ and stores the result in qin
+! use lattice
+ use ios , only : ulog
+ use geometry
+ implicit none
+ real(8), intent(in):: gshel(3,26)
+ real(8), intent(in) :: q(3)
+ real(8), intent(out) :: qin(3)
+ integer j,inside
+ real(8) leng
+
+ inside=0
+ call check_inside_ws(q,gshel,inside)
+ if(inside.eq.1)      return
+
+ qin=q
+ leng=length(q)
+ do j=1,26 !while (leng.gt.gmin)
+    if(length(q-gshel(:,j)).lt.leng) then
+       qin=q-gshel(:,j)
+       leng=length(qin)
+    endif
+ enddo
+
+ call check_inside_ws(qin,gshel,inside)
+ if(inside.eq.1) then
+    return
+ else
+    write(*,4)'fold_in_bz_new: starting q=',q
+    write(*,4)'fold_in_bz_new: final  qin=',qin
+    write(*,*)'fold_in_bz_new: still not inside FBZ!'
+    write(ulog,*)'fold_in_bz_new: still not inside FBZ!'
+    stop
+ endif
+
+3 format(3(i6),9(2x,f8.4))
+4 format(a,9(1x,g11.4))
+
+ end subroutine fold_in_bz_new
+!-------------------------------------------
+   subroutine map_ibz(nk,kp,mapi,ni)
+  implicit none
+  integer nk,mapi(nk),i,j,l,ni
+  real(8) kp(3,nk)
+  logical inside
+
+  l=0 ; j=0 ; mapi=0
+  do i=1,nk
+     call check_inside_irred_fbz(kp(:,i),inside)
+     if (inside) then
+        j=j+1
+        mapi(j) = i
+     else
+        l=l+1
+        mapi(nk-l+1) = i
+     endif
+  enddo
+  ni = j
+  if(j+l .ne. nk)then
+     write(*,*)' pb in map_ibz j,l,nk=',j,l,nk
+  endif
+  end subroutine map_ibz
+!----------------------------------------------
+ subroutine fold_in_fbz_new(nk,kp,gg,nbz,kz,mapz)
+!! folds the k-mesh defined by kp into the FBZ and stores the result in kz
+ use lattice
+ use ios
+ implicit none
+ integer, intent(in) :: nk
+ integer, intent(out) :: nbz,mapz(nk)
+ real(8), intent(in) :: kp(3,nk),gg(3,26)
+ real(8), intent(out) :: kz(3,nk)
+ integer i,ns,j,inside
+ real(8) qaux(3),dmin,dist
+
+
+! write(ulog,*)'FOLD IN FBZ: ik,shell,i,q ====================='
+ nbz=0
+ do i=1,nk
+ foldloop: do ns=1,26
+     qaux = kp(:,i)+gg(:,ns)
+     call check_inside_ws(qaux,gg,inside)
+     if(inside.eq.1) then
+! make sure it is different from previous points: find smallest neighbor distance
+        dmin = 1d9
+        jloop: do j=1,nbz
+           dist = length(qaux-kz(:,j))
+           if( dist .lt. dmin) then
+              dmin = dist
+           endif
+        enddo jloop
+! if smallest distance is not 0 then accept the point
+        if ( dmin .gt. 1.d-6 ) then
+           nbz=nbz+1
+           mapz(nbz) = i
+           kz(:,nbz) = qaux(:)
+!          write(ulog,3)i,ns,nbz,qaux
+        endif
+     endif
+ enddo foldloop
+ enddo
+ write(ulog,*)'FOLD IN FBZ:  DONE! ==============================='
+
+3 format(3(i6),9(2x,f8.4))
+
+ end subroutine fold_in_fbz_new
+!----------------------------------------------
+  subroutine map_ibz2(nk,kp,mapi,ni)
+  implicit none
+  integer nk,mapi(nk),i,j,l,ni
+  real(8) kp(3,nk)
+  logical inside
+
+  l=0 ; j=0 ; mapi=0
+  do i=1,nk
+     call check_inside_irred_fbz(kp(:,i),inside)
+     if (inside) then
+        j=j+1
+        mapi(j) = i
+     else
+        l=l+1
+        mapi(nk-l+1) = i
+     endif
+  enddo
+  ni = j
+  if(j+l .ne. nk)then
+     write(*,*)' pb in map_ibz j,l,nk=',j,l,nk
+  endif
+  end subroutine map_ibz2
+!----------------------------------------------
+  subroutine get_kindex(q,nkc,kpc,ik)
+  use  geometry
+  implicit none
+  integer ik,nkc,i,j
+  real(8) kpc(3,nkc),q(3)
+
+  ik=0
+  mainlp: do i=1,nkc
+     do j=1,3
+        if (.not. (abs(q(j)-kpc(j,i)) .myeq. 0d0) ) exit
+        if (j.eq.3) then
+           ik=i
+           exit mainlp
+        endif
+     enddo
+  enddo mainlp
+  if (ik.eq.0) then
+     write(*,*)'GET_INDEX: could not find the index of',q
+     stop
+  endif
+
+  end subroutine get_kindex
+!========================================
+ subroutine get_kpfbz(gshel,kpfull)
 !! this routine translates kp grid into the formal FBZ. Output to KPFBZ.DAT
  use kpoints !, only : nkc,kpc
  use geometry
  implicit none
- type(vector), intent(in) :: gg1(3),gg2(3),gg3(3)
  real(8), intent(in) :: gshel(3,26)
  real(8), intent(out) :: kpfull(3,nkc)
- integer i , inside
- real(8) gp(3,3),q(3)
+ integer i 
  integer :: unit = 100
 
  do i=1,nkc
@@ -1902,7 +2093,7 @@
 
  end subroutine get_short_rlatvecs
 !==========================================================
- subroutine get_weights3(nk,kp,prim2cart,nibz) !,kibz,wibz)
+ subroutine get_weights3(nk,kp,nibz) 
 !! takes as input kp(3,nk) in cartesian and finds based on crystal symmetries, the
 !! weights associated with each kpoint, and then normalizes them
 !! nibz is the final number of kpoints stored in kibz in the irreducible BZ
@@ -1919,14 +2110,14 @@
  use ios
  implicit none
  integer, intent(in):: nk
- real(8), intent(in):: kp(3,nk) ,prim2cart(3,3) !r1(3),r2(3),r3(3)
+ real(8), intent(in):: kp(3,nk) 
  integer, intent(out):: nibz
 ! real(8), intent(out), allocatable :: kibz(:,:) ,wibz(:)
  integer, allocatable :: mcor(:),mapibz(:),mapinv(:)
  real(8), allocatable :: k2(:,:),lg(:),w2(:)
  real(8) zro,q(3),kvecstar(3,48),sw,skc(3),rr1(3),rr2(3),rr3(3)
- integer nkibz,i,j,l,narms,kvecop(48),aux
- logical exists,foundit
+ integer i,j,l,narms,kvecop(48),aux
+ logical exists
 
  rr1=v2a(r01)/2/pi
  rr2=v2a(r02)/2/pi
@@ -2110,10 +2301,10 @@
  integer, intent(out):: ngibz,mapibz(nk)
  real(8), intent(out), allocatable :: gibz(:,:) ,wgibz(:)
  integer, allocatable :: mapinv(:)  !mcor(:),mapibz(:),
- real(8), allocatable :: k2(:,:),lg(:),w2(:)
+ real(8), allocatable :: k2(:,:),w2(:)
  real(8) zro,q(3),kvecstar(3,48),sw,skc(3),rr1(3),rr2(3),rr3(3)
- integer nkibz,i,j,l,narms,kvecop(48),aux
- logical exists,foundit
+ integer i,j,l,narms,kvecop(48),aux
+ logical exists
 
 
  open(uibz,file='GMESH.IBZ',status='unknown')
@@ -2210,25 +2401,48 @@
 
  end subroutine get_weights4
 !====================================
- subroutine structure_factor(r,nk,kp,st)
+ subroutine structure_factor(r,nk,kp,wei,st,dst)
 !! takes kpoints within the FBZ as input, and calculates sum_k cos(k.R) for given R
  implicit none
  integer, intent(in) :: nk
- real(8), intent(in) :: r(3),kp(3,nk)
- real(8), intent(out) :: st
+ real(8), intent(in) :: r(3),kp(3,nk),wei(nk)
+ real(8), intent(out) :: st,dst(3)
  integer i
 
- st=0
+ st=0;dst=0
  do i=1,nk
-    st=st+cos(dot_product(r,kp(:,i)))
+     st= st+cos(dot_product(r,kp(:,i))) * wei(i)
+    dst=dst-sin(dot_product(r,kp(:,i))) * wei(i) * r
  enddo
- st=st/nk
 
- write(*,5)'Structure factor for ', r,st
-5 format(a,3(1x,f10.4),3x,g11.5)
+!  write(*,5)'Structure factor for r=', r,st,dst
+5 format(a,9(1x,f10.4),3x,g11.5)
 
  end subroutine structure_factor
 !====================================
+  subroutine structure_factor_recip(q,ngrid,grid,weig,sf)
+ !! takes primitive vectors within the WS of the supercell as input, and calculates 
+ !! 1/N_R sum_R cos(q.R) for given q
+  implicit none
+  integer, intent(in) :: ngrid
+  real(8), intent(in) :: q(3),grid(3,ngrid),weig(ngrid)     
+  real(8), intent(out) :: sf
+  integer i
+ 
+  if(abs(sum(weig)-1).gt.1d-5) then
+     write(*,*)'STRUCTURE_FACTOR_RECIP: weights should add up to 1, not ',sum(weig)
+     stop
+  endif
+  sf=0
+  do i=1,ngrid
+     sf=sf+cos(dot_product(q,grid(:,i))) * weig(i)
+  enddo
+ 
+ ! write(*,5)'Structure factor_recip for ', q,sf
+ 5 format(a,3(1x,f10.4),3x,g11.4)
+ 
+  end subroutine structure_factor_recip
+ !====================================
  subroutine K_mesh(g01,g02,g03,g1,g2,g3,gshells,nk,kmesh)
 !! given the translation vectors of the primitive and supercell reciprocal space,
 !! this subroutine calculates the mesh of translation vectors within the Wigner-Seitz
@@ -2246,9 +2460,9 @@
  real(8), intent(out) :: kmesh(3,nk)
  real(8), allocatable:: aux(:,:)
  real(8) q(3),nij(3,3),qred(3)
- type(vector) r01,r02,r03,kred,rr1,rr2,rr3
+ type(vector) kred,rr1,rr2,rr3
  integer i,j,k,l,mxi,inside,cnt,mxa
- logical exists,is_integer
+ logical exists
 
  mxi=7
  mxa=(2*mxi+1)**3
@@ -2349,8 +2563,8 @@
  integer, intent(out) :: inside
 ! type(vector), intent(in):: g1,g2,g3
  real(8), intent(in):: q(3),gshel(3,26)
- real(8) qdotg,gg,sm,gmax
- integer i,j,k,n
+ real(8) qdotg,gg,sm
+ integer i
 
  sm = 1d-4  ! a point on the boundary is also counted as inside
 
@@ -2372,19 +2586,6 @@
 
  end subroutine check_inside_ws
 !===========================================================
- function is_integer(i)
-!! checks if the variable is integer
- implicit none
- real(8) i
- logical is_integer
-
- if (abs(i-nint(i)).lt.1d-5 ) then
-    is_integer=.true.
- else
-    is_integer=.false.
- endif
- end function is_integer
-!===========================================================
  subroutine get_26shortest_shell(gg1,gg2,gg3,gshells,x1,x2,x3)
 !! get the 26 nonzero shortest vectors to define the FBZ, and also to be used for check_inside_fbz
 !! outputs gshells and the shortest basis x1,x2,x3 which may replace gg1,gg2,gg3
@@ -2396,8 +2597,8 @@
  real(8)     , intent(out):: gshells(3,26)
  real(8) , allocatable :: aux(:,:),leng(:)
  integer , allocatable :: mcor(:)
- real(8) junk,vol,gt(3),gmax,shortest(3)
- integer size,i,j,k,n,cnt,radius,diameter
+ real(8) junk,vol,gt(3),gmax
+ integer d3,i,j,k,cnt,radius,diameter
 
 ! find the longest G
  gmax=max(length(gg1),length(gg2))
@@ -2406,13 +2607,14 @@
  junk=vol**0.33333   ! typical short length
  radius = (nint(gmax/junk)+1)
  diameter=2*radius+1
- size= diameter**3 - 1   ! to exclude 0
- write(*,*)'26SHORTEST_SHELL: diameter**3-1=size=',size
- allocate(leng(size),aux(3,size),mcor(size))
+ d3= diameter**3 - 1   ! to exclude 0
+ write(*,*)'26SHORTEST_SHELL: diameter**3-1=d3=',d3
+ allocate(leng(d3),aux(3,d3),mcor(d3))
 
 ! construct a lattice out of Gs and take the 27 shortest vectors
 ! this has to be modified for 1D or 2D systems or if one G is much larger than others
  cnt=0
+ leng=1d5
  do i=-radius,radius
  do j=-radius,radius
  do k=-radius,radius
@@ -2426,7 +2628,7 @@
  enddo
  write(*,*)'26SHORTEST_SHELL: counted=',cnt
 
- call sort(cnt,leng,mcor,cnt)
+ call sort(cnt,leng,mcor,d3)
 
 ! find the shortest 3 vectors
  x1= a2v(aux(:,mcor(1)))
@@ -2671,13 +2873,18 @@
 
  end subroutine dir2cart_g
 !------------------------------------
- subroutine dirconv2cart(q,k)
+ subroutine dirconv2cart(q,k1)
 ! takes q in direct coordinates of the conventional cell and outputs k in cartesian
  use geometry
  use lattice
- real(8) q(3),k(3)
+ use ios
+ real(8) q(3),k1(3)
 
- k(:) = q(1)*g1conv + q(2)*g2conv + q(3)*g3conv
+ k1(:) = q(1)*g1conv + q(2)*g2conv + q(3)*g3conv
+
+! k2=matmul(cart_to_prim,q)
+! call write_out(ulog,'k1=',k1)
+! call write_out(ulog,'k2=',k2)
 
  end subroutine dirconv2cart
 !-------------------------------------
@@ -2832,7 +3039,6 @@
  real(8), intent(in) :: a(na)
  real(8), intent(in) :: b(nb)
  real(8), allocatable, intent(inout) :: c(:)
- real(8), allocatable :: aux(:)
  integer ncc
 
  ncc=na+nb
@@ -2870,30 +3076,211 @@
 
  end subroutine pad_array2
 !===================================================
- subroutine append_array(a,b,c)
-!! appends array b to the end of a and stores the result in c
+ subroutine write_lattice(n,lat,fn)
+!! writes the lattice vectors lat(3,n) in file fn in the xyz format
+ use lattice
  implicit none
-! integer, intent(in) :: na,nb
-! real(8), intent(in):: a(na),b(nb)
- real(8), intent(in):: a(:),b(:)
-! real(8), allocatable, intent(inout):: c(:)
- real(8), allocatable :: c(:)
-! real(8) :: c(size(a)+size(b))
- real(8), allocatable :: aux(:)
- integer ncc,naa,nbb
+ integer, intent(in) :: n
+ real(8), intent(in) :: lat(3,n)
+ character(*), intent(in) :: fn
+ integer i
 
- naa=size(a);
- nbb=size(b);
- ncc=naa+nbb
-! if (allocated(c)) deallocate (c)
- allocate(aux(ncc)) ! this is to allow calls like append_array(a,b,a)
- aux=reshape(a,shape=(/naa+nbb/),pad=b)
-! aux=reshape(a,(/naa+nbb/),pad=b)
- if (allocated(c)) deallocate (c)
- allocate(c(ncc))
- c=aux
- deallocate(aux)
-! c=reshape(a,(/na+nb/),pad=b,order=(/1,1/))
+ open(125,file=fn)
+ write(125,*)n+15
+ write(125,*)'supercell lattice'
+ write(125,*)'Ge   0 0 0 '
+ write(125,4)'Ge ',gs1
+ write(125,4)'Ge ',gs2
+ write(125,4)'Ge ',gs3
+ write(125,4)'Ge ',gs1+gs2
+ write(125,4)'Ge ',gs3+gs1
+ write(125,4)'Ge ',gs3+gs2
+ write(125,4)'Ge ',gs3+gs1+gs2
+ write(125,4)'Bi ',rs1
+ write(125,4)'Bi ',rs2
+ write(125,4)'Bi ',rs3
+ write(125,4)'Bi ',rs1+rs2
+ write(125,4)'Bi ',rs2+rs3
+ write(125,4)'Bi ',rs3+rs1
+ write(125,4)'Bi ',rs1+rs2+rs3
+ do i=1,n
+    write(125,4)'C  ',lat(:,i)
+ enddo
+ close(125)
 
- end subroutine append_array
+4 format(a,9(1x,f11.5))
+ 
+ end subroutine write_lattice
 !===================================================
+! subroutine append_array(a,b,c)
+!!! appends array b to the end of a and stores the resu     lt in c
+! implicit none
+!! integer, intent(in) :: na,nb
+!! real(8), intent(in):: a(na),b(nb)
+!! real(8), allocatable, intent(inout):: c(:)
+!! real(8) :: c(size(a)+size(b))
+! real(8), intent(in):: a(:),b(:)
+! real(8), allocatable :: c(:)
+! real(8), allocatable :: aux(:)
+! integer nc,na,nb
+
+! na=size(a);
+! nb=size(b);
+! nc=na+nb
+! allocate(aux(nc)) ! this is to allow calls like append_array(a,b,a)
+! aux=reshape(a,shape=(/na+nb/),pad=b)
+! if (allocated(c)) deallocate (c)
+! allocate(c(nc))
+! c=aux
+! deallocate(aux)
+
+!! cal also use in the 1D case:
+!! c=reshape(a,(/na+nb/),pad=b,order=(/1,1/))
+!    
+! end subroutine append_array
+!===================================================
+  subroutine swap(a,b)
+  real(8), intent(inout) :: a,b 
+  real(8) c
+  c=a
+  a=b
+  b=c
+  end subroutine swap
+!===================================================
+      subroutine xmatinv(n,xmatin,xmatout,ier)
+      implicit none
+
+!! invert a n by n matrix
+
+!     double precision xmatin(3,3),xmatout(3,3),buffer(3,3),x
+      integer, intent(in) :: n
+      real(8), dimension(n,n),intent(in) :: xmatin
+      real(8), dimension(n,n),intent(out) :: xmatout
+      integer, intent(out) :: ier
+      real(8) x
+      real(8) buffer(n,n) !size(xmatin,1),size(xmatin,2))
+! , allocatable:: buffer(:,:) ! dimension(size(xmatin,1),size(xmatin,2)) :: buffer
+      integer i,j,indx(n) !size(xmatin,1)),n,i,j
+
+! dimension of matrix
+!     n=size(xmatin,1)   ! it's a square matrix!
+!     n=3
+!     write(6,*)'Entering XMATINV with matrix size=',n
+!     allocate(buffer(n,n))
+! clear error flag
+      ier=0
+      buffer=xmatin  ! keep matin at exit
+      xmatout=0
+      do i=1,n
+        xmatout(i,i)=1
+      enddo
+! decomposition
+!     write(6,*)'XMATINV: calling LUDCMP for size=',n
+      call ludcmp(buffer,n,n,indx,x)
+! singular matrix
+      if(x.eq.0.0d0)then
+        ier=1
+        return
+      endif
+! inverse matrix
+      do j=1,n
+        call lubksb(buffer,n,n,indx,xmatout(:,j))
+      enddo
+   !  deallocate(buffer)
+
+      end subroutine xmatinv
+!------------------------------------------------------------------
+! The following routines are from Numerical Recipes
+      subroutine ludcmp(a,n,np,indx,d)
+      implicit none
+      integer np,n
+      real(8) tiny
+      parameter (tiny=1.0d-20)
+      real(8) a(np,np),vv(np),d,aamax,dum,sum
+      integer indx(n),i,j,k,imax,ncmp
+      d=1
+      do i=1,n
+        aamax=0
+        do j=1,n
+          if(dabs(a(i,j)).gt.aamax)aamax=dabs(a(i,j))
+        enddo
+        if(ncmp(aamax).eq.0)then
+! singular matrix
+          d=0
+          return
+        endif
+        vv(i)=1/aamax
+      enddo
+      do j=1,n
+        do i=1,j-1
+          sum=a(i,j)
+          do k=1,i-1
+            sum=sum-a(i,k)*a(k,j)
+          enddo
+          a(i,j)=sum
+        enddo
+        aamax=0
+        do i=j,n
+          sum=a(i,j)
+          do k=1,j-1
+            sum=sum-a(i,k)*a(k,j)
+          enddo
+          a(i,j)=sum
+          dum=vv(i)*dabs(sum)
+          if(dum.ge.aamax)then
+            imax=i
+            aamax=dum
+          endif
+        enddo
+        if(j.ne.imax)then
+          do k=1,n
+            dum=a(imax,k)
+            a(imax,k)=a(j,k)
+            a(j,k)=dum
+          enddo
+          d=-d
+          vv(imax)=vv(j)
+        endif
+        indx(j)=imax
+        if(a(j,j).eq.0.0d0)a(j,j)=tiny
+        if(j.ne.n)then
+          dum=1/a(j,j)
+          do i=j+1,n
+            a(i,j)=a(i,j)*dum
+          enddo
+        endif
+      enddo
+      end subroutine ludcmp
+!-----------------------------------------------
+      subroutine lubksb(a,n,np,indx,b)
+      implicit none
+      integer n,np
+      double precision a(np,np),b(n),sum
+      integer indx(n),ii,i,j,ll
+      ii=0
+      do i=1,n
+        ll=indx(i)
+        sum=b(ll)
+        b(ll)=b(i)
+        if(ii.ne.0)then
+          do j=ii,i-1
+            sum=sum-a(i,j)*b(j)
+          enddo
+        else if(sum.ne.0.0d0)then
+          ii=i
+        endif
+        b(i)=sum
+      enddo
+      do i=n,1,-1
+        sum=b(i)
+        if(i.lt.n)then
+          do j=i+1,n
+            sum=sum-a(i,j)*b(j)
+          enddo
+        endif
+        b(i)=sum/a(i,i)
+      enddo
+
+      end subroutine lubksb
+  
+

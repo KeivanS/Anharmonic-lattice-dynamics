@@ -13,12 +13,12 @@
  use geometry
 ! use force_constants_module
  implicit none
- integer i0,j,k,l,mx,ired,counter,rnk,res,dum
+ integer i0,j,k,ired,counter,rnk,res
  integer al,be,ga,de,cnt2,g,t,ti
  real(8), allocatable:: atemp(:,:),btemp(:),ared1d(:),zero(:)
  logical new
 
- write(*,*) 'entering translational invce constraints routine'
+ write(*,*) 'entering translational invce constraints routine with estimate ',transl_constraints
  write(ulog,*)' SETTING TRANSLATIONAL INVARIANCE CONSTRAINTS part of AMATRIX ************'
 
 ! set dimensions of ared matrix according to the number of constraints
@@ -27,8 +27,8 @@
 ! only if include_fc=1 then add the ngroups in the number of columns
 ! nindepfc = (sum(ngroups(:)*include_fc(:)*(2-include_fc(:))))
 ! nindepfc = (sum(ngroups(:)))
- dim_al = inv_constraints
- call write_out(ulog,'Estimated # of invariance constraints',inv_constraints)
+ dim_al = transl_constraints
+! call write_out(ulog,'Estimated # of invariance constraints',inv_constraints)
  call write_out(ulog,'Total # of irreducible FCs=# of columns in Ared',nindepfc)
  allocate( atemp(dim_al,nindepfc),btemp(dim_al),ared1d(nindepfc),zero(nindepfc) )
 
@@ -45,7 +45,7 @@
 !       TRANSLATIONAL INVARIANCES
 !------------------------------------------------------------------
 
- atemp = 0d0 ; counter = 0; zero = 0d0 ; res = 0; rcut = 0
+ atemp = 0d0 ; btemp=0 ; counter = 0 ; zero = 0d0 ; res = 0; !rcut = 0
 
 ! include translatnal invce constraints, otherwise calculate deviations from it
  write(ulog,*)' TREATING TRANSLATIONAL INVARIANCES ======================='
@@ -90,8 +90,9 @@
     endif
  enddo
  if(map(rnk)%ngr.gt.0) res = res + sum(map(rnk)%ntind(:))
-!endif
+
  write(ulog,*)' RANK=1; residual index is=',res
+ write(ulog,*)' NUMBER OF TRANSLATIONAL CONSTRAINTS of rank=1 is ', counter
  endif
 
  rnk = 2  !********************************************
@@ -107,20 +108,25 @@
 
     ared1d = zero
     cnt2=0  ! cnt2 counts the previous independent terms
+
     gloop2: do g=1,map(rnk)%ngr  ! ineq. terms and identify neighbors
 
 !! K1 new change made on 2/13/23 ----------------
       if(keep_grp2(g).ne.1) cycle gloop2
 !! K1 new change made on 2/13/23 ----------------
 
-      if(g.gt.1) cnt2 = cnt2 + map(rnk)%ntind(g-1)
+      if(g.gt.1) then
+         if (keep_grp2(g-1).eq.1) cnt2=cnt2+map(rnk)%ntind(g-1)
+      endif
+!! K1 new change made on 9/21/23 ----------------
       do t=1,map(rnk)%nt(g)
         if ( map(rnk)%gr(g)%iat(1,t) .ne. i0 .or.  &
  & map(rnk)%gr(g)%ixyz(1,t) .ne. al .or. map(rnk)%gr(g)%ixyz(2,t) .ne. be ) cycle
         do ti=1,map(rnk)%ntind(g)
           ired = res+cnt2+ti    ! this is the corresponding index of i in ared
+!         if(verbose)   write(ulog,*)'TRANS_INVCE: rnk=2 g,ti,ired=',g,ti,ired
           if (ired.gt.nindepfc .or. ired.lt.1) then
-             write(ulog,*)'rnk=2:ired=',ired,'> nindepfc =',nindepfc
+             write(ulog,*)'TRANS_INVCE: rnk=2 g,ti,ired=',g,ti,ired,'> nindepfc =',nindepfc
              stop
           endif
           ared1d(ired) = ared1d(ired) + map(rnk)%gr(g)%mat(t,ti)
@@ -145,11 +151,12 @@
 !! K1 new change made on 2/13/23 ----------------
 
 ! if(map(rnk)%ngr.gt.0) res  = res  + sum(map(rnk  )%ntind(:))
- if(map(rnk)%ngr.gt.0) res  = res  +  size_kept_fc2
+ if(map(rnk)%ngr.gt.0) res  = res  +  size_kept_fc2  ! res counts the cu,mulative # of previous groups of previous rank
 
 !! K1 new change made on 2/13/23 ----------------
 
  write(ulog,*)' RANK=2; residual index is=',res
+ write(ulog,*)' NUMBER OF CUMULATIVE TRANSLATIONAL CONSTRAINTS up to rank 2 is ', counter
  endif
 
  rnk = 3  !********************************************
@@ -165,9 +172,9 @@
 !   if ( iatomneighbor(i0,j) .gt. nshells(rnk) ) cycle
 !   if ( iatomneighbor(i0,j) .eq. nshells(rnk) ) then
     if ( iatomneighbor(i0,j) .gt. nshells(rnk,i0) ) cycle
-    if ( iatomneighbor(i0,j) .eq. nshells(rnk,i0) ) then
-         rcut(rnk) = length(atompos(:,j)-atompos(:,i0))
-    endif
+ !  if ( iatomneighbor(i0,j) .eq. nshells(rnk,i0) ) then
+ !       rcut(rnk) = length(atompos(:,j)-atompos(:,i0))
+ !  endif
  do al=1,3
  do be=al,3  ! avoid redundancies in the constraints
  do ga=be,3  ! avoid redundancies in the constraints
@@ -183,7 +190,7 @@
         do ti=1,map(rnk)%ntind(g)
           ired = res+cnt2+ti    ! this is the corresponding index of i in ared
           if (ired.gt.nindepfc .or. ired.lt.1) then
-             write(ulog,*)'rnk=3:ired=',ired,'> nindepfc=',nindepfc
+             write(ulog,*)'TRANS_INVCE: rnk=3 ired=',ired,'> nindepfc=',nindepfc
              stop
           endif
           ared1d(ired) = ared1d(ired) + map(rnk)%gr(g)%mat(t,ti)
@@ -206,10 +213,9 @@
  enddo
  enddo
  enddo
-! res = res + sum(map(rnk)%ntind(:))
  if(map(rnk  )%ngr.gt.0) res  = res  + sum(map(rnk  )%ntind(:))
  write(ulog,*)' RANK=3; residual index is=',res
- write(ulog,*)' RANK=3 cnter for tr cnstr=',counter
+ write(ulog,*)' NUMBER OF CUMULATIVE TRANSLATIONAL CONSTRAINTS up to rank 3 is ', counter
  endif
 
  rnk = 4  !********************************************
@@ -225,9 +231,9 @@
 !   if ( iatomneighbor(i0,j) .gt. nshells(rnk) ) cycle
 !   if ( iatomneighbor(i0,j) .eq. nshells(rnk) ) then
     if ( iatomneighbor(i0,j) .gt. nshells(rnk,i0) ) cycle
-    if ( iatomneighbor(i0,j) .eq. nshells(rnk,i0) ) then
-         rcut(rnk) = length(atompos(:,j)-atompos(:,i0))
-    endif
+ !  if ( iatomneighbor(i0,j) .eq. nshells(rnk,i0) ) then
+ !       rcut(rnk) = length(atompos(:,j)-atompos(:,i0))
+ !  endif
  do k=1,natoms ! take only j atoms within the nshells'th neighbor shell of i0
 !   if ( iatomneighbor(i0,k) .gt. nshells(rnk) ) cycle
     if ( iatomneighbor(i0,k) .gt. nshells(rnk,i0) ) cycle
@@ -274,19 +280,19 @@
  enddo
  enddo
 !res = res + sum(map(rnk)%ntind(:))
- if(map(rnk  )%ngr.gt.0) res  = res  + sum(map(rnk  )%ntind(:))
- write(ulog,*)' RANK=4 res=tot# of groups=',res
- write(ulog,*)' RANK=4 cnter for tr cnstr=',counter
+ if(map(rnk)%ngr.gt.0) res = res + sum(map(rnk  )%ntind(:))
+ write(ulog,*)' RANK=4 res=tot# of independent terms=',res
+ write(ulog,*)' NUMBER OF CUMULATIVE TRANSLATIONAL CONSTRAINTS up to rank 4 is ', counter
  endif
 
  transl_constraints = counter
- write(ulog,*)' NUMBER OF TRANSLATIONAL CONSTRAINTS =', transl_constraints
+ write(ulog,*)' UPDATED TOTAL NUMBER OF TRANSLATIONAL CONSTRAINTS =', transl_constraints
  allocate(atransl(transl_constraints,nindepfc),btransl(transl_constraints))
  atransl(1:transl_constraints,1:nindepfc)=atemp(1:transl_constraints,1:nindepfc)
 ! to change if include_fc .ne.0 *****************************
- btransl=0
+ btransl=btemp
 ! to change if include_fc .ne.0 *****************************
- deallocate( atemp,ared1d,zero )
+ deallocate( atemp,ared1d,zero,btemp )
  write(*,*) 'exiting translational invce constraints routine'
 
 6 format(a,3(1x,i3),66(2x,f7.3))
@@ -306,7 +312,7 @@
  use geometry
 ! use force_constants_module
  implicit none
- integer i0,j,k,l,t,mx,ired,counter,rnk,res,res1,dum,g,ti,cnt2,cnt3
+ integer i0,j,k,l,t,ired,counter,rnk,res,res1,g,ti,cnt2,cnt3
  integer al,be,ga,de,mu,nu
  integer lc(3,3,3)
  real(8), allocatable:: ared1d(:),zero(:),aux(:)
@@ -321,7 +327,7 @@
 !*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
- write(*,*) 'entering rotational invce constraints routine'
+ write(*,*) 'entering rotational invce constraints routine with estimate ',rot_constraints
  write(ulog,*)' SETTING ROTATIONAL INVARIANCE CONSTRAINTS  part of AMATRIX  ******************'
 
 ! set dimensions of ared matrix according to the number of constraints
@@ -329,6 +335,7 @@
 !       ROTATIONAL INVARIANCES
 !------------------------------------------------------------------
 
+ dim_al=rot_constraints  ! # of lines from estimate
  allocate( atemp(dim_al,nindepfc),btemp(dim_al),ared1d(nindepfc),zero(nindepfc) )
 ! initialize the Levi-Civita symbol here (called lc)
  lc = 0; counter = 0; zero = 0d0; atemp = 0d0; btemp = 0d0; junk = 0d0
@@ -378,6 +385,8 @@
       call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
       if (new) then
          counter = counter+1; atemp(counter,:) = ared1d(:);
+!        write(umatrx,7)(atemp(counter,dum),dum=1,ngr),btemp(counter)
+         if (counter.eq.dim_al-1) write(ulog,*)'DIM_AL TOO SMALL rot_inv rnk=',rnk
          if(include_fc(2).ne.2) then
          	btemp(counter) = 0d0
          else
@@ -399,13 +408,11 @@
 
 
          endif
-!        write(umatrx,7)(atemp(counter,dum),dum=1,ngr),btemp(counter)
-         if (counter.eq.dim_al-1) write(ulog,*)'DIM_AL TOO SMALL rot_inv rnk=',rnk
       endif
    enddo
    if(map(rnk)%ngr.gt.0) res = res + sum(map(rnk)%ntind(:))
    write(ulog,*)' RANK=1; residual index is=',res
-   write(ulog,*)' RANK=1 cnter for rot cntr=',counter
+   write(ulog,*)' NUMBER OF CUMULATIVE ROTATIONAL CONSTRAINTS up to rank 1 is ', counter
  endif
 
  rnk = 2  !********************************************
@@ -428,9 +435,10 @@
 
 !! K1 new change made on 2/13/23 ----------------
       if(keep_grp2(g).ne.1) cycle gloop12
-!! K1 new change made on 2/13/23 ----------------
-
-        if(g.gt.1) cnt2 = cnt2 + map(rnk)%ntind(g-1)
+        if(g.gt.1) then
+           if (keep_grp2(g-1).eq.1) cnt2=cnt2+map(rnk)%ntind(g-1)
+        endif
+!! K1 new change made on 9/21/23 ----------------
         do t=1,map(rnk)%nt(g)
           if ( map(rnk)%gr(g)%iat(1,t) .ne. i0 .or. map(rnk)%gr(g)%ixyz(1,t) .ne. al ) cycle
           j  = map(rnk)%gr(g)%iat(2,t) ;       be = map(rnk)%gr(g)%ixyz(2,t)
@@ -454,7 +462,11 @@
 !btemp(counter)=-sum(ared1d)
 !endif
       gloop13: do g=1,map(rnk)%ngr  ! ineq. terms and identify neighbors
-        if(g.gt.1) cnt2 = cnt2 + map(rnk)%ntind(g-1)
+         if(keep_grp2(g).ne.1) cycle gloop13
+         if(g.gt.1) then
+            if (keep_grp2(g-1).eq.1) cnt2=cnt2+map(rnk)%ntind(g-1)
+         endif
+!! K1 new change made on 9/21/23 ----------------
         do t=1,map(rnk)%nt(g)
           if ( map(rnk)%gr(g)%iat(1,t) .ne. i0 .or. map(rnk)%gr(g)%ixyz(1,t) .ne. al ) cycle
           j  = map(rnk)%gr(g)%iat(2,t) ;       be = map(rnk)%gr(g)%ixyz(2,t)
@@ -483,8 +495,9 @@
 ! TO CHECK------------
       aux=0; !junk = 0   ! junk goes to bmat (it already includes the - sign)
       cnt3 = 0
-      if(include_fc(1) .eq. 1 .or. include_fc(1) .eq. 2) then
+      if(include_fc(1) .eq. 1 .or. include_fc(1) .eq. 2) then 
 
+!! what does the rank=1 have to do here?
 
 !!
 !! why is bikash adding the condition .or. include_fc(2) .eq. 2 to the above?
@@ -492,7 +505,11 @@
 
 
       do g=1,map(rnk-1)%ngr  ! ineq. terms and identify neighbors
-        if(g.gt.1) cnt3 = cnt3 + map(rnk-1)%ntind(g-1)
+           if(g.gt.1) then
+              if (keep_grp2(g-1).eq.1) cnt3=cnt3+map(rnk)%ntind(g-1)
+           endif
+!! K1 new change made on 9/21/23 ----------------
+!       if(g.gt.1) cnt3 = cnt3 + map(rnk-1)%ntind(g-1)  ! this is wrong it should be rnk not rnk-1 !
         do t=1,map(rnk-1)%nt(g)
            if ( map(rnk-1)%gr(g)%iat(1,t) .ne.i0 ) cycle
            be = map(rnk-1)%gr(g)%ixyz(1,t)
@@ -545,7 +562,7 @@
 !! K1 new change made on 2/13/23 ----------------
 
    write(ulog,*)' RANK=2; residual index is=',res
-   write(ulog,*)' RANK=2 cnter for rot cntr=',counter
+   write(ulog,*)' NUMBER OF CUMULATIVE ROTATIONAL CONSTRAINTS up to rank 2 is ', counter
  endif
 
  rnk = 3  !********************************************
@@ -574,7 +591,7 @@
           do ti=1,map(rnk)%ntind(g)
             ired = res+cnt2+ti    ! this is the corresponding index of i in ared
             if (ired.gt.nindepfc .or. ired.lt.1) then
-               write(ulog,*)'rnk=3:ired=',ired,'> nindepfc=',nindepfc
+               write(ulog,*)'ROT_INVCE: rnk=3 ired=',ired,'> nindepfc=',nindepfc
                stop
             endif
             do de=1,3
@@ -673,13 +690,12 @@
 !! K1 new change made on 2/13/23 ----------------
 
    if(map(rnk  )%ngr.gt.0) res  = res  + sum(map(rnk  )%ntind(:))
-!   if(map(rnk-1)%ngr.gt.0) res1 = res1 + sum(map(rnk-1)%ntind(:))
    if(map(rnk-1)%ngr.gt.0) res1  = res1  +  size_kept_fc2
 
 !! K1 new change made on 2/13/23 ----------------
 
    write(ulog,*)' RANK=3; residual index is=',res
-   write(ulog,*)' RANK=3 cnter for rot cntr=',counter
+   write(ulog,*)' NUMBER OF CUMULATIVE ROTATIONAL CONSTRAINTS up to rank 3 is ', counter
  endif
 
  rnk = 4  !********************************************
@@ -781,16 +797,20 @@
  ! res = res + sum(map(rnk)%ntind(:))
    if(map(rnk  )%ngr.gt.0) res  = res  + sum(map(rnk  )%ntind(:))
    write(ulog,*)' RANK=4; residual index is=',res
-   write(ulog,*)' RANK=4 cnter for rot cntr=',counter
+   write(ulog,*)' NUMBER OF CUMULATIVE ROTATIONAL CONSTRAINTS up to rank 4 is ', counter
  endif
 
  rot_constraints = counter
- write(ulog,*)' NUMBER OF ROTATIONAL INVARIANCE CONSTRAINTS =', rot_constraints
+ write(ulog,*)' UPDATED TOTAL NUMBER OF ROTATIONAL INVARIANCE CONSTRAINTS =', rot_constraints
  allocate(arot(rot_constraints,nindepfc),brot(rot_constraints))
  arot(1:rot_constraints,1:nindepfc)=atemp(1:counter,1:nindepfc)
  brot(1:rot_constraints)=btemp(1:counter)
 
- write(ulog,*)' res=',res,' must be equal to # of indepdt FCs ',nindepfc
+ if(res.ne.nindepfc) then
+    write(ulog,*)' res=',res,' must be equal to # of indepdt FCs ',nindepfc
+    write(*   ,*)' res=',res,' must be equal to # of indepdt FCs ',nindepfc
+    stop
+ endif
 ! inv_constraints = rot_constraints + transl_constraints
 ! write(umatrx,*)'**********************************************'
 ! write(umatrx,*)' sym constr part of amatrix size has ',inv_constraints,' lines'
@@ -823,13 +843,11 @@
 ! use geometry
 ! use force_constants_module
  implicit none
- integer i,j,al,be,ga,de,t,ti,mterm,cnt2,g,rnk,voigt,vab,vcd,counter,ired,dum,res,dim_h
+ integer i,j,al,be,ga,de,t,ti,mterm,cnt2,g,rnk,voigt,vab,vcd,counter,ired,res,dim_h
  real(8) huang,rr(3)
  real(8), allocatable:: ared1d(:),zero(:)
 
- huang_constraints=15
-
-! if (ihuang .ne. 0) then
+ huang_constraints=15  ! this is only for rank 2
 
    rnk = 2;
 !  res = sum(map(1)%ntind(:))
@@ -863,7 +881,10 @@
       if(keep_grp2(g).ne.1) cycle gloop
 !! K1 new change made on 2/13/23 ----------------
 
-         if(g.gt.1) cnt2 = cnt2 + map(rnk)%ntind(g-1)
+      if(g.gt.1) then
+         if (keep_grp2(g-1).eq.1) cnt2=cnt2+map(rnk)%ntind(g-1)
+      endif
+!! K1 new change made on 9/21/23 ----------------
       do t=1,map(2)%nt(g)
          if ( map(2)%gr(g)%iat(1,t).ne.i ) cycle
          if ( map(2)%gr(g)%ixyz(1,t).eq.al .and. map(2)%gr(g)%ixyz(2,t).eq.be ) then
@@ -894,6 +915,7 @@
       if(verbose) write(ulog,6)'counter,mterm,vab,vcd=',counter,mterm,al,be,ga,de,vab,vcd
       if (counter.eq.dim_h+1) then
          write(ulog,*)' DIM_H TOO SMALL, huang_inv=15, counter= ',counter
+         write(*   ,*)' DIM_H TOO SMALL, huang_inv=15, counter= ',counter
          stop
       endif
       ahuang(counter,:) = ared1d(:)
@@ -906,13 +928,12 @@
 
    deallocate( ared1d,zero )
 
-!  endif
 6 format(a,8(1x,i4),9(2x,f7.3))
 7 format(66(1x,g9.2))
 
  end subroutine set_huang_inv_constraints
 !===========================================================================
- subroutine set_force_displacement_matrix(frc_constr,afrc,bfrc)
+ subroutine set_force_displacement_matrix(ncfgs,frc_constr,afrc,bfrc)
 !! outputs afrc and bfrc matrices afrc,bfrc from the knowledge of arrays force and displ for a given supercell
  use svd_stuff
  use params
@@ -921,15 +942,13 @@
  use geometry
 ! use force_constants_module
  implicit none
- integer, intent(in) :: frc_constr
+ integer, intent(in) :: frc_constr,ncfgs
  real(8), intent(out) :: afrc(frc_constr,nindepfc),bfrc(frc_constr)
- integer i0,j,k,l,t,ired,counter,rnk,nat,confg,jatom,katom,latom,res,cnt2
- integer al,be,ga,de,mu,nu,taui,tauj,tauk,taul,ni(3),nj(3),nk(3),nl(3),ti
+ integer l,t,ired,counter,rnk,nat,confg,jatom,katom,latom,res,cnt2
+ integer al,be,ga,de,taui,tauj,tauk,taul,ni(3),nj(3),nk(3),nl(3),ti
  real(8), allocatable:: ared1d(:),aux(:)
- real(8) rij,rik,rjk,junk
- logical new
 
- write(*,*) 'entering set_force_displacements routine',nindepfc
+ write(*,*) 'entering set_force_displacements routine,nindepfc=',nindepfc
  write(ulog,*)' SETUP_AMATRICES : ************************************'
 ! l is group index, t: general term index, and ti: independent term index
 ! this convention is followed in all setting constraint or amat subroutines
@@ -946,13 +965,17 @@
  write(ulog,6)'********************************************************'
  write(ulog,6)' Now making the force-displacement part of the A matrix'
  write(ulog,*)' Force_constraints     =', frc_constr
+ if(frc_constr.ne.3*natom_super_cell*ncfgs) then
+    write(*,*)'check parameters frc_constr natom_super_cell ncfgs=',frc_constr,natom_super_cell,ncfgs
+    stop
+ endif
 ! now compute the force constraints on the FCs. The equation is:
 ! -F_ia = phi1_ia + phi2_{ia,jb} u_jb + 0.5 phi3_{ia,jb,kc} u_jb u_kc + ...
 !   iatomterm(1,t)=(0,tau)   iatomterm(2,t)=(n1,tau1)
 !   ixyzterm (1,t)=alpha     ixyzterm (2,t)=beta
 ! Really the (n1,tau1)=(iatomcell(:,iatomterm(2,t)),iatomcell0(iatomterm(2,t)))
   counter = 0
-  do confg=1,nconfigs
+  do confg=1,ncfgs
   do nat=1,natom_super_cell
   do al=1,3             ! this is how we order each line
 
@@ -1013,10 +1036,12 @@
            groups: do l=1,map(rnk)%ngr  ! sum over groups
 
 !! K1 new change made on 2/13/23 ----------------
-      if(keep_grp2(l).ne.1) cycle groups
+           if(keep_grp2(l).ne.1) cycle groups
 !! K1 new change made on 2/13/23 ----------------
-
-              if(l.gt.1) cnt2 = cnt2 + map(rnk)%ntind(l-1)
+           if(l.gt.1) then
+              if (keep_grp2(l-1).eq.1) cnt2=cnt2+map(rnk)%ntind(l-1)
+           endif
+!! K1 new change made on 9/21/23 ----------------
            l8: do t=1,map(rnk)%nt(l) ! sum over all terms in that group
               if ( taui.eq. map(rnk)%gr(l)%iat(1,t) .and.  &
           &        al  .eq. map(rnk)%gr(l)%ixyz(1,t) ) then
@@ -1068,8 +1093,11 @@
 
                cnt2=0
                do l=1,map(rnk)%ngr
-                    if(keep_grp2(l).ne.1) cycle
-                    if(l.gt.1) cnt2 = cnt2 + map(rnk)%ntind(l-1)
+                  if(keep_grp2(l).ne.1) cycle
+                  if(l.gt.1) then
+                     if (keep_grp2(l-1).eq.1) cnt2=cnt2+map(rnk)%ntind(l-1)
+                  endif
+!! K1 new change made on 9/21/23 ----------------
                do t=1,map(rnk)%nt(l) ! sum over all terms in that group
                   if ( taui.eq. map(rnk)%gr(l)%iat (1,t) .and.  &
             &          al  .eq. map(rnk)%gr(l)%ixyz(1,t) )         then

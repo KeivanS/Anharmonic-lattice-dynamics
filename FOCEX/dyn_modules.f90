@@ -36,39 +36,45 @@
 !==========================================================
  module eigen
  integer ndyn,nkc2  ! this is a copy of nkc
-! eigenval for the coarse mesh (nkc,kpc),
+! eigenval for the coarse mesh (nkc,kpc), ! sqr of phonon freqs in eV/A/A/m0
 
- real(8), allocatable :: velocibz(:,:,:),veloc(:,:,:)
+ real(8), allocatable :: veloc_bs(:,:,:),veloc(:,:,:),velocibz(:,:,:)
  real(8), allocatable :: eigenval_bs(:,:),eigenval(:,:),eivalibz(:,:)
-! sqr of phonon freqs in eV/A/A/m0
- complex(8), allocatable :: eigenvec_bs(:,:,:),eigenvec(:,:,:),grun(:,:),grun_bs(:,:),eivecibz(:,:,:)
+ complex(8), allocatable :: eigenvec_bs(:,:,:),eigenvec(:,:,:),eivecibz(:,:,:)
+ complex(8), allocatable :: grun(:,:),grun_bs(:,:),grunibz(:,:)
 
     contains
 
-    subroutine allocate_eig(nb,ni,nk) ! nb for band, nk for coarse mesh in FBZ
-    integer nb,nk,ni
+    subroutine allocate_eig(nb,nk) ! nb for band, nk for k mesh in FBZ
+    integer nb,nk
       allocate( eigenval(nb,nk),eigenvec(nb,nb,nk),veloc   (3,nb,nk), grun(nb,nk) )
-      allocate( eivalibz(nb,ni),eivecibz(nb,nb,ni),velocibz(3,nb,ni) )
     end subroutine allocate_eig
+    subroutine allocate_eig_ibz(nb,ni) ! nb for band, ni for k mesh in IBZ
+    integer nb,ni
+      allocate( eivalibz(nb,ni),eivecibz(nb,nb,ni),velocibz(3,nb,ni),grunibz(nb,ni) )
+    end subroutine allocate_eig_ibz
 !---------------------------------
     subroutine allocate_eig_bs(nb,nk,nv) ! nb for band, nk for band structure mesh
     integer nb,nk,nv
      if (nv.ne.0) then
-      allocate( eigenval_bs(nb,nk),eigenvec_bs(nb,nv,nk), grun_bs(nb,nk) ,veloc(3,nb,nk) )
+      allocate( eigenval_bs(nb,nk),eigenvec_bs(nb,nv,nk), grun_bs(nb,nk) ,veloc_bs(3,nb,nk) )
      else
       allocate( eigenval_bs(nb,nk),eigenvec_bs(1,1,1), grun_bs(nb,nk))
      endif
     end subroutine allocate_eig_bs
 !---------------------------------
-    subroutine deallocate_eig_bs ! nb for band, nk for band structure mesh
-      if(allocated(veloc)) deallocate(veloc)
+    subroutine deallocate_eig_bs 
+      if(allocated(veloc_bs)) deallocate(veloc_bs)
       deallocate( eigenval_bs, eigenvec_bs, grun_bs )
     end subroutine deallocate_eig_bs
 !---------------------------------
-    subroutine deallocate_eig ! nb for band, nk for coarse mesh in FBZ
-      deallocate( eigenval,eigenvec,grun,veloc,eivalibz,eivecibz,velocibz )
+    subroutine deallocate_eig 
+      deallocate( eigenval,eigenvec,veloc,grun)
     end subroutine deallocate_eig
-
+!---------------------------------
+    subroutine deallocate_eig_ibz 
+      deallocate(eivalibz,eivecibz,velocibz,grunibz )
+    end subroutine deallocate_eig_ibz
 !---------------------------------
  function onedim(nb,nk)
 ! calculates the running index onedim

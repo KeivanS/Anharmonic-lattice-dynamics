@@ -4,8 +4,10 @@
 !! system ax=b. SVD results will be written in the file fnsvd
  implicit none
  integer , intent(in):: m3,n
- real(8), intent(in) :: a(m3,n),b(m3),svdcut
- real(8), allocatable :: u(:,:),v(:,:),w(:) !,aux(:,:),eye(:,:)
+ real(8), intent(inout) :: a(m3,n)
+ real(8), intent(in) :: b(m3),svdcut
+! real(8), allocatable :: u(:,:),v(:,:),w(:) 
+ real(8) v(n,n),w(n),w2(n,n) , ax(m3)
  real(8), intent(out) :: error,ermax,x(n),sigma(n),sig
  character(LEN=*), intent(in) :: fnsvd
  integer i,j,k,uio,umat
@@ -19,17 +21,13 @@
 ! do i=1,n
 !    eye(i,i)=1d0   ! make the identity matrix
 ! enddo
- write(umat,*)' Matrix A and vector b are '
- do i=1,m3
-   write(umat,9)i,(a(i,j),j=1,n),b(i)
- enddo
 
  write(uio,*)' A and b written, now doing the SVD '
 
- allocate( u(m3,n),v(n,n),w(n) ) !,aux(n,n),eye(n,n) )
+! allocate( v(n,n),w(n),u(m3,n) )
 
- u = a
- call svdcmp(u,m3,n,w,v)
+!u = a
+ call svdcmp(a,m3,n,w,v)
 
 ! write svd matrices in a file
  write(uio,*)' W (better not be too small) is:  '
@@ -46,14 +44,14 @@
 ! write(umat,*)' Its condition number w_max/w_min = ',wmax/wmin
  write(umat,*)' w larger than ',wcut,' will be used in the inversion'
 
- write(umat,*)' Matrix u is  '
- do i=1,m3
-   write(umat,9)i,(u(i,j),j=1,n)
- enddo
- write(umat,*)' Matrix v is  '
- do i=1,n
-   write(umat,9)i,(v(i,j),j=1,n)
- enddo
+! write(umat,*)' Matrix u is  '
+! do i=1,m3
+!   write(umat,9)i,(u(i,j),j=1,n)
+! enddo
+! write(umat,*)' Matrix v is  '
+! do i=1,n
+!   write(umat,9)i,(v(i,j),j=1,n)
+! enddo
 
 ! test for orthogonality of u
 ! aux=matmul(transpose(u),u)
@@ -72,16 +70,16 @@
 ! endif
 
 ! test for correctness of SVD by comparing A to u*w*transpose(v)
- write(uio,*)' SVD product of U*W*V^T, a is: '
-  do i=1,m3
-  do j=1,n
-     prod = 0
-     do k=1,n
-        prod = prod+v(j,k)*u(i,k)*w(k)
-     enddo
-     if( abs(prod-a(i,j)) .gt. 1d-10) write(uio,8)'i,j,UW(V^T),a(i,j)=',i,j,prod,a(i,j)
-  enddo
-  enddo
+! write(uio,*)' SVD product of U*W*V^T, a is: '
+!  do i=1,m3
+!  do j=1,n
+!     prod = 0
+!     do k=1,n
+!        prod = prod+v(j,k)*u(i,k)*w(k)
+!     enddo
+!     if( abs(prod-a(i,j)) .gt. 1d-10) write(uio,8)'i,j,UW(V^T),a(i,j)=',i,j,prod,a(i,j)
+!  enddo
+!  enddo
 
 
 ! this is to eliminate the v vectors with small w
@@ -90,11 +88,13 @@
   enddo
 
 ! Solve the system using x=V(1/W)(U^T) b; after eliminating w=0 terms
-  call svbksb(u,w,v,m3,n,b,x)
+  call svbksb(a,w,v,m3,n,b,x)
 
   write(uio,*)' results of SVD solution, variance, error are: x,sigma,Dx'
+  w2=0
   do j=1,n
      sigma(j) = 0
+     w2(j,j)=w(j)
      do k=1,n
         if (w(k).ge.wcut) then
            sigma(j) = sigma(j) + v(j,k)*v(j,k) / w(k)/w(k)
@@ -104,28 +104,28 @@
      write(uio,7) j,x(j),sigma(j),sigma(j)/sqrt(m3*1.)
   enddo
 
- deallocate(u,v,w) !,aux,eye)
+! deallocate(v,w,u) !,aux,eye)
 
+! reconstruct a from u,v,w2: a=u*w2*v^T
+ w2=matmul(w2,transpose(v))
+ a=matmul(a,w2) !matmul(w2,transpose(v)))
  write(uio,*)' residual of SVD solution is: Ax,b,|Ax-b|,|Ax-b|/Ax'
-  error = 0; ermax = 0; num=0; denom=0
+!  error = 0; ermax = 0; num=0; denom=0
+  ax=matmul(a,x)
+  num=dot_product((ax-b),(ax-b))
+  denom=dot_product(ax,ax)
+  error=sum(abs(ax-b))/m3
+  ermax=maxval(abs(ax-b))
   do i=1,m3
-     prod = dot_product(a(i,:),x)
-     junk = abs(prod-b(i))
-     num=num     + junk*junk
-     denom=denom + prod*prod
-     if ( ermax .lt. junk ) ermax = junk
-     write(uio,6) i, prod,b(i), junk, junk/prod
-     error = error + junk
+     write(uio,*)' Ax-b ',i,ax(i)-b(i)
   enddo
-
-  error = error /(1.*m3)
-  sig=sqrt(num/denom)
+  sig=sqrt(num/denom)*100
   write(uio,3)' Average, largest errors in force,percent deviation=',error,ermax,sig
 
 6 format(i6,3(1x,g13.6),3x,g11.4)
 3 format(a,3(1x,g13.6))
 9 format(i8,1x,999(1x,f7.3))
-8 format(a,i8,1x,i8,3x,f25.15,3x,f25.15)
+8 format(a,i8,1x,i8,3(1x,f17.10))
 7 format(i8,1x,99(1x,g11.4))
 
   close(uio)
@@ -142,12 +142,10 @@
  integer, intent(in) ::  m3,n,m0 ,itemp,nconfigs,nlines(nconfigs)  ! the first m0 lines form the homogeneous part of a
  real(8), intent(in) ::  a(m3,n),b(m3),svdcut ,tempk,energies(nconfigs)
  real(8), intent(out) :: x(n),sigma(n)
- integer, allocatable :: r(:)
- real(8), allocatable :: u(:,:),w(:),ahom(:,:),ainhom(:,:),x2(:),v0(:,:),kernelbasis(:,:)
+ real(8), allocatable :: ahom(:,:),ainhom(:,:),kernelbasis(:,:)
  real(8), allocatable :: mat(:,:),qmat(:)
-
- integer l,c,i,j,k,uio,nb,nkernel
- real(8) norm,wmin,wmax,wcut,error,ermax,num,denom,prod,junk,sig
+ integer i,uio,nkernel
+ real(8) norm,error,ermax,num,denom,prod,junk,sig
 
  write(*,*)'SOLVE_BY_ELIMINATION: First solving the kernel of the homogeneous part'
 
@@ -207,7 +205,7 @@
  enddo
  error = error /(1.*m3)
  sig=sqrt(num/denom)
- write(uio,3)' ELIMINATION: Average, largest errors in force,percent deviation=',error,ermax,sig
+ write(uio,3)' ELIMINATION: Average, largest errors in force,percent deviation=',error,ermax,sig*100,' %'
  write(uio,*)' After elimination, || F_dft-F_fit || / || F_dft || =',sig
 
  close(uio)
@@ -215,13 +213,13 @@
 7 format(i8,1x,99(1x,g13.6))
 6 format(i6,3(1x,g13.6),3x,g11.4)
 4 format(a,99(1x,g11.4))
-3 format(a,9(1x,g11.4))
+3 format(a,3(1x,g11.4),a)
 
  end subroutine solve_by_elimination
 !===================================================
       SUBROUTINE svdcmp(a,m,n,w,v)
 !! performs SVD decomposition of A in  the form A=U*W*transpose(V)
-!! on out put U is written into A
+!! on output U is written into A
       implicit none
       INTEGER, intent(in) :: m,n
       REAL(8), intent(inout) :: a(m,n)
@@ -485,7 +483,7 @@
       REAL(8), intent(in) :: b(m),u(m,n),v(n,n),w(n)
       REAL(8), intent(out) :: x(n)
       INTEGER j
-      REAL(8) s,tmp(n)
+      REAL(8) tmp(n)
 
       tmp=matmul(transpose(u),b)
       do j=1,n
@@ -525,18 +523,19 @@
 !! inputs are a,b,svdcut,a,b and their dimensions; output is xout
 !! write resutls and sd=sig in file with unit=uio
  use ios
+ use params, only : verbose
  implicit none
  integer, intent(in) :: ndim,n,uio
  real(8), intent(in) :: b(ndim),svdcut
  real(8), intent(in) :: a(ndim,n)
  real(8), intent(out):: xout(n) ,sig(n)
- integer nsvd,i,k
+ integer i,k
  real(8), allocatable :: u(:,:),w(:),v(:,:)
- real(8) wmax,wmin,wcut,xp
+ real(8) wmax,wmin,wcut
 
  allocate( u(ndim,n),w(n),v(n,n) )
  write(uio,*)'SOLVE_SVD: amatrix is of dimensions ',ndim,n
- call write_out(uio,'=========================== SOLVE_SVD: amatrix ',a)
+ if (verbose) call write_out(uio,'=========================== SOLVE_SVD: amatrix ',a)
  u=a ! to keep a intact
  call svdcmp(u,ndim,n,w,v)  ! BEWARE: a will be overwritten !
 
