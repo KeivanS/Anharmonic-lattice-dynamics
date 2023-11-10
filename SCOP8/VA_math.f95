@@ -30,7 +30,7 @@ Module VA_math
     COMPLEX(8),DIMENSION(:),ALLOCATABLE :: GradientF_trial
 
     REAL(8) :: conv_to_cart(3,3)
-    REAL(8) :: cputime, cputime_1, cputime_2
+    REAL(8) :: cputime, cputime_1, cputime_2, cputime_3, cputime_i
     REAL(8),DIMENSION(:),ALLOCATABLE :: YY_record,trialfc2_record
     REAL(8),DIMENSION(:,:,:,:),ALLOCATABLE :: approx_term
     LOGICAL :: YY_flag
@@ -232,20 +232,39 @@ Module VA_math
 
         GradientF_trial=0
 
-WRITE(*,*)'TimeCheck Pos3'
-
         !******************ENERGY CALCULATIONS************************
         !we have to diagonalize matrix here
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+cputime_2 = cputime
+endif
+
         CALL initiate_yy(kvector)!calculate new <yy> for every time
 !CALL check_degeneracy
 !CALL special_check
 !CALL updatePhi !just for test
 !STOP
-
-WRITE(*,*)'TimeCheck Pos4'
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+WRITE(37,*)'Time takes for <initiate_yy> a.k.a the matrix diagonalization:', cputime-cputime_2
+cputime_2 = cputime
+endif
 
         CALL GetF0_and_V0 ! not really needed here
+
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+WRITE(37,*)'Time takes for F0 and V0 calculation:', cputime-cputime_2
+cputime_2 = cputime
+endif
+
         CALL GetV_avg_And_GradientV_avg(kvector) ! translational invariant form that actually works
+
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+WRITE(37,*)'Time takes for <V> and d<V>/dx calculation:', cputime-cputime_2
+cputime_2 = cputime
+endif
 !        CALL TreatGradientV ! modify GradientV_utau GradientV_eta with a matrix
         F_trial=F0+V_avg-V0
 
@@ -263,7 +282,6 @@ WRITE(*,*) 'F=F0+V-V0:',REAL(F_trial)
 WRITE(34,*) 'F=F0+V-V0:',REAL(F_trial)
 !WRITE(unitnumber2,'(f10.4)') F_trial
 
-WRITE(*,*)'TimeCheck Pos5'
 
         !**************MAKE GradientF_trial AN ARRAY******************
         !force symmetry on strain gradients?
@@ -312,11 +330,21 @@ WRITE(*,*)'TimeCheck Pos5'
  WRITE(*,*)       '***************************************************************************'
         !*************************************************************
 
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+cputime_2 = cputime
+endif
+
         !-----add pressure-----
         IF(pressure) THEN
             CALL add_Pressure
         END IF
 
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+WRITE(37,*)'Time takes for add pressure term:', cputime-cputime_2
+cputime_2 = cputime
+endif
 7 format(a,f10.8)
     END SUBROUTINE GetF_trial_And_GradientF_trial
 !================================================================================================================
@@ -1012,7 +1040,7 @@ A = 0d0
     ALLOCATE(YY_record(eff_fc2_terms))
     YY_record = 0d0
 
-WRITE(47,*) "===== ALL Y_square at this iteration ====="
+!WRITE(47,*) "===== ALL Y_square at this iteration =====" !turn on if want a record of YY for every iteration
 j = 0
 DO i=1,SIZE(myfc2_index)
     atom1=myfc2_index(i)%iatom_number
@@ -1031,9 +1059,9 @@ DO i=1,SIZE(myfc2_index)
 !    ELSE
 !        Y_square(direction1,atom1,direction2,atom2) = 0d0
     END IF
-WRITE(47,*) get_letter(direction1),atom1,get_letter(direction2),atom2,Y_square(direction1,atom1,direction2,atom2)
+!WRITE(47,*) get_letter(direction1),atom1,get_letter(direction2),atom2,Y_square(direction1,atom1,direction2,atom2)
 END DO
-WRITE(47,*) '========================================================'
+!WRITE(47,*) '========================================================'
 
     !up to here the <YY> ranges (0tau1,R2tau2) have all been calculated
 
@@ -1103,7 +1131,10 @@ WRITE(47,*) '========================================================'
 !END DO
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+cputime_3 = cputime
+endif
 !---------------------------------------QUADRATIC TERMS-----------------------------------------------------------
     DO i=1,atom_number
         tau1=every_atom(i)%type_tau
@@ -1151,6 +1182,12 @@ WRITE(47,*) '========================================================'
 
 check = V_avg
 !WRITE(*,*) 'check quadratic:', check
+
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+WRITE(37,*)'Time takes for quadratic terms:', cputime-cputime_3
+cputime_3 = cputime
+ENDIF
 
 coefficient(:) = 0d0
 !-------------------------------------------CUBIC TERMS------------------------------------------------------
@@ -1244,7 +1281,11 @@ coefficient(:) = 0d0
 
 check = V_avg - check
 !WRITE(*,*) 'check cubic:', check
-
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+WRITE(37,*)'Time takes for cubic terms:', cputime-cputime_3
+cputime_3 = cputime
+endif
 !------------------------------------------------QUARTIC TERMS-----------------------------------------------------
 CALL CPU_TIME(time1)
 !!$OMP PARALLEL DO
@@ -1347,8 +1388,11 @@ CALL CPU_TIME(time1)
 !WRITE(*,*)'FINISH QUARTIC TERMS CALCULATION'
 !
 !!$OMP END PARALLEL DO
-CALL CPU_TIME(time2)
-WRITE(*,*) 'time:',time2-time1
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+WRITE(37,*)'Time takes for quartic terms:', cputime-cputime_3
+cputime_3 = cputime
+endif
 check = V_avg - check
 !WRITE(*,*) 'check quartic:', check
 

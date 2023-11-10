@@ -113,16 +113,19 @@ SUBROUTINE ThreeVariableRoutine
     OPEN(unit_number2,FILE='output.txt')
     OPEN(unit_number3,FILE='convergence.dat')
     OPEN(unit_number4,FILE='fc2_comparison.dat')
-    !OPEN(unit_number5,FILE='cputime.dat',status='unknown',position='append',action='write')
+    OPEN(unit_number5,FILE='cputime.dat',status='unknown',position='append',action='write')
     CALL CPU_TIME(cputime)
     WRITE(unit_number2,*)'***************************************************************************'
-    WRITE(unit_number2,*)'Start time: ', cputime
+    WRITE(unit_number5,*)'Start time: ', cputime
     cputime_1 = cputime
-
+    cputime_i = cputime
     !~~~~~~~~~~~~~~~~~~~READ LATTICE INFORMATIONS~~~~~~~~~~~~~~~~~~~~~
 
     CALL read_force_constants
 
+CALL CPU_TIME(cputime)
+WRITE(unit_number5,*) 'Time takes for <read_force_constants>',cputime-cputime_1
+cputime_1 = cputime
 WRITE(*,*)'*************************Check Reading files*************************'
 WRITE(unit_number2,*)'*************************Check Reading files*************************'
 WRITE(*,*) '*************************Read lat_fc.dat*************************'
@@ -167,7 +170,9 @@ WRITE(unit_number2,*)"*************************FORCE CONSTANTS INITIALIZATION***
 WRITE(unit_number2,*)'number of atoms within fc2 cutoff region: ', SIZE(atoms_fc2)
 WRITE(unit_number2,*)'number of atoms within fc3 cutoff region: ', SIZE(atoms_fc3)
 WRITE(unit_number2,*)'number of atoms within fc4 cutoff region: ', SIZE(atoms_fc4)
-
+CALL CPU_TIME(cputime)
+WRITE(unit_number5,*) 'Time takes for ASR check and fix:',cputime-cputime_1
+cputime_1 = cputime
     !~~~~~~~~~~~~~~~~~READ K POINT MESH SIZE AND GENERATE~~~~~~~~~~~~~~~~~~
 
     ! read params.phon
@@ -178,10 +183,6 @@ WRITE(unit_number2,*)'number of atoms within fc4 cutoff region: ', SIZE(atoms_fc
     wmin=-0.1;  nband=1
     dk=(length(g1)+length(g2)+length(g3))/(nc1+nc2+nc3)
     CALL kvector_Update(nband,nk)!don't forget to turn this on for tetrahedron k mesh
-    !----------------------------------
-CALL CPU_TIME(cputime)
-WRITE(unit_number2,*)'Cputime after reading all the input:', cputime
-
     !~~~~~~~~~~~~~~~~GET THE FOURIER CONSTANTS LIST~~~~~~~~~~~~~~~~~
 
     !read params.born
@@ -223,7 +224,9 @@ WRITE(*,*)'*************************End of Iteration Parameters check***********
 WRITE(unit_number2,*)'****************End of Iteration Parameters check*************************'
 WRITE(*,*)
 WRITE(unit_number2,*)
-
+CALL CPU_TIME(cputime)
+WRITE(unit_number5,*)'Cputime after reading all the input:', cputime
+cputime_1 = cputime
 endif
 
     !~~~~~~~~~~~~~~~~~INITIALIZE MATRIX PARAMETERS~~~~~~~~~~~~~~~~~~
@@ -290,7 +293,9 @@ if (mpi_rank==0) then
 
 WRITE(*,*)'**********************Check 1st Variational Approach calculation**********************'
 WRITE(unit_number2,*)'*********************Check 1st Variational Approach calculation*********************'
-
+CALL CPU_TIME(cputime)
+WRITE(unit_number5,*)'Cputime before 1st Variational Approach run:', cputime
+cputime_1 = cputime
 endif
 
     iter_rec = 0
@@ -315,8 +320,11 @@ endif
 
 if (mpi_rank==0) then
 
-    WRITE(*,*)'start_F', start_F
+CALL CPU_TIME(cputime)
+WRITE(unit_number5,*)'Time takes for the 1st variational approach run', cputime-cputime_1
+cputime_1 = cputime
 
+WRITE(*,*)'start_F', start_F
 WRITE(*,*) 'first Unpertubed Free Energy F0=',F0
 WRITE(unit_number2,*) 'first Unpertubed Free Energy F0=',F0
 WRITE(unit_number,*) 'first Unpertubed Free Energy F0=',F0
@@ -401,11 +409,13 @@ endif
 if (mpi_rank==0) then
 WRITE(*,*)'ITERATION#:',iter
 WRITE(unit_number2,*)'ITERATION#:',iter
+CALL CPU_TIME(cputime)
+cputime_1 = cputime
 endif
     !---------------update old x(:) for next loop-----------------
           CALL combine_variants(x)   !get x
 
-          CALL printGradients(x)
+!          CALL printGradients(x) !modified 11/10/2023, comment on for a log of gradients for  every iteration
 
 !CALL printTargetGradients(x,7)
 !PRINT*,'f(:),x(:) constructed, iter=',iter
@@ -490,7 +500,7 @@ CALL asr_checkfc2(trialfc2_value) !check ASR in trial fc2
 
 
     !~~~~~~~~~~~~~~~~Variational Parameters Check After a Broyden/CG iteration~~~~~~~~~~~~~~~~~~~
-
+if(mpi_rank==0) then
 WRITE(unit_number2,*) &
 &'********************Variational Parameters Check After a Broyden iteration*********************'
 WRITE(unit_number2,*) '||Atomic deviation u_tau(:)||'
@@ -541,7 +551,11 @@ WRITE(unit_number3,*) iter,',',threshold,',',REAL(F_trial)
 !    CALL asr_fc2
 !    CALL asr_fc3
 !    CALL asr_fc4
-    END DO !the do while loop
+CALL CPU_TIME(cputime)
+WRITE(unit_number5,*) 'Time takes for the ',iter,'th iteration:',cputime-cputime_1
+endif
+
+    END DO !the do while loop for the whole Broyden
 
 
 
@@ -554,13 +568,14 @@ WRITE(unit_number2,*)''
 
 !END DO guessloop !guess loop
 
-    CALL printGradients(x)
+!    CALL printGradients(x)
     CALL printFinalGradients(x) !final gradients value and variational parameters value in a separate file
     !-----out put results for target initialization of next temperature(optional)-----
     CALL printResults
 
 !CALL printTargetGradients(x,7)
 !-------------------------------------------------------------------------------------
+if(mpi_rank==0) then
 WRITE(*,*)'final translational vector =',trans_vec
 WRITE(unit_number,*)'final translational vector =',trans_vec
 WRITE(*,*) 'final F0 = ', F0
@@ -572,9 +587,8 @@ WRITE(unit_number,*)'Temperature',temperature*(100*h_plank*c_light)/k_b
 CALL asr_checkfc2(trialfc2_value) !check final ASR
 
 CALL CPU_TIME(cputime)
-cputime_2 = cputime
-WRITE(unit_number2,*)'Total running time: ', cputime_2-cputime_1
-WRITE(*,*)'Total running time: ', cputime_2-cputime_1
+WRITE(unit_number5,*)'Total running time: ', cputime-cputime_i
+endif
 !-------------------------------------------------------------------------------------
 
     !~~~~~~~~~~~~~~~~~~~~~~~POST PROCESS && CHECK~~~~~~~~~~~~~~~~~~~~~~~~~~~

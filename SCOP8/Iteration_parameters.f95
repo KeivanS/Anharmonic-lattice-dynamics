@@ -322,12 +322,14 @@ CONTAINS
         INTEGER,DIMENSION(:),ALLOCATABLE :: free_params
 
         unit_number = 60
-        OPEN(unit_number,file='iteration_parameters.in',status='old',action='read')
+!        OPEN(unit_number,file='iteration_parameters.in',status='old',action='read')
+        OPEN(unit_number,file='control.params',status='old',action='read') !modified 11/10/2023
 
         READ(unit_number,*) rand_start !start randomly or not
         READ(unit_number,*) inherit !use results from last run to target initialize or not
         READ(unit_number,*) pressure !whether include pressure factor
-        READ(unit_number,*) tolerance2
+!        READ(unit_number,*) tolerance2 !modified 11/10/2023
+        tolerance2 = 0.0001
         READ(unit_number,*) seed
         READ(unit_number,*) max_it_number
         READ(unit_number,*) my_pmix
@@ -338,7 +340,8 @@ CONTAINS
         END DO
         stress = stress*1d-21/ee !unify the unit, file is in GPa
 
-        READ(unit_number,'(E5.0)') danger !used in this version
+!        READ(unit_number,'(E5.0)') danger !threshold for negative eigenvalues handling, modified 11/10/2023
+        danger = 1d-4
         READ(unit_number,*) n !number of fixed variational parameter
         IF(ALLOCATED(fixed_params)) DEALLOCATE(fixed_params)
         !if n variational parameters are fixed and listed
