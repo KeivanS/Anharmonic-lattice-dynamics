@@ -79,7 +79,7 @@
 
   - **Important preparations for MPI library installation and link**: follow [here](https://abhila.sh/writing/3/mpi_instructions.html)
   - Direct to the installation folder of MinGW, find msys -> 1.0 -> msys.bat, this is the MinGW shell terminal we will use for compile and execute the code
-  - Open the terminal and direct to the SCOP8 folder on your Windows PC, then input following command to compiler, ther order matters
+  - Open the terminal and direct to the SCOP8 folder on your Windows PC, then input following command to compiler, the order matters
 
   > gfortran -c constants.f90
   >
