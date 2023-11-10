@@ -8,6 +8,10 @@ Module VA_math
     USE tetrahedron
     USE om_dos
     USE phi3
+
+    use mpi
+    use mpi_params
+
     IMPLICIT NONE
 
     ! To keep a track of updated fc number
@@ -320,7 +324,6 @@ WRITE(*,*)'TimeCheck Pos5'
     !!to Fourier transform trial force constant K into 'trialffc2_value'
     !!then diagonalize trial force constant K dynamic matrix 'trialffc2_matrix'
     !!call subroutines in MatrixDiagonalize module
-        USE OMP_LIB ! this might be not needed on Windows
         IMPLICIT NONE
          TYPE(vector),INTENT(IN) :: kvector(:)
          TYPE(ffc2_value),DIMENSION(:,:,:),ALLOCATABLE :: trialffc2_value
@@ -367,8 +370,49 @@ WRITE(*,*)'TimeCheck Pos5'
           nv=d*atom_number
           ier=0
 CALL CPU_TIME(time1)
-!!$OMP PARALLEL DO
-        Do k=1,SIZE(kvector)
+
+! No reason to recompute this over and over
+        ndim = atom_number*d
+
+! Figure out my part of the arrays to fill
+! lazy and not super load balanced but usually good enough
+! Should be moved if this routine is called multiple times, so it is only done once
+        kpart=size(kvector)/nprocs
+        kremain=mod(size(kvector),nprocs)
+
+        mynumk=kpart
+        if (kremain /= 0) then
+            do i=1,kremain
+                if ((i-1)==mpi_rank) mynumk=mynumk+1
+            enddo
+        endif
+
+        mystartk=mpi_rank*mynumk+1
+        myendk=mystartk+mynumk-1
+
+        myeivals=size(eivals,1)*mynumk
+        myeivecs=size(eivecs,1)*size(eivecs,2)*mynumk
+
+!print *,"Total number of k vectors ",size(kvector)
+!do i=0,nprocs-1
+!   call MPI_Barrier(MPI_COMM_WORLD,mpi_err)
+!   if (i==mpi_rank) then
+!print *,"My rank ID is ",mpi_rank, "out of",nprocs
+!print *,"I start at ",mystartk," and end at ",myendk
+!   endif
+!enddo
+
+       call MPI_Allgather(myeivals,1,MPI_INTEGER,vals_count,1,MPI_INTEGER,MPI_COMM_WORLD,mpi_err)
+       call MPI_Allgather(myeivecs,1,MPI_INTEGER,vecs_count,1,MPI_INTEGER,MPI_COMM_WORLD,mpi_err)
+
+        do i=2,nprocs
+           vals_displs(i)=vals_displs(i-1)+vals_count(i-1)
+           vecs_displs(i)=vecs_displs(i-1)+vecs_count(i-1)
+        enddo
+
+!        Do k=1,SIZE(kvector)
+         DO k=mystartk,myendk
+
 !------------------------------my old codes, without born but faster------------------------------
 !            DO i=1,atom_number
 !                tau1=i
@@ -407,7 +451,6 @@ CALL CPU_TIME(time1)
 !notes: calculate dynmat & ddyn by <calculate_dynmat> then call <nonanal> to
 !add born correction, then let trialffc2_matrix(i,j) equal to new dynmat(i,j)
             qp = kvector(k)%component(:)
-            ndim = atom_number*d
             CALL calculate_dynmat(qp)
             !comment the if clause to turn off born term
             !problem at gamma point
@@ -420,6 +463,14 @@ CALL CPU_TIME(time1)
                 END DO !j loop
             END DO !i loop
 
+! If need to write in parallel, use a different file per process, otherwise
+!the file will likely be corrupted.
+! Example
+!Must declare variable for filename, literal won't work.  fname must also
+!be a character variable, equal in length to trimmed length of filename+4
+!i4.4 zero pads
+
+!write(fname,'(a,i4.4)') filename(1:len_trim(filename)),rank
 !eigenvalue = 0d0 problem check POSITION 1
 !OPEN(75,FILE='DynamicMat.dat',STATUS='unknown',POSITION='append',ACTION='write')
 !IF(k.eq.1) THEN
@@ -451,6 +502,8 @@ CALL CPU_TIME(time1)
 !                END DO
 !            END DO
 
+!See comment about writing files with multiple processes above
+
 !eigenvalue = 0d0 problem check POSITION 2
 !OPEN(75,FILE='DynamicMat.dat',STATUS='unknown',POSITION='append',ACTION='write')
 !IF(k.eq.1) THEN
@@ -476,6 +529,8 @@ END DO !for test, no other uses
 
 !a subroutine to transpose eivecs(atom_type*direction,lambda,k) to eivecs_t(lambda,atom_type*direction,k)
             CALL dagger_eigen(eivecs(:,:,k),eivecs_t(:,:,k))
+
+!If need to write, use a different file per process here, as explained above
 
 !--------------------check consistency-----------------------
 !OPEN(71,FILE='dynmat_check.dat',STATUS='unknown',ACTION='write')
@@ -513,9 +568,26 @@ END DO !for test, no other uses
 
          End Do !k loop
 
-!!$OMP END PARALLEL DO
+! Works because of column-major ordering
+    call MPI_Allgatherv(dynmat_record(:,:,mystartk:myendk),myeivecs,           &
+            MPI_DOUBLE_COMPLEX, dynmat_record,vecs_count,vecs_displs,          &
+            MPI_DOUBLE_COMPLEX, MPI_COMM_WORLD,mpi_err)
+
+    call MPI_Allgatherv(eivals(:,mystartk:myendk),myeivals,MPI_REAL8,eivals,   &
+            vals_count,vals_displs,MPI_REAL8,MPI_COMM_WORLD,mpi_err)
+
+    call MPI_Allgatherv(eivecs(:,:,mystartk:myendk),myeivecs,                  &
+            MPI_DOUBLE_COMPLEX, eivecs,vecs_count,vecs_displs,                 &
+            MPI_DOUBLE_COMPLEX,MPI_COMM_WORLD,mpi_err)
+
+    call MPI_Allgatherv(eivecs_t(:,:,mystartk:myendk),myeivecs,                &
+            MPI_DOUBLE_COMPLEX, eivecs_t,vecs_count,vecs_displs,               &
+            MPI_DOUBLE_COMPLEX,MPI_COMM_WORLD,mpi_err)
+
 CALL CPU_TIME(time2)
+if (mpi_rank==0) then
 WRITE(*,*) time1, time2, time2-time1
+endif
 
         DEALLOCATE(trialffc2_matrix)
         DEALLOCATE(trialffc2_value)
@@ -581,22 +653,26 @@ SUBROUTINE initiate_yy(kvector)
 
     unitnumber=40
     gthb = 41
+
+    if (mpi_rank==0) then
     OPEN(unitnumber,FILE='eigenvalues.dat',STATUS='unknown',ACTION='write',POSITION='append')
     OPEN(gthb,FILE='eigenvectors.dat',STATUS='unknown',ACTION='write')
+!    OPEN(47,FILE='Y_square.dat',STATUS='unknown',ACTION='write',POSITION='append')
+
     WRITE(unitnumber,*)
     WRITE(gthb,*)
     WRITE(unitnumber,*) 'iteration # = ',iter_rec
     WRITE(gthb,*) 'iteration # = ', iter_rec
 
-!    OPEN(47,FILE='Y_square.dat',STATUS='unknown',ACTION='write',POSITION='append')
 !    WRITE(47,*)"This is Iteration #",iter_rec
 !    WRITE(47,*)"xyz_1,atom_1,xyz_2,atom_2, gamma point correction, <YY> "
+
+    endif
 
     ALLOCATE(phi_test(d,atom_number,d,tot_atom_number))
 
     k_number = SIZE(kvector)
     CALL GetEigen(kvector)!get eigenvalues from dynmat
-
     !**** fix if there is any negative eigenvalues based on input fc2 ****
     !*(old)if there are negative eigenvalues but larger than the threshold, just shift will be fine
     !*(1)if there are negative eigenvalues: drop Broyden values, manual update trialfc2 = 2*GradientVCor
@@ -604,9 +680,13 @@ SUBROUTINE initiate_yy(kvector)
 
     min_eivals=MINVAL(MINVAL(eivals, DIM=2))
     min_eival = min_eivals
+
+    if (mpi_rank==0) then
     WRITE(unitnumber,*)'minimum eigenvalue = ', min_eival
     WRITE(*,*) 'minimum eigenvalue = ',min_eival
     WRITE(*,*) SIZE(eivals)
+    endif
+
     neg_lambda = 0; neg_k = 0 !don't forget to initialize them to be 0 as a flag(no too negative eival)
 outer:    DO k=1,SIZE(eivals,dim=2)
         DO l=1,SIZE(eivals,dim=1)
@@ -621,6 +701,7 @@ outer:    DO k=1,SIZE(eivals,dim=2)
             END IF
 
             !print out negative eigenvalues record
+ ! if (mpi_rank==0) etc be sure to close this if
             IF(eivals(l,k).le.0d0) THEN
                 counter = counter + 1 !find one more soft mode
                 negative_eivals=eivals(l,k)
@@ -630,6 +711,7 @@ outer:    DO k=1,SIZE(eivals,dim=2)
 
             END IF
             !print out gamma point eigenvectors record
+            if (mpi_rank==0) then
             IF(k.eq.1) THEN
                 WRITE(gthb,*)'lambda',l,'#kvector gamma'
                 WRITE(gthb,5) 'atom1 eigenvector (x,y,z)=',REAL(eivecs(1:3,l,1))
@@ -643,14 +725,18 @@ outer:    DO k=1,SIZE(eivals,dim=2)
                 IF(eivals(6,1).eq.0d0) eivals(6,1) = 0.0001 * eivals(6,2)
             END IF
 
+            endif !rank
+
         END DO
     END DO outer
 
+    if (mpi_rank==0) then
     IF(min_eivals.lt.0d0) THEN
         WRITE(unitnumber,*)
         WRITE(unitnumber,*) 'most negative eigenvalue=', min_eival
         WRITE(unitnumber,*) 'lambda', neg_lambda, '#kvector', neg_k
     END IF
+    endif
 !@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 !------------------------------------------NEW--------------------------------------------------
     !record all the negative eigenvalues index and shift those
@@ -670,7 +756,10 @@ outer:    DO k=1,SIZE(eivals,dim=2)
         END DO
     END IF
 !-----------------------------------------------------------------------------------------------
+
+if (mpi_rank==0) then
 WRITE(*,*)'minimum eigenvalue after shift:',MINVAL(MINVAL(eivals,DIM=2))
+endif
 
     !**** calculate <YY> and store them in yy_value ****
     DO i=1,SIZE(myfc2_index)
@@ -684,6 +773,7 @@ WRITE(*,*)'minimum eigenvalue after shift:',MINVAL(MINVAL(eivals,DIM=2))
 
 
 !****Test the value of gamma point correction****
+!if (mpi_rank==0) then
 !WRITE(47,6) get_letter(xyz1),atom1,get_letter(xyz2),atom2,&
 !&for_check,yy_value(atom1,atom2)%phi(xyz1,xyz2)
 !****Test if using <yy> can recover the trial fc2****
@@ -693,6 +783,7 @@ WRITE(*,*)'minimum eigenvalue after shift:',MINVAL(MINVAL(eivals,DIM=2))
 !&trialfc2_value(atom1,atom2)%phi(xyz1,xyz2),&
 !&ABS(REAL(phi_test(xyz1,atom1,xyz2,atom2))-trialfc2_value(atom1,atom2)%phi(xyz1,xyz2))
 !WRITE(47,*)
+!endif
     END DO
 
 DEALLOCATE(phi_test)
@@ -724,19 +815,26 @@ SUBROUTINE CheckFixEigen
     END DO
 
     CALL GetEigen(kvector)
+
     min_eivals=MINVAL(MINVAL(eivals, DIM=2))
+
+    if (mpi_rank==0) then
     WRITE(*,*) min_eivals
     OPEN(unitnumber,FILE='eigenvalues.dat',STATUS='unknown',ACTION='write',POSITION='append')
     WRITE(unitnumber,*) 'eigenvalues 1st check not passed, enter fixing routing (1)'
     WRITE(unitnumber,*) 'After manual update trialfc2 = 2*GradientVCor*...'
+    endif
+
 outer:    IF(min_eivals.lt.0d0) THEN
         DO k=1,SIZE(eivals,dim=2)
         DO l=1,SIZE(eivals,dim=1)
             IF(eivals(l,k).lt.0d0) THEN
                 negative_eivals=eivals(l,k)
+                if (mpi_rank==0) then
                 WRITE(unitnumber,*)
                 WRITE(unitnumber,*)'lambda',l,'#kvector',k
                 WRITE(unitnumber,*)'eigenvalue=',eivals(l,k)
+                endif
             END IF
             !if now the min eival is larger than threshold
             IF(min_eivals.lt.0d0 .AND. min_eivals.gt.-danger) THEN
@@ -768,10 +866,14 @@ SUBROUTINE CheckFixEigenAgain
 
     CALL GetEigen(kvector)
     min_eivals=MINVAL(MINVAL(eivals, DIM=2))
+
+    if (mpi_rank==0) then
     WRITE(*,*) min_eivals
     OPEN(unitnumber,FILE='eigenvalues.dat',STATUS='unknown',ACTION='write',POSITION='append')
     WRITE(unitnumber,*) 'eigenvalues 2nd check not passed, enter fixing routing (2)'
     WRITE(unitnumber,*) 'After rollback to prev_trial_fc2(freeze eff fc2)...'
+    endif
+
     IF(min_eivals.lt.0d0) THEN
         DO k=1,SIZE(eivals,dim=2)
         DO l=1,SIZE(eivals,dim=1)
@@ -890,7 +992,8 @@ A = 0d0
 !WRITE(34,*)'===========================CHECK Gradients==========================================='
 
     ALLOCATE(S(d,tot_atom_number))
-    ALLOCATE(Y_square(d,tot_atom_number,d,tot_atom_number))
+!    ALLOCATE(Y_square(d,tot_atom_number,d,tot_atom_number)) !memory exceed, 10/31/2023
+    ALLOCATE(Y_square(d,atom_number,d,tot_atom_number))
     Y_square=0d0
     k_number=SIZE(kvector)
 
@@ -923,10 +1026,10 @@ DO i=1,SIZE(myfc2_index)
         j = j + 1
         !record current <YY> for threshold calculation
         YY_record(j) = Y_square(direction1,atom1,direction2,atom2)
-    ELSEIF(atom1.gt.atom_number .AND. atom2.le.atom_number) THEN
-        Y_square(direction1,atom1,direction2,atom2) = yy_value(atom2,atom1)%phi(direction2,direction1)!symmetry
-    ELSE
-        Y_square(direction1,atom1,direction2,atom2) = 0d0
+!    ELSEIF(atom1.gt.atom_number .AND. atom2.le.atom_number) THEN
+!        Y_square(direction1,atom1,direction2,atom2) = yy_value(atom2,atom1)%phi(direction2,direction1)!symmetry
+!    ELSE
+!        Y_square(direction1,atom1,direction2,atom2) = 0d0
     END IF
 WRITE(47,*) get_letter(direction1),atom1,get_letter(direction2),atom2,Y_square(direction1,atom1,direction2,atom2)
 END DO
@@ -8129,13 +8232,16 @@ SUBROUTINE calculate_Atilda(gama,Atilda,Ahat)
     END DO
     END DO
 
+if (mpi_rank==0) then
     WRITE(33,*)'Atilda from (7.32):'
     DO v1=1,6
         WRITE(33,7) Atilda(v1,:)/cell_volume*1.6*100 !in Gpa
     END DO
     WRITE(33,*)
+endif
 7 Format(6(f10.5, 2X))
     DEALLOCATE(X,middle_term,Aijkl,Aikjl)
+
 END SUBROUTINE calculate_Atilda
 !-------------------------------------------------------------------------------------------------------
 SUBROUTINE GetElastic_velocity !get C11, C12, C44 from speed of sound along (1,1,0)
@@ -8156,11 +8262,13 @@ SUBROUTINE GetElastic_velocity !get C11, C12, C44 from speed of sound along (1,1
         temp2 = speed(3)*speed(3)*2d0*density-2*C44 !C11+C12
         C11 = (temp1+temp2)/2d0
         C12 = (temp2-temp1)/2d0
+        if (mpi_rank==0) then
         WRITE(33,6) 'Elastic from speed of sound when delta= ',delta
         WRITE(33,6) 'C11=',C11*160
         WRITE(33,6) 'C12=',C12*160
         WRITE(33,6) 'C44=',C44*160
         WRITE(33,*)
+        endif
 !        delta = delta*2d0
 !    END DO
 
@@ -8191,7 +8299,9 @@ SUBROUTINE get_velocity(delta, speed) !use finite difference to approx. velocity
         CALL allocate_eigen(d*atom_number,SIZE(kvector)) !clear up the eivec, eivals
 
         speed(:) = (omega2(:)-omega1(:))/k !k has unit 1/A, omega has unit of sqrt(eV/a.u.)/A
+        !if (mpi_rank==0) then
 !        WRITE(59,*) dist, ',', speed(1),',', speed(2),',',speed(3)
+        !endif
 
 !        dist = dist + 0.01
 !    END DO

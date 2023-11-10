@@ -1,249 +1,234 @@
 
  iteration # =            0
- minimum eigenvalue =    3.5130744964570624E-008
+ minimum eigenvalue =   -3.3415725443983331E-007
+
+ most negative eigenvalue=  -3.3415725443983331E-007
+ lambda           0 #kvector           0
 
  iteration # =            1
- minimum eigenvalue =    3.5127777992820109E-008
+ minimum eigenvalue =   -3.3406903454997703E-007
+
+ most negative eigenvalue=  -3.3406903454997703E-007
+ lambda           0 #kvector           0
 
  iteration # =            2
- minimum eigenvalue =    3.5125746462677617E-008
+ minimum eigenvalue =   -3.3407191298441404E-007
 
- iteration # =            0
- minimum eigenvalue =    3.5130744964570624E-008
-
- iteration # =            1
- minimum eigenvalue =    3.5127777992820109E-008
-
- iteration # =            2
- minimum eigenvalue =    3.5125746243844922E-008
+ most negative eigenvalue=  -3.3407191298441404E-007
+ lambda           0 #kvector           0
 
  iteration # =            3
- minimum eigenvalue =    3.5125934091311798E-008
+ minimum eigenvalue =   -3.3403915635923382E-007
+
+ most negative eigenvalue=  -3.3403915635923382E-007
+ lambda           0 #kvector           0
 
  iteration # =            4
- minimum eigenvalue =    3.5337506988931649E-008
+ minimum eigenvalue =   -2.9361836660734931E-007
+
+ most negative eigenvalue=  -2.9361836660734931E-007
+ lambda           0 #kvector           0
 
  iteration # =            5
- minimum eigenvalue =    3.5575107120898062E-008
+ minimum eigenvalue =   -2.9689211206401212E-007
+
+ most negative eigenvalue=  -2.9689211206401212E-007
+ lambda           0 #kvector           0
 
  iteration # =            6
- minimum eigenvalue =    3.5529543171948454E-008
+ minimum eigenvalue =   -2.9719329458750683E-007
+
+ most negative eigenvalue=  -2.9719329458750683E-007
+ lambda           0 #kvector           0
 
  iteration # =            7
- minimum eigenvalue =    3.5507462447420832E-008
+ minimum eigenvalue =   -2.9647541511315763E-007
+
+ most negative eigenvalue=  -2.9647541511315763E-007
+ lambda           0 #kvector           0
 
  iteration # =            8
- minimum eigenvalue =    3.5659348170556887E-008
+ minimum eigenvalue =   -2.9266518933126199E-007
+
+ most negative eigenvalue=  -2.9266518933126199E-007
+ lambda           0 #kvector           0
 
  iteration # =            9
- minimum eigenvalue =    3.4233892730723326E-008
+ minimum eigenvalue =   -2.8260773294645873E-007
+
+ most negative eigenvalue=  -2.8260773294645873E-007
+ lambda           0 #kvector           0
 
  iteration # =           10
- minimum eigenvalue =    2.9654785996809476E-008
+ minimum eigenvalue =   -2.5592433951507877E-007
+
+ most negative eigenvalue=  -2.5592433951507877E-007
+ lambda           0 #kvector           0
 
  iteration # =           11
- minimum eigenvalue =    2.9929487505373932E-008
+ minimum eigenvalue =   -2.5675275092980611E-007
+
+ most negative eigenvalue=  -2.5675275092980611E-007
+ lambda           0 #kvector           0
 
  iteration # =           12
- minimum eigenvalue =    3.0177322351134566E-008
+ minimum eigenvalue =   -2.5179031160294746E-007
+
+ most negative eigenvalue=  -2.5179031160294746E-007
+ lambda           0 #kvector           0
 
  iteration # =           13
- minimum eigenvalue =    3.0978787369403288E-008
+ minimum eigenvalue =   -2.3423385578542663E-007
+
+ most negative eigenvalue=  -2.3423385578542663E-007
+ lambda           0 #kvector           0
 
  iteration # =           14
- minimum eigenvalue =    3.1910357890687441E-008
+ minimum eigenvalue =   -2.3383120939048943E-007
+
+ most negative eigenvalue=  -2.3383120939048943E-007
+ lambda           0 #kvector           0
 
  iteration # =           15
- minimum eigenvalue =    3.2282188303987470E-008
+ minimum eigenvalue =   -2.3440828663269065E-007
+
+ most negative eigenvalue=  -2.3440828663269065E-007
+ lambda           0 #kvector           0
 
  iteration # =           16
- minimum eigenvalue =    3.2323010816381162E-008
+ minimum eigenvalue =   -2.4681425468380509E-007
+
+ most negative eigenvalue=  -2.4681425468380509E-007
+ lambda           0 #kvector           0
 
  iteration # =           17
- minimum eigenvalue =    3.1955509921831360E-008
+ minimum eigenvalue =   -2.4957663365798118E-007
+
+ most negative eigenvalue=  -2.4957663365798118E-007
+ lambda           0 #kvector           0
 
  iteration # =           18
- minimum eigenvalue =    3.2392233820357208E-008
+ minimum eigenvalue =   -2.6499412925765063E-007
+
+ most negative eigenvalue=  -2.6499412925765063E-007
+ lambda           0 #kvector           0
 
  iteration # =           19
- minimum eigenvalue =    3.2635462057982955E-008
+ minimum eigenvalue =   -3.6560812157363339E-007
+
+ most negative eigenvalue=  -3.6560812157363339E-007
+ lambda           0 #kvector           0
 
  iteration # =           20
- minimum eigenvalue =    3.4400601646838940E-008
+ minimum eigenvalue =   -3.6673619628348544E-007
+
+ most negative eigenvalue=  -3.6673619628348544E-007
+ lambda           0 #kvector           0
 
  iteration # =           21
- minimum eigenvalue =    3.5602150312927500E-008
+ minimum eigenvalue =   -3.6830102065869340E-007
+
+ most negative eigenvalue=  -3.6830102065869340E-007
+ lambda           0 #kvector           0
 
  iteration # =           22
- minimum eigenvalue =    3.2793903494669254E-008
+ minimum eigenvalue =   -3.6917817561922897E-007
+
+ most negative eigenvalue=  -3.6917817561922897E-007
+ lambda           0 #kvector           0
 
  iteration # =           23
- minimum eigenvalue =    3.3166282235607400E-008
+ minimum eigenvalue =   -3.6920308736729003E-007
+
+ most negative eigenvalue=  -3.6920308736729003E-007
+ lambda           0 #kvector           0
 
  iteration # =           24
- minimum eigenvalue =    3.3168882753983433E-008
+ minimum eigenvalue =   -3.6917953627900644E-007
 
- iteration # =           24
- minimum eigenvalue =    3.3168882753983433E-008
+ most negative eigenvalue=  -3.6917953627900644E-007
+ lambda           0 #kvector           0
 
- iteration # =            0
- minimum eigenvalue =    3.3168882753983433E-008
+ iteration # =           25
+ minimum eigenvalue =   -3.6918404376371972E-007
 
- iteration # =            1
- minimum eigenvalue =    3.3170250765573159E-008
+ most negative eigenvalue=  -3.6918404376371972E-007
+ lambda           0 #kvector           0
 
- iteration # =            2
- minimum eigenvalue =    3.3167026666020137E-008
+ iteration # =           26
+ minimum eigenvalue =   -3.6915610543402541E-007
 
- iteration # =            0
- minimum eigenvalue =    3.3168882753983433E-008
+ most negative eigenvalue=  -3.6915610543402541E-007
+ lambda           0 #kvector           0
 
- iteration # =            1
- minimum eigenvalue =    3.3170250765573159E-008
+ iteration # =           27
+ minimum eigenvalue =   -3.6914865099503535E-007
 
- iteration # =            2
- minimum eigenvalue =    3.3167010045656371E-008
+ most negative eigenvalue=  -3.6914865099503535E-007
+ lambda           0 #kvector           0
 
- iteration # =            3
- minimum eigenvalue =    3.3163799853716306E-008
+ iteration # =           28
+ minimum eigenvalue =   -3.6912814529870942E-007
 
- iteration # =            4
- minimum eigenvalue =    3.2855203249510913E-008
+ most negative eigenvalue=  -3.6912814529870942E-007
+ lambda           0 #kvector           0
 
- iteration # =            5
- minimum eigenvalue =    3.2838932461371989E-008
+ iteration # =           29
+ minimum eigenvalue =   -3.6798358286741151E-007
 
- iteration # =            6
- minimum eigenvalue =    3.2828753537044776E-008
+ most negative eigenvalue=  -3.6798358286741151E-007
+ lambda           0 #kvector           0
 
- iteration # =            7
- minimum eigenvalue =    3.2996108159165810E-008
+ iteration # =           30
+ minimum eigenvalue =   -3.6757882160281241E-007
 
- iteration # =            8
- minimum eigenvalue =    3.5619071326345200E-008
+ most negative eigenvalue=  -3.6757882160281241E-007
+ lambda           0 #kvector           0
 
- iteration # =            9
- minimum eigenvalue =    3.5786237739110256E-008
+ iteration # =           31
+ minimum eigenvalue =   -3.6745865540734548E-007
 
- iteration # =           10
- minimum eigenvalue =    3.5615026234961050E-008
+ most negative eigenvalue=  -3.6745865540734548E-007
+ lambda           0 #kvector           0
 
- iteration # =           11
- minimum eigenvalue =    3.5248802358879373E-008
+ iteration # =           32
+ minimum eigenvalue =   -3.6746331450915890E-007
 
- iteration # =           12
- minimum eigenvalue =    3.4898917162541351E-008
+ most negative eigenvalue=  -3.6746331450915890E-007
+ lambda           0 #kvector           0
 
- iteration # =           13
- minimum eigenvalue =    3.2005802558405635E-008
+ iteration # =           33
+ minimum eigenvalue =   -3.6745024273054241E-007
 
- iteration # =           14
- minimum eigenvalue =    3.1997920323190987E-008
+ most negative eigenvalue=  -3.6745024273054241E-007
+ lambda           0 #kvector           0
 
- iteration # =           15
- minimum eigenvalue =    3.2000557809523666E-008
+ iteration # =           34
+ minimum eigenvalue =   -3.6736545808763887E-007
 
- iteration # =           16
- minimum eigenvalue =    3.2010488444581028E-008
+ most negative eigenvalue=  -3.6736545808763887E-007
+ lambda           0 #kvector           0
 
- iteration # =           17
- minimum eigenvalue =    3.2011630491989668E-008
+ iteration # =           35
+ minimum eigenvalue =   -3.6736831642522009E-007
 
- iteration # =           18
- minimum eigenvalue =    3.1553597448996131E-008
+ most negative eigenvalue=  -3.6736831642522009E-007
+ lambda           0 #kvector           0
 
- iteration # =           19
- minimum eigenvalue =    3.1300774445388807E-008
+ iteration # =           36
+ minimum eigenvalue =   -3.6728540370815772E-007
 
- iteration # =           20
- minimum eigenvalue =    3.1289224307973307E-008
+ most negative eigenvalue=  -3.6728540370815772E-007
+ lambda           0 #kvector           0
 
- iteration # =           20
- minimum eigenvalue =    3.1289224307973307E-008
+ iteration # =           37
+ minimum eigenvalue =   -3.6727822637788412E-007
 
- iteration # =            0
- minimum eigenvalue =    3.1289224307973307E-008
+ most negative eigenvalue=  -3.6727822637788412E-007
+ lambda           0 #kvector           0
 
- iteration # =            1
- minimum eigenvalue =    3.1291018289600649E-008
+ iteration # =           37
+ minimum eigenvalue =   -3.6727822637788412E-007
 
- iteration # =            2
- minimum eigenvalue =    3.1286830425177756E-008
-
- iteration # =            0
- minimum eigenvalue =    3.1289224307973307E-008
-
- iteration # =            1
- minimum eigenvalue =    3.1291018289600649E-008
-
- iteration # =            2
- minimum eigenvalue =    3.1286830425177756E-008
-
- iteration # =            0
- minimum eigenvalue =    3.1289224307973307E-008
-
- iteration # =            0
- minimum eigenvalue =    3.1289224307973307E-008
-
- iteration # =            0
- minimum eigenvalue =    3.1289224307973307E-008
-
- iteration # =            1
- minimum eigenvalue =    3.1291018289600649E-008
-
- iteration # =            2
- minimum eigenvalue =    3.1286911236732238E-008
-
- iteration # =            3
- minimum eigenvalue =    3.1283883343237705E-008
-
- iteration # =            4
- minimum eigenvalue =    3.1016012115407486E-008
-
- iteration # =            5
- minimum eigenvalue =    3.1006318130773108E-008
-
- iteration # =            6
- minimum eigenvalue =    3.1002673963555043E-008
-
- iteration # =            7
- minimum eigenvalue =    3.1035343579770885E-008
-
- iteration # =            8
- minimum eigenvalue =    3.1399615858849675E-008
-
- iteration # =            9
- minimum eigenvalue =    3.1326347589733514E-008
-
- iteration # =           10
- minimum eigenvalue =    3.1268534789229272E-008
-
- iteration # =           11
- minimum eigenvalue =    3.1210823577450988E-008
-
- iteration # =           12
- minimum eigenvalue =    3.1189799196094204E-008
-
- iteration # =           13
- minimum eigenvalue =    3.0815842126191708E-008
-
- iteration # =           14
- minimum eigenvalue =    3.0808500440089885E-008
-
- iteration # =           15
- minimum eigenvalue =    3.0742253645817296E-008
-
- iteration # =           16
- minimum eigenvalue =    3.0741741735182291E-008
-
- iteration # =           17
- minimum eigenvalue =    3.0741325908495668E-008
-
- iteration # =           18
- minimum eigenvalue =    3.0483258311709632E-008
-
- iteration # =           19
- minimum eigenvalue =    3.0460516090146754E-008
-
- iteration # =           19
- minimum eigenvalue =    3.0460516090146754E-008
+ most negative eigenvalue=  -3.6727822637788412E-007
+ lambda           0 #kvector           0

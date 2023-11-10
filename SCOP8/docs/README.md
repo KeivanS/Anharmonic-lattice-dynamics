@@ -60,19 +60,55 @@
 
 #### How to Install/Compile Code on Windows
 
-1. Put that MingW folder in C:\ (download [here](https://drive.google.com/file/d/1mdHpw7Eac_hwmtHLrHkKdj9zlLljesz8/view?usp=sharing), the newest version of MingW may not work properly) 
+1. Put that MinGW folder in C:\ (download [here](https://drive.google.com/file/d/1mdHpw7Eac_hwmtHLrHkKdj9zlLljesz8/view?usp=sharing), the newest version of MingW may not work properly) 
 2. Open control panel > system advanced settings > add path of "C:\MingW", see below
 
 <img src="img\how.JPG" style="zoom:50%;" />
 
-3. Install codeblocks, download [here](www.codeblocks.org/downloads/)
-4. Codeblocks > settings > compiler > set ==gnu fortran== as default and auto detect compilers (you may need to uncheck all the optional compiling options)
-5. Double click *test.cbp* to open the project in code::blocks and compile.
+- For code editing:
+
+  - Install code::blocks, download [here](www.codeblocks.org/downloads/)
+
+  - Codeblocks > settings > compiler > set **gnu fortran** as default and auto detect compilers (this step is optional as we're not compile the code in code::blocks)
+
+    <img src="img\how2.JPG" style="zoom:50%;" />
+
+  - Double click the file *test.cbp* to open the project in code::blocks and modify code as wish
+
+- For code compiling:
+
+  - **Important preparations for MPI library installation and link**: follow [here](https://abhila.sh/writing/3/mpi_instructions.html)
+  - Direct to the installation folder of MinGW, find msys -> 1.0 -> msys.bat, this is the MinGW shell terminal we will use for compile and execute the code
+  - Open the terminal and direct to the SCOP8 folder on your Windows PC, then input following command to compiler, ther order matters
+
+  > gfortran -c constants.f90
+  > gfortran -c geometry.f95
+  > gfortran -c force_constants.f90
+  > gfortran -c zhegv.f
+  > gfortran -c mods9.f90
+  > gfortran -c MatrixDiagonalize.f90
+  > gfortran -c modules_tetra.f90
+  > gfortran -c extratools.f90
+  > gfortran -c Structure_info.f95
+  > gfortran -c DFT_force_constants.f95
+  > gfortran -c kp_1d.f90
+  > gfortran -c others3_nshells.f90
+  > gfortran -c Fourier_force_constants.f95
+  > gfortran -c Iteration_parameters.f95
+  > gfortran -c mpi_params.f95
+  > gfortran -c Broyden.f95
+  > gfortran -c VA_math.f95
+  > gfortran -c force_update.f90
+  > gfortran -c check.f90
+  > gfortran -c ConjugateGradient.f90
+  >
+  > ar rcs libAll.a *.o
+  >
+  > gfortran -o out.exe main.f95 -IC:'\lib\mpi\include' -LC:'\lib\mpi\lib' -lmsmpi libAll.a libmsmpi.a
+
+  - Execute use 'mpiexec', for example, if want to use 4 processes, input below
+
+  > mpiexec -np 4 ./out.exe
 
 ---
 
-#### How to Run Code
-
-1. Move all the files in 'input_sample' to the root folder where '.cbp' file is.
-2. Double click *test.cbp* to open the project in code::blocks and run.
-3. Sample output is in 'output_sample' folder for user to compare.

@@ -13,7 +13,12 @@
 				<Option compiler="gfortran" />
 				<Compiler>
 					<Add option="-g" />
+					<Add directory="C:/MPI/Include" />
+					<Add directory="C:/MPI/Include/x64" />
 				</Compiler>
+				<Linker>
+					<Add library="C:/Windows/System32/msmpi.dll" />
+				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/test" prefix_auto="1" extension_auto="1" />
@@ -35,7 +40,7 @@
 			<Option weight="6" />
 		</Unit>
 		<Unit filename="ConjugateGradient.f90">
-			<Option weight="9" />
+			<Option weight="10" />
 		</Unit>
 		<Unit filename="DFT_force_constants.f95">
 			<Option weight="4" />
@@ -53,13 +58,13 @@
 			<Option weight="3" />
 		</Unit>
 		<Unit filename="VA_math.f95">
-			<Option weight="6" />
-		</Unit>
-		<Unit filename="VA_math2.f95">
 			<Option weight="7" />
 		</Unit>
+		<Unit filename="VA_math2.f95">
+			<Option weight="0" />
+		</Unit>
 		<Unit filename="check.f90">
-			<Option weight="8" />
+			<Option weight="9" />
 		</Unit>
 		<Unit filename="constants.f90">
 			<Option weight="0" />
@@ -71,7 +76,7 @@
 			<Option weight="2" />
 		</Unit>
 		<Unit filename="force_update.f90">
-			<Option weight="7" />
+			<Option weight="8" />
 		</Unit>
 		<Unit filename="geometry.f95">
 			<Option weight="1" />
@@ -80,13 +85,16 @@
 			<Option weight="4" />
 		</Unit>
 		<Unit filename="main.f95">
-			<Option weight="10" />
+			<Option weight="11" />
 		</Unit>
 		<Unit filename="mods9.f90">
 			<Option weight="2" />
 		</Unit>
 		<Unit filename="modules_tetra.f90">
 			<Option weight="3" />
+		</Unit>
+		<Unit filename="mpi_params.f95">
+			<Option weight="0" />
 		</Unit>
 		<Unit filename="others3_nshells.f90">
 			<Option weight="5" />

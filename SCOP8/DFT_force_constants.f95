@@ -1607,4 +1607,16 @@ END SUBROUTINE check_trans_fcs
         CLOSE(117)
     END SUBROUTINE print_indieFC2
 !========================================================================================
+SUBROUTINE find_largest_fc2atomidx
+    !this subroutine is used for check the largest(farthest) atom label of fc2
+    IMPLICIT NONE
+    INTEGER :: i,largest
+
+    largest = 1
+    DO i=1, SIZE(myfc2_index)
+        largest = MAX(largest, myfc2_index(i)%iatom_number, myfc2_index(i)%jatom_number)
+    END DO
+    WRITE(*,*) 'largest atom index for fc2 data:', largest
+END SUBROUTINE find_largest_fc2atomidx
+!========================================================================================
 END MODULE DFT_force_constants

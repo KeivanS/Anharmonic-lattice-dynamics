@@ -661,7 +661,7 @@ r3%component=trans_vec(:,3)
         !this part has nothing to do with 'reading' and is directly copied from fc234 main program
         !notice that original comment reads:
         !"This does not work: fcinit must be called once or latparam(4:6) will be overwritten"
-        maxatoms=2500; imaxat=1
+        maxatoms=5500; imaxat=1
         DO WHILE (imaxat.ne.0) !imaxat is a flag number, it equals 0 when some conditions are satisfied
             maxatoms=maxatoms+300 !???
             WRITE(6,*)' maxatoms=',maxatoms
