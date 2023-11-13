@@ -1,6 +1,8 @@
 .False. # whether start randomly
 .True. # whether inherit file <targetInitialize.dat> results for initial guess
 .True. # whether include pressure factor
+.True. # whether force ASR in K after each Broyden iteration
+.True. # whether use high temperature limit in <YY> calculation
 54321 # if you want random start, this is the seed
 300 # max_iteration number note: add pmic here
 -0.006 # pmix parameter here, usually -0.006

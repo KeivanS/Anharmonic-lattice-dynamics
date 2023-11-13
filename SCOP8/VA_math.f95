@@ -715,6 +715,10 @@ SUBROUTINE initiate_yy(kvector)
     WRITE(*,*) SIZE(eivals)
     endif
 
+
+    if(.not.highT_limit) then
+    !==============handling negative eigenvalues======================
+
     neg_lambda = 0; neg_k = 0 !don't forget to initialize them to be 0 as a flag(no too negative eival)
 outer:    DO k=1,SIZE(eivals,dim=2)
         DO l=1,SIZE(eivals,dim=1)
@@ -765,8 +769,7 @@ outer:    DO k=1,SIZE(eivals,dim=2)
         WRITE(unitnumber,*) 'lambda', neg_lambda, '#kvector', neg_k
     END IF
     endif
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-!------------------------------------------NEW--------------------------------------------------
+
     !record all the negative eigenvalues index and shift those
     IF(ALLOCATED(soft)) DEALLOCATE(soft)
     IF(counter.ne.0) THEN !if there is any negative eigenvalue
@@ -783,6 +786,8 @@ outer:    DO k=1,SIZE(eivals,dim=2)
         END DO
         END DO
     END IF
+
+endif
 !-----------------------------------------------------------------------------------------------
 
 if (mpi_rank==0) then
@@ -797,9 +802,15 @@ endif
         xyz1 = myfc2_index(i)%iatom_xyz
         xyz2 = myfc2_index(i)%jatom_xyz
 
+        if(.not.highT_limit) then
+
         yy_value(atom1,atom2)%phi(xyz1,xyz2) = Get_Y_square2(k_number,xyz1,atom1,xyz2,atom2)/k_number
 
+        else
 
+        yy_value(atom1,atom2)%phi(xyz1,xyz2) = Get_Y_square3(k_number,xyz1,atom1,xyz2,atom2)/k_number
+
+        endif
 !****Test the value of gamma point correction****
 !if (mpi_rank==0) then
 !WRITE(47,6) get_letter(xyz1),atom1,get_letter(xyz2),atom2,&
@@ -3220,143 +3231,6 @@ for_check = for_check / k_number
 
 !        ALLOCATE(func(SIZE(eivals,DIM=1),k_number),array(k_number))
         ALLOCATE(n_qlambda(SIZE(eivals,DIM=1),SIZE(eivals,DIM=2)))
-!******************************BELOW IS TETRAHEDRON METHOD*****************************
-!        array=0d0
-!        !get needed indexes
-!        IF(direction1.eq.d) THEN
-!            temp1=d*tau1
-!        ELSE
-!            temp1=d*(tau1-1)+direction1
-!        END IF
-!
-!        IF(direction2.eq.d) THEN
-!            temp2=d*tau2
-!        ELSE
-!            temp2=d*(tau2-1)+direction2
-!        END IF
-!
-!        !initialize func(k)
-!        func=0
-!        DO k=1,k_number ! k point loop
-!        DO l=1,3
-!
-!            !---------------------------CLASSICAL VERSION------------------------------
-!            !func(l,k)=func(l,k)+&
-!            !    &temperature/eivals(l,k)/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/&
-!            !    &(ee*1d20)*100*h_plank*c_light*&
-!            !    &REAL(eivecs_t(l,temp1,k)*eivecs(temp2,l,k))*COS(kvector(k).dot.cell_vec(:,R2))
-!            !IMPORTANT: updated k dot updated R
-!            !--------------------------------------------------------------------------
-!
-!            !---------------------------QUANTUM VERSION--------------------------------
-!            !IF(ABS(eivals(l,k)).lt.1E-10) THEN
-!            !    eivals(l,k)=ABS(eivals(l,k))
-!            !END IF
-!
-!            n_qlambda(l,k)=nbe(SQRT(eivals(l,k))*cnst,temperature,0) !0 for quantum ver.
-!
-!            !func is in S.I units
-!            func(l,k)=func(l,k)+&
-!                &hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
-!                &(2*n_qlambda(l,k)+1)*&
-!                & REAL(eivecs_t(l,temp1,k)*eivecs(temp2,l,k))*COS(kvector(k).dot.cell_vec(:,R2))*1d20 !angstrom^2
-!
-!        END DO !l loop for eigen index sum
-!        END DO !k loop for every k point
-
-        !initialize om(steps)
-!        steps=500
-!        ALLOCATE(om(steps))
-!        om_max=MAXVAL(MAXVAL(eivals,DIM=2)) !get the largest omega
-!        om_max=SQRT(om_max)
-!
-!        DO i=1,steps
-!            om(i)=om_max/steps*i
-!        END DO
-
-        !prepare arg(k)
-!        ALLOCATE(arg(SIZE(eivals,DIM=1),SIZE(eivals,DIM=2)))
-!        DO k=1,k_number
-!            DO l=1,3
-!                IF(ABS(eivals(l,k)).lt.1E-10) THEN
-!                    arg(l,k)=0d0
-!                ELSE
-!                    arg(l,k)=SQRT(SQRT(eivals(l,k)))
-!                    !arg(l,k)=SQRT(eivals(l,k))
-!                    !arg(l,k)=eivals(l,k)
-!                END IF
-!            END DO ! l loop
-!        END DO ! k loop
-
-
-
-!-------------------------find the minimum trust om(i) by group velocity. PREVIOUSLY------------------------------------
-!        temp1=tet(7)%p(1)%i;temp2=tet(7)%p(2)%i
-!        check=ABS(kvector(temp2)%component(1)-kvector(temp1)%component(1))
-!        delta_k=(/0d0,SQRT(5d0)*check,0d0/)
-!        CALL finitedif_vgr(delta_k,d*atom_number,vgr,evl0,evc0) !temp1-th corner
-!        cutoff=INT(SQRT(ABS(vgr(:,3)).dot.delta_k)*steps/om_max)
-!        WRITE(*,*) 'Group Velocity: the critical om is at:',cutoff
-!
-!        !get every F(om) after the cutoff for the 3 acoustic bands
-!        ALLOCATE(res(steps,SIZE(eivals,DIM=1)))
-!        DO l=1,3
-!        DO i=cutoff-1,steps
-!            CALL tet_sum(om(i),k_number,arg(l,:),func(l,:),res(i,l),array)
-!        END DO !i loop
-!        END DO !l loop
-!***********************check F(omega)***************************
-!IF(tau1.eq.1 .AND. direction1.eq.1 .AND. atom2.eq.1 .AND. direction2.eq.1) THEN
-!OPEN(44,FILE='F_om.dat',STATUS='unknown',ACTION='write')
-!check=0d0
-!DO i=1,steps
-!    WRITE(44,*)om(i),SUM(res(i,1:6)) !plot the F(om) for 3 acoustic bands
-    !check=check+SUM(res(i,:))*om_max/steps
-!END DO
-!CLOSE(44)
-!WRITE(*,*)'Integral of DOS=',check
-!WRITE(*,*)'Maximum Frequency=',om_max*cnst
-!ENDIF
-!*****************************************************************
-!---------------------------find the minimum trust om(i) from the graph--------------------------------------------------
-!        limit=(om_max-danger)/steps
-!        array=0
-!        cutoff_true=1
-!        DO i=cutoff,steps-1
-!            array(i)=ABS(SUM(res(i+1,:))-SUM(res(i,:)))
-!            IF(array(i).lt.limit) THEN
-!                cutoff_true=i+1
-!                !WRITE(*,*) 'From Graph: the critical om:',om(cutoff_true)
-!                WRITE(*,*)'From Graph: the critical om is at:',cutoff_true
-!                EXIT
-!            END IF
-!        END DO
-!--------------------------fix the found cutoff for the rest of the iterations--------------------------------------------
-!        cutoff=cutoff_true
-
-        !tweak the diverging part
-!        DO l=1,3
-!            CALL tet_sum(om(cutoff),k_number,arg(l,:),func(l,:),res(cutoff,l),array)
-!            coefficientA(l)=res(cutoff,l)/om(cutoff)**3 *TANH(om(cutoff)**2*cnst/2/temperature)
-!        END DO
-!
-!        DO i=1,cutoff
-!        DO l=1,3
-!            res(i,l)=coefficientA(l)*om(i)**3 / TANH(om(i)**2*cnst/2/temperature)
-!        END DO !l loop
-!        END DO!i loop
-
-
-!-----------------------------SUM UP THE ACOUSTIC MODES--------------------------------
-!        term=0d0
-!        DO l=1,3
-!        DO i=1,steps
-!            term=term+res(i,l)
-!        END DO !i loop
-!        END DO !l loop
-!
-!        Get_Y_square=term/steps*om_max*k_number !k_number=nk, which will be dividing outside this subroutine
-!*******************ABOVE IS TETRAHEDRON METHOD****************************
 
 !*******************CURRENT METHOD****************************
         !re-get needed indexes
@@ -3385,31 +3259,11 @@ for_check = for_check / k_number
             IF(match) CYCLE
 !--------------------------------------------------------------------------------------------------
 
-            !****DO THIS IF CHOOSE option.1 or option.2****
             n_qlambda(l,k)=nbe(SQRT(eivals(l,k))*cnst,temperature,0)
             Get_Y_square2=Get_Y_square2+&
                 &hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
                 &(2*n_qlambda(l,k)+1)*&
                 &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
-
-            !****ONLY DO THIS IF CHOOSE option.3 WHEN DEAL WITH NEGATIVE W****
-!            IF(eivals(l,k).gt.0d0) THEN
-!                n_qlambda(l,k)=nbe(SQRT(eivals(l,k))*cnst,temperature,0)
-!
-!                Get_Y_square=Get_Y_square+&
-!                &hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
-!                &(2*n_qlambda(l,k)+1)*&
-!                &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
-!            ELSE
-!                n_qlambda(l,k)=-nbe(SQRT(-eivals(l,k))*cnst,temperature,1) !keep it as it is so the negative sign in the front
-!
-!                Get_Y_square=Get_Y_square+&
-!                &hbar/2/SQRT(-eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
-!                &(2*n_qlambda(l,k)+1)*&
-!                &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
-!            ENDIF
-
-
 
 
 IF(isnan(REAL(Get_Y_square2))) THEN
@@ -3542,49 +3396,137 @@ for_check = for_check / k_number
 
             IF(match) CYCLE
 !--------------------------------------------------------------------------------------------------
-
-
-            !****DO THIS IF CHOOSE option.1 or option.2****
             n_qlambda(l,k)=nbe(SQRT(eivals(l,k))*cnst,temperature,0)
             Get_Y_square2=Get_Y_square2+&
                  &hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
                  &(2*n_qlambda(l,k)+1)*&
                  &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
 
-            !****ONLY DO THIS IF CHOOSE option.3 WHEN DEAL WITH NEGATIVE W****
-!            IF(eivals(l,k).gt.0d0) THEN
-!                n_qlambda(l,k)=nbe(SQRT(eivals(l,k))*cnst,temperature,0)
-!
-!                Get_Y_square=Get_Y_square+&
-!                 &hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
-!                 &(2*n_qlambda(l,k)+1)*&
-!                 &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
-!            ELSE
-!                n_qlambda(l,k)=-nbe(SQRT(-eivals(l,k))*cnst,temperature,1) !keep it as it is so the negative sign in the front
-!
-!                Get_Y_square=Get_Y_square+&
-!                 &hbar/2/SQRT(-eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
-!                 &(2*n_qlambda(l,k)+1)*&
-!                 &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
-!            ENDIF
-
-
-
-!IF(isnan(Get_Y_square)) THEN
-!WRITE(34,*)'--------------POSITION3---------------'
-!WRITE(34,*)'lambda',l,'#kvector',k
-!WRITE(34,*)'eivals',eivals(l,k)
-!WRITE(34,*)'n_qlambda',n_qlambda(l,k)
-!WRITE(34,*)'eivecs',eivecs(temp2,l,k),eivecs_t(l,temp1,k)
-!WRITE(34,*)'cell_vec',cell_vec(:,R2)
-!STOP
-!END IF
 
         END DO !k loop
         END DO !l loop
         DEALLOCATE(n_qlambda)
 !        DEALLOCATE(res,arg,om,func,array)
     END FUNCTION Get_Y_square2
+!--------------------------------------------------------------------------------------------
+    FUNCTION Get_Y_square3(k_number,direction1,atom1,direction2,atom2) !MODIFIED gammapoint
+   !!Major subroutine that calculate <YY> for specific indexes given
+    !!utilize analytical approximation for diverging terms
+    !!for high temperature limit only
+        IMPLICIT NONE
+        INTEGER :: i,j,k,l,steps
+        INTEGER :: R1,tau1,R2,tau2,temp1,temp2,temp3,temp4
+        INTEGER, INTENT(IN) :: k_number,atom1,direction1,atom2,direction2
+        INTEGER :: unitnumber
+
+        REAL(8) :: om_max,term,nbe,check,limit,vgr(d,d*atom_number),evl0(d*atom_number),delta_k(d)
+        REAL(8),DIMENSION(:),ALLOCATABLE :: om,array!parameter omega; Y_square only sums lambda but not q
+        REAL(8),DIMENSION(:,:),ALLOCATABLE :: arg,func,res
+        REAL(8) :: coefficientA(6)
+        REAL(8) :: delta_cubic,denominator(3),term1,term2,delta_square,interval_K
+!        REAL(8) :: Get_Y_square
+        COMPLEX(8) :: Get_Y_square3
+
+        COMPLEX(8) :: evc0(d*atom_number,d*atom_number)
+
+        INTEGER :: cutoff,cutoff_true
+        LOGICAL :: auxiliary,FLAG
+        LOGICAL :: match
+
+        !retrieve atomic indexes
+        R1=every_atom(atom1)%type_R
+        tau1=every_atom(atom1)%type_tau
+        R2=every_atom(atom2)%type_R
+        tau2=every_atom(atom2)%type_tau
+
+
+!*******************CURRENT METHOD****************************
+        !re-get needed indexes
+        temp1 = d*(tau1-1)+direction1
+        temp2 = d*(tau2-1)+direction2
+
+        !initiate Get_Y_square
+        Get_Y_square3=CMPLX(0d0,0d0)
+
+        !Acoustic bands
+        DO l=1,3
+        DO k=2,SIZE(kvector) !drop gamma point region
+
+            Get_Y_square3=Get_Y_square3+&
+                &1d0/eivals(l,k)/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/(ee*1d20*uma)*&
+                &temperature*100*h_plank*c_light*&
+                &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
+
+
+IF(isnan(REAL(Get_Y_square3))) THEN
+WRITE(34,*)'--------------POSITION1---------------'
+WRITE(34,*)'Get_Y_square', Get_Y_square3
+WRITE(34,*)'lambda',l,'#kvector',k
+WRITE(34,*)'eivals',eivals(l,k)
+WRITE(34,*)'eivecs',eivecs(temp2,l,k),eivecs_t(l,temp1,k)
+WRITE(34,*)'cell_vec',cell_vec(:,R2)
+STOP
+END IF
+        END DO !k loop
+        END DO !l loop
+
+        !correction term for 3 acoustic bands at Gamma point
+        denominator(1) = (eivals(3,1)+eivals(3,3)-2*eivals(3,2))
+        denominator(2) = (eivals(2,1)+eivals(2,3)-2*eivals(2,2))
+        denominator(3) = (eivals(1,1)+eivals(1,3)-2*eivals(1,2))
+
+        delta_cubic = 3d0*volume_g/(4*pi*k_number)
+        delta_square = delta_cubic**(2.0/3.0)
+        interval_K = sqrt((kvector(2)%component(1)-kvector(1)%component(1))**2 + &
+                      &(kvector(2)%component(2)-kvector(1)%component(2))**2 + &
+                      & (kvector(2)%component(3)-kvector(1)%component(3))**2)
+        term1 = (1d0/3/denominator(1)+1d0/6/denominator(2)+1d0/2/denominator(3))*1d-20*uma/ee*interval_K*interval_K
+        term2 = (1d0/3/denominator(1)+2d0/3/denominator(2))*1d-20*uma/ee*interval_K*interval_K
+
+        IF(direction1.eq.direction2) THEN
+            IF(direction1.eq.1 .OR. direction1.eq.2) THEN
+                Get_Y_square3 = Get_Y_square3 + temperature*100*h_plank*c_light/atom_number&
+                        &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20/delta_square*3
+            ELSE
+                Get_Y_square3 = Get_Y_square3 + temperature*100*h_plank*c_light/atom_number&
+                        &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20/delta_square*3
+            END IF
+        END IF !xx,yy,zz should be equal
+
+!--------------------------------------------------------------------
+!IF(isnan(Get_Y_square)) THEN
+!WRITE(34,*)'--------------POSITION2---------------'
+!WRITE(34,*)'term',term
+!STOP
+!END IF
+!***** check the contribution of this gamma point correction term *****
+!for_check = (0d0,0d0)
+!
+!IF(direction1.eq.direction2) THEN
+!    for_check = 2*pi*temperature*100*h_plank*c_light&
+!                    &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20
+!ELSE
+!    for_check = 4*pi*temperature*100*h_plank*c_light&
+!                    &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20
+!END IF
+!for_check = for_check / k_number
+!**********************************************************************
+
+        !Optic bands
+        DO l=4,SIZE(eivals,DIM=1)
+        DO k=1,SIZE(kvector)
+
+            Get_Y_square3=Get_Y_square3+&
+                &1d0/eivals(l,k)/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/(ee*1d20*uma)*&
+                &temperature*100*h_plank*c_light*&
+                &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
+
+
+        END DO !k loop
+        END DO !l loop
+
+!        DEALLOCATE(res,arg,om,func,array)
+    END FUNCTION Get_Y_square3
 !======================================================================================================================================
     SUBROUTINE Get_SKfreq(kpoint,freq)
     !!get omega^2 at a single k-point

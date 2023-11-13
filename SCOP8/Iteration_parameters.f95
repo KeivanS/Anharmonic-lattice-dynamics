@@ -19,6 +19,8 @@ MODULE Iteration_parameters
     LOGICAL :: inherit = .false.
     LOGICAL :: rand_start = .false.
     LOGICAL :: pressure = .True.
+    LOGICAL :: forceK_asr = .False.
+    LOGICAL :: highT_limit = .False.
     REAL(8) :: stress(d,d) !for pressure test
 
 CONTAINS
@@ -328,6 +330,8 @@ CONTAINS
         READ(unit_number,*) rand_start !start randomly or not
         READ(unit_number,*) inherit !use results from last run to target initialize or not
         READ(unit_number,*) pressure !whether include pressure factor
+        READ(unit_number,*) forceK_asr !whether force ASR in K after each Broyden
+        READ(unit_number,*) highT_limit !whether use high temperature limit in <yy> calculation
 !        READ(unit_number,*) tolerance2 !modified 11/10/2023
         tolerance2 = 0.0001
         READ(unit_number,*) seed
@@ -391,7 +395,7 @@ CONTAINS
     SUBROUTINE asr_checkfc2(dummyFC)
         !!check asr on selected [myfc2_value] object, i.e. Phi or K
         IMPLICIT NONE
-        TYPE(fc2_value),INTENT(IN),DIMENSION(:,:) :: dummyFC
+        TYPE(fc2_value),INTENT(INOUT),DIMENSION(:,:) :: dummyFC
         TYPE(fc2_value),DIMENSION(:),ALLOCATABLE :: checkfc2
         INTEGER :: atom1,atom2,direction1,direction2
         INTEGER :: i,j
@@ -413,15 +417,21 @@ CONTAINS
             &+dummyFC(i,j)%phi(direction1,direction2)
         END DO
 
-            IF(ABS(checkfc2(i)%phi(direction1,direction2)).gt.1d-8) THEN
-                WRITE(55,*)"found corresponding fc2 not satisfy ASR:"
-                WRITE(55,*) checkfc2(i)%phi(direction1,direction2)
-                WRITE(55,*) i,get_letter(direction1),get_letter(direction2)
+        IF(ABS(checkfc2(i)%phi(direction1,direction2)).gt.1d-8) THEN
+            WRITE(55,*)"found corresponding fc2 not satisfy ASR:"
+            WRITE(55,*) checkfc2(i)%phi(direction1,direction2)
+            WRITE(55,*) i,get_letter(direction1),get_letter(direction2)
+
+            IF(forceK_asr) THEN
+                dummyFC(i,i)%phi(direction1,direction2) = &
+                & dummyFC(i,i)%phi(direction1,direction2) - checkfc2(i)%phi(direction1,direction2)
             END IF
 
-        END DO
-        END DO
-        END DO
+        END IF
+
+        END DO !direction2 loop
+        END DO !direction1 loop
+        END DO !i loop
         WRITE(55,*)'======================================='
         DEALLOCATE(checkfc2)
         CLOSE(55)
