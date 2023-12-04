@@ -1,0 +1,12 @@
+1     # of atom types
+2    nensemble
+0   # of relaxation timesteps before recording data 
+0.01   delta t for md update in units of 10.4 fs
+5   temperature in Kelvin
+0.1     amplitude of initial random displacements    
+50      nfft_t for outputing the current time series
+2        potflag=1,2,3 for lj,morse,2bodypotential and 0 for taylor expansion 
+0.001 tolerance for equating two coordinates
+1     for applying BC use 1
+50 50 50 10 5  10 10 energy,x_vx, and current output periods 
+49583 10.d0  seed for random numbers and relaxation time in fs for langevin thermostat
