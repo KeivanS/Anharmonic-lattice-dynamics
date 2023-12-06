@@ -743,10 +743,10 @@ inner:      DO direction=1,d
 !4 format(i6,3(2x,g11.5),4(3x,i4))
     END SUBROUTINE read_structure
 !==========================================================
-    SUBROUTINE decide_ksize(cell_vec,nk_c1,nk_c2,nk_c3)
+    SUBROUTINE decide_ksize(nk_c1,nk_c2,nk_c3)
     !! old subroutine by me, not used
         IMPLICIT NONE
-        REAL(8),ALLOCATABLE,DIMENSION(:,:),INTENT(IN) :: cell_vec
+        
         INTEGER,ALLOCATABLE,DIMENSION(:) :: n1,n2,n3
         INTEGER :: i,nk_c1,nk_c2,nk_c3
 

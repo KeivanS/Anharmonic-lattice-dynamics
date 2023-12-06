@@ -2883,21 +2883,24 @@ WRITE(34,*)'Finish <get_nshells> stage3'
     END SUBROUTINE fix_asr_fc2
 
     SUBROUTINE fix_asr_fc3
+        !----UPDATE: 12/06/2023 optimization update----
+        !----removed original fc3_sum due to memory exceed----
+        !----replace by fc3_sum_thin----
         IMPLICIT NONE
         INTEGER :: i,j
         INTEGER :: atom1, atom2,atom3, direction1, direction2, direction3
-        INTEGER :: atom1_idx, atom2_idx, atom3_idx
-        TYPE(fc3_value),ALLOCATABLE,DIMENSION(:,:) :: fc3_sum
-
+        INTEGER :: atom1_idx, atom2_idx, atom3_idx        
+        TYPE(fc3_value),ALLOCATABLE,DIMENSION(:,:) :: fc3_sum_thin
 !        OPEN(34,FILE='output.txt',STATUS='old',action='write',POSITION='APPEND')
         WRITE(34,*)'===========ASR fix for fc3================'
-
-        ALLOCATE(fc3_sum(atom_number,tot_atom_number))
-
-        !fix 3rd idx, i neq j
-        DO i=1, atom_number
-            DO j=1,tot_atom_number
-                fc3_sum(i,j)%psi = 0d0
+        
+        !----NOTE: only allocate size of valid atoms w.r.t fc3 ----
+        ALLOCATE(fc3_sum_thin(atom_number,SIZE(fc3_unique_idx)))
+        
+        !step1: fix 3rd atomic index of fc3, Psi_ijj
+        DO i=1,atom_number
+            DO j=1,SIZE(fc3_unique_idx)
+                fc3_sum_thin(i,j)%psi = 0d0
             END DO
         END DO
 
@@ -2909,37 +2912,36 @@ WRITE(34,*)'Finish <get_nshells> stage3'
             atom2 = myfc3_index(i)%jatom_number
             IF(atom2.eq.atom1) CYCLE
             atom3 = myfc3_index(i)%katom_number
-!            IF(atom3.eq.atom1) CYCLE
             direction1 = myfc3_index(i)%iatom_xyz
             direction2 = myfc3_index(i)%jatom_xyz
             direction3 = myfc3_index(i)%katom_xyz
             IF(ANY(fc3_unique_idx==atom2) .AND. ANY(fc3_unique_idx==atom3)) THEN
                 atom2_idx = find_loc(fc3_unique_idx,atom2)
                 atom3_idx = find_loc(fc3_unique_idx,atom3)
-                fc3_sum(atom1,atom2)%psi(direction1,direction2,direction3) =&
-                & fc3_sum(atom1,atom2)%psi(direction1,direction2,direction3) +&
+                fc3_sum_thin(atom1,atom2_idx)%psi(direction1,direction2,direction3) =&
+                & fc3_sum_thin(atom1,atom2_idx)%psi(direction1,direction2,direction3) +&
                 & myfc3_value(atom1_idx,atom2_idx,atom3_idx)%psi(direction1,direction2,direction3)
             END IF
         END DO
 
         DO i=1, atom_number
-        DO j=1,tot_atom_number
+        DO j=1,SIZE(fc3_unique_idx)
         DO direction1=1,d
         DO direction2=1,d
         DO direction3=1,d
-            IF(ABS(fc3_sum(i,j)%psi(direction1,direction2,direction3)).gt.resolution) THEN
+            IF(ABS(fc3_sum_thin(i,j)%psi(direction1,direction2,direction3)).gt.resolution) THEN
 
-                WRITE(34,*)"asr for atom1: ",i,"    atom2: ",j,&
+                WRITE(34,*)"asr for atom1: ",i,"    atom2: ",fc3_unique_idx(j),&
                 &"    xyz1: ",get_letter(direction1),"    xyz2: ",get_letter(direction2),&
                 &"    xyz3: ",get_letter(direction3)
-                WRITE(34,*)fc3_sum(i,j)%psi(direction1,direction2,direction3)
+                WRITE(34,*)fc3_sum_thin(i,j)%psi(direction1,direction2,direction3)
                 WRITE(34,*)'...is broken, now fix it'
                 !here is the sum non-zero, it means i,j must belong to fc3_unique_idx
                 atom1_idx = find_loc(fc3_unique_idx,i)
-                atom2_idx = find_loc(fc3_unique_idx,j)
+                atom2_idx = j
                 myfc3_value(atom1_idx,atom2_idx,atom2_idx)%psi(direction1,direction2,direction3) = &
                 & myfc3_value(atom1_idx,atom2_idx,atom2_idx)%psi(direction1,direction2,direction3) - &
-                & fc3_sum(i,j)%psi(direction1,direction2,direction3)
+                & fc3_sum_thin(i,j)%psi(direction1,direction2,direction3)
                 WRITE(34,*)'---------------------------------------'
             END IF
         END DO
@@ -2948,10 +2950,10 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         END DO
         END DO
 
-        !fix 2nd idx, i neq j
+        !step2: fix 2nd atomic index of fc3, Psi_iij
         DO i=1, atom_number
-            DO j=1,tot_atom_number
-                fc3_sum(i,j)%psi = 0d0
+            DO j=1, SIZE(fc3_unique_idx)
+                fc3_sum_thin(i,j)%psi = 0d0
             END DO
         END DO
 
@@ -2969,30 +2971,30 @@ WRITE(34,*)'Finish <get_nshells> stage3'
             IF(ANY(fc3_unique_idx==atom2) .AND. ANY(fc3_unique_idx==atom3)) THEN
             atom2_idx = find_loc(fc3_unique_idx,atom2)
             atom3_idx = find_loc(fc3_unique_idx,atom3)
-                fc3_sum(atom1,atom3)%psi(direction1,direction2,direction3) =&
-                & fc3_sum(atom1,atom3)%psi(direction1,direction2,direction3) +&
+                fc3_sum_thin(atom1,atom3_idx)%psi(direction1,direction2,direction3) =&
+                & fc3_sum_thin(atom1,atom3_idx)%psi(direction1,direction2,direction3) +&
                 & myfc3_value(atom1_idx,atom2_idx,atom3_idx)%psi(direction1,direction2,direction3)
             END IF
         END DO
 
         DO i=1, atom_number
-        DO j=1,tot_atom_number
+        DO j=1, SIZE(fc3_unique_idx)
         DO direction1=1,d
         DO direction2=1,d
         DO direction3=1,d
-            IF(ABS(fc3_sum(i,j)%psi(direction1,direction2,direction3)).gt.resolution) THEN
+            IF(ABS(fc3_sum_thin(i,j)%psi(direction1,direction2,direction3)).gt.resolution) THEN
 
-                WRITE(34,*)"asr for atom1: ",i,"    atom2: ",j,&
+                WRITE(34,*)"asr for atom1: ",i,"    atom2: ",fc3_unique_idx(j),&
                 &"    xyz1: ",get_letter(direction1),"    xyz2: ",get_letter(direction2),&
                 &"    xyz3: ",get_letter(direction3)
-                WRITE(34,*)fc3_sum(i,j)%psi(direction1,direction2,direction3)
+                WRITE(34,*)fc3_sum_thin(i,j)%psi(direction1,direction2,direction3)
                 WRITE(34,*)'...is broken, now fix it'
                 !here is the sum non-zero, it means i,j must belong to fc3_unique_idx
                 atom1_idx = find_loc(fc3_unique_idx,i)
-                atom2_idx = find_loc(fc3_unique_idx,j)
+                atom2_idx = j
                 myfc3_value(atom1_idx,atom1_idx,atom2_idx)%psi(direction1,direction2,direction3) = &
                 & myfc3_value(atom1_idx,atom1_idx,atom2_idx)%psi(direction1,direction2,direction3) - &
-                & fc3_sum(i,j)%psi(direction1,direction2,direction3)
+                & fc3_sum_thin(i,j)%psi(direction1,direction2,direction3)
                 WRITE(34,*)'---------------------------------------'
 
             END IF
@@ -3002,10 +3004,10 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         END DO
         END DO
 
-        !fix the first idx, the Psi_iii term
+        !step3: fix 1st atomic index of fc3, Psi_iii
         DO i=1, atom_number
-            DO j=1,tot_atom_number
-                fc3_sum(i,j)%psi = 0d0
+            DO j=1,SIZE(fc3_unique_idx)
+                fc3_sum_thin(i,j)%psi = 0d0
             END DO
         END DO
 
@@ -3024,8 +3026,8 @@ WRITE(34,*)'Finish <get_nshells> stage3'
             IF(ANY(fc3_unique_idx==atom2) .AND. ANY(fc3_unique_idx==atom3)) THEN
                 atom2_idx = find_loc(fc3_unique_idx,atom2)
                 atom3_idx = find_loc(fc3_unique_idx,atom3)
-                fc3_sum(atom1,atom2)%psi(direction1,direction2,direction3) =&
-                & fc3_sum(atom1,atom2)%psi(direction1,direction2,direction3) +&
+                fc3_sum_thin(atom1,atom2_idx)%psi(direction1,direction2,direction3) =&
+                & fc3_sum_thin(atom1,atom2_idx)%psi(direction1,direction2,direction3) +&
                 & myfc3_value(atom1_idx,atom2_idx,atom3_idx)%psi(direction1,direction2,direction3)
             END IF
         END DO
@@ -3034,48 +3036,52 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         DO direction1=1,d
         DO direction2=1,d
         DO direction3=1,d
-            IF(ABS(fc3_sum(i,i)%psi(direction1,direction2,direction3)).gt.resolution) THEN
+            IF(ABS(fc3_sum_thin(i,i)%psi(direction1,direction2,direction3)).gt.resolution) THEN
 
                 WRITE(34,*)"asr for atom1: ",i,"    atom2: ",i,&
                 &"    xyz1: ",get_letter(direction1),"    xyz2: ",get_letter(direction2),&
                 &"    xyz3: ",get_letter(direction3)
-                WRITE(34,*)fc3_sum(i,i)%psi(direction1,direction2,direction3)
+                WRITE(34,*)fc3_sum_thin(i,i)%psi(direction1,direction2,direction3)
                 WRITE(34,*)'...is broken, now fix it'
                 !here is the sum non-zero, it means i,j must belong to fc3_unique_idx
                 atom1_idx = find_loc(fc3_unique_idx,i)
                 myfc3_value(atom1_idx,atom1_idx,atom1_idx)%psi(direction1,direction2,direction3) = &
                 & myfc3_value(atom1_idx,atom1_idx,atom1_idx)%psi(direction1,direction2,direction3) - &
-                & fc3_sum(i,i)%psi(direction1,direction2,direction3)
+                & fc3_sum_thin(i,i)%psi(direction1,direction2,direction3)
                 WRITE(34,*)'---------------------------------------'
 
             END IF
         END DO
         END DO
         END DO
-        END DO
+        END DO        
 
-        DEALLOCATE(fc3_sum)
+        DEALLOCATE(fc3_sum_thin)
 !        CLOSE(34)
     END SUBROUTINE fix_asr_fc3
 
     SUBROUTINE fix_asr_fc4
+        !----UPDATE: 12/06/2023 optimization update----
+        !----removed original fc4_sum due to memory exceed----
+        !----replace by fc4_sum_thin----
         IMPLICIT NONE
         INTEGER :: i,j,k
         INTEGER :: atom1, atom2,atom3,atom4
         INTEGER :: direction1, direction2, direction3, direction4
         INTEGER :: atom1_idx, atom2_idx, atom3_idx, atom4_idx
-        TYPE(fc4_value),ALLOCATABLE,DIMENSION(:,:,:) :: fc4_sum
+        TYPE(fc4_value),ALLOCATABLE,DIMENSION(:,:,:) :: fc4_sum_thin
 
 !        OPEN(34,FILE='output.txt',STATUS='old',action='write',POSITION='APPEND')
         WRITE(34,*)'===========ASR fix for fc4================'
 
-        ALLOCATE(fc4_sum(atom_number,tot_atom_number,tot_atom_number))
+        !----NOTE: only allocate size of valid atoms w.r.t fc4 ----
+        ALLOCATE(fc4_sum_thin(atom_number,SIZE(fc4_unique_idx),SIZE(fc4_unique_idx)))
 
-        !fix 4th idx, j,k .ne. i and j.ne.k
+        !step1: fix 4th idx, j!=i and k!=i or j, Chi_ijkk
         DO i=1, atom_number
-            DO j=1,tot_atom_number
-                DO k=1,tot_atom_number
-                    fc4_sum(i,j,k)%chi = 0d0
+            DO j=1,SIZE(fc4_unique_idx)
+                DO k=1,SIZE(fc4_unique_idx)
+                    fc4_sum_thin(i,j,k)%chi = 0d0
                 END DO
             END DO
         END DO
@@ -3101,37 +3107,38 @@ WRITE(34,*)'Finish <get_nshells> stage3'
             atom2_idx = find_loc(fc4_unique_idx,atom2)
             atom3_idx = find_loc(fc4_unique_idx,atom3)
             atom4_idx = find_loc(fc4_unique_idx,atom4)
-            fc4_sum(atom1,atom2,atom3)%chi(direction1,direction2,direction3,direction4) =&
-            & fc4_sum(atom1,atom2,atom3)%chi(direction1,direction2,direction3,direction4) +&
+    fc4_sum_thin(atom1,atom2_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) =&
+    & fc4_sum_thin(atom1,atom2_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) +&
     & myfc4_value(atom1_idx,atom2_idx,atom3_idx,atom4_idx)%chi(direction1,direction2,direction3,direction4)
 
             END IF
         END DO
 
         DO i=1, atom_number
-        DO j=1,tot_atom_number
-            IF(j.eq.i) CYCLE
-        DO k=1, tot_atom_number
-            IF(k.eq.i .or. k.eq.j) CYCLE
+        DO j=1,SIZE(fc4_unique_idx)
+            IF(fc4_unique_idx(j).eq.i) CYCLE
+        DO k=1, SIZE(fc4_unique_idx)
+            IF(fc4_unique_idx(k).eq.i .or. k.eq.j) CYCLE
         DO direction1=1,d
         DO direction2=1,d
         DO direction3=1,d
         DO direction4=1,d
 
-        IF(ABS(fc4_sum(i,j,k)%chi(direction1,direction2,direction3,direction4)).gt.resolution) THEN
-            WRITE(34,*)"asr for atom1: ",i,"    atom2: ",j,"    atom3: ",k,&
+        IF(ABS(fc4_sum_thin(i,j,k)%chi(direction1,direction2,direction3,direction4)).gt.resolution) THEN
+            WRITE(34,*)"asr for atom1: ",i,"    atom2: ",fc4_unique_idx(j),&
+            &"    atom3: ",fc4_unique_idx(k),&
             &"    xyz1: ",get_letter(direction1),"    xyz2: ",get_letter(direction2),&
             &"    xyz3: ",get_letter(direction3),"    xyz4: ",get_letter(direction4)
-            WRITE(34,*)fc4_sum(i,j,k)%chi(direction1,direction2,direction3,direction4)
+            WRITE(34,*)fc4_sum_thin(i,fc4_unique_idx(j),fc4_unique_idx(k))%chi(direction1,direction2,direction3,direction4)
             WRITE(34,*)' ...is broken, now fix it'
             WRITE(34,*)'---------------------------------------'
             !here is the sum non-zero, it means i,j,k must belong to fc4_unique_idx
             atom1_idx = find_loc(fc4_unique_idx,i)
-            atom2_idx = find_loc(fc4_unique_idx,j)
-            atom3_idx = find_loc(fc4_unique_idx,k)
+            atom2_idx = j
+            atom3_idx = k
             myfc4_value(atom1_idx,atom2_idx,atom3_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) =&
             & myfc4_value(atom1_idx,atom2_idx,atom3_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) - &
-            & fc4_sum(i,j,k)%chi(direction1,direction2,direction3,direction4)
+            & fc4_sum_thin(i,j,k)%chi(direction1,direction2,direction3,direction4)
         END IF
 
         END DO
@@ -3142,11 +3149,11 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         END DO
         END DO !7 nested loops
 
-        !fix 3rd idx,similar
+        !step2: fix 3rd idx, j!=i and k!=i or j, Chi_ijjk
         DO i=1, atom_number
-            DO j=1,tot_atom_number
-                DO k=1,tot_atom_number
-                    fc4_sum(i,j,k)%chi = 0d0
+            DO j=1,SIZE(fc4_unique_idx)
+                DO k=1,SIZE(fc4_unique_idx)
+                    fc4_sum_thin(i,j,k)%chi = 0d0
                 END DO
             END DO
         END DO
@@ -3172,37 +3179,37 @@ WRITE(34,*)'Finish <get_nshells> stage3'
             atom2_idx = find_loc(fc4_unique_idx,atom2)
             atom3_idx = find_loc(fc4_unique_idx,atom3)
             atom4_idx = find_loc(fc4_unique_idx,atom4)
-            fc4_sum(atom1,atom2,atom4)%chi(direction1,direction2,direction3,direction4) =&
-            & fc4_sum(atom1,atom2,atom4)%chi(direction1,direction2,direction3,direction4) +&
+    fc4_sum_thin(atom1,atom2_idx,atom4_idx)%chi(direction1,direction2,direction3,direction4) =&
+    & fc4_sum_thin(atom1,atom2_idx,atom4_idx)%chi(direction1,direction2,direction3,direction4) +&
     & myfc4_value(atom1_idx,atom2_idx,atom3_idx,atom4_idx)%chi(direction1,direction2,direction3,direction4)
 
             END IF
         END DO
 
         DO i=1, atom_number
-        DO j=1,tot_atom_number
-            IF(j.eq.i) CYCLE
-        DO k=1, tot_atom_number
-            IF(k.eq.i .or. k.eq.j) CYCLE
+        DO j=1, SIZE(fc4_unique_idx)
+            IF(fc4_unique_idx(j).eq.i) CYCLE
+        DO k=1, SIZE(fc4_unique_idx)
+            IF(fc4_unique_idx(k).eq.i .or. k.eq.j) CYCLE
         DO direction1=1,d
         DO direction2=1,d
         DO direction3=1,d
         DO direction4=1,d
 
-        IF(ABS(fc4_sum(i,j,k)%chi(direction1,direction2,direction3,direction4)).gt.resolution) THEN
-            WRITE(34,*)"asr for atom1: ",i,"    atom2: ",j,"    atom3: ",k,&
+        IF(ABS(fc4_sum_thin(i,j,k)%chi(direction1,direction2,direction3,direction4)).gt.resolution) THEN
+            WRITE(34,*)"asr for atom1: ",i,"    atom2: ",fc4_unique_idx(j),&
+            &"    atom3: ",fc4_unique_idx(k),&
             &"    xyz1: ",get_letter(direction1),"    xyz2: ",get_letter(direction2),&
             &"    xyz3: ",get_letter(direction3),"    xyz4: ",get_letter(direction4)
-            WRITE(34,*)fc4_sum(i,j,k)%chi(direction1,direction2,direction3,direction4)
+            WRITE(34,*)fc4_sum_thin(i,fc4_unique_idx(j),fc4_unique_idx(k))%chi(direction1,direction2,direction3,direction4)
             WRITE(34,*)' ...is broken, now fix it'
             WRITE(34,*)'---------------------------------------'
-            !here is the sum non-zero, it means i,j,k must belong to fc4_unique_idx
             atom1_idx = find_loc(fc4_unique_idx,i)
-            atom2_idx = find_loc(fc4_unique_idx,j)
-            atom3_idx = find_loc(fc4_unique_idx,k)
-            myfc4_value(atom1_idx,atom2_idx,atom2_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) =&
-            & myfc4_value(atom1_idx,atom2_idx,atom2_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) - &
-            & fc4_sum(i,j,k)%chi(direction1,direction2,direction3,direction4)
+            atom2_idx = j
+            atom3_idx = k
+        myfc4_value(atom1_idx,atom2_idx,atom2_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) =&
+        & myfc4_value(atom1_idx,atom2_idx,atom2_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) - &
+        & fc4_sum_thin(i,j,k)%chi(direction1,direction2,direction3,direction4)
         END IF
 
         END DO
@@ -3213,11 +3220,11 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         END DO
         END DO !7 nested loops
 
-        !fix intermediate terms Chi_ijjj
+        !step3: fix intermediate terms Chi_ijjj
         DO i=1, atom_number
-            DO j=1,tot_atom_number
-                DO k=1,tot_atom_number
-                    fc4_sum(i,j,k)%chi = 0d0
+            DO j=1,SIZE(fc4_unique_idx)
+                DO k=1,SIZE(fc4_unique_idx)
+                    fc4_sum_thin(i,j,k)%chi = 0d0
                 END DO
             END DO
         END DO
@@ -3243,37 +3250,37 @@ WRITE(34,*)'Finish <get_nshells> stage3'
             atom2_idx = find_loc(fc4_unique_idx,atom2)
             atom3_idx = find_loc(fc4_unique_idx,atom3)
             atom4_idx = find_loc(fc4_unique_idx,atom4)
-            fc4_sum(atom1,atom2,atom3)%chi(direction1,direction2,direction3,direction4) =&
-            & fc4_sum(atom1,atom2,atom3)%chi(direction1,direction2,direction3,direction4) +&
+        fc4_sum_thin(atom1,atom2_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) =&
+        & fc4_sum_thin(atom1,atom2_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) +&
     & myfc4_value(atom1_idx,atom2_idx,atom3_idx,atom4_idx)%chi(direction1,direction2,direction3,direction4)
 
             END IF
         END DO
 
         DO i=1, atom_number
-        DO j=1,tot_atom_number
-            IF(j.eq.i) CYCLE
-        DO k=1, tot_atom_number
-            IF(k.eq.i .or. k.ne.j) CYCLE
+        DO j=1,SIZE(fc4_unique_idx)
+            IF(fc4_unique_idx(j).eq.i) CYCLE
+        DO k=1, SIZE(fc4_unique_idx)
+            IF(fc4_unique_idx(k).eq.i .or. k.ne.j) CYCLE
         DO direction1=1,d
         DO direction2=1,d
         DO direction3=1,d
         DO direction4=1,d
 
-        IF(ABS(fc4_sum(i,j,k)%chi(direction1,direction2,direction3,direction4)).gt.resolution) THEN
-            WRITE(34,*)"asr for atom1: ",i,"    atom2: ",j,"    atom3: ",k,&
+        IF(ABS(fc4_sum_thin(i,j,k)%chi(direction1,direction2,direction3,direction4)).gt.resolution) THEN
+            WRITE(34,*)"asr for atom1: ",i,"    atom2: ",fc4_unique_idx(j),&
+            &"    atom3: ",fc4_unique_idx(k),&
             &"    xyz1: ",get_letter(direction1),"    xyz2: ",get_letter(direction2),&
             &"    xyz3: ",get_letter(direction3),"    xyz4: ",get_letter(direction4)
-            WRITE(34,*)fc4_sum(i,j,k)%chi(direction1,direction2,direction3,direction4)
+            WRITE(34,*)fc4_sum_thin(i,j,k)%chi(direction1,direction2,direction3,direction4)
             WRITE(34,*)' ...is broken, now fix it'
             WRITE(34,*)'---------------------------------------'
-            !here is the sum non-zero, it means i,j,k must belong to fc4_unique_idx
+            !here if the sum's non-zero, it means i,j,k must belong to fc4_unique_idx
             atom1_idx = find_loc(fc4_unique_idx,i)
-            atom2_idx = find_loc(fc4_unique_idx,j)
-!            atom3_idx = find_loc(fc4_unique_idx,k)
+            atom2_idx = j
             myfc4_value(atom1_idx,atom2_idx,atom2_idx,atom2_idx)%chi(direction1,direction2,direction3,direction4) =&
             & myfc4_value(atom1_idx,atom2_idx,atom2_idx,atom2_idx)%chi(direction1,direction2,direction3,direction4) - &
-            & fc4_sum(i,j,k)%chi(direction1,direction2,direction3,direction4)
+            & fc4_sum_thin(i,j,k)%chi(direction1,direction2,direction3,direction4)
         END IF
 
         END DO
@@ -3283,12 +3290,12 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         END DO
         END DO
         END DO !7 nested loops
-
-        !fix 2nd idx,similar
+        
+        !step 4: fix 2nd idx, j!=i and k!=i, Chi_iijk
         DO i=1, atom_number
-            DO j=1,tot_atom_number
-                DO k=1,tot_atom_number
-                    fc4_sum(i,j,k)%chi = 0d0
+            DO j=1,SIZE(fc4_unique_idx)
+                DO k=1,SIZE(fc4_unique_idx)
+                    fc4_sum_thin(i,j,k)%chi = 0d0
                 END DO
             END DO
         END DO
@@ -3314,37 +3321,37 @@ WRITE(34,*)'Finish <get_nshells> stage3'
             atom2_idx = find_loc(fc4_unique_idx,atom2)
             atom3_idx = find_loc(fc4_unique_idx,atom3)
             atom4_idx = find_loc(fc4_unique_idx,atom4)
-            fc4_sum(atom1,atom3,atom4)%chi(direction1,direction2,direction3,direction4) =&
-            & fc4_sum(atom1,atom3,atom4)%chi(direction1,direction2,direction3,direction4) +&
+        fc4_sum_thin(atom1,atom3_idx,atom4_idx)%chi(direction1,direction2,direction3,direction4) =&
+        & fc4_sum_thin(atom1,atom3_idx,atom4_idx)%chi(direction1,direction2,direction3,direction4) +&
     & myfc4_value(atom1_idx,atom2_idx,atom3_idx,atom4_idx)%chi(direction1,direction2,direction3,direction4)
 
             END IF
         END DO
 
         DO i=1, atom_number
-        DO j=1,tot_atom_number
-            IF(j.eq.i) CYCLE
-        DO K=1, tot_atom_number
-            IF(k.eq.i) CYCLE
+        DO j=1,SIZE(fc4_unique_idx)
+            IF(fc4_unique_idx(j).eq.i) CYCLE
+        DO K=1, SIZE(fc4_unique_idx)
+            IF(fc4_unique_idx(k).eq.i) CYCLE
         DO direction1=1,d
         DO direction2=1,d
         DO direction3=1,d
         DO direction4=1,d
 
-        IF(ABS(fc4_sum(i,j,k)%chi(direction1,direction2,direction3,direction4)).gt.resolution) THEN
-            WRITE(34,*)"asr for atom1: ",i,"    atom2: ",j,"    atom3: ",k,&
+        IF(ABS(fc4_sum_thin(i,j,k)%chi(direction1,direction2,direction3,direction4)).gt.resolution) THEN
+            WRITE(34,*)"asr for atom1: ",i,"    atom2: ",fc4_unique_idx(j),&
+            &"    atom3: ",fc4_unique_idx(k),&
             &"    xyz1: ",get_letter(direction1),"    xyz2: ",get_letter(direction2),&
             &"    xyz3: ",get_letter(direction3),"    xyz4: ",get_letter(direction4)
-            WRITE(34,*)fc4_sum(i,j,k)%chi(direction1,direction2,direction3,direction4)
+            WRITE(34,*)fc4_sum_thin(i,j,k)%chi(direction1,direction2,direction3,direction4)
             WRITE(34,*)' ...is broken, now fix it'
             WRITE(34,*)'---------------------------------------'
-            !here is the sum non-zero, it means i,j,k must belong to fc4_unique_idx
             atom1_idx = find_loc(fc4_unique_idx,i)
-            atom2_idx = find_loc(fc4_unique_idx,j)
-            atom3_idx = find_loc(fc4_unique_idx,k)
+            atom2_idx = j
+            atom3_idx = k
             myfc4_value(atom1_idx,atom1_idx,atom2_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) =&
             & myfc4_value(atom1_idx,atom1_idx,atom2_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) - &
-            & fc4_sum(i,j,k)%chi(direction1,direction2,direction3,direction4)
+            & fc4_sum_thin(i,j,k)%chi(direction1,direction2,direction3,direction4)
         END IF
 
         END DO
@@ -3355,11 +3362,11 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         END DO
         END DO !7 nested loops
 
-        !fix 1st index, the Chi_iiii terms
+        !step 5: fix 1st index, the Chi_iiii terms
         DO i=1, atom_number
-            DO j=1,tot_atom_number
-                DO k=1,tot_atom_number
-                    fc4_sum(i,j,k)%chi = 0d0
+            DO j=1,SIZE(fc4_unique_idx)
+                DO k=1,SIZE(fc4_unique_idx)
+                    fc4_sum_thin(i,j,k)%chi = 0d0
                 END DO
             END DO
         END DO
@@ -3385,8 +3392,8 @@ WRITE(34,*)'Finish <get_nshells> stage3'
             atom2_idx = find_loc(fc4_unique_idx,atom2)
             atom3_idx = find_loc(fc4_unique_idx,atom3)
             atom4_idx = find_loc(fc4_unique_idx,atom4)
-            fc4_sum(atom1,atom2,atom3)%chi(direction1,direction2,direction3,direction4) =&
-            & fc4_sum(atom1,atom2,atom3)%chi(direction1,direction2,direction3,direction4) +&
+        fc4_sum_thin(atom1,atom2_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) =&
+        & fc4_sum_thin(atom1,atom2_idx,atom3_idx)%chi(direction1,direction2,direction3,direction4) +&
     & myfc4_value(atom1_idx,atom2_idx,atom3_idx,atom4_idx)%chi(direction1,direction2,direction3,direction4)
 
             END IF
@@ -3398,18 +3405,17 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         DO direction3=1,d
         DO direction4=1,d
 
-        IF(ABS(fc4_sum(i,i,i)%chi(direction1,direction2,direction3,direction4)).gt.resolution) THEN
+        IF(ABS(fc4_sum_thin(i,i,i)%chi(direction1,direction2,direction3,direction4)).gt.resolution) THEN
             WRITE(34,*)"asr for atom1: ",i,"    atom2: ",i,"    atom3: ",i,&
             &"    xyz1: ",get_letter(direction1),"    xyz2: ",get_letter(direction2),&
             &"    xyz3: ",get_letter(direction3),"    xyz4: ",get_letter(direction4)
-            WRITE(34,*)fc4_sum(i,i,i)%chi(direction1,direction2,direction3,direction4)
+            WRITE(34,*)fc4_sum_thin(i,i,i)%chi(direction1,direction2,direction3,direction4)
             WRITE(34,*)' ...is broken, now fix it'
             WRITE(34,*)'---------------------------------------'
-            !here is the sum non-zero, it means i,j,k must belong to fc4_unique_idx
             atom1_idx = find_loc(fc4_unique_idx,i)
             myfc4_value(atom1_idx,atom1_idx,atom1_idx,atom1_idx)%chi(direction1,direction2,direction3,direction4) =&
             & myfc4_value(atom1_idx,atom1_idx,atom1_idx,atom1_idx)%chi(direction1,direction2,direction3,direction4) - &
-            & fc4_sum(i,i,i)%chi(direction1,direction2,direction3,direction4)
+            & fc4_sum_thin(i,i,i)%chi(direction1,direction2,direction3,direction4)
         END IF
 
         END DO
@@ -3418,7 +3424,7 @@ WRITE(34,*)'Finish <get_nshells> stage3'
         END DO
         END DO !7 nested loops
 
-        DEALLOCATE(fc4_sum)
+        DEALLOCATE(fc4_sum_thin)
 !        CLOSE(34)
     END SUBROUTINE fix_asr_fc4
 !========================================================================================================
