@@ -26,7 +26,7 @@
 - *others3_nshells.f90* legacy code that contains useful subroutines
 - *Structure_info.f95* declare atom and structure related object, allocate and initialize them, also read parameters from legacy input files lat_fc.dat, params.inp, etc
 - *VA_math.f95* major module for variational approach, contains subroutines for free energy and its gradients calculation and many others
-  - The new and old math regarding whether to couple $\eta$ with $\lang yy\rang$ can be switched between subroutine 'GetV_avg_And_GradientV_avg2' and 'GetV_avg_And_GradientV_avg' 
+  - The new and old math regarding whether to couple $\eta$ with $<yy>$ can be switched between subroutine 'GetV_avg_And_GradientV_avg2' and 'GetV_avg_And_GradientV_avg' 
 
 
 ---
@@ -142,7 +142,7 @@
   ```
   "terminal.external.windowsExec": "C:\\MinGW\\msys\\1.0\\bin\\sh.exe",
   ```
-  also add a block in the terminal dropdown menu as shown below:
+  also add 'msys' in the terminal dropdown menu by filling as shown below:
   <img src="img\json_settings.png" style="zoom:50%;" />
 
 5. Setup for MPI in Windows follow the steps [here](https://abhila.sh/writing/3/mpi_instructions.html)
@@ -150,7 +150,7 @@
 6. Compile and Run the code: 
   - Open 'Developer Command Prompt for VS 2022', direct to the SCOP8 folder on your local machine
   - Type `code .` NOTICE: this should be the only way to open VScode 
-  - Press `Ctrl+Shift+\`` to open the terminal window (remember to select 'msys' in the dropdown menu as the default terminal is windows powershell) and direct to the SCOP8 folder on your Windows PC, then input following command to compiler, the order matters
+  - Press ` Ctrl+Shift+\` ` to open the terminal window (remember to select 'msys' in the dropdown menu as the default terminal is windows powershell) and direct to the SCOP8 folder on your Windows PC, then input following command to compiler, the order matters
 
   > gfortran -c constants.f90
   >
