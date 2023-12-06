@@ -58,28 +58,99 @@
 
 ---
 
-#### How to Install/Compile Code on Windows
+#### How to Install/Compile Code on Windows(UPDATE: vscode)
 
-1. Put that MinGW folder in C:\ (download [here](https://drive.google.com/file/d/1mdHpw7Eac_hwmtHLrHkKdj9zlLljesz8/view?usp=sharing), the newest version of MingW may not work properly) 
-2. Open control panel > system advanced settings > add path of "C:\MingW", see below
+1. Install Visual Studio Code (download [here](https://code.visualstudio.com/download)). This is the ultimate all-in-one code development environment for Windows. Not only it's compatible with and switch with one click among C++, Python, Java, Fortran,...etc, it can also be integrated with Git, MinGW bash, WSL for Linux subsystem, Jupyter Notebook, PDF Reader and more. I strongly recommend this as the one and only code editor for everyone.
+
+2. Install the latest MinGW (download [here](https://sourceforge.net/projects/mingw/)). I suggest installing it on C drive. Notice that you may later need download extra package via 'mingw-get', it's located in C:\MinGW\bin\mingw-get.exe
+
+3. Add MinGW to the system environment by:  Open control panel > system advanced settings > add path of "C:\MinGW", see below
 
 <img src="img\how.JPG" style="zoom:50%;" />
 
-- For code editing:
+4. Setup Fortran environment with VScode:
+- Install 'Modern Fortran' extension (download [here](https://marketplace.visualstudio.com/items?itemName=fortran-lang.linter-gfortran)) or press `Ctrl+Shift+X` in VScode and search for 'Modern Fortran'. There are also some useful extensions such as 'TODO Highlight'
+- Integrate msys bash(1.0) for compiling and running the code (assuming you installed MinGW in C:\MinGW):
+  - Create a file `Run_MSYS.bat` in C:\MinGW\msys\1.0\, copy and paste the script below into the file
+  ```
+  @rem Do not use "echo off" to not affect any child calls.
+  @SETLOCAL
+  @SETLOCAL ENABLEEXTENSIONS
 
-  - Install code::blocks, download [here](www.codeblocks.org/downloads/)
+  :: Figure out where msys's root folder. If you want, you could just add the folder in the line
+  :: below.
+  @set MSYSROOT=
+  @if "x%MSYSROOT%"=="x" @if exist "%~dp0msys.bat" @set MSYSROOT=%~dp0
+  @if "x%MSYSROOT%"=="x" @if exist "%~dp0.msys-root" @set /P MSYSROOT=<%~dp0.msys-root
+  @if "x%MSYSROOT%"=="x" (
+  @echo Could not locate your mysys root folder.
+  @set /P MSYSROOT=Location:
+  )
+  :: Read as MSYSROOT.trim()
+  @if not "x%MSYSROOT%"=="x" (
+  @for /f "tokens=* delims= " %%a in ("%MSYSROOT%") do @set MSYSROOT=%%a
+  @for /f "useback tokens=*" %%a in ('%MSYSROOT%') do @set MSYSROOT=%%~a
+  @if not "%MSYSROOT:~-1%"=="\" @set MSYSROOT=%MSYSROOT%\
+  )
+  :: Verify that root folder exists
+  @if not exist "%MSYSROOT%" (
+  @echo "%MSYSROOT%" is not a valid folder. Please check for .msys-root in %~dp0, or if you entered the path above, please rerun this script and select a valid folder.
+  @exit /B 1
+  ) else (
+  @if not "%MSYSROOT%"=="%~dp0" @echo %MSYSROOT%>%~dp0.msys-root
+  )
 
-  - Codeblocks > settings > compiler > set **gnu fortran** as default and auto detect compilers (this step is optional as we're not compile the code in code::blocks)
+  :: Home Folder
+  :: If you'd prefer the home directory set to your C:\Users\Username folder, uncomment the two lines
+  :: below.
+  @rem @if not exist "%HOME%" @set HOME=%HOMEDRIVE%%HOMEPATH%
+  @rem @if not exist "%HOME%" @set HOME=%USERPROFILE%
+  @if not exist "%HOME%" @if not "%MSYSROOT%"=="" @set HOME=%MSYSROOT%home\%USERNAME%
+  @if not "x%WD%"=="x" @set WD=
+  @set PLINK_PROTOCOL=ssh
+  @if not exist "%WD%msys-1.0.dll" @set WD=%MSYSROOT%\bin\
+  @set MSYSCON=sh.exe
 
-    <img src="img\how2.JPG" style="zoom:50%;" />
+  :: Default action, open msys and go to the current folder.
+  @set OLDCD=%CD%
+  @if not "x%OLDCD%"=="x" @set CURRCD=%CD%
+  :: Get the current console ("OEM") codepage.
+  @for /f %%i in ('"%MSYSROOT%bin\getcp.exe" -oem') do @set cp_oem=%%i
+  :: Get the current GUI ("ANSI") codepage.
+  @for /f %%i in ('"%MSYSROOT%bin\getcp.exe" -ansi') do @set cp_ansi=%%i
+  :: Set the console codepage to match the GUI codepage.
+  @chcp %cp_ansi% > nul < nul
+  @if not "x%OLDCD%"=="x" (
+  @"%MSYSROOT%bin\bash.exe" -l -i -c "cd \"$CURRCD\"; exec /bin/bash -rcfile ~/.bash_profile"
+  ) else (
+  @"%MSYSROOT%bin\bash.exe" -l
+  )
+  :: Store the error level returned by bash.
+  @set ErrorLevel=%ErrorLevel%
+  :: Restore the original console codepage.
+  @chcp %cp_oem% > nul < nul
+  :: If we had a current directory at the store of the script, go back to it.
+  @if not "x%OLDCD%"=="x" chdir /D "%OLDCD%"
 
-  - Double click the file *test.cbp* to open the project in code::blocks and modify code as wish
+  :: quit script with the current error level.
+  @exit /b %ErrorLevel%
+  ```
 
-- For code compiling:
+  - Download `getcp.exe` [here](https://github.com/msysgit/msysgit/tree/master/mingw/bin) and put it into C:\MinGW\msys\1.0\bin
 
-  - **Important preparations for MPI library installation and link**: follow [here](https://abhila.sh/writing/3/mpi_instructions.html)
-  - Direct to the installation folder of MinGW, find msys -> 1.0 -> msys.bat, this is the MinGW shell terminal we will use for compile and execute the code
-  - Open the terminal and direct to the SCOP8 folder on your Windows PC, then input following command to compiler, the order matters
+  - Open VScode and press `Ctral+Shift+P`, type 'setting' and find the 'Open User Setting(JSON)' to open the `settings.json` file, add following lines
+  ```
+  "terminal.external.windowsExec": "C:\\MinGW\\msys\\1.0\\bin\\sh.exe",
+  ```
+  also add a block in the terminal dropdown menu as shown below:
+  <img src="img\json_settings.png" style="zoom:50%;" />
+
+5. Setup for MPI in Windows follow the steps [here](https://abhila.sh/writing/3/mpi_instructions.html)
+
+6. Compile and Run the code: 
+  - Open 'Developer Command Prompt for VS 2022', direct to the SCOP8 folder on your local machine
+  - Type `code .` NOTICE: this should be the only way to open VScode 
+  - Press `Ctrl+Shift+\`` to open the terminal window (remember to select 'msys' in the dropdown menu as the default terminal is windows powershell) and direct to the SCOP8 folder on your Windows PC, then input following command to compiler, the order matters
 
   > gfortran -c constants.f90
   >
@@ -131,3 +202,4 @@
 
 ---
 
+7. Git can also be integrated into VScode for repository fetch and change commitments with 1-click.
