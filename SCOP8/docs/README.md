@@ -60,7 +60,7 @@
 
 #### How to Install/Compile Code on Windows(UPDATE: vscode)
 
-1. Install Visual Studio Code (download [here](https://code.visualstudio.com/download)). This is the ultimate all-in-one code development environment for Windows. Not only it's compatible with and switch with one click among C++, Python, Java, Fortran,...etc, it can also be integrated with Git, MinGW bash, WSL for Linux subsystem, Jupyter Notebook, PDF Reader and more. I strongly recommend this as the one and only code editor for everyone.
+1. Install Visual Studio Code (download [here](https://code.visualstudio.com/download)). This is the ultimate all-in-one code development environment for Windows. Not only it's compatible and can switch with one click among C++, Python, Java, Fortran,...etc, it can also be integrated with Git, MinGW bash, WSL for Linux subsystem, Jupyter Notebook, PDF Reader and more. I strongly recommend using it for coding.
 
 2. Install the latest MinGW (download [here](https://sourceforge.net/projects/mingw/)). I suggest installing it on C drive. Notice that you may later need download extra package via 'mingw-get', it's located in C:\MinGW\bin\mingw-get.exe
 
