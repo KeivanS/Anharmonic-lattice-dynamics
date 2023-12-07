@@ -150,7 +150,7 @@
 6. Compile and Run the code: 
   - Open 'Developer Command Prompt for VS 2022', direct to the SCOP8 folder on your local machine
   - Type `code .` NOTICE: this should be the only way to open VScode 
-  - Press ` Ctrl+Shift+\` ` to open the terminal window (remember to select 'msys' in the dropdown menu as the default terminal is windows powershell) and direct to the SCOP8 folder on your Windows PC, then input following command to compiler, the order matters
+  - Press ` Ctrl+Shift+` ` to open the terminal window (remember to select 'msys' in the dropdown menu since the default terminal is windows powershell). If previous steps are executed correctly, the terminal should be opened in current directory, where you can input following command to compile and run the code.
 
   > gfortran -c constants.f90
   >

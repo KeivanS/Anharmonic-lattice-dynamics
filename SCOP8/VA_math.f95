@@ -701,6 +701,9 @@ SUBROUTINE initiate_yy(kvector)
 
     k_number = SIZE(kvector)
     CALL GetEigen(kvector)!get eigenvalues from dynmat
+
+    CALL PrintSmallEigen !NOTE: temporary check
+
     !**** fix if there is any negative eigenvalues based on input fc2 ****
     !*(old)if there are negative eigenvalues but larger than the threshold, just shift will be fine
     !*(1)if there are negative eigenvalues: drop Broyden values, manual update trialfc2 = 2*GradientVCor
@@ -797,7 +800,7 @@ WRITE(*,*)'minimum eigenvalue after shift:',MINVAL(MINVAL(eivals,DIM=2))
 endif
 
 !----temporary check--------
-OPEN(93,file='large<yy>.txt',status='unknown',action='write',position='append')
+OPEN(93,file='large_yy.txt',status='unknown',action='write',position='append')
 WRITE(93,*) '=======atom1, atom2, xyz1, xyz2, <yy>=========='
     !**** calculate <YY> and store them in yy_value ****
     DO i=1,SIZE(myfc2_index)
@@ -818,7 +821,7 @@ WRITE(93,*) '=======atom1, atom2, xyz1, xyz2, <yy>=========='
         endif
 
         !UPDATE: 12/06/2023 print YY larger than 0.1, temporary check
-        if (yy_value(atom1,atom2)%phi(xyz1,xyz2).gt.0.1) then
+        if (yy_value(atom1,atom2)%phi(xyz1,xyz2).gt.0.01) then
             WRITE(93,9) atom1,atom2,xyz1,xyz2,yy_value(atom1,atom2)%phi(xyz1,xyz2)
         end if
 !****Test the value of gamma point correction****
@@ -845,7 +848,7 @@ DEALLOCATE(phi_test)
 6 FORMAT(2(A2,I3),(G16.7,SP,G16.7,"i"),1(3X,G16.7))
 7 FORMAT(2(A2,I3),2(3X,G16.7))
 8 FORMAT(2(A2,I3),(G16.7,SP,G16.7,"i"),2(3X,G16.7))
-9 FORMAT(4(I3,3X),1(G8.5))
+9 FORMAT(4(I3,3X),1(G16.10))
 END SUBROUTINE initiate_yy
 !================================================================================================================
 SUBROUTINE CheckFixEigen
@@ -865,7 +868,6 @@ SUBROUTINE CheckFixEigen
     END DO
 
     CALL GetEigen(kvector)
-    CALL PrintSmallEigen !NOTE: temporary check
     min_eivals=MINVAL(MINVAL(eivals, DIM=2))
 
     if (mpi_rank==0) then
@@ -906,17 +908,17 @@ SUBROUTINE PrintSmallEigen
     IMPLICIT NONE
 
     INTEGER :: k, l
-    OPEN(41,file='small_eivals.txt', status='unknown',action='write')
-    WRITE(41,*) '====lambda, kvector#, omega^2===='
+    OPEN(71,file='small_eivals.txt', status='unknown',action='write')
+    WRITE(71,*) '====lambda, kvector#, omega^2===='
     DO k=1, SIZE(eivals, dim=2)
     DO l=1, SIZE(eivals, dim=1)
         IF(ABS(eivals(l,k)).lt.1d-4) THEN
-            WRITE(41,6) l, k, eivals(l,k)
+            WRITE(71,6) l, k, eivals(l,k)
         END IF
     END DO
     END DO
-    6 FORMAT(2(I4,4x),(G10.6))
-    CLOSE(41)
+    6 FORMAT(2(I4,4x),(G16.10))
+    CLOSE(71)
 END SUBROUTINE PrintSmallEigen
 !--------------------------------------------------------------------------------------------
 SUBROUTINE CheckFixEigenAgain

@@ -157,11 +157,11 @@ WRITE(unit_number2,*)
     !??? What if I don't force asr fix
     CALL fix_asr_fc2
     CALL fix_asr_fc3
-!    CALL fix_asr_fc4 !memory exceed if too many atoms
+    CALL fix_asr_fc4 !UPDATE: 12/06/2023 optimized for memory usage
 !
-    CALL asr_fc2
-    CALL asr_fc3
-!    CALL asr_fc4
+    ! CALL asr_fc2
+    ! CALL asr_fc3
+    ! CALL asr_fc4 !NOTE: redundant 
     !get the max distance
     R_0 = MAX(lengtha(trans_vec(:,1)),lengtha(trans_vec(:,2)),lengtha(trans_vec(:,3)))*maxneighbors
 
@@ -314,7 +314,7 @@ endif
 !CALL Get_dispersion
 !CALL calc_gruneisen
 !
-!STOP
+! STOP
 
     start_F = REAL(F_trial)
 
