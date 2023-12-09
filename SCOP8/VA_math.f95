@@ -702,7 +702,7 @@ SUBROUTINE initiate_yy(kvector)
     k_number = SIZE(kvector)
     CALL GetEigen(kvector)!get eigenvalues from dynmat
 
-    CALL PrintSmallEigen !NOTE: temporary check
+    CALL HandleSmallEigen !NOTE: temporary check
 
     !**** fix if there is any negative eigenvalues based on input fc2 ****
     !*(old)if there are negative eigenvalues but larger than the threshold, just shift will be fine
@@ -753,12 +753,18 @@ outer:    DO k=1,SIZE(eivals,dim=2)
                 WRITE(gthb,5) 'atom1 eigenvector (x,y,z)=',REAL(eivecs(1:3,l,1))
                 WRITE(gthb,5) 'atom2 eigenvector (x,y,z)=',REAL(eivecs(4:6,l,1))
             END IF
-            !very unlikely to happen, that min_eivals are exactly 0
+            !handle when min_evals or eivals are exactly 0d0
+            !NOTE: need a better way 12/08/2023
             IF(k.eq.1 .AND. min_eivals.eq.0d0) THEN
                 !this could happen to optic bands at gamma point in some weird cases
                 IF(eivals(4,1).eq.0d0) eivals(4,1) = 0.0001 * eivals(4,2)
                 IF(eivals(5,1).eq.0d0) eivals(5,1) = 0.0001 * eivals(5,2)
                 IF(eivals(6,1).eq.0d0) eivals(6,1) = 0.0001 * eivals(6,2)
+            END IF
+
+            IF(eivals(l,k).eq.0d0) THEN
+                eivals(l,k) = 0.0001 * &
+                &(eivals(MOD(l,3),k) + eivals(MOD(l+1,3),k)+eivals(MOD(l+2,3),k))/3d0
             END IF
 
             endif !rank
@@ -774,7 +780,9 @@ outer:    DO k=1,SIZE(eivals,dim=2)
     END IF
     endif
 
-    !record all the negative eigenvalues index and shift those
+    !record all the negative eigenvalues index and
+    !(1)shift those up w.r.t min_eivals if not useing highT_limit
+    !(2)do nothing with highT_limit on
     IF(ALLOCATED(soft)) DEALLOCATE(soft)
     IF(counter.ne.0) THEN !if there is any negative eigenvalue
         ALLOCATE(soft(counter))
@@ -799,9 +807,9 @@ if (mpi_rank==0) then
 WRITE(*,*)'minimum eigenvalue after shift:',MINVAL(MINVAL(eivals,DIM=2))
 endif
 
-!----temporary check--------
-OPEN(93,file='large_yy.txt',status='unknown',action='write',position='append')
-WRITE(93,*) '=======atom1, atom2, xyz1, xyz2, <yy>=========='
+!NOTE: temporary check
+! OPEN(93,file='large_yy.txt',status='unknown',action='write',position='append')
+! WRITE(93,*) '=======atom1, atom2, xyz1, xyz2, <yy>==========','iter=',iter
     !**** calculate <YY> and store them in yy_value ****
     DO i=1,SIZE(myfc2_index)
         atom1 = myfc2_index(i)%iatom_number
@@ -820,10 +828,9 @@ WRITE(93,*) '=======atom1, atom2, xyz1, xyz2, <yy>=========='
 
         endif
 
-        !UPDATE: 12/06/2023 print YY larger than 0.1, temporary check
-        if (yy_value(atom1,atom2)%phi(xyz1,xyz2).gt.0.01) then
-            WRITE(93,9) atom1,atom2,xyz1,xyz2,yy_value(atom1,atom2)%phi(xyz1,xyz2)
-        end if
+        ! if (yy_value(atom1,atom2)%phi(xyz1,xyz2).gt.0.01) then
+        !     WRITE(93,9) atom1,atom2,xyz1,xyz2,yy_value(atom1,atom2)%phi(xyz1,xyz2)
+        ! end if
 !****Test the value of gamma point correction****
 !if (mpi_rank==0) then
 !WRITE(47,6) get_letter(xyz1),atom1,get_letter(xyz2),atom2,&
@@ -837,12 +844,12 @@ WRITE(93,*) '=======atom1, atom2, xyz1, xyz2, <yy>=========='
 !WRITE(47,*)
 !endif
     END DO
-CLOSE(93)
+! CLOSE(93)
 DEALLOCATE(phi_test)
 !DEALLOCATE(yy_test)
 !    CLOSE(47)
-    CLOSE(unitnumber)
-    CLOSE(gthb)
+CLOSE(unitnumber)
+CLOSE(gthb)
 
 5 FORMAT(a,3(3X,G16.7))
 6 FORMAT(2(A2,I3),(G16.7,SP,G16.7,"i"),1(3X,G16.7))
@@ -903,26 +910,29 @@ outer:    IF(min_eivals.lt.0d0) THEN
     CLOSE(unitnumber)
 END SUBROUTINE CheckFixEigen
 !--------------------------------------------------------------------------------------------
-SUBROUTINE PrintSmallEigen
+SUBROUTINE HandleSmallEigen
     !UPDATE: 12/06/2023 print eigenvalues(omega^2) that are smaller than 1e-4
     IMPLICIT NONE
 
     INTEGER :: k, l
-    OPEN(71,file='small_eivals.txt', status='unknown',action='write')
-    WRITE(71,*) '====lambda, kvector#, omega^2===='
+    REAL(8) :: delta = 1d-8
+    ! OPEN(71,file='small_eivals.txt', status='unknown',action='write',position='append')
+    ! WRITE(71,*) '====lambda, kvector#, omega^2====','iter=',iter
     DO k=1, SIZE(eivals, dim=2)
     DO l=1, SIZE(eivals, dim=1)
         IF(ABS(eivals(l,k)).lt.1d-4) THEN
-            WRITE(71,6) l, k, eivals(l,k)
+            ! WRITE(71,6) l, k, eivals(l,k)
+            !NOTE: Try SQRT(delta + x^2)*sign(x) strategy
+            eivals(l,k) = SIGN(sqrt(delta + eivals(l,k)**2), eivals(l,k))
         END IF
     END DO
-    END DO
+    END DO    
     6 FORMAT(2(I4,4x),(G16.10))
-    CLOSE(71)
-END SUBROUTINE PrintSmallEigen
+    ! CLOSE(71)
+END SUBROUTINE HandleSmallEigen
 !--------------------------------------------------------------------------------------------
 SUBROUTINE CheckFixEigenAgain
-!!(2)if there still are negative eigenvalues, rollback to prev_trial_fc2(freeze eff fc2)*
+    !!(2)if there still are negative eigenvalues, rollback to prev_trial_fc2(freeze eff fc2)*
     IMPLICIT NONE
 
     INTEGER :: k,l,i,j
@@ -3441,10 +3451,11 @@ for_check = for_check / k_number
 !        DEALLOCATE(res,arg,om,func,array)
     END FUNCTION Get_Y_square2
 !--------------------------------------------------------------------------------------------
-    FUNCTION Get_Y_square3(k_number,direction1,atom1,direction2,atom2) !MODIFIED gammapoint
-   !!Major subroutine that calculate <YY> for specific indexes given
-    !!utilize analytical approximation for diverging terms
-    !!for soft mode, use high temperature approx. instead
+    FUNCTION Get_Y_square3(k_number,direction1,atom1,direction2,atom2) 
+    !!Major subroutine that calculate <YY> for specific indexes given
+    !!utilize analytical approximation for diverging terms at gamma point
+    !!MODIFY: for soft mode, use high temperature approx. instead
+     
             IMPLICIT NONE
         INTEGER :: i,j,k,l,steps
         INTEGER :: R1,tau1,R2,tau2,temp1,temp2,temp3,temp4
@@ -3459,13 +3470,17 @@ for_check = for_check / k_number
         REAL(8) :: delta_cubic,denominator(3),term1,term2,delta_square,interval_K
 !        REAL(8) :: Get_Y_square
         COMPLEX(8) :: Get_Y_square3
-
+        
         COMPLEX(8) :: evc0(d*atom_number,d*atom_number)
 
         INTEGER :: cutoff,cutoff_true
         LOGICAL :: auxiliary,FLAG
         LOGICAL :: match
 
+!NOTE: temporary monitor extra large term in <yy> sum
+        COMPLEX(8) :: foo
+! OPEN(79,file='monitorYY_sum.txt',position='append',action='write',status='unknown')
+    
         !retrieve atomic indexes
         R1=every_atom(atom1)%type_R
         tau1=every_atom(atom1)%type_tau
@@ -3487,11 +3502,10 @@ for_check = for_check / k_number
         DO l=1,3
         DO k=2,SIZE(kvector) !drop gamma point region
 
-!-------------------------------------------NEW----------------------------------------------------
             !skip if they were soft
             match = .FALSE.
             IF(min_eival.le.0d0) THEN
-           checksoft_a: DO i=1,SIZE(soft)
+            checksoft_a: DO i=1,SIZE(soft)
                 IF(l.eq.soft(i)%idx_la .AND. k.eq.soft(i)%idx_q) THEN
                     match = .TRUE.
                     EXIT checksoft_a
@@ -3519,8 +3533,21 @@ WRITE(34,*)'eivecs',eivecs(temp2,l,k),eivecs_t(l,temp1,k)
 WRITE(34,*)'cell_vec',cell_vec(:,R2)
 STOP
 END IF
+
+!DEBUG_b:
+! foo = hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
+! &(2*n_qlambda(l,k)+1)*&
+! &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
+! IF(REAL(foo).gt.100d0) THEN
+!     WRITE(79,*) 'abnormal iter: ', iter
+!     WRITE(79,*) 'group: acoustic, regular formula'
+!     WRITE(79,8) 'l=',l,'k=',k,'large term:',foo
+! END IF
+! foo = 0d0
+!DEBUG_f.
+
         END DO !k loop
-        END DO !l loop
+        END DO !l loop, acoustic
 
         !correction term for 3 acoustic bands at Gamma point
         denominator(1) = (eivals(3,1)+eivals(3,3)-2*eivals(3,2))
@@ -3551,21 +3578,27 @@ END IF
 !WRITE(34,*)'term',term
 !STOP
 !END IF
-!***** check the contribution of this gamma point correction term *****
-for_check = (0d0,0d0)
-
-IF(direction1.eq.direction2) THEN
-    for_check = 2*pi*temperature*100*h_plank*c_light&
-                    &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20
-ELSE
-    for_check = 4*pi*temperature*100*h_plank*c_light&
-                    &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20
-END IF
-for_check = for_check / k_number
 !**********************************************************************
 
-!-------------------------------------------NEW----------------------------------------------------
+!DEBUG_b:
+! IF(direction1.eq.direction2) THEN
+!     foo = temperature*100*h_plank*c_light/atom_number&
+!     &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term1*1d20/delta_square*3
+! ELSE
+!     foo = temperature*100*h_plank*c_light/atom_number&
+!     &/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/uma*term2*1d20/delta_square*3
+! ENDIF
+! IF(REAL(foo).gt.100d0) THEN
+!     WRITE(79,*) 'abnormal iter: ', iter
+!     WRITE(79,*) 'group: acoustic, gamma point approx.'
+!     WRITE(79,8) 'l=',l,'k=',k,'large term:',foo
+! END IF
+! foo = 0d0
+!DEBUG_f.
+
+!-------------------------------------------MODIFY----------------------------------------------------
         !correction term for those soft bands that get dropped at certain q
+        !NOTE: apply highT_limit to all soft mode phonons here
         IF(min_eival.le.0d0) THEN !first make sure there IS any negative mode
         DO i=1,SIZE(soft)
             l=soft(i)%idx_la
@@ -3574,12 +3607,22 @@ for_check = for_check / k_number
             IF(k.eq.1) CYCLE !already fixed gamma point above
 
             Get_Y_square3=Get_Y_square3+&
-                &1d0/eivals(l,k)/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/(ee*1d20*uma)*&
-                &temperature*100*h_plank*c_light*&
+                &1d0/eivals(l,k)/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/(ee*1d20)*&
+                &temperature*100*h_plank*c_light*& 
                 &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
-
             !------------------------------------------------------------------------------
 
+!DEBUG_b:
+! foo = 1d0/eivals(l,k)/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/(ee*1d20)*&
+! &temperature*100*h_plank*c_light*&
+! &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
+! IF(REAL(foo).gt.100d0) THEN
+!     WRITE(79,*) 'abnormal iter: ', iter
+!     WRITE(79,*) 'group: soft acoustic, high-T approx'
+!     WRITE(79,8) 'l=',l,'k=',k,'large term:',foo
+! END IF
+! foo = 0d0
+!DEBUG_f.
 
         END DO !soft loop
         END IF
@@ -3595,7 +3638,7 @@ for_check = for_check / k_number
             !check if they were soft
             match = .FALSE.
             IF(min_eival.le.0d0) THEN
-           checksoft_o: DO i=1,SIZE(soft)
+            checksoft_o: DO i=1,SIZE(soft)
                 IF(l.eq.soft(i)%idx_la .AND. k.eq.soft(i)%idx_q) THEN
                     match = .TRUE.
                     EXIT checksoft_o
@@ -3603,25 +3646,52 @@ for_check = for_check / k_number
             END DO checksoft_o
             END IF
 
-            !use high temperature limit if they are soft
+            !NOTE: use high temperature limit if they are soft
             IF(match) THEN
                 Get_Y_square3=Get_Y_square3+&
-                &1d0/eivals(l,k)/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/(ee*1d20*uma)*&
+                &1d0/eivals(l,k)/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/(ee*1d20)*&
                 &temperature*100*h_plank*c_light*&
                 &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
-            END IF
-!--------------------------------------------------------------------------------------------------
-            n_qlambda(l,k)=nbe(SQRT(eivals(l,k))*cnst,temperature,0)
-            Get_Y_square3=Get_Y_square3+&
-                 &hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
-                 &(2*n_qlambda(l,k)+1)*&
-                 &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
 
+!DEBUG_b:
+! foo = 1d0/eivals(l,k)/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/(ee*1d20)*&
+! &temperature*100*h_plank*c_light*&
+! &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
+! IF(REAL(foo).gt.100d0) THEN
+!     WRITE(79,*) 'abnormal iter: ', iter
+!     WRITE(79, *) 'group: soft optic, high-T approx.'
+!     WRITE(79,8) 'l=',l,'k=',k,'large term:',foo
+! END IF
+! foo = 0d0
+!DEBUG_f.                
+
+            ELSE
+!--------------------------------------------------------------------------------------------------
+                n_qlambda(l,k)=nbe(SQRT(eivals(l,k))*cnst,temperature,0)
+                Get_Y_square3=Get_Y_square3+&
+                &hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
+                &(2*n_qlambda(l,k)+1)*&
+                &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
+
+!DEBUG_b:
+! foo = hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
+! &(2*n_qlambda(l,k)+1)*&
+! &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
+! IF(REAL(foo).gt.100d0) THEN
+!     WRITE(79,*) 'abnormal iter: ', iter
+!     WRITE(79,*) 'optic, regular formula'
+!     WRITE(79,8) 'l=',l,'k=',k,'large term:',foo
+! END IF
+! foo = 0d0
+!DEBUG_f.
+            END IF
 
         END DO !k loop
         END DO !l loop
         DEALLOCATE(n_qlambda)
 
+8 FORMAT(2(A6,I4,2x),(A15),(G16.10))
+! CLOSE(79)
     END FUNCTION Get_Y_square3
 !======================================================================================================================================
     SUBROUTINE Get_SKfreq(kpoint,freq)

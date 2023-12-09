@@ -25,9 +25,9 @@ implicit none
 !********************************************
 
  end module constants
- !===========================================================
+!===========================================================
 module force_constants_module
- !! Module for saved data, seems mostly not used
+ !! legacy module for saved data, seems mostly not used
 ! maximum number of shells of nearest neighbors
       integer maxneighbors
 !     parameter(maxneighbors=18 )
@@ -68,17 +68,3 @@ module force_constants_module
 ! cell at the origin that contains the ith atom
 end module force_constants_module
 !*************************************************************************
-
-
-module test
-!! not used
-use constants
-    implicit none
-    real(8) :: pi_test
-    contains
-
-    subroutine assign_pi
-        pi_test=pi
-    end subroutine assign_pi
-
-end module test

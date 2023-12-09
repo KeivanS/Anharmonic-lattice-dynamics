@@ -1,6 +1,5 @@
 !!THIS MODULE IS SEPERATED FROM modules9.f90
 !!legacy code, no comment
-!==============================================
 module params
  real(8) tolerance,margin,alfaborn
  integer nconfigs,classical,ntemp,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,isvd
@@ -9,15 +8,14 @@ module params
  real(8) rcut(4),tau0,wshift(3)
  real(8) tmin,tmax,qcros(3),svdcut
  logical verbose
-!********************************************
-INTEGER,PARAMETER :: d=3 !dimension
-!********************************************
+  
+ INTEGER,PARAMETER :: d=3 !NOTE: dimension, seems redundant
 end module params
-!===============================================
+!************************************************************
+!NOTE:
 !THIS MODULE IS SEPERATED FROM modules9.f90
 !with changed type declaration, removed interface operator not used
 !added/adjusted original interace operator
-!============================================================
  module geometry
   !use Structure_info !now the dimension is in module [params]
   use params
@@ -58,7 +56,6 @@ end module params
      module procedure myequal0, myequal0array, myequal0vector
     end interface
 !------------------------------------------------------------
-!-------------------------------------------------------------
     interface operator(.dot.)
     !!this sums all concatenate=able tensor/array
     !!for example, a v(:,:).dot.w(:,:) will lead to a scalar
@@ -134,24 +131,6 @@ contains
      add(2) = w%component(2)+v%component(2)
      add(3) = w%component(3)+v%component(3)
    end function addition_vva
-!-----------------------------------!AMBIGUOUS AND NOT NECESSARY!
-   !function addition_avv(w,v) result(add)
-   !  type(vector) add !, intent(out) ::
-   !  type(vector), intent(in) :: v
-   !  real(8), intent(in) :: w(3)
-   !  add%component(1) = v%component(1) + w(1)
-   !  add%component(2) = v%component(2) + w(2)
-   !  add%component(3) = v%component(3) + w(3)
-   !end function addition_avv
-!----------------------------------- !AMBIGUOUS AND NOT NECESSARY!
-   !function addition_vav(v,w) result(add)
-   !  type(vector) add !, intent(out) ::
-   !  type(vector), intent(in) :: v
-   !  real(8), intent(in) :: w(3)
-   !  add%component(1) = v%component(1) + w(1)
-   !  add%component(2) = v%component(2) + w(2)
-   !  add%component(3) = v%component(3) + w(3)
-   !end function addition_vav
 !-----------------------------------
    function subtraction(v,w) result(dif)
      real(8) dif(3) !, intent(out) ::
@@ -215,7 +194,7 @@ contains
      cross%component(2) = v%component(3)*w%component(1)-v%component(1)*w%component(3)
      cross%component(3) = v%component(1)*w%component(2)-v%component(2)*w%component(1)
    end function crossproduct_v
-
+!-----------------------------------
    function crossproduct_a(v,w) result(cross)
      real(8) cross(3) !, intent(out) ::
      real(8), intent(in) :: v(3),w(3)
@@ -250,9 +229,7 @@ contains
      dot = sum(v * w%component)
    end function dotproduct_va
 !-----------------------------------
-
-!****************************************************************************************************************
-!expand .dot. operation for tensors
+!NOTE: expand .dot. operation for tensors
 function dotproduct_vt2(v,w) result(dot)
      real(8), dimension(d) :: dot
      real(8), intent(in),dimension(d) :: v
@@ -319,8 +296,7 @@ function dotproduct_vt4(v,w) result(dot)
         dot(:,:,i)=dotproduct_vt3(v,w(:,:,:,i))
     end do
 end function dotproduct_vt4
-!****************************************************************************************************************
-!expand .dot. operation for complex number
+!NOTE: expand .dot. operation for complex number
 function dotproductC_vt2(v,w) result(dot)
      complex(8), dimension(d) :: dot
      complex(8), intent(in),dimension(d) :: v
@@ -522,7 +498,7 @@ function quadrupledotR(v,w) result(dot)
         end do
     end do
 end function quadrupledotR
-!*****************************************************************************************************************
+!------------------------------------------
 function doubledot2(v,w) result(idot)
     real(8) :: idot
     real(8),dimension(d) :: temp
@@ -592,7 +568,6 @@ end function doubledot3
 !    endif
    end function myequal
 !-------------------------------------------
-!-------------------------------------------
    function myequal0(v,w) result(eq)
      real(8), intent(in)::  v,w
      logical eq
@@ -603,7 +578,6 @@ end function doubledot3
         endif
 !    endif
    end function myequal0
-!-------------------------------------------
 !-------------------------------------------
    function myequalvector(v,w) result(eq)
      type(vector), intent(in)::  v,w
@@ -702,8 +676,7 @@ end function doubledot3
      enddo
      l = sqrt(l)
    end function lengtha
-!-----------------------------------
-!------------------inverse matrix----------------------
+!------------------matrix inverse----------------------
  subroutine invers_r(a,b,n)
       implicit none
       integer n,imax,k,j,i,ii
@@ -860,9 +833,9 @@ END FUNCTION voigtMap
             output(1)=1;output(2)=2 !xy or yx
     ENDSELECT
  END FUNCTION inv_voigtMap
- !-----------------------------------------------------
+ !================================================
  end module geometry
-!===========================================================
+!**************************************************************
 module ios
  use geometry
  integer, parameter:: ulog=30,uposcar=10, utraj=40,ufco=20,  &
@@ -878,31 +851,33 @@ module ios
 
  contains
 
-!-----------------------------
-  subroutine write_outrm(unit,string,n,m,var)
-  implicit none
-  character*(*) string
-  integer n,m,unit,l,i,j
-  real(8) var(n,m)
+!=============================================
+subroutine write_outrm(unit,string,n,m,var)
+    implicit none
+    character*(*) string
+    integer n,m,unit,l,i,j
+    real(8) var(n,m)
 
-  l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',((var(i,j),i=1,n),j=1,m)
+    l=len_trim(string)
+    write(unit,4)string(1:l)//' is=',((var(i,j),i=1,n),j=1,m)
+
 4 format(a,99(1x,g12.6))
-  end subroutine write_outrm
+end subroutine write_outrm
 !-----------------------------
-  subroutine write_outim(unit,string,n,m,var)
-  implicit none
-  character*(*) string
-  integer n,m,unit,i,l,j
-  integer var(n,m)
+subroutine write_outim(unit,string,n,m,var)
+    implicit none
+    character*(*) string
+    integer n,m,unit,i,l,j
+    integer var(n,m)
 
-  l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',((var(i,j),i=1,n),j=1,m)
+    l=len_trim(string)
+    write(unit,4)string(1:l)//' is=',((var(i,j),i=1,n),j=1,m)
+
 4 format(a,99(1x,i8))
-
-  end subroutine write_outim
+end subroutine write_outim
 !-----------------------------
-  subroutine write_outrv(unit,string,var)
+subroutine write_outrv(unit,string,var)
+  
   implicit none
   character*(*) string
   integer unit,l,i
@@ -910,10 +885,12 @@ module ios
 
   l=len_trim(string)
   write(unit,4)string(1:l)//' is=',(var(i),i=1,size(var))
+
 4 format(a,99(1x,g12.6))
-  end subroutine write_outrv
+end subroutine write_outrv
 !-----------------------------
-  subroutine write_outiv(unit,string,var)
+subroutine write_outiv(unit,string,var)
+  
   implicit none
   character*(*) string
   integer unit,i,l
@@ -921,11 +898,12 @@ module ios
 
   l=len_trim(string)
   write(unit,4)string(1:l)//' is=',(var(i),i=1,size(var))
-4 format(a,99(1x,i8))
 
+4 format(a,99(1x,i8))
 end subroutine write_outiv
 !-----------------------------
-  subroutine write_outr(unit,string,var)
+subroutine write_outr(unit,string,var)
+  
   implicit none
   character*(*) string
   integer unit,l
@@ -933,10 +911,12 @@ end subroutine write_outiv
 
   l=len_trim(string)
   write(unit,4)string(1:l)//' is=',var
-4 format(a,99(1x,g12.6))
+
+  4 format(a,99(1x,g12.6))
 end subroutine write_outr
 !-----------------------------
-  subroutine write_outi(unit,string,var)
+subroutine write_outi(unit,string,var)
+
   implicit none
   character*(*) string
   integer n,unit,l
@@ -944,11 +924,11 @@ end subroutine write_outr
 
   l=len_trim(string)
   write(unit,4)string(1:l)//' is=',var
+  
 4 format(a,99(1x,i8))
-
 end subroutine write_outi
 !-----------------------------
-  subroutine write_outv(unit,string,var)
+subroutine write_outv(unit,string,var)
 
   implicit none
   character*(*) string
@@ -957,136 +937,141 @@ end subroutine write_outi
 
   l=len_trim(string)
   write(unit,4)string(1:l)//' is=',var
+
 4 format(a,3(1x,g12.6))
 end subroutine write_outv
 !-----------------------------
 subroutine ustring(m,lineout,nrank,iatom,ixyz)
 
     implicit none
-      integer i,j,k,m,n,nrank,iatom(nrank),ixyz(nrank)
-      character lineout*80,xyz(3)
-      data xyz/'x','y','z'/
+    integer i,j,k,m,n,nrank,iatom(nrank),ixyz(nrank)
+    character lineout*80,xyz(3)
+    data xyz/'x','y','z'/
 !     write(*,*)' Entering ustring with rank=',nrank
-      lineout(m+1:m+1)='d'
-      m=m+1
-      write(lineout(m+1:m+1),'(i1)')nrank
-      m=m+1
-      lineout(m+1:m+2)='U/'
+    lineout(m+1:m+1)='d'
+    m=m+1
+    write(lineout(m+1:m+1),'(i1)')nrank
+    m=m+1
+    lineout(m+1:m+2)='U/'
+    m=m+2
+    do i=1,nrank
+      lineout(m+1:m+2)='d'//xyz(ixyz(i))
       m=m+2
-      do i=1,nrank
-        lineout(m+1:m+2)='d'//xyz(ixyz(i))
+      n=iatom(i)
+      if(n.lt.10)then
+        write(lineout(m+1:m+1),'(i1)')n
+        m=m+1
+      else if(n.lt.100)then
+        write(lineout(m+1:m+2),'(i2)')n
         m=m+2
-        n=iatom(i)
-        if(n.lt.10)then
-          write(lineout(m+1:m+1),'(i1)')n
-          m=m+1
-        else if(n.lt.100)then
-          write(lineout(m+1:m+2),'(i2)')n
-          m=m+2
-        else if(n.lt.1000)then
-          write(lineout(m+1:m+3),'(i3)')n
-          m=m+3
-        else
-          write(lineout(m+1:m+4),'(i4)')n
-          m=m+4
-        endif
-      enddo
+      else if(n.lt.1000)then
+        write(lineout(m+1:m+3),'(i3)')n
+        m=m+3
+      else
+        write(lineout(m+1:m+4),'(i4)')n
+        m=m+4
+      endif
+    enddo
 !     write(*,*)' Exiting ustring'
 
 end subroutine ustring
-!--------------------
+!-------------------------------------
 subroutine warn(unt)
- implicit none
- integer unt
+  implicit none
+  integer unt
 
- write(unt,*)'********************************************************************'
- write(unt,*)'|                                                                  |'
- write(unt,*)'|                                                                  |'
- write(unt,*)'|      W    W    AA    RRRRR   N    N  II  N    N   GGGG   !!!     |'
- write(unt,*)'|      W    W   A  A   R    R  NN   N  II  NN   N  G    G  !!!     |'
- write(unt,*)'|      W    W  A    A  R    R  N N  N  II  N N  N  G       !!!     |'
- write(unt,*)'|      W WW W  AAAAAA  RRRRR   N  N N  II  N  N N  G  GGG   !      |'
- write(unt,*)'|      WW  WW  A    A  R   R   N   NN  II  N   NN  G    G          |'
- write(unt,*)'|      W    W  A    A  R    R  N    N  II  N    N   GGGG   !!!     |'
- write(unt,*)'|                                                                  |'
- write(unt,*)'|   There MIGHT be FC cancellation in the sum and perhaps errors   |'
- write(unt,*)'|                                                                  |'
- write(unt,*)'********************************************************************'
- end subroutine warn
+  write(unt,*)'********************************************************************'
+  write(unt,*)'|                                                                  |'
+  write(unt,*)'|                                                                  |'
+  write(unt,*)'|      W    W    AA    RRRRR   N    N  II  N    N   GGGG   !!!     |'
+  write(unt,*)'|      W    W   A  A   R    R  NN   N  II  NN   N  G    G  !!!     |'
+  write(unt,*)'|      W    W  A    A  R    R  N N  N  II  N N  N  G       !!!     |'
+  write(unt,*)'|      W WW W  AAAAAA  RRRRR   N  N N  II  N  N N  G  GGG   !      |'
+  write(unt,*)'|      WW  WW  A    A  R   R   N   NN  II  N   NN  G    G          |'
+  write(unt,*)'|      W    W  A    A  R    R  N    N  II  N    N   GGGG   !!!     |'
+  write(unt,*)'|                                                                  |'
+  write(unt,*)'|   There MIGHT be FC cancellation in the sum and perhaps errors   |'
+  write(unt,*)'|                                                                  |'
+  write(unt,*)'********************************************************************'
+  end subroutine warn
 
 end module ios
-!============================================================
- module lattice
- use geometry
- use constants
- implicit none
- type(vector) r1,r2,r3,g1,g2,g3  ,rr1,rr2,rr3   ! translation vectors of the supercell
- type(vector) r01,r02,r03,g01,g02,g03  ! tr vect of prim cell and its recip spce
- real(8) volume_r,volume_g,lattice_parameter,latticeparameters(6),primitivelattice(3,3)
- real(8) box(3),boxg(3)
- real(8) r0g(3,3)
- type(vector) r1conv,r2conv,r3conv,g1conv,g2conv,g3conv
- integer n1min,n2min,n3min,n1max,n2max,n3max,NC(3),NF(3)
+！********************************************************************
+module lattice
+ 
+  use geometry
+  use constants
+
+  implicit none
+
+  type(vector) r1,r2,r3,g1,g2,g3  ,rr1,rr2,rr3   ! translation vectors of the supercell
+  type(vector) r01,r02,r03,g01,g02,g03  ! tr vect of prim cell and its recip spce
+  real(8) volume_r,volume_g,lattice_parameter,latticeparameters(6),primitivelattice(3,3)
+  real(8) box(3),boxg(3)
+  real(8) r0g(3,3)
+  type(vector) r1conv,r2conv,r3conv,g1conv,g2conv,g3conv
+  integer n1min,n2min,n3min,n1max,n2max,n3max,NC(3),NF(3)
 
  contains
- !-----------------------------------------
- subroutine transform_input_structure
+!========================================
+subroutine transform_input_structure
 !! takes input variables latticeparameters(6),primitivelattice(3,3) to construct the primitive cell
- use ios
- implicit none
- real(8),dimension(3,3):: conv_to_cart,prim_to_conv,conv_to_prim,prim_to_cart,cart_to_prim
- real(8) latp(6),temp(3,3),tempi(3,3)
- integer ier
+  use ios
+  implicit none
+  real(8),dimension(3,3):: conv_to_cart,prim_to_conv,conv_to_prim,prim_to_cart,cart_to_prim
+  real(8) latp(6),temp(3,3),tempi(3,3)
+  integer ier
 
 !k1
-!      d2r = 4d0*datan(1d0)/180d0 ! 3.1415926535897932384626/180d0
+! d2r = 4d0*datan(1d0)/180d0 ! 3.1415926535897932384626/180d0
 !k1
-      conv_to_cart=0
-      prim_to_conv=primitivelattice
-      call xmatinv(prim_to_conv,conv_to_prim,ier)
-      if(ier.ne.0) then
-         write(*,*)'prim_to_conv does not have an inverse!'
-         stop
-      endif
-      latp=latticeparameters ! for short
+  conv_to_cart=0
+  prim_to_conv=primitivelattice
+  call xmatinv(prim_to_conv,conv_to_prim,ier)
+  if(ier.ne.0) then
+      write(*,*)'prim_to_conv does not have an inverse!'
+      stop
+  endif
+
+  latp=latticeparameters ! for short
 !      latp(4:6) = latp(4:6)*d2r   ! convert angles from degree to radian
-      conv_to_cart(1,1)=latp(1)
-      conv_to_cart(1,2)=latp(2)*dcos(latp(6)*pi/180)
-      conv_to_cart(2,2)=latp(2)*dsin(latp(6)*pi/180)
-      conv_to_cart(1,3)=latp(3)*dcos(latp(5)*pi/180)
-      conv_to_cart(2,3)=latp(3)*(dcos(latp(4)*pi/180)   &
-     &     -dcos(latp(6)*pi/180)*dcos(latp(5)*pi/180))  /dsin(latp(6)*pi/180)
-      conv_to_cart(3,3)=sqrt(latp(3)**2-conv_to_cart(1,3)**2   &
-     &     -conv_to_cart(2,3)**2)
-      write(*,*)'conv_to_cart has conventional vectors in its columns='
-      call write_out(ulog,' conventional cell(1) =',conv_to_cart(:,1))
-      call write_out(ulog,' conventional cell(2) =',conv_to_cart(:,2))
-      call write_out(ulog,' conventional cell(3) =',conv_to_cart(:,3))
-      r1conv%component=conv_to_cart(:,1)
-      r2conv%component=conv_to_cart(:,2)
-      r3conv%component=conv_to_cart(:,3)
+  conv_to_cart(1,1)=latp(1)
+  conv_to_cart(1,2)=latp(2)*dcos(latp(6)*pi/180)
+  conv_to_cart(2,2)=latp(2)*dsin(latp(6)*pi/180)
+  conv_to_cart(1,3)=latp(3)*dcos(latp(5)*pi/180)
+  conv_to_cart(2,3)=latp(3)*(dcos(latp(4)*pi/180)   &
+  &     -dcos(latp(6)*pi/180)*dcos(latp(5)*pi/180))  /dsin(latp(6)*pi/180)
+  conv_to_cart(3,3)=sqrt(latp(3)**2-conv_to_cart(1,3)**2   &
+  &     -conv_to_cart(2,3)**2)
+  write(*,*)'conv_to_cart has conventional vectors in its columns='
+  call write_out(ulog,' conventional cell(1) =',conv_to_cart(:,1))
+  call write_out(ulog,' conventional cell(2) =',conv_to_cart(:,2))
+  call write_out(ulog,' conventional cell(3) =',conv_to_cart(:,3))
+  r1conv%component=conv_to_cart(:,1)
+  r2conv%component=conv_to_cart(:,2)
+  r3conv%component=conv_to_cart(:,3)
 
-      call make_reciprocal_lattice_2pi(r1conv,r2conv,r3conv,g1conv,g2conv,g3conv)
-      call write_out(ulog,' conventional recip(1) =',g1conv)
-      call write_out(ulog,' conventional recip(2) =',g2conv)
-      call write_out(ulog,' conventional recip(3) =',g3conv)
+  call make_reciprocal_lattice_2pi(r1conv,r2conv,r3conv,g1conv,g2conv,g3conv)
+  call write_out(ulog,' conventional recip(1) =',g1conv)
+  call write_out(ulog,' conventional recip(2) =',g2conv)
+  call write_out(ulog,' conventional recip(3) =',g3conv)
 
 ! prim_to_cart(i,j) is the ith cartesian coordinate of the jth primitive translation vector
-      prim_to_cart=matmul(conv_to_cart,prim_to_conv)
+  prim_to_cart=matmul(conv_to_cart,prim_to_conv)
 
-      r01%component = prim_to_cart(:,1)
-      r02%component = prim_to_cart(:,2)
-      r03%component = prim_to_cart(:,3)
-      call write_out(ulog,'primitive lattice vector #1= ',prim_to_cart(:,1))
-      call write_out(ulog,'primitive lattice vector #2= ',prim_to_cart(:,2))
-      call write_out(ulog,'primitive lattice vector #3= ',prim_to_cart(:,3))
+  r01%component = prim_to_cart(:,1)
+  r02%component = prim_to_cart(:,2)
+  r03%component = prim_to_cart(:,3)
+  call write_out(ulog,'primitive lattice vector #1= ',prim_to_cart(:,1))
+  call write_out(ulog,'primitive lattice vector #2= ',prim_to_cart(:,2))
+  call write_out(ulog,'primitive lattice vector #3= ',prim_to_cart(:,3))
 
-      call make_reciprocal_lattice_2pi(r01,r02,r03,g01,g02,g03)
-      call write_out(ulog,' g01= ' ,g01)
-      call write_out(ulog,' g02= ' ,g02)
-      call write_out(ulog,' g03= ' ,g03)
+  call make_reciprocal_lattice_2pi(r01,r02,r03,g01,g02,g03)
+  call write_out(ulog,' g01= ' ,g01)
+  call write_out(ulog,' g02= ' ,g02)
+  call write_out(ulog,' g03= ' ,g03)
 
- end subroutine transform_input_structure
+end subroutine transform_input_structure
 !-----------------------------------------
 ! subroutine get_components(q,n,i,j,k )  !,g1,g2,g3)
 !! for a given q-vector, it finds its integer components assuming it was
@@ -1104,101 +1089,101 @@ end module ios
 ! k = nint(1+ n(3)* (q.dot.r3)/2/pi )
 !
 ! end subroutine get_components
-
- end module lattice
 !===========================================================
- module atoms_force_constants
+end module lattice
+！******************************************************
+module atoms_force_constants
 ! the type atom_id0 concerns the properties of the primitive unit cell
 ! it s atoms, masses, neighbors, shells and force constants, whereas the
 ! type atomic refers to atoms in the supercell, their displacements and forces.
- use ios
- use force_constants_module
- implicit none
- integer natom_prim_cell,natom_super_cell,maxshells
+  use ios
+  use force_constants_module
+  implicit none
+  integer natom_prim_cell,natom_super_cell,maxshells
 !-------------------------
- type cell_id         ! id of atoms: position within cell, and cell coordinates
-    integer n(3)
-    integer tau
-!    integer at_type
- end type
+  type cell_id         ! id of atoms: position within cell, and cell coordinates
+      integer n(3)
+      integer tau
+  !    integer at_type
+  end type
 !-------------------------
- type shell
+  type shell
     integer no_of_neighbors  ! within that shell
     real(8) rij              ! radius of that shell
     type(cell_id) :: neighbors(296)  ! id of atoms in that shell
- end type
+  end type
 !-------------------------
- type atomic
-!   type(tensor1) u       ! displacement from equilibrium
-!   type(tensor1) force   ! force applied on it
-    type(vector) equilibrium_pos
-    type(cell_id) cell
+  type atomic
+  !   type(tensor1) u       ! displacement from equilibrium
+  !   type(tensor1) force   ! force applied on it
+  type(vector) equilibrium_pos
+  type(cell_id) cell
     INTEGER at_type ! I add this because it's used in subroutine identify_atoms_in_supercell
     real(8) mass
- end type
+  end type
 !-------------------------
- type atom_id0   ! all characteristics of an atom in the primitive central cell
+  type atom_id0   ! all characteristics of an atom in the primitive central cell
     integer at_type
     character name*2
     real(8) mass,charge
     integer nshells       ! how many shells are included=actual dim(shell)
     type(vector) equilibrium_pos !BE CAREFUL WITH vector TYPE
     type(shell), allocatable ::  shells(:)  !0:maxshells)
-!    type(tensor2r), pointer :: phi2(:)  ! refers to atom numbers neighbor of i
-!    type(tensor3), pointer :: phi3(:,:)
-!    type(tensor4), pointer :: phi4(:,:,:)
- end type
+    !    type(tensor2r), pointer :: phi2(:)  ! refers to atom numbers neighbor of i
+    !    type(tensor3), pointer :: phi3(:,:)
+    !    type(tensor4), pointer :: phi4(:,:,:)
+  end type
 !-------------------------
 ! everything with 0 refers to the primitive cell
 
- integer  natom_type
- integer, allocatable:: natom(:),atom_type(:) !label_of_primitive_atoms(:),
-! integer, allocatable:: ncel1(:),ncel2(:),ncel3(:)
-! atompos0 is using reduced unit of conventional lattice vector
- real(8), allocatable:: atompos0(:,:),mas(:),force(:,:,:),displ(:,:,:)
- real(8), allocatable:: forc(:,:),disp(:,:),vel(:,:),cur(:,:)
- character(2), allocatable:: atname(:)
- type (atom_id0), allocatable :: atom0(:)
- type (atomic), allocatable :: atom_sc(:),atom_shl(:)
+  integer  natom_type
+  integer, allocatable:: natom(:),atom_type(:) !label_of_primitive_atoms(:),
+  ! integer, allocatable:: ncel1(:),ncel2(:),ncel3(:)
+  ! atompos0 is using reduced unit of conventional lattice vector
+  real(8), allocatable:: atompos0(:,:),mas(:),force(:,:,:),displ(:,:,:)
+  real(8), allocatable:: forc(:,:),disp(:,:),vel(:,:),cur(:,:)
+  character(2), allocatable:: atname(:)
+  type (atom_id0), allocatable :: atom0(:)
+  type (atomic), allocatable :: atom_sc(:),atom_shl(:)
 
 contains
-
- subroutine allocate_disp_forc(n)  ! needed for the md code
-    integer n
+!======================================================================
+subroutine allocate_disp_forc(n)  ! needed for the md code
+  integer n
 !   allocate( disp(3,n),forc(3,n),vel(3,n),cur(3,n),ncel1(n),ncel2(n),ncel3(n) )
-    allocate( disp(3,n),forc(3,n),vel(3,n),cur(3,n) )
- end subroutine allocate_disp_forc
+  allocate( disp(3,n),forc(3,n),vel(3,n),cur(3,n) )
+end subroutine allocate_disp_forc
 
- subroutine allocate_pos(n,m)
-    integer n,m
+subroutine allocate_pos(n,m)
+  integer n,m
 !   allocate( pos(n,m),force(3,n,m) )
-    allocate( displ(3,n,m),force(3,n,m) )
- end subroutine allocate_pos
+  allocate( displ(3,n,m),force(3,n,m) )
+end subroutine allocate_pos
 
- subroutine allocate_mass(n)
-    integer n
+subroutine allocate_mass(n)
+  integer n
 IF(.NOT.ALLOCATED(mas)) ALLOCATE(mas(n))
 IF(.NOT.ALLOCATED(natom)) ALLOCATE(natom(n))
 IF(.NOT.ALLOCATED(atname)) ALLOCATE(atname(n))
     !allocate( mas(n) ,natom(n), atname(n) )
- end subroutine allocate_mass
+end subroutine allocate_mass
 
- subroutine allocate_primcell(n0)
- integer n0
+subroutine allocate_primcell(n0)
+  integer n0
 !print*,'n0=',n0
 IF(.NOT.ALLOCATED(atom0)) ALLOCATE(atom0(n0))
 IF(.NOT.ALLOCATED(atompos0)) ALLOCATE(atompos0(3,n0))
 IF(.NOT.ALLOCATED(atom_type)) ALLOCATE(atom_type(n0))
 !allocate( atom0(n0),atompos0(3,n0), atom_type(n0) )  !label_of_primitive_atoms(n0),
- end subroutine allocate_primcell
+end subroutine allocate_primcell
 
- subroutine allocate_supercell(n)
+subroutine allocate_supercell(n)
  integer n
  allocate( atom_sc(n) )
- end subroutine allocate_supercell
+end subroutine allocate_supercell
 
 !------------------------------------
- subroutine set_neighbor_list
+subroutine set_neighbor_list
 ! this is needed in order to know what force constants to associate
 ! to a pair ij, or ijk or ijkl
 ! if a neighbor j is known then one can get the vect(i,j) between
@@ -1209,14 +1194,14 @@ IF(.NOT.ALLOCATED(atom_type)) ALLOCATE(atom_type(n0))
  !use lattice
  !use ios
  !use geometry
- implicit none
+  implicit none
 ! integer, parameter :: max=500
- integer i0,j,shel_count,counter,msort(maxatoms),l
- real(8) dist(maxatoms),d_old,d_min,rmax
+  integer i0,j,shel_count,counter,msort(maxatoms),l
+  real(8) dist(maxatoms),d_old,d_min,rmax
 
 ! allocate( atom0(1:natoms0)%shells(maxshells) )
- rmax = 0 ; dist = 1d10
- do i0=1,natoms0
+  rmax = 0 ; dist = 1d10
+  do i0=1,natoms0
     !MARK MODIFIED, bad modification, revised
     IF(ALLOCATED(atom0(i0)%shells)) DEALLOCATE(atom0(i0)%shells)
     allocate( atom0(i0)%shells(0:maxshells) )
@@ -1258,7 +1243,7 @@ IF(.NOT.ALLOCATED(atom_type)) ALLOCATE(atom_type(n0))
        atom0(i0)%shells(shel_count)%neighbors(counter)%n   = iatomcell(:,msort(j))!n1,n2,n3
        write(ulog,*)' ------------------------------------'
        write(ulog,5)' count, j, of tau =',j,msort(j),iatomcell0(msort(j)),   &
-&                                        iatomcell(:,msort(j))
+                      & iatomcell(:,msort(j))
 !      write(ulog,3)' cell (n1,n2,n3) ='
        write(ulog,2)' shell# , neighb# =',shel_count,counter
        write(ulog,6)' neighbor distance=',d_min
@@ -1289,64 +1274,64 @@ IF(.NOT.ALLOCATED(atom_type)) ALLOCATE(atom_type(n0))
 5 format(a,3(2x,i4),' (',i4,2(1x,i4),1x,')')
 6 format(a,2x,g16.7)
 
- end subroutine set_neighbor_list
-
- end module atoms_force_constants
+end subroutine set_neighbor_list
 !============================================================
-!===========================================================
-  module svd_stuff
+end module atoms_force_constants
+!************************************************************
+module svd_stuff
 ! stuff related to Harold's subroutines, mappings and the svd matrices
 
- type groupmatrix
+  type groupmatrix
     real(8), allocatable:: mat(:,:)
     integer, allocatable:: iat(:,:),ixyz(:,:),iatind(:,:),ixyzind(:,:)
- end type groupmatrix
- type fulldmatrix
+  end type groupmatrix
+  
+  type fulldmatrix
     type(groupmatrix), allocatable :: gr(:)
     integer, allocatable:: nt(:),ntind(:),igr(:)
     character(1), allocatable:: err(:)
     integer ngr, ntotind, ntot
- end type fulldmatrix
+  end type fulldmatrix
 
- integer maxrank,maxgroups,itrans,irot,ihuang,enforce_inv
- integer nterms(4),maxterms(4),maxtermsindep(4),ngroups(4)
- integer ndindp(4),ndfull(4)
- parameter(maxrank=4)
- integer, allocatable :: nterm(:),ntermsindep(:)
- integer, allocatable :: iatomtermindep(:,:,:),ixyztermindep(:,:,:)
- integer, allocatable :: iatmtrm(:,:,:),ixyztrm(:,:,:)
- real(8), allocatable :: mapmat(:,:,:)
- !real(8) svdcut,radius(4) !svdcut is already declared in module [params]
- real(8) radius(4)
- integer, allocatable:: iatomterm_1(:,:),ixyzterm_1(:,:),igroup_1(:),map_1(:)
- integer, allocatable:: iatomterm_2(:,:),ixyzterm_2(:,:),igroup_2(:),map_2(:)
- integer, allocatable:: iatomterm_3(:,:),ixyzterm_3(:,:),igroup_3(:),map_3(:)
- integer, allocatable:: iatomterm_4(:,:),ixyzterm_4(:,:),igroup_4(:),map_4(:)
- character(1), allocatable:: err_1(:),err_2(:),err_3(:),err_4(:)
- type(fulldmatrix) map(4)
- real(8), allocatable:: ampterm_1(:),fcs_1(:)
- real(8), allocatable:: ampterm_2(:),fcs_2(:),grun_fc(:)
- real(8), allocatable:: ampterm_3(:),fcs_3(:)
- real(8), allocatable:: ampterm_4(:),fcs_4(:)
- real(8), allocatable:: amat(:,:),bmat(:),sigma(:),fcs(:),ahom(:,:),overl(:,:)
- real(8), allocatable:: a11ia12(:,:),fc1(:)
- real(8), allocatable:: arot(:,:),brot(:),atransl(:,:),ahuang(:,:),aforce(:,:),bforce(:)
- integer inv_constraints,force_constraints,dim_al,dim_ac,n_indep,newdim_al, dim_hom    &
-&        ,transl_constraints, rot_constraints, huang_constraints,ngr
+  integer maxrank,maxgroups,itrans,irot,ihuang,enforce_inv
+  integer nterms(4),maxterms(4),maxtermsindep(4),ngroups(4)
+  integer ndindp(4),ndfull(4)
+  parameter(maxrank=4)
+  integer, allocatable :: nterm(:),ntermsindep(:)
+  integer, allocatable :: iatomtermindep(:,:,:),ixyztermindep(:,:,:)
+  integer, allocatable :: iatmtrm(:,:,:),ixyztrm(:,:,:)
+  real(8), allocatable :: mapmat(:,:,:)
+  !real(8) svdcut,radius(4) !svdcut is already declared in module [params]
+  real(8) radius(4)
+  integer, allocatable:: iatomterm_1(:,:),ixyzterm_1(:,:),igroup_1(:),map_1(:)
+  integer, allocatable:: iatomterm_2(:,:),ixyzterm_2(:,:),igroup_2(:),map_2(:)
+  integer, allocatable:: iatomterm_3(:,:),ixyzterm_3(:,:),igroup_3(:),map_3(:)
+  integer, allocatable:: iatomterm_4(:,:),ixyzterm_4(:,:),igroup_4(:),map_4(:)
+  character(1), allocatable:: err_1(:),err_2(:),err_3(:),err_4(:)
+  type(fulldmatrix) map(4)
+  real(8), allocatable:: ampterm_1(:),fcs_1(:)
+  real(8), allocatable:: ampterm_2(:),fcs_2(:),grun_fc(:)
+  real(8), allocatable:: ampterm_3(:),fcs_3(:)
+  real(8), allocatable:: ampterm_4(:),fcs_4(:)
+  real(8), allocatable:: amat(:,:),bmat(:),sigma(:),fcs(:),ahom(:,:),overl(:,:)
+  real(8), allocatable:: a11ia12(:,:),fc1(:)
+  real(8), allocatable:: arot(:,:),brot(:),atransl(:,:),ahuang(:,:),aforce(:,:),bforce(:)
+  integer inv_constraints,force_constraints,dim_al,dim_ac,n_indep,newdim_al, dim_hom    &
+  &        ,transl_constraints, rot_constraints, huang_constraints,ngr
+
 contains
-
- subroutine set_maxterms
-   maxterms(1)=15
-   maxterms(2)=1200
-   maxterms(3)=10
-   maxterms(4)=10
-   maxtermsindep(1)=5
-   maxtermsindep(2)=30
-   maxtermsindep(3)=10
-   maxtermsindep(4)=10
-   maxgroups=30
- end subroutine set_maxterms
-
-  end module svd_stuff
+!==================================================================
+subroutine set_maxterms
+  maxterms(1)=15
+  maxterms(2)=1200
+  maxterms(3)=10
+  maxterms(4)=10
+  maxtermsindep(1)=5
+  maxtermsindep(2)=30
+  maxtermsindep(3)=10
+  maxtermsindep(4)=10
+  maxgroups=30
+end subroutine set_maxterms
 !============================================================
+end module svd_stuff
 
