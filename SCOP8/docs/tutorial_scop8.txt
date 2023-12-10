@@ -1,0 +1,78 @@
+SCOP8 is a code that to calculate the state of equilibrium of a crystal at a given temperature and
+pressure solely from the set of force constants parameters of the high-symmetry phase. It outputs
+the optimized lattice structure, phonon dispersions and several thermodynamics quantities at given
+temperature.
+
+The scop8 code can be download as a zip file on our github page ALADIN, folder 'SCOP8'.
+
+To install and use the code in Windows, simply follow the steps written in SCOP8 > docs > README.md
+If done correctly, the setups can also let you run FOCEX and other part of ALADYN packages in Windows.
+For Linux environment, you just need to do step 5 and ignore the rest. The Makefile is provided so
+the code can be simply compiled by typing 'make' if step 5 is done correctly.
+
+Now to run SCOP8, you need 9 or 10 files (depends on the choice). 
+The first five files: lat_fc.dat, fc2.dat, fc3.dat, fc4.dat, structure.params should be generated
+from running FOCEX beforehand, they're raw input and should be left as it is.
+
+The control.params is main 'control file' with several options. The first line is whether to
+start with random value for variational parameter strain tensor and atomic displacements. 
+The second line is to choose whether to inherit previous running result. If set to 'True', this
+means that this run will start with variational parameters values from the file 'targetInitialize.dat'.
+So be sure to have this file in current path while turning this option on. Notice that the file
+'targetInitialize.dat' itself is also the OUTPUT of SCOP8.
+The third line is whether to include pressure factor, the stress tensor matrix can be customized
+through line 10 to line 12.
+The fourth line is whether to force acoustic sum rule in effective force constants K, after each 
+Broyden iteration. This option should be left off since acoustic sum rule should be automatically
+preserved in K given proper input fc2, fc3 and fc4 values.
+The fifth line is whether to use high temperature approximation when dealing with soft 
+modes. If this is turned on, the default strategy of manually shifting all negative eigenvalues up
+will be skipped, instead the high temperature limit will be employed for and only for negative 
+eigenvalues.
+The sixth line only matters if you set the first line true as it's the seed value for random number.
+The seventh line and eighth line are for loop control, they are max iteration number and pmix value.
+Notice that pmix value should always be negative.
+The nineth line is temperature in Kelvin decided by user.
+The 13th and 14th line are for freeze or release certain variational parameters. 13th line defines
+how many variational parameters you want to freeze or release. If it's a positive number X, it means
+X variational parameters in total will be fixed. If it's a negative number -X, it means X variational
+parameters in total will be freed. 14th line should list of all the indexes of these X variational
+parameters. The index is also the line number in file 'targetInitialize.dat', so it's very easy to
+modify and compare.
+
+The dielectric.params contains dielectric and born charge values, these should be treated as raw 
+data just like the lat_fc.dat, etc. There is usually no need to change the values.
+
+The kpbs.params file define the q-point path for band dispersion plot. The first line can be set to
+0 or 1 where 0 means conventional lattice and 1 means primitive lattice. The second line is the number
+of k points along each direction and the third line is the number of directions for the band plot.
+The following lines should be input with format of special q point label(G, K, L, X, etc) followed by
+its 3d coordinates.
+
+The params.phon is another control file but mostly deprecated. The only really active line is the first
+line which defines the size of k point mesh.
+
+Come to output files, most of them can be ignored as checking or logging related, or simply legacy
+output that should be deprecated. 
+
+convergence.dat keeps record of  free energy value and L1 norm of all gradients at each iteration
+
+Dispersion.dat, dos_gauss.dat, dos_tet.dat, dos2_tet.dat are for plotting the corresponding 
+quantities as the file name implies.
+
+eigenvalues.dat usually will print nothing unless there are negative eigenvalues a.k.a soft modes,
+it will record the minimum eigenvalues if it is negative at each iteration.
+
+GradientF.dat is the history of every variational parameter values and its free energy gradients
+values at every iteration, the FinalGradientF.dat is just these of the last iteration for convenience,
+since GradientF.dat is usually a large file with too many iterations.
+
+targetInitialize.dat, as explained previously, is the main output file that lists final values for
+all the variational parameters. It also serves as a customizable input file if user choose to set
+the 2nd line of control.params to True.
+
+Most runtime information can either be found in logfile.txt or output.txt, the latter could be a
+large file with too many iterations.
+
+Some thermodynamics properties of interest might be printed out in result.txt, but it's still under
+modification and not in its final format.

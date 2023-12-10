@@ -41,7 +41,7 @@
 - <iteration_parameters.in> is <u>user defined</u> input file, what every line does is noted directly in the sample file
 - <kpbs.in> is <u>user defined</u> input file. It is only for post process, gives the high symmetry k point path that user chooses to calculate phonon dispersion, etc
 - <targetInitialize.dat> is both <u>user defined</u> input file and code's output file. Can be used to manually assign initial values to corresponding variational parameters. When a run finishes, it will be updated as the optimized variational parameters at this temperature.
-
+- for a detailed explanation on input file, please refer to 'tutorial_scop8.txt'
 ---
 
 #### Output Files Explanation
@@ -60,7 +60,7 @@
 
 #### How to Install/Compile Code on Windows(UPDATE: vscode)
 
-1. Install Visual Studio Code (download [here](https://code.visualstudio.com/download)). This is the ultimate all-in-one code development environment for Windows. Not only it's compatible and can switch with one click among C++, Python, Java, Fortran,...etc, it can also be integrated with Git, MinGW bash, WSL for Linux subsystem, Jupyter Notebook, PDF Reader and more. I strongly recommend using it for coding.
+1. Install Visual Studio Code (download [here](https://code.visualstudio.com/download)). This is the ultimate all-in-one code development environment for Windows. Not only it's compatible and can switch with one click among C++, Python, Java, Fortran,...etc, it can also be integrated with Git, MinGW bash, WSL for Linux subsystem, SSH-remote connection, Jupyter Notebook, PDF Reader and more. I strongly recommend using it for coding.
 
 2. Install the latest MinGW (download [here](https://sourceforge.net/projects/mingw/)). I suggest installing it on C drive. Notice that you may later need download extra package via 'mingw-get', it's located in C:\MinGW\bin\mingw-get.exe
 

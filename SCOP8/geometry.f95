@@ -996,7 +996,7 @@ subroutine warn(unt)
   end subroutine warn
 
 end module ios
-！********************************************************************
+!********************************************************************
 module lattice
  
   use geometry
@@ -1091,7 +1091,7 @@ end subroutine transform_input_structure
 ! end subroutine get_components
 !===========================================================
 end module lattice
-！******************************************************
+!******************************************************
 module atoms_force_constants
 ! the type atom_id0 concerns the properties of the primitive unit cell
 ! it s atoms, masses, neighbors, shells and force constants, whereas the
