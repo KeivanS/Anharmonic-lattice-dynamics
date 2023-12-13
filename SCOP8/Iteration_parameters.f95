@@ -9,6 +9,7 @@ MODULE Iteration_parameters
     INTEGER :: max_it_number,indie_fc2
     REAL(8) :: temperature,tolerance2,danger
     REAL(8) :: my_pmix !for user input
+    REAL(8) :: rand_range, rand_center(3) !for user input
     INTEGER,DIMENSION(:),ALLOCATABLE :: fixed_params
     REAL(8),ALLOCATABLE :: atomic_deviation(:,:),strain(:,:) !atomic_deviation(xyz,atom_type),strain(xyz,xyz)
     REAL(8),ALLOCATABLE :: atomic_deviation_sav(:,:),strain_sav(:,:)
@@ -150,9 +151,9 @@ CONTAINS
         REAL(8) :: x(3)
         !randomize strain eta
         CALL srand(seed)
-        strain(:,1) = strain(:,1) + 0.02*(/rand(),rand(),rand()/)-(/0.01,0.01,0.01/)
-        strain(:,2) = strain(:,2) + 0.02*(/rand(),rand(),rand()/)-(/0.01,0.01,0.01/)
-        strain(:,3) = strain(:,3) + 0.02*(/rand(),rand(),rand()/)-(/0.01,0.01,0.01/)
+        strain(:,1) = strain(:,1) + rand_range*(/rand()-0.5,rand()-0.5,rand()-0.5/)+rand_center
+        strain(:,2) = strain(:,2) + rand_range*(/rand()-0.5,rand()-0.5,rand()-0.5/)+rand_center
+        strain(:,3) = strain(:,3) + rand_range*(/rand()-0.5,rand()-0.5,rand()-0.5/)+rand_center
 
         !randomize atomic deviation utau
         CALL RANDOM_NUMBER(x)
@@ -334,7 +335,9 @@ CONTAINS
         READ(unit_number,*) highT_limit !whether use high temperature limit in <yy> calculation
 !        READ(unit_number,*) tolerance2 !modified 11/10/2023
         tolerance2 = 0.0001
-        READ(unit_number,*) seed
+        READ(unit_number,*) seed !seed to generate random number
+        READ(unit_number,*) rand_range !range to generate random number
+        READ(unit_number,*) rand_center !center to generate random number 
         READ(unit_number,*) max_it_number
         READ(unit_number,*) my_pmix
         READ(unit_number,*) temperature

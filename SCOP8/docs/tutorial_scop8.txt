@@ -21,7 +21,7 @@ means that this run will start with variational parameters values from the file 
 So be sure to have this file in current path while turning this option on. Notice that the file
 'targetInitialize.dat' itself is also the OUTPUT of SCOP8.
 The third line is whether to include pressure factor, the stress tensor matrix can be customized
-through line 10 to line 12.
+through line 12 to line 14.
 The fourth line is whether to force acoustic sum rule in effective force constants K, after each 
 Broyden iteration. This option should be left off since acoustic sum rule should be automatically
 preserved in K given proper input fc2, fc3 and fc4 values.
@@ -29,14 +29,15 @@ The fifth line is whether to use high temperature approximation when dealing wit
 modes. If this is turned on, the default strategy of manually shifting all negative eigenvalues up
 will be skipped, instead the high temperature limit will be employed for and only for negative 
 eigenvalues.
-The sixth line only matters if you set the first line true as it's the seed value for random number.
-The seventh line and eighth line are for loop control, they are max iteration number and pmix value.
+The sixth to eighth line only matters if you set the first line true. If this is the case, then 
+the sixth, seventh, eighth line are the seed, range and center to generate random number. 
+The nineth line and tenth line are for loop control, they are max iteration number and pmix value.
 Notice that pmix value should always be negative.
-The nineth line is temperature in Kelvin decided by user.
-The 13th and 14th line are for freeze or release certain variational parameters. 13th line defines
+The 11th line is temperature in Kelvin decided by user.
+The 15th and 16th line are for freeze or release certain variational parameters. 15th line defines
 how many variational parameters you want to freeze or release. If it's a positive number X, it means
 X variational parameters in total will be fixed. If it's a negative number -X, it means X variational
-parameters in total will be freed. 14th line should list of all the indexes of these X variational
+parameters in total will be freed. 16th line should list of all the indexes of these X variational
 parameters. The index is also the line number in file 'targetInitialize.dat', so it's very easy to
 modify and compare.
 
