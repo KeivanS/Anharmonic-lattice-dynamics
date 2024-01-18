@@ -23,6 +23,7 @@ MODULE Iteration_parameters
     LOGICAL :: forceK_asr = .False.
     LOGICAL :: highT_limit = .False.
     REAL(8) :: stress(d,d) !for pressure test
+    CHARACTER path_out*29  !UPDATE: for output path
 
 CONTAINS
 !--------------------------------------------------------------------------------------------
@@ -174,7 +175,8 @@ CONTAINS
         INTEGER :: i,idx
         INTEGER :: atom1,atom2,xyz1,xyz2
         REAL(8) :: temp
-
+        
+        !NOTE: not path output
         OPEN(21,FILE='targetInitialize.dat',STATUS='old',ACTION='read')
 
         !initialize utau, one vector/atom per line
@@ -323,6 +325,9 @@ CONTAINS
 
         INTEGER :: unit_number,n,i,j
         INTEGER,DIMENSION(:),ALLOCATABLE :: free_params
+
+        !UPDATE: for path output initialize
+        path_out = 'output/'
 
         unit_number = 60
 !        OPEN(unit_number,file='iteration_parameters.in',status='old',action='read')

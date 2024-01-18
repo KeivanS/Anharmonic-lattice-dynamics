@@ -99,25 +99,19 @@ MODULE check
     END SUBROUTINE small_test_ex
 !---------------------------------------------------------------------------------------------------------
     !after assign i, j make the rest of strain and atomic deviation to be rhom symmetry
-    SUBROUTINE rhom_symmetrize
+    SUBROUTINE extra_symmetrize
         IMPLICIT NONE
         INTEGER :: i,j
+        strain(2,2) = strain(1,1)
 
-        DO i=1,3
-            atomic_deviation(i,2) = atomic_deviation(1,2) !utau_2^x
-        DO j=1,3
-            IF(i.eq.j) THEN
-                strain(i,j) = strain(1,1) !eta^xx
-            ELSE
-                strain(i,j) = strain(1,2) !eta^xy
-            END IF
-        END DO
-        END DO
-
-    END SUBROUTINE rhom_symmetrize
+    END SUBROUTINE extra_symmetrize
 !---------------------------------------------------------------------------------------------------------
-    !just for rhom test, so i,j values are limited to {4,7,8} which stands for utau_2^x,eta^xx, eta^xy
     SUBROUTINE rhom_contour(i,j,step1,step2,many)
+    !! for structure validation contour plot
+    !! i, j are variational parameter indexes and should be limited to u0, eta. No K allowed
+    !! turn on the 'inherit' option to use it
+    !! x(i), x(j) will scan with range 2*step1*many, 2*step2*many; 
+    !! centered at x(i), x(j)'s original value
         IMPLICIT NONE
 
         INTEGER,INTENT(IN):: many,i,j ! how many steps,x(i),x(j)
@@ -127,13 +121,16 @@ MODULE check
         REAL(8) :: rollback
         CHARACTER name*8
 
+        CALL initiate_yy(kvector) !no K allowed to move, these are constant
+        CALL GetF0_and_V0 !no K allowed to move, these are constant
+
         WRITE(name,'(i2,a,i2)') i,'_to_',j
         OPEN(517,FILE='gradient_vs_x_'//name//'.dat',POSITION='append')
         OPEN(518,FILE='energy_vs_x_'//name//'.dat',POSITION='append')
 
         CALL assign_x(i,-many*step1) !initialize x_i to starting point: -many*step1
         CALL assign_x(j,-many*step2) !initialize x_j to starting point: -many*step2
-        CALL rhom_symmetrize
+        CALL extra_symmetrize !to force eta^xx = eta^yy, very specific need to generalize
 
         !outer loop: iterate x(i)
         DO idx=1,many*2
@@ -146,9 +143,8 @@ MODULE check
                 CALL assign_x(j,step2)
                 rollback = rollback + step2
 
-                CALL rhom_symmetrize
-!                CALL updateK !for inherited run, turn this off
-                CALL GetF_trial_And_GradientF_trial(kvector) !it automatically diagonalize new K, calculate F
+                CALL extra_symmetrize !to force eta^xx = eta^yy, very specific need to generalize
+                CALL GetF_trial_And_GradientF_trial2(kvector)  !placeholder
 
                 CALL collect_xf(x,f)
                 WRITE(517,*) x(i),x(j),f(i),f(j)

@@ -50,7 +50,7 @@ Module VA_math
 
     REAL(8) :: reserve
     REAL(8) :: bulk_test
-
+   
     CONTAINS
 !=========================================FOR INITIAL GUESS=======================================================
     SUBROUTINE initiate_guess
@@ -347,6 +347,224 @@ cputime_2 = cputime
 endif
 7 format(a,f10.8)
     END SUBROUTINE GetF_trial_And_GradientF_trial
+!================================================================================================================
+    SUBROUTINE GetEigen_np(kvector)
+    !!to Fourier transform trial force constant K into 'trialffc2_value'
+    !!then diagonalize trial force constant K dynamic matrix 'trialffc2_matrix'
+    !!call subroutines in MatrixDiagonalize module
+        IMPLICIT NONE
+            TYPE(vector),INTENT(IN) :: kvector(:)
+            TYPE(ffc2_value),DIMENSION(:,:,:),ALLOCATABLE :: trialffc2_value
+            COMPLEX(8),ALLOCATABLE::trialffc2_matrix(:,:),temp(:,:)
+            COMPLEX(8),ALLOCATABLE :: vec_test(:,:),vec_test2(:,:),test(:,:),test2(:,:)
+            REAL(8) :: limit,val_test(2),qp(d)
+            INTEGER :: i,j,k,l,atom1,atom2,R1,R2,tau1,tau2,la
+            INTEGER :: n,ier,nv,k_number,ndim
+
+            !---------for test---------
+            INTEGER :: test_i,test_j
+            INTEGER :: test_l,test_temp
+            COMPLEX(8) :: test_sum
+            REAL(8) :: test_diff_r,test_diff_i
+            REAL(8) :: time1, time2
+            !--------------------------
+
+            i=0;k=0;k_number=SIZE(kvector)
+            ALLOCATE(trialffc2_value(atom_number,atom_number,k_number))
+            ALLOCATE(trialffc2_matrix(d*atom_number,d*atom_number),temp(d*atom_number,d*atom_number))
+!****
+!ALLOCATE(test(2,2),vec_test(2,2))
+!****
+
+            trialffc2_matrix=0
+
+!initialize trialffc2_value as zero, so that we can directly calculate from arbitrarily given trialfc2_value
+            Do while(k<k_number)
+            k=k+1
+            DO i=1,SIZE(myfc2_index)
+                !get the R, tau,atom indexes of every fc2
+                atom1=myfc2_index(i)%iatom_number !atom index, that's basically R*tau
+                atom2=myfc2_index(i)%jatom_number
+                R1=every_atom(atom1)%type_R       !cell_vec index,which is the R index
+                R2=every_atom(atom2)%type_R
+                tau1=every_atom(atom1)%type_tau   !atom type index, which is the tau index
+                tau2=every_atom(atom2)%type_tau
+                trialffc2_value(tau1,tau2,k)%FFC_D=0
+            END DO !i loop
+            End Do !k loop
+
+            k=0;i=0
+            n=d*atom_number
+            nv=d*atom_number
+            ier=0
+CALL CPU_TIME(time1)
+        Do k=1,SIZE(kvector)
+!------------------------------my old codes, without born but faster------------------------------
+!            DO i=1,atom_number
+!                tau1=i
+!            DO j=1,tot_atom_number
+!                tau2=every_atom(j)%type_tau
+!                R2=every_atom(j)%type_R
+!                trialffc2_value(tau1,tau2,k)%FFC_D = trialffc2_value(tau1,tau2,k)%FFC_D+&
+!                &trialfc2_value(tau1,j)%phi*EXP(ci*(kvector(k).dot.cell_vec(:,R2)))/&
+!                &SQRT(iatom(tau1)%mass*iatom(tau2)%mass)
+!            END DO !j loop
+!            END DO !i loop
+!
+!!we have every value for trialffc2, now need to put it into matrix form: trialffc2_matrix(d*atom_number,d*atom_number)
+!!!!NOTICE: trialffc2_matrix has to be an Hermitian!
+!            Do i=1,d*atom_number
+!              Do j=1,i
+!
+!                IF(MOD(i,d).eq.0) THEN
+!                    IF(MOD(j,d).eq.0) THEN
+!                        trialffc2_matrix(i,j)=trialffc2_value(INT(i/d),INT(j/d),k)%FFC_D(d,d)
+!                    ELSE
+!                        trialffc2_matrix(i,j)=trialffc2_value(INT(i/d),INT(j/d+1),k)%FFC_D(d,MOD(j,d))
+!                    END IF
+!                ELSE
+!                    IF(MOD(j,d).eq.0) THEN
+!                        trialffc2_matrix(i,j)=trialffc2_value(INT(i/d+1),INT(j/d),k)%FFC_D(MOD(i,d),d)
+!                    ELSE
+!                        trialffc2_matrix(i,j)=trialffc2_value(INT(i/d+1),INT(j/d+1),k)%FFC_D(MOD(i,d),MOD(j,d))
+!                    END IF
+!                END IF
+!
+!              End Do
+!            End Do
+!---------------------------------------------------------------------------------------------------
+!*********************added born correction to every trialffc2_value*********************
+!notes: calculate dynmat & ddyn by <calculate_dynmat> then call <nonanal> to
+!add born correction, then let trialffc2_matrix(i,j) equal to new dynmat(i,j)
+            qp = kvector(k)%component(:)
+            ndim = atom_number*d
+            CALL calculate_dynmat(qp)
+            !comment the if clause to turn off born term
+            !problem at gamma point
+            IF (k.ne.1) THEN
+                CALL nonanal(qp,dynmat,ndim,ddyn)
+            END IF
+            DO i=1,ndim
+                DO j=1, i
+                    trialffc2_matrix(i,j)=dynmat(i,j)
+                END DO !j loop
+            END DO !i loop
+
+!eigenvalue = 0d0 problem check POSITION 1
+!OPEN(75,FILE='DynamicMat.dat',STATUS='unknown',POSITION='append',ACTION='write')
+!IF(k.eq.1) THEN
+!    WRITE(75,*)'current iteration # ',iter_rec
+!    WRITE(75,*)'gamma point dynamic matrix:'
+!    DO j=1,ndim
+!        WRITE(75,5) REAL(trialffc2_matrix(:,j))
+!    END DO
+!END IF
+!CLOSE(75)
+!!***********************************************************************************
+
+
+!Force Hermitian: fill  in the rest with corresponding conjg
+            DO i=1,d*atom_number-1
+                DO j=i+1,d*atom_number
+                    trialffc2_matrix(i,j)=CONJG(trialffc2_matrix(j,i))
+                END DO
+            END DO
+
+!fix rounding error or machine error
+!maybe this causes the problem of eigenvalue = 0d0?
+!            limit=danger
+!            DO i=1,d*atom_number
+!                DO j=1,d*atom_number
+!                    IF(ABS(trialffc2_matrix(i,j)).lt.limit) THEN
+!                        trialffc2_matrix(i,j)=0
+!                    END IF
+!                END DO
+!            END DO
+
+!eigenvalue = 0d0 problem check POSITION 2
+!OPEN(75,FILE='DynamicMat.dat',STATUS='unknown',POSITION='append',ACTION='write')
+!IF(k.eq.1) THEN
+!    WRITE(75,*)'gamma point dynamic matrix AFTER:'
+!    DO j=1,ndim
+!        WRITE(75,5) REAL(trialffc2_matrix(:,j))
+!    END DO
+!END IF
+!CLOSE(75)
+!****************************
+DO i=1,ndim
+DO j=1, ndim
+dynmat(i,j) = trialffc2_matrix(i,j)
+dynmat_record(i,j,k) = dynmat(i,j)
+END DO !
+END DO !for test, no other uses
+!****************************
+
+!use module zhegv to diagonalize trialffc2_matrix for this k, and get eivecs(:,:,k), eivals(:,k)
+
+
+            CALL diagonalize(n,trialffc2_matrix,eivals(:,k),nv,eivecs(:,:,k),ier)
+
+!a subroutine to transpose eivecs(atom_type*direction,lambda,k) to eivecs_t(lambda,atom_type*direction,k)
+            CALL dagger_eigen(eivecs(:,:,k),eivecs_t(:,:,k))
+
+!--------------------check consistency-----------------------
+!OPEN(71,FILE='dynmat_check.dat',STATUS='unknown',ACTION='write')
+!IF(k.eq.1) THEN
+!    WRITE(71,*)
+!    WRITE(71,*)'iteration # ',iter_rec
+!    WRITE(71,*)'=====dynamic matrix index i,j,at which k vector,difference of &
+!&<from fc2 fourier transform> vs <revert by multiply eigenvec with eigenval>'
+!END IF
+!DO test_i=1,ndim
+!DO test_j=1,ndim
+!    test_sum = CMPLX(0d0,0d0)
+!    DO test_l=1,ndim !sum all lambda, for any given (i,j)
+!        test_sum = test_sum + eivecs(test_i,test_l,k)*eivecs_t(test_l,test_j,k)*eivals(test_l,k)
+!    END DO
+!    IF(k.eq.1) THEN
+!        test_diff_r = ABS(REAL(dynmat(test_i,test_j))-REAL(test_sum))
+!        test_diff_i = ABS(AIMAG(dynmat(test_i,test_j))-AIMAG(test_sum))
+!        WRITE(71,9)'real part',test_i,test_j,k,test_diff_r
+!        WRITE(71,9)'imaginary part',test_i,test_j,k,test_diff_i
+!    END IF
+!    IF(test_diff_r.gt.1d-15) THEN
+!        WRITE(71,*)'real part not match'
+!        WRITE(71,8)test_i,test_j,k,test_diff_r
+!        WRITE(71,*)
+!    ELSEIF(test_diff_i.gt.1d-15) THEN
+!        WRITE(71,*)'imaginary part not match'
+!        WRITE(71,8)test_i,test_j,k,test_diff_i
+!        WRITE(71,*)
+!    END IF
+!END DO
+!END DO
+!CLOSE(71)
+!------------------------------------------------------------
+
+            End Do !k loop
+
+CALL CPU_TIME(time2)
+WRITE(*,*) time1, time2, time2-time1
+
+        DEALLOCATE(trialffc2_matrix)
+        DEALLOCATE(trialffc2_value)
+        !CLOSE(56)
+
+!****
+!test(1,1)=1d0;test(1,2)=2d0;test(2,1)=2d0;test(2,2)=3d0
+!CALL diagonalize(2,test,val_test,2,vec_test,ier)
+!OPEN(74,FILE='simple_matCheck.dat',STATUS='unknown',ACTION='write')
+!WRITE(74,*) 'Eigenvalues:',val_test
+!WRITE(74,*) 'First Eigenvector:',vec_test(1,:)
+!WRITE(74,*) 'Second Eigenvector:',vec_test(2,:)
+!****
+!WRITE(*,*) 'eigenvector(:,3,1): ', eivecs(:,3,1)
+5 format(6(G16.7,2X))
+6 format(2i5,99(1x,g10.4))
+7 format((1X,F8.6,A,F8.6,A,2X))
+8 format(3(I4,2X),G16.7)
+9 format(A,3(I4,2X),G16.7)
+    END SUBROUTINE GetEigen_np
 !================================================================================================================
     SUBROUTINE GetEigen(kvector)
     !!to Fourier transform trial force constant K into 'trialffc2_value'
@@ -655,7 +873,7 @@ endif
                 !V0 = V0+0.5*100*h_plank*c_light*temperature !classic
             END DO !k loop
         END DO !i loop
-        !energy unit is ev
+        !NOTE: energy unit is ev
         F0=F0/SIZE(kvector)/ee
         V0=V0/SIZE(kvector)/ee
     END SUBROUTINE GetF0_and_V0
@@ -683,8 +901,9 @@ SUBROUTINE initiate_yy(kvector)
     gthb = 41
 
     if (mpi_rank==0) then
-    OPEN(unitnumber,FILE='eigenvalues.dat',STATUS='unknown',ACTION='write',POSITION='append')
-    OPEN(gthb,FILE='eigenvectors.dat',STATUS='unknown',ACTION='write')
+    !UPDATE: path output
+    OPEN(unitnumber,FILE=trim(path_out)//'eigenvalues.dat',STATUS='unknown',ACTION='write',POSITION='append')
+    OPEN(gthb,FILE=trim(path_out)//'eigenvectors.dat',STATUS='unknown',ACTION='write')
 !    OPEN(47,FILE='Y_square.dat',STATUS='unknown',ACTION='write',POSITION='append')
 
     WRITE(unitnumber,*)
@@ -702,8 +921,7 @@ SUBROUTINE initiate_yy(kvector)
     k_number = SIZE(kvector)
     CALL GetEigen(kvector)!get eigenvalues from dynmat
 
-    CALL HandleSmallEigen !NOTE: temporary check
-
+    CALL HandleSmallEigen !HACK: NOTE: temporary check
     !**** fix if there is any negative eigenvalues based on input fc2 ****
     !*(old)if there are negative eigenvalues but larger than the threshold, just shift will be fine
     !*(1)if there are negative eigenvalues: drop Broyden values, manual update trialfc2 = 2*GradientVCor
@@ -725,7 +943,7 @@ SUBROUTINE initiate_yy(kvector)
     neg_lambda = 0; neg_k = 0 !don't forget to initialize them to be 0 as a flag(no too negative eival)
 outer:    DO k=1,SIZE(eivals,dim=2)
         DO l=1,SIZE(eivals,dim=1)
-
+write(unitnumber,*)'k=',k,'l=',l,eivals(l,k)
             !below is used for the initial guess generation
             !find the most negative eigenvalue's lambda and k
             IF(min_eivals.lt.-1d-5) THEN
@@ -745,7 +963,7 @@ outer:    DO k=1,SIZE(eivals,dim=2)
 !                WRITE(unitnumber,*)'eigenvalue=',eivals(l,k)
 
             END IF
-            WRITE(33,*) 'percentage of negative eigenvalues',1d0*counter/k_number/atom_number/3
+            ! WRITE(33,*) 'percentage of negative eigenvalues',1d0*counter/k_number/atom_number/3
             !print out gamma point eigenvectors record
             if (mpi_rank==0) then
             IF(k.eq.1) THEN
@@ -879,7 +1097,8 @@ SUBROUTINE CheckFixEigen
 
     if (mpi_rank==0) then
     WRITE(*,*) min_eivals
-    OPEN(unitnumber,FILE='eigenvalues.dat',STATUS='unknown',ACTION='write',POSITION='append')
+    !UPDATE: path output
+    OPEN(unitnumber,FILE=trim(path_out)//'eigenvalues.dat',STATUS='unknown',ACTION='write',POSITION='append')
     WRITE(unitnumber,*) 'eigenvalues 1st check not passed, enter fixing routing (1)'
     WRITE(unitnumber,*) 'After manual update trialfc2 = 2*GradientVCor*...'
     endif
@@ -926,9 +1145,18 @@ SUBROUTINE HandleSmallEigen
             eivals(l,k) = SIGN(sqrt(delta + eivals(l,k)**2), eivals(l,k))
         END IF
     END DO
-    END DO    
+    END DO
+
+    ! WRITE(71,*) '=================AFTER==================='
+    ! DO k=1,SIZE(eivals, dim=2)
+    ! DO l=1,SIZE(eivals, dim=1)
+    !     IF(eivals(l,k).lt.1d-4) THEN
+    !         WRITE(71,6) l, k, eivals(l,k)
+    !     END IF
+    ! END DO
+    ! END DO
     6 FORMAT(2(I4,4x),(G16.10))
-    ! CLOSE(71)
+    CLOSE(71)
 END SUBROUTINE HandleSmallEigen
 !--------------------------------------------------------------------------------------------
 SUBROUTINE CheckFixEigenAgain
@@ -949,7 +1177,8 @@ SUBROUTINE CheckFixEigenAgain
 
     if (mpi_rank==0) then
     WRITE(*,*) min_eivals
-    OPEN(unitnumber,FILE='eigenvalues.dat',STATUS='unknown',ACTION='write',POSITION='append')
+    !UPDATE: path output
+    OPEN(unitnumber,FILE=trim(path_out)//'eigenvalues.dat',STATUS='unknown',ACTION='write',POSITION='append')
     WRITE(unitnumber,*) 'eigenvalues 2nd check not passed, enter fixing routing (2)'
     WRITE(unitnumber,*) 'After rollback to prev_trial_fc2(freeze eff fc2)...'
     endif
@@ -3534,18 +3763,6 @@ WRITE(34,*)'cell_vec',cell_vec(:,R2)
 STOP
 END IF
 
-!DEBUG_b:
-! foo = hbar/2/SQRT(eivals(l,k))/SQRT(iatom(tau1)%mass*iatom(tau2)%mass)/SQRT(ee*1d20*uma)*&
-! &(2*n_qlambda(l,k)+1)*&
-! &eivecs(temp1,l,k)*eivecs_t(l,temp2,k)*EXP(-ci*(kvector(k).dot.cell_vec(:,R2)))*1d20
-! IF(REAL(foo).gt.100d0) THEN
-!     WRITE(79,*) 'abnormal iter: ', iter
-!     WRITE(79,*) 'group: acoustic, regular formula'
-!     WRITE(79,8) 'l=',l,'k=',k,'large term:',foo
-! END IF
-! foo = 0d0
-!DEBUG_f.
-
         END DO !k loop
         END DO !l loop, acoustic
 
@@ -3854,7 +4071,8 @@ END IF
         ALLOCATE(freq(d*atom_number,SIZE(kp_bs,DIM=2)))
 
         unit_number=78
-        OPEN(unit_number,FILE='Dispersion.dat',STATUS='Unknown',ACTION='write')
+        !UPDATE: path output
+        OPEN(unit_number,FILE=trim(path_out)//'Dispersion.dat',STATUS='Unknown',ACTION='write')
 
         DO i=1,SIZE(kp_bs,DIM=2)
             CALL Get_SKfreq(i,freq(:,i))
@@ -6445,7 +6663,8 @@ END SUBROUTINE FixASR2
         CHARACTER(10) :: flag
 
         checkF = 199
-        OPEN(checkF,FILE='FinalGradientF.dat',STATUS='unknown',ACTION='write')
+        !UPDATE: path output 
+        OPEN(checkF,FILE=trim(path_out)//'FinalGradientF.dat',STATUS='unknown',ACTION='write')
         WRITE(checkF,*)'current interation #:',iter_rec
         WRITE(checkF,*)'temperature=',temperature*c_light*h_plank*100/k_b
         WRITE(checkF,*)'F0=', F0
@@ -6580,7 +6799,8 @@ END SUBROUTINE FixASR2
         INTEGER :: i,j
         INTEGER :: atom1,atom2,xyz1,xyz2
 
-        OPEN(21,file='targetInitialize.dat',status='unknown',action='write')
+        !UPDATE: path output
+        OPEN(21,file=trim(path_out)//'targetInitialize.dat',status='unknown',action='write')
         !output utau, one vector/atom per line
         DO i=1,atom_number
             WRITE(21,*) atomic_deviation(:,i)
@@ -6763,7 +6983,7 @@ END SUBROUTINE FixASR2
     SUBROUTINE calc_gruneisen
     !!calculate gruneisen
         IMPLICIT NONE
-        INTEGER :: i,j
+        INTEGER :: i,j,k,l
         INTEGER,ALLOCATABLE :: mp(:)
         REAL(8),ALLOCATABLE :: sorted(:)
         REAL(8) :: cv, gama, bulk, volume
@@ -6776,7 +6996,8 @@ END SUBROUTINE FixASR2
         CALL make_kp_bs !new kp_bs
         CALL allocate_eig_bs(ndyn,nkp_bs,ndyn)
         CALL get_frequencies(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,ndyn,eigenvec_bs,veloc)
-        OPEN(644,file='path_grun.dat',status='unknown')
+        !UPDATE: path output
+        OPEN(644,file=trim(path_out)//'path_grun.dat',status='unknown')
         CALL gruneisen(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,eigenvec_bs,644,grun_bs)
 
         CLOSE(644)
@@ -6784,7 +7005,8 @@ END SUBROUTINE FixASR2
         ALLOCATE(mp(ndyn),sorted(ndyn))
         mp = 0; sorted = 0d0
 
-        OPEN(106,FILE='Dispersion_grun.dat',STATUS='unknown')
+        !UPDATE: path output
+        OPEN(106,FILE=trim(path_out)//'Dispersion_grun.dat',STATUS='unknown')
         DO i=1,SIZE(grun_bs,dim=2)
             CALL sort(ndyn,REAL(grun_bs(:,i)), mp,ndyn) !crucial
             DO j=1,ndyn
@@ -6812,8 +7034,8 @@ END SUBROUTINE FixASR2
 !        CALL get_frequencies(nibz,kibz,dkc,ndyn,eivalibz,ndyn,eivecibz,velocibz)
 !        DEALLOCATE(dkc)
 
-
-        OPEN(645,file='all_grun.dat',status='unknown')
+        !UPDATE: path output
+        OPEN(645,file=trim(path_out)//'all_grun.dat',status='unknown')
 
         CALL gruneisen(nkc,kpc,dkc,ndyn,eigenval,eigenvec,645,grun)
 
@@ -6825,20 +7047,21 @@ END SUBROUTINE FixASR2
 !        CALL subst_eivecs(ndyn,nkc,eigenval,eigenvec,kpc,npos,mappos)
 
         CALL gruneisen_fc
-
-        OPEN(646,file='thermal.dat',status='unknown')
+        
+        !UPDATE: path output
+        OPEN(646,file=trim(path_out)//'thermal.dat',status='unknown')
 
         CALL calculate_thermal(nkc,wk,ndyn,eigenval,grun,tmin,tmax,646,veloc)
-
         CALL my_thermal(cv,gama)
         CALL my_bulk(bulk)
-
         CALL calculate_volume(r1,r2,r3,volume)
-
+        WRITE(33,*) 'temperature:', temperature*(100*h_plank*c_light)/k_b
+        WRITE(33,*) 'current eta_xx:', strain(1,1)
+        WRITE(33,*) 'current volume', volume
         WRITE(33,*) 'my calculated gruneisen:',gama
-        WRITE(33,*) 'my calculated specific heat:',cv
         WRITE(33,*) 'my calculated bulk modulus:',bulk
         WRITE(33,*) 'calculated beta = ', cv*gama/bulk/volume/ee/n_avog*atom_number !because Cv is per mole
+        WRITE(33,*) 'my calculated specific heat:',cv
 
         CLOSE(646)
         DEALLOCATE(grun)
@@ -6849,7 +7072,7 @@ END SUBROUTINE FixASR2
     SUBROUTINE my_thermal(cv,gama) !everthing is in standard unit
     !!calculate multiple thermal dynamical terms
         IMPLICIT NONE
-        INTEGER :: la,k
+        INTEGER :: la,k,l
         REAL(8) :: cv_nk,  x, temp, nbe, nbx
         REAL(8),INTENT(out) :: cv, gama
         REAL(8) :: volume
@@ -6857,21 +7080,24 @@ END SUBROUTINE FixASR2
         CALL calculate_volume(r1,r2,r3,volume) !get volume, in angstrom^3
         temp = temperature*(100*h_plank*c_light)/k_b ! in K
 
+        OPEN(36,FILE=trim(path_out)//'the_comparison.dat',status='unknown')
+        
         cv = 0d0; gama = 0d0
         DO k=1,nkc
         DO la=1,ndyn
             x= SQRT(ABS(eivals(la,k)))*cnst*100*c_light*h_plank/k_b/temp ! pure number
+            ! x = eigenval(la,k)*100*c_light*h_plank/k_b/temp
 
-            nbx=nbe(x,1d0,0) ! use quantum one?
+            nbx=nbe(x,1d0,0) !use quantum one?
             cv_nk = x*x*nbx*(1+nbx) !also just a number
             cv = cv + cv_nk*wk(k) !weighted
-            gama = gama + grun(la,k)*cv_nk*wk(k) !dimensionless(I forgot gama +=...
+            gama = gama + grun(la,k)*cv_nk*wk(k) !dimensionless
+
         END DO
         END DO
 
         gama = gama/cv !forgot why, here it's still dimensionless
         cv = cv/atom_number*n_avog*k_b !unit is Joule/K per mole
-
 
     END SUBROUTINE my_thermal
 !-------------------------------------------------------------------------------------------------------
@@ -7293,6 +7519,12 @@ WRITE(*,*) 'CHECK MARK2'
             IF (x.gt.60) THEN
               cv_nk = 0
             ELSE
+            !DEBUG_b: why
+                IF(x.eq.0d0) THEN
+                    WRITE(*,*) 'calculate_thermal has x=0'
+                    stop
+                END IF 
+            !DEBUG_f.
               nbx=nbe(x,1d0,classical)
               cv_nk = x*x*nbx*(1+nbx) !/4/sinh(x/2)/sinh(x/2)
             ENDIF
@@ -7304,6 +7536,7 @@ WRITE(*,*) 'CHECK MARK2'
              kapoverl(al,be)=kapoverl(al,be)+cv_nk*wk(k)*veloc(al,b,k)*veloc(be,b,k)/(magv+1d-20)
           ENDDO
           ENDDO
+
        ENDDO
        ENDDO
 ! multiplied by MFP(nm), it is the thermal conductivity
@@ -7657,6 +7890,9 @@ SUBROUTINE add_Pressure
         strain_dot_stress = strain_dot_stress + strain(xyz1,xyz2)*stress(xyz1,xyz2)
     END DO
     END DO
+    !NOTE: energy has to be in unit of ev
+    !strain has no unit, stress is 1e^9 Pa which is GPa, volume is anstrom^3 which is 1e^-30 m^3
+    !thus the convertion (already made when read stress, see Iteration_parameters.f95)
     F_trial = F_trial + cell_volume*strain_dot_stress
 
     !----- add regarding terms to free energy gradients -----
@@ -7672,11 +7908,9 @@ SUBROUTINE add_Pressure
         B = r2_now%component !(1+eta)R2
         C = r3_now%component !(1+eta)R3
 
-
         mix = trans_vec(1,xyz2)*(B(odx1)*C(odx2)-B(odx2)*C(odx1)) + &
             & trans_vec(2,xyz2)*(C(odx1)*A(odx2)-C(odx2)*A(odx1)) + &
             & trans_vec(3,xyz2)*(A(odx1)*B(odx2)-A(odx2)*B(odx1))
-
         GradientF_trial(i) = GradientF_trial(i) + mix*strain_dot_stress
 
     END DO
@@ -8077,17 +8311,17 @@ WRITE(33,*) voigt1, voigt2, matrix(i,j),elastic(voigt1,voigt2),ABS(matrix(i,j)-e
     END DO
     END DO
 
-WRITE(33, *) 'Matrix Form'
-WRITE(33, *) '===================2nd deriv================='
-    DO voigt1 = 1, 6
-        WRITE(33, 7) temp(voigt1, :)/cell_volume*1.6*100 !unit in Gpa
-    END DO
+! WRITE(33, *) 'Matrix Form'
+! WRITE(33, *) '===================2nd deriv================='
+!     DO voigt1 = 1, 6
+!         WRITE(33, 7) temp(voigt1, :)/cell_volume*1.6*100 !unit in Gpa
+!     END DO
 
-WRITE(33, *) '===================from simple formula===================='
-    DO voigt1 = 1, 6
-        WRITE(33, 7) elastic(voigt1,:)/cell_volume*1.6*100 !unit in Gpa
-    END DO
-WRITE(33,*) '====================================================='
+! WRITE(33, *) '===================from simple formula===================='
+!     DO voigt1 = 1, 6
+!         WRITE(33, 7) elastic(voigt1,:)/cell_volume*1.6*100 !unit in Gpa
+!     END DO
+! WRITE(33,*) '====================================================='
 7 Format(6(f10.5, 2X))
 END SUBROUTINE map_2nd_deriv_C
 !-------------------------------------------------------------------------------------------------------
@@ -8215,25 +8449,25 @@ SUBROUTINE calculate_Atilda(gama,Atilda,Ahat)
     END DO
 
     !check the symmetry of X
-    WRITE(33,*) 'Check the Symmetry of X: '
-    DO i=1,3
-    DO mu=1,atom_number
-        DO j=1,3
-        DO k=1,3
-            WRITE(33,*)'The Actual X value:', X(i,j,k,mu) !Every X
-            IF(ABS(X(i,j,k,mu)-X(i,k,j,mu)).lt.3d-4) THEN
-                X(i,j,k,mu) = 0.5*(X(i,j,k,mu)+X(i,k,j,mu))
-                X(i,k,j,mu) = X(i,j,k,mu)
-            ELSE
-                WRITE(33,*)'differences are too big'
-                WRITE(33,*)'Not matching:','i,k,l,mu=',i,k,l,mu,'diff:',ABS(X(i,j,k,mu)-X(i,k,j,mu))
-!                STOP
-            END IF
-        END DO
-        END DO
-    END DO
-    END DO
-    WRITE(33,*)
+!     WRITE(33,*) 'Check the Symmetry of X: '
+!     DO i=1,3
+!     DO mu=1,atom_number
+!         DO j=1,3
+!         DO k=1,3
+!             WRITE(33,*)'The Actual X value:', X(i,j,k,mu) !Every X
+!             IF(ABS(X(i,j,k,mu)-X(i,k,j,mu)).lt.3d-4) THEN
+!                 X(i,j,k,mu) = 0.5*(X(i,j,k,mu)+X(i,k,j,mu))
+!                 X(i,k,j,mu) = X(i,j,k,mu)
+!             ELSE
+!                 WRITE(33,*)'differences are too big'
+!                 WRITE(33,*)'Not matching:','i,k,l,mu=',i,k,l,mu,'diff:',ABS(X(i,j,k,mu)-X(i,k,j,mu))
+! !                STOP
+!             END IF
+!         END DO
+!         END DO
+!     END DO
+!     END DO
+!     WRITE(33,*)
 
     !----------------------------------------A tilda(7.58)-----------------------------------------------------
     ALLOCATE(Aijkl(3,3,3,3))
@@ -8396,7 +8630,9 @@ endif
 
 END SUBROUTINE calculate_Atilda
 !-------------------------------------------------------------------------------------------------------
-SUBROUTINE GetElastic_velocity !get C11, C12, C44 from speed of sound along (1,1,0)
+SUBROUTINE GetElastic_velocity 
+    !!get C11, C12, C44 from speed of sound along (1,1,0)
+    !!this is a checking process, shouldn't be included in the real calculation
     IMPLICIT NONE
     REAL(8) :: C11, C12, C44
     REAL(8) :: density, temp1, temp2, delta
@@ -8427,7 +8663,9 @@ SUBROUTINE GetElastic_velocity !get C11, C12, C44 from speed of sound along (1,1
 6 FORMAT(A,F10.5)
 END SUBROUTINE GetElastic_velocity
 !-------------------------------------------------------------------------------------------------------
-SUBROUTINE get_velocity(delta, speed) !use finite difference to approx. velocity at gamma point along (1,1,0)
+SUBROUTINE get_velocity(delta, speed) 
+    !!use finite difference to approx. velocity at gamma point along (1,1,0)
+    !!NOTE: eivals and eivecs get reallocated during the process, beware
     IMPLICIT NONE
     REAL(8),INTENT(in) :: delta
     REAL(8),DIMENSION(3),INTENT(out) :: speed
@@ -8461,4 +8699,161 @@ SUBROUTINE get_velocity(delta, speed) !use finite difference to approx. velocity
 
 END SUBROUTINE get_velocity
 !-------------------------------------------------------------------------------------------------------
+SUBROUTINE GetF_trial_And_GradientF_trial2(kvector)
+    !!a place holder subroutine just for <rhom_contour>
+    
+        IMPLICIT NONE
+
+        TYPE(vector),INTENT(INOUT)::kvector(:)
+
+        INTEGER :: size_GradientF_trial,i,j,k,l,temp,temp1,temp2
+        INTEGER :: atom1, atom2,R1,R2,tau1,tau2,direction1,direction2
+        COMPLEX(8) :: temp_sum,mass1,mass2,compromise(d*atom_number,SIZE(kvector))
+        REAL(8) :: negative_eivals,max_eivals,min_eivals
+        INTEGER :: k_number
+
+        REAL(8),DIMENSION(d,d) :: identity
+
+        identity(:,1) = (/1d0,0d0,0d0/)
+        identity(:,2) = (/0d0,1d0,0d0/)
+        identity(:,3) = (/0d0,0d0,1d0/)
+
+        !**** allocate an 1D array to record <eff_fc2> for L1 norm calculation ****
+        IF(ALLOCATED(trialfc2_record)) DEALLOCATE(trialfc2_record)
+        ALLOCATE(trialfc2_record(eff_fc2_terms))
+        trialfc2_record = 0d0
+        j=0
+        DO i=1,SIZE(myfc2_index)
+            atom1 = myfc2_index(i)%iatom_number
+            IF(atom1.gt.atom_number) CYCLE
+            atom2 = myfc2_index(i)%jatom_number
+            direction1 = myfc2_index(i)%iatom_xyz
+            direction2 = myfc2_index(i)%jatom_xyz
+            j = j + 1
+            trialfc2_record(j) = trialfc2_value(atom1,atom2)%phi(direction1,direction2)
+            !here the trialfc2_value are the new ones after Broyden
+        END DO
+        !below are to update f(:) using already updated x(:)
+
+        k_number=SIZE(kvector)
+        size_GradientF_trial=sum(variational_parameters_size)
+
+        GradientF_trial=0
+
+        !******************ENERGY CALCULATIONS************************
+        !we have to diagonalize matrix here
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+cputime_2 = cputime
+endif
+
+        ! CALL initiate_yy(kvector)!calculate new <yy> for every time
+!CALL check_degeneracy
+!CALL special_check
+!CALL updatePhi !just for test
+!STOP
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+WRITE(37,*)'Time takes for <initiate_yy> a.k.a the matrix diagonalization:', cputime-cputime_2
+cputime_2 = cputime
+endif
+
+        ! CALL GetF0_and_V0 ! not really needed here
+
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+WRITE(37,*)'Time takes for F0 and V0 calculation:', cputime-cputime_2
+cputime_2 = cputime
+endif
+
+        CALL GetV_avg_And_GradientV_avg(kvector) ! translational invariant form that actually works
+
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+WRITE(37,*)'Time takes for <V> and d<V>/dx calculation:', cputime-cputime_2
+cputime_2 = cputime
+endif
+!        CALL TreatGradientV ! modify GradientV_utau GradientV_eta with a matrix
+        F_trial=F0+V_avg-V0
+
+        !*************************************************************
+
+WRITE(*,*)'======================='
+WRITE(34,*)'======================='
+WRITE(*,*) 'F0=:',REAL(F0)
+WRITE(34,*) 'F0=:',REAL(F0)
+WRITE(*,*) 'V0=:',REAL(V0)
+WRITE(34,*) 'V0=:',REAL(V0)
+WRITE(*,*) 'V=:',REAL(V_avg)
+WRITE(34,*) 'V=:',REAL(V_avg)
+WRITE(*,*) 'F=F0+V-V0:',REAL(F_trial)
+WRITE(34,*) 'F=F0+V-V0:',REAL(F_trial)
+!WRITE(unitnumber2,'(f10.4)') F_trial
+
+
+        !**************MAKE GradientF_trial AN ARRAY******************
+        !force symmetry on strain gradients?
+        CALL sym_strain
+        !combine all GradientV_avg and get a 1d array GradientF_trial
+        !gradients of free energy w.r.t atomic deviation
+        i=0
+        DO while(i<variational_parameters_size(1))
+            i=i+1
+            IF(MOD(i,d).eq.0) THEN
+                GradientF_trial(i)=GradientV_utau(d,INT(i/d))
+            ELSE
+                GradientF_trial(i)=GradientV_utau(MOD(i,d),INT(i/d+1))
+            END IF
+        END DO !i loop
+
+        !gradients of free energy w.r.t strain
+        DO while(i<variational_parameters_size(1)+variational_parameters_size(2))
+            i=i+1
+            temp=i-variational_parameters_size(1)
+            IF(MOD(temp,d).eq.0) THEN
+                GradientF_trial(i)=GradientV_eta(INT(temp/d),d)
+            ELSE
+                GradientF_trial(i)=GradientV_eta(INT(temp/d+1),MOD(temp,d))
+            END IF
+        END DO !i loop
+
+        !gradients of free energy w.r.t <YY>, then subtract 1/2 effective fc2(which should give 0)
+        !...as a substitute of gradients w.r.t effective fc2 itself
+        DO while(i<SUM(variational_parameters_size))
+            i=i+1
+            temp=i-variational_parameters_size(1)-variational_parameters_size(2)
+            tau1=eff_fc2_index(temp)%iatom_number
+            atom2=eff_fc2_index(temp)%jatom_number
+            direction1=eff_fc2_index(temp)%iatom_xyz
+            direction2=eff_fc2_index(temp)%jatom_xyz
+
+            GradientF_trial(i)=GradientV_cor(tau1,atom2)%phi(direction1,direction2)-&
+            &0.5*trialfc2_value(tau1,atom2)%phi(direction1,direction2)
+
+            !harmonic potential energy, update 2 test
+            GradientF_trial(i)=GradientV_cor(tau1,atom2)%phi(direction1,direction2)-&
+            &0.5*((identity(direction1,:)+strain(direction1,:)).dot.trialfc2_value(tau1,atom2)%phi&
+            &.dot.(identity(:,direction2)+strain(:,direction2)))
+        END DO !i loop
+ WRITE(*,*)       '***************************************************************************'
+        !*************************************************************
+
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+cputime_2 = cputime
+endif
+
+        !-----add pressure-----
+        IF(pressure) THEN
+            CALL add_Pressure
+        END IF
+
+if(mpi_rank==0) then
+CALL CPU_TIME(cputime)
+WRITE(37,*)'Time takes for add pressure term:', cputime-cputime_2
+cputime_2 = cputime
+endif
+7 format(a,f10.8)
+END SUBROUTINE GetF_trial_And_GradientF_trial2
+!==================================================================================================
 End Module VA_math

@@ -90,6 +90,14 @@
 
   end function fcut
 !=====================================================================
+ subroutine vector_module(v, u)
+   implicit none
+   real(8), dimension(3), intent(in) :: v
+   real(8), intent(out) :: u
+   u = sqrt(v(1)**2 + v(2)**2 + v(3)**2)
+
+ end subroutine vector_module
+!=====================================================================
  subroutine calculate_distance(i,j,atompos,maxatoms,rij)
  implicit none
  integer i,j,maxatoms

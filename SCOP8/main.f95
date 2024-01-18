@@ -109,11 +109,13 @@ SUBROUTINE ThreeVariableRoutine
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~OPEN OUTPUT AND LOG FILES~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     unit_number=33;unit_number2=34;unit_number3=35;unit_number4=36;unit_number5=37
-    OPEN(unit_number,file='result.txt',status='unknown',action='write')
-    OPEN(unit_number2,FILE='output.txt')
-    OPEN(unit_number3,FILE='convergence.dat')
-    OPEN(unit_number4,FILE='fc2_comparison.dat')
-    OPEN(unit_number5,FILE='cputime.dat',status='unknown',position='append',action='write')
+    !UPDATE: path output
+    path_out = 'output/'
+    OPEN(unit_number,file=trim(path_out)//'result.txt',status='unknown',action='write')
+    OPEN(unit_number2,FILE=trim(path_out)//'output.txt')
+    OPEN(unit_number3,FILE=trim(path_out)//'convergence.dat')
+    OPEN(unit_number4,FILE=trim(path_out)//'the_comparison.dat')
+    OPEN(unit_number5,FILE=trim(path_out)//'cputime.dat',status='unknown',position='append',action='write')
     CALL CPU_TIME(cputime)
     WRITE(unit_number2,*)'***************************************************************************'
     WRITE(unit_number5,*)'Start time: ', cputime
@@ -242,33 +244,43 @@ endif
     IF(rand_start) CALL test_update
 
     !~~~~~~~~~~~TESTING SECTION, REMOVE IN THE FINAL VERSION~~~~~~~~~~~
-        !----------test openmp here-----------------
-!        CALL GetEigen(kvector)
-!    call MPI_Finalize(mpi_err) !MODIFY:COMMENT OFF 11/03/2023
+    !---------------Test Thermo Calculations---------------
+    ! CALL initiate_yy(kvector)
+    ! CALL matrix_2nd_deriv(vals, vecs)
+    ! CALL Get_dispersion
+    ! CALL calc_gruneisen
+    ! IF(atom_number.eq.1) THEN
+    !     CALL GetElastic_final
+    ! ELSE
+    !     CALL GetElastic_Wallace
+    ! END IF
+    ! CALL GetElastic_velocity
+
+    ! STOP
+    !----------test OPENMPI here-----------------
+!    call MPI_Finalize(mpi_err) !UPDATE:COMMENT OFF 11/03/2023
 !    WRITE(*,*) 'total atom', tot_atom_number
-!        STOP
+    !    STOP
+    !---------test Free Energy Landscape ---------
 
-    !~~~~~~~~~~~~~Free Energy Landscape test~~~~~~~~~~~
-!!!!comment off guessloop and comment on that STOP for this part!!!!
+    !step = 0.005
+    !CALL small_test2(step) !general check
+    !CALL small_test3(15,step,4) !compare with finite difference for given utau or eta
+    !CALL small_test3_yy(9,step,4) !compare with finite difference for given yy
 
-!step = 0.005
-!CALL small_test2(step) !general check
-!CALL small_test3(15,step,4) !compare with finite difference for given utau or eta
-!CALL small_test3_yy(9,step,4) !compare with finite difference for given yy
+    !NOTE: turn off <test_update> when doing this, so x can start from 0
+    !NOTE: turn off <make_rhombohedral> and <updateK> when doing this
+    !CALL small_test(6,0.01d0,30) !single var.
+    !
+    !CALL initiate_yy(kvector)
+    !CALL small_test_ex(7,15,step,10) !contour two vars.
 
-!NOTICE: turn off <test_update> when doing this, so x can start from 0
-!NOTICE: turn off <make_rhombohedral> and <updateK> when doing this
-!CALL small_test(6,0.01d0,30) !single var.
-!
-!CALL initiate_yy(kvector)
-!CALL small_test_ex(7,15,step,10) !contour two vars.
-
-!NOTICE: turn on inherit option for contour, by doing that you are only allowing
-!        two variables to change, while others are fixed at their optimized values
-!step_1 = 0.02; step_2 = 0.001
-!strain(1,2) = 0d0;atomic_deviation(1,2) = 0d0
-!CALL rhom_contour(4,8,step_1,step_2,20)
-!STOP
+    !NOTE: turn on inherit option for contour, by doing that you are only allowing
+    !        two variables to change, while others are fixed at their optimized values
+    ! step_1 = 0.002; step_2 = 0.002
+    ! CALL rhom_contour(13,21,step_1,step_2,50)
+    !NOTE: turn on the below STOP while testing
+    ! STOP
 !----------------------------------------------------------------
 
     !~~~~~~~~~~MAKE AN INITIAL GUESS BASED ON FC2 DIAGONALIZATION~~~~~~~~~~~~~~~~
@@ -301,20 +313,6 @@ endif
     iter_rec = 0
     CALL asr_checkfc2(trialfc2_value)!this is just to check if input fc2/inherited trialfc2 satisfies asr
     CALL GetF_trial_And_GradientF_trial(kvector)
-
-
-!IF(atom_number.eq.1) THEN
-!    CALL GetElastic_final
-!ELSE
-!    CALL GetElastic_Wallace
-!END IF
-!CALL GetElastic_velocity
-!CALL matrix_2nd_deriv(vals, vecs)
-!trialfc2_value = myfc2_value
-!CALL Get_dispersion
-!CALL calc_gruneisen
-!
-! STOP
 
     start_F = REAL(F_trial)
 
@@ -503,34 +501,33 @@ CALL asr_checkfc2(trialfc2_value) !check ASR in trial fc2
 if(mpi_rank==0) then
 WRITE(unit_number2,*) &
 &'********************Variational Parameters Check After a Broyden iteration*********************'
-WRITE(unit_number2,*) '||Atomic deviation u_tau(:)||'
-DO j=1,atom_number
-    WRITE(unit_number2,*)'atom: ', j
-    WRITE(unit_number2,*) atomic_deviation(:,j)
-END DO
-WRITE(unit_number2,*)
-WRITE(unit_number2,*)'||Strain Tensor||'
-DO j=1, d
-    WRITE(unit_number2,*) strain(j,:)
-END DO
-WRITE(unit_number2,*)
-WRITE(unit_number2,*)'||Force Constants||'
-
-DO j=1,eff_fc2_terms
-    WRITE(unit_number2,*)'---------------------------------'
-    WRITE(unit_number2,*) 'indie fc2 number: ', j
-    t_atom1 = eff_fc2_index(j)%iatom_number
-    t_atom2 = eff_fc2_index(j)%jatom_number
-    t_xyz1 = eff_fc2_index(j)%iatom_xyz
-    t_xyz2 = eff_fc2_index(j)%jatom_xyz
-    WRITE(unit_number2,*) '1st atomic index:', t_atom1
-    WRITE(unit_number2,*) '1st directional index:', t_xyz1
-    WRITE(unit_number2,*) '2nd atomic index:', t_atom2
-    WRITE(unit_number2,*) '2nd directional index:', t_xyz2
-    WRITE(unit_number2,*) 'effective fc2 value:', trialfc2_value(t_atom1, t_atom2)%phi(t_xyz1, t_xyz2)
-    WRITE(unit_number2,*) 'corresponding (input file) fc2 value:',myfc2_value(t_atom1, t_atom2)%phi(t_xyz1, t_xyz2)
-    WRITE(unit_number2,*)
-END DO
+! WRITE(unit_number2,*) '||Atomic deviation u_tau(:)||'
+! DO j=1,atom_number
+!     WRITE(unit_number2,*)'atom: ', j
+!     WRITE(unit_number2,*) atomic_deviation(:,j)
+! END DO
+! WRITE(unit_number2,*)
+! WRITE(unit_number2,*)'||Strain Tensor||'
+! DO j=1, d
+!     WRITE(unit_number2,*) strain(j,:)
+! END DO
+! WRITE(unit_number2,*)
+! WRITE(unit_number2,*)'||Force Constants||'
+! DO j=1,eff_fc2_terms
+!     WRITE(unit_number2,*)'---------------------------------'
+!     WRITE(unit_number2,*) 'indie fc2 number: ', j
+!     t_atom1 = eff_fc2_index(j)%iatom_number
+!     t_atom2 = eff_fc2_index(j)%jatom_number
+!     t_xyz1 = eff_fc2_index(j)%iatom_xyz
+!     t_xyz2 = eff_fc2_index(j)%jatom_xyz
+!     WRITE(unit_number2,*) '1st atomic index:', t_atom1
+!     WRITE(unit_number2,*) '1st directional index:', t_xyz1
+!     WRITE(unit_number2,*) '2nd atomic index:', t_atom2
+!     WRITE(unit_number2,*) '2nd directional index:', t_xyz2
+!     WRITE(unit_number2,*) 'effective fc2 value:', trialfc2_value(t_atom1, t_atom2)%phi(t_xyz1, t_xyz2)
+!     WRITE(unit_number2,*) 'corresponding (input file) fc2 value:',myfc2_value(t_atom1, t_atom2)%phi(t_xyz1, t_xyz2)
+!     WRITE(unit_number2,*)
+! END DO
 
 WRITE(*,*)'***************************************************************************'
 
@@ -632,11 +629,13 @@ endif
     ELSE
         CALL GetElastic_Wallace
     END IF
-    CALL GetElastic_velocity
 
-    !-----final gruneisen------ !temporarily commented off for check
+    !-----final gruneisen------ 
     CALL calc_gruneisen
 
+    !NOTE: should always be commented off/put in the last line
+    !...since it reallocate eivals and eivecs
+    ! CALL GetElastic_velocity 
 
     WRITE(unit_number2,*)'Start Free Energy = ', start_F
     WRITE(unit_number2,*)'Final Free Energy = ', REAL(F_trial)

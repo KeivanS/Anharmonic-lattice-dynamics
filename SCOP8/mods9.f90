@@ -112,8 +112,8 @@ subroutine deallocate_eig ! nb for band, nk for coarse mesh in FBZ
 end subroutine deallocate_eig
 !---------------------------------
 function onedim(nb,nk)
-! calculates the running index onedim
-! calculates the running index onedim
+!! calculates the running index onedim
+!! calculates the running index onedim
 ! use eigen
    implicit none
    integer nk,nb,onedim
@@ -122,7 +122,7 @@ function onedim(nb,nk)
 end function onedim
 !---------------------------------
 function nkpt(onedm,nb)
-   ! assumes the outerloop is over kpoints and the innerloop over bands
+   !! assumes the outerloop is over kpoints and the innerloop over bands
    ! use eigen
    implicit none
    integer nkpt,onedm,nb
@@ -170,10 +170,10 @@ end subroutine deallocate_v33
 end module phi3
 !*******************************************************
 module kpoints
-! this includes 4 kpoint meshes: one for the band structure: kp_bs(3,nkp_bs)
-! one shifted MP-coarse mesh around gamma for interpolation : kpc(3,nkc)
-! a mapping of this coarse mesh into the FBZ: kpc(3,mapbz(1:nbz))
-! one fine grid in the irreducible FBZ for kappa/dos sums: kibz(3,nibz)
+!! this includes 4 kpoint meshes: one for the band structure: kp_bs(3,nkp_bs)
+!! one shifted MP-coarse mesh around gamma for interpolation : kpc(3,nkc)
+!! a mapping of this coarse mesh into the FBZ: kpc(3,mapbz(1:nbz))
+!! one fine grid in the irreducible FBZ for kappa/dos sums: kibz(3,nibz)
    use lattice   ! it is also used for all included subroutines
    use io2
    !use constants
@@ -395,9 +395,9 @@ subroutine make_kp_bs
 
 end subroutine make_kp_bs
 !-------------------------------------------
-subroutine make_kp_bs2_new !MARK: format change, copied from FOCEX
-! this subroutine sets up the kpoints for the band structure from the
-! list written in the file kpbs.params (given in direct coordinates of the conventional cell)
+subroutine make_kp_bs2_new !NOTE: format change, copied from FOCEX
+!! this subroutine sets up the kpoints for the band structure from the
+!! list written in the file kpbs.params (given in direct coordinates of the conventional cell)
    use ios
    use lattice , only : g01
    implicit none
@@ -479,8 +479,8 @@ subroutine make_kp_bs2_new !MARK: format change, copied from FOCEX
 end subroutine make_kp_bs2_new
 !-------------------------------------------
 subroutine make_kp_bs2 !original version
-! this subroutine sets up the kpoints for the band structure from the
-! list written in the file kpbs.in (given in direct coordinates)
+!! this subroutine sets up the kpoints for the band structure from the
+!! list written in the file kpbs.in (given in direct coordinates)
    use io2
    implicit none
    
@@ -577,7 +577,7 @@ subroutine make_kp_cubic(nx,ny,nz,kpg)
 end subroutine make_kp_cubic
 !-------------------------------------------
 subroutine make_kp_FBZ(nk)
-! generate a regular cubic mesh of kpoints with eventual shift, within FBZ
+!! generate a regular cubic mesh of kpoints with eventual shift, within FBZ
    use geometry
    implicit none
    
@@ -959,10 +959,10 @@ subroutine fold_in_fbz(nk,kp,nshl,gg,nbz,kz,mapz)
          kz(:,nbz) = qaux(:)
 !          write(ulog,3)i,ns,nbz,qaux
       endif
-   endif
-enddo foldloop
-enddo
-write(ulog,*)'FOLD IN FBZ:  DONE! ==============================='
+      endif
+   enddo foldloop
+   enddo
+   write(ulog,*)'FOLD IN FBZ:  DONE! ==============================='
 !WRITE(*,*) 'FOLD IN FBZ:  DONE! ==============================='
 3 format(3(i6),9(2x,f8.4))
 
