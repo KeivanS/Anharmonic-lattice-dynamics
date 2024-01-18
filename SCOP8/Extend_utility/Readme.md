@@ -1,8 +1,6 @@
 ## Readme
 
-This stand-alone utility program is for users to transform the original lattice via a transformation matrix(written in 'mat.inp')
-
-
+This stand-alone utility program is for users to transform the original lattice via a transformation matrix(written in 'mat.inp') and generate the new atom list and structure info as well as remapping force constants files to those new atoms.
 
 1. input file list (refer to folder <input_example>)
    - fc2.dat
@@ -22,5 +20,3 @@ Regarding the transformation matrix $\textbf{P}$, given origina lattice transvec
 $\begin{pmatrix}
 \textbf{a}^{new}\\ \textbf{b}^{new} \\ \textbf{c}^{new}
 \end{pmatrix} = \textbf{P}\cdot \begin{pmatrix}\textbf{a}\\ \textbf{b} \\ \textbf{c} \end{pmatrix}$
-
-
