@@ -7,7 +7,6 @@
 #### Code Files Explanation
 
 - *test.cbp* is the code::blocks project file that contains dependency and so on, only for Windows
-
 - *main.f95* is the main program file, can modify according to comments on different type of calculations
 - *Broyden.f95* is the root finding module that utilizes Broyden's method
 - *check.f90* contains several test subroutines, including free energy landscape calculations
@@ -26,8 +25,8 @@
 - *others3_nshells.f90* legacy code that contains useful subroutines
 - *Structure_info.f95* declare atom and structure related object, allocate and initialize them, also read parameters from legacy input files lat_fc.dat, params.inp, etc
 - *VA_math.f95* major module for variational approach, contains subroutines for free energy and its gradients calculation and many others
-  - The new and old math regarding whether to couple $\eta$ with $<yy>$ can be switched between subroutine 'GetV_avg_And_GradientV_avg2' and 'GetV_avg_And_GradientV_avg' 
 
+  - The new and old math regarding whether to couple $\eta$ with $<yy>$ can be switched between subroutine 'GetV_avg_And_GradientV_avg2' and 'GetV_avg_And_GradientV_avg'
 
 ---
 
@@ -38,10 +37,11 @@
 - <params.born> has the born charge and electric constsant
 - <params.inp> contains some structure info
 - <params.phon> contains some phonon related info, such as k mesh size, etc
-- <iteration_parameters.in> is <u>user defined</u> input file, what every line does is noted directly in the sample file
-- <kpbs.in> is <u>user defined</u> input file. It is only for post process, gives the high symmetry k point path that user chooses to calculate phonon dispersion, etc
-- <targetInitialize.dat> is both <u>user defined</u> input file and code's output file. Can be used to manually assign initial values to corresponding variational parameters. When a run finishes, it will be updated as the optimized variational parameters at this temperature.
+- <iteration_parameters.in> is `<u>`user defined`</u>` input file, what every line does is noted directly in the sample file
+- <kpbs.in> is `<u>`user defined`</u>` input file. It is only for post process, gives the high symmetry k point path that user chooses to calculate phonon dispersion, etc
+- <targetInitialize.dat> is both `<u>`user defined`</u>` input file and code's output file. Can be used to manually assign initial values to corresponding variational parameters. When a run finishes, it will be updated as the optimized variational parameters at this temperature.
 - for a detailed explanation on input file, please refer to 'tutorial_scop8.txt'
+
 ---
 
 #### Output Files Explanation
@@ -60,18 +60,19 @@
 
 #### How to Install/Compile Code on Windows(UPDATE: vscode)
 
-1. Install Visual Studio Code (download [here](https://code.visualstudio.com/download)). This is the ultimate all-in-one code development environment for Windows. Not only it's compatible and can switch with one click among C++, Python, Java, Fortran,...etc, it can also be integrated with Git, MinGW bash, WSL for Linux subsystem, SSH-remote connection, Jupyter Notebook, PDF Reader and more. I strongly recommend using it for coding.
-
-2. Install the latest MinGW (download [here](https://sourceforge.net/projects/mingw/)). I suggest installing it on C drive. Notice that you may later need download extra package via 'mingw-get', it's located in C:\MinGW\bin\mingw-get.exe
-
+1. Install Visual Studio Code (download [here](https://code.visualstudio.com/download)). This is strongly recommended as it is most commonly used and supported 'all-in-one' code development environment for Windows by Microsoft community. Coding in C++, Python, Java, Fortran,...etc can be switched to and from with one click inside the IDE. VScode can also be integrated with Git, MinGW bash, WSL for Linux subsystem, SSH-remote connection, Jupyter Notebook, PDF Reader and more via powerful optional extensions.
+2. Install the latest MinGW (download [here](https://sourceforge.net/projects/mingw/)). Assume this is installed on C drive and beware that you may later need to download extra package via 'mingw-get', which is located in C:\MinGW\bin\mingw-get.exe
 3. Add MinGW to the system environment by:  Open control panel > system advanced settings > add path of "C:\MinGW", see below
 
 <img src="img\how.JPG" style="zoom:50%;" />
 
 4. Setup Fortran environment with VScode:
+
 - Install 'Modern Fortran' extension (download [here](https://marketplace.visualstudio.com/items?itemName=fortran-lang.linter-gfortran)) or press `Ctrl+Shift+X` in VScode and search for 'Modern Fortran'. There are also some useful extensions such as 'TODO Highlight'
 - Integrate msys bash(1.0) for compiling and running the code (assuming you installed MinGW in C:\MinGW):
+
   - Create a file `Run_MSYS.bat` in C:\MinGW\msys\1.0\, copy and paste the script below into the file
+
   ```
   @rem Do not use "echo off" to not affect any child calls.
   @SETLOCAL
@@ -137,68 +138,69 @@
   ```
 
   - Download `getcp.exe` [here](https://github.com/msysgit/msysgit/tree/master/mingw/bin) and put it into C:\MinGW\msys\1.0\bin
-
   - Open VScode and press `Ctral+Shift+P`, type 'setting' and find the 'Open User Setting(JSON)' to open the `settings.json` file, add following lines
+
   ```
   "terminal.external.windowsExec": "C:\\MinGW\\msys\\1.0\\bin\\sh.exe",
   ```
+
   also add 'msys' in the terminal dropdown menu by filling as shown below:
-  <img src="img\json_settings.png" style="zoom:50%;" />
+  `<img src="img\json_settings.png" style="zoom:50%;" />`
 
 5. Setup for MPI in Windows follow the steps [here](https://abhila.sh/writing/3/mpi_instructions.html)
+6. Compile and Run the code:
 
-6. Compile and Run the code: 
-  - Open 'Developer Command Prompt for VS 2022', direct to the SCOP8 folder on your local machine
-  - Type `code .` NOTICE: this should be the only way to open VScode 
-  - Press ` Ctrl+Shift+` ` to open the terminal window (remember to select 'msys' in the dropdown menu since the default terminal is windows powershell). If previous steps are executed correctly, the terminal should be opened in current directory, where you can input following command to compile and run the code.
+- Open 'Developer Command Prompt for VS 2022', direct to the SCOP8 folder on your local machine
+- Type `code .` NOTICE: this should be the only way to open VScode
+- Press ` Ctrl+Shift+` ` to open the terminal window (remember to select 'msys' in the dropdown menu since the default terminal is windows powershell). If previous steps are executed correctly, the terminal should be opened in current directory, where you can input following command to compile and run the code.
 
-  > gfortran -c constants.f90
-  >
-  > gfortran -c geometry.f95
-  >
-  > gfortran -c force_constants.f90
-  >
-  > gfortran -c zhegv.f
-  >
-  > gfortran -c mods9.f90
-  >
-  > gfortran -c MatrixDiagonalize.f90
-  >
-  > gfortran -c modules_tetra.f90
-  >
-  > gfortran -c extratools.f90
-  >
-  > gfortran -c Structure_info.f95
-  >
-  > gfortran -c DFT_force_constants.f95
-  >
-  > gfortran -c kp_1d.f90
-  > 
-  > gfortran -c others3_nshells.f90
-  > 
-  > gfortran -c Fourier_force_constants.f95
-  > 
-  > gfortran -c Iteration_parameters.f95
-  > 
-  > gfortran -c mpi_params.f95
-  > 
-  > gfortran -c Broyden.f95
-  > 
-  > gfortran -c VA_math.f95
-  > 
-  > gfortran -c force_update.f90
-  > 
-  > gfortran -c check.f90
-  > 
-  > gfortran -c ConjugateGradient.f90
-  >
-  > ar rcs libAll.a *.o
-  >
-  > gfortran -o out.exe main.f95 -IC:'\lib\mpi\include' -LC:'\lib\mpi\lib' -lmsmpi libAll.a libmsmpi.a
+> gfortran -c constants.f90
+>
+> gfortran -c geometry.f95
+>
+> gfortran -c force_constants.f90
+>
+> gfortran -c zhegv.f
+>
+> gfortran -c mods9.f90
+>
+> gfortran -c MatrixDiagonalize.f90
+>
+> gfortran -c modules_tetra.f90
+>
+> gfortran -c extratools.f90
+>
+> gfortran -c Structure_info.f95
+>
+> gfortran -c DFT_force_constants.f95
+>
+> gfortran -c kp_1d.f90
+>
+> gfortran -c others3_nshells.f90
+>
+> gfortran -c Fourier_force_constants.f95
+>
+> gfortran -c Iteration_parameters.f95
+>
+> gfortran -c mpi_params.f95
+>
+> gfortran -c Broyden.f95
+>
+> gfortran -c VA_math.f95
+>
+> gfortran -c force_update.f90
+>
+> gfortran -c check.f90
+>
+> gfortran -c ConjugateGradient.f90
+>
+> ar rcs libAll.a *.o
+>
+> gfortran -o out.exe main.f95 -IC:'\lib\mpi\include' -LC:'\lib\mpi\lib' -lmsmpi libAll.a libmsmpi.a
 
-  - Execute use 'mpiexec', for example, if want to use 4 processes, input below
+- Execute use 'mpiexec', for example, if want to use 4 processes, input below
 
-  > mpiexec -np 4 ./out.exe
+> mpiexec -np 4 ./out.exe
 
 ---
 
