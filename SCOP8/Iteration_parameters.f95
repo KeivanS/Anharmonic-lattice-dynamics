@@ -93,7 +93,6 @@ CONTAINS
          !! initiate variational parameters to trivial start
          IMPLICIT NONE
          INTEGER :: tau1,direction1,direction2
-         INTEGER :: seed
 
          IF(ALLOCATED(atomic_deviation)) DEALLOCATE(atomic_deviation)
          IF(ALLOCATED(strain)) DEALLOCATE(strain)

@@ -1,4 +1,37 @@
- !============================================================================
+!UPDATE: FOCEX_ec
+subroutine symmetrize4(n,mat4) 
+   use constants, only : r15
+   use linalgb
+   implicit none
+   integer, intent(in) :: n       
+   real(r15), intent(inout) :: mat4(n,n,n,n) !:,:,:,:) 
+   real(r15), allocatable:: mean(:,:) 
+   integer i,j
+  
+  ! n=size(mat4,1)
+  ! if(n.ne.3) then
+  !   write(*,*)' Symmetrize4: n is ',n
+  !   stop
+  ! endif
+   allocate(mean(n,n))
+   do i=1,n
+   do j=1,n
+      mean=mat4(i,j,:,:)
+      call symmetrize2(n,mean)
+      mat4(i,j,:,:)=mean
+   enddo
+   enddo
+   do i=1,n
+   do j=1,n
+      mean=mat4(:,:,i,j)
+      call symmetrize2(n,mean)
+      mat4(:,:,i,j)=mean
+   enddo
+   enddo
+  
+   deallocate(mean)
+end subroutine symmetrize4
+!============================================================================
  !! functional programming: substitute for map(f, x)
  PURE ELEMENTAL REAL FUNCTION square(x)
     REAL, INTENT(in) :: x

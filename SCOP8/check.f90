@@ -4,9 +4,9 @@ MODULE check
 
     CONTAINS
 !==========================================================================================================
-    !this test a single variable x(i) versus F and f(i), for many steps
-    !this test subroutine should be run after <Allocate_Gradients>
     SUBROUTINE small_test(i,step,many)
+        !!this test a single variable x(i) versus F and f(i), for many steps
+        !!this test subroutine should be run after <Allocate_Gradients>
         IMPLICIT NONE
         INTEGER,INTENT(IN):: i, many ! which x:f, how many steps
         INTEGER :: j
@@ -31,10 +31,10 @@ MODULE check
         WRITE(*,*) 'Finished Testing'
     END SUBROUTINE small_test
 !---------------------------------------------------------------------------------------------------------
-    !this test two variable x(i) and x(j) versus F and f(i), for many steps
-    !this test subroutine should be run after <Allocate_Gradients>
-    !variable variation range (-many*step, many*step]
     SUBROUTINE small_test_ex(i,j,step,many)
+        !!this test two variable x(i) and x(j) versus F and f(i), for many steps
+        !!this test subroutine should be run after <Allocate_Gradients>
+        !!variable variation range (-many*step, many*step]
         IMPLICIT NONE
         INTEGER,INTENT(IN):: many,i,j ! how many steps,x(i),x(j)
         INTEGER :: idx,jdx
@@ -48,7 +48,7 @@ MODULE check
         OPEN(517,FILE='gradient_vs_x_'//name//'.dat',POSITION='append')
         OPEN(518,FILE='energy_vs_x_'//name//'.dat',POSITION='append')
 
-        center_i = 0.03d0; center_j = -0.1d0 !usually both 0d0
+        center_i = -0.3d0; center_j = -0.3d0 !usually both 0d0
 
         CALL assign_x(i,-many*step + center_i)
         CALL assign_x(j,-many*step + center_j)
@@ -64,12 +64,7 @@ MODULE check
                 CALL assign_x(j,step)
                 rollback = rollback + step
 
-                !eta_xx=eta_yy lock, comment off if not needed
-                if(i.eq.7 .or. j.eq.7) THEN
-                    strain(2,2) = strain(1,1)
-                ELSEIF(i.eq.11 .or. j.eq.11) THEN
-                    strain(1,1) = strain(2,2)
-                end if
+                call extra_symmetrize !NOTE: enforce extra symmetry on eta and u0
 
 !                CALL GetF_trial_And_GradientF_trial(kvector) !not accurate but more realistic
                 !-------------this is too slow---------------
@@ -102,7 +97,12 @@ MODULE check
     SUBROUTINE extra_symmetrize
         IMPLICIT NONE
         INTEGER :: i,j
+        atomic_deviation(2,2) = atomic_deviation(1,2)
+        atomic_deviation(3,2) = atomic_deviation(1,2)
         strain(2,2) = strain(1,1)
+        strain(2,1) = strain(1,2)
+        strain(3,1) = strain(1,3)
+        strain(3,2) = strain(2,3)
 
     END SUBROUTINE extra_symmetrize
 !---------------------------------------------------------------------------------------------------------
@@ -119,17 +119,23 @@ MODULE check
         REAL(8),INTENT(IN) :: step1,step2 !incremental step value for x(i),x(j)
         REAL(8),DIMENSION(:),ALLOCATABLE :: x,f
         REAL(8) :: rollback
+        REAL(8) :: start_i, start_j
         CHARACTER name*8
+
+        start_i = -0.0d0; start_j = -0.0d0 !usually 0, the contour center
+
+        path_out = 'output/'
 
         CALL initiate_yy(kvector) !no K allowed to move, these are constant
         CALL GetF0_and_V0 !no K allowed to move, these are constant
 
         WRITE(name,'(i2,a,i2)') i,'_to_',j
-        OPEN(517,FILE='gradient_vs_x_'//name//'.dat',POSITION='append')
-        OPEN(518,FILE='energy_vs_x_'//name//'.dat',POSITION='append')
+        OPEN(517,FILE=trim(path_out)//'gradient_vs_x_'//name//'.dat',POSITION='append')
+        OPEN(518,FILE=trim(path_out)//'energy_vs_x_'//name//'.dat',POSITION='append')
 
-        CALL assign_x(i,-many*step1) !initialize x_i to starting point: -many*step1
-        CALL assign_x(j,-many*step2) !initialize x_j to starting point: -many*step2
+        CALL assign_x(i,-many*step1+start_i) !initialize x_i to starting point: -many*step1
+        CALL assign_x(j,-many*step2+start_j) !initialize x_j to starting point: -many*step2
+
         CALL extra_symmetrize !to force eta^xx = eta^yy, very specific need to generalize
 
         !outer loop: iterate x(i)
@@ -142,10 +148,8 @@ MODULE check
                 WRITE(*,*)'------Run# for jdx:',jdx,' ------'
                 CALL assign_x(j,step2)
                 rollback = rollback + step2
-
-                CALL extra_symmetrize !to force eta^xx = eta^yy, very specific need to generalize
+                CALL extra_symmetrize !NOTE: to force eta^xx = eta^yy, very specific need to generalize
                 CALL GetF_trial_And_GradientF_trial2(kvector)  !placeholder
-
                 CALL collect_xf(x,f)
                 WRITE(517,*) x(i),x(j),f(i),f(j)
                 WRITE(518,*) x(i),x(j),REAL(F_trial)
@@ -161,9 +165,9 @@ MODULE check
 
     END SUBROUTINE rhom_contour
 !---------------------------------------------------------------------------------------------------------
-    !this test all variable x(:), f(:) from formula vs. finite difference
-    !this test subroutine should be run after <initiate_yy>
     SUBROUTINE small_test2(step)
+        !!this test all variable x(:), f(:) from formula vs. finite difference
+        !!this test subroutine should be run after <initiate_yy>
         IMPLICIT NONE
         INTEGER :: i,num_var
         INTEGER :: tau1,atom2,xyz1,xyz2,temp

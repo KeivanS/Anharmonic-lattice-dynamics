@@ -140,7 +140,7 @@ end subroutine write_input_fit
     !---NOTE: hard-coded params that used to be set in 'params.inp'
     maxneighbors = 90 !I just default set it to 90 for now 
     tolerance = 0.001; margin = 0.00001
-    maxshells = 27 ! this is added from the fc234 main program to here 
+    maxshells = 90 !MODIFY:27 this is added from the fc234 main program to here 
 
     read(unit_params,*) latticeparameters   ! (a,b,c,alpha,beta,gamma)
     read(unit_params,*) primitivelattice     ! prim latt vectors(3:3) in terms of conventional above
@@ -245,10 +245,13 @@ SUBROUTINE read_structure
     REAL(8) :: check(d)
     TYPE(vector) :: vv
     LOGICAL :: condition
+    CHARACTER path_output*29
 
     check=0
     unit_log=30
-    OPEN(unit_log,file='logfile.txt',status='unknown')
+    !MODIFY: add into output path
+    path_output = 'output/'
+    OPEN(unit_log,file=trim(path_output)//'logfile.txt',status='unknown')
 
     unit_number=50
     OPEN(unit_number, file='lat_fc.dat',status='old',action='read')
@@ -326,7 +329,10 @@ SUBROUTINE read_structure
     READ(unit_number,*) line
     READ(unit_number,*) (ngroups(j),j=1,4)
     READ(unit_number,*) line
-    READ(unit_number,*) maxshell, tot_atom_number !MODIFY: 09/04/2023
+    READ(unit_number,*) maxshell, tot_atom_number 
+
+    !UPDATE: 03/02/2024 fc_init generated natoms not match tot_atomnumber
+    ! maxshell = 35
 
     WRITE(unit_log,*) (include_fc(j),j=1,4)
     WRITE(unit_log,*) line
@@ -338,9 +344,10 @@ SUBROUTINE read_structure
 
     ALLOCATE(every_atom(tot_atom_number))
     !this part has nothing to do with 'reading' and is directly copied from fc234 main program
-    !NOTE: the original comment reads:
+    !NOTE: increase maxatoms if there are more atoms listed in lat_fc.dat
+    ! the original comment reads:
     !"This does not work: fcinit must be called once or latparam(4:6) will be overwritten"
-    maxatoms=5500; imaxat=1
+    maxatoms=6500; imaxat=1
     DO WHILE (imaxat.ne.0) !imaxat is a flag number, it equals 0 when some conditions are satisfied
         maxatoms=maxatoms+300 !???
         WRITE(6,*)' maxatoms=',maxatoms

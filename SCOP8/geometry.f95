@@ -837,6 +837,7 @@ END FUNCTION voigtMap
  end module geometry
 !**************************************************************
 module ios
+  use constants, only : r15
  use geometry
  integer, parameter:: ulog=30,uposcar=10, utraj=40,ufco=20,  &
 &         umap=60,umatrx=50,utimes=70,ufc1=21,ufc2=22,ufc3=23,ufc4=24,   &
@@ -844,101 +845,130 @@ module ios
 
 !contradictory with it in io2
 !integer, parameter :: uparams = 11
-  interface write_out
-     module procedure write_outiv, write_outrv, write_outim, write_outrm &
-&    , write_outi, write_outr , write_outv
+  interface write_out !UPDATE: FOCEX_ec
+    module procedure write_outim, write_outrm, write_outiv, write_outrv, &
+      &    write_outv , write_outi, write_outr,write_outcv,write_outrm3
   end interface
 
  contains
 
-!=============================================
-subroutine write_outrm(unit,string,n,m,var)
-    implicit none
-    character*(*) string
-    integer n,m,unit,l,i,j
-    real(8) var(n,m)
-
-    l=len_trim(string)
-    write(unit,4)string(1:l)//' is=',((var(i,j),i=1,n),j=1,m)
-
-4 format(a,99(1x,g12.6))
-end subroutine write_outrm
 !-----------------------------
-subroutine write_outim(unit,string,n,m,var)
-    implicit none
-    character*(*) string
-    integer n,m,unit,i,l,j
-    integer var(n,m)
-
-    l=len_trim(string)
-    write(unit,4)string(1:l)//' is=',((var(i,j),i=1,n),j=1,m)
-
-4 format(a,99(1x,i8))
-end subroutine write_outim
-!-----------------------------
-subroutine write_outrv(unit,string,var)
-  
+ subroutine write_outrm3(unt,string,var)
   implicit none
-  character*(*) string
-  integer unit,l,i
-  real(8), dimension(:) :: var
+  character*(*), intent(in) :: string
+  integer n1,n2,n3,unt,l,j
+  real(r15), dimension(:,:,:), intent(in) :: var
 
   l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',(var(i),i=1,size(var))
-
-4 format(a,99(1x,g12.6))
-end subroutine write_outrv
+  n1=size(var,1) ; n2=size(var,2) ; n3=size(var,3)
+! write(unt,*)' write_outrm called;nl,n2,n3=',n1,n2,n3
+  write(unt,4)string(1:l)//' is='
+  do j=1,n1
+     call write_out(unt,' block #j ',j)
+     call write_out(unt,' ',var(j,:,:))
+  enddo
+4 format(a,99(1x,g11.4))
+  end subroutine write_outrm3
 !-----------------------------
-subroutine write_outiv(unit,string,var)
-  
+  subroutine write_outrm(unt,string,var)
   implicit none
-  character*(*) string
-  integer unit,i,l
+  character*(*), intent(in) :: string
+  integer n,m,unt,l,i,j
+  real(r15), dimension(:,:), intent(in) :: var
+
+  l=len_trim(string)
+  n=size(var,1) ; m=size(var,2)
+! write(unit,*)' write_outrm called;nl,nc=',n,m
+  write(unt,*)string(1:l)//' is='
+  do i=1,n
+     write(unt,4)var(i,:)
+  enddo
+4 format(99(1x,f13.5))
+  end subroutine write_outrm
+!-----------------------------
+  subroutine write_outim(unt,string,var)
+  implicit none
+  integer, dimension(:,:), intent(in) :: var
+  integer, intent(in) :: unt
+  character*(*), intent(in) :: string
+  integer n,m,i,l,j
+
+  l=len_trim(string)
+  n=size(var,1) ; m=size(var,2)
+  do i=1,n
+     write(unt,4)string(1:l)//' is=',var(i,:)
+  enddo
+4 format(a,99(1x,i8))
+
+  end subroutine write_outim
+!-----------------------------
+  subroutine write_outrv(unt,string,var)
+  implicit none
+  character*(*), intent(in) :: string
+  integer unt,l,i
+  real(r15), dimension(:) :: var
+
+  l=len_trim(string)
+  write(unt,4)string(1:l)//' is=',var(:)
+4 format(a,99(1x,f13.5))
+  end subroutine write_outrv
+!-----------------------------
+  subroutine write_outcv(unt,string,var)
+  implicit none
+  character*(*), intent(in) :: string
+  integer unt,l,i
+  complex(r15), dimension(:) :: var
+
+  l=len_trim(string)
+  write(unt,4)string(1:l)//' is=',var(:)
+4 format(a,99(3x,f13.5,1x,f13.5))
+  end subroutine write_outcv
+!-----------------------------
+  subroutine write_outiv(unt,string,var)
+  implicit none
+  character*(*), intent(in) :: string
+  integer unt,i,l
   integer, dimension(:) :: var
 
   l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',(var(i),i=1,size(var))
-
+  write(unt,4)string(1:l)//' is=',var(:)
 4 format(a,99(1x,i8))
+
 end subroutine write_outiv
 !-----------------------------
-subroutine write_outr(unit,string,var)
-  
+  subroutine write_outr(unt,string,var)
   implicit none
-  character*(*) string
-  integer unit,l
-  real(8) var
+  character*(*), intent(in) :: string
+  integer unt,l
+  real(r15) var
 
   l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',var
-
-  4 format(a,99(1x,g12.6))
+  write(unt,4)string(1:l)//' is=',var
+4 format(a,99(1x,f13.5))
 end subroutine write_outr
 !-----------------------------
-subroutine write_outi(unit,string,var)
-
+  subroutine write_outi(unt,string,var)
   implicit none
-  character*(*) string
-  integer n,unit,l
+  character*(*), intent(in) :: string
+  integer unt,l
   integer var
 
   l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',var
-  
+  write(unt,4)string(1:l)//' is=',var
 4 format(a,99(1x,i8))
+
 end subroutine write_outi
 !-----------------------------
-subroutine write_outv(unit,string,var)
-
+  subroutine write_outv(unt,string,var)
+  use geometry
   implicit none
-  character*(*) string
-  integer unit,l
+  character*(*), intent(in) :: string
+  integer unt,l
   type(vector) var
 
   l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',var
-
-4 format(a,3(1x,g12.6))
+  write(unt,4)string(1:l)//' is=',var
+4 format(a,3(1x,f13.5))
 end subroutine write_outv
 !-----------------------------
 subroutine ustring(m,lineout,nrank,iatom,ixyz)
@@ -1011,6 +1041,8 @@ module lattice
   real(8) r0g(3,3)
   type(vector) r1conv,r2conv,r3conv,g1conv,g2conv,g3conv
   integer n1min,n2min,n3min,n1max,n2max,n3max,NC(3),NF(3)
+  
+  real(r15) volume_r0,volume_g0 !UPDATE: FOCEX_ec
 
  contains
 !========================================
@@ -1292,6 +1324,9 @@ module svd_stuff
     character(1), allocatable:: err(:)
     integer ngr, ntotind, ntot
   end type fulldmatrix
+
+  integer size_kept_fc2 !UPDATE: FOCEX_ec
+  integer, allocatable :: keep_grp2(:),nlines(:) !UPDATE: FOCEX_ec
 
   integer maxrank,maxgroups,itrans,irot,ihuang,enforce_inv
   integer nterms(4),maxterms(4),maxtermsindep(4),ngroups(4)

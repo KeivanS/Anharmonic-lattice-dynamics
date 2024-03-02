@@ -1,3 +1,131 @@
+!**********************************************************
+!UPDATE: FOCEX_ec
+module mech
+   use atoms_force_constants, only :  natom_prim_cell
+   use constants, only : r15
+   use eigen, only : ndyn
+   implicit none
+  
+   real(r15) sigma0(3,3),atld0(3,3,3,3)
+   real(r15), allocatable :: phi(:,:),xi(:,:,:),qiu(:,:,:),zeta(:,:,:),teta(:,:,:) ,gama(:,:),y0(:),pi0(:)
+   
+  ! contains
+  
+  
+end module mech
+!**********************************************************
+!UPDATE: FOCEX_ec
+module linalgb
+   use constants, only : r15
+  
+    interface append_array
+       module procedure append_array_1d,append_array_2d
+    end interface
+  
+   contains
+!----------------------------------------------------------------
+subroutine append_array_1d(a,b,c)
+  !! appends array b to the end of a and stores the result in c
+   implicit none
+  ! integer, intent(in) :: na,nb
+  ! real(r15), intent(in):: a(na),b(nb)
+  ! real(r15), allocatable, intent(inout):: c(:)
+  ! real(r15) :: c(size(a)+size(b))
+   real(r15), intent(in):: a(:),b(:)
+   real(r15), allocatable :: c(:),aux(:)
+   integer nc,na,nb
+  
+   na=size(a(:));
+   nb=size(b(:));
+   nc=na+nb
+   c=reshape(a,shape=(/nc/),pad=b)
+  
+   return
+  
+  ! could also use
+   allocate(aux(nc)) ! this is to allow calls like append_array(a,b,a)
+   aux(1:na)=a
+   aux(na+1:na+nb)=b
+   if (allocated(c)) deallocate (c)
+   allocate(c(nc))
+   c=aux
+   deallocate(aux)
+  
+end subroutine append_array_1d
+  !---------------------------------------
+subroutine append_array_2d(a,b,c)
+  !! appends array b to the end of a and stores the result in c
+   implicit none
+  ! integer, intent(in) :: na,nb
+  ! real(r15), intent(in):: a(na),b(nb)
+  ! real(r15), allocatable, intent(inout):: c(:)
+  ! real(r15) :: c(size(a)+size(b))
+   real(r15), intent(in):: a(:,:),b(:,:)
+   real(r15), allocatable :: c(:,:) ,aux(:,:)
+   integer nc,na,nb,col
+  
+   col=size(a,2) ! (1,:));
+   na =size(a,1)   ! (:,1));
+   nb =size(b,1)   ! (:,1));
+   nc =na+nb
+  
+  ! c=reshape(transpose(a),shape=(/col,nc/),pad=transpose(b),order=(/1,2/))
+  ! c=transpose(c)
+  !! c=reshape(a,shape=(/nc,col/),pad=b,order=(/1,2/))
+  
+  ! return
+  
+  ! could also use
+   allocate(aux(nc,col)) ! this is to allow calls like append_array(a,b,a)
+   aux(1:na,:)=a
+   aux(na+1:na+nb,:)=b
+   if (allocated(c)) deallocate (c)
+   allocate(c(nc,col))
+   c=aux
+   deallocate(aux)
+  
+end subroutine append_array_2d
+  !---------------------------------------
+subroutine symmetrize_res(mat2,res)
+  ! enforces mat2(a,b)-mat2(b,a)=res(a,b)-res(b,a); consider mat=mat2-res ; symmetrize mat then mat2=sym(mat)+res
+   use constants, only : r15
+   implicit none
+   real(r15), intent(inout) :: mat2(:,:) 
+   real(r15), intent(in) :: res(:,:) 
+   real(r15), allocatable:: mean(:,:) 
+   integer n
+  
+   n=size(mat2,1)
+   allocate(mean(n,n))
+  
+   mean=(mat2-res+transpose(mat2-res))/2
+   mat2=mean+res
+   deallocate(mean)
+end subroutine symmetrize_res
+  
+  !---------------------------------------
+subroutine symmetrize2(n,mat2)
+   use constants, only : r15
+   implicit none
+   integer, intent(in) :: n
+   real(r15), intent(inout) :: mat2(n,n) 
+   real(r15), allocatable:: mean(:,:) 
+  
+  ! n=size(mat2,1)
+   allocate(mean(n,n))
+  ! mean=(mat(1,2)+mat(2,1))/2
+  ! mat(1,2)=mean ; mat(2,1)=mean
+  ! mean=(mat(1,3)+mat(3,1))/2
+  ! mat(1,3)=mean ; mat(3,1)=mean
+  ! mean=(mat(3,2)+mat(2,3))/2
+  ! mat(3,2)=mean ; mat(2,3)=mean
+  
+   mean=(mat2+transpose(mat2))/2
+   mat2=mean
+   deallocate(mean)
+end subroutine symmetrize2
+  
+end module linalgb
 !!legacy code, no comment
 !**********************************************************
 module io2
@@ -70,7 +198,7 @@ module eigen
    complex(8), allocatable :: eigenvec_bs(:,:,:),eigenvec(:,:,:),grun(:,:),grun_bs(:,:),eivecibz(:,:,:)
 
 contains
-
+!==========================================================
 subroutine allocate_eig(nb,ni,nk) ! nb for band, nk for coarse mesh in FBZ
    integer nb,nk,ni
 
@@ -86,7 +214,8 @@ subroutine allocate_eig(nb,ni,nk) ! nb for band, nk for coarse mesh in FBZ
 !      allocate( eivalibz(nb,ni),eivecibz(nb,nb,ni),velocibz(3,nb,ni) )
 end subroutine allocate_eig
 !---------------------------------
-subroutine allocate_eig_bs(nb,nk,nv) ! nb for band, nk for band structure mesh
+subroutine allocate_eig_bs(nb,nk,nv) 
+   !! nb for band, nk for band structure mesh
    integer nb,nk,nv
    if (nv.ne.0) then
       IF(ALLOCATED(eigenval_bs)) DEALLOCATE(eigenval_bs)
@@ -138,7 +267,9 @@ end function nkpt
 ! end function nband
 !==========================================================
 end module eigen
+
 !*******************************************************
+
 module phi3
 
    complex(8), allocatable :: v3(:,:,:,:,:),selfN(:,:,:) ,selfU(:,:,:),v33(:)
@@ -546,6 +677,7 @@ close(ibs)
 end subroutine make_kp_bs2
 !-------------------------------------------
 subroutine make_kp_cubic(nx,ny,nz,kpg)
+   !!legacy code, not used
    use lattice
    implicit none
    integer :: i,j,k,nx,ny,nz,nk
@@ -629,7 +761,7 @@ subroutine make_kp_FBZ(nk)
 end subroutine make_kp_FBZ
 !-------------------------------------------
 subroutine make_kp_reg(nx,ny,nz,sx,sy,sz,kpt,wkt)
-! generate a regular mesh from 0 to g_i, with eventual shift
+   !! generate a regular mesh from 0 to g_i, with eventual shift
    use geometry
    use params
    implicit none
@@ -682,12 +814,12 @@ subroutine make_kp_reg(nx,ny,nz,sx,sy,sz,kpt,wkt)
 end subroutine make_kp_reg
 !-------------------------------------------
 subroutine make_kp_coarse(nx,ny,nz)
-! generate a regular mesh (no shift) from -g_i to g_i, throw away kpoints larger
-! that some radius a bit larger than the FBZ's larger radius, the points in the
-! FBZ are identified with a mapping integer array called mapbz:
-! mapbz(1:nbz) is the index of the corse kpoints which are in the FBZ
-! also adds a finer mesh near Gamma for better fitting there.
-! input: ni, output: kpc,nkc,nbz,mapbz
+   !! generate a regular mesh (no shift) from -g_i to g_i, throw away kpoints larger
+   !! that some radius a bit larger than the FBZ's larger radius, the points in the
+   !! FBZ are identified with a mapping integer array called mapbz:
+   !! mapbz(1:nbz) is the index of the corse kpoints which are in the FBZ
+   !! also adds a finer mesh near Gamma for better fitting there.
+   !! input: ni, output: kpc,nkc,nbz,mapbz
    use geometry
    use params
    implicit none
@@ -714,7 +846,7 @@ subroutine make_kp_coarse(nx,ny,nz)
    nshell=15 !what value to choose?
    ALLOCATE(gg(3,nshell))
    CALL make_sorted_gs(g1,g2,g3,nshell,gg)
-! shift by a small amount so that only one boundary K remains in the FBZ after folding
+   !shift by a small amount so that only one boundary K remains in the FBZ after folding
    nk = 0
    do i = -nx,nx
    do j = -ny,ny
@@ -736,12 +868,12 @@ subroutine make_kp_coarse(nx,ny,nz)
    write(ulog,*)' Number of raw coarse kpoints generated is=',nk
    allocate(mp(nk))
 
-! sort according to their lengths
+   !sort according to their lengths
    call sort(nk,kl,mp,nk)
     !DO num=1,nk
         !WRITE(*,*) 'num=',num,'mp=',mp(num),'kl=',kl(mp(num))
     !END DO
-! find the radius of the sphere containing the FBZ
+   !find the radius of the sphere containing the FBZ
    kmax = 0
    do i=1,15 ! nshl do not need the third shell here !why i from 1 to 15
       g6=length(gg(:,i))
@@ -752,7 +884,7 @@ subroutine make_kp_coarse(nx,ny,nz)
    g6 = kmax*0.7
    write(ulog,*)' radius of the coarse mesh is chosen to be=',g6
 
-! find how many kp are within this sphere
+   !find how many kp are within this sphere
    iloop: do i=1,nk
       if (kl(mp(i)) .gt. g6) then
          nkc = i
@@ -761,24 +893,24 @@ subroutine make_kp_coarse(nx,ny,nz)
    enddo iloop
    write(ulog,*)' size of the coarse mesh is=',nkc
 
-! store the points within the spere in junk
+   !store the points within the spere in junk
    allocate(junk(3,nkc))
    do i=1,nkc
       junk(:,i) = kp(:,mp(i))
    enddo
 
-! now fold in the FBZ and find out how many kpoints are in there and their mapping
+   !now fold in the FBZ and find out how many kpoints are in there and their mapping
    allocate(mapbz(nkc),kz(3,nkc))
    call fold_in_fbz(nkc,junk,1,gg,nbz,kz,mapbz)
 
-! mapbz is the mapping of a point in the FBZ to the index of that point in kpc
+   !mapbz is the mapping of a point in the FBZ to the index of that point in kpc
    write(ulog,*)'Number of coarse kpoints generated in the FBZ =',nbz
    do i=1,nbz
       write(fbz,3)junk(:,mapbz(i))
    enddo
    deallocate(kp,kz,mp)
 
-! add a small fine mesh around the gamma point
+   !add a small fine mesh around the gamma point
    n4 = 4
    allocate(kz(3,n4*n4*n4),kp(3,n4*n4*n4))
    call make_kp_cubic(n4,n4,n4,kz)
@@ -794,14 +926,14 @@ subroutine make_kp_coarse(nx,ny,nz)
    enddo
    write(ulog,*)j,' mesh points added near the gamma point'
 
-! now allocate and store the coarse mesh in this array, and the KPOINT.COARSE file
+   !now allocate and store the coarse mesh in this array, and the KPOINT.COARSE file
    allocate(kpc(3,nkc+j))
    do i=1,nkc
       kpc(:,i) = junk(:,i)     ! junk(:,mapbz(i)) lists the folded vectors in the FBZ
       write(126,3)kpc(:,i)
    enddo
 
-! add the extra sphere around gamma
+   !add the extra sphere around gamma
    do i=nkc+1,nkc+j
       kpc(:,i) = kp(:,i-nkc)
       write(126,3)kpc(:,i)

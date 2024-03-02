@@ -12,6 +12,9 @@ Module VA_math
     use mpi
     use mpi_params
 
+    !UPDATE: FOCEX_ec
+    use mech
+    use linalgb
     IMPLICIT NONE
 
     ! To keep a track of updated fc number
@@ -7715,7 +7718,7 @@ subroutine mechanical(bulk,c11,c44,dlogv)
     temp = elastic
     CALL invers_r(temp, compliance,6)
 
-    WRITE(33,*)'elastic'
+    WRITE(33,*)'elastic from simple FC2 sum'
     DO i=1,6
         WRITE(33,*) elastic(i,:)/cell_volume*1.6 !final result is in 100Gpa
     END DO
@@ -7836,7 +7839,478 @@ subroutine mechanical(bulk,c11,c44,dlogv)
     END DO
     WRITE(33,*)
  END SUBROUTINE GetElastic2
+!========================================================================================================
+!MODIFY: FOCEX_ec
+! elastic constants computing subroutines from FOCEX 'get_phi_zeta_Xi', 'residuals ', 'mechanical' and 'convert_to_voigt'
+! because there is already a subroutine named 'mechanical' in this code,
+! the FOCEX 'mechanical' subroutine is renamed into 'mechanical2'
+! need to implement 'mechanical0' or replace it by my own 'GetElastic_final'
+subroutine convert_to_voigt(a,c)
+    use constants, only : r15
+    implicit none
+    real(r15), intent(in):: a(3,3,3,3)
+    real(r15), intent(out)::c(6,6)
+    integer voigt,al,be,ga,de,i,j
+   
+    c=0
+    do al=1,3
+    do be=1,3
+    do ga=1,3
+    do de=1,3
+       i=voigt(al,be); j=voigt(ga,de)
+       c(i,j)=a(al,be,ga,de)
+   !   c(j,i)=a(al,be,ga,de)
+    enddo
+    enddo
+    enddo
+    enddo
+end subroutine convert_to_voigt
 !-------------------------------------------------------------------------------------------------------
+ subroutine get_phi_zeta_Xi(uio) !ndn,atld0,gama,phi,zeta,teta,xi,qiu,uio)
+    !! calculates some matrices useful for later operations, in addition to the  "standard" elastic constants
+     use ios , only: ulog, write_out
+     use lattice, only : volume_r0 
+     use atoms_force_constants
+     use svd_stuff
+     use params, only : verbose
+     use eigen, only : ndyn
+     implicit none
+     integer, intent(in) :: uio !,ndn
+    ! real(r15), intent(out) :: gama(max(1,ndn-3),max(1,ndn-3)),phi(ndn,ndn),zeta(ndn,ndn,3), &
+    !&            xi(ndn,3,3),teta(ndn,ndn,3),atld0(3,3,3,3),qiu(ndn,3,3)
+     integer tau,taup,al,be,ga,de,j,t,g,ti,s,cnt2,ired,la,nl,nc,nq
+     real(r15)  rij(3),junk,gam(ndyn,ndyn),tm(max(1,ndyn-3),max(1,ndyn-3)),constr(3,3,3),am(3,3,3,3)
+     real(r15)  matr(3,3),c1(6,6),c0(6,6),aux(ndyn,ndyn)
+     
+     !UPDATE:
+     INTEGER :: fc2_idx,atom1, atom2, tau1, tau2
+     INTEGER :: ndn
+
+     write(* ,*)' ********** ENTERING get_phi_zeta_x *************'
+     write(ulog,*)' ********** ENTERING get_phi_zeta_x *************'
+     write(35,*)' ********** ENTERING get_phi_zeta_x *************'
+     
+     !MODIFY: these needs to be allocated first! 
+     !They're allocated somewhere else in FOCEX but not in SCOP8
+     ndn = ndyn !it's atom_number*3
+     IF(.not.ALLOCATED(zeta)) ALLOCATE(zeta(ndn, ndn, 3))
+     IF(.not.ALLOCATED(phi)) ALLOCATE(phi(ndn, ndn))
+     IF(.not.ALLOCATED(xi)) ALLOCATE(xi(ndn, 3, 3))
+     IF(.not.ALLOCATED(teta)) ALLOCATE(teta(ndn, ndn, 3))
+     IF(.not.ALLOCATED(qiu)) ALLOCATE(qiu(ndn, 3, 3))
+
+     zeta=0; phi=0; xi=0;  teta=0; atld0=0;constr=0
+
+     !DEBUG_b: 
+     !replace the original gloop by a loop over all fc2, since it's just a sum on 2nd atom index of Phi. 
+     !on second thought, there is no need to loop through al, ga, tau at all
+     !only one loop through all fc2 covers everything
+     !original code deleted for simplicity, refer to FOCEX
+     DO fc2_idx = 1, SIZE(myfc2_index)
+        atom1 = myfc2_index(fc2_idx)%iatom_number
+        IF(atom1.gt.atom_number) CYCLE
+        tau1 = every_atom(atom1)%type_tau !this is tau
+        atom2 = myfc2_index(fc2_idx)%jatom_number !this is j
+        tau2 = every_atom(atom2)%type_tau  !this is taup
+        al = myfc2_index(fc2_idx)%iatom_xyz
+        ga = myfc2_index(fc2_idx)%jatom_xyz
+
+        rij = (every_atom(atom2)%R + every_atom(atom2)%tau) - (every_atom(atom1)%tau)
+        junk = trialfc2_value(atom1,atom2)%phi(al,ga) !this's just the actual fc2 value(K)
+        nl = al + 3*(tau1 - 1); nc = ga + 3*(tau2 - 1) ! dynmat dimensions
+        phi(nl, nc) = phi(nl,nc) + junk ! = sum_R fc2(0,tau;R,Taup)
+
+        DO la=1,3
+            constr(al,ga,la)=constr(al,ga,la) + junk * rij(la)  ! = sum_R,tau,taup fc2(0,tau;R,Taup) (R+taup-tau)_la
+        ENDDO
+
+        DO la=1,3
+            teta(nl,nc,la)=teta(nl,nc,la)+junk * &
+            &            (every_atom(atom2)%R(la) + every_atom(atom2)%tau(la))  ! = sum_R fc2(0,tau;R,Taup) (R+taup)_la
+            zeta(nl,nc,la)=zeta(nl,nc,la)+junk * rij(la)  ! = sum_R fc2(0,tau;R,Taup) (R+taup-tau)_la
+        ENDDO
+
+        DO be=1,3
+        DO de=1,3
+            atld0(al,be,ga,de)=atld0(al,be,ga,de) - junk*rij(be)*rij(de)/2
+        ENDDO
+        ENDDO
+    END DO
+    !DEBUG_f.
+    
+     qiu=0
+     do la=1,ndyn
+     do al=1,3
+     do ga=1,3
+        do tau=1, atom_number!MODIFY: natom_prim_cell
+           qiu(la,al,ga)=qiu(la,al,ga)+teta(la,3*(tau-1)+al,ga)
+        enddo
+        
+     enddo
+     enddo
+    ! ensure qiu is symmetric
+     if(maxval(abs(qiu(la,:,:)-transpose(qiu(la,:,:)))).gt.1d-6) call symmetrize2(3,qiu(la,:,:))
+     enddo
+    
+     do la =1,3
+        call write_out(ulog,' CONSTR=\sum_R,tau,taup phi_ij * R_ij (eV/Ang) = 0',constr(:,:,la))
+        WRITE(35,*) ' CONSTR=\sum_R,tau,taup phi_ij * R_ij (eV/Ang) = 0',constr(:,:,la)
+     enddo
+    
+     junk=maxval((phi-transpose(phi))*(phi-transpose(phi)))
+     if (junk.gt.1d-12) then
+        call write_out(   6,' PHI NOT SYMMETRIC ',phi)
+        call write_out(ulog,' PHI NOT SYMMETRIC ',phi)
+        WRITE(35,*) ' PHI NOT SYMMETRIC ',phi
+        stop
+     endif
+     if (verbose) then
+        call write_out(ulog,' PHI=sum_R phi(tau,R+taup)  (eV/Ang^2)',phi)
+        write(35,*) ' PHI=sum_R phi(tau,R+taup)  (eV/Ang^2)',phi
+     endif
+    
+     do la =1,3 ! for each la, zeta(:,:,la) is ANTIsymmetric wrt first 2 indices
+        if (verbose) then
+           call write_out(ulog,' ZETA=sum_R phi(tau,R+taup)(R+taup-tau) (eV/Ang)',zeta(:,:,la))
+           WRITE(35,*) ' ZETA=sum_R phi(tau,R+taup)(R+taup-tau) (eV/Ang)',zeta(:,:,la)
+        endif
+        aux=zeta(:,:,la)+transpose(zeta(:,:,la))
+        junk=maxval(aux*aux)
+        if (junk.gt.1d-12) then
+           call write_out(   6,' Zeta NOT ANTISYMMETRIC:z+z^T ',aux)
+           call write_out(ulog,' Zeta NOT ANTISYMMETRIC:z+z^T ',aux)
+           WRITE(35,*) ' Zeta NOT ANTISYMMETRIC:z+z^T ',aux
+        endif
+     enddo
+ 
+    3 format(a,2i5,9(1x,f10.4))
+    
+    ! to get gama, invert phi: gam.phi=1a ---------------------------------------
+      gam=phi  ! force constants and the images sum_R K(tau,R+taup)
+      gama=0 ! gama.phi=1
+      if(ndyn.gt.3) then
+         gama=gam(4:ndyn,4:ndyn)
+         call inverse_real(gama,tm,ndyn-3) 
+         gam(1:3,:)=0 ; gam(:,1:3)=0
+         gam(4:ndyn,4:ndyn)=tm  
+         gama=tm  
+         junk=maxval((gam-transpose(gam))*(gam-transpose(gam)))
+         if (junk.gt.1d-12) then
+            call write_out(   6,' |G-G^T|^2 ',junk)
+            call write_out(ulog,' |G-G^T|^2 ',junk)
+            write(35,*) ' |G-G^T|^2 ',junk
+            call write_out(   6,' GAMA NOT SYMMETRIC ',gam)
+            call write_out(ulog,' GAMA NOT SYMMETRIC ',gam)
+            WRITE(35,*) ' GAMA NOT SYMMETRIC ',gam
+            stop
+         endif
+         if (verbose) then
+            call write_out(ulog,' Gamma (should be symmetric) ',gam)
+            write(35,*) ' Gamma (should be symmetric) ',gam
+         endif
+      endif
+    
+    ! this part calculates xi(tau,ga;al,be) = du(tau,ga)/d eta_al,be = - Gam. qiu  ! should be symmetric under al <-> be
+    ! xi=0 
+    ! do al=1,3
+    ! do be=1,3
+    !    do tau=1,natom_prim_cell
+    !    do ga=1,3
+    !       j=ga+3*(tau-1)
+    !
+    !       do s=1,natom_prim_cell
+    !          nc=al+3*(s-1)
+    !! Should not symmetrize; strictly speaking, the formula below is correct
+    !          xi(j,al,be)=xi(j,al,be)-dot_product(gam(j,:),teta(:,nc,be))
+    !       enddo 
+    !
+    !    enddo 
+    !    enddo 
+    ! enddo 
+    ! enddo 
+    !  xi=-gama*qiu ; this way both xi and qiu are symmetric wrt al<->be
+     do s=1,ndyn
+     do al=1,3
+     do be=1,3
+        xi(s,al,be)= -dot_product(gam(s,:),qiu(:,al,be))
+     enddo
+     enddo
+        call write_out(ulog,' Symmetrized xi (Ang) ', xi(s,:,:))
+        write(35,*)' Symmetrized xi (Ang) ', xi(s,:,:)
+     enddo
+    
+    ! do tau=1,ndyn
+    !     junk=maxval((xi(tau,:,:)-transpose(xi(tau,:,:)))*(xi(tau,:,:)-transpose(xi(tau,:,:))))
+    !     if (junk.gt.1d-12) then
+    !        write(   6,5)' for tau, |Xi-Xi^T|^2 ',tau,junk
+    !        write(ulog,5)' for tau, |Xi-Xi^T|^2 ',tau,junk
+    !        call write_out(   6,' Xi NOT SYMMETRIC ',xi(tau,:,:))
+    !        call write_out(ulog,' Xi NOT SYMMETRIC ',xi(tau,:,:))
+    !!       stop
+    !     endif
+    !     call symmetrize2(xi(tau,:,:))
+    !     call symmetrize2(qiu(tau,:,:))
+    !     if (verbose) then
+    !        call write_out(ulog,' Symmetrized xi (Ang) ', xi(tau,:,:))
+    !        call write_out(ulog,' Symmetrized qiu(Ang) ',qiu(tau,:,:))
+    !     endif 
+    ! enddo
+    
+    ! calculate A from teta
+    ! am=0
+    ! do al=1,3
+    ! do be=1,3
+    ! do ga=1,3
+    ! do de=1,3
+    !    do tau=1,natom_prim_cell 
+    !       am(al,be,ga,de)=am(al,be,ga,de)+qiu(3*(tau-1)+al,ga,de)* atompos(be,tau)
+    !    enddo
+    ! enddo
+    ! enddo
+    ! enddo
+    ! enddo
+      
+    ! am   =am   /volume_r0*ee*1d30*1d-9
+     atld0=atld0/volume_r0*ee*1d30*1d-9
+     call convert_to_voigt(atld0,c0)
+    ! call convert_to_voigt(am   ,c1)
+     call write_out (ulog,' Elastic Tensor (standard term; old formula) in GPa, in voigt ',c0)
+    ! call write_out (ulog,' Elastic Tensor AM=teta*tau in GPa, in voigt ',c1)
+    WRITE(35,*) ' Elastic Tensor (standard term; old formula) in GPa, in voigt ',c0
+    4 format(a,99(1x,f10.4))
+    5 format(a,i5, 99(1x,f10.4))
+end subroutine get_phi_zeta_Xi
+!-------------------------------------------------------------------------------------------------------
+subroutine residuals(uio) !ndn,xi,zeta,phi,gam,sigma0,y0,pi0,uio)
+!! given phi,gam=1/phi,and xi=d_u/d_eta, calculates residual forces  pi0, stresses sigma0 and displacements y0 
+    use ios
+    use atoms_force_constants
+    use svd_stuff
+    use linalgb, only : symmetrize2,symmetrize_res
+    use mech
+    use eigen, only : ndyn
+    implicit none
+    integer, intent(in) :: uio !,ndn 
+! real(r15), intent(in) :: xi(ndn,3,3),phi(ndn,ndn),zeta(ndn,ndn,3),gam(ndn-3,ndn-3)
+! real(r15), intent(out) :: sigma0(3,3),y0(3*natom_prim_cell),pi0(3*natom_prim_cell)   
+    integer tau,taup,al,be,ga,de,i,j,t,g,ti,cnt2,ired,voigt,la,nl,nc,nu,s,nq!,delta_k 
+    !NOTE: replace delta_k by Kronecker, there is no need to declare it
+    real(r15)  rij(3),junk,constr(3,3,3),res(3,3) ,mat2(3,3)  
+
+    !UPDATE:
+    INTEGER :: fc1_idx, atom1, tau1
+
+    write(  * ,*)' ********** ENTERING RESIDUALS *************, ndyn=',ndyn
+    write(uio,*)' ********** ENTERING RESIDUALS *************, ndyn=',ndyn
+    write(ulog,*)' ********** ENTERING RESIDUALS *************, ndyn=',ndyn
+
+! pi0 is the residual force ------------------------------------
+    IF(.not.ALLOCATED(pi0)) ALLOCATE(pi0(3*atom_number)) !it's allocated somewhere else in FOCEX
+    pi0=0
+    !DEBUG_b:
+    !the original loop basically just sums FC1 on <R> label
+    !one loop over fc1 should be sufficient, no need for the tau, al, g, t loop
+    !original codes are removed for simplicity
+    IF(.not.ALLOCATED(myfc1_index)) THEN !can't use SIZE(myfc1_index).eq.0 as condition...
+        pi0 = 0
+    ELSE
+        DO fc1_idx=1, SIZE(myfc1_index)
+            atom1 = myfc1_index(fc1_idx)%iatom_number
+            al = myfc1_index(fc1_idx)%iatom_xyz
+            tau1 = every_atom(atom1)%type_tau
+            i=al+3*(tau-1)
+            !below should automatically take care of the sum on different <R> label
+            pi0(i) = pi0(i) + myfc1_index(fc1_idx)%pie_temp
+        END DO 
+    END IF
+    !DEBUG_f.
+
+3 format(a,i4,99(1x,f11.5))
+
+    IF(.not.ALLOCATED(y0)) ALLOCATE(y0(3*atom_number)) !it's allocated somewhere else in FOCEX
+    y0=0 ! y0 = -Gama*pi correction to equilibrium positions  at eta=0----------------------
+    do tau=2, atom_number!MODIFY:natom_prim_cell
+    do al=1,3
+    i=3*(tau-1)+al
+    do j=4,ndyn
+        y0(i)=y0(i)-gama(i-3,j-3)*pi0(j)
+    enddo
+    enddo
+    write(uio,3)'Position correction(Ang): tau,u0(tau,:)=',tau,(y0(3*(tau-1)+al),al=1,3)
+    write(ulog,3)'Position correction(Ang): tau,u0(tau,:)=',tau,(y0(3*(tau-1)+al),al=1,3)
+    enddo
+
+! residual Stress tensor (under no strain) ------------------------------------
+    sigma0=0
+    do al=1,3
+    do be=1,3
+    do tau=1,atom_number!MODIFY:natom_prim_cell
+            !MODIFY: replace atompos(be, tau)
+            sigma0(al,be)=sigma0(al,be)+(every_atom(tau)%tau(be))*pi0(3*(tau-1)+al)
+
+    enddo
+    enddo
+    enddo
+    call write_out(uio,'Residual stress sigma(eta=0) before symmetrization (eV) ',sigma0)
+    WRITE(ulog,*) 'Residual stress sigma(eta=0) before symmetrization (eV) ',sigma0
+! should be symmetric according to rotational invariance
+    call symmetrize2(3,sigma0)
+    sigma0 = sigma0/volume_r0*1d30*ee*1d-9
+    call write_out(uio,'Residual stress sigma(eta=0) after symmetrization (GPa) ',sigma0)
+    WRITE(ulog, *) 'Residual stress sigma(eta=0) after symmetrization (GPa) ',sigma0
+
+! enforces mat2(a,b)-mat2(b,a)=res(a,b)-res(b,a); consider mat=mat2-res ; symmetrize mat then mat2=sym(mat)+res
+! check below
+    s=0
+    do al=1,3
+    do tau=1,atom_number!natom_prim_cell
+        do be=1,3
+        do ga=1,3
+            junk=0
+            do taup=1,atom_number!natom_prim_cell
+            junk=junk+teta(3*(tau-1)+al,3*(taup-1)+be,ga)-teta(3*(tau-1)+al,3*(taup-1)+ga,be)
+            enddo
+            junk=junk + (pi0(3*(tau-1)+be)*Kronecker(al,ga)-pi0(3*(tau-1)+ga)*Kronecker(al,be))
+            if(abs(junk).gt.1d-6) then
+                write(ulog,*)'GET_PHI_XI: rot invce violation in theta:tau,al,be,ga,rot=',tau,al,be,ga,junk
+                write(34,*)'GET_PHI_XI: rot invce violation in theta:tau,al,be,ga,rot=',tau,al,be,ga,junk
+                s=1
+            endif
+        enddo
+        enddo
+    enddo
+    enddo
+
+! if(s.ne.0) then 
+!   write(*,*)' symmetrizing now teta '
+!! Impose rotational invariance on teta: sum_taup teta(tau,al;taup,be;ga) + pi(taup,be) delta(al,ga) symm in be<->ga
+!    do al=1,3
+!    do tau=1,natom_prim_cell
+!       la=al+3*(tau-1)
+!       do be=1,3
+!       do ga=1,3
+!          res(be,ga)= -( pi0(3*(tau-1)+be)*Kronecker(al,ga)-pi0(3*(tau-1)+ga)*Kronecker(al,be) )
+!          mat2(be,ga)=0
+!          do taup=1,natom_prim_cell
+!            mat2(be,ga)=mat2(be,ga)+teta(3*(tau-1)+al,3*(taup-1)+be,ga)-teta(3*(tau-1)+al,3*(taup-1)+ga,be)
+!          enddo
+!       enddo
+!       enddo
+!       call symmetrize_res(mat2,res)
+!    enddo
+!    enddo
+!
+! endif
+        
+end subroutine residuals
+!-------------------------------------------------------------------------------------------------------
+subroutine mechanical2(elastic,uio) !ndn,atld1,sigma0,phi,zeta,xi,qiu,gama,elastic,uio)
+    use ios
+    use atoms_force_constants
+    use svd_stuff
+    use mech
+    use eigen, only : ndyn
+    implicit none
+    integer, intent(in) :: uio !,ndn 
+   ! real(r15), intent(in) :: xi(ndn,3,3),phi(ndn,ndn),zeta(ndn,ndn,3),sigma0(3,3), &
+   !&                         qiu(ndn,3,3),gama(ndn-3,ndn-3)
+    real(r15), intent(out) :: elastic(6,6)
+   ! real(r15), intent(inout) :: atld1(3,3,3,3)
+    integer tau,taup,al,be,ga,de,i,j,t,g,ti,cnt2,ired,voigt,la,nl,nc,nu,s,nq
+    real(r15) c1(6,6),c2(6,6),c3(6,6),cq(6,6) ,atld2(3,3,3,3),atld3(3,3,3,3),qgq(3,3,3,3)
+      
+    call convert_to_voigt(atld0,c1)
+    call write_out (uio,' Elastic Tensor (first term in GPa) in voigt ',c1)
+    WRITE(ulog,*) ' Elastic Tensor (first term in GPa) in voigt ',c1
+   
+    !MODIFY: atld2&3 not needed, so removed
+
+    qgq=0 
+   
+    atld2=0    ! cross terms : phi*(R+tau)*Xi = zeta*delta (Xi) needs symmtrization --------------------
+    do al=1,3
+    do be=1,3
+    do ga=1,3
+    do de=1,3
+        
+       qgq(al,be,ga,de)=dot_product(qiu(4:ndyn,al,be),matmul(gama,qiu(4:ndyn,ga,de)))
+
+    enddo
+    enddo
+    enddo
+    enddo
+    qgq  =qgq  /volume_r0*ee*1d30*1d-9
+
+    call convert_to_voigt(qgq,cq)
+    call write_out (uio,' Elastic Tensor correction QGQ in voigt ',cq)
+    
+   ! should have c2+c3=-cq
+   
+   ! call write_out (uio,' Total Elastic Tensor (new formula in GPa) in voigt ',c1+c2+c3-cq)
+   
+   ! here use qgq as dummy
+   
+    call symmetrize4(3,qgq)
+    atld0=atld0-qgq
+   
+   ! these should be symmetric wr (al,be <-> ga,de)
+   ! can(?) symmetrize wr (al<->be) and (ga<->de) 
+   !
+   ! check symmetry
+     do al=1,3
+     do be=1,3
+     do ga=1,3
+     do de=1,3
+       if (abs(atld0(al,be,ga,de)-atld0(ga,de,al,be)).gt.1d-4)  &
+    &       write(uio,*)al,be,ga,de,atld0(al,be,ga,de),atld0(ga,de,al,be)
+       if (abs(atld0(al,be,ga,de)-atld0(be,al,ga,de)).gt.1d-4)  &
+    &       write(uio,*)al,be,ga,de,atld0(al,be,ga,de),atld0(be,al,ga,de)
+       if (abs(atld0(al,be,ga,de)-atld0(al,be,de,ga)) .gt.1d-4)  &
+    &       write(uio,*)al,be,ga,de,atld0(al,be,ga,de),atld0(al,be,de,ga)
+   !   if (abs(atld2(al,be,ga,de)-atld2(ga,de,al,be)).gt.1d-4)  &
+   !&       write(uio,*)al,be,ga,de,atld2(al,be,ga,de),atld2(ga,de,al,be)
+   !   if (abs(atld3(al,be,ga,de)-atld3(ga,de,al,be)).gt.1d-4)  &
+   !&       write(uio,*)al,be,ga,de,atld3(al,be,ga,de),atld3(ga,de,al,be)
+   !    if (abs(atld(al,be,ga,de)-atld(ga,de,al,be)).gt.1d-4)  &
+   ! &       write(uio,*)al,be,ga,de,atld(al,be,ga,de),atld(ga,be,al,de)
+   !    ahat(al,ga,be,de)=0.5*(atld(al,be,ga,de)+atld1(al,de,ga,be))
+     enddo
+     enddo
+     enddo
+     enddo
+   
+    !DEBUG_b:
+    !add sigma0 and eventtually symmetrize, implement Wallace (7.26)
+    DO al=1,3
+    DO be=1,3
+    DO ga=1,3
+    DO de=1,3
+        atld0(al,be,ga,de) = atld0(al,be,ga,de) - sigma0(be,ga)*Kronecker(al,de)
+    END DO
+    END DO   
+    END DO
+    END DO
+    !DEBUG_f. 
+   
+     call convert_to_voigt(atld0,elastic)
+   
+   ! do al=1,3
+   ! do be=1,3
+   ! do ga=1,3
+   ! do de=1,3
+   ! !  ct(al,be,ga,de)=ahat(al,ga,be,de)+ahat(be,ga,al,de)-ahat(al,be,ga,de)
+   !    ct(al,be,ga,de)=atld1(al,ga,be,de)+atld2(al,ga,be,de)+atld3(al,ga,be,de)
+   ! enddo
+   ! enddo
+   ! enddo
+   ! enddo
+   ! call convert_to_voigt(c1+c2+c3,elastic)
+   ! elastic=c1+c2+c3
+    call write_out (6,' Elastic Tensor ',elastic)
+    WRITE(ulog,*) ' Elastic Tensor ',elastic
+   
+end subroutine mechanical2
+!========================================================================================================
  SUBROUTINE Extract_xy(idx,odx1,odx2)
   !!utility subroutine, for pressure part
   !!i.e. give idx = 4(xy), output odx1 = 1(x), odx2 = 2(y). etc

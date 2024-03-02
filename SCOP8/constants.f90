@@ -1,6 +1,9 @@
 module constants
 !!A module contains constants value
 implicit none
+!UPDATE: FOCEX_ec
+integer, parameter,public :: r15 = kind(1.0d0)
+
  real(8) :: pi=3.14159265358979323846d0
  complex(8) :: ci=cmplx(0d0,1d0)
  real(8) :: h_plank= 6.62606896d-34

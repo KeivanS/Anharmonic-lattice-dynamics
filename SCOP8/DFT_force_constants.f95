@@ -11,6 +11,16 @@ MODULE DFT_force_constants
     REAL(8) :: max_fc3=0d0
     REAL(8),DIMENSION(6,6) :: elastic,compliance
     !!Below are FORTRAN TYPE definition for force constants
+!------------------------------------!UPDATE: FOCEX_ec----------------------------------------------
+    TYPE fc1_index !index info directly read from file, will be used to map fc1_value
+        INTEGER :: junk, group
+        INTEGER :: iatom_number, iatom_xyz
+        REAL(8) :: pie_temp
+    END TYPE
+
+    TYPE fc1_value
+        REAL(8),DIMENSION(d) :: pie
+    END TYPE
 !---------------------------------------------------------------------------------------------------
     TYPE fc2_index  !index info directly reads from file, will be used to map fc2_value
         INTEGER :: junk,group
@@ -48,6 +58,10 @@ MODULE DFT_force_constants
     END TYPE
 !------------------------------------------------------------------------------------------------------
     !! Below are variable declarations
+    !UPDATE: FOCEX_ec
+    TYPE(fc1_index),DIMENSION(:),ALLOCATABLE :: myfc1_index
+    TYPE(fc1_value),DIMENSION(:),ALLOCATABLE :: myfc1_value
+
     TYPE(fc2_index),DIMENSION(:),ALLOCATABLE :: myfc2_index, oldfc2_index
     TYPE(fc2_value),DIMENSION(:,:),ALLOCATABLE :: myfc2_value,myefc2_value, prev_fc2, inv_phiTau
     TYPE(fc2_index),DIMENSION(:),ALLOCATABLE :: eff_fc2_index !to store all fc2 that atom1 within p cell
@@ -175,7 +189,6 @@ CONTAINS
         END IF
     END FUNCTION find_loc2
 !-----------------------------------------------------------------------------------------------
-
     FUNCTION include_arrays(child, parent) RESULT(inc)
     !!check if child array is included in the parent array
         IMPLICIT NONE
@@ -261,6 +274,7 @@ CONTAINS
     END SUBROUTINE get_atoms_otf
 !===============================================================================================
     SUBROUTINE read_force_constants
+    !UPDATE: add FC1.dat part for FOCEX_ec
     !!The major subroutine to read FCs from fc#.dat files(rank#=2,3,4)
         IMPLICIT NONE
 
@@ -292,6 +306,45 @@ CONTAINS
          WRITE(*,*) 'dimension=',d
          WRITE(*,*) 'total atom number=',tot_atom_number
 
+!-------------------------!UPDATE: add FC1.dat part for FOCEX_ec---------------------------------
+         rank = 1
+         OPEN(ufc1, file='fc1.dat', status='old', action='read')
+         READ(ufc1,'(a)') line
+         mx = 100000
+         DO j=1,mx
+            READ(ufc1, *, END=91) temporary
+         END DO
+91       mx=j-1
+         REWIND(ufc1)
+      
+         IF(mx.lt.1) THEN
+            WRITE(*,*) 'There is no rank 1 fc'
+            IF(ALLOCATED(myfc1_index).or.ALLOCATED(myfc1_value)) THEN
+                DEALLOCATE(myfc1_index,myfc1_value)
+            END IF
+         ELSE
+            ALLOCATE(myfc1_index(mx),myfc1_value(tot_atom_number))
+            DO i=1,tot_atom_number
+                myfc1_value(i)%pie=0
+            END DO
+            i=1
+            READ(ufc1, '(a)') line !the head line
+            WRITE(*,'(a)') line
+            WRITE(*,*) '********** FCs for rank=1:' ,mx,'  ************'
+
+            DO i=1,mx
+                READ(ufc1,*) myfc1_index(i)%junk,myfc1_index(i)%group,myfc1_index(i)%iatom_number,&
+                &myfc1_index(i)%iatom_xyz, myfc1_index(i)%pie_temp
+
+                atom1=myfc1_index(i)%iatom_number !first atom index
+                direction1=myfc1_index(i)%iatom_xyz !first direction index
+
+                myfc1_value(atom1)%pie=myfc1_index(i)%pie_temp !give value to pie(:)
+
+            END DO
+
+         ENDIF
+         CLOSE(ufc1)
 !------------------------------------------------------------------------------------------------
          rank=2
          OPEN(ufc2,file='fc2.dat',status='old',action='read')
