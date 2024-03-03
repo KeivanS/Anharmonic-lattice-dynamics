@@ -32,14 +32,14 @@
 
 #### Input Files Explanation
 
-- <fc2.dat>,<fc3.dat>,<fc4.dat> are force constants file extracted from runing **FOCEX**, values are labeled with atom number and directional indexes, stored as objects in this code
+- <fc1.dat> has no other use than for elastic constant residue term<fc2.dat>,<fc3.dat>,<fc4.dat> are force constants file extracted from runing **FOCEX**, values are labeled with atom number and directional indexes, stored as objects in this code
 - <lat_fc.dat> contains some structure info of crystal and a complete atom list of the supercell, stored as objects in this code
 - <params.born> has the born charge and electric constsant
 - <params.inp> contains some structure info
 - <params.phon> contains some phonon related info, such as k mesh size, etc
-- <iteration_parameters.in> is `<u>`user defined`</u>` input file, what every line does is noted directly in the sample file
-- <kpbs.in> is `<u>`user defined`</u>` input file. It is only for post process, gives the high symmetry k point path that user chooses to calculate phonon dispersion, etc
-- <targetInitialize.dat> is both `<u>`user defined`</u>` input file and code's output file. Can be used to manually assign initial values to corresponding variational parameters. When a run finishes, it will be updated as the optimized variational parameters at this temperature.
+- <iteration_parameters.in> is `<u>`user defined `</u>` input file, what every line does is noted directly in the sample file
+- <kpbs.in> is `<u>`user defined `</u>` input file. It is only for post process, gives the high symmetry k point path that user chooses to calculate phonon dispersion, etc
+- <targetInitialize.dat> is both `<u>`user defined `</u>` input file and code's output file. Can be used to manually assign initial values to corresponding variational parameters. When a run finishes, it will be updated as the optimized variational parameters at this temperature.
 - for a detailed explanation on input file, please refer to 'tutorial_scop8.txt'
 
 ---
