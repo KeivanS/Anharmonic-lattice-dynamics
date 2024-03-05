@@ -2,16 +2,17 @@
  subroutine svd_set(m3,n,a,b,x,sigma,svdcut,error,ermax,sig,fnsvd)
 !! performs a Singular Value Decomposition of the matrix a(m3,n) in order to solve the linear
 !! system ax=b. SVD results will be written in the file fnsvd
+ use constants, only : r15
  implicit none
  integer , intent(in):: m3,n
- real(8), intent(inout) :: a(m3,n)
- real(8), intent(in) :: b(m3),svdcut
-! real(8), allocatable :: u(:,:),v(:,:),w(:) 
- real(8) v(n,n),w(n),w2(n,n) , ax(m3)
- real(8), intent(out) :: error,ermax,x(n),sigma(n),sig
+ real(r15), intent(inout) :: a(m3,n)
+ real(r15), intent(in) :: b(m3),svdcut
+! real(r15), allocatable :: u(:,:),v(:,:),w(:)
+ real(r15) v(n,n),w(n),w2(n,n) , ax(m3)
+ real(r15), intent(out) :: error,ermax,x(n),sigma(n),sig
  character(LEN=*), intent(in) :: fnsvd
  integer i,j,k,uio,umat
- real(8) prod,wmax,wmin,wcut,junk,num,denom
+ real(r15) wmax,wmin,wcut,num,denom !,prod,junk
 
  uio = 345
  umat= 346
@@ -134,18 +135,19 @@
  end subroutine svd_set
 !===================================================
  subroutine solve_by_elimination(m3,n,m0,a,b,x,sigma,svdcut,nconfigs,nlines,energies,itemp,tempk)
-!! for a system of linear homogeneous equations, A(m3,n)*X(n)=b , this subroutine finds the
+!! for a system of linear homogeneous equations, A(m3,n)*X(n)=b(m3) , this subroutine finds the
 !! range of A and eliminates dependent variables X using SVD, first by solving the
 !! inhomogeneous part of Ax=b (i.e. b\=0), and then projecting the solution on the
 !! kernel of the homogeneous part (i.e. b=0)
+ use constants, only : r15
  implicit none
  integer, intent(in) ::  m3,n,m0 ,itemp,nconfigs,nlines(nconfigs)  ! the first m0 lines form the homogeneous part of a
- real(8), intent(in) ::  a(m3,n),b(m3),svdcut ,tempk,energies(nconfigs)
- real(8), intent(out) :: x(n),sigma(n)
- real(8), allocatable :: ahom(:,:),ainhom(:,:),kernelbasis(:,:)
- real(8), allocatable :: mat(:,:),qmat(:)
+ real(r15), intent(in) ::  a(m3,n),b(m3),svdcut ,tempk,energies(nconfigs)
+ real(r15), intent(out) :: x(n),sigma(n)
+ real(r15), allocatable :: kernelbasis(:,:)  !ahom(:,:),ainhom(:,:),
+ real(r15), allocatable :: mat(:,:),qmat(:)
  integer i,uio,nkernel
- real(8) norm,error,ermax,num,denom,prod,junk,sig
+ real(r15) norm,error,ermax,num,denom,prod,junk,sig
 
  write(*,*)'SOLVE_BY_ELIMINATION: First solving the kernel of the homogeneous part'
 
@@ -158,32 +160,34 @@
        write(uio,*)'SOLVE_BY_ELIMINATION: the homogeneous part of B does not seem to be zero ',norm
        stop
     endif
-    allocate (kernelbasis(n,n),ahom(1:m0,1:n))  ! dummy for the homogeneous part
-    ahom=a(1:m0,1:n)
-    call get_kernel(m0,n,ahom,svdcut,nkernel,kernelbasis,uio)
-    deallocate (ahom)
+    allocate (kernelbasis(n,n)) !,ahom(1:m0,1:n))  ! dummy for the homogeneous part
+!   ahom=a(1:m0,1:n)
+!   call get_kernel(m0,n,ahom,svdcut,nkernel,kernelbasis,uio)
+    call get_kernel(m0,n,a(1:m0,1:n),svdcut,nkernel,kernelbasis,uio)
+!    deallocate (ahom)
  endif
 
  write(*,*)'SOLVE_BY_ELIMINATION: Now solving the inhomogeneous part'
- allocate (ainhom(m3-m0,n))
- ainhom=a(m0+1:m3,1:n)
+! allocate (ainhom(m3-m0,n))
+! ainhom=a(m0+1:m3,1:n)
 
  if(itemp.eq.1) then  ! implement temperature
 
     write(*,*) ' Temperature of ',tempk,' will be implemented'
     allocate(mat(n,n),qmat(n))
     write(uio,*)' Boltzmann weighting before solving for the inhomogeneous part'
-    call implement_temperature(m3,n,ainhom,b(m0+1:m3),nconfigs,energies,nlines,tempk,mat,qmat)
+!   call implement_temperature(m3,n,ainhom,b(m0+1:m3),nconfigs,energies,nlines,tempk,mat,qmat)
+    call implement_temperature(m3,n,a(m0+1:m3,1:n),b(m0+1:m3),nconfigs,energies,nlines,tempk,mat,qmat)
     call solve_svd(n,n,mat,qmat,svdcut,x,sigma,uio)
 
  else
 
-    call solve_svd(m3-m0,n,ainhom,b(m0+1:m3),svdcut,x,sigma,uio)
+    call solve_svd(m3-m0,n,a(m0+1:m3,1:n),b(m0+1:m3),svdcut,x,sigma,uio)
 
  endif
  write(uio,*)' Solution of the inhomogeneous part is=',x
 
- deallocate(ainhom)
+! deallocate(ainhom)
 
  write(uio,*)' After solving for the inhomogeneous part, now we project on the kernel of a_hom'
  call project_on(n,nkernel,x,kernelbasis(1:n,1:nkernel),x)
@@ -220,12 +224,13 @@
       SUBROUTINE svdcmp(a,m,n,w,v)
 !! performs SVD decomposition of A in  the form A=U*W*transpose(V)
 !! on output U is written into A
+ use constants, only : r15
       implicit none
       INTEGER, intent(in) :: m,n
-      REAL(8), intent(inout) :: a(m,n)
-      real(8), intent(out) :: v(n,n),w(n)
+      real(r15), intent(inout) :: a(m,n)
+      real(r15), intent(out) :: v(n,n),w(n)
       INTEGER i,its,j,jj,k,l,nm
-      REAL(8) anorm,c,f,g,h,s,scale,x,y,z,rv1(n),pythag2
+      real(r15) anorm,c,f,g,h,s,scale,x,y,z,rv1(n),pythag2
 
       g=0.d0
       scale=0.d0
@@ -448,13 +453,14 @@
 !  (C) Copr. 1986-92 Numerical Recipes Software !+!).
 !===================================================
       SUBROUTINE isvbksb(u,w,v,m,n,b,x)
+ use constants, only : r15
       implicit none
       INTEGER m,n
-      REAL(8) b(m),u(m,n),v(n,n),w(n),x(n)
+      real(r15) b(m),u(m,n),v(n,n),w(n),x(n)
 !     PARAMETER (NMAX=500)
       INTEGER i,j,jj
-!     REAL(8) s,tmp(NMAX)
-      REAL(8) s,tmp(n)
+!     real(r15) s,tmp(NMAX)
+      real(r15) s,tmp(n)
 
       do j=1,n
         s=0d0
@@ -478,12 +484,13 @@
 !=================
       SUBROUTINE svbksb(u,w,v,m,n,b,x)
 !! back substitutes u,w,v to solve for x, given b after small W terms are set to zero
+ use constants, only : r15
       implicit none
       INTEGER, intent(in) :: m,n
-      REAL(8), intent(in) :: b(m),u(m,n),v(n,n),w(n)
-      REAL(8), intent(out) :: x(n)
+      real(r15), intent(in) :: b(m),u(m,n),v(n,n),w(n)
+      real(r15), intent(out) :: x(n)
       INTEGER j
-      REAL(8) tmp(n)
+      real(r15) tmp(n)
 
       tmp=matmul(transpose(u),b)
       do j=1,n
@@ -496,9 +503,10 @@
       END SUBROUTINE svbksb
 !===================================================
       FUNCTION pythag2(a,b)
+ use constants, only : r15
       implicit none
-      REAL(8) a,b,pythag2
-      REAL(8) absa,absb,rat
+      real(r15) a,b,pythag2
+      real(r15) absa,absb,rat
 
       absa=abs(a)
       absb=abs(b)
@@ -523,21 +531,22 @@
 !! inputs are a,b,svdcut,a,b and their dimensions; output is xout
 !! write resutls and sd=sig in file with unit=uio
  use ios
+ use constants, only : r15
  use params, only : verbose
  implicit none
  integer, intent(in) :: ndim,n,uio
- real(8), intent(in) :: b(ndim),svdcut
- real(8), intent(in) :: a(ndim,n)
- real(8), intent(out):: xout(n) ,sig(n)
+ real(r15), intent(in) :: b(ndim),svdcut
+ real(r15), intent(in) :: a(ndim,n)
+ real(r15), intent(out):: xout(n) ,sig(n)
  integer i,k
- real(8), allocatable :: u(:,:),w(:),v(:,:)
- real(8) wmax,wmin,wcut
+ real(r15), allocatable :: u(:,:),w(:),v(:,:)
+ real(r15) wmax,wmin,wcut
 
  allocate( u(ndim,n),w(n),v(n,n) )
  write(uio,*)'SOLVE_SVD: amatrix is of dimensions ',ndim,n
  if (verbose) call write_out(uio,'=========================== SOLVE_SVD: amatrix ',a)
  u=a ! to keep a intact
- call svdcmp(u,ndim,n,w,v)  ! BEWARE: a will be overwritten !
+ call svdcmp(u,ndim,n,w,v)  ! BEWARE: a or u here will be overwritten !
 
 ! make small w equal to zero
  wmax=maxval(abs(w))
@@ -574,23 +583,25 @@
  end subroutine solve_svd
 !======================================================
  subroutine get_kernel(m0,n,amat,svdcut,nkernel,kernel,uio)
+!! calculates the kernel space of the matrix amat(m0,n) and stores the basis vectors in kernel(n,n)
  use ios
+ use constants, only : r15
  implicit none
  integer, intent(in) :: m0,n,uio
  integer, intent(out):: nkernel
- real(8), intent(in) :: amat(m0,n)
- real(8), intent(out):: kernel(n,n)
+ real(r15), intent(in) :: amat(m0,n)
+ real(r15), intent(out):: kernel(n,n)
  integer j,nb
  integer,allocatable :: r(:)
- real(8),allocatable :: u(:,:),v(:,:),w(:)
- real(8) wmin,wmax,wcut,svdcut
+ real(r15),allocatable :: u(:,:),v(:,:),w(:)
+ real(r15) wmin,wmax,wcut,svdcut
 
- write(*,*)'GET_KERNEL: calculating the kernel space of the homogeneous part of amat'
+ write(*,*)'GET_KERNEL: calculating the kernel space of the matrix amat'
 
  allocate(u(m0,n),v(n,n),w(n),r(n))
 
 ! SVD the homogeneous part of A to find the kernel basis and project x2 in it
-    u=amat(1:m0,1:n)
+    u=amat !(1:m0,1:n)
     call svdcmp(u,m0,n,w,v)
 
     wmax=maxval(abs(w))
@@ -598,14 +609,14 @@
     wcut=wmax*svdcut
 !    write(uio,4)'SOLVE_BY_ELIMINATION: largest w, condition number is ',wmax,wmax/wmin
     write(uio,4)'Maxval of w is=',wmax
-    write(uio,4)'SOLVE_BY_ELIMINATION: will only keep svds larger than wmax*1d-9=',wcut
+    write(uio,4)'SOLVE_BY_ELIMINATION: will only keep svs larger than wmax*1d-9=',wcut
 
     r=0
     do j=1,n
        write(uio,*)'j,w(j)=',j,w(j)
        if(abs(w(j)).lt.wcut) then  ! kernel space
           w(j)=0d0
-          r(j)=1  ! r is a map of zero elements of w , where x can be arbitrary (free)
+          r(j)=1  ! kernel space:r is a map of zero elements of w , where x can be arbitrary (free) 
        else
           r(j)=0  ! 1-r is a map of non-zero elements of w , x should be zero in this subspace
        endif

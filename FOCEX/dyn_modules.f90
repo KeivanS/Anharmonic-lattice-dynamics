@@ -1,8 +1,10 @@
 !==========================================================
+
  module om_dos
+ use constants, only : r15
  integer wmesh,ndyn2
- real(8) wmax,width,etaz
- real(8), allocatable :: dos(:,:),om(:)
+ real(r15) wmax,width,etaz
+ real(r15), allocatable :: dos(:,:),om(:)
 
    contains
 
@@ -19,7 +21,7 @@
    subroutine write_dos(udos)
    implicit none
    integer i,la,udos
-   real(8) sumdos
+   real(r15) sumdos
 
    write(udos,*)'# om(i),i,integrated_dos,total_dos,(dos(la,i),la=1,n))'
    sumdos=0
@@ -29,19 +31,20 @@
    enddo
    sumdos=sumdos-dos(0,1)*wmax/wmesh/2d0
 
-3  format(g11.5,2x,i5,99(1x,g10.4))
+3  format(g11.4,2x,i5,99(1x,g11.4))
    end subroutine write_dos
 
  end module om_dos
 !==========================================================
  module eigen
+ use constants, only : r15
  integer ndyn,nkc2  ! this is a copy of nkc
 ! eigenval for the coarse mesh (nkc,kpc), ! sqr of phonon freqs in eV/A/A/m0
 
- real(8), allocatable :: veloc_bs(:,:,:),veloc(:,:,:),velocibz(:,:,:)
- real(8), allocatable :: eigenval_bs(:,:),eigenval(:,:),eivalibz(:,:)
- complex(8), allocatable :: eigenvec_bs(:,:,:),eigenvec(:,:,:),eivecibz(:,:,:)
- complex(8), allocatable :: grun(:,:),grun_bs(:,:),grunibz(:,:)
+ real(r15), allocatable :: veloc_bs(:,:,:),veloc(:,:,:),velocibz(:,:,:)
+ real(r15), allocatable :: eigenval_bs(:,:),eigenval(:,:),eivalibz(:,:)
+ complex(r15), allocatable :: eigenvec_bs(:,:,:),eigenvec(:,:,:),eivecibz(:,:,:)
+ complex(r15), allocatable :: grun(:,:),grun_bs(:,:),grunibz(:,:)
 
     contains
 
@@ -104,7 +107,7 @@
 !---------------------------------
  function mysqrt(x)
  implicit none
- real(8) x,mysqrt
+ real(r15) x,mysqrt
  if(x.ge.0) then
     mysqrt=sqrt(x)
  else
@@ -113,3 +116,16 @@
  end function mysqrt
 
  end module eigen
+
+!===========================================================
+ module mech
+ use atoms_force_constants, only :  natom_prim_cell
+ use constants, only : r15
+ use eigen, only : ndyn
+ implicit none
+
+ real(r15) sigma0(3,3),atld0(3,3,3,3),sigmav(6)
+ real(r15), allocatable :: phi(:,:),xi(:,:,:),qiu(:,:,:),zeta(:,:,:),teta(:,:,:),gama(:,:),y0(:),pi0(:)
+ real(r15), allocatable :: qiuv(:,:),u0v(:)
+ 
+ end module mech

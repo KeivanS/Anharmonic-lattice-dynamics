@@ -1,4 +1,5 @@
 !===========================================================
+
  module kpoints
 !! this includes 4 kpoint meshes: one for the band structure: kp_bs(3,nkp_bs)
 ! one Monkhorst-Pack mesh around gamma for interpolation : kpc(3,nkc)
@@ -9,13 +10,13 @@
  use constants
  implicit none
  integer nbs1,nbs2,nbs3,nkp_bs   ! for the band structure
- integer nc(3),nkc,nbz,nibz_coarse,nkcc  ! coarse mesh,its FBZ folded mesh,IBZ_coarse mesh
+ integer nc(3),nkc,nbz,nkcc  ! coarse mesh,its FBZ folded mesh,IBZ_coarse mesh
  integer nib1,nib2,nib3,nbz_fine  ! for the fine mesh in the Irreducible BZ
  integer nshl,nbkmax,npos,nkmesh,nrmesh,ngibz         ! max no of neighbors=20
  integer, allocatable :: nb(:,:),nbk(:),mapbz(:) ,mapibz(:),mappos(:),mapinv(:)  ! nb_list of k
- real(8) shift(3),deltak,kcutnbf,kcutnbc,k_cart(3),k_conv(3),k_prim(3)   ! kcutnb for nbrlst and interpolation
- real(8), allocatable :: kpc(:,:),wk(:),kp_bs(:,:),dk_bs(:),dkc(:),gibz(:,:),wgibz(:)
- real(8), allocatable :: kbzf(:,:) ,kibz(:,:),wibz(:),kbz(:,:),kpfbz(:,:),kmesh(:,:),rmesh(:,:)
+ real(r15) shift(3),deltak,kcutnbf,kcutnbc,k_cart(3),k_conv(3),k_prim(3)   ! kcutnb for nbrlst and interpolation
+ real(r15), allocatable :: kpc(:,:),wk(:),kp_bs(:,:),dk_bs(:),dkc(:),gibz(:,:),wgibz(:)
+ real(r15), allocatable :: kbzf(:,:) ,kibz(:,:),wibz(:),kbz(:,:),kpfbz(:,:),kmesh(:,:),rmesh(:,:)
  integer, allocatable :: fbz2ibz(:),kop_ibz2fbz(:),fbzKstar(:)
  integer, allocatable :: ibzarms(:),ibz2fbz(:)
  character(LEN=3), allocatable :: kname_bs(:)
@@ -26,11 +27,11 @@
 
   subroutine allocate_kp_bs(n)
   integer n
-    allocate (kp_bs(3,n),dk_bs(n)) 
+    allocate (kp_bs(3,n),dk_bs(n))
   end subroutine allocate_kp_bs
 !-------------------------------------------
   subroutine deallocate_kp_bs
-    deallocate (kp_bs,dk_bs) 
+    deallocate (kp_bs,dk_bs)
   end subroutine deallocate_kp_bs
 !-------------------------------------------
   subroutine make_kp_bs
@@ -38,26 +39,26 @@
 !! list written in the file kpbs.params (given in direct coordinates of the CONVENTIONAL cell)
   use ios
   use geometry
-  use lattice , only : g01
+  use lattice , only : g01,g02,g03
   use constants, only : pi
-    implicit none 
+    implicit none
     integer :: i,j,nk,uio,nkdir,ubs,units ,ndir
-    real(8) lk,q(3),k2(3),k_conv(3),k_prim(3),k_cart(3)
-    real(8), allocatable :: ki(:,:),kf(:,:) ,kext_bs(:,:)
+    real(r15) lk,q(3),k_conv(3),k_prim(3),k_cart(3)
+    real(r15), allocatable :: ki(:,:),kf(:,:) ,kext_bs(:,:)
     character(LEN=6), allocatable :: dk(:)
 
     write(*,*)'entering MAKE_KP_BS'
-    uio = 67 
+    uio = 67
     ubs = 68
     open(uio,file='kpbs.params',status='old')
     open(ubs,file='redtocart')
 
     read(uio,*) units  ! if 0 conventional, else primitive
-    write(*,*)'reading ',units,nkdir,ndir 
+    write(*,*)'reading ',units,nkdir,ndir
     read(uio,*) nkdir  ! number of kpoints along each direction
-    write(*,*)'reading ',units,nkdir,ndir 
+    write(*,*)'reading ',units,nkdir,ndir
     read(uio,*) ndir  ! number of directions for the band structure
-    write(ubs,*)'reading units,nkdir,ndir=',units,nkdir,ndir 
+    write(ubs,*)'reading units,nkdir,ndir=',units,nkdir,ndir
     write(ubs,*)'# k_name , k in primitive, k in gconv units, k in cartesian '
     nkp_bs = ndir*nkdir    ! +1 is for including the last point
     write(*,*)'reading nkp_bs= ',nkp_bs
@@ -75,12 +76,12 @@
           k_conv=kext_bs(:,i)
 ! convert to units of primitive (k_prim) and cartesian (k_cart)
           k_prim=matmul(transpose(prim_to_conv),kext_bs(:,i))
-          k_cart=2*pi*matmul(cart_to_prim,k_prim)
+          k_cart=2*pi*(matmul(cart_to_prim,k_prim))
 ! this q is cartesian units
-          q=kext_bs(1,i  )*g1conv+kext_bs(2,i  )*g2conv+kext_bs(3,i  )*g3conv  
+          q=kext_bs(1,i  )*g1conv+kext_bs(2,i  )*g2conv+kext_bs(3,i  )*g3conv
           if(length(q-k_cart).gt.1d-5) write(*,9)'MAKE_KP_BS: Error,units,q,k_cart',units,q,k_cart
           ki(:,i)=q       ! ki should also be in cartesian
-          q=kext_bs(1,i+1)*g1conv+kext_bs(2,i+1)*g2conv+kext_bs(3,i+1)*g3conv 
+          q=kext_bs(1,i+1)*g1conv+kext_bs(2,i+1)*g2conv+kext_bs(3,i+1)*g3conv
           kf(:,i)=q
 
 ! conventional reduced and primitive
@@ -88,27 +89,27 @@
 
        else  ! reading in units of primitive
           q=kext_bs(:,i)
-          ki(:,i) = q(1)*g01+q(2)*g02+q(3)*g03   
+          ki(:,i) = q(1)*g01+q(2)*g02+q(3)*g03
           q=kext_bs(:,i+1)
-          kf(:,i) = q(1)*g01+q(2)*g02+q(3)*g03 
+          kf(:,i) = q(1)*g01+q(2)*g02+q(3)*g03
 ! convert to units of conventional
           k_prim=kext_bs(:,i)
           k_cart=2*pi*matmul(cart_to_prim,k_prim)
           k_conv=matmul(transpose(conv_to_cart),k_cart)/2/pi
-          
+
 ! conventional reduced and primitive
-          write(ubs,9)kname_bs(i),i, kext_bs(:,i),k_conv,k_cart  
+          write(ubs,9)kname_bs(i),i, kext_bs(:,i),k_conv,k_cart
 
        endif
     enddo
 
     i=ndir+1
     if(units.eq.0) then ! reading in units of conventional
-          k_cart=kext_bs(1,i)*g1conv+kext_bs(2,i)*g2conv+kext_bs(3,i)*g3conv 
+          k_cart=kext_bs(1,i)*g1conv+kext_bs(2,i)*g2conv+kext_bs(3,i)*g3conv
           k_prim=matmul(transpose(prim_to_conv),kext_bs(:,i))
           write(ubs,9)kname_bs(i),i, k_prim,kext_bs(:,i),k_cart
     else
-          k_cart=kext_bs(1,i)*g01+kext_bs(2,i)*g02+kext_bs(3,i)*g03   
+          k_cart=kext_bs(1,i)*g01+kext_bs(2,i)*g02+kext_bs(3,i)*g03
           k_conv=matmul(transpose(conv_to_cart),k_cart)/2/pi
           write(ubs,9)kname_bs(i),i, kext_bs(:,i),k_conv,k_cart
     endif
@@ -130,7 +131,7 @@
 ! now for each direction set up the coordinates of the kpoints
     kext_bs(1,1)=0    ! here using kext_bs(1,:) as a dummy variable
     do i = 1,ndir !-1
-  !       write(ubs,7) i, matmul(prim_to_cart,ki(:,i)),ki(:,i), matmul(transpose(conv_to_prim),ki(:,i))
+       write(ubs,7) i, matmul(prim_to_cart,ki(:,i)),ki(:,i), matmul(transpose(conv_to_prim),ki(:,i))
        q(:) = kf(:,i)-ki(:,i)  ! length of each section
        lk = length(q)/length(g01)  ! length of each section
        do j = 1,nkdir
@@ -150,9 +151,10 @@
     enddo
 !   kext_bs(1,ndir+1)=dk_bs(nk)
 
-    do i=1,ndir+1
+    do i=1,ndir
        write(dk(i),'(f6.3)') kext_bs(1,i)
     enddo
+    write(dk(i),'(f6.3)') kext_bs(1,ndir+1)-0.002
 
 !   write(88,*)'set xtics ( ',(kname_bs(i),dk(i),",",i=1,ndir+1),' )'
     write(88,*)'set xtics ( ',(kname_bs(i),dk(i),",",i=1,ndir),kname_bs(ndir+1),dk(ndir+1),' )'
@@ -176,21 +178,21 @@
     use params
     implicit none
     integer, intent(in) :: ncs(3)
-    real(8), intent(in) :: shft(3) !,g1(3),g2(3),g3(3)
-    real(8), intent(out):: kpt(3,ncs(1)*ncs(2)*ncs(3)),wkt(ncs(1)*ncs(2)*ncs(3))
+    real(r15), intent(in) :: shft(3) !,g1(3),g2(3),g3(3)
+    real(r15), intent(out):: kpt(3,ncs(1)*ncs(2)*ncs(3)),wkt(ncs(1)*ncs(2)*ncs(3))
     type(vector), intent(in) :: gg1,gg2,gg3
     type(vector) rr1,rr2,rr3
-    real(8) a1,a2,a3
+    real(r15) a1,a2,a3
 
     integer :: i,j,k,nk
-    real(8) q(3),ep(3)
+    real(r15) q(3),ep(3)
     open(126,file='KPOINT.MP',status='unknown')
     write(126,*)'# i ,kp(:,i), wk(i), kp_red'
     ep = 0d0  ! shift by a small amount so that only one boundary K remains in the FBZ after folding
 !   shft = (-0.5d0)*(g1+g2+g3)
 
-    nk=ncs(1)*ncs(2)*ncs(3)
-    allocate(dkc(nk))
+    nkc=ncs(1)*ncs(2)*ncs(3)
+    allocate(dkc(nkc))
 
     nk = 0
     do i = 1,ncs(1)
@@ -214,7 +216,7 @@
 
     call make_reciprocal_lattice_v(gg1,gg2,gg3,rr1,rr2,rr3)
 
-    do i=1,nk
+    do i=1,nkc
        q=kpt(:,i)
        a1=rr1.dot.q
        a2=rr2.dot.q
@@ -227,7 +229,7 @@
     close(126)
 
   end subroutine make_kp_reg
-!----------------------------------------------
+!-------------------------------------------
  subroutine get_k_info(q,N,nk,i,j,k,inside)
 ! for a vector q(3) in the primitive cell of the reciprocal space, defined on
 ! a mesh N(1),N(2),N(3), this subroutine finds the three indices of q
@@ -236,7 +238,7 @@
  use geometry
  implicit none
  integer, intent(in):: N(3)
- real(8), intent(in):: q(3)
+ real(r15), intent(in):: q(3)
  integer, intent (out) :: nk,i,j,k,inside
  integer indexg
 
@@ -268,8 +270,9 @@
  use geometry
  implicit none
  integer, intent(in):: N(3)
- real(8), intent(in):: q(3)
- integer, intent (out) :: nk,i,j,k,inside
+ real(r15), intent(in):: q(3)
+ integer, intent (out) :: nk,i,j,k
+ integer, intent (inout) :: inside
  integer indexg
 
 ! this was for when the kpoints were between 0 and N-1
@@ -297,7 +300,7 @@
  use params
  use ios
  implicit none
- real(8) q(3),ll
+ real(r15) q(3),ll
  integer nkt,i
  logical ex
 
@@ -324,3 +327,4 @@
 !----------------------------------------------
 
 end module kpoints
+

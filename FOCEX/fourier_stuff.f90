@@ -1,7 +1,10 @@
+!============================================================
+
  module fourier
+ use constants, only : r15
   integer nrgrid,nggrid
-  real(8), allocatable :: rgrid(:,:),ggrid(:,:)
-  real(8), allocatable:: rws_weights(:),gws_weights(:)
+  real(r15), allocatable :: rgrid(:,:),ggrid(:,:)
+  real(r15), allocatable:: rws_weights(:),gws_weights(:)
   integer, allocatable :: i1r(:),i2r(:),i3r(:),i1g(:),i2g(:),i3g(:)
 
   interface fourier_r2k
@@ -22,8 +25,8 @@
  use geometry
  implicit none
  integer, intent(in) :: nr,ng
- real(8), intent(in) :: fr(nr),wei(nr)
- real(8), intent(out) :: fk(ng)
+ real(r15), intent(in) :: fr(nr),wei(nr)
+ real(r15), intent(out) :: fk(ng)
  integer ik,ir
 
  fk=0
@@ -44,8 +47,8 @@
  use geometry
  implicit none
  integer, intent(in) :: nr,nk
- real(8), intent(in) :: fk(nk),wei(nk)
- real(8), intent(out) :: fr(nr)
+ real(r15), intent(in) :: fk(nk),wei(nk)
+ real(r15), intent(out) :: fr(nr)
  integer ik,ir
 
  fr=0
@@ -65,8 +68,8 @@
 
  use geometry
  implicit none
- real(8), intent(in) :: fr(:) !nrgrid)
- real(8), intent(out) :: fk(:) !nggrid)
+ real(r15), intent(in) :: fr(:) !nrgrid)
+ real(r15), intent(out) :: fk(:) !nggrid)
  integer ik,ir
 
  fk=0
@@ -84,8 +87,8 @@
 ! there is k,-k symmetry from time reversal, so a cosine transform is enough
  use geometry
  implicit none
- real(8), intent(in) ::  fk(:) !nggrid)
- real(8), intent(out) :: fr(:) !nrgrid)
+ real(r15), intent(in) ::  fk(:) !nggrid)
+ real(r15), intent(out) :: fr(:) !nrgrid)
  integer ik,ir
 
  fr=0
@@ -106,8 +109,8 @@
  use geometry
  use constants, only : ci
  implicit none
- complex(8), intent(in) :: fr(:) !nrgrid)
- complex(8), intent(out) :: fk(:) !nggrid)
+ complex(r15), intent(in) :: fr(:) !nrgrid)
+ complex(r15), intent(out) :: fk(:) !nggrid)
  integer ik,ir
 
  fk=0
@@ -126,8 +129,8 @@
  use geometry
  use constants, only : ci
  implicit none
- complex(8), intent(in) ::  fk(:) !nggrid) 
- complex(8), intent(out) :: fr(:) !nrgrid)
+ complex(r15), intent(in) ::  fk(:) !nggrid)
+ complex(r15), intent(out) :: fr(:) !nrgrid)
  integer ik,ir
 
  fr=0
@@ -151,20 +154,20 @@
  use atoms_force_constants !, only : natom_prim_cell,op_matrix,op_kmatrix
  use svd_stuff
  use lattice, only : primitivelattice
- use kpoints, only : kibz,wibz,nibz
+ use kpoints, only : kibz,nibz !,wibz
  use ios !, only : ulog,umatrx,ufc2,utimes,write_out
  use geometry
  use params, only : verbose
  use atoms_force_constants
  implicit none
  integer, intent(in) :: ncfg,nat,nrmesh,nkmesh,maprtausc(natom_prim_cell,nrmesh)
- real(8), intent(in) :: dsp(3,nat,ncfg),frc(3,nat,ncfg)
- real(8), intent(in) :: rmesh(3,nrmesh),kmesh(3,nkmesh)
- real(8), allocatable:: ur(:,:),uk(:,:),fr(:,:),fk(:,:),amatk(:,:),bmatk(:),coefs(:,:),sigm(:)
- complex(8), allocatable:: dynk(:,:,:) ,aux(:) ,d2(:,:),phi(:,:,:)
+ real(r15), intent(in) :: dsp(3,nat,ncfg),frc(3,nat,ncfg)
+ real(r15), intent(in) :: rmesh(3,nrmesh),kmesh(3,nkmesh)
+ real(r15), allocatable:: ur(:,:),uk(:,:),fr(:,:),fk(:,:),amatk(:,:),bmatk(:),coefs(:,:),sigm(:)
+ complex(r15), allocatable:: dynk(:,:,:) ,aux(:) ,d2(:,:),phi(:,:,:)
  integer nat0,icfg,ik,iarm,l,i,j,tau,ir,iatom,nu,nkstar,dim_l,dimdyn, &
  &       kvecop(48),narms,nsym,dim_c,n2,iop
- real(8) error,ermax,sig,kvecstar(3,48),sk(3),s3(3,3)
+ real(r15) error,ermax,sig,kvecstar(3,48),sk(3),s3(3,3)
  real tim
 
 ! nat0=nat/nrmesh
@@ -340,8 +343,8 @@
 
 
 1 format(a,i4,a,i4,a)
-2 format(a,i4,999(1x,g9.3))
-3 format(999(1x,g9.3))
+2 format(a,i4,999(1x,g10.3))
+3 format(999(1x,g10.3))
 5 format(a,i6,99(1x,f9.4))
 6 format(a,2i6,99(1x,g11.4))
 
@@ -350,9 +353,9 @@
 ! subroutine rotate(d2,s3,d2r)
 ! The relation is: D^al,be (tau,tau',S(k))=S^al,al' S^be,be' D^al',be' (iS(tau),iS(tau'),k)
 ! implicit none
-! complex(8), dimension(:,:), intent(in) :: d2
-! real(8), dimension(3,3), intent(in) :: s3
-! complex(8), dimension(:,:), intent(out) :: d2r
+! complex(r15), dimension(:,:), intent(in) :: d2
+! real(r15), dimension(3,3), intent(in) :: s3
+! complex(r15), dimension(:,:), intent(out) :: d2r
 ! integer ndim,i,j,al,be,tau,taup,als,bes,taus,taups
 
 ! ndim=size(d2(1,:))
@@ -373,8 +376,8 @@
  use atoms_force_constants
  implicit none
  integer, intent(in) :: ndim,nat,iop
- real(8), intent(in) :: s3(3,3)
- real(8), intent(out):: coefs(ndim,ndim)
+ real(r15), intent(in) :: s3(3,3)
+ real(r15), intent(out):: coefs(ndim,ndim)
  integer l,c,tau,taup,i,j,ic,jc,al,be,als,bes,taus,taups
 
  if(ndim .ne. (3*nat*(3*nat+1))/2 ) then
@@ -435,7 +438,7 @@
  implicit none
  integer, intent(in) :: nkmesh
  integer, intent(out):: nkstar
- real(8), intent(in) :: kstar(3),kmesh(3,nkmesh)
+ real(r15), intent(in) :: kstar(3),kmesh(3,nkmesh)
  integer i
 
  nkstar=0
@@ -454,3 +457,4 @@
  end subroutine find_in_mesh
 
  end module fourier
+

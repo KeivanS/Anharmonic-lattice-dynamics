@@ -1,6 +1,6 @@
  ! In the following 3 subroutines, only the treatment of FC2s has changed: instead
- ! of using all map(2)ngr, we only use the groups for which keep_grp2(g)=1
- ! and map(2)%ngr should be replaced by map(2)%nindepfc
+ ! of using all map(2)%ngr, we only use the groups for which keep_grp2(g)=1
+ ! and map(2)%ngr should be replaced by map(2)%nindepfc !! REALLY ??
  subroutine set_translational_inv_constraints
 !! outputs atransl, transl_constraints part of amatrix
 !! used for svd and also check the violation of translational invariance constraints
@@ -11,11 +11,12 @@
  use atoms_force_constants
  use ios
  use geometry
+ use constants, only : r15
 ! use force_constants_module
  implicit none
  integer i0,j,k,ired,counter,rnk,res
  integer al,be,ga,de,cnt2,g,t,ti
- real(8), allocatable:: atemp(:,:),btemp(:),ared1d(:),zero(:)
+ real(r15), allocatable:: atemp(:,:),btemp(:),ared1d(:),zero(:)
  logical new
 
  write(*,*) 'entering translational invce constraints routine with estimate ',transl_constraints
@@ -62,21 +63,21 @@
     cnt2=0
     gloop1: do g=1,map(rnk)%ngr  ! ineq. terms and identify neighbors
       if(g.gt.1) cnt2 = cnt2 + map(rnk)%ntind(g-1)
-    do t=1,map(rnk)%nt(g)
-       if ( map(rnk)%gr(g)%ixyz(1,t) .ne. al ) cycle
-       do ti=1,map(rnk)%ntind(g)
-          ired = cnt2+ti    ! this is the corresponding index of i in ared
-          if (ired.gt.nindepfc .or. ired.lt.1) then
-             write(ulog,*)'rnk=1:ired=',ired,'> nindepfc=',nindepfc
-             stop
-          endif
-          ared1d(ired) = ared1d(ired) + map(rnk)%gr(g)%mat(t,ti)
-       enddo
+      do t=1,map(rnk)%nt(g)
+         if ( map(rnk)%gr(g)%ixyz(1,t) .ne. al ) cycle
+         do ti=1,map(rnk)%ntind(g)
+            ired = cnt2+ti    ! this is the corresponding index of i in ared
+            if (ired.gt.nindepfc .or. ired.lt.1) then
+               write(ulog,*)'rnk=1:ired=',ired,'> nindepfc=',nindepfc
+               stop
+            endif
+            ared1d(ired) = ared1d(ired) + map(rnk)%gr(g)%mat(t,ti)
+         enddo
 !     write(ulog,6)'i0,term,red_indx,ared=',iatomterm_1(1,t),t,ired,ared1d(ired)
-    enddo
+      enddo
     enddo gloop1
 
-!   write(ulog,11)'al,ared=',al,ared1d
+!   if(verbose) write(ulog,11)'Rank1: counter,ared=',counter,ared1d(res+1:size(ared1d))  !res+map(rnk)%ntotind)
 
 ! compare with previous lines of ared; write if ared1d not repeated
     if ( ared1d .myeqz. zero ) cycle
@@ -85,11 +86,11 @@
        counter = counter+1
        atemp(counter,:) = ared1d(:)
        btemp(counter) = 0d0
-!      write(umatrx,7)(atemp(counter,dum),dum=1,ngr)
+       if(verbose) write(umatrx,7) ared1d(res+1:size(ared1d)) !res+map(rnk)%ntotind)
        if (counter.eq.dim_al-1) write(ulog,*)' DIM_AL TOO SMALL tr_inv rnk=',rnk
     endif
  enddo
- if(map(rnk)%ngr.gt.0) res = res + sum(map(rnk)%ntind(:))
+ if(map(rnk)%ngr.gt.0) res = res + map(rnk)%ntotind
 
  write(ulog,*)' RANK=1; residual index is=',res
  write(ulog,*)' NUMBER OF TRANSLATIONAL CONSTRAINTS of rank=1 is ', counter
@@ -135,12 +136,14 @@
       enddo
     enddo gloop2
 
+!   write(ulog,11)'Rank2: counter,ared=',counter,ared1d(res+1:size(ared1d)) !res+map(rnk)%ntotind)
+
 ! compare with previous lines of ared; write if ared1d not repeated
     if ( ared1d .myeqz. zero ) cycle
     call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
     if (new) then
        counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter) = 0d0
-!      write(umatrx,7)(atemp(counter,dum),dum=1,ngr)
+       if(verbose) write(umatrx,7) ared1d(res+1:res+ size_kept_fc2) !map(rnk)%ntotind)
        if (counter.eq.dim_al-1) write(ulog,*)' DIM_AL TOO SMALL tr_inv rnk=',rnk
     endif
  enddo
@@ -155,8 +158,8 @@
 
 !! K1 new change made on 2/13/23 ----------------
 
- write(ulog,*)' RANK=2; residual index is=',res
- write(ulog,*)' NUMBER OF CUMULATIVE TRANSLATIONAL CONSTRAINTS up to rank 2 is ', counter
+   write(ulog,*)' RANK=2; residual index is=',res
+   write(ulog,*)' NUMBER OF CUMULATIVE TRANSLATIONAL CONSTRAINTS up to rank 2 is ', counter
  endif
 
  rnk = 3  !********************************************
@@ -169,8 +172,6 @@
 
  do i0=1,natom_prim_cell
  do j=1,natoms ! take only j atoms within the nshells'th neighbor shell of i0
-!   if ( iatomneighbor(i0,j) .gt. nshells(rnk) ) cycle
-!   if ( iatomneighbor(i0,j) .eq. nshells(rnk) ) then
     if ( iatomneighbor(i0,j) .gt. nshells(rnk,i0) ) cycle
  !  if ( iatomneighbor(i0,j) .eq. nshells(rnk,i0) ) then
  !       rcut(rnk) = length(atompos(:,j)-atompos(:,i0))
@@ -198,14 +199,15 @@
 !     write(ulog,6)'i0,term,red_indx,ared=',iatomterm_1(1,t),t,ired,ared1d(ired)
       enddo
     enddo gloop3
-!   write(ulog,15)'i0,j,al,be,ga,ared=',i0,j,al,be,ga,ared1d
+
+!   write(ulog,11)'Rank3: counter,ared=',counter,ared1d(res+1:size(ared1d))  !res+map(rnk)%ntotind)
 
 ! compare with previous lines of ared; write if ared1d not repeated
     if ( ared1d .myeqz. zero ) cycle
     call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
     if (new) then
        counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter) = 0d0
-!      write(umatrx,7)(atemp(counter,dum),dum=1,ngr)
+       if(verbose) write(umatrx,7) ared1d(res+1:res+map(rnk)%ntotind)
        if (counter.eq.dim_al-1) write(ulog,*)' DIM_AL TOO SMALL tr_inv rnk=',rnk
     endif
  enddo
@@ -213,7 +215,7 @@
  enddo
  enddo
  enddo
- if(map(rnk  )%ngr.gt.0) res  = res  + sum(map(rnk  )%ntind(:))
+ if(map(rnk  )%ngr.gt.0) res  = res  + map(rnk)%ntotind
  write(ulog,*)' RANK=3; residual index is=',res
  write(ulog,*)' NUMBER OF CUMULATIVE TRANSLATIONAL CONSTRAINTS up to rank 3 is ', counter
  endif
@@ -228,14 +230,11 @@
 
  do i0=1,natom_prim_cell
  do j=1,natoms ! take only j atoms within the nshells'th neighbor shell of i0
-!   if ( iatomneighbor(i0,j) .gt. nshells(rnk) ) cycle
-!   if ( iatomneighbor(i0,j) .eq. nshells(rnk) ) then
     if ( iatomneighbor(i0,j) .gt. nshells(rnk,i0) ) cycle
  !  if ( iatomneighbor(i0,j) .eq. nshells(rnk,i0) ) then
  !       rcut(rnk) = length(atompos(:,j)-atompos(:,i0))
  !  endif
  do k=1,natoms ! take only j atoms within the nshells'th neighbor shell of i0
-!   if ( iatomneighbor(i0,k) .gt. nshells(rnk) ) cycle
     if ( iatomneighbor(i0,k) .gt. nshells(rnk,i0) ) cycle
  do al=1,3
  do be=al,3  ! avoid redundancies in the constraints
@@ -262,14 +261,15 @@
 !     write(ulog,6)'i0,term,red_indx,ared=',iatomterm_1(1,t),t,ired,ared1d(ired)
       enddo
     enddo gloop4
-!   write(ulog,17)'i0,j,k,al,be,ga,de,ared=',i0,j,k,al,be,ga,de,ared1d
+
+!   write(ulog,11)'Rank4: counter,ared=',counter,ared1d(res+1:size(ared1d))  !res+map(rnk)%ntotind)
 
 ! compare with previous lines of ared; write if ared1d not repeated
     if ( ared1d .myeqz. zero ) cycle
     call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
     if (new) then
        counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter) = 0d0
-!      write(umatrx,7)(atemp(counter,dum),dum=1,ngr)
+       if(verbose) write(umatrx,7) ared1d(res+1:size(ared1d))  !res+map(rnk)%ntotind)
        if (counter.eq.dim_al-1) write(ulog,*)' DIM_AL TOO SMALL tr_inv rnk=',rnk
     endif
  enddo
@@ -279,13 +279,15 @@
  enddo
  enddo
  enddo
-!res = res + sum(map(rnk)%ntind(:))
- if(map(rnk)%ngr.gt.0) res = res + sum(map(rnk  )%ntind(:))
+ if(map(rnk)%ngr.gt.0) res = res + map(rnk)%ntotind
  write(ulog,*)' RANK=4 res=tot# of independent terms=',res
  write(ulog,*)' NUMBER OF CUMULATIVE TRANSLATIONAL CONSTRAINTS up to rank 4 is ', counter
  endif
 
  transl_constraints = counter
+ write(umatrx,*)'**********************************************'
+ write(umatrx,*)' TRANSLATIONAL constr part of amatrix size has ',counter,' lines'
+ write(umatrx,*)'**********************************************'
  write(ulog,*)' UPDATED TOTAL NUMBER OF TRANSLATIONAL CONSTRAINTS =', transl_constraints
  allocate(atransl(transl_constraints,nindepfc),btransl(transl_constraints))
  atransl(1:transl_constraints,1:nindepfc)=atemp(1:transl_constraints,1:nindepfc)
@@ -296,7 +298,7 @@
  write(*,*) 'exiting translational invce constraints routine'
 
 6 format(a,3(1x,i3),66(2x,f7.3))
-7 format(66(1x,f7.3))
+7 format(266(1x,f7.3))
 11 format(a,1(1x,i3),66(2x,f7.3))
 
  end subroutine set_translational_inv_constraints
@@ -310,14 +312,15 @@
  use atoms_force_constants
  use ios
  use geometry
+ use constants, only : r15
 ! use force_constants_module
  implicit none
  integer i0,j,k,l,t,ired,counter,rnk,res,res1,g,ti,cnt2,cnt3
  integer al,be,ga,de,mu,nu
  integer lc(3,3,3)
- real(8), allocatable:: ared1d(:),zero(:),aux(:)
- real(8), allocatable:: atemp(:,:),btemp(:)
- real(8) junk
+ real(r15), allocatable:: ared1d(:),zero(:),aux(:)
+ real(r15), allocatable:: atemp(:,:),btemp(:)
+ real(r15) junk
  logical new
 
 !*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -385,12 +388,12 @@
       call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
       if (new) then
          counter = counter+1; atemp(counter,:) = ared1d(:);
-!        write(umatrx,7)(atemp(counter,dum),dum=1,ngr),btemp(counter)
+         if(verbose) write(umatrx,7) ared1d(res+1:size(ared1d))  !res+map(rnk)%ntotind),btemp(counter)
          if (counter.eq.dim_al-1) write(ulog,*)'DIM_AL TOO SMALL rot_inv rnk=',rnk
          if(include_fc(2).ne.2) then
-         	btemp(counter) = 0d0
+            btemp(counter) = 0d0
          else
-                btemp(counter)=0 !!! .... to be completed
+            btemp(counter)=0 !!! .... to be completed
 ! constraint is for each i0,al,nu: phi1_{i0,al} eps(al,be,nu)= - sum_j phi_{i0,j) phi_{i0,j}^{be,al} eps(al,ga,nu) Rj^ga
 
 
@@ -410,7 +413,7 @@
          endif
       endif
    enddo
-   if(map(rnk)%ngr.gt.0) res = res + sum(map(rnk)%ntind(:))
+   if(map(rnk)%ngr.gt.0) res = res + map(rnk)%ntotind
    write(ulog,*)' RANK=1; residual index is=',res
    write(ulog,*)' NUMBER OF CUMULATIVE ROTATIONAL CONSTRAINTS up to rank 1 is ', counter
  endif
@@ -495,12 +498,11 @@
 ! TO CHECK------------
       aux=0; !junk = 0   ! junk goes to bmat (it already includes the - sign)
       cnt3 = 0
-      if(include_fc(1) .eq. 1 .or. include_fc(1) .eq. 2) then 
+      if(include_fc(1) .eq. 1 .or. include_fc(1) .eq. 2) then
 
-!! what does the rank=1 have to do here?
 
 !!
-!! why is bikash adding the condition .or. include_fc(2) .eq. 2 to the above?
+!! why is bikash adding the condition .or. include_fc(1) .eq. 2 to the above?
 !!
 
 
@@ -538,7 +540,7 @@
       call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
       if (new) then
          counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter)=junk
-!        write(umatrx,7)(atemp(counter,dum),dum=1,ngr),btemp(counter)
+         if(verbose) write(umatrx,7) ared1d(res+1:res+size_kept_fc2) !size(ared1d))!res+map(rnk)%ntotind),btemp(counter)
        if (counter.eq.dim_al-1) write(ulog,*)'DIM_AL TOO SMALL rot_inv rnk=',rnk
       endif
    enddo
@@ -554,7 +556,7 @@
      if(map(rnk-1)%ngr.gt.0) res1 = res1 + sum(map(rnk-1)%ntind(:))
    elseif(include_fc(2) .eq. 2) then
       if(map(rnk-1)%ngr.gt.0) then
-!         write(*,*) "RNK and RES1 are: ", rnk, res1
+         write(*,*) "RNK and RES1 are: ", rnk, res1
          !res1 = res1 + map(1)%ntotind(:)
       endif
    endif
@@ -575,7 +577,6 @@
 
    do i0=1,natom_prim_cell
    do j =1,natoms
-!      if ( iatomneighbor(i0,j) .gt. nshells(rnk) ) cycle
       if ( iatomneighbor(i0,j) .gt. nshells(rnk,i0) ) cycle
    do al=1,3
    do be=1,3
@@ -676,7 +677,7 @@
       call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
       if (new) then
          counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter)=junk
-!        write(umatrx,7)(atemp(counter,dum),dum=1,ngr),btemp(counter)
+         if(verbose) write(umatrx,7) ared1d(res+1:res+map(rnk)%ntotind),btemp(counter)
        if(verbose) write(ulog,5)'ROT:new term for:i0,j,al,be,nu=',i0,j,al,be,real(nu)
        if (counter.eq.dim_al-1) write(ulog,*)'DIM_AL TOO SMALL rot_inv rnk=',rnk
       endif
@@ -689,7 +690,7 @@
 
 !! K1 new change made on 2/13/23 ----------------
 
-   if(map(rnk  )%ngr.gt.0) res  = res  + sum(map(rnk  )%ntind(:))
+   if(map(rnk)%ngr.gt.0) res = res + map(rnk)%ntotind
    if(map(rnk-1)%ngr.gt.0) res1  = res1  +  size_kept_fc2
 
 !! K1 new change made on 2/13/23 ----------------
@@ -706,10 +707,8 @@
 
    do i0=1,natom_prim_cell
    do j =1,natoms
-!     if ( iatomneighbor(i0,j) .gt. nshells(rnk) ) cycle
       if ( iatomneighbor(i0,j) .gt. nshells(rnk,i0) ) cycle
    do k =1,natoms
-!     if ( iatomneighbor(i0,k) .gt. nshells(rnk) ) cycle
       if ( iatomneighbor(i0,k) .gt. nshells(rnk,i0) ) cycle
    do al=1,3
    do be=1,3
@@ -783,7 +782,7 @@
       call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
       if (new) then
          counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter)=junk
-!        write(umatrx,7)(atemp(counter,dum),dum=1,ngr),btemp(counter)
+         if(verbose) write(umatrx,7) ared1d(res+1:res+map(rnk)%ntotind),btemp(counter)
        if (counter.eq.dim_al-1) write(ulog,*)'DIM_AL TOO SMALL rot_inv rnk=',rnk
       endif
    enddo
@@ -794,8 +793,7 @@
    enddo
    enddo
    deallocate(aux)
- ! res = res + sum(map(rnk)%ntind(:))
-   if(map(rnk  )%ngr.gt.0) res  = res  + sum(map(rnk  )%ntind(:))
+   if(map(rnk)%ngr.gt.0) res = res + map(rnk)%ntotind
    write(ulog,*)' RANK=4; residual index is=',res
    write(ulog,*)' NUMBER OF CUMULATIVE ROTATIONAL CONSTRAINTS up to rank 4 is ', counter
  endif
@@ -811,10 +809,9 @@
     write(*   ,*)' res=',res,' must be equal to # of indepdt FCs ',nindepfc
     stop
  endif
-! inv_constraints = rot_constraints + transl_constraints
-! write(umatrx,*)'**********************************************'
-! write(umatrx,*)' sym constr part of amatrix size has ',inv_constraints,' lines'
-! write(umatrx,*)'**********************************************'
+  write(umatrx,*)'**********************************************'
+  write(umatrx,*)' ROTATIONAL constr part of amatrix size has ',counter,' lines'
+  write(umatrx,*)'**********************************************'
 
  deallocate ( atemp,btemp,ared1d,zero )
  write(*,*) 'exiting rotational invce constraints routine'
@@ -823,7 +820,7 @@
 4 format(a,66(1x,i3))
 5 format(a,4(1x,i3),66(2x,f7.3))
 6 format(a,3(1x,i3),66(2x,f7.3))
-7 format(66(1x,f7.3))
+7 format(266(1x,f7.3))
 8 format(i8,1x,i8,3x,f25.15,3x,f25.15)
 9 format(i8,1x,99(1x,f8.4))
 11 format(a,1(1x,i3),66(2x,f7.3))
@@ -840,19 +837,20 @@
  use atoms_force_constants
  use svd_stuff
  use ios
+ use constants, only : r15
 ! use geometry
 ! use force_constants_module
  implicit none
  integer i,j,al,be,ga,de,t,ti,mterm,cnt2,g,rnk,voigt,vab,vcd,counter,ired,res,dim_h
- real(8) huang,rr(3)
- real(8), allocatable:: ared1d(:),zero(:)
+ real(r15) huang,rr(3)
+ real(r15), allocatable:: ared1d(:),zero(:)
 
  huang_constraints=15  ! this is only for rank 2
 
    rnk = 2;
 !  res = sum(map(1)%ntind(:))
    if(map(1)%ngr.gt.0) then
-     res = sum(map(1)%ntind(:))  ! should also be equal to map(1)%ntotind
+     res = map(1)%ntotind
    else
      res=0
    endif
@@ -862,7 +860,6 @@
    write(*   ,*)' allocating ',dim_h,' lines and ',nindepfc,' columns'
    allocate( ahuang(dim_h,nindepfc),ared1d(nindepfc),zero(nindepfc),bhuang(dim_h) )
    counter = 0; zero = 0d0 ; ahuang = 0d0
-   ared1d = zero  !! K1 :: shouldn't this come after the al,be,ga,de loop??
 
    do al=1,3
    do be=al,3
@@ -873,6 +870,7 @@
       if ( vab.le.vcd ) cycle
       huang = 0
       mterm = 0
+      ared1d = zero  !! K1 :: this comes after the al,be,ga,de loop !!
       atomloop: do i=1,natom_prim_cell
       cnt2=0     ! cnt2 counts the previous independent terms
       gloop: do g=1,map(2)%ngr
@@ -919,7 +917,7 @@
          stop
       endif
       ahuang(counter,:) = ared1d(:)
-!     write(umatrx,7)(ahuang(counter,dum),dum=1,ngr)
+      if(verbose) write(umatrx,7) ared1d(res+1:res+size_kept_fc2) !map(2)%ntotind)
       bhuang(counter)=0d0
    enddo
    enddo
@@ -927,26 +925,30 @@
    enddo
 
    deallocate( ared1d,zero )
+  write(umatrx,*)'**********************************************'
+  write(umatrx,*)' HUANG constr part of amatrix size has ',counter,' lines'
+  write(umatrx,*)'**********************************************'
 
 6 format(a,8(1x,i4),9(2x,f7.3))
-7 format(66(1x,g9.2))
+7 format(266(1x,f9.3))
 
  end subroutine set_huang_inv_constraints
 !===========================================================================
  subroutine set_force_displacement_matrix(ncfgs,frc_constr,afrc,bfrc)
 !! outputs afrc and bfrc matrices afrc,bfrc from the knowledge of arrays force and displ for a given supercell
+!! equilibrium positions already subtracted from displ
  use svd_stuff
  use params
  use atoms_force_constants
  use ios
  use geometry
-! use force_constants_module
+ use constants, only : r15
  implicit none
  integer, intent(in) :: frc_constr,ncfgs
- real(8), intent(out) :: afrc(frc_constr,nindepfc),bfrc(frc_constr)
+ real(r15), intent(out) :: afrc(frc_constr,nindepfc),bfrc(frc_constr)
  integer l,t,ired,counter,rnk,nat,confg,jatom,katom,latom,res,cnt2
  integer al,be,ga,de,taui,tauj,tauk,taul,ni(3),nj(3),nk(3),nl(3),ti
- real(8), allocatable:: ared1d(:),aux(:)
+ real(r15), allocatable:: ared1d(:),aux(:)
 
  write(*,*) 'entering set_force_displacements routine,nindepfc=',nindepfc
  write(ulog,*)' SETUP_AMATRICES : ************************************'
@@ -964,11 +966,17 @@
 5 format(a,9(i5))
  write(ulog,6)'********************************************************'
  write(ulog,6)' Now making the force-displacement part of the A matrix'
- write(ulog,*)' Force_constraints     =', frc_constr
- if(frc_constr.ne.3*natom_super_cell*ncfgs) then
-    write(*,*)'check parameters frc_constr natom_super_cell ncfgs=',frc_constr,natom_super_cell,ncfgs
-    stop
- endif
+ write(ulog,*)' Force_constraints      =', frc_constr
+! write(ulog,*)' number of configs,3N_SC=',size(nlines),nlines
+!if(frc_constr.ne.sum(nlines)) then
+!   write(*,*)'check parameters frc_constr natom_super_cell ncfgs=',frc_constr,natom_super_cell,ncfgs
+!   stop
+!endif
+
+! if(frc_constr.ne.3*natom_super_cell*ncfgs) then
+!    write(*,*)'check parameters frc_constr natom_super_cell ncfgs=',frc_constr,natom_super_cell,ncfgs
+!    write(*,*)'are your supercels of different size??'
+! endif
 ! now compute the force constraints on the FCs. The equation is:
 ! -F_ia = phi1_ia + phi2_{ia,jb} u_jb + 0.5 phi3_{ia,jb,kc} u_jb u_kc + ...
 !   iatomterm(1,t)=(0,tau)   iatomterm(2,t)=(n1,tau1)
@@ -997,7 +1005,7 @@
            aux = 0
            do l=1,map(rnk)%ngr  ! sum over groups
               if(l.gt.1) cnt2 = cnt2 + map(rnk)%ntind(l-1)
-              do t=1,map(rnk)%nt(l) ! sum over all therms in that group
+              do t=1,map(rnk)%nt(l) ! sum over all terms in that group
                  if ( taui.eq. map(rnk)%gr(l)%iat(1,t) .and.  &
              &      al  .eq. map(rnk)%gr(l)%ixyz(1,t) ) then
                     do ti=1,map(rnk)%ntind(l)
@@ -1029,7 +1037,7 @@
 
 ! the force on atom i is from j in the supercell and all of its images for which the corresponding FC needs to be identified
 !           allocate(aux(ndindp(rnk)))
-           allocate(aux(map(rnk)%ntotind))
+           allocate(aux(size_kept_fc2)) !map(rnk)%ntotind))
 ! for given (ni,taui,al) find its neighbors within nshells(2)
            cnt2= 0        ! cnt2 is the size of previous groups
            aux = 0
@@ -1070,6 +1078,7 @@
 ! this is the index of the indep FC coming in the A*FC=b matrix product
                     ired = cnt2+ti ! this is the corresponding index of aux
 !                   write(ulog,5)'l,cnt2,ti,ired=',l,cnt2,ti,ired
+! this ads all equivalent FCs of that group or shell (ie atoms on edges or vertices of the WS of supercell
                     aux(ired) = aux(ired) + displ(be,jatom,confg)*map(rnk)%gr(l)%mat(t,ti)
                  enddo
   !             write(ulog,22)'term,red_indx,ared=',t,iatomterm_2(1,t),  &
@@ -1142,7 +1151,7 @@
            aux = 0
            do l=1,map(rnk)%ngr  ! sum over groups
               if(l.gt.1) cnt2 = cnt2 + map(rnk)%ntind(l-1)
-           do t=1,map(rnk)%nt(l) ! sum over all therms in that group
+           do t=1,map(rnk)%nt(l) ! sum over all terms in that group
               if ( taui.eq. map(rnk)%gr(l)%iat(1,t) .and.  &
               &    al  .eq. map(rnk)%gr(l)%ixyz(1,t) ) then
                  tauj = iatomcell0(map(rnk)%gr(l)%iat(2,t))
@@ -1206,7 +1215,7 @@
            aux = 0
            do l=1,map(rnk)%ngr  ! sum over groups
               if(l.gt.1) cnt2 = cnt2 + map(rnk)%ntind(l-1)
-           do t=1,map(rnk)%nt(l) ! sum over all therms in that group
+           do t=1,map(rnk)%nt(l) ! sum over all terms in that group
               if ( taui.eq. map(rnk)%gr(l)%iat(1,t) .and.  &
               &    al  .eq. map(rnk)%gr(l)%ixyz(1,t) ) then
                  tauj = iatomcell0(map(rnk)%gr(l)%iat(2,t))
@@ -1292,7 +1301,7 @@
 
 4 format(a,4(1x,i6))
 6 format(a,3(1x,i3),66(2x,f7.3))
-7 format(66(1x,g9.2))
+7 format(266(1x,g9.2))
 12 format(a,2(1x,i3),66(2x,g11.4))
 22 format(a,6(1x,i3),66(2x,f9.5))
 

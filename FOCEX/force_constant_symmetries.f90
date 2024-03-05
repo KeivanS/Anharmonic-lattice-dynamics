@@ -11,21 +11,22 @@
 !     natoms_in (input), number of atoms in the primitive unit cell
 !     iatomtype(i) (input), type of ith atom, numbered 1,2,3,etc.
 !     atompos_in(j,i) (input), jth dimensionless coordinate of the ith atom
-! also uses nsmax for shell looping and rcut and maxneighbors and maxatoms
+! also uses rcut, maxneighbors and maxatoms for shell looping
 
       use lattice
-      use atoms_force_constants !force_constants_module
+      use atoms_force_constants
       use ios !, only : ulog
       use params , only : tolerance
+ use constants, only : r15
       implicit none
 
       integer, intent(in) :: natoms_in
-      real(8), intent(in) :: atompos_in(3,natoms_in)
       integer, intent(in) :: iatomtype(natoms_in)
+      real(r15), intent(in) :: atompos_in(3,natoms_in)
       integer j,g,k,ier,iatom,tau,ncmp,   &
      &     iatom2,itype2,iatom3,ipntop,   &
      &     itype,isg,iop_matrix(3,3,48),aux(3,3)
-      real(8) r(3),tempi(3,3),fract(3),v(3),v2(3),temp(3,3),at1star(3)
+      real(r15) tempi(3,3),fract(3),v(3),v2(3),temp(3,3),at1star(3) !r(3),
 
 ! maxneighbors= largest # of neighbor shells <  50 usually unless very low symmetry
 
@@ -41,7 +42,6 @@
       call write_out(6,' cartesian atomic positions ',atompos_in)
 
 ! allocate memory
-      if(allocated(iatomneighbor)) deallocate(iatomneighbor) 
 ! it is the shell# (in 1:nd2save) associated with neighbor natoms
       if(allocated(atomopfract))   deallocate(atomopfract)
       if(allocated(iatomop))       deallocate(iatomop)
@@ -51,7 +51,7 @@
  &       atomopfract(3,natom_prim_cell,natom_prim_cell))
       iatomneighbor=maxneighbors+1
       iatomop=0
-    
+
  3 format(3(1x,f10.5))
 
 ! get primitive lattice parameters in cartesian coordinates
@@ -81,20 +81,18 @@
 ! get atomic positions in cartesian coordinates and the neighbor list
       natoms=natom_prim_cell
       do tau=1,natom_prim_cell
-!       write(*,*)'before xvmlt ',tau
 !       call xvmlt(conv_to_cart,atomposconv(1,i),atompos(1,i),3,3,3)
         atompos(:,tau)=atompos_in(:,tau)  !matmul(conv_to_cart,atomposconv(:,tau))
 !       write(*,*)'before unitcell ',tau
         call unitcell(cart_to_prim,prim_to_cart,atompos(1,tau), atompos(1,tau))
         iatomcell0(tau)=atom0(tau)%tau   ! it is in the same order as in structure.params file
-        iatomcell(:,tau)=0 
+        iatomcell(:,tau)=0
         iatomneighbor(tau,tau)=0   !! shell# is zero for onsite neighbor
         write(ulog,8)'Atompos After unitcell '//atom0(tau)%name,atom0(tau)%at_type,  &
 &                     atom0(tau)%tau,atompos(:,tau),atom0(tau)%mass
         write( *  ,8)'Atompos After unitcell '//atom0(tau)%name,atom0(tau)%at_type,  &
 &                     atom0(tau)%tau,atompos(:,tau),atom0(tau)%mass
       enddo
-!     write(*,*)'before dlatmat2'
 !-------------------------------------------------------------------------------
 ! find symmetry of crystal.
 ! find point group of lattice
@@ -276,10 +274,10 @@
       enddo
 
       write(ulog,*)'--------------------------------------------------------- '
-      call write_out(6   ,' Entered FC_INIT with    maxshells  ',maxshells) 
-      call write_out(ulog,' Entered FC_INIT with    maxshells  ',maxshells)  
+      call write_out(6   ,' Entered FC_INIT with    maxshells  ',maxshells)
+      call write_out(ulog,' Entered FC_INIT with    maxshells  ',maxshells)
       call write_out(6   ,' Entered FC_INIT with maxneighbors  ',maxneighbors)
-      call write_out(ulog,' Entered FC_INIT with maxneighbors  ',maxneighbors) 
+      call write_out(ulog,' Entered FC_INIT with maxneighbors  ',maxneighbors)
 
 
       do while(imaxnei.eq.1)
@@ -300,30 +298,31 @@
       use lattice
       use atoms_force_constants !force_constants_module
       use ios !, only : ulog
-      use params , only : tolerance,rcutoff
+      use params , only : rcutoff  !tolerance,
+ use constants, only : r15
       implicit none
-      integer i1,i2,i3,j,k,n,tau,nd2save,ncmp,icell(3),g,iatom,nshl !(natom_prim_cell)
-      real(8) d2save(maxneighbors),r(3),d2,fract(3),v(3),v2(3),a0
-      logical already_found !,exists(maxatoms)
+      integer i1,i2,i3,j,n,tau,nd2save,ncmp,icell(3),mshl !,iatom,k
+      real(r15) r(3),d2,a0 !d2save(maxneighbors),fract(3),v(3),v2(3)
+      logical already_found
 
       a0=100
       do j=2,natom_prim_cell
          d2=length(atompos(:,1)-atompos(:,j))
          if(d2.lt.a0) a0=d2
-      enddo 
-      write(*   ,*) 'SET_ATOMPOS: shortest bond length=a0=',a0
-      write(ulog,*) 'SET_ATOMPOS: shortest bond length=a0=',a0
+      enddo
+      write(*   ,*) 'SET_ATOMPOS: shortest distance with atom1 within primcell is a0=',a0
+      write(ulog,*) 'SET_ATOMPOS: shortest distance with atom1 within primcell is a0=',a0
 
 !      exists(1:natom_prim_cell)=.True.
 !-------------------------------------------------------------------------------
 ! collect nearest neighbor atoms (up to a maxshells or maxneighbors, whichever happens first)
-        nd2save=0
+        nd2save=0 ; mshl=0
         natoms=natom_prim_cell
-! collect distances to nearest neighbors up to maxneighbors shells 
+! collect distances to nearest neighbors up to maxneighbors shells
 ! do one shell of unit cells at a time
         shelloop: do n=0,maxshells
           already_found=.false.
-          firstloop: do i1=-n,n  ! generated shells are cubic shells 
+          firstloop: do i1=-n,n  ! generated shells are cubic shells
           icell(1)=i1
           do i2=-n,n
           icell(2)=i2
@@ -342,14 +341,14 @@
 !  atompos(j,tau) -atompos(j,iatom0) + &
                 d2=d2+r(j)**2
 !  d2= |R+r_tau-r_i0|^2  to find shells centered at r_i0??
-             enddo    
-             if (d2.gt.rcutoff*rcutoff) then
-    !            write(*,*)'d>rcut^2 ',sqrt(d2),rcutoff
-                 cycle             
-             endif
+             enddo
+!            if (d2.gt.rcutoff*rcutoff) then
+!   !            write(*,*)'d>rcut^2 ',sqrt(d2),rcutoff
+!                cycle
+!            endif
              if (ncmp(d2).eq.0)  then
                  write(*,*)'d2 = 0 ',d2
-                 cycle             
+                 cycle
              endif
              if(natoms.gt.maxatoms-natom_prim_cell)  then
                  write(*,*)'natoms > maxatoms ', natoms , maxatoms
@@ -359,11 +358,12 @@
              iloop: do tau=1,natom_prim_cell
 !  did we find any new ones in this shell? save new shells in d2save(nd2save) up to maxneighbors
                  natoms=natoms+1
-                 atompos(:,natoms)=r+atompos(:,tau) 
+                 atompos(:,natoms)=r+atompos(:,tau)
                  iatomcell(1:3,natoms)=icell(1:3)
                  iatomcell0(natoms)=tau
-!         !      iatomneighbor(tau,m)=  ?? ! m is the shell# 
-!                write(6,3)'New atompos ',tau,natoms,atompos(:,natoms)
+!         !      iatomneighbor(tau,m)=  ?? ! m is the shell#
+                 write(6,3)'New atompos ',tau,natoms,atompos(:,natoms)
+                 if(n.gt.mshl) mshl=n
              enddo iloop
 
            enddo
@@ -372,175 +372,20 @@
          enddo shelloop
 
 
-
-!  now sort to calculate iatomneighbor 
-!              if(m.eq.0)then   ! onsite shell only 
-!                already_found=.true.
-!              else if(ncmp(d2-d2save(nd2save)).eq.0 .or. d2.lt.d2save(nd2save))then
-!                already_found=.true.
-!              endif
-!  compare distance to atom with previously found distances
-!              saveloop: do j=1,nd2save
-!  same distance: do another atom
-!                if(ncmp(d2-d2save(j)).eq.0)cycle iloop
-!  new distance: insert into list
-!                if(d2.lt.d2save(j))then
-!                  do k=maxneighbors,j+1,-1  
-!  shift d2save up by one from position j to insert d2 at the position j (and keep d2save sorted)
-!                    d2save(k)=d2save(k-1)
-!                  enddo
-!                  if(nd2save.lt.maxneighbors) then
-!                     nd2save=nd2save+1
-!          !       else
-!          !          write(ulog,*)'nd2save >= maxneighbors; stoping to avoid overflow of d2save!!',nd2save
-!          !          write(*,*)'nd2save >= maxneighbors; stop here to avoid d2save to overflow!!',nd2save
-!          !          exit  shelloop
-!                  endif
-
-!                  d2save(j)=d2
-!  go to the next atomic position in the 4 loops
-!                  cycle iloop
-!                endif
-!              enddo saveloop
-
-!  if not next loop then d2 is a new distance: insert at end of list if list is not already full
-!              if(nd2save.lt.maxneighbors)then
-!                nd2save=nd2save+1
-!                d2save(nd2save)=d2
-!       write(*,*)'NEW d2;n,i0,tau,nd2save,dij/d0=',n,iatom0,tau,nd2save,sqrt(d2)/a0
-!              else  ! d2save will exceed its allocated size
-!                 write(*,*)'nd2save=',nd2save,' exceeding or equal to maxneighbors=',maxneighbors
-!                 write(*,*)'Going to increase maxneighbors in the next iteration'
-!                 imaxnei=1
-!         !       return
-!                 exit firstloop
-!              endif
-!            enddo iloop
-!          enddo
-!          enddo
-!          enddo firstloop
-!  no new atom found in shell:  save previous shell and exit loop
-! K1       if(.not.foundone.and.(nd2save.eq.maxneighbors)) then
-!          if(.not.already_found.and.(nd2save.eq.maxneighbors)) then
-!            nshl = n-1 !(iatom0)=n-1
-!            write(ulog,*)'maxneighbor reached; exiting shelloop: i0,nshl,nd2save=',iatom0,nshl,nd2save 
-!            write(  * ,*)'maxneighbor reached; exiting shelloop: i0,nshl,nd2save=',iatom0,nshl,nd2save 
-!            exit shelloop
-!          endif
-!  list is filled
-! K1       if(nd2save.eq.maxneighbors.and.m.eq.0)m=1  ! m is the shell index
-!          if(nd2save.eq.maxneighbors-1.and.m.eq.0)m=1  ! m is the shell index
-!  we reached the last shell before we finished the list
-!          if(n.eq.maxshells)then
-!            write(*   ,*)'FORCE_CONSTANTS_INIT: maxshells=',n,' reached for ',nd2save,'neighbor shells'
-!            write(ulog,*)'FORCE_CONSTANTS_INIT: maxshells=',n,' reached for ',nd2save,'neighbor shells'
-!            write(*   ,*)'FORCE_CONSTANTS_INIT: last shell was reached before list is finished '
-!            write(ulog,*)'FORCE_CONSTANTS_INIT: last shell was reached before list is finished '
-!            write(*   ,*)'FORCE_CONSTANTS_INIT: maxshells may not be large enough'
-!            write(*   ,*)'FORCE_CONSTANTS_INIT: if you need larger values increase nshells(2) and rerun'
-!          endif
-!        enddo shelloop
-
-
-!   write(ulog,4)'FC_INIT: shelloop:i0,nshl,nd2save,rmax=',iatom0,nshl,nd2save,sqrt(d2save(nd2save))
-!   write(*   ,*)'FC_INIT: shelloop:i0,nshl,nd2save,rmax=',iatom0,nshl,nd2save,sqrt(d2save(nd2save))
-
-! -----------------------------------------------------------------------------
-!  generate positions of neighbors 
-!  do each shell of unit cells
-!        shloop: do n=0,nshl !(iatom0)
-!          write(*,*)'shell# n=',n
-!          do i1=-n,n
-!          icell(1)=i1
-!          do i2=-n,n
-!          icell(2)=i2
-!          do i3=-n,n
-!          icell(3)=i3
-!            if(iabs(i1).ne.n.and.iabs(i2).ne.n.and.iabs(i3).ne.n)cycle
-!  do each atom in unit cell
-!            do tau=1,natom_prim_cell
-!  skip atom at origin
-!              if(n.eq.0.and.tau.eq.iatom0)cycle
-!  position of atom
-!              r(1:3)=atompos(1:3,tau)
-!              d2=0
-!              do j=1,3
-!                r(j)=atompos(j,tau)+i1*prim_to_cart(j,1)  &
-!     &               +i2*prim_to_cart(j,2)+i3*prim_to_cart(j,3)
-!                d2=d2+(r(j)-atompos(j,iatom0))**2
-!  d2= |R+r_tau-r_i0|^2  to find shells centered at r_i0??
-!              enddo
-!  K1 new addition to avoid exceeding maxatoms
-!              if (d2 .gt. rcut(2)*rcut(2)) cycle
-
-!  find atom in list d2save, generated in the previous section shell by shell 
-!              do m=1,nd2save
-!                if(ncmp(d2-d2save(m)).eq.0)then
-!                  call find_atompos(icell,tau,iatom)
-!                  if(iatom.eq.0)then
-!  if not found, add it to the list up to maxatoms
-!                    natoms=natoms+1   
-!  write(*,*)' new atom: natoms=',natoms
-!                    if(natoms.gt.maxatoms)then  ! maxatoms is the limit 
-!                      write(ulog,*)'Warning: in force_constants_init:  '   &
-!     &                     //'the value of maxatoms was reached within the d2save list '
-!                      write(6,*)'Warning: in force_constants_init:  '   &
-!     &                     //'the value of maxatoms was reached within the d2save list '
-!                      imaxatm=0     ! flag to increase maxatoms and recall fc_init if needed
-!                      natoms=natoms-1  ! recover maxatoms
-!                      exit shloop
-!                    endif
-!  save position in cartesian and identity (tau,n)
-!                    atompos(1:3,natoms)=r(1:3)
-!                    iatomcell(1:3,natoms)=icell(1:3)
-!                    iatomcell0(natoms)=tau
-!                    iatomneighbor(iatom0,natoms)=m ! m is the shell# associated with neighbor natoms
-!                    write(6,4)'New atompos ',iatom0,m,natoms,atompos(:,natoms)
-!                  else ! atom was found in the shell #m
-!                    iatomneighbor(iatom0,iatom)=m
-!                  endif
-!                endif
-!              enddo
-!            enddo
-!          enddo
-!          enddo
-!          enddo
-!        enddo shloop
-
-!        write(ulog,*)'FC_INIT: iatom0 =',iatom0,' last neighbor shell= ',nd2save
-!        write(ulog,6)' iatomneighbor(iatom0,j), neighbor shell # of iatom0 in primitive unit, and atom j'
-!        write(ulog,6)'FC_INIT: first 20 shells '
-!        write(ulog,6)' i0,  shell#  , jatom , d(i0,j) for at the most the first 20 shells '
-!        do g=1,min(20,nd2save)
-!        do j=1,natoms
-!           if(g .eq. iatomneighbor(iatom0,j))  &
-!           & write(ulog,*)iatom0,g,j,length(atompos(:,iatom0)-atompos(:,j)),sqrt(d2save(g))
-!        enddo
-!        enddo
-
-! ! new change
-!        atom0(iatom0)%nshells=nd2save
-!        if(alloated(atom0(iatom0)%shells)) deallocate atom0(iatom0)%shells
-!        allocate(atom0(iatom0)%shells(0:nd2save))
-! ! new change
-
-!  next inequivalent atom
-!      enddo primloop
-!      maxneighbors=nd2save
-
-
-      write(*   ,*) 'FC_INIT: maxneighbors now changed to ',maxneighbors
-!     write(*   ,*) 'FC_INIT: last shells are ',nshl,' corresponding to rcut=',sqrt(d2save(nd2save))
-      write(*   ,*) 'FC_INIT: generated ',natoms,' atoms in the neighborhood of primcell'
-      write(ulog,*) 'FC_INIT: maxneighbors now changed to ',maxneighbors
-!     write(ulog,*) 'FC_INIT: last shells are ',nshl,' corresponding to rcut=',sqrt(d2save(nd2save))
-      write(ulog,*) 'FC_INIT: generated ',natoms,' atoms in the neighborhood of primcell'
+!     maxshells = mshl
+!     write(*   ,*) 'FC_INIT: maxshells now updated to ',maxshells
+!     write(ulog,*) 'FC_INIT: maxshells now updated to ',maxshells
+      write(*   ,*) 'FC_INIT: last shell #',mshl,' corresponding to rcut=',sqrt(d2)
+      write(ulog,*) 'FC_INIT: last shell #',mshl,' corresponding to rcut=',sqrt(d2)
+      write(*   ,*) 'FC_INIT: generated natoms= ',natoms,' atoms in the neighborhood of primcell'
+      write(ulog,*) 'FC_INIT: generated natoms= ',natoms,' atoms in the neighborhood of primcell'
       imaxatm=0
       imaxnei=0
 
 3 format(a,2(1x,i7),9(1x,f10.4))
 4 format(a,3(1x,i7),9(1x,f10.4))
 6 format(a,99(i4))
+
 
       end subroutine set_atompos
 
@@ -551,17 +396,18 @@
       use lattice
       use atoms_force_constants !force_constants_module
       use ios !, only : ulog
-      use params , only : tolerance
+ use constants, only : r15
+!      use params , only : tolerance
       implicit none
       integer i1,i2,i3,j,k,m,n,tau,nd2save,ncmp,iatom0,icell(3),g,iatom,nshl !(natom_prim_cell)
-      real(8) d2save(maxneighbors),r(3),d2,fract(3),v(3),v2(3),a0
-      logical already_found !,exists(maxatoms)
+      real(r15) d2save(maxneighbors),r(3),d2,a0 !,fract(3),v(3),v2(3)
+      logical already_found
 
       a0=100
       do j=2,natom_prim_cell
          d2=length(atompos(:,1)-atompos(:,j))
          if(d2.lt.a0) a0=d2
-      enddo 
+      enddo
       write(*   ,*) 'SET_ATOMPOS: shortest bond length=a0=',a0
       write(ulog,*) 'SET_ATOMPOS: shortest bond length=a0=',a0
 
@@ -572,11 +418,11 @@
       primloop: do iatom0=1,natom_prim_cell
         nd2save=0
         m=0
-! collect distances to nearest neighbors up to maxneighbors shells 
+! collect distances to nearest neighbors up to maxneighbors shells
 ! do one shell of unit cells at a time
         shelloop: do n=0,maxshells
           already_found=.false.
-          firstloop: do i1=-n,n  ! generated shells are cubic shells 
+          firstloop: do i1=-n,n  ! generated shells are cubic shells
           do i2=-n,n
           do i3=-n,n
 ! walk only on the facets of the cube of length 2n+1
@@ -593,10 +439,10 @@
   &                  i1*prim_to_cart(j,1)+i2*prim_to_cart(j,2)+i3*prim_to_cart(j,3)
                 d2=d2+r(j)**2
 ! d2= |R+r_tau-r_i0|^2  to find shells centered at r_i0??
-              enddo    
-              
+              enddo
+
 ! did we find any new ones in this shell? save new shells in d2save(nd2save) up to maxneighbors
-              if(m.eq.0)then   ! onsite shell only 
+              if(m.eq.0)then   ! onsite shell only
                 already_found=.true.
               else if(ncmp(d2-d2save(nd2save)).eq.0 .or. d2.lt.d2save(nd2save))then
                 already_found=.true.
@@ -607,7 +453,7 @@
                 if(ncmp(d2-d2save(j)).eq.0)cycle iloop
 ! new distance: insert into list
                 if(d2.lt.d2save(j))then
-                  do k=maxneighbors,j+1,-1  
+                  do k=maxneighbors,j+1,-1
 ! shift d2save up by one from position j to insert d2 at the position j (and keep d2save sorted)
                     d2save(k)=d2save(k-1)
                   enddo
@@ -645,8 +491,8 @@
 !K1       if(.not.foundone.and.(nd2save.eq.maxneighbors)) then
           if(.not.already_found.and.(nd2save.eq.maxneighbors)) then
             nshl = n-1 !(iatom0)=n-1
-            write(ulog,*)'maxneighbor reached; exiting shelloop: i0,nshl,nd2save=',iatom0,nshl,nd2save 
-            write(  * ,*)'maxneighbor reached; exiting shelloop: i0,nshl,nd2save=',iatom0,nshl,nd2save 
+            write(ulog,*)'maxneighbor reached; exiting shelloop: i0,nshl,nd2save=',iatom0,nshl,nd2save
+            write(  * ,*)'maxneighbor reached; exiting shelloop: i0,nshl,nd2save=',iatom0,nshl,nd2save
             exit shelloop
           endif
 ! list is filled
@@ -668,7 +514,7 @@
    write(*   ,*)'FC_INIT: shelloop:i0,nshl,nd2save,rmax=',iatom0,nshl,nd2save,sqrt(d2save(nd2save))
 
 !-----------------------------------------------------------------------------
-! generate positions of neighbors 
+! generate positions of neighbors
 ! do each shell of unit cells
         shloop: do n=0,nshl !(iatom0)
           write(*,*)'shell# n=',n
@@ -695,21 +541,21 @@
 ! K1 new addition to avoid exceeding maxatoms
 !             if (d2 .gt. rcut(2)*rcut(2)) cycle
 
-! find atom in list d2save, generated in the previous section shell by shell 
+! find atom in list d2save, generated in the previous section shell by shell
               do m=1,nd2save
                 if(ncmp(d2-d2save(m)).eq.0)then
                   call find_atompos(icell,tau,iatom)
                   if(iatom.eq.0)then
 ! if not found, add it to the list up to maxatoms
-                    natoms=natoms+1   
+                    natoms=natoms+1
   write(*,*)' new atom: natoms=',natoms
-                    if(natoms.gt.maxatoms)then  ! maxatoms is the limit 
+                    if(natoms.gt.maxatoms) then
                       write(ulog,*)'Warning: in force_constants_init:  '   &
-     &                     //'the value of maxatoms was reached within the d2save list '
+     &                     //'the value of maxatoms was reached within the d2save list ',maxatoms
                       write(6,*)'Warning: in force_constants_init:  '   &
-     &                     //'the value of maxatoms was reached within the d2save list '
+     &                     //'the value of maxatoms was reached within the d2save list ',maxatoms
                       imaxatm=0     ! flag to increase maxatoms and recall fc_init if needed
-                      natoms=natoms-1  ! recover maxatoms
+                      natoms=natoms-1
                       exit shloop
                     endif
 ! save position in cartesian and identity (tau,n)
@@ -807,6 +653,7 @@
 
       use atoms_force_constants
       use lattice, only : cart_to_prim
+ use constants, only : r15
       implicit none
       integer, intent(in):: nrank,maxrank,maxterms,maxtermsindep,maxtermszero
       integer, intent(out):: ierz,iert,ieri,ntermsindep,ntermall,ntermszero
@@ -817,16 +664,16 @@
      &   iatomtermzero (maxrank,maxtermszero),ixyztermzero (maxrank,maxtermszero)
       integer i,j,k,m,n,iatom(nrank),ncmp,ixyz(nrank),   &
      &   iatomterm(maxrank,maxterms),ixyzterm(maxrank,maxterms),jterm,   &
-     &     icell(3),iv(3),isg,msave,nn,nv(3),tauv,  &
+     &     icell(3),iv(3),isg,msave,nn,  &
      &     irank,k2,neqs,ifactorial,msave2,j2,   &
      &     npermute,ixyzfirst(nrank),ixyz4(nrank),   &
      &     mapdep(maxterms),mapterms(maxterms),   &
-     &     maptermsindep(maxterms),mapindepterms(maxterms)  , iat2
+     &     maptermsindep(maxterms),mapindepterms(maxterms)  !, iat2,nv(3),tauv
       logical foundit(maxterms),firstone,zero(maxterms)
-      double precision v(3),amp
-      real(8), intent(out):: amat(maxterms,maxtermsindep)
+      real(r15) v(3),amp
+      real(r15), intent(out):: amat(maxterms,maxtermsindep)
       integer, allocatable :: ipermute(:,:)
-      real(8), allocatable :: eqs(:,:),eqs2(:,:)
+      real(r15), allocatable :: eqs(:,:),eqs2(:,:)
 
       allocate(eqs(maxterms,maxterms),eqs2(maxterms,maxterms))
       iert=0 ; ieri=0 ; ierz=0
@@ -890,7 +737,8 @@
           if(iatom(irank).eq.0)then
             write(6,*)'Error0 in force_constants: atom not found,for irank,iatom=',irank,iatom(irank)
   !         write(6,*)'the atom moved by the space group operation is not there!tau,n=',tauv,nv
-            write(6,9)'noncorresponding vector,in reduced=',v,matmul(cart_to_prim,v)
+            write(6,9)'noncorresponding vector,length, reduced=',v,length(v),matmul(cart_to_prim,v)
+            write(6,*)'you probably need to increase the cutoff length in 3rd line of default.params'
             stop
           endif
         enddo
@@ -902,7 +750,7 @@
               ixyzfirst(k)=i
               exit
             endif
-            if(i.eq.3)stop 'This cannot happen!'
+            if(i.eq.3)stop 'i=3; This cannot happen!'
           enddo
         enddo
         ixyz4(nrank)=ixyz4(nrank)-1
@@ -929,7 +777,11 @@
           do k=1,nrank
             amp=amp*op_matrix(ixyz4(k),ixyzterm(k,jterm),isgop(isg))
           enddo
-          if(ncmp(amp).eq.0)stop 'This cannot happen!'
+          if(ncmp(amp).eq.0) then
+             write(*,*) 'Amp=0; This cannot happen! rank,igroup,term,xyz(term),amp=', &
+&                       nrank,isg,jterm,ixyzterm(:,jterm),amp
+             stop
+          endif
 ! get unique denominator
           call unique_force_constant(nrank,iatom,ixyz4,iatom,ixyz)
 ! look for variable
@@ -1030,6 +882,7 @@
         if(mapdep(i).eq.0)then
           ntermsindep=ntermsindep+1
           if(ntermsindep.gt.maxtermsindep)then
+!! can extend the size of iatomtermindep and ixyztermindep arrays
             write(6,*) 'Warning: in force_constants: maxtermsindep too small'
             ieri=ieri+1
             deallocate(ipermute,eqs,eqs2)
@@ -1111,6 +964,7 @@
               call find_atompos(icell,iatomcell0(iatomtermall(k,i)), iatomtermall(k,m+1))
               if(iatomtermall(k,m+1).eq.0)then
                 write(6,*)'Error in force_constants: atom not found'
+            write(6,*)'you probably need to increase the cutoff length in 3rd line of default.params'
                 stop
               endif
               ixyztermall(k,m+1)=ixyztermall(k,i)
@@ -1197,6 +1051,7 @@
           call find_atompos(icell,iatomcell0(iatomin(k)),iatomtemp(k))
           if(iatomtemp(k).eq.0)then
             write(6,*)'Error in unique_force_constants: atom not found'
+            write(6,*)'you probably need to increase the cutoff length in 3rd line of default.params'
             stop
           endif
           ixyztemp(k)=ixyzin(k)
@@ -1267,7 +1122,7 @@
       integer, intent(out):: iatom
       integer i,j
 
-      do i=1,natoms !maxatoms !natoms
+      do i=1,natoms
         if(icell0.ne.iatomcell0(i))cycle
         do j=1,3
           if(icell(j).ne.iatomcell(j,i))exit
@@ -1287,9 +1142,11 @@
 !!     iatom (output), location of atom in data base.  Returns zero if not found
 !!          in data base
       use atoms_force_constants
+ use constants, only : r15
       implicit none
-      integer iatom,i,j,ncmp
-      double precision pos(3)
+      integer,intent(out) :: iatom
+      real(r15), intent(in) :: pos(3)
+      integer i,j,ncmp
 
     ! write(*,5)'natoms,pos=',natoms,pos(:)
       do i=1,natoms
@@ -1307,6 +1164,8 @@
       end subroutine findatom_cart
 !--------------------------------------------------------------------------------
       function ncmp(x)
+      use params, only : tolerance
+ use constants, only : r15
       implicit none
 !
 !!	COMPARE X WITH ZERO
@@ -1315,11 +1174,11 @@
 !!	X IS REAL
 !
       integer ncmp
-      real(8) x !,delta
+      real(r15) x !,delta
 !     data delta/1.e-3/
       ncmp=0
 !     if(abs(x).gt.delta)ncmp=1
-      if(abs(x).gt.1d-4)ncmp=1  ! was originally 1d-6 ! K1
+      if(abs(x).gt.tolerance)ncmp=1  ! was originally 1d-6 ! K1
       return
       end function ncmp
 !-------------------------------------------------------------------------
@@ -1339,10 +1198,13 @@
 !     nr2 (input), number of rows in the physical array x2
 !     nr3 (input), number of rows in the physical array x3
 
+ use constants, only : r15
       implicit none
-      integer i,j,k,nrow1,ncol1,ncol2,nr1,nr2,nr3
-      double precision x1(nr1,ncol1),x2(nr2,ncol2),x3(nr3,ncol2)
-      real(8), allocatable :: x(:,:)
+      integer ,intent(in) :: nrow1,ncol1,ncol2,nr1,nr2,nr3
+      real(r15), intent(in) :: x1(nr1,ncol1),x2(nr2,ncol2)
+      real(r15), intent(out) :: x3(nr3,ncol2)
+      real(r15), allocatable :: x(:,:)
+      integer i,j,k
 
       x3=matmul(x1,x2)
 
@@ -1377,10 +1239,11 @@
 !     ncol (input), number of columns in x, also the number of rows in v1
 !     nr (input), number of rows in the physical array x
 
+ use constants, only : r15
       implicit none
       integer nrow,ncol,nr,i,j
-      double precision x(nr,ncol),v1(ncol),v2(nrow)
-      real(8), allocatable:: v(:)
+      real(r15) x(nr,ncol),v1(ncol),v2(nrow)
+      real(r15), allocatable:: v(:)
 
       v2=matmul(x,v1)
 
@@ -1403,13 +1266,15 @@
 !! cart_to_prim has the reciprocal vectors in lines 1,2,3
 !! prim_to_cart has the translation vectors in real space in columns 1,2,3
 
+ use constants, only : r15
       implicit none
-      double precision cart_to_prim(3,3),prim_to_cart(3,3),v1(3),  &
+      real(r15) cart_to_prim(3,3),prim_to_cart(3,3),v1(3),  &
      &     v2(3),buff(3)
       integer i,ncmp
 ! change coordinates of point to linear combination of basis vectors of the
 ! primitive lattice
-      call xmatmlt(cart_to_prim,v1,buff,3,3,1,3,3,3)
+!     call xmatmlt(cart_to_prim,v1,buff,3,3,1,3,3,3)
+      buff=matmul(cart_to_prim,v1)
 ! in the unit cell at the origin, the coefficient must be greater than or
 ! equal to zero and less than one.
       do i=1,3
@@ -1421,8 +1286,9 @@
         enddo
       enddo
 ! return to cartesian coordinates
-      call xmatmlt(prim_to_cart,buff,v2,3,3,1,3,3,3)
-
+!      call xmatmlt(prim_to_cart,buff,v2,3,3,1,3,3,3)
+      v2=matmul(prim_to_cart,buff)
+ 
       end subroutine unitcell
 !----------------------------------------------------------------------------
       subroutine dlatmat2(cart,eps,nmatrices,matrices)
@@ -1435,16 +1301,17 @@
 !!     nmatrices (output), number of matrices
 !!     matrices(i,j,k) (output), kth matrix
 
+ use constants, only : r15
       implicit none
 
       integer nmax
       parameter(nmax=400)
 
-      real(8), intent(in)  :: cart(3,3),eps
+      real(r15), intent(in)  :: cart(3,3),eps
       integer, intent(out) :: nmatrices,matrices(3,3,48)
       integer n,i,j,j1,j2,j3,k,m,i1,i2,i3,nshort(3),ndet,itrans(3,3),  &
      &      ichoose(3),ishort(3,nmax,3)
-      real(8) vshort(3,nmax,3),v(3),xmax,vlength,x,d,abc(3,3),dshort(nmax,3)
+      real(r15) vshort(3,nmax,3),v(3),xmax,vlength,x,d,abc(3,3),dshort(nmax,3)
       logical foundone,tried(48,48)
 
 ! some initialization
@@ -1595,16 +1462,17 @@
 !     v3 (output), vector v1-v2
 !     nrow (input), number of rows in each vector
 
+ use constants, only : r15
       implicit none
-      integer i,nrow
-      double precision v1(nrow),v2(nrow),v3(nrow)
+      integer nrow
+      real(r15) v1(nrow),v2(nrow),v3(nrow)
 
-      v3=v1-v2 
+      v3=v1-v2
       return
 
-      do i=1,nrow
-        v3(i)=v1(i)-v2(i)
-      enddo
+!     do i=1,nrow
+!       v3(i)=v1(i)-v2(i)
+!     enddo
 
       end subroutine xvsub
 !------------------------------------------------------------------------------
@@ -1617,23 +1485,25 @@
 !     v3 (output), vector v1+v2
 !     nrow (input), number of rows in each vector
 
+ use constants, only : r15
       implicit none
       integer i,nrow
-      double precision v1(nrow),v2(nrow),v3(nrow)
-        
+      real(r15) v1(nrow),v2(nrow),v3(nrow)
+
       v3=v1+v2
       return
 
-      do i=1,nrow
-        v3(i)=v1(i)+v2(i)
-      enddo
+!     do i=1,nrow
+!       v3(i)=v1(i)+v2(i)
+!     enddo
 
       end subroutine xvadd
 !-------------------------------------------------------------------------------
       function vlength(n,v)
+ use constants, only : r15
       implicit none
       integer n
-      double precision v(n),vlength,x
+      real(r15) v(n),vlength,x
       integer i
       x=0
       do i=1,n
@@ -1754,13 +1624,14 @@
       end function ifactorial
 !-------------------------------------------------------------------------------
       subroutine xrowop2(zna,nrow,ncol,nnrow,nncol)
+ use constants, only : r15
       implicit none
 !
 !!	DO ROW OPERATIONS ON MATRIX ZNA TO BRING IT TO UPPER TRIANGULAR FORM
 !!	DOUBLE PRECISION NUMBERS
 !
       integer nnrow,nncol
-      double precision zna(nnrow,nncol),zntemp
+      real(r15) zna(nnrow,nncol),zntemp
       integer nrow,ncol,nout,j,k,l,ncmp
 !
 !	TRANSFORM MATRIX BY ROWS
@@ -1808,12 +1679,13 @@
 !!     kvecstar(3,1:narms), all the stars of kvec
 !!     kvecop(i), the symmetry operation number for the star vector i
       use atoms_force_constants
+ use constants, only : r15
       implicit none
       integer, intent(out):: narms,kvecop(48)
-      real(8), intent(in) :: kvec(3),primlatt(3,3)
-      real(8), intent(out):: kvecstar(3,48)
+      real(r15), intent(in) :: kvec(3),primlatt(3,3)
+      real(r15), intent(out):: kvecstar(3,48)
       integer i,j,k,n,ncmp
-      real(8) v(3),v2(3),v3(3),kvecstarp(3,48)
+      real(r15) v(3),v2(3),v3(3),kvecstarp(3,48)
 
       narms=0
 !      print*,'lattpgcount=',lattpgcount
@@ -1822,7 +1694,8 @@
 !        call xvmlt(op_kmatrix(1,1,i),kvec,v,3,3,3)
         v=matmul(op_kmatrix(:,:,i),kvec)
 ! find the reduced coordinates of v and store in v2
-        call xmatmlt(v,primlatt,v2,1,3,3,1,3,1)
+!       call xmatmlt(v,primlatt,v2,1,3,3,1,3,1)
+        v2=matmul(v,primlatt)
 
 ! now check if v2 - any_previous_v2 is integer (differ by a G vector)
 ! if so, skip; else store this v as a new star vector
@@ -1894,6 +1767,7 @@
       use atoms_force_constants
 !      use force_constants_module
       use ios , only : ulog
+ use constants, only : r15
       implicit none
       integer, intent(in) :: nrank,maxrank,maxterms,maxtermsindep,maxgroups,  &
      &     maxtermszero,nshell(natom_prim_cell)
@@ -1903,7 +1777,7 @@
      &     ixyztermindep(maxrank,maxterms,maxgroups), &
      &     iatomterm(maxrank,maxterms,maxgroups),ixyzterm(maxrank,maxterms,maxgroups),  &
      &     iatomtermzero(maxrank,maxtermszero),ixyztermzero(maxrank,maxtermszero)
-      real(8), intent(out):: amat(maxterms,maxtermsindep,maxgroups)
+      real(r15), intent(out):: amat(maxterms,maxtermsindep,maxgroups)
       integer i,j,k,m,n0,ncount,iatom,iatom0,iatomd(nrank),ixyz,ngroupsave,  &
      &     ixyzd(nrank),icell(3),iatomd2(nrank),ixyzd2(nrank),ntermszerosave
       logical firsttime
@@ -2028,12 +1902,14 @@
             ngroups=ngroups+1
 
             if(ngroups.ge.maxgroups)then
+!! can add to the size of arrays ixyzterm*, iatomterm* 
               write(6,*)' maxgroups is too small ',maxgroups
               ierg=ierg+1
               return
             endif
 
             if (ntermszero.ge.maxtermszero) then
+!! can add to the size of arrays iatomtermzero,ixyztermzero
               write(*,3)' mxt0 =< nt0=',maxtermszero,ntermszero
               write(ulog,3)' mxt0 =< nt0=',maxtermszero,ntermszero
               ierz=5

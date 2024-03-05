@@ -300,10 +300,11 @@
  use params
  use ios
  use linalgb
+ use constants, only : r15
  implicit none
  integer nlout,ierr
- real(8), allocatable:: bout(:),aout(:,:)
-! real(8), allocatable:: a11(:,:),b1(:),a12(:,:),a11i(:,:),b2(:)
+ real(r15), allocatable:: bout(:),aout(:,:)
+! real(r15), allocatable:: a11(:,:),b1(:),a12(:,:),a11i(:,:),b2(:)
 
 !  dim_al = force_constraints
 !  allocate(amat(dim_al,dim_ac),bmat(dim_al))
@@ -312,7 +313,7 @@
 !  if(ierr.ne.0) then
 !     write(*,*)'translation deallocation error in remove_zeros'
 !     stop
-!  endif 
+!  endif
 
 ! start with translational invariance matrix
    dim_al=transl_constraints+rot_constraints+huang_constraints+force_constraints
@@ -322,10 +323,10 @@
 
 !-----------------------------------------------------------------------
 ! in this case, invariances are obtained in a rms sense and are not exact.
-! in principle zero lines have already been removed from the invariance part 
+! in principle zero lines have already been removed from the invariance part
 ! of amat, and the call to remove zeros in not necessary!
 
- 
+
    dim_al=0
    if (itrans .ne. 0) then
       allocate(aout(transl_constraints,dim_ac),bout(transl_constraints))
@@ -340,9 +341,9 @@
       if(ierr.ne.0) then
          write(*,*)'rotation deallocation error in remove_zeros'
          stop
-      endif 
+      endif
       transl_constraints=nlout
- 
+
       write(ulog,*)'After remove_zeros from transl: NEW # of lines=',nlout
       write(*   ,*)'After remove_zeros from transl: NEW # of lines=',nlout
 
@@ -362,41 +363,13 @@
 !     if(ierr.ne.0) then
 !        write(*,*)'translation deallocation error in remove_zeros'
 !        stop
-!     endif 
+!     endif
 !  endif
-   if (ihuang .ne. 0) then
-      allocate(aout(huang_constraints,dim_ac),bout(huang_constraints))
-      call remove_zeros(huang_constraints,dim_ac,ahuang,bhuang,   &
-      &        nlout,aout,bout)
-      amat(dim_al+1:dim_al+nlout,1:dim_ac)=aout(1:nlout,1:dim_ac)
-      bmat(dim_al+1:dim_al+nlout)=bout(1:nlout)
-      dim_al= dim_al+  nlout
-      write(ulog,*)'INCLUDE_CONSTRAINTS :c(huang ),dim_hom(A)=',nlout,dim_al
-      deallocate(aout,bout,stat=ierr)
-      if(ierr.ne.0) then
-         write(*,*)'Huang deallocation error in remove_zeros'
-         stop
-      endif 
-
- write(ulog,*)'After remzeros from Huang: NEW # of lines=',nlout
-!     deallocate(ahuang,bhuang)
-
-! amat=reshape(transpose(amat),shape=(/size(amat,2),size(amat,1)+size(aout,1)/),pad=    transpose(aout),order=(/1,2/))
-! amat=transpose(amat)
-! bmat=reshape(bmat,shape=(/size(bmat)+size(bout)/),pad=bout)
-
-!     write(*,*)' going to call append_array 1'
-!     call append_array(amat,aout,amat)
-!     call append_array(bmat,bout,bmat)
-
-      huang_constraints=nlout
-   endif
-! we do rotations last as it might be inhomogeneous, and will be combined with afroce
    if (irot   .ne. 0) then
       allocate(aout(rot_constraints,dim_ac),bout(rot_constraints))
       call remove_zeros(rot_constraints,dim_ac,arot,brot,  &
       &        nlout,aout,bout)
-      
+
 
 !write(ulog,*)'After remzeros from rot: NEW # of lines=',nlout
 !      deallocate(arot,brot)
@@ -411,15 +384,44 @@
 
       amat(dim_al+1:dim_al+nlout,1:dim_ac)=aout(1:nlout,1:dim_ac)
       bmat(dim_al+1:dim_al+nlout)=bout(1:nlout)
-      dim_al= dim_al+ nlout
+      dim_al= dim_al + nlout
       write(ulog,*)'INCLUDE_CONSTRAINTS :c(rotatn),dim_hom(A)=',nlout,dim_al
       deallocate(aout,bout,stat=ierr)
       if(ierr.ne.0) then
          write(*,*)'rotation deallocation error in remove_zeros'
          stop
-      endif 
+      endif
       rot_constraints=nlout
    endif
+
+   if (ihuang .ne. 0) then
+      allocate(aout(huang_constraints,dim_ac),bout(huang_constraints))
+      call remove_zeros(huang_constraints,dim_ac,ahuang,bhuang,   &
+      &        nlout,aout,bout)
+      amat(dim_al+1:dim_al+nlout,1:dim_ac)=aout(1:nlout,1:dim_ac)
+      bmat(dim_al+1:dim_al+nlout)=bout(1:nlout)
+      dim_al= dim_al+  nlout
+      write(ulog,*)'INCLUDE_CONSTRAINTS :c(huang ),dim_hom(A)=',nlout,dim_al
+      deallocate(aout,bout,stat=ierr)
+      if(ierr.ne.0) then
+         write(*,*)'Huang deallocation error in remove_zeros'
+         stop
+      endif
+
+ write(ulog,*)'After remzeros from Huang: NEW # of lines=',nlout
+!     deallocate(ahuang,bhuang)
+
+! amat=reshape(transpose(amat),shape=(/size(amat,2),size(amat,1)+size(aout,1)/),pad=    transpose(aout),order=(/1,2/))
+! amat=transpose(amat)
+! bmat=reshape(bmat,shape=(/size(bmat)+size(bout)/),pad=bout)
+
+!     write(*,*)' going to call append_array 1'
+!     call append_array(amat,aout,amat)
+!     call append_array(bmat,bout,bmat)
+
+      huang_constraints=nlout
+   endif
+!
 
    inv_constraints=dim_al
    write(ulog,3)' REMOVE_ZEROS: # of invce cnstrnts=',transl_constraints,rot_constraints,huang_constraints
@@ -432,9 +434,9 @@
 !     deallocate(aforce,bforce)
 
 
-!     write(*,*)' force_constraints, before appending ',force_constraints 
-!     write(*,*)' force_constraints, after  appending ',force_constraints 
-      
+!     write(*,*)' force_constraints, before appending ',force_constraints
+!     write(*,*)' force_constraints, after  appending ',force_constraints
+
 !     write(*,*)' number of lines before appending forces=',size(amat,1),size(aout,1)
 !     write(*,*)' going to call append_array 3'
 !     call append_array(amat,aout,amat)
@@ -450,7 +452,7 @@
       if(ierr.ne.0) then
          write(*,*)'force deallocation error in remove_zeros'
          stop
-      endif 
+      endif
 
 
    write(ulog,*)' size(a) nlines,ncolumn=(dim(a1d))=',dim_al,dim_ac
@@ -459,9 +461,9 @@
    if(ierr.ne.0) then
       write(*,*)'aforce,bforce deallocation error in remove_zeros'
       stop
-   endif 
+   endif
 ! aforce bforce used here as dummy vars to remove deleted lines from amat and bmat
-   allocate (aforce(dim_al,dim_ac),bforce(dim_al))  
+   allocate (aforce(dim_al,dim_ac),bforce(dim_al))
    aforce=amat(1:dim_al,1:dim_ac)
    bforce=bmat(1:dim_al)
 
@@ -482,12 +484,12 @@
  subroutine homogeneous_constraints_overlap(n_constr)
 !! now that we have the 3 matrices atransl,arot,ahuang,
 !! we put them together to do the SVD
-!! outputs are amat and bmat and their dimensions:dim_al,dim_ac, which go to SVD
+!! output s ahom and its dimensions:n_constr,dim_ac, which go to SVD
  use svd_stuff
  use params
- use ios
+ use ios, only : ulog
  implicit none
- integer n_constr
+ integer , intent(out) :: n_constr
 
 !-----------------------------------------------------------------------
 ! in this case, invariances are obtained in a rms sense and are not exact.
@@ -569,7 +571,7 @@
 !  endif
  enddo
 !if(ihuang.eq.1)then
-    huang_constraints = 15 
+    huang_constraints = 15
 !endif
  write(ulog,*)' Cumulative transl_cnstrnts estimated to be ', transl_constraints
  write(ulog,*)' Cumulative    rot_cnstrnts estimated to be ', rot_constraints
@@ -599,16 +601,17 @@
  use ios
  use params
  use svd_stuff
+ use constants, only : r15
  implicit none
  integer line,col,i,j,noforc,nosym,rnk,dum
- real(8) afrc(line,col)
+ real(r15) afrc(line,col)
 
  write(ulog,*)'==== CHECK_ZERO_COLUMN: lines and columns are:',line,col
  main: do i=1,col
 ! separate the contribution of symmetries from the force-displacements
 ! nosym counts the number of non-zero symmetry constraints
     nosym = 0
-    col_loop: do j=1,line-force_constraints
+    col_loop: do j=1,line-force_constraints  ! homogeneouds part
 !      write(*,*)'j=',j,line-force_constraints
        if (abs(afrc(j,i)) .gt. 1d-8) then
           nosym = 1+nosym
@@ -619,7 +622,6 @@
        write(6,*)' The FC #',i,' is not involved in the symmetry constraints'
        write(6,*)' Thus it might only be fixed from the force-displacements'
        write(ulog,*)' The FC #',i,' is not involved in the symmetry constraints'
-       write(ulog,*)' Thus it might only be fixed from the force-displacements'
     endif
 
 ! now the contribution of force-displacements
@@ -632,13 +634,12 @@
        endif
     enddo col_loop2
     if (noforc .eq. 0) then  ! column i was all = zero in the symmetry constraints
+       write(ulog,*)' The FC #',i,' is not involved in the force-displacements data'
        write(6,*)' The FC #',i,' is not involved in the force-displacements data'
        write(6,*)' Thus it might only be fixed from the enforced symmetry constraints'
-       write(ulog,*)' The FC #',i,' is not involved in the force-displacements data'
-       write(ulog,*)' Thus it might only be fixed from the enforced symmetry constraints'
     endif
 
-    if ((noforc .eq. 0) .and. (nosym .eq. 0)) then  ! column i was all = zero 
+    if ((noforc .eq. 0) .and. (nosym .eq. 0)) then  ! column i was all = zero
        call warn(6)
        write(6,*)' The column no. ',i,' of Amatrix is 0, the corresponding '// &
 &                ' FC will not be evaluated correctly because it does not appear in' // &
@@ -724,47 +725,48 @@
  end subroutine find_t
 !============================================================
  subroutine compare2previous_lines(m,n,a1d,a,counter,new)
-!use atoms_force_constants
+!! compares line a1d to all lines of a matrix up to counter, and confirms whether a1d is a new line or not
  use geometry
  use params
  use ios
+ use constants, only : r15
  implicit none
- integer j,t,counter,m,n,j0,i
+ integer j,t,counter,m,n,j0 !,i
  logical new
- real(8) junk,zero
- real(8), dimension(n) :: a1d,b
- real(8), dimension(m,n) :: a
+ real(r15) junk,zero
+ real(r15), dimension(n) :: a1d,b
+ real(r15), dimension(m,n) :: a
 
  zero = 0d0
  new=.true.
+ j0=0
+    do j=1,n  ! = no of columns in ared; it's really ngr
+       if ( a1d(j) .myeqz. zero ) cycle
+       j0 = j   ! it is the first nonzero index (column)
+       exit
+    enddo
+    if(j0.eq.0) then
+       new=.false.  ! all a1d was zero
+       return
+    endif
 
     checkloop: do t=1,counter
 ! check to see if they are multiples of each other
 !   write(ulog,*)' comparing with line ',t,' in ared matrix'
-          do j=1,n  ! = no of columns in ared; it's really ngr
-             if ( a1d(j) .myeqz. zero ) cycle
-             j0 = j   ! it is the first nonzero index
-!    write(ulog,*)' found j0=',j0
-             exit
-          enddo
-          if (j.gt.n .and. verbose ) then
-             write(ulog,*)' this line of ared1d is all=0'
-             write(ulog,4)(a1d(i),i=1,n)
-!            stop
-          endif
+  !       if (j.gt.n .and. verbose ) then
+  !          write(ulog,*)' this line of ared1d is all=0'
+  !          write(ulog,4)(a1d(i),i=1,n)
+! !          stop
+  !       endif
           junk = a(t,j0)/a1d(j0)
           b = a1d*junk   ! this is to avoid repeating amat and -amat
           if ( a(t,:) .myeqz. b(:) ) then
              new=.false.
-             exit checkloop
+             return !exit checkloop
           endif
     enddo checkloop
-    if(verbose) then
-      if (new) then
-         write(ulog,5)'NEW ',counter+1,a1d
-!      else
-!         write(ulog,5)'COMPARE2PREVIOUS: EXISTED ',counter+1,a1d
-      endif
+    if(verbose .and. new) then
+         write(ulog,5)'NEW LINE:',counter+1,a1d
     endif
 
 4 format(99(1x,g11.4))
@@ -779,13 +781,14 @@
  use atoms_force_constants
  use svd_stuff
  use ios
+ use constants, only : r15
 ! use geometry
 ! use force_constants_module
  implicit none
  integer, intent(in) :: ngr
- real(8), intent(in) :: phi2(ngr)
+ real(r15), intent(in) :: phi2(ngr)
  integer i,j,al,be,ga,de,t,ti,cnt2,mterm,rnk,voigt,g,vab,vcd,res
- real(8) huang1,huang2,rr(3),stress(6)
+ real(r15) huang1,huang2,rr(3),stress(6)
 
  write(ulog,*)'CHECKING HUANG INVARIANCE RELATIONS       ###############################'
  res = sum(map(1)%ntind(:))
@@ -851,9 +854,10 @@
 ! ============================================
  subroutine truncate(n,ws,n_kept,mw)
 ! find a gap in the ws and drop the small ws values
+ use constants, only : r15
  implicit none
  integer n,n_kept,i,i1
- real(8) ws(n), logws(n),gap(n-1),maxgap1,wmax
+ real(r15) ws(n), logws(n),gap(n-1),maxgap1,wmax
  integer mw(n)
 
  wmax=maxval(ws)
@@ -910,36 +914,45 @@
  use geometry
  use svd_stuff
  use params
+ use constants, only : r15
  implicit none
 ! integer, intent(out) :: keep_grp2(:),size_kept_fc2
- integer g,t,i0,j,inside,keep,ishl
- real(8) rij(3),dij(999)
+ integer g,ti,i0,j,inside,keep !,ishl
+ real(r15) rij(3),dij(999)
 
  write(ulog,*)'SETUP_FC2: dimension of keep_grp2=',size(keep_grp2)
  keep_grp2=0
  size_kept_fc2=0  ! this is the size in amatrix of the FC2s not eliminated<map(2)%ntind.
-!cnt=0
  do g=1,map(2)%ngr
-    keep=0
+    keep=0 ! counts how many indepterms within this group are inside WS
     ! do t=1,map(2)%nt(g)
-    do t=1,map(2)%ntind(g)
+!    cnt=0  ! counts how many are inside within that group
+    do ti=1,map(2)%ntind(g)
 ! find the pairs in that group and see if they fit in the WS cell
     !  i0=map(2)%gr(g)%iat(1,t)
     !  j =map(2)%gr(g)%iat(2,t)  ! this j is for atompos
-       i0=map(2)%gr(g)%iatind(1,t)
-       j =map(2)%gr(g)%iatind(2,t)  ! this j is for atompos
+       i0=map(2)%gr(g)%iatind(1,ti)
+       j =map(2)%gr(g)%iatind(2,ti)  ! this j is for atompos
        rij=atompos(:,j)-atompos(:,i0) ! is this within the WS cell?
 !      dij(cnt+1)=length(rij)
        call check_inside_ws(rij,rws26,inside)
        keep=keep+inside
+! Do we have elements of the same group, i.e. same distance, one being inside and one outside?
+       if(keep.lt.ti) then
+         write(ulog,*)'SETUP_FC2: ti=',ti,' was not kept in group ', g
+       endif
     enddo
-!   cnt=cnt+1
     dij(g)=length(rij)
-    if(keep.ne.0) then ! if at least, one of the has to be kept, we keep that group
-        keep_grp2(g)=1
-        size_kept_fc2=size_kept_fc2 + map(2)%ntind(g)
-        write(ulog,5)'In group ',g,' the shell corresponding to rij=',dij(g),' is kept nt_ind,sizekeptfc2 ', &
-&                     map(2)%ntind(g),size_kept_fc2
+    if(keep.ne.0) then ! if at least, one of them has to be kept,
+        keep_grp2(g)=1 ! if use keep instead of 1 check the ret of the code
+!! NEW
+!        size_kept_fc2=size_kept_fc2 + map(2)%ntind(g)   !we keep that whole group!
+        size_kept_fc2=size_kept_fc2 + keep    ! keep only group members that were inside
+!        write(ulog,5)'Group ',g,' is shell corresponding to rij=',dij(g),' kept nt_ind,sizekeptfc2 ', &
+!&                     map(2)%ntind(g),size_kept_fc2
+        write(ulog,5)'Group ',g,' is shell corresponding to rij=',dij(g),' kept,nt_ind,sizekeptfc2 ', &
+&                     keep,map(2)%ntind(g),size_kept_fc2
+!! NEW
 
 !        do ti=1,map(2)%ntind(g)
 !!          if (map(2)%ntind(g).gt.1) size_kept_fc2=size_kept_fc2+1
@@ -953,15 +966,15 @@
 !        write(ulog,3)' kept group, # of elements in it, cumulative size_kept_fc2=',g, &
 !   &                 map(2)%ntind(g),size_kept_fc2
     else
-        write(ulog,6)'In group ',g,' the shell corresponding to rij,dij=',rij,dij(g),' is NOT kept'
+        write(ulog,6)'Group ',g,' is shell corresponding to rij,dij=',rij,dij(g),' is NOT kept'
 
     endif
  enddo
 
 
- write(ulog,*)'size of kept FC2 indep terms=',size_kept_fc2, 'out of ',sum(map(2)%ntind)
- write(ulog,*)'size of groups of FC2s=',map(2)%ngr,size(keep_grp2)
- write(ulog,*)'# of groups kept =',sum(keep_grp2)
+ write(ulog,*)'size of kept FC2 indep terms=',size_kept_fc2, 'out of ',map(2)%ntotind
+ write(ulog,*)'size of groups of FC2s, kept ones=',map(2)%ngr,size(keep_grp2)
+ write(ulog,*)'Total # of groups kept =',sum(keep_grp2)
  write(ulog,*)'# i, keep_grp2(i)'
  do g=1, map(2)%ngr
     write(ulog,*)g,keep_grp2(g),dij(g)
@@ -969,7 +982,7 @@
 
 3 format(a,i3,1x,i3,1x,i5,3x,i3,1x,i4,f9.4,a,i4)
 4 format(a,i4,1x,2i4,3x,i4,2x,i4,2x,f9.4)
-5 format(a,i4,a,f9.4,a,2i5)
+5 format(a,i4,a,f9.4,a,3i5)
 6 format(a,i4,a,4f9.4,a,2i5)
 
  end subroutine setup_FC2_in_supercell
@@ -978,10 +991,10 @@
 ! input is the inhomogeneous part of amat; output is a square matrix mat(n,n) and qmat(n)
  use constants
  implicit none
- integer, intent(in) :: m3,n,nconfg,nlines(nconfg)
- real(8), intent(in) :: amat(m3,n),bmat(m3), ene(nconfg),tempk
- real(8), intent(out):: mat(n,n),qmat(n)
- real(8) wei,kt
+ integer, intent(in) :: m3,n,nconfg,nlines(nconfg) ! # of lines for each configuration
+ real(r15), intent(in) :: amat(m3,n),bmat(m3), ene(nconfg),tempk
+ real(r15), intent(out):: mat(n,n),qmat(n)
+ real(r15) wei,kt
  integer s,nat3,nat,nl,res,i1,in
 
  kt=tempk*k_b/ee  ! kT in eV
@@ -993,6 +1006,10 @@
     write(*,*)'TEMPERATURE: We have ',nat,' atoms!'
  endif
  nl=(m3)/nconfg
+ if(sum(nlines).ne.m3) then
+   write(*,*)' IMPLEMENT T: sum(nlines) \= force_constraints:',sum(nlines),m3  
+   stop
+ endif
 
  res=0
  mat=0
