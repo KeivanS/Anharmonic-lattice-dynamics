@@ -1,19 +1,3 @@
-!**********************************************************
-!UPDATE: FOCEX_ec
-module mech
-   use atoms_force_constants, only :  natom_prim_cell
-   use constants, only : r15
-   use eigen, only : ndyn
-   implicit none
-  
-   real(r15) sigma0(3,3),atld0(3,3,3,3)
-   real(r15), allocatable :: phi(:,:),xi(:,:,:),qiu(:,:,:),zeta(:,:,:),teta(:,:,:) ,gama(:,:),y0(:),pi0(:)
-   
-  ! contains
-  
-  
-end module mech
-!**********************************************************
 !UPDATE: FOCEX_ec
 module linalgb
    use constants, only : r15
@@ -1685,4 +1669,20 @@ end subroutine sort3
 
 
  end module kpoints
+!**********************************************************
+!UPDATE: FOCEX_ec
+module mech
+   use atoms_force_constants, only :  natom_prim_cell
+   use constants, only : r15
+   use eigen, only : ndyn
+   implicit none
+  
+   real(r15) sigma0(3,3),atld0(3,3,3,3)
+   real(r15), allocatable :: phi(:,:),xi(:,:,:),qiu(:,:,:),zeta(:,:,:),teta(:,:,:) ,gama(:,:),y0(:),pi0(:)
+   
+  ! contains
+  
+  
+end module mech
+!**********************************************************
 !===========================================================

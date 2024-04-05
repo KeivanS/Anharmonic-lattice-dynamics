@@ -83,8 +83,10 @@ MODULE Fourier_force_constants
                asr=asr+ zeu(i,j,k)
             end do
             if(abs(asr).gt.1d-9) then ! split the correction equally between the atoms
-               asr=asr/natoms0
-               zeu(i,j,k)=zeu(i,j,k)-asr
+                asr=asr/natoms0
+                do k=1,natoms0
+                    zeu(i,j,k)=zeu(i,j,k)-asr
+                end do
             endif
          end do
          end do
@@ -110,6 +112,7 @@ MODULE Fourier_force_constants
             END DO
         END DO
 
+        
 
         DO k=1,k_number
         DO i=1,atom_number

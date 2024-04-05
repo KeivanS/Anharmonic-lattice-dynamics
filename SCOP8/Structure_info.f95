@@ -331,9 +331,6 @@ SUBROUTINE read_structure
     READ(unit_number,*) line
     READ(unit_number,*) maxshell, tot_atom_number 
 
-    !UPDATE: 03/02/2024 fc_init generated natoms not match tot_atomnumber
-    ! maxshell = 35
-
     WRITE(unit_log,*) (include_fc(j),j=1,4)
     WRITE(unit_log,*) line
     WRITE(unit_log,*) (nterms(j),j=1,4)

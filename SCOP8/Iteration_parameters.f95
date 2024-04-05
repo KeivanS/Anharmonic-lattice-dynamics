@@ -12,7 +12,7 @@ MODULE Iteration_parameters
     REAL(8) :: rand_range, rand_center(3) !for user input
     INTEGER,DIMENSION(:),ALLOCATABLE :: fixed_params
     REAL(8),ALLOCATABLE :: atomic_deviation(:,:),strain(:,:) !atomic_deviation(xyz,atom_type),strain(xyz,xyz)
-    REAL(8),ALLOCATABLE :: atomic_deviation_sav(:,:),strain_sav(:,:)
+    REAL(8),ALLOCATABLE :: atomic_deviation_sav(:,:)
     TYPE(fc2_value),DIMENSION(:,:),ALLOCATABLE :: trialfc2_value,prev_trialfc2_value,trialfc2_value_initial
     TYPE(fc2_value),DIMENSION(:,:),ALLOCATABLE :: yy_value,yy_value_initial
     INTEGER,DIMENSION(:),ALLOCATABLE :: free_var
@@ -99,18 +99,27 @@ CONTAINS
          IF(ALLOCATED(trialfc2_value)) DEALLOCATE(trialfc2_value)
          IF(ALLOCATED(prev_trialfc2_value)) DEALLOCATE(prev_trialfc2_value)
          IF(ALLOCATED(yy_value)) DEALLOCATE(yy_value)
-         IF(ALLOCATED(strain_sav)) DEALLOCATE(strain_sav)
          IF(ALLOCATED(atomic_deviation_sav)) DEALLOCATE(atomic_deviation_sav)
 
-         ALLOCATE(atomic_deviation(d,atom_number),atomic_deviation_sav(d,atom_number))
-         ALLOCATE(strain(d,d),strain_sav(d,d))
+WRITE(*,*) 'MARK2'
+
+         ALLOCATE(atomic_deviation(d,atom_number))
+WRITE(*,*) 'MARK3'
+
+         ALLOCATE(atomic_deviation_sav(d,atom_number))
+WRITE(*,*) 'MARK4'
+
          ALLOCATE(trialfc2_value(atom_number,tot_atom_number))
+WRITE(*,*) 'MARK5'
+
+         ALLOCATE(strain(d,d))
+WRITE(*,*) 'MARK6'
+
          ALLOCATE(prev_trialfc2_value(atom_number,tot_atom_number))
+WRITE(*,*) 'MARK7'
+
          ALLOCATE(yy_value(atom_number,tot_atom_number))
-
          atomic_deviation=0d0;atomic_deviation_sav=0d0
-
-         strain=0d0;strain_sav=0d0
 
          trialfc2_value=myfc2_value
          prev_trialfc2_value=trialfc2_value
@@ -324,13 +333,15 @@ CONTAINS
 
         INTEGER :: unit_number,n,i,j
         INTEGER,DIMENSION(:),ALLOCATABLE :: free_params
-
-        !UPDATE: for path output initialize
-        path_out = 'output/'
-
+WRITE(*,*) 'mark 1'
         unit_number = 60
 !        OPEN(unit_number,file='iteration_parameters.in',status='old',action='read')
         OPEN(unit_number,file='control.params',status='old',action='read') !modified 11/10/2023
+        
+WRITE(*,*) 'mark 2'
+        path_out = 'output/'
+
+WRITE(*,*) 'mark 3'
 
         READ(unit_number,*) rand_start !start randomly or not
         READ(unit_number,*) inherit !use results from last run to target initialize or not
@@ -345,6 +356,7 @@ CONTAINS
         READ(unit_number,*) max_it_number
         READ(unit_number,*) my_pmix
         READ(unit_number,*) temperature
+WRITE(*,*) 'mark 4'
 
         DO i=1,3
             READ(unit_number,*) stress(i,:) !read stress tensor

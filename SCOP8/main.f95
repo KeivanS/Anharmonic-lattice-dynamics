@@ -75,6 +75,11 @@ SUBROUTINE ThreeVariableRoutine
     OPEN(unit_number3,FILE=trim(path_out)//'convergence.dat')
     OPEN(unit_number4,FILE=trim(path_out)//'the_comparison.dat')
     OPEN(unit_number5,FILE=trim(path_out)//'cputime.dat',status='unknown',position='append',action='write')
+    
+    uio = 45
+    WRITE(*,*) 'this makes no sense'
+    OPEN(uio,file=trim(path_out)//'mech.dat',status='unknown')
+    
     CALL CPU_TIME(cputime)
     WRITE(unit_number2,*)'***************************************************************************'
     WRITE(unit_number5,*)'Start time: ', cputime
@@ -114,7 +119,6 @@ SUBROUTINE ThreeVariableRoutine
     CALL fix_asr_fc2
     CALL fix_asr_fc3
     CALL fix_asr_fc4
-
     ! get the max distance between two input atoms
     ! legacy variable for checking purpose, may not be used
     R_0 = MAX(lengtha(trans_vec(:,1)),lengtha(trans_vec(:,2)),lengtha(trans_vec(:,3)))*maxneighbors
@@ -137,14 +141,20 @@ SUBROUTINE ThreeVariableRoutine
     k_number=nk
     wmin=-0.1;  nband=1
     dk=(length(g1)+length(g2)+length(g3))/(nc1+nc2+nc3)
+WRITE(*,*) 'MARK a'
     CALL kvector_Update(nband,nk)!don't forget to turn this on for tetrahedron k mesh
+WRITE(*,*) 'MARK b'
 
     !~~~~~~~~~~~~~~~~GET THE FOURIER CONSTANTS LIST~~~~~~~~~~~~~~~~~
 
     !--------read params.born----------
     CALL read_born
+WRITE(*,*) 'MARK c'
+
     CALL Allocate_FFC(k_number)
-    CALL Fourier_Force_Constants_Calculation(k_number)
+WRITE(*,*) 'MARK d'
+
+    ! CALL Fourier_Force_Constants_Calculation(k_number) !MODIFY: 03/12/2024 this is useless
 
     !~~~~~~~~~~~~~~~~~~~GET THE ITERATION && VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~~~~~~~
 
@@ -156,8 +166,11 @@ SUBROUTINE ThreeVariableRoutine
     endif
 
     ! Probably OK for all process to read same file
+WRITE(*,*) 'MARK0'
     CALL read_iteration_parameters_file
+WRITE(*,*) 'MARK1'
     CALL initiate_var
+WRITE(*,*) 'MARK2'
 
     if (mpi_rank==0) then
     WRITE(*,*) 'tolerance for convergence of f: ',tolerance2
@@ -192,7 +205,7 @@ WRITE(*,*) '!~~~~~~~~~~~~~~~~~INITIALIZE MATRIX PARAMETERS~~~~~~~~~~~~~~~~~~'
     eigen_number=d*atom_number
     ndyn = eigen_number
     CALL allocate_eigen(eigen_number,k_number)
-    CALL Allocate_Gradients !NOTE: temporarily commented off for not enough memory
+    ! CALL Allocate_Gradients !NOTE: temporarily commented off for not enough memory
 
 WRITE(*,*) '!~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~'
     !~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~
@@ -210,23 +223,23 @@ WRITE(*,*) '!~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~'
     ! CALL calc_gruneisen
 
     !---------------2. Quick Elastic Constants Calculations
-    ! IF(atom_number.eq.1) THEN
-    !     CALL GetElastic_final
-    ! ELSE
-    !     ! CALL GetElastic_Wallace !my previous own 
-    !     !UPDATE: FOCEX_ec
-    !     uio = 345
-    !     OPEN(uio,file=trim(path_out)//'mech.dat')
-    !     ALLOCATE(gama(ndyn-3,ndyn-3))
-    !     !MODIFY: need to calculate volume_r0 first
-    !     CALL calculate_volume(r1, r2, r3, volume_r0)
-    !     CALL get_phi_zeta_Xi(uio) !ndyn,atld0,gama,phi,zeta,teta,xi,qiu,uio)
+    IF(atom_number.eq.1) THEN
+        CALL GetElastic_final
+        CALL calc_modulus
+    ELSE
+        ! CALL GetElastic_Wallace !my previous own 
+        !UPDATE: FOCEX_ec
 
-    !     CALL residuals (uio) !ndyn,xi,zeta,phi,gama,sigma0,y0,pi0,uio)
-    !     CALL mechanical2(elastic,uio) !ndyn,atld0,sigma0,phi,zeta,xi,qiu,gama,elastic,uio)
-    !     CLOSE(uio)
-    ! END IF
-    ! STOP
+        ALLOCATE(gama(ndyn-3,ndyn-3))
+        !MODIFY: need to calculate volume_r0 first
+        CALL calculate_volume(r1, r2, r3, volume_r0)
+        CALL get_phi_zeta_Xi(uio) !ndyn,atld0,gama,phi,zeta,teta,xi,qiu,uio)
+        CALL residuals (uio) !ndyn,xi,zeta,phi,gama,sigma0,y0,pi0,uio)
+        CALL mechanical2(elastic,uio) !ndyn,atld0,sigma0,phi,zeta,xi,qiu,gama,elastic,uio)
+        CALL calc_modulus
+        CLOSE(uio)
+    END IF
+    STOP
     !-------3. Quick Free Energy Landscape Calculations-------
     !! A utility subroutine for free energy landscape calculation
     !! with only selected variational parameters free to change by step 

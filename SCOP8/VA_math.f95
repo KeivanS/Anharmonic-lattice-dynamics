@@ -7902,7 +7902,7 @@ end subroutine convert_to_voigt
      zeta=0; phi=0; xi=0;  teta=0; atld0=0;constr=0
 
      !DEBUG_b: 
-     !replace the original gloop by a loop over all fc2, since it's just a sum on 2nd atom index of Phi. 
+     !replace the original code by a loop over all fc2, since it's just a sum on R of 2nd atom index of fc2. 
      !on second thought, there is no need to loop through al, ga, tau at all
      !only one loop through all fc2 covers everything
      !original code deleted for simplicity, refer to FOCEX
@@ -7961,8 +7961,10 @@ end subroutine convert_to_voigt
      if (junk.gt.1d-12) then
         call write_out(   6,' PHI NOT SYMMETRIC ',phi)
         call write_out(ulog,' PHI NOT SYMMETRIC ',phi)
+        WRITE(ulog,*) 'PHI DIFFERENCES=', junk
         WRITE(35,*) ' PHI NOT SYMMETRIC ',phi
-        stop
+        phi = 0.5*(phi+transpose(phi))
+        !stop
      endif
      if (verbose) then
         call write_out(ulog,' PHI=sum_R phi(tau,R+taup)  (eV/Ang^2)',phi)
@@ -8118,7 +8120,7 @@ subroutine residuals(uio) !ndn,xi,zeta,phi,gam,sigma0,y0,pi0,uio)
             atom1 = myfc1_index(fc1_idx)%iatom_number
             al = myfc1_index(fc1_idx)%iatom_xyz
             tau1 = every_atom(atom1)%type_tau
-            i=al+3*(tau-1)
+            i=al+3*(tau1-1)
             !below should automatically take care of the sum on different <R> label
             pi0(i) = pi0(i) + myfc1_index(fc1_idx)%pie_temp
         END DO 
@@ -8310,6 +8312,29 @@ subroutine mechanical2(elastic,uio) !ndn,atld1,sigma0,phi,zeta,xi,qiu,gama,elast
     WRITE(ulog,*) ' Elastic Tensor ',elastic
    
 end subroutine mechanical2
+!-------------------------------------------------------------------------------------------------------
+!UPDATE: calculate Bulk & Young's modulus, call this after mechanical2
+subroutine calc_modulus
+    IMPLICIT NONE
+
+    REAL(8),DIMENSION(6,6) :: temp !call inverse matrix will destroy original matrix, so
+    REAL(8) :: bulk, modulus_E, modulus_niu, modulus_G
+
+    temp = elastic
+    CALL invers_r(temp, compliance,6)
+    
+    bulk = 1d0/(compliance(1,1) + compliance(2,2) + compliance(3,3))
+    modulus_E = 1d0/compliance(1,1)
+    modulus_niu = -(compliance(2,1) + compliance(3,1))/2d0/compliance(1,1)
+    modulus_G = 0.5/(compliance(1,1) - compliance(1,2))
+
+    WRITE(33,*) '==========modulus=========='
+    WRITE(33,*) 'Bulk=',bulk, (elastic(1,1)+elastic(1,2)*2)/3d0 !for cubic check
+    WRITE(33,*) 'E=', modulus_E
+    WRITE(33,*) 'niu=', modulus_niu
+    WRITE(33,*) 'G=', modulus_G
+
+end subroutine calc_modulus
 !========================================================================================================
  SUBROUTINE Extract_xy(idx,odx1,odx2)
   !!utility subroutine, for pressure part
