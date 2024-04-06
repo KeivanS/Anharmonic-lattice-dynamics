@@ -223,23 +223,21 @@ WRITE(*,*) '!~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~'
     ! CALL calc_gruneisen
 
     !---------------2. Quick Elastic Constants Calculations
-    IF(atom_number.eq.1) THEN
-        CALL GetElastic_final
-        CALL calc_modulus
-    ELSE
-        ! CALL GetElastic_Wallace !my previous own 
-        !UPDATE: FOCEX_ec
+    ! IF(atom_number.eq.1) THEN
+    !     CALL GetElastic_final
+    !     CALL calc_modulus
+    ! ELSE
+    !     ! CALL GetElastic_Wallace !my previous version, deprecated
 
-        ALLOCATE(gama(ndyn-3,ndyn-3))
-        !MODIFY: need to calculate volume_r0 first
-        CALL calculate_volume(r1, r2, r3, volume_r0)
-        CALL get_phi_zeta_Xi(uio) !ndyn,atld0,gama,phi,zeta,teta,xi,qiu,uio)
-        CALL residuals (uio) !ndyn,xi,zeta,phi,gama,sigma0,y0,pi0,uio)
-        CALL mechanical2(elastic,uio) !ndyn,atld0,sigma0,phi,zeta,xi,qiu,gama,elastic,uio)
-        CALL calc_modulus
-        CLOSE(uio)
-    END IF
-    STOP
+    !     ALLOCATE(gama(ndyn-3,ndyn-3))
+    !     CALL calculate_volume(r1, r2, r3, volume_r0)
+    !     CALL get_phi_zeta_Xi(uio) !ndyn,atld0,gama,phi,zeta,teta,xi,qiu,uio)
+    !     CALL residuals (uio) !ndyn,xi,zeta,phi,gama,sigma0,y0,pi0,uio)
+    !     CALL mechanical2(elastic,uio) !ndyn,atld0,sigma0,phi,zeta,xi,qiu,gama,elastic,uio)
+    !     CALL calc_modulus
+    !     CLOSE(uio)
+    ! END IF
+    ! STOP
     !-------3. Quick Free Energy Landscape Calculations-------
     !! A utility subroutine for free energy landscape calculation
     !! with only selected variational parameters free to change by step 

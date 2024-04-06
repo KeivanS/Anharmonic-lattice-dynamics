@@ -8318,12 +8318,13 @@ subroutine calc_modulus
     IMPLICIT NONE
 
     REAL(8),DIMENSION(6,6) :: temp !call inverse matrix will destroy original matrix, so
-    REAL(8) :: bulk, modulus_E, modulus_niu, modulus_G
+    REAL(8) :: bulk, modulus_E, modulus_niu, modulus_G, middle
 
     temp = elastic
     CALL invers_r(temp, compliance,6)
     
-    bulk = 1d0/(compliance(1,1) + compliance(2,2) + compliance(3,3))
+    middle = SUM(compliance)
+    bulk = 1d0/middle
     modulus_E = 1d0/compliance(1,1)
     modulus_niu = -(compliance(2,1) + compliance(3,1))/2d0/compliance(1,1)
     modulus_G = 0.5/(compliance(1,1) - compliance(1,2))
