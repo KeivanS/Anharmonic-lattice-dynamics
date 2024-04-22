@@ -1,7 +1,7 @@
 !zoom id:https://virginia.zoom.us/j/4349248029
 !!main program
 !!mpi used for parallelisation
-
+!!add -fcheck=all to FFLAGS and F90FLAGS for runtime check
 Program SCOP8
 
     use mpi
@@ -205,7 +205,7 @@ WRITE(*,*) '!~~~~~~~~~~~~~~~~~INITIALIZE MATRIX PARAMETERS~~~~~~~~~~~~~~~~~~'
     eigen_number=d*atom_number
     ndyn = eigen_number
     CALL allocate_eigen(eigen_number,k_number)
-    ! CALL Allocate_Gradients !NOTE: temporarily commented off for not enough memory
+    CALL Allocate_Gradients !NOTE: temporarily commented off for not enough memory
 
 WRITE(*,*) '!~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~'
     !~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~
@@ -227,8 +227,6 @@ WRITE(*,*) '!~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~'
     !     CALL GetElastic_final
     !     CALL calc_modulus
     ! ELSE
-    !     ! CALL GetElastic_Wallace !my previous version, deprecated
-
     !     ALLOCATE(gama(ndyn-3,ndyn-3))
     !     CALL calculate_volume(r1, r2, r3, volume_r0)
     !     CALL get_phi_zeta_Xi(uio) !ndyn,atld0,gama,phi,zeta,teta,xi,qiu,uio)
@@ -242,7 +240,7 @@ WRITE(*,*) '!~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~'
     !! A utility subroutine for free energy landscape calculation
     !! with only selected variational parameters free to change by step 
     !! comment off the specific block which you want to test with
-    step = 0.005
+    ! step = 0.005
     ! CALL initiate_yy(kvector)
 
     !NOTE: <small_test2(step)> is a general validation test for Broyden method
@@ -259,7 +257,13 @@ WRITE(*,*) '!~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~'
 
     !NOTE: <small_test(i, step, n)> calculates the free energy F and f(i)
     ! given selected variational variable x(i) move n steps
-    ! CALL small_test(6,0.01d0,30) 
+    strain(1,1) = -0.2d0
+    CALL align_diag_strain
+    ! CALL updateK    
+    CALL initiate_yy(kvector)
+    CALL GetF0_and_V0
+    CALL small_test(7,0.01d0,40) 
+    STOP
 
     !NOTE: <small_test_ex(i, j, step, n)> calculates the free energy F and f(i)
     ! given 2 selected variables x(i) and x(j) ranged in (-n*step, n*step]
@@ -273,9 +277,8 @@ WRITE(*,*) '!~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~'
     ! start_i, start_j can be designated in targetInitialize.dat, so turn on inherit option
     ! or assigned manually in the subroutine
     ! used for contour plot
-    step_1 = 0.0001; step_2 = 0.0001
-    CALL rhom_contour(4,8,step_1,step_2,40)
-    STOP
+    ! step_1 = 0.0001; step_2 = 0.0001
+    ! CALL rhom_contour(4,8,step_1,step_2,40)
 
     !~~~~~~~~~~MAKE AN INITIAL GUESS BASED ON FC2 DIAGONALIZATION~~~~~~~~~~~~~~~~
     !NOTE: might not used
@@ -558,6 +561,7 @@ WRITE(*,*) '!~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~'
     !-----final elastic constants-----
     IF(atom_number.eq.1) THEN
         CALL GetElastic_final
+        CALL calc_modulus
     ELSE
         ! CALL GetElastic_Wallace !my previous own 
         !UPDATE: FOCEX_ec
@@ -570,6 +574,7 @@ WRITE(*,*) '!~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~'
 
         CALL residuals (uio) !ndyn,xi,zeta,phi,gama,sigma0,y0,pi0,uio)
         CALL mechanical2(elastic,uio) !ndyn,atld0,sigma0,phi,zeta,xi,qiu,gama,elastic,uio)
+        CALL calc_modulus
         CLOSE(uio)
     END IF
     !-----final gruneisen------ 

@@ -4,6 +4,14 @@ MODULE check
 
     CONTAINS
 !==========================================================================================================
+    SUBROUTINE align_diag_strain
+        !! this subroutine is only for cubic lattice
+        !! make all diagonal strain equal to strain(1,1)
+        IMPLICIT NONE
+        strain(2,2) = strain(1,1)
+        strain(3,3) = strain(2,2)
+    END SUBROUTINE align_diag_strain
+    
     SUBROUTINE small_test(i,step,many)
         !!this test a single variable x(i) versus F and f(i), for many steps
         !!this test subroutine should be run after <Allocate_Gradients>
@@ -15,18 +23,20 @@ MODULE check
         CHARACTER name*2
 
         WRITE(name,'(i2)') i
-        OPEN(517,FILE='gradient_vs_x_'//name//'.dat',POSITION='append')
+        ! OPEN(517,FILE='gradient_vs_x_'//name//'.dat',POSITION='append')
         OPEN(518,FILE='energy_vs_x_'//name//'.dat',POSITION='append')
         DO j=1,many
             WRITE(*,*)'==========Run#:',j,' ========='
             CALL assign_x(i,step)
-            CALL GetF_trial_And_GradientF_trial(kvector)
+            CALL align_diag_strain  !NOTE: optional
+            CALL GetV_avg_And_GradientV_avg(kvector)
+            F_trial=F0+V_avg-V0
             CALL collect_xf(x,f)
-            WRITE(517,*) x(i),f(i)
+            ! WRITE(517,*) x(i),f(i)
             WRITE(518,*) x(i),REAL(F_trial)
             DEALLOCATE(x,f)
         END DO
-        CLOSE(517)
+        ! CLOSE(517)
         CLOSE(518)
         WRITE(*,*) 'Finished Testing'
     END SUBROUTINE small_test

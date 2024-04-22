@@ -179,6 +179,10 @@ end subroutine write_input_fit
     read(unit_params,*) nshells(2,1:natoms0)       ! # of neigr-shells to use for each rank
     read(unit_params,*) nshells(3,1:natoms0)       ! # of neigr-shells to use for each rank
     read(unit_params,*) nshells(4,1:natoms0)       ! # of neigr-shells to use for each rank
+    read(unit_params,*) nshells(5,1:natoms0)       ! # of neigr-shells to use for each rank
+    read(unit_params,*) nshells(6,1:natoms0)       ! # of neigr-shells to use for each rank
+    read(unit_params,*) nshells(7,1:natoms0)       ! # of neigr-shells to use for each rank
+    read(unit_params,*) nshells(8,1:natoms0)       ! # of neigr-shells to use for each rank
     
     !-------------screen output for check------------------
     write(*,*)'reading ',natoms0,' atoms in the primitive cell'

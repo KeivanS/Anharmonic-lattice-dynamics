@@ -8281,7 +8281,6 @@ subroutine mechanical2(elastic,uio) !ndn,atld1,sigma0,phi,zeta,xi,qiu,gama,elast
      enddo
      enddo
    
-    !DEBUG_b:
     !add sigma0 and eventtually symmetrize, implement Wallace (7.26)
     DO al=1,3
     DO be=1,3
@@ -8292,7 +8291,6 @@ subroutine mechanical2(elastic,uio) !ndn,atld1,sigma0,phi,zeta,xi,qiu,gama,elast
     END DO   
     END DO
     END DO
-    !DEBUG_f. 
    
      call convert_to_voigt(atld0,elastic)
    
@@ -8323,7 +8321,7 @@ subroutine calc_modulus
     temp = elastic
     CALL invers_r(temp, compliance,6)
     
-    middle = SUM(compliance)
+    middle = SUM(compliance(1:3,1:3))
     bulk = 1d0/middle
     modulus_E = 1d0/compliance(1,1)
     modulus_niu = -(compliance(2,1) + compliance(3,1))/2d0/compliance(1,1)

@@ -285,6 +285,8 @@ CONTAINS
         REAL(8) :: check
         CHARACTER(LEN=99) line
         INTEGER,ALLOCATABLE,DIMENSION(:) :: atoms, directions
+        !UPDATE: inquire file existence
+        LOGICAL :: file_exist
 
         check = 0d0
 

@@ -1,8 +1,8 @@
 .False. # whether start randomly
 .False. # whether inherit file <targetInitialize.dat> results for initial guess
-.True. # whether include pressure factor
-.True. # whether force ASR in K after each Broyden iteration
-.True. # whether use high temperature limit in <YY> calculation
+.False. # whether include pressure factor
+.False. # whether force ASR in K after each Broyden iteration
+.False. # whether use high temperature limit in <YY> calculation
 54321 # if you want random start, this is the seed
 0.02 # range for random start
 0.0 0.0 0.0 # center for random start

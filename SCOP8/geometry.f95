@@ -3,8 +3,8 @@
 module params
  real(8) tolerance,margin,alfaborn
  integer nconfigs,classical,ntemp,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,isvd
- integer nshells(4,20)   ! up to which shell to include for each rank of FC
- integer include_fc(4)  ! whether to include FCs of that rank
+ integer nshells(8,20)   ! up to which shell to include for each rank of FC !UPDATE: increase rank to 8
+ integer include_fc(8)  ! whether to include FCs of that rank !UPDATE: increase rank to 8
  real(8) rcut(4),tau0,wshift(3)
  real(8) tmin,tmax,qcros(3),svdcut
  logical verbose

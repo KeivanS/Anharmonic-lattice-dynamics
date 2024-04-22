@@ -1,18 +1,22 @@
 1 1 1 90 90 90 
 0 0.5 0.5 0.5 0 0.5 0.5 0.5 0
 5.7022565
-1 1 1 1  include FC1234
-1 1 1 0 invariances to impose
+1 1 1 1 0 0 0 0  include FC1234
+1 1 0 0 invariances to impose
 0 300  whether to weight snapshots by Boltzmann factor, tempk
 1 .false.  number  of OUTCAR files, verbosity
 1  natom_type
 72.64 #15.9994 24.3050  #   masses 28.0855
 Ge  #O   Mg    names
 2          # of atoms in the primitive cell
-1 flag for setting the range of FC2s (if 0 take default)
-12 12   number of shells for rank 2 for each atom if not default
-2 2   number of shells for rank 3 for each atom
+0 flag for setting the range of FC2s (if 0 take default)
+11 11    number of shells for rank 2 for each atom if not default
+3 3   number of shells for rank 3 for each atom
 1 1   number of shells for rank 4 for each atom
+0 0
+0 0
+0 0
+0 0
 1 1 0 0 0 
 2 1 0.25 0.25 0.25
 
