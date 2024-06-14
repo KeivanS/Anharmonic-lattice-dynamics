@@ -148,6 +148,7 @@
 !===================================================
  subroutine get_n_tau_r_mod(r,n,tau)
 !! for a vector position r, finds the (tau,n) regardless of ATOMPOS list
+!! assumes atoms in atompos are of reduced units between 0 and 1 times (r01,r02,r03)
 ! just brings it to the primcell and finds the tau.
 ! It is not the (tau,n) defining atompos!! or is it??
  use constants, only : r15
@@ -161,18 +162,18 @@
  real(r15) a(3),v(3),p(3)
  external unitcell
 
-! bring it to unitcell, i.e. between 0 and r0i
+! bring it to unitcell, i.e. between 0 and r0i 
  call unitcell(cart_to_prim,prim_to_cart,r,p)
  v=r-p      ! by construction, this should be an integer multiple of r0i
- n = nint(matmul(cart_to_prim,v))
+ n = nint(matmul(cart_to_prim,v))   ! these are its reduced coordinates
  tau=0
  do  i0=1,natom_prim_cell
      a=(p-atompos(:,i0))
      if( length(a) .lt. tolerance) then
         tau=i0  ! i=iatomcell0(i) for i =< natom_prim_cell
         return
-     else
-        write(*,5)'i0,r_cell-pos(i),red=',dble(i0),a,matmul(cart_to_prim,a)
+!     else
+!        write(*,5)'i0,r_cell-pos(i),red=',dble(i0),a,matmul(cart_to_prim,a)
      endif
  enddo
  write(*,4)'GET_N_TAU_R_MOD: atom not found; tau,n,r,r_red=',tau,n,r,matmul(cart_to_prim,r)
@@ -273,14 +274,15 @@
  real(r15), intent(out):: g1(3),g2(3),g3(3)
  real(r15) om
 
- om = abs(r1 .dot. (r2 .cross. r3))
- if (om.lt.1d-8) then
+ om = (r1 .dot. (r2 .cross. r3))
+ if (abs(om).lt.1d-8) then
     write(*,*)'MAKE_RECIPROCAL_LATTICE_A: volume is zero; check your translation vectors'
     stop
  endif
  g1=(r2 .cross. r3)/om
  g2=(r3 .cross. r1)/om
  g3=(r1 .cross. r2)/om
+ om=abs(om)
 
  end subroutine make_reciprocal_lattice_a
 !===============================================================
@@ -290,18 +292,23 @@
  use constants
  use ios
  implicit none
- type(vector) :: r1,r2,r3,g1,g2,g3
+ type(vector),intent(in) :: r1,r2,r3
+ type(vector),intent(out) :: g1,g2,g3
  real(r15) om
 
- om = abs(r1 .dot. (r2 .cross. r3))
- if (om.lt.1d-8) then
+ om = (r1 .dot. (r2 .cross. r3))
+ if (abs(om).lt.1d-8) then
     write(*,*)'MAKE_RECIPROCAL_LATTICE_V: volume is zero; check your translation vectors'
+    write(*,*)'r1=',r1
+    write(*,*)'r2=',r2
+    write(*,*)'r3=',r3
     stop
  endif
 ! write(ulog,*)'RECIPROCAL_LATTICE: '
  g1=(r2 .cross. r3)/om
  g2=(r3 .cross. r1)/om
  g3=(r1 .cross. r2)/om
+ om=abs(om)
 ! call write_out(ulog,'om ',om)
 ! call write_out(ulog,'g1 ',g1)
 ! call write_out(ulog,'g2 ',g2)
@@ -318,8 +325,8 @@
  type(vector) :: r1,r2,r3,g1,g2,g3
  real(r15) om
 
- om = abs(r1 .dot. (r2 .cross. r3))
- if (om.lt.1d-8) then
+ om = (r1 .dot. (r2 .cross. r3))
+ if (abs(om)/length(r1).lt.1d-8) then
     write(*,*)'MAKE_RECIPROCAL_LATTICE_2PI: volume is zero; check your translation vectors'
     stop
  endif
@@ -327,6 +334,7 @@
  g1=2*pi*(r2 .cross. r3)/om
  g2=2*pi*(r3 .cross. r1)/om
  g3=2*pi*(r1 .cross. r2)/om
+ om=abs(om)
 ! call write_out(ulog,'om ',om)
 ! call write_out(ulog,'g1 ',g1)
 ! call write_out(ulog,'g2 ',g2)
@@ -378,8 +386,8 @@
  use constants, only : r15
  implicit none
  real(r15) , intent(in) :: w,t
+ integer, intent(in):: m
  real(r15) y,z
- integer m
 
  if(t.le. 0) then
    write(*,*)'ERROR in N_BE: t=<0 ',t
@@ -484,7 +492,7 @@
  use constants
  implicit none
  real(r15) k(3)
- logical inside
+ logical, intent(out) :: inside
 
  if( (abs(k(3)).lt.1d-9 .or. (k(3) >= 0)) .and. (k(3) <= k(2)) .and. (k(2) <= k(1)) &
 &    .and. (k(1) <= boxg(1))  .and.  (k(1)+k(2)+k(3) <= 3d0*boxg(1)/2d0) ) then
@@ -496,41 +504,6 @@
 
  end subroutine check_inside_irred_fbz
 !===========================================================
- subroutine select_IBZ(nbz,kbz,nib,kib)
-! for a given kpoint mesh kbz within the FBZ, this routine stores
-! those which are in the irreducible FBZ into kib
- use constants, only : r15
- use lattice
- implicit none
- integer, intent(in) :: nbz
- integer, intent(out) :: nib
- real(r15), intent(in) :: kbz(3,nbz)
- real(r15), intent(out) :: kib(3,nbz)
- real(r15) q(3)
- logical inside
- integer i
-! real(r15), allocatable kib(:,:),ki(:,:)
-!  allocate(ki(3,nkfine))
-
- nib = 0
- kib = 0
- do i=1,nbz
-    q(:) = kbz(:,i)
-    call check_inside_irred_fbz2(q,inside)
-    if(inside) then
-       nib = nib+1
-       kib(:,nib) = q(:)
-    endif
- enddo
-
-! allocate(kib(3,ni))
-! do i=1,ni
-!    kib(:,i)=ki(:,i)
-! enddo
-! deallocate(ki)
-
- end subroutine select_IBZ
-!============================================================
  function indexg(i,j,k,nil,nih,njl,njh,nkl,nkh) result(n)
 ! finds the index n of the kpoint defined with 3 loop indices
 ! ijk going in general from nil to nih, njl to njh nkl to nkh
@@ -1035,7 +1008,7 @@
  implicit none
  integer i,n
  real(r15), dimension(:,:), intent(in) :: mat
- real(r15) tr !, intent(out) ::  tr
+ real(r15) tr 
 
  n=size(mat,1); write(*,*)'TRACE: n=',n
  write(*,*)'TRACE: mat=',mat
@@ -1077,7 +1050,121 @@
  endif
  end function determinant
 !===========================================================
-     DOUBLE PRECISION FUNCTION my_erfc(x) result(S15ADF)
+     FUNCTION my_erfc(x) result(S15ADF)
+     use constants, only : r15
+!     MARK 5A REVISED - NAG COPYRIGHT 1976
+!     MARK 5C REVISED
+!     MARK 11.5(F77) REVISED. (SEPT 1985.)
+!     COMPLEMENT OF ERROR FUNCTION ERFC(X)
+!
+!     .. Scalar Arguments ..
+      real(r15), intent(in) :: X
+!     .. Local Scalars ..
+      real(r15)   T, XHI, XLO, Y, s15adf
+!     .. Intrinsic Functions ..
+      INTRINSIC                        ABS, EXP
+!     .. Data statements ..
+!     PRECISION DEPENDENT CONSTANTS
+! 08   DATA XLO/-4.5D0/
+! 12   DATA XLO/-5.25D0/
+! 14   DATA XLO/-5.75D0/
+      DATA XLO/-6.25D0/
+! 18   DATA XLO/-6.5D0/
+!
+!     RANGE DEPENDENT CONSTANTS
+      DATA XHI/ 2.66D+1 /
+!     XHI = LARGEST X SUCH THAT EXP(-X*X) .GT. MINREAL (ROUNDED DOWN)
+! R1   DATA XHI/13.0D0/
+! R2   DATA XHI/9.5D0/
+! R3   DATA XHI/13.0D0/
+! R4   DATA XHI/25.0D0/
+! R5   DATA XHI/26.0D0/
+!     .. Executable Statements ..
+!
+!     TEST EXTREME EXITS
+      IF (X.GE.XHI) then
+           s15adf=0
+           return
+      endif
+      IF (X.LE.XLO) then
+           s15adf=2
+           return
+      endif
+!
+!     EXPANSION ARGUMENT
+      T = 1.0D0 - 7.5D0/(ABS(X)+3.75D0)
+!
+!      * EXPANSION (0021) *
+!
+!     EXPANSION (0021) EVALUATED AS Y(T)  --PRECISION 08E
+! 08   Y = (((((((((((+3.1475326D-5)*T-1.3874589D-4)*T-6.4127909D-6)
+! 08  *    *T+1.7866301D-3)*T-8.2316935D-3)*T+2.4151896D-2)
+! 08  *    *T-5.4799165D-2)*T+1.0260225D-1)*T-1.6357229D-1)
+! 08  *    *T+2.2600824D-1)*T-2.7342192D-1)*T + 1.4558972D-1
+!
+!     EXPANSION (0021) EVALUATED AS Y(T)  --PRECISION 12E
+! 12   Y = ((((((((((((((((-4.21661579602D-8*T-8.63384346353D-8)
+! 12  *    *T+6.06038693567D-7)*T+5.90655413508D-7)
+! 12  *    *T-6.12872971594D-6)*T+3.73223486059D-6)
+! 12  *    *T+4.78645837248D-5)*T-1.52546487034D-4)
+! 12  *    *T-2.55222360474D-5)*T+1.80299061562D-3)
+! 12  *    *T-8.22062412199D-3)*T+2.41432185990D-2)
+! 12  *    *T-5.48023263289D-2)*T+1.02604312548D-1)
+! 12  *    *T-1.63571895545D-1)*T+2.26008066898D-1)
+! 12  *    *T-2.73421931495D-1)*T + 1.45589721275D-1
+!
+!     EXPANSION (0021) EVALUATED AS Y(T)  --PRECISION 14E
+! 14   Y = (((((((((((((((-2.2356173494379D-9
+! 14  *    *T+4.5302502889845D-9)*T+2.5918103316137D-8)
+! 14  *    *T-6.3684846832869D-8)*T-1.7642194353331D-7)
+! 14  *    *T+6.4907607131235D-7)*T+7.4296952017617D-7)
+! 14  *    *T-6.1758018478516D-6)*T+3.5866167916231D-6)
+! 14  *    *T+4.7895180610590D-5)*T-1.5246364229106D-4)
+! 14  *    *T-2.5534256252531D-5)*T+1.8029626230333D-3)
+! 14  *    *T-8.2206213481002D-3)*T+2.4143223946968D-2)
+! 14  *    *T-5.4802326675661D-2)*T+1.0260431203382D-1
+! 14   Y = (((Y*T-1.6357189552481D-1)*T+2.2600806691658D-1)
+! 14  *    *T-2.7342193149541D-1)*T + 1.4558972127504D-1
+!
+!     EXPANSION (0021) EVALUATED AS Y(T)  --PRECISION 16E
+      Y = (((((((((((((((+3.328130055126039D-10        &
+     &    *T-5.718639670776992D-10)*T-4.066088879757269D-9)       &
+     &    *T+7.532536116142436D-9)*T+3.026547320064576D-8)       &
+     &    *T-7.043998994397452D-8)*T-1.822565715362025D-7)       &
+     &    *T+6.575825478226343D-7)*T+7.478317101785790D-7)       &
+     &    *T-6.182369348098529D-6)*T+3.584014089915968D-6)       &
+     &    *T+4.789838226695987D-5)*T-1.524627476123466D-4)       &
+     &    *T-2.553523453642242D-5)*T+1.802962431316418D-3)       &
+     &    *T-8.220621168415435D-3)*T+2.414322397093253D-2
+      Y = (((((Y*T-5.480232669380236D-2)*T+1.026043120322792D-1)       &
+     &    *T-1.635718955239687D-1)*T+2.260080669166197D-1)       &
+     &    *T-2.734219314954260D-1)*T + 1.455897212750385D-1
+!
+!     EXPANSION (0021) EVALUATED AS Y(T)  --PRECISION 18E
+! 18   Y = (((((((((((((((-1.58023488119651697D-11
+! 18  *    *T-4.94972069009392927D-11)*T+1.86424953544623784D-10)
+! 18  *    *T+6.29796246918239617D-10)*T-1.34751340973493898D-9)
+! 18  *    *T-4.84566988844706300D-9)*T+9.22474802259858004D-9)
+! 18  *    *T+3.14410318645430670D-8)*T-7.26754673242913196D-8)
+! 18  *    *T-1.83380699508554268D-7)*T+6.59488268069175234D-7)
+! 18  *    *T+7.48541685740064308D-7)*T-6.18344429012694168D-6)
+! 18  *    *T+3.58371497984145357D-6)*T+4.78987832434182054D-5)
+! 18  *    *T-1.52462664665855354D-4)*T-2.55353311432760448D-5
+! 18   Y = ((((((((Y*T+1.80296241673597993D-3)
+! 18  *    *T-8.22062115413991215D-3)
+! 18  *    *T+2.41432239724445769D-2)*T-5.48023266949776152D-2)
+! 18  *    *T+1.02604312032198239D-1)*T-1.63571895523923969D-1)
+! 18  *    *T+2.26008066916621431D-1)*T-2.73421931495426482D-1)*T +
+! 18  *     1.45589721275038539D-1
+!
+      S15ADF = EXP(-X*X)*Y
+      IF (X.LT.0.0D0) then
+            S15ADF = 2.0D0 - S15ADF
+      endif
+
+      END function my_erfc !s15adf
+!===========================================================
+     DOUBLE PRECISION FUNCTION my_old_erfc(x) result(S15ADF)
 !     MARK 5A REVISED - NAG COPYRIGHT 1976
 !     MARK 5C REVISED
 !     MARK 11.5(F77) REVISED. (SEPT 1985.)
@@ -1188,7 +1275,7 @@
             S15ADF = 2.0D0 - S15ADF
       endif
 
-      END function my_erfc !s15adf
+      END function my_old_erfc !s15adf
 !==================================================
       SUBROUTINE choldc(a,n,p)
 ! Choleski decomposition of a=LLT; p contains the diagonals of L
@@ -1354,12 +1441,13 @@
  use fourier   ! grid points and their weights defined in module Fourier
  implicit none
  type(vector), intent(in):: x01,x02,x03,x1,x2,x3
+ character(len=1), intent(in) :: space
  real(r15), intent(out):: sx(3,26),s0x(3,26)
  integer, intent(out):: ngrd
- character(len=1), intent(in) :: space
- integer i1,i2,i3,m,cnt,ns,nboundary,insid,nbtot
+ integer i1,i2,i3,m,cnt,ns,nboundary,nbtot
+ logical insid
  type(vector) b01,b02,b03,b1,b2,b3
- real(r15) v(3),omx,omx0,tol,matr(3,3),y1,y2,y3 !,weig(ngrd)
+ real(r15) v(3),omx,omx0,tol,matr(3,3),y1,y2,y3 
  integer, allocatable :: save_boundary(:)
  real(r15), allocatable :: aux(:,:),grd(:,:)
  real(r15), allocatable :: weig(:)
@@ -1416,7 +1504,7 @@
     call check_inside_ws(v,sx,insid)
 
 ! skip if it is outside
-    if (insid.eq.0) cycle i3loop
+    if (.not. insid) cycle i3loop
 
 ! take only those points inside or on the boundary of WS (corresponding to in=1)
     cnt=cnt+1
@@ -1454,7 +1542,7 @@
 ! find the weights of each point on the grid (and its boundary)
  weig=1
  nbtot=0
- write(ulog,*)' grid vectors, number on boundary, weight =========='
+ write(ulog,*)' grid vectors, number on boundary, coordinates  =========='
  do cnt=1,ngrd
 
 ! identify vectors on the boundary
@@ -1463,13 +1551,12 @@
        save_boundary(cnt)=nboundary
        nbtot=nbtot+1
     endif
-    write(ulog,6)'i,grid(i), on how many boundaries ',cnt,nboundary,grd(:,cnt),matmul(matr,grd(:,cnt))
+    write(ulog,6)'i,on how many boundaries, grid(i), grid_reduced ',cnt,nboundary,grd(:,cnt),matmul(matr,grd(:,cnt))
  enddo
  write(ulog,*)'Of ',ngrd,' grid points ',nbtot,' are on the boundary'
  write(ulog,6)'CHECK: sum of saveboundary=',nbtot,sum(save_boundary)
 
  call find_ws_weights(ngrd,grd,save_boundary,sx,weig)
-
 
 
  if(space.eq.'r' .or. space.eq.'R') then
@@ -1487,7 +1574,7 @@
        write(*,*)'WARNING: Rweights not normalized to 1 ',sum(rws_weights) !(1:ngrd))
        write(ulog,*)'WARNING: Rweights not normalized to 1 ',sum(rws_weights) !(1:ngrd))
     endif
-    open(98,file='rgrid_raw.dat')
+    open(98,file='rgrid_raw.xyz')
     open(99,file='rgridWS.xyz')
     matr=cart_to_prim
 
@@ -1502,17 +1589,18 @@
     gws_weights = weig ! / (volume_r/volume_r0) ! introduce 1/N since used for Fourier transforms
     write(ulog,*)'sum of the weights=',sum(weig) !(1:ngrd))
     write(ulog,*)'Gweights normalizartion is ',sum(weig) !(1:ngrd))
-    open(98,file='ggrid_raw.dat')
+    open(98,file='ggrid_raw.xyz')
     open(99,file='ggridWS.xyz')
     matr=transpose(prim_to_cart)/(2*pi)
 
  endif
 
- write(99,*)ngrd
- write(99,*)" "
- write(98,*)" i , save_boundary(i), grid(3,i) , weight(i) "
+ write(99,*)ngrd+26+8
+! write(98,*)ngrd
+ write(99,*)" name, cart, red "
+! write(98,*)" name, cart, weight , red , count, save_boundary"
  do cnt=1,ngrd
-    write(98,6)" ",cnt,save_boundary(cnt),grd(:,cnt),weig(cnt),matmul(matr,grd(:,cnt))
+    write(98,8)"Si ",grd(:,cnt),weig(cnt),matmul(matr,grd(:,cnt)),cnt,save_boundary(cnt)
     write(99,7)"Si ",grd(:,cnt),matmul(matr,grd(:,cnt))
  enddo
  close(98)
@@ -1587,6 +1675,7 @@
 5 format(3(1x,f10.5),i3,1x,g11.4)
 6 format(a,2i5,99(1x,f10.5))
 7 format(a,9(1x,f12.5))
+8 format(a,7(1x,f12.5),3i5)
 
  end subroutine make_grid_weights_WS
 !============================================================
@@ -1595,8 +1684,10 @@
 !! largest volume, and check its consistency with the primitive cell
  use params, only : fdfiles
  use ios   , only : ulog
- use lattice, only : volume_r
+ use lattice, only : volume_r,cart_to_prim
  use constants, only : r15
+ use atoms_force_constants , only : natom_super_cell,atom_sc
+ use geometry, only : v2a
  implicit none
  integer, intent(out) :: imax  ! index of largest supercell
  real(r15), intent(out) :: volmax
@@ -1625,11 +1716,23 @@
      write(xt,'(i1)')imax
      poscar='POSCAR'//xt
      call read_supercell(poscar)
+
+ open(745,file='supercell.xyz')
+ write(745,*) natom_super_cell
+ write(745,*)' name, x , y , z , i,tau,n(3), jatompos, reduced coordinates '
+ do i=1,natom_super_cell
+! name has not been assigned yet
+   write(745,7)"Si ",atom_sc(i)%equilibrium_pos,i,atom_sc(i)%cell%tau,atom_sc(i)%cell%n  &
+&      ,atom_sc(i)%cell%atomposindx,matmul(cart_to_prim,v2a(atom_sc(i)%equilibrium_pos))
+ enddo
+ close(745)
+
+7 format(a,3(1x,f12.5),i5,i3,'(',3i2,')',i5,3(1x,f6.3))
      call check_input_poscar_consistency_new
 
  end subroutine find_WS_largest_SC
 !========================================
- subroutine update_nshells2(ng,grd) !,,x01,x02,x03 )
+ subroutine update_nshells2(ng,grd) 
 !! finds the longest vector in grd(3,ng) and resets nshells(2,:) accordingly
  use geometry
  use ios
@@ -1679,14 +1782,14 @@
     shell_loop: do shel_count = 0 , shelmax(i0) ! maxneighbors
 ! we update nshells if lmax is reached, otherwise if lmax > rcut no update
        if(lmax .myeq. atom0(i0)%shells(shel_count)%radius) then
-          nshells(2,i0) = shel_count
-          write(ulog,*)'UPDATE_NSHELLS: for atom ',i0,' the nshell is set to ',shel_count
+          nshells(2,i0) = shel_count+1
+          write(ulog,*)'UPDATE_NSHELLS: for atom ',i0,' the nshell is set to ',shel_count+1
           exit shell_loop
        else ! take the farthest shell available within rcut
           nshells(2,i0)=shelmax(i0)
        endif
     enddo shell_loop
-    atom0(i0)%nshells=shel_count
+    atom0(i0)%nshells=shel_count+1
  enddo
 
  write(ulog,5)' ****************************************'
@@ -1897,43 +2000,37 @@
  subroutine fold_in_WS_BZ(nk,kp,gshel,foldedk)
 !! for the BZ defined by (gshel) this subroutine generates foldedk obtained
 !! from folding of kp into the WS Wigner-Seitz cell of FBZ,
- use lattice , only : r01, r02, r03
+ use lattice , only : reduce_g ! prim_to_cart  !r01, r02, r03,
  use geometry
  use kpoints  !, only : nkc,kpc
- use constants, only : r15
+ use constants, only : r15,pi
  implicit none
  integer, intent(in) :: nk
  real(r15), intent(in) :: kp(3,nk),gshel(3,26)
  real(r15), intent(out) :: foldedk(3,nk)
- real(r15) prim2cart(3,3)  !,gmax  !cart2prim(3,3) ,
- integer i,inside
-
- prim2cart(:,1)=r01
- prim2cart(:,2)=r02
- prim2cart(:,3)=r03
+ real(r15) kr(3),fkr(3) !,gmax  prim2cart(3,3) !cart2prim(3,3) ,
+ integer i
 
  open(134,file='kfolding.dat')
- write(134,*)'# i       kp(:,i)          folded_k(:,i)'
+ write(134,*)'# i       kp(:,i)    k_red      folded_k(:,i)   folded_k_red'
  do i=1,nk
-! for each kpoint, if it is not within the FBZ, fold it into FBZ
-!   call check_inside_ws(kp(:,i),gshel,inside)
-!   if(inside .eq. 1) then
-!      foldedk(:,i)=kp(:,i)
-!   else
 ! need to fold kp in the FBZ
-       call fold_in_bz_new(kp(:,i),gshel,foldedk(:,i))
-!   endif
-    write(134,4)i,kp(:,i),foldedk(:,i)
+    call fold_in_bz_new(kp(:,i),gshel,foldedk(:,i))
+    kr = reduce_g(kp(:,i))  !matmul(transpose(prim_to_cart),kp(:,i))/(2*pi)
+    fkr = reduce_g(foldedk(:,i))  !matmul(transpose(prim_to_cart),foldedk(:,i))/(2*pi)
+    write(134,4)i,kp(:,i),kr,foldedk(:,i),fkr
  enddo
  close(134)
-4 format(i6,2(3x,3(1x,f9.4)))
+4 format(i6,4(3x,3(1x,f9.4)))
 
 ! Now calculate the weigths
- call get_weights3(nk,foldedk) !,nibz)
+! call get_weights3(nk,foldedk) !,nibz)
 
  end subroutine fold_in_WS_BZ
 !========================================
  subroutine fold_in_bz_new(q,gshel,qin)
+!! takes the reduced coordinates and puts it in the WS of a cube of length=1
+!! then converts the reduced coordinates to real ones
 !! folds the vector q into the WS cell of FBZ and stores the result in qin
 ! use lattice
  use constants, only : r15,pi
@@ -1944,21 +2041,77 @@
  real(r15), intent(in):: gshel(3,26)
  real(r15), intent(in) :: q(3)
  real(r15), intent(out) :: qin(3)
- integer j,inside
+ integer j
  real(r15) leng,b1(3),b2(3)
+ logical inside
 
-      b1=matmul(transpose(prim_to_cart),q)/(2*pi) ! reduced coordinates of q
-      b2=b1-nint(b1)  ! bring it in [-0.5:0.5]
+! bring q in [-0.5,0.5] times G1,G2,G3
+ b1=matmul(transpose(prim_to_cart),q)/(2*pi) ! reduced coordinates of q
+ b2=b1-nint(b1)  ! bring it in [-0.5:0.5]
+ qin=matmul(cart_to_prim,b2)*2*pi  ! back to cartesian coords
+
+ do j=1,14 
+    if( dot_product(qin,gshel(:,j)) .gt. dot_product(gshel(:,j),gshel(:,j))/2 ) qin=qin-gshel(:,j)
+ enddo
+
+! verify it is inside and the rest of 12 vectors do not change the answer
+ inside= .false.
+ call check_inside_ws(qin,gshel,inside)
+ write(ulog,5)' inside,q,q_red=',inside,qin, matmul(transpose(prim_to_cart),qin)/(2*pi) 
+ if(.not. inside) then
+    write(ulog,*)' now trying the remaining 12 vectors'  
+    do j=15,26 
+       if( dot_product(qin,gshel(:,j)) .gt. dot_product(gshel(:,j),gshel(:,j))/2 ) then
+          qin=qin-gshel(:,j)
+          write(ulog,4)'j, new q,q_red=',j, qin,matmul(transpose(prim_to_cart),qin)/(2*pi) 
+       endif
+    enddo
+ endif
+
+
+      return
+
+
+      if ( dot_product(b2,(/ 0, 1, 1/)).gt.2/2 ) b2=b2-(/ 0, 1, 1/)
+      if ( dot_product(b2,(/ 1, 0, 1/)).gt.2/2 ) b2=b2-(/ 1, 0, 1/)
+      if ( dot_product(b2,(/ 1, 1, 0/)).gt.2/2 ) b2=b2-(/ 1, 1, 0/)
+      if ( dot_product(b2,(/ 0,-1,-1/)).gt.2/2 ) b2=b2-(/ 0,-1,-1/)
+      if ( dot_product(b2,(/-1, 0,-1/)).gt.2/2 ) b2=b2-(/-1, 0,-1/)
+      if ( dot_product(b2,(/-1,-1, 0/)).gt.2/2 ) b2=b2-(/-1,-1, 0/)
+
+      if ( dot_product(b2,(/ 0,-1, 1/)).gt.2/2 ) b2=b2-(/ 0,-1, 1/)
+      if ( dot_product(b2,(/-1, 0, 1/)).gt.2/2 ) b2=b2-(/-1, 0, 1/)
+      if ( dot_product(b2,(/ 1,-1, 0/)).gt.2/2 ) b2=b2-(/ 1,-1, 0/)
+      if ( dot_product(b2,(/ 0, 1,-1/)).gt.2/2 ) b2=b2-(/ 0, 1,-1/)
+      if ( dot_product(b2,(/ 1, 0,-1/)).gt.2/2 ) b2=b2-(/ 1, 0,-1/)
+      if ( dot_product(b2,(/-1, 1, 0/)).gt.2/2 ) b2=b2-(/-1, 1, 0/)
+
+      if ( dot_product(b2,(/ 1, 1, 1/)).gt.3/2 ) b2=b2-(/ 1, 1, 1/)
+      if ( dot_product(b2,(/-1, 1, 1/)).gt.3/2 ) b2=b2-(/-1, 1, 1/)
+      if ( dot_product(b2,(/ 1,-1, 1/)).gt.3/2 ) b2=b2-(/ 1,-1, 1/)
+      if ( dot_product(b2,(/ 1, 1,-1/)).gt.3/2 ) b2=b2-(/ 1, 1,-1/)
+      if ( dot_product(b2,(/ 1,-1,-1/)).gt.3/2 ) b2=b2-(/ 1,-1,-1/)
+      if ( dot_product(b2,(/-1, 1,-1/)).gt.3/2 ) b2=b2-(/-1, 1,-1/)
+      if ( dot_product(b2,(/-1,-1, 1/)).gt.3/2 ) b2=b2-(/-1,-1, 1/)
+      if ( dot_product(b2,(/-1,-1,-1/)).gt.3/2 ) b2=b2-(/-1,-1,-1/)
+
       write(456,4) 'q_red,qin_red=',b1,b2
       qin=matmul(cart_to_prim,b2)*2*pi  ! back to cartesian coords
 
- inside=0
+ inside= .false.
  call check_inside_ws(qin,gshel,inside)
- if(inside.eq.1) then
+ if(inside) then
     return 
+ else
+    write(ulog,4)'fold_in_bz_new: starting q,qred=',q,b1
+    write(ulog,4)'fold_in_bz_new: final  qin,qinred=',qin,b2
+    write(*,*)'fold_in_bz_new: still not inside FBZ!'
+    write(ulog,*)'fold_in_bz_new: still not inside FBZ!'
+ !   stop
  endif
 
- qin=q
+ return
+! qin=q
 ! leng=length(q)
  do j=1,26 !while (leng.gt.gmin)
     if( dot_product(qin,gshel(:,j)) .gt. dot_product(gshel(:,j),gshel(:,j))/2 ) qin=qin-gshel(:,j)
@@ -1969,7 +2122,7 @@
  enddo
 
  call check_inside_ws(qin,gshel,inside)
- if(inside.eq.1) then
+ if(inside) then
     return
  else
     write(*,4)'fold_in_bz_new: starting q=',q
@@ -1981,6 +2134,7 @@
 
 3 format(3(i6),9(2x,f8.4))
 4 format(a,9(1x,g11.4))
+5 format(a,i5,9(1x,g11.4))
 
  end subroutine fold_in_bz_new
 !-------------------------------------------
@@ -2018,7 +2172,8 @@
  integer, intent(out) :: nbz,mapz(nk)
  real(r15), intent(in) :: kp(3,nk),gg(3,26)
  real(r15), intent(out) :: kz(3,nk)
- integer i,ns,j,inside
+ integer i,ns,j
+ logical inside
  real(r15) qaux(3),dmin,dist
 
 
@@ -2028,7 +2183,7 @@
  foldloop: do ns=1,26
      qaux = kp(:,i)+gg(:,ns)
      call check_inside_ws(qaux,gg,inside)
-     if(inside.eq.1) then
+     if(inside) then
 ! make sure it is different from previous points: find smallest neighbor distance
         dmin = 1d9
         jloop: do j=1,nbz
@@ -2101,27 +2256,28 @@
 
   end subroutine get_kindex
 !========================================
- subroutine get_kpfbz(gshel,kpfull)
+ subroutine get_kpfbz(nk,kp,gshel,kpfold)
 !! this routine translates kp grid into the formal FBZ. Output to KPFBZ.DAT
- use kpoints !, only : nkc,kpc
+! use kpoints !, only : nkc,kpc
  use geometry
  use constants, only : r15
  implicit none
- real(r15), intent(in) :: gshel(3,26)
- real(r15), intent(out) :: kpfull(3,nkc)
+ integer, intent(in) :: nk
+ real(r15), intent(in) :: gshel(3,26),kp(3,nk)
+ real(r15), intent(out) :: kpfold(3,nk)
  integer i
  integer :: unit = 100
 
- do i=1,nkc
-   call fold_in_bz_new(kpc(:,i),gshel,kpfull(:,i))
+ do i=1,nk
+   call fold_in_bz_new(kp(:,i),gshel,kpfold(:,i))
  enddo
 
  open(unit,file='KPFBZ.DAT',status='unknown')
  write(unit,'(A)') &
- & "#   n              kpfbz(:,n)          |kpfbz(:,n)|           kp(:,n)          |kp(:,n)|"
- do i=1,nkc
+ & "#   n              folded kp(:,n)          |folded kp(:,n)|           kp(:,n)          |kp(:,n)|"
+ do i=1,nk
    write(unit,'(I10,4X,4(1x,g12.5),4X,4(1x,g12.5))') i, &
- &      kpfull(:,i),sqrt(sum(kpfull(:,i)**2)), kpc(:,i),sqrt(sum(kpc(:,i)**2))
+ &      kpfold(:,i),length(kpfold(:,i)), kp(:,i), length(kp(:,i))
  enddo
  close(unit)
 
@@ -2205,9 +2361,9 @@
 !! folded in the irreducible zone : mapibz(j=1:nk) is the index of the k in the IBZ list
 !! corresponding to the argument j
 !! for i=1,nibz mapinv(i) gives the index of the corresponding kpoint in the original kp list
- use lattice, only : primitivelattice,r01,r02,r03,prim_to_cart
+ use lattice, only : primitivelattice,r01,r02,r03 ,reduce_g !,prim_to_cart, cart_to_prim
  use kpoints, only : kibz, wibz , nibz
- use constants
+ use constants, only : pi
  use geometry
  use params
  use ios
@@ -2218,13 +2374,9 @@
 ! real(r15), intent(out), allocatable :: kibz(:,:) ,wibz(:)
  integer, allocatable :: mcor(:),mapibz(:),mapinv(:)
  real(r15), allocatable :: k2(:,:),lg(:),w2(:)
- real(r15) zro,q(3),kvecstar(3,48),sw,skc(3),rr1(3),rr2(3),rr3(3)
+ real(r15) zro,q(3),kvecstar(3,48),sw,skc(3) !,k_corner(3)
  integer i,j,l,narms,kvecop(48),aux
  logical exists
-
- rr1=v2a(r01)/2/pi
- rr2=v2a(r02)/2/pi
- rr3=v2a(r03)/2/pi
 
  open(uibz,file='KPOINT.IBZ',status='unknown')
 
@@ -2233,7 +2385,7 @@
  write(ulog,*)'GET_WEIGHTS3: generating kpoints in the irreducible FBZ '
  write(*,*)'MAKE_KP_IBZ: nk,wk(nk),k2(:,nk)'
 
- nibz=0 ; mapibz=0; w2=1
+ nibz=0 ; mapibz=0; w2=1; k2=0
 
 ! initialize mapvinv with identity so that later elements can be switched
  do i=1,nk
@@ -2242,41 +2394,41 @@
 
 ! main loop to identify points in the FBZ
  kploop: do i=1,nk
-!    q = kp(:,i)
+
 ! kp is in cartesian coordinates, we need to convert it to reduced units:
-!    q(1)=(kp(:,i)  .dot. r1) /2/pi
-!    q(2)=(kp(:,i)  .dot. r2) /2/pi
-!    q(3)=(kp(:,i)  .dot. r3) /2/pi
+!    q=matmul(transpose(prim_to_cart),kp(:,i)) / (2*pi)
+
 ! below the cartesian components of kp are needed
     call getstar(kp(:,i),primitivelattice,narms,kvecstar,kvecop)
 
 ! see if already exists among the previously assigned ones
     exists=.False.
-    if(verbose) write(ulog,4)'list of kvecstar(l),l=1,narms for kp_red=',i,q
 
+!    call select_corner(narms,kvecstar(:,1:narms),k_corner)
     lloop: do l=1,narms
 
-        if(verbose)   write(ulog,4)'stars are:',l,kvecstar(:,l)
+        if(verbose) write(ulog,4)'stars & red are:',l,kvecstar(:,l),reduce_g(kvecstar(:,l))
 
 ! set weight for the first kpoint where nibz=0
         jloop: do j=1,nibz
           if (k2(:,j) .myeq. kvecstar(:,l)) then
-! first bring the star in the FBZ, then compare to the existing points
              exists=.True.
              w2(j)=w2(j)+1d0
              mapibz(i)=j
-!            write(ulog,4)' this kpoint turned out to exist ',j,k2(:,j)
              exit lloop
           endif
         enddo jloop
+
     enddo lloop
 
 !   write(ulog,4)' kpoint, folded one  ',i,kp(:,i),exists,j,k2(:,j)
     if(exists ) then
+
        cycle kploop
+
     else
 
-       nibz=nibz+1
+       nibz=nibz+1  ! didn't exist: new kvector in the ibz list
 
        if (nibz.eq.1) w2(nibz) = 1
        mapibz(i) = nibz
@@ -2286,9 +2438,11 @@
        mapinv(nibz)=i
        mapinv(i)=aux
 
-          k2(:,nibz)=kp(:,i)
-          write(ulog,4)'new vector*:',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz))
-          write(*,4)'new vector*:',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz))
+       k2(:,nibz)=kp(:,i)
+       q = reduce_g(k2(:,nibz))    ! to get it in reduced coordinates of g0i
+       write(ulog,4)'new vector*:',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz)),q
+       write(*   ,4)'new vector*:',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz)),q
+
     endif
 
  enddo kploop
@@ -2327,11 +2481,10 @@
  do i=1,nk !,nibz
     if(i.le.nibz) then
        j=mcor(i)
-       q = matmul(transpose(prim_to_cart),kibz(:,j))/(2*pi)  ! to get it in reduced coordinates of g0i
-       write(uibz,3)i,kibz(:,j),wibz(j),q,length(kibz(:,j))
+       write(uibz,3)i,kibz(:,j),wibz(j),reduce_g(kibz(:,j)),length(kibz(:,j))
     endif
     write(345,*)i,mapinv(i),mapibz(i)
-    write(346,3)i,kp(:,i),matmul(transpose(prim_to_cart),kp(:,i))/(2*pi)
+    write(346,3)i,kp(:,i),reduce_g(kp(:,i))
  enddo
  close(345)
  close(346)
@@ -2541,8 +2694,8 @@
  real(r15), allocatable:: aux(:,:)
  real(r15) q(3),nij(3,3),qred(3)
  type(vector) kred,rr1,rr2,rr3
- integer i,j,k,l,mxi,inside,cnt,mxa
- logical exists
+ integer i,j,k,l,mxi,cnt,mxa
+ logical exists,inside
 
  mxi=7
  mxa=(2*mxi+1)**3
@@ -2580,7 +2733,7 @@
  do k=-mxi,mxi
     q=i*v2a(g1)+j*v2a(g2)+k*v2a(g3)
     call check_inside_ws(q,gshells,inside)
-    if(inside .eq. 1) then
+    if(inside ) then
        write(ulog,5)"Q is inside; cnt ",cnt,q
 ! make sure it does not exist
        exists=.false.
@@ -2640,15 +2793,16 @@
  use geometry
  use constants
  implicit none
- integer, intent(out) :: inside
+!integer, intent(out) :: inside
+ logical, intent(out) :: inside
 ! type(vector), intent(in):: g1,g2,g3
  real(r15), intent(in):: q(3),gshel(3,26)
  real(r15) qdotg,gg,sm
  integer i
 
- sm = 1d-3  ! a point on the boundary is also counted as inside
+ sm = 1.001  ! a point on the boundary is also counted as inside
 
- inside = 0
+ inside = .false.
 
 ! construct a lattice out of Gs and take the shortest vectors
 ! this has to be modified for 1D or 2D systems or if one G is much larger than others
@@ -2657,12 +2811,12 @@
     qdotg = ( q .dot. gshel(:,i))
     gg = gshel(:,i) .dot. gshel(:,i)
 ! check the Bragg condition |q.G| < G.G/2
-    if(abs(qdotg) .gt. gg/2 + sm) return  ! keep if on the border
+    if(abs(qdotg) .gt. gg/2d0 * sm) return  ! keep if on the border
 
  enddo
 
 ! qdotg was smaller than all gg/2: q is therefore inside
- inside = 1
+ inside = .true.
 
  end subroutine check_inside_ws
 !===========================================================
@@ -2721,7 +2875,7 @@
  do while  (abs(vol).lt.1d-7*length(x1)**2)
     x2 = a2v(aux(:,mcor(j))) ! 2nd shortest linearly indept from x1
     x3 = x1 .cross. x2
-    vol=length(x3)   ! thisis really the area
+    vol=length(x3)   ! this is really the area
     j=j+1
  enddo
  write(*,*)'26SHORTEST_SHELL2: j, area=',j,vol
@@ -2740,7 +2894,7 @@
  write(*,*)'26SHORTEST_SHELL: final smallest volume=',vol
  call make_reciprocal_lattice_v(x1,x2,x3,xg1,xg2,xg3)
 
-3 format(a,9(1x,f11.4))
+3 format(a,3('(',3(1x,f11.4),')'))
 4 format(i6,9(1x,f11.4))
 
  deallocate(leng,aux,mcor)
@@ -2758,7 +2912,7 @@
  enddo
  enddo
  call sort(cnt,leng,mcor,26)
- write(ulog,*)' 26 shortest shell vectors are :'
+ write(ulog,3)' 26 shortest shell vectors for :',x1,x2,x3
  do i=1,cnt
     gshells(:,i)=aux(:,mcor(i))
     y1=dot_product(gshells(:,i),v2a(xg1))
@@ -3175,7 +3329,8 @@
 ! singular matrix
       if(x.eq.0.0d0)then
         ier=1
-        return
+        write(*,*)' XMATINV: INVERSION ERROR; ier.ne.0 ',ier
+        stop !return
       endif
 ! inverse matrix
       do j=1,n
@@ -3329,11 +3484,11 @@ end subroutine sort3
  implicit none
  real(r15), intent(in):: q(3)
  type(vector), intent(in):: g1,g2,g3
- integer, intent(out) :: inside
+ logical, intent(out) :: inside
  real(r15) qdotg,gg,gt(3),sm
  sm = -.0001 * (g1.dot.g1) !dot_product(g1,g1) ! on the boundary is also counted as inside, but once only
 
- inside = 0
+ inside = .false.
 !------------------- along the diagonal 100
        qdotg = ( q .dot. g1) + sm
        gg = g1 .dot. g1
@@ -3388,17 +3543,18 @@ end subroutine sort3
        gg = gt .dot. gt
        if(abs(qdotg) .gt. gg/2) return
 !-------------------
- inside = 1
+ inside = .true.
 
  end subroutine check_inside_fbz_old
 !================================================
  subroutine symmetrize4(n,mat4) 
+! symmetrizes wrt to swap of indices 1<->2 and 3<->4 
  use constants, only : r15
  use linalgb
  implicit none
  integer, intent(in) :: n       
  real(r15), intent(inout) :: mat4(n,n,n,n) !:,:,:,:) 
- real(r15), allocatable:: mean(:,:) 
+ real(r15), allocatable:: mean(:,:),mea2(:,:) 
  integer i,j
 
 ! n=size(mat4,1)
@@ -3406,21 +3562,28 @@ end subroutine sort3
 !   write(*,*)' Symmetrize4: n is ',n
 !   stop
 ! endif
- allocate(mean(n,n))
+ allocate(mean(n,n),mea2(n,n))
  do i=1,n
- do j=1,n
+    mean=mat4(i,i,:,:)
+    call symmetrize2(n,mean)
+    mat4(i,i,:,:)=mean
+ do j=i+1,n
     mean=mat4(i,j,:,:)
+    mea2=mat4(j,i,:,:)
     call symmetrize2(n,mean)
-    mat4(i,j,:,:)=mean
+    call symmetrize2(n,mea2)
+    mat4(i,j,:,:)=(mean+mea2)/2
+    mat4(j,i,:,:)=(mean+mea2)/2
  enddo
  enddo
- do i=1,n
- do j=1,n
-    mean=mat4(:,:,i,j)
-    call symmetrize2(n,mean)
-    mat4(:,:,i,j)=mean
- enddo
- enddo
+! now wrt ab<->gd
+! do i=1,n
+! do j=1,n
+!    mean=mat4(:,:,i,j)
+!    call symmetrize2(n,mean)
+!    mat4(:,:,i,j)=mean
+! enddo
+! enddo
 
  deallocate(mean)
  end subroutine symmetrize4
@@ -3450,6 +3613,7 @@ end subroutine sort3
 !! computes gradient of the scalar function f(q) at point q0 in the n-dimensional space
  use constants, only : r15
  implicit none
+
  integer, intent(in):: n
  real(r15), intent(in):: q0(n)
  real(r15), intent(out)::gf(n)  
@@ -3460,11 +3624,120 @@ end subroutine sort3
  dq=1d-4
  qp=q0; qm=q0
  do i=1,n
-    qp(i)=q0(i)+dq ; fp=f(qp)
-    qm(i)=q0(i)-dq ; fm=f(qm)
+    qp(i)=q0(i)+dq
+    qm(i)=q0(i)-dq
+    fp=f(qp) ! or call function(qp,fp)
+    fm=f(qm)
     gf(i)=(fp-fm)/(2*dq)
     qp(i)=q0(i)-dq
     qm(i)=q0(i)+dq
  enddo
    
  end subroutine grad
+!================================================
+ subroutine grad_sub(sub,n,q0,f,gf,h)
+!! computes gradient of the scalar function f(q) at point q0 in the n-dimensional space
+ use constants, only : r15
+ implicit none
+
+ interface 
+   subroutine sub(n,qin,fout)
+   use constants, only : r15
+   implicit none
+   integer, intent(in) :: n
+   real(r15), intent(in) :: qin(n)
+   real(r15), intent(out) :: fout
+   end subroutine sub
+ end interface
+
+ integer, intent(in):: n
+ real(r15), intent(in):: q0(n)
+ real(r15), intent(in), optional :: h
+ real(r15), intent(out)::gf(n)  
+ real(r15), external :: f
+ real(r15) dq,fp,fm,qp(n),qm(n)
+ integer i
+
+ If(present(h)) then
+   dq=h
+ else
+   dq=1d-4  ! default step size
+ endif
+
+ qp=q0; qm=q0
+ do i=1,n
+    qp(i)=q0(i)+dq
+    qm(i)=q0(i)-dq
+    call sub(n,qp,fp)
+    call sub(n,qm,fm)
+    gf(i)=(fp-fm)/(2*dq)
+    qp(i)=q0(i)-dq
+    qm(i)=q0(i)+dq
+ enddo
+   
+ end subroutine grad_sub
+
+!=========================================
+ subroutine select_corner(n,ks,k)
+!! among the star ks, selects the one with largest kx,ky,kz such that kx<ky<kz
+ use constants, only : r15
+ use geometry, only : length
+  use lattice, only : cart_to_prim,reduce_g
+ implicit none
+ integer, intent(in) :: n
+ real(r15), intent(in) :: ks(3,n)
+ real(r15), intent(out):: k(3)
+ real(r15) kred(3,n),leng(n),kc(3)
+ integer i,mcor(n),ier
+
+ do i=1,n
+    kred(:,i)=reduce_g(ks(:,i))   ! get its reduced vector
+    leng(i)=dot_product(kred(:,i),(/1,1,1/)) ! find longest vector along (1,1,1)
+ enddo
+ call sort(n,leng,mcor,n)
+
+ ier=1
+ iloop: do i=0,n-1
+    k=kred(:,mcor(n-i))  ! among the longest parallel to, select the one with kz>ky>kx
+    if(k(3).ge.k(2) .and. k(2).ge.k(1)) then
+       kc=k
+       ier=0
+       exit iloop
+    endif
+ enddo iloop
+ if(ier.eq.0) then
+   k=matmul(cart_to_prim,kc)   ! back to cartesian
+ else
+   write(*,*)'SELECT_CORNER MAY HAVE ERROR'
+   k=matmul(cart_to_prim,kred(:,mcor(n)))   ! back to cartesian
+ endif
+
+ end subroutine select_corner
+!=========================================
+ subroutine bring_to_ws(qin,gs,qout)
+!! takes qin and applies translations defined by gs to bring it in the WS cell of gs
+ use constants, only : r15
+ implicit none
+ real(r15), intent(in) :: gs(3,26),qin(3)
+ real(r15), intent(out):: qout(3)
+ integer i
+ logical insid
+
+ qout=qin
+ do i=1,26
+    do while( 2*dot_product(qout,gs(:,i)).gt.dot_product(gs(:,i),gs(:,i)) )
+       qout=qout-gs(:,i)   
+    enddo
+    do while( 2*dot_product(qout,gs(:,i)).lt.-dot_product(gs(:,i),gs(:,i)) )
+       qout=qout+gs(:,i)   
+    enddo
+ enddo
+
+ call check_inside_ws(qout,gs,insid) 
+ if(.not.insid) then
+   write(*,*)'BRING_TO_WS ERROR: final q=',qout
+   stop
+ endif
+ 
+ end subroutine bring_to_ws
+

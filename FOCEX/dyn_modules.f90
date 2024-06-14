@@ -27,9 +27,9 @@
    sumdos=0
    do i=1,wmesh
       sumdos=sumdos+dos(0,i)*wmax/wmesh
-      write(udos,3)om(i),i,sumdos,(dos(la,i),la=0,min(10,ndyn2))
+      write(udos,3)om(i),i,sumdos,(dos(la,i),la=0,min(18,ndyn2))
    enddo
-   sumdos=sumdos-dos(0,1)*wmax/wmesh/2d0
+   sumdos=sumdos-dos(0,1)*wmax/wmesh/2d0 ! first point comes with weight=1/2
 
 3  format(g11.4,2x,i5,99(1x,g11.4))
    end subroutine write_dos
@@ -45,6 +45,10 @@
  real(r15), allocatable :: eigenval_bs(:,:),eigenval(:,:),eivalibz(:,:)
  complex(r15), allocatable :: eigenvec_bs(:,:,:),eigenvec(:,:,:),eivecibz(:,:,:)
  complex(r15), allocatable :: grun(:,:),grun_bs(:,:),grunibz(:,:)
+
+  interface mysqrt
+     module procedure mysqrt_a,mysqrt_1
+  end interface
 
     contains
 
@@ -105,15 +109,27 @@
  nband = mod(onedm-1,nb)+1
  end function nband
 !---------------------------------
- function mysqrt(x)
+ function mysqrt_1(x) result(y)
  implicit none
- real(r15) x,mysqrt
+ real(r15) x,y
  if(x.ge.0) then
-    mysqrt=sqrt(x)
+    y=sqrt(x)
  else
-    mysqrt=-sqrt(-x)
+    y=-sqrt(-x)
  endif
- end function mysqrt
+ end function mysqrt_1
+!---------------------------------
+ function mysqrt_a(x) result(y)
+ implicit none
+ real(r15) x(:),y(size(x))
+ integer n,i
+
+ n=size(x)
+ do i=1,n
+    y(i)=mysqrt(x(i))
+ enddo
+
+ end function mysqrt_a
 
  end module eigen
 
@@ -124,7 +140,7 @@
  use eigen, only : ndyn
  implicit none
 
- real(r15) sigma0(3,3),atld0(3,3,3,3),sigmav(6)
+ real(r15) sigma0(3,3),atld0(3,3,3,3),sigmav(6) , bulkmod,youngmod,shearmod,poisson, elastic(6,6),compliance(6,6)
  real(r15), allocatable :: phi(:,:),xi(:,:,:),qiu(:,:,:),zeta(:,:,:),teta(:,:,:),gama(:,:),y0(:),pi0(:)
  real(r15), allocatable :: qiuv(:,:),u0v(:)
  

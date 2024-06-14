@@ -30,7 +30,6 @@
 
 ! maxneighbors= largest # of neighbor shells <  50 usually unless very low symmetry
 
-
 !-------------------------------------------------------------------------------
 ! some preliminary stuff
 ! copy input arguments into global variables
@@ -49,6 +48,7 @@
       allocate(iatomneighbor(natom_prim_cell,maxatoms))
       allocate(iatomop(natom_prim_cell,natom_prim_cell), &
  &       atomopfract(3,natom_prim_cell,natom_prim_cell))
+
       iatomneighbor=maxneighbors+1
       iatomop=0
 
@@ -294,12 +294,12 @@
 !-------------------------------------------------------------------------------
 
       subroutine set_atompos
-!! uses maxatoms and maxneighbors to construct atoms around the primitive unitcell
+!! uses maxatoms and maxshells to construct atoms around the primitive unitcell
       use lattice
       use atoms_force_constants !force_constants_module
       use ios !, only : ulog
-      use params , only : rcutoff  !tolerance,
- use constants, only : r15
+!     use params , only : rcutoff  !tolerance,
+      use constants, only : r15
       implicit none
       integer i1,i2,i3,j,n,tau,nd2save,ncmp,icell(3),mshl !,iatom,k
       real(r15) r(3),d2,a0 !d2save(maxneighbors),fract(3),v(3),v2(3)
@@ -1487,7 +1487,7 @@
 
  use constants, only : r15
       implicit none
-      integer i,nrow
+      integer nrow
       real(r15) v1(nrow),v2(nrow),v3(nrow)
 
       v3=v1+v2
@@ -1890,14 +1890,14 @@
               cycle ixyzloop
             enddo iloop3
             enddo
-           iloop5: do i=ntermszerosave+1,ntermszero
-             do j=1,nrank
-               if(iatomtermzero(j,i).ne.iatomd2(j))cycle iloop5
-               if(ixyztermzero(j,i).ne.ixyzd2(j))cycle iloop5
-             enddo
+            iloop5: do i=ntermszerosave+1,ntermszero
+              do j=1,nrank
+                if(iatomtermzero(j,i).ne.iatomd2(j))cycle iloop5
+                if(ixyztermzero(j,i).ne.ixyzd2(j))cycle iloop5
+              enddo
 ! found it: try next set of coordinates
-             cycle ixyzloop
-           enddo iloop5
+              cycle ixyzloop
+            enddo iloop5
 ! did not find it: generate terms
             ngroups=ngroups+1
 
@@ -1924,7 +1924,7 @@
      &           maxrank,maxterms,maxtermsindep,maxtermszero-ntermszero,  &
      &           ierz,iert,ieri) !,ierg)
 
-            write(*,3)'OUTPUT OF FORCE_CONSTANTS FOR RANK/ngroups=',nrank,ngroups
+            write(*,3)'OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=',iatom0,ixyz,nrank,ngroups
             write(*,3)'OUTPUT OF FORCE_CONSTANTS: ntermsindep=',ntermsindep(1:ngroups)
             write(*,3)'OUTPUT OF FORCE_CONSTANTS: nterms     =',ntermsall(1:ngroups)
             write(*,3)'OUTPUT OF FORCE_CONSTANTS: ntermszero =',ntermszero

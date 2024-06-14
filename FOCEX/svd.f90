@@ -204,7 +204,7 @@
     num=num     + junk*junk
     denom=denom + prod*prod
     if ( ermax .lt. junk ) ermax = junk
-    write(uio,6) i, prod,b(i), junk, junk/prod
+!   write(uio,6) i, prod,b(i), junk, junk/prod
     error = error + junk
  enddo
  error = error /(1.*m3)

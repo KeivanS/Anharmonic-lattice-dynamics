@@ -1,9 +1,10 @@
 !=====================================
 
  module ewald
- use constants, only : r15
+ use constants, only : r15,pi
  integer nr_ewald,ng_ewald
  real(r15), allocatable :: r_ewald(:,:),g_ewald(:,:)
+ real(r15) rcutoff_ewa,gcutoff_ewa, eta
 
  contains
 
@@ -22,7 +23,7 @@
 ! integer, intent(inout):: ngrid
 ! real(r15), intent(inout):: grid(:,:)
 ! real(r15), allocatable, intent(inout):: grid(:,:)
- integer i1,i2,i3,m,cnt,max
+ integer i1,i2,i3,m,cnt,maxx
  real(r15) v(3),rr,aux2(3,3),epsinv(3,3)
  real(r15), allocatable :: aux(:,:),lengths(:)
  integer, allocatable :: msort(:)
@@ -32,14 +33,15 @@
  aux2=epsilo
  call inverse_real(aux2,epsinv,3)
 
- call get_upper_bounds(x1,x2,x3,rcut,max,m)
+ call get_upper_bounds(x1,x2,x3,rcut,maxx,m)
 ! call calculate_volume(x1,x2,x3,om0)
 ! max=nint(15d0/3d0*rcut**3/om0)+10
 ! m=nint((max/4.2)**0.333)+4
 
- allocate(aux(3,max),lengths(max),msort(max))
+ allocate(aux(3,maxx),lengths(maxx),msort(maxx))
  lengths =1d20; aux=1d20
- write(ulog,4)'MAKE_GRID_SHELL, max(Rgrid), for rcut=',max,rcut
+ write(ulog,4)'MAKE_GRID_SHELL, maxx(Rgrid), for rcut=',maxx,rcut
+ write(*,4)'MAKE_GRID_SHELL, maxx(Rgrid), m for rcut=',maxx,float(m),rcut
  cnt=1
  do i1=-m,m
  do i2=-m,m
@@ -47,16 +49,14 @@
 
 ! generate vectors in a grid
     v= v2a(i1*x1 + i2*x2 + i3*x3)
-!    rl=length(v)
-    rr=dot_product(v,matmul(epsinv,v))
-!    rr=sqrt(dot_product(v,matmul(epsinv,v)))
+    rr=sqrt(dot_product(v,matmul(epsinv,v)))
     if(rr.gt.rcut) cycle
 
     aux(:,cnt)=v
     lengths(cnt)=rr
     cnt=cnt+1
-    if (cnt.gt.max) then
-       write(ulog,*)'RLOOP: max size exceeded, need to increase variable max from ',max
+    if (cnt.gt.maxx) then
+       write(ulog,*)'RLOOP: maxx size exceeded, need to increase variable maxx from ',maxx
        stop
     endif
 
@@ -68,10 +68,9 @@
  write(ulog,5) 'MAKE_GRID_SHELL: within rcut=',rcut,' r_ewald generated ',nr_ewald,' vectors'
 
  if (allocated(r_ewald)) deallocate(r_ewald)  ! overwrite if previously called
- if (allocated(msort)) deallocate(msort)
- allocate(r_ewald(3,nr_ewald),msort(max))
+ allocate(r_ewald(3,nr_ewald))
 
- call sort(nr_ewald,lengths,msort,max)
+ call sort(nr_ewald,lengths,msort,maxx)
 
  open(ujunk,file='ewald_vecs.dat')
  write(ujunk,*)'MAKE RGRID:----first 200 vectors--------------',nr_ewald
@@ -87,9 +86,10 @@
 ! max=2*nint(12.6/3d0*gcut**3/om0)+10
 ! m=nint(max**0.333)*2
  call make_reciprocal_lattice_2pi(x1,x2,x3,y1,y2,y3)
- call get_upper_bounds(y1,y2,y3,gcut,max,m)
- write(ulog,4)'MAKE_GRID_SHELL, max(g_ewald), for gcut=',max,gcut
- allocate(aux(3,max),lengths(max),msort(max))
+ call get_upper_bounds(y1,y2,y3,gcut,maxx,m)
+ write(ulog,4)'MAKE_GRID_SHELL, maxx(g_ewald), for gcut=',maxx,gcut
+ write(*,4)'MAKE_GRID_SHELL, maxx(g_ewald), m for gcut=',maxx,float(m),gcut
+ allocate(aux(3,maxx),lengths(maxx),msort(maxx))
  lengths =1d20; aux=1d20
 
  cnt=1
@@ -99,15 +99,14 @@
 
 ! generate vectors in a grid
     v= v2a(i1*y1 + i2*y2 + i3*y3)
-!    rr=length(v)
     rr=sqrt(dot_product(v,matmul(epsilo,v)))
     if(rr.gt.gcut) cycle
 
     aux(:,cnt)=v
     lengths(cnt)=rr
     cnt=cnt+1
-    if (cnt.gt.max .and. max.ne.1) then
-       write(ulog,*)'GLOOP: max size exceeded, need to increase variable max from ',max
+    if (cnt.gt.maxx .and. maxx.ne.1) then
+       write(ulog,*)'GLOOP: maxx size exceeded, need to increase variable maxx from ',maxx
        stop
     endif
 
@@ -119,10 +118,9 @@
  write(ulog,5) 'MAKE_GRID_SHELL: within gcut=',gcut,' g_ewald generated ',ng_ewald,' vectors'
 
  if (allocated(g_ewald)) deallocate(g_ewald)
- if (allocated(msort)) deallocate(msort)
- allocate(g_ewald(3,ng_ewald),msort(max))
+ allocate(g_ewald(3,ng_ewald))
 
- call sort(ng_ewald,lengths,msort,max)
+ call sort(ng_ewald,lengths,msort,maxx)
 
  write(ujunk,*)'MAKE GGRID:------------------------',ng_ewald
  do i1=1,ng_ewald
@@ -142,7 +140,7 @@
  subroutine dewapot(x,dpot)
 !! calculates the -d/dx(sum_R 1/|R+x| -background) = force  with the corrected metric
 !! Assumes translation vectors are r_ewald(:,igrid),g_ewald(:,igrid)
- use constants
+! use constants
  use lattice
  use params
  use born , only : epsil,epsinv
@@ -150,7 +148,7 @@
  real(r15), intent(out) :: dpot(3)
  real(r15), intent(in) :: x(3)
  integer igrid
- real(r15) termg,qpg(3),dd,erfc,geg,ep,vd(3)
+ real(r15) termg,qpg(3),dd,my_erfc,geg,ep,vd(3)
 
  if (length(x).lt.1d-12) then
     write(*,*)'DEWAPOT: X is too small! ',x
@@ -165,7 +163,8 @@
        dd=sqrt(dot_product(vd,matmul(epsinv,vd)))
        if(dd.lt.1d-12) dd=1d-12
        if (dd.gt.6) cycle
-       dpot=dpot + eta*eta*matmul(epsinv,vd)/dd/dd * (erfc(dd)/dd+2/sqrt(pi)*exp(-dd*dd))/sqrt(det(epsil))
+       dpot=dpot + eta*eta*(matmul(epsinv,vd) +  matmul(transpose(epsinv),vd))/2d0/dd/dd *  &
+&           (my_erfc(dd)/dd+2/sqrt(pi)*exp(-dd*dd))/sqrt(det(epsil))
     enddo
 
 ! write(*,3)'dpotr=',dpot
@@ -190,7 +189,7 @@
  subroutine ewaldforce(n,dsp,fewald)
 !! calculates the Coulomb force on atoms in supercell (in 1/Ang)
 !! Assumes translation vectors are r_ewald(:,igrid),g_ewald(:,igrid)
- use constants
+ use constants, only : ee, eps0
  use lattice
  use params
  use atoms_force_constants
@@ -243,16 +242,16 @@
 !===========================================================
  subroutine ewapot(x,pot)
 ! calculates the sum_R 1/|R+x| -background = pot (in 1/Ang no epsil)
- use constants , only: pi
+! use constants , only: pi
  use lattice , only: volume_r
- use params, only : eta
+! use params, only : eta
  use geometry
  use born
  implicit none
  real(r15), intent(out) :: pot
  real(r15), intent(in) :: x(3)
  integer igrid
- real(r15) termg,qpg(3),dd,erfc,geg,ep,vd(3)
+ real(r15) termg,qpg(3),dd,my_erfc,geg,ep,vd(3)
 
  if (length(x).lt.1d-12) then
     write(*,*)'EWAPOT: X is too small! ',x
@@ -266,7 +265,7 @@
        vd=eta*(x+r_ewald(:,igrid))
        dd=sqrt(dot_product(vd,matmul(epsinv,vd)))+ep
        if (dd.gt.5) cycle  ! r_ewald is sorted but not x+r_ewald
-       pot=pot + eta*erfc(dd)/dd/sqrt(det(epsil))
+       pot=pot + eta*my_erfc(dd)/dd/sqrt(det(epsil))
     enddo
 
     do igrid=2,ng_ewald
@@ -286,7 +285,7 @@
 !===========================================================
  subroutine coulomb_energy(i,n,atoms,dsp,e_coul)
 ! calculates the Coulomb interaction between atom i in primitive cell and the rest (in eV/Ang)
- use constants
+ use constants, only : ee,eps0
 ! use lattice
 ! use params
  use atoms_force_constants
@@ -341,12 +340,6 @@
  end subroutine madelung2
 !===========================================================
  subroutine test_ewald
-! use constants
-! use lattice
-! use geometry
-! use params
-! use atoms_force_constants
-! use born
  use ios , only : ulog
  implicit none
  integer al
@@ -377,7 +370,7 @@
  subroutine subtract_coulomb_force(born_flag,ncfg,dsp,frc)
 ! dsp is the cartesian position not including the equilibrium positions
  use atoms_force_constants
- use constants, only : pi
+! use constants, only : pi
  use fourier
  use lattice, only : rs1,rs2,rs3,g01,g02,g03,rws26, volume_r !, volume_r0
  use ios , only : ulog,write_out
@@ -394,7 +387,7 @@
 ! real(r15), allocatable :: frcr(:,:,:),frcg(:,:,:),disr(:,:,:),disg(:,:,:)
  real(r15) dyn_na(natom_prim_cell,natom_prim_cell,3,3,nggrid),ddn(3,3,3,nggrid)
  real(r15) phi_na(natom_prim_cell,natom_prim_cell,3,3,nrgrid)
- real(r15) rr(3),rcutoff_ewa,eta,gcutoff_ewa,deteps3,asr(3,3), foldedr(3),pos(3,natom_super_cell)
+ real(r15) rr(3),deteps3,asr(3,3), foldedr(3),pos(3,natom_super_cell) !rcutoff_ewa,eta,gcutoff_ewa,
  integer nsc,n3(3),tau,taup,al,be,icfg,i,j,l,jj,one
 
  one=1
@@ -409,7 +402,7 @@
 ! set cutoffs for Ewald sums ! this should come after the supercell is read!!!!
 !     allocate(ewald_force(3,natom_super_cell))
      deteps3=det(epsil)**0.3333
-     eta=sqrt(pi*deteps3)/(volume_r**0.3333)
+     eta=sqrt(pi*deteps3)/(volume_r**0.3333) ! so that both R-sums and G-sums converge at the same rate
      rcutoff_ewa=10*sqrt(deteps3)/eta
      gcutoff_ewa=10*eta*2/sqrt(deteps3)
 ! generate real space and reciprocal space translation vectors of the supercell for Ewald sums
@@ -636,6 +629,107 @@
 
 
  end subroutine subtract_coulomb_force
+!--------------------------------------------------
+ function hfunc(v,y) result(h)
+ use born , only : epsinv
+ implicit none
+ real(r15), intent(in) :: v(3),y
+ integer al,be
+ real(r15) h(3,3),t1,t2,my_erfc
+ 
+ t1=my_erfc(y)/(y*y*y)
+ t2=2/sqrt(pi)*exp(-y*y)/(y*y)
+ do al=1,3
+ do be=1,3
+    h(al,be)=v(al)*v(be)/(y*y)*(3*t1+t2*(3+2*y*y))
+ enddo
+ enddo
+ h=h-epsinv*(t1+t2)
+
+ end function hfunc
+!--------------------------------------------------
+ subroutine ewald_2nd_deriv_hat(q,tau,taup,nr,ng,rgrid,ggrid,etaew,d2ew,d3ew)
+!! calculates the second derivative of the Ewald potential to be used in the Non-analytical correction
+!! input is the two atoms tau and taup, output is the 3x3 block D^EW_tau,taup(q) which goes to D^NA for q \to 0
+! use constants, only : ci
+ use params, only : tolerance
+ use lattice
+ use geometry, only : length
+ use born , only : epsil,epsinv
+ use atoms_force_constants, only : atom0,atompos
+ use ios , only : ulog,write_out
+ implicit none
+ integer, intent(in) :: tau,taup,nr,ng
+ real(r15), intent(in) :: q(3),rgrid(3,nr),ggrid(3,ng),etaew
+ real(r15), intent(out) :: d2ew(3,3),d3ew(3,3,3)
+ integer igrid,al,be,ga
+ real(r15) termg,sd(3),del(3),dd,my_erfc,geg,ep,vd(3),dta(3),dhat(3,3),qpg(3),gscale, hout(3,3)
+
+ dta=atompos(:,tau)-atompos(:,taup)
+ gscale=6.28/volume_r0**0.3333
+
+! real space term  
+    dhat=0 ; d3ew=0
+    do igrid=1,nr
+       sd=etaew*(dta+rgrid(:,igrid))
+       del=matmul(epsinv,sd)
+       dd=sqrt(dot_product(sd,del))
+       if(dd.lt.1d-6) cycle ! exclude self-interactions
+       if (dd.gt.6) cycle
+       hout= hfunc(del,dd)
+!      write(6,4)'rgrid,dd,hout=',igrid,dd,hout(1,1)
+       dhat=dhat - hout*cos(dot_product(q,rgrid(:,igrid))) 
+       do ga=1,3
+          d3ew(:,:,ga)=d3ew(:,:,ga) - hout*sin(dot_product(q,rgrid(:,igrid))) *rgrid(ga,igrid) 
+       enddo
+!      write(*,4)'R_sum: igrid,d,dhat_11=',igrid,dd, dhat(1,1)
+    enddo
+     if(tau.eq.taup) dhat=dhat - 4/3d0/sqrt(pi)*epsinv 
+!    if(tau.eq.taup) d3ew=d3ew - 4/3d0/sqrt(pi)*epsinv   !!! TO BE CHECKED !!!
+    dhat=dhat* etaew*etaew*etaew/sqrt(det(epsil)) 
+    d3ew=d3ew* etaew*etaew*etaew/sqrt(det(epsil)) 
+    write(6,*)'Last R-term(1,1)=',hout(1,1)*etaew*etaew*etaew/sqrt(det(epsil)) 
+    call write_out(6,'total of Rsum terms ',dhat)
+
+! reciprocal space term  
+    do igrid=1,ng
+       qpg=ggrid(:,igrid)+q
+       if(length(qpg).lt.1d-10*gscale) cycle  ! exclude G+q=0
+       geg=dot_product(qpg,matmul(epsil,qpg))
+       if (geg.gt.100*etaew*etaew) exit  ! assumes ggrid is sorted 
+       termg=exp(-geg/4/etaew/etaew)/geg
+!      write(6,4)'ggrid,gg,term=',igrid,sqrt(geg),termg
+       do al=1,3
+       do be=1,3
+          hout(al,be)= termg * qpg(al)*qpg(be)*cos(dot_product(qpg,dta)) 
+!! NEED TO ADD THIRD DERIVATIVE !!
+       enddo
+       enddo
+       dhat=dhat + hout*4*pi/volume_r0 
+!      if(igrid.eq.1) call write_out(6,'G=0 term of ewald ',hout*180.9557368)
+    enddo
+!   write(*,3)'final EW2DERIV:dhat=',dhat
+    write(6,*)'Last G-term(1,1)=',hout(1,1)*4*pi/volume_r0 
+
+    dhat=dhat /(4*pi*eps0)* ee*1d10
+    write(*,3)'final EW2DERIV:dhat_11 scaled by 1d10*ee/eps0=',dhat(1,1)
+
+    d2ew=matmul(matmul(atom0(tau)%charge,dhat),transpose(atom0(taup)%charge))
+ !  do al=1,3
+ !  do be=1,3
+ !     do a2=1,3
+ !     do b2=1,3
+ !        d2ew(al,be)=d2ew(al,be)+atom0(tau)%charge(al,a2)*dhat(a2,b2)*atom0(tau)%charge(be,b2)
+ !     enddo
+ !     enddo
+ !  enddo
+ !  enddo
+     
+
+3 format(a,99(1x,g14.7))
+4 format(a,i4,99(1x,g11.4))
+
+ end subroutine ewald_2nd_deriv_hat
 !--------------------------------------------------
 
  end module ewald

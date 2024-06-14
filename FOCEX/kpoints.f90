@@ -39,24 +39,30 @@
 !! list written in the file kpbs.params (given in direct coordinates of the CONVENTIONAL cell)
   use ios
   use geometry
-  use lattice , only : g01,g02,g03
+  use lattice , only : g01,g02,g03,volume_g0
   use constants, only : pi
     implicit none
     integer :: i,j,nk,uio,nkdir,ubs,units ,ndir
-    real(r15) lk,q(3),k_conv(3),k_prim(3),k_cart(3)
+    real(r15) lk,q(3),k_conv(3),k_prim(3),k_cart(3),rand(3)
     real(r15), allocatable :: ki(:,:),kf(:,:) ,kext_bs(:,:)
     character(LEN=6), allocatable :: dk(:)
+
+! we use this small random shift to move away from high symmetry points and remove degeneracies
+! but need to worry about band connections -> band_sort (in case finite_diff is used)
+! if dk is small enough, but larger than dq=1d-4 below, then this should not affect bandsorting.
+  call random_number(rand)
+  rand=(2*rand-1)*1d-4 *volume_g0**0.33333333 
 
     write(*,*)'entering MAKE_KP_BS'
     uio = 67
     ubs = 68
     open(uio,file='kpbs.params',status='old')
-    open(ubs,file='redtocart')
+    open(ubs,file='KPOINT.BS')
 
     read(uio,*) units  ! if 0 conventional, else primitive
-    write(*,*)'reading ',units,nkdir,ndir
+    write(*,*)'reading ',units
     read(uio,*) nkdir  ! number of kpoints along each direction
-    write(*,*)'reading ',units,nkdir,ndir
+    write(*,*)'reading ',nkdir
     read(uio,*) ndir  ! number of directions for the band structure
     write(ubs,*)'reading units,nkdir,ndir=',units,nkdir,ndir
     write(ubs,*)'# k_name , k in primitive, k in gconv units, k in cartesian '
@@ -123,15 +129,12 @@
   write(*,*)' Kpoints for band structure generated from kpbs.params'
 
 
- open(ubs,file='KPOINT.BS',status='unknown')
- write(ubs,*)'# k in cartesian and in direct units of primitive and conventional reciprocal lattice'
  open(88,file='KTICS.BS',status='unknown')
     nk = 0
 !    dk_bs(1) = 0
 ! now for each direction set up the coordinates of the kpoints
     kext_bs(1,1)=0    ! here using kext_bs(1,:) as a dummy variable
     do i = 1,ndir !-1
-       write(ubs,7) i, matmul(prim_to_cart,ki(:,i)),ki(:,i), matmul(transpose(conv_to_prim),ki(:,i))
        q(:) = kf(:,i)-ki(:,i)  ! length of each section
        lk = length(q)/length(g01)  ! length of each section
        do j = 1,nkdir
@@ -145,7 +148,7 @@
           else  ! nk = 1
             dk_bs(nk) = 0 !dk_bs(nk-1)
           endif
-          kp_bs(:,nk) = ki(:,i) + (j-1)*q(:)/(nkdir-1+1d-8)
+          kp_bs(:,nk) = ki(:,i) + (j-1)*q(:)/(nkdir-1+1d-8) + rand
        enddo
        kext_bs(1,i+1)=real(dk_bs(nk))   ! here using kext_bs(1,:) as a dummy variable
     enddo
@@ -158,7 +161,6 @@
 
 !   write(88,*)'set xtics ( ',(kname_bs(i),dk(i),",",i=1,ndir+1),' )'
     write(88,*)'set xtics ( ',(kname_bs(i),dk(i),",",i=1,ndir),kname_bs(ndir+1),dk(ndir+1),' )'
-    close(ubs)
     close(88)
 
     deallocate(ki,kf,kname_bs)
@@ -294,36 +296,62 @@
 
  end subroutine get_k_info_cent
 !----------------------------------------------
- subroutine get_k_info3(q,nkt,ex) !,i1,j1,k1,gg1,gg2,gg3,inside)
+ subroutine get_k_info3(q,nkt,exists) 
 ! scans the kpoints to identify the index of the input q
  use geometry
- use params
+ use params, only : tolerance
  use ios
  implicit none
- real(r15) q(3),ll
- integer nkt,i
- logical ex
+ real(r15), intent(in):: q(3)
+ integer, intent(out):: nkt
+ logical, intent(out):: exists
+ integer i
 
 3 format(a,i6,2x,3(1x,g10.3),2x,f10.4,L3)
 
- nkt=0; ex=.false.
+ nkt=0; exists=.false.
  loop: do i=1,nkc
-!    if( (q(1).myeq.kpc(1,i)) .and. (q(2).myeq.kpc(2,i)) .and. (q(3).myeq.kpc(3,i)) ) then
-    ll=length(q-kpc(:,i))
-!   if( length(q-kpc(:,i)) .lt. 1d-4) then
-!       write(*,3)'i,k,q,k-q=',i,kpc(:,i),q,ll
-    if( ll .lt. 1d-4) then
+    if( length(q-kpc(:,i)) .lt. tolerance ) then
        nkt=i
-       ex=.true.
+       exists=.true.
        exit loop
     endif
  enddo loop
 ! write(*,*)'nkt=',nkt
  if (nkt.eq.0) then
-   write(ulog,3)'GET_K_INFO3: qpoint not found! nq,q,l,exist?',nkt,q,length(q),ex
+   write(ulog,3)'GET_K_INFO3: qpoint not found! nq,q,l,exist?',nkt,q,length(q),exists
 !  stop
  endif
  end subroutine get_k_info3
+!----------------------------------------------
+
+ subroutine get_k_info_general(q,kp,nk,nq,exists) 
+! scans the kpoints to identify the index of the input q
+ use geometry
+ use params, only : tolerance
+ use ios
+ implicit none
+ integer, intent(in):: nk
+ real(r15), intent(in):: q(3),kp(3,nk)
+ integer, intent(out):: nq
+ logical, intent(out):: exists
+ integer i
+
+3 format(a,i6,2x,3(1x,g10.3),2x,f10.4,L3)
+
+ nq=0; exists=.false.
+ loop: do i=1,nk
+    if( length(q-kp(:,i)) .lt. tolerance ) then
+       nq=i
+       exists=.true.
+       exit loop
+    endif
+ enddo loop
+ if (nq.eq.0) then
+   write(ulog,3)'GET_K_INFO3: qpoint not found! nq,q,l,exist?',nq,q,length(q),exists
+!  stop
+ endif
+ end subroutine get_k_info_general
 !----------------------------------------------
 
 end module kpoints
