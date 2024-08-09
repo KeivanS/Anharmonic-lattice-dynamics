@@ -1,0 +1,35 @@
+8   added the option of prim versus conv in inputting kpoints in kpbs.params
+    replaced all real(8) by real(r15) so that the kind can be changed in one place only
+8.1 corrected the elastic constants and FD and pert calculation part of the group velocities ; aded module mech
+    added the defaults.params file for user to change tolerance,svdcut,rcutoff,maxterms if needed
+    added module linalg for append_array, symmetrizing
+8.2 keeping full matrix a_hom, but processing it later according to include_fc flag 
+8.3 definig the IBZ with weights in order to calculate sums over BZ for doing thermodynamics
+    Adding thermodynamics to the harmonic calculations with harmonic pressure, E, F, Cv as a funtion ot T 
+8.4 extending setforce_displacement matrix to any order (limiting to 8 in practice) and translational invariances also to 8th order
+8.5 fixing the keep_grp2 terms to keep, QHA results with constant bulk modulus 
+8.6 used the soft convention of the phase in the dynamical matrix and structure factor for the NA_coulomb terms; 
+    added a T-dependent or volume-dependent bulk modulus 
+    added the harmonic dielectric matrix due to phonons (optical at zone center)
+    added the condition to be inside the WS cell of the supercell when constructing the dynamical matrix
+    added info about the # of groups, termsindep and terms to lat_fc.dat, useful for reading fc data (ph program) before allocation
+8.7 set of fcs restricted to those within the supercell rgrid and having still full symmetry of the crystal
+    same was done and tested for sf(q)
+8.8 read the range, but only keep fc2indeps that are within the WS cell of the supercell, and throw away the ones outside; 
+    (this is completed by symmetry)
+    write symmetry matrices in a separate file
+    nshells 2nd dimension increased from 20 to 90 upper limit of atoms per primitive cell
+    modified and moved band sorting operations inside the bandsort subroutine
+    modified svd to svd_ridge to include proper regularization
+    removed from set_dynamical_matrix the condition if inside WS because this breaks symmetry
+    added a subroutine to show boundary of the WS cell of the FBZ (output used for display in fcs.plt)
+    updated the default values of defaults.params
+    added boundary to check_inside in extratools.f90
+
+to do:  
+-make bulk modulus also volume-dependent since group velocities are now vol-dependent thanks to gruneisen
+-for include_fc=2 reads fcs(rnk) from a file, and properly store it in the 1D array fcs(ngr?) for usage in the setup_amatrix code.
+-Add Ewald sum to the potential energy part of SCOP8 : that goes in the free energy and its gradient wrt u0 and eta and K!!!
+-Compare the size of W and that of nindepfc. If w is smaller then is CS needed to reduce them?
+-Add harmonic contribution to the dielectric constant
+-project dos on atoms in the tetrahedron method 
