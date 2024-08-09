@@ -31,9 +31,8 @@ module params
  use constants, only : r15
  real(r15) tolerance,margin,scalelengths,alfaborn,tempk,rcutoff
  integer nconfigs,classical,ntemp,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,itemp
- integer nshells(8,20)  ! up to which shell to include for each rank of FC (read from input file)
+ integer , allocatable :: nshells(:,:)  !nshells(8,natom_prim_cell) up to which shell to include for each rank of FC (read from input file)
  integer include_fc(8), icutoff !,nsmax  ! whether to include FCs of that rank ,max# of shells looping
-! real(r15) rcut(4),tau0,wshift(3)
  real(r15) tmin,tmax,qcros(3),svdc,lmax ! lmax is the cutoff length of FC2 limited by the supercell WS
  logical verbose
 
@@ -48,6 +47,9 @@ end module params
   type point
     real(r15) :: x,y,z
   end type point
+  type svector
+    real(r15) :: s,v(3)
+  end type svector
 !-----------------------------
    interface operator(*)
      module procedure multiply_by_real,multiply_by_integer ; end interface
@@ -110,7 +112,7 @@ end module params
 !! checks if the variable is integer
  use params, only : tolerance
  implicit none
- real(r15) i
+ real(r15), intent(in):: i
  logical is
 
  if (abs(i-nint(i)).lt.tolerance ) then
@@ -124,7 +126,7 @@ end module params
 !! checks if the variable is integer
  use params, only : tolerance
  implicit none
- real(r15) i(:)
+ real(r15), intent(in):: i(:)
  logical is
  integer j,n
 
@@ -679,7 +681,7 @@ end subroutine calvol_v
 !==============================================
 module ios
  use constants, only : r15
- integer, parameter:: uposcar=10,uparams=11,uborn=12, &
+ integer, parameter:: uposcar=10,uparams=11,uborn=12,usym=29, &
 &         ufco=20,ulog=30,utraj=40,umatrx=50,umap=60,utimes=70,ufc=80, &
 &         ufc1=21,ufc2=22,ufc3=23,ufc4=24,  &
 &         ufit1=31,ufit2=32,ufit3=33,ufit4=34,  &
@@ -1080,7 +1082,7 @@ contains
 ! integer nr1(3),nr2(3),nr3(3)
 ! real(r15), allocatable:: rgrid(:,:),ggrid(:,:),xgrid(:,:)
  real(r15) gws26(3,26),rws26(3,26),invn_sc(3,3)  ! superlattice shells defining the WS of SL
- real(r15) g0ws26(3,26),r0ws26(3,26)
+ real(r15) g0ws26(3,26),r0ws26(3,26) , lgridmax
  integer n_sc(3,3)
 
   interface make_rg
@@ -1111,6 +1113,7 @@ contains
 
 !=========================================
  function reduce_g(q) result(redq)
+!! converts cartesian coordinates of a kpoint to its reduced coordinates
  use constants, only : pi,r15
  implicit none
  real(r15) , intent(in) :: q(3)
@@ -1354,7 +1357,7 @@ contains
  use constants
  implicit none
  integer i,mx1
- real(r15) particle_density,volcut  ! x1,x2,x3,
+ real(r15) particle_density,volcut,r1(3),r2(3),r3(3),volmax,rshells(3,26),rc1
  external unitcell,symmetry_init
 
 ! generate r0i and g0i rom latticeparameters, primitivelattice
@@ -1411,35 +1414,50 @@ contains
   particle_density=natom_prim_cell/volume_r0  
   write(ulog,*)'       density (uma/Ang^3)=',sum(atom0(:)%mass)/volume_r0
   write(ulog,*)'       density (  g/ cm^3)=',density
-  write(ulog,*)' particle density (Ang^-3)=',particle_density
+  write(ulog,*)' particle density (1/Ang^3)=',particle_density
   write(ulog,*)' COORDINATES read successfully '
   write(   *,*)' COORDINATES read successfully '
 
-  mx1=nint(4*pi/3*icutoff**3)
-  write(ulog,*)'reduced Rcutoff=',icutoff,' suggests maxatoms=',mx1
-! Convert to actual distances
-  rcutoff = 1d0/particle_density**0.333333 * icutoff 
-  volcut=4*pi/3d0*rcutoff**3   ! volume of a sphere of radius rcutoff 
-! hardwire maxatoms and maxneighbors; after fc_init maxatoms -> natoms, maxneighbors -> nshell
-  maxatoms = nint(volcut * particle_density)  ! should be initial rcutoff^3*4pi/3
-!  maxatoms=max(maxatoms,1200)
-  write(ulog,*)' the value of maxatom is ',maxatoms
-  write(ulog,*)' if you need a larger value, increase the value of icutoff in default.params from 10'  
+
+  call find_cutoff_from_largest_SC (volmax,rcutoff,r1,r2,r3,rshells)
+
+! nshells should be within this cutoff
+  write(ulog,*)' the suggested value of rcutoff from SC is ',rcutoff
+  rcutoff=max(rcutoff, icutoff*volume_r0**0.333)
+  write(ulog,*)' rcutoff updated from icutoff is ',rcutoff
+! use this volume for atompos; the largest supercell will be fully included in this volume
+  volcut=4*pi/3d0*(rcutoff*1.3)**3   
+  maxatoms = nint(volcut * particle_density)  
+! this seems reasonably large, but can be increased if more is needed
+  maxneighbors=100
+  maxshells = icutoff   ! let the user decide it
+
+! FCs will exist at the most up to maxshells; it's ok if maxshell is too large
+! if (fc2flag .eq.0 ) then
+!    maxshells=nint(rcutoff / min(length(r01),length(r02),length(r03)))+1
+! else
+!    maxshells=max(maxval(nshells)+2,icutoff )  ! go with what the user prescribed
+! endif
 
 
-! FCs will exist at the most up to maxshells
-  if (fc2flag .eq.0 ) then
-     maxshells=icutoff  ! go with the default cutoff
-  else
-     maxshells=maxval(nshells)+2  ! go with what the user prescribed
-  endif
+!  mx1=nint(4*pi/3*icutoff**3)
+!  write(ulog,*)'reduced scutoff=',icutoff,' suggests maxatoms=',mx1
+!! Convert to actual distances
+!  rc1 = 1d0/particle_density**0.333333 * icutoff  ! based on average bond length
+! rcutoff=max(rcutoff,rc1)  ! to be able to change using the default if too small 
+! write(ulog,*)' if you need a larger value, increase the value of icutoff in default.params from 10'  
+
+
+
 !  everything is based on maxneighbors, maxatoms and maxshells will be updated accordingly
+! maxneighbors is the largest number of neighborshells; largest in a glass or 
+! huge unit cell
+! maxneighbors=min(3*maxshells,nint(((2*maxshells+1)**3)/48d0))
 
-  maxneighbors=min(3*maxshells,((2*maxshells+1)**3)/48)
-
-  write(ulog,*) 'Default maxatoms    =', maxatoms
-  write(ulog,*) 'Default maxshells   =', maxshells
-  write(ulog,*) 'Default maxneighbors=', maxneighbors
+  write(ulog,*)'Based on this rcutoff, volcut=4pi/3*(1.3rcut)^3, maxatoms=volcut*density'
+  write(ulog,*)'the default  maxatom=', maxatoms
+  write(ulog,*)'maxshells set to    =', maxshells
+  write(ulog,*)'Start   maxneighbors=', maxneighbors
   write(ulog,*)'*****************************************************************'
 
   imaxatm=1
@@ -1451,8 +1469,6 @@ contains
   imaxnei=1
 
   do while(imaxnei.eq.1)
-     maxneighbors=maxneighbors+100
-     write(*,*)' Increasing maxeighbors to ',maxneighbors
 
 ! find symmetry operations; the above allocation is for this subroutine
 ! requires maxneighbors to generate atoms within these shells
@@ -1552,7 +1568,8 @@ contains
  implicit none
  integer i0,j,jj,s,l,k,shel_count,minat,cnt,nbs,mxshell
  integer nb(0:maxneighbors),msort(maxatoms)  ! because dist is of size natoms
- real(r15) dist(maxatoms),d_old,d_min(0:maxneighbors),rmax,dij,d_new
+! real(r15) dist(maxatoms),d_old,d_min(0:maxneighbors),rmax,dij,d_new
+ real(r15) dist(maxatoms),d_old,d_min(0:maxatoms),rmax,dij,d_new
 
  call write_out(ulog,'SET_NEIGHBOR_LIST: entering with maxneighbors ',maxneighbors)
  call write_out(ulog,'SET_NEIGHBOR_LIST: entering with maxshells    ',maxshells )
@@ -1592,13 +1609,14 @@ contains
           d_old = d_new
           d_min(shel_count)=d_new
           write(*,4)' NEW shell , dij= ',shel_count,d_new
-          if ( shel_count .gt. maxneighbors ) then
-             write(   *,*)'maxneighbors=', maxneighbors,' shells completed up to distance ',d_new
+ !        if ( shel_count .gt. maxneighbors ) then
+          if ( d_new .gt. rcutoff ) then
+             write(   *,*) shel_count,' shells completed up to distance ',d_new
              write(   *,*)'It  corresponds to ',msort(j),' th nearest atom'
-             write(   *,*)'The largest # of shells is set to ',shel_count-1 ,' which should be ',maxneighbors
-             write(ulog,*)'maxneighbors=', maxneighbors,' shells completed up to distance ',d_new
+       !     write(   *,*)'The largest # of shells is set to ',shel_count-1 ,' which should be ',maxneighbors
+             write(ulog,*) shel_count,' shells completed up to distance ',d_new
              write(ulog,*)'It  corresponds to ',msort(j),' th nearest atom'
-             write(ulog,*)'The largest # of shells is set to ',shel_count-1 ,' which should be ',maxneighbors
+!             write(ulog,*)'The largest # of shells is set to ',shel_count-1 ,' which should be ',maxneighbors
              exit jloop
           endif
 
@@ -1613,7 +1631,7 @@ contains
        endif
     enddo jloop
 
-    shel_count=shel_count-1
+!   shel_count=shel_count-1  ! why is that necessary?
     atom0(i0)%nshells=shel_count
     write(*,*)'allocating atom0(',i0,')%shells(:) to size ',shel_count
 !    if(allocated(atom0(i0)%shells)) deallocate(atom0(i0)%shells)

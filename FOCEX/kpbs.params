@@ -1,0 +1,12 @@
+1   #0 for conventional reduced coordinates, 1 for primitive reduced coordinates
+40  number of kpoints along each direction
+7   number of directions or kpoint paths
+G 0 0.0001 0    name of the kpoint folllowed by it reduced coordinates
+M 0 0.5 0
+K 0.333333 0.3333333 0  # 0.666667 -0.3333333 0
+G 0.000001 0 0 
+A 0 0 0.5
+L 0 0.5 0.5
+H 0.333333 0.3333333 0.5  #  0.666667 -0.3333333 0.5
+A 0 0 0.5
+

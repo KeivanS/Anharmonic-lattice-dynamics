@@ -1,0 +1,29 @@
+1 1.7320508 4.0317828  90 90 90   conventional unit cell (a,b,c,alpha,beta,gamma)
+1 0 0 -0.5 0.5 0 0 0 1   primitive vectors in terms of conventional
+3.498953654    scaling factor for translation vectors
+1 1 0 0 0 0 0 0  include 1st 2nd 3rd 4th, ... 8th order force constants
+1 1 1 0 flags for including translational and rotational invce constraints.
+0  300  whether or not weight snaps by Boltzmann factor
+1 .false.  number of OUTCAR files, verbosity
+2       number of different atom types
+95.94  127.6  mass of atoms of different type
+Mo  Te       names of atoms of different type
+6     number of atoms in the primitive cell 
+1     flag for setting the range of FCs (if=0 take the default defined by the supercell size;1 for user's choice))
+7 7 12 12 12 12 neighbor shells for harmonic FCs for atoms 1-6 in the primitive cell
+3 3 5 5 5 5     neighbor shells for cubic    FCs for atoms 1-6 in the primitive cell
+1 1 1 1 1 1     neighbor shells for quartic  FCs for atoms 1-6 in the primitive cell
+0 0 0 0 0 0     neighbor shells for 5th rank FCs for atoms 1-6 in the primitive cell
+0 0 0 0 0 0     neighbor shells for 6th rank FCs for atoms 1-6 in the primitive cell
+0 0 0 0 0 0     neighbor shells for 7th rank FCs for atoms 1-6 in the primitive cell
+0 0 0 0 0 0     neighbor shells for 8th rank FCs for atoms 1-6 in the primitive cell
+1 1 0.0 0.3333333  0.25     atom number , atom type, reduced coordinates in units of CONVENTIONAL vectors
+2 1 0.5 0.1666667  0.75
+3 2 0.0 0.3333333  0.62253
+4 2 0.0 0.3333333  0.87747
+5 2 0.5 0.1666667  0.12253
+6 2 0.5 0.1666667  0.37747 
+
+
+
+

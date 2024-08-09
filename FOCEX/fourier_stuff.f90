@@ -2,9 +2,10 @@
 
  module fourier
  use constants, only : r15
-  integer nrgrid,nggrid
-  real(r15), allocatable :: rgrid(:,:),ggrid(:,:)
-  real(r15), allocatable:: rws_weights(:),gws_weights(:)
+  integer nrgrid,nggrid,nsubgrid
+  real(r15), allocatable :: rgrid(:,:),rws_weights(:)
+  real(r15), allocatable :: ggrid(:,:),gws_weights(:)
+  real(r15), allocatable :: subgrid(:,:),subgrid_weights(:)
   integer, allocatable :: i1r(:),i2r(:),i3r(:),i1g(:),i2g(:),i3g(:)
 
   interface fourier_r2k

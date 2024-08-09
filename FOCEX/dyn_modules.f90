@@ -70,16 +70,16 @@
      endif
     end subroutine allocate_eig_bs
 !---------------------------------
-    subroutine deallocate_eig_bs 
+    subroutine deallocate_eig_bs
       if(allocated(veloc_bs)) deallocate(veloc_bs)
       deallocate( eigenval_bs, eigenvec_bs, grun_bs )
     end subroutine deallocate_eig_bs
 !---------------------------------
-    subroutine deallocate_eig 
+    subroutine deallocate_eig
       deallocate( eigenval,eigenvec,veloc,grun)
     end subroutine deallocate_eig
 !---------------------------------
-    subroutine deallocate_eig_ibz 
+    subroutine deallocate_eig_ibz
       deallocate(eivalibz,eivecibz,velocibz,grunibz )
     end subroutine deallocate_eig_ibz
 !---------------------------------
@@ -143,5 +143,5 @@
  real(r15) sigma0(3,3),atld0(3,3,3,3),sigmav(6) , bulkmod,youngmod,shearmod,poisson, elastic(6,6),compliance(6,6)
  real(r15), allocatable :: phi(:,:),xi(:,:,:),qiu(:,:,:),zeta(:,:,:),teta(:,:,:),gama(:,:),y0(:),pi0(:)
  real(r15), allocatable :: qiuv(:,:),u0v(:)
- 
+
  end module mech

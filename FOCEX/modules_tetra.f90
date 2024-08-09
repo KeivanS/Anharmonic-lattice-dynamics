@@ -44,16 +44,17 @@ contains
 
     implicit none
     integer :: i,j,k,l,nk,nt,np,ierr,pt(8),mc(3)
-    real(8) q(3),ep(3) !,shft(3)
+    real(8) q(3),ep(3) 
     real(8) q1(3),q2(3),q3(3),q4(3),q5(3),q6(3),q7(3),q8(3)
-    integer inside, i1, j1, k1, nk1,nk2
+    integer inside , i1, j1, k1, nk1
+    integer inside2, i2, j2, k2, nk2
 
     open(126,file='KPOINT_tet.mp',status='unknown')
-    write(126,*)'# i ,kp(:,i), wk(i)'
+    write(126,*)'# i ,kp(:,i), wk(i) , kp_reduced'
     open(127,file='tet.mp',status='unknown')
     write(127,*)'# i ,tet(i)%p(1...4)%i'
     ep = 0d0  ! shift by a small amount so that only one boundary K remains in the FBZ after folding
-!   shft = (-0.5d0)*(g1+g2+g3)
+!   sh = shift(1)/nc(1)*v2a(g01) + shift(2)/nc(2)*v2a(g02) + shift(3)/nc(3)*v2a(g03)
     mc=nc !mc(1)=nc(1); mc(2)=nc(2); mc(3)=nc(3)
 
 !call mypause('entering make_kp_reg_tet',shft(1))
@@ -68,9 +69,9 @@ contains
 !      q = ((i-1+shftx)/nc(1))*g1 + ((j-1+shfty)/nc(2))*g2 + ((k-1+shftz)/nc(3))*g3 
 ! get_k_info works with the non-shifted kpoints
        q = ((i-1d0)/nc(1))*g01 + ((j-1d0)/nc(2))*g02 + ((k-1d0)/nc(3))*g03  
-       kpc(:,nk) = q(:) !+ shft
+       kpc(:,nk) = q  !+ sh shift works for tetra but IBZ gets much larger
        wk(nk)=1d0/nkc              !1 divided by number of points
-       write(126,2)nk,kpc(:,nk)
+       write(126,2)nk,kpc(:,nk), wk(nk), reduce_g(kpc(:,nk))
     enddo
     enddo
     enddo
@@ -102,6 +103,16 @@ contains
           endif
           pt(1)=nk1
           call get_k_info(q2,mc,nk1,i1,j1,k1,inside)
+!         call get_k_info2(q2,mc,nk2,i2,j2,k2,inside2) as a test of get_k_info
+!         if (i1.ne.i2 .or. j1.ne.j2 .or. k1.ne.k2 .or. nk1.ne.nk2 ) then !.or. inside.ne.inside2
+!            write(*,'(3(1x,f9.4))') reduce_g(q2)
+!            write(*,*)'i1,i2=',i1,i2
+!            write(*,*)'j1,j2=',j1,j2
+!            write(*,*)'k1,k2=',k1,k2
+!            write(*,*)'nk1,nk2=',nk1,nk2
+!             write(*,*)'ins1,ins2=',inside,inside2
+!            stop
+!         endif 
           pt(2)=nk1
           call get_k_info(q3,mc,nk1,i1,j1,k1,inside)
           pt(3)=nk1
@@ -175,15 +186,15 @@ contains
 !      enddo
 !   endif
 
-    do i=1,nk
-       write(126,2)i,kpc(:,i),wk(i)
-    enddo
+!   do i=1,nk
+!      write(126,2)i,kpc(:,i),wk(i)
+!   enddo
     do i=1,nt
        write(127,1)i,(tet(i)%p(l)%i,l=1,4)
     enddo
 
  1  format(9(1x,i6))
- 2  format(i7,2x,3(1x,f10.5),5x,f9.5,3x,9(g9.3,1x))
+ 2  format(i7,2x,3(1x,f10.5),5x,f9.5,3x,9(f11.5,1x))
  3  format(3(i3),2x,i6,2x,3(1x,f12.5),5x,f9.5)
  4  format(a,3(1x,i6),2x,9(1x,f12.5),5x,f9.5)
     close(126)
@@ -444,16 +455,18 @@ contains
 
  end subroutine calc_tet
 !-------------------------------------
- subroutine tet_sum(om,nk,arg,func,res,array)
+! subroutine tet_sum(om,nk,arg,func,res,array)
+ subroutine tet_sum(om,nk,arg,func,res)
 ! for given om, it calculates res=sum_k delta(om-arg(k))*func(k)
 ! nk is the #of kpoints, 
 ! arg and func are the arrays of kpoints eigenvalues, arguments of the delta 
 ! function and the weighting function in front of delta, all of
 ! which are defined at the kpoints
  implicit none
- integer :: j,l,nk,k
+ integer,intent(in) :: nk
  real(8),intent(in) :: om, arg(nk), func(nk)  ! res=sum_k array(k)
- real(8),intent(out) :: res,array(nk) ! res=sum_k array(k)
+ real(8),intent(out) :: res !,array(nk) ! res=sum_k array(k)
+ integer :: j,l,k
 
 ! assign the eigenvalues to each tetrahedron
  call eigen_tet(nk,arg)    
@@ -462,15 +475,16 @@ contains
  call weight_tet(om) 
 
 ! do the sum over k using the tetrahedron method
- array=0
+! array=0
+ res = 0! this is the dos(om)*func(om)
  do j=1,6*nk ! number of possible tetrahedra
     do l=1,4 ! number of corners for each tetrahedron
-       k = tet(j)%p(l)%i
-       array(k) = array(k) + tet(j)%p(l)%c/(nk*6)*func(k)
+       k = tet(j)%p(l)%i  ! this is the k index
+!      array(k) = array(k) + tet(j)%p(l)%c/(nk*6)*func(k)
+       res = res + tet(j)%p(l)%c/(nk*6)*func(k)
 !      write(33,3)j,l,tet(j)%p(l)%i,tet(j)%p(l)%c,tet(j)%p(l)%w
     enddo
  enddo
- res=sum(array)
 
 3 format(3(2x,i8),3x,5(1x,g10.4))
 4 format(1(2x,i8),3x,55(1x,g10.4))

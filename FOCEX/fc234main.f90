@@ -4,6 +4,7 @@ program FC234
 !
 ! todo:
 !
+! in case there is residual force, get residual stress, recommend updated lattice and fcs
 ! add option of reading existing fc files and fitting the remaining ones.
 ! also writeout the fitted FCs in the format of other codes: ALAMODE, PHONOpy SHENG
 !
@@ -26,7 +27,7 @@ program FC234
 !! the CONVENTIONAL cell.
 !! In POSCARi file the super cell structure and the equilibrium position of its atoms are specified
 !! similar to VASP POSCAR format
-!! Finally, OUTCARi contains the atomic displacement and corresponding forces on each atom in the
+!! Finally, FORCEDISPi contains the atomic displacement and corresponding forces on each atom in the
 !! supercell. It is obtained using a postprocessing utility (readoutcar) of VASP or QE output files.
 !! OUTPUT FILES: log.dat contains log of the run and intermediate outputs
 !! fcr_irr.dat fcr.dat : contain the obtained irreducible and full set of force constants of rank r
@@ -58,7 +59,7 @@ use kpoints !, only : kpc, wk, shift,nc,nkc,kibz,wibz
 use born
 use linalgb
 implicit none
-integer i,j,g,ti,rank,iunit, uio,nkernel,imax,n_hom,nt(maxrank),ntind(maxrank)  ,tau,taup
+integer i,j,g,ti,rank,iunit, uio,nkernel,imax,n_hom,nt(maxrank),ntind(maxrank)  ,tau,taup,nat,maxnat
 character xt*1,fn*7,now*10,today*8,zone*5,fni*11
 logical ex
 real(r15), allocatable :: xout(:),foldedk(:,:)
@@ -148,53 +149,25 @@ real tim
 !
 ! stop
 
-! k1 added for testing
-! allocate(foldedk(3,nkc))
-
-! rs1=nc(1)*r01
-! rs2=nc(2)*r02
-! rs3=nc(3)*r03
-
-! call read_latdyn
-! allocate(kpc(3,nkc),wk(nkc))
-! gs1=(1d0/nc(1))*g01; gs2=(1d0/nc(2))*g02; gs3=(1d0/nc(3))*g03; 
-! call make_grid_weights_WS(gs1,gs2,gs3,g01,g02,g03,nggrid,'g',gws26,g0ws26)
-! call make_kp_reg(nc,g01,g02,g03,shift,kpc,wk)
-! kpc=ggrid; if(nkc.ne. nggrid) write(*,*)'ERROR in the test nkc,nggrid=',nkc,nggrid
-
-!  call fold_in_WS_BZ(nkc,kpc,g0ws26,foldedk)   ! also calls get_weights
-!  call get_kpfbz(nkc,kpc,g0ws26,foldedk) 
-
-! Now calculate the weigths
-! call get_weights3(nkc,ggrid) !foldedk) 
-
-! stop
-
 ! of available supercells, takes the one with largest volume to eventually set
 ! the range of FC2= largest center to WS boundary distance; record rs1,rs2,rs3
 ! output is rs1,rs2,rs3 of this largest supercell
-   call find_WS_largest_SC(imax,volmax)
 
+   call find_WS_largest_SC(imax,volmax)
 
  call cpu_time(tim)
  write(utimes,'(a,f10.4)')' make_unitcell, TIME                          IS ',tim
 
-    call set_neighbor_list !(rcut(2),maxshell)
+  call set_neighbor_list
+
 
 ! outputs: atom0%equilb_pos,shells%no_of_neighbors , rij, neighbors(:)%tau and n and maxshell
 ! maxshell is the actual # of shells within rcut(2). It is not nsmax; maxshell < maxneighbors
  write(ulog,*)' After set_neighbors: maxshells=',maxshells,' while maxneighbors=',maxneighbors
  write(ulog,*)' ***************************************************************************** '
-! write(ulog,*)' rcut(2) for FC2s set to be=',rcut(2),' corresponding to new maxshell=',maxshell
-! write(ulog,*)' ************************* Writing the neighborlist ************************** '
  write(ulog,*)' Now the actual number of shells within the largest WS cell is set...'
 
-
-!   if (fc2flag.ne.0 .and. maxval(nshells(2,:)) .gt. maxshells) then
-!     nshells(2,:)=maxshells
-!     write(*   ,*)'nshells2 reduced from ',maxval(nshells(2,:)),' to ',maxshells
-!     write(ulog,*)'nshells2 reduced from ',maxval(nshells(2,:)),' to ',maxshells
-!   endif
+ write(ulog,*)' ************************* Writing the neighborlist ************************** '
 
   call write_neighbors
 
@@ -220,52 +193,35 @@ real tim
      enddo
      write(ulog,*)' sum of gws_weights(j) ',sum(gws_weights)
 
-! check: structure factor should be 1 on the superlattice reciprocal vectors
-   do i=1,nggrid
-      call structure_factor_recip(ggrid(:,i),nrgrid,rgrid,rws_weights,sf,dsf)
-      if( length(ggrid(:,i)) .lt. tolerance) then
-         if(abs(sf-1).gt.tolerance ) then
-            write(*,'(a,i3,99(1x,f9.4))')'SF=1 check for i,sf,ggrid_red(i)=',i,sf, &
-&                  matmul(transpose(prim_to_cart),ggrid(:,i))/(2*pi)
-            stop
-         else
-            cycle
-         endif
-      endif
-      if(abs(sf).gt.1d-5 ) then
-         write(*,'(a,i3,99(1x,f9.4))')'SF\=0 check for i,sf,ggrid_red(i)=',i,sf, &
-&                  matmul(transpose(prim_to_cart),ggrid(:,i))/(2*pi)
-!         stop
-      endif
-   enddo
+! if input range is larger than cutoff(SC) or if fc2flag=0, set it corresponding to that cutoff 
+     call update_nshells(nrgrid,rgrid,lgridmax) ! neighborshells should stay within the WS cell of largest supercell < lgridmax
+     write(ulog,*)' nshells2 updated according to cutoff = ',lgridmax
+     write(ulog,*)' use largest WS; new updated nshells2 = ',nshells(2,1:natom_prim_cell)
 
+! endif
 
-! this tests fr2k etc
-! allocate(auxr(nrgrid),auxg(nggrid))
-! auxr=1
-! call fr2k_5(nrgrid,auxr,rws_weights,nggrid,auxg)
-! write(*,*) auxg
-! call fk2r_5(nggrid,auxg,gws_weights,nrgrid,auxr)
-! write(*,*) auxr
-! deallocate(auxr,auxg)
+! create a second subgrid of translation vectors in the supercell WS that has full symmetry of the primitive cell (for sf)
+! output is nsubgrid, subgrid,subgrid_weights
+  call make_subrgrid(nrgrid,rgrid,rws26,nsubgrid)   ! maybe not needed
+
+!q2=0
+!do i=0,25
+!   q2=(i/100d0)*v2a(g01+g02)
+!       call structure_factor_recip(q2,nsubgrid,subgrid,subgrid_weights,sf,dsf)
+!       write(*,'(a,i3,99(1x,f9.4))')'SF check for i,sf,dsf,ggrid_red(i)=',i,q2,sf,dsf &
+! &              ,matmul(transpose(prim_to_cart),q2)/(2*pi)
+!       call structure_factor_recip(q2,nrgrid,rgrid,rws_weights,sf,dsf)
+!       write(*,'(a,i3,99(1x,f9.4))')'SF check for i,sf,dsf,ggrid_red(i)=',i,q2,sf,dsf &
+! &              ,matmul(transpose(prim_to_cart),q2)/(2*pi)
+!enddo
 ! stop
-
-  if(fc2flag.eq.0) then  ! calculate the default # of shells of FC2 based on largest supercell
-
-     call update_nshells2(nrgrid,rgrid)
-     write(ulog,*)'fc2flag=0; use largest WS; nshells2 updated to ',nshells(2,1:6)
-
-  endif
-
-
-
 ! define the dimensions of the FC arrays, for each rank if include_fc.ne.0
 ! collects identical force_constants in groups of shells, identifies the irreducible ones and
 ! finds the mapping between the irreducible ones and all FCs in that group
-  call setup_maps
 ! inputs: outputs of force_constants_init: iatomop etc...
 ! outputs: map structure including for rank, the groups of indep FCs and the full FCs
 ! maxterms, nshells, ngroups, nterms, estimate of inv_constraints, nindepfc
+  call setup_maps
 
   write(ulog,*)"rank, indep FC terms , total FC terms , # of groups "
   do rank=1,maxrank
@@ -294,7 +250,7 @@ real tim
         open(iunit,file=fni,status='old')
 ! this rank is to be read and is not included in svd extraction
         ngrnk(rank)=map(rank)%ntotind; allocate(fcrnk(rank,ngrnk(rank)))
-        call read_fcs_2(iunit,fn,rank,fcrnk(rank,:),ngrnk(rank))
+        call read_fcs(iunit,fn,rank,fcrnk(rank,:),ngrnk(rank))
      endif
   endif
   enddo
@@ -305,14 +261,23 @@ real tim
 ! before imposing the constraints, first define the number of columns in matrix A
  allocate(keep_fc2i(map(2)%ntotind))  ! which indep fc2s to keep based on the vectors rws26
 ! keep_fc2i(i)=1 is the list of FC2s within WS of supercell defined by 2ws26
-! find the FC2s within the SC and their number, which is size_kept_fc2
+! find the FC2s within the SC and their number, which is size_kept_fc2, 
+!! by K1 on July 21 2024
+! complete by symmetry, but remove anything that goes beyond WS cell of the superell
+!! by K1 on July 21 2024
 
-  if(fc2flag.eq.0) then
-     call setup_FC2_in_supercell !(keep_fc2i,size_kept_fc2)
-  else  ! use the default values found by setup_maps
+   do i=1,26
+      call write_out(ulog,' rws26 ',rws26(:,i))
+   enddo
+   if(fc2flag.eq.0) then ! determine the range from the supercell WS 
+      call setup_FC2_in_supercell !(keep_fc2i,size_kept_fc2)
+   else  ! use the default values found by setup_maps and the required shell numbers; exclude if range is above supercell
       keep_fc2i=1  ! keep everything
-      size_kept_fc2=map(2)%ntotind !sum(keep_fc2i)  not sum of the groups but sum of all rnk2 indep terms
-  endif
+      call exclude_beyond_sc(map(2)%ntotind,keep_fc2i)
+      size_kept_fc2= sum(keep_fc2i) ! not sum of the groups but sum of all rnk2 indep terms
+   endif
+
+ call write_springs
 
 ! calculate the new nindepfc based on keep_fc2i
 ! write(ulog,*)' new ngr(fc2) based size_kept_fc2=',map(2)%ngr-sum(map(2)%ntind)+size_kept_fc2
@@ -333,7 +298,7 @@ real tim
  enddo
  write(ulog,*)' MAIN: total # of independent FCs of all rank, nindepfc=',nindepfc
 
-! update map(2)%mat by setting the weight of non-kept fcs to zero
+!  map(2)%mat set to zero if (g,ti) not kept 
  do g=1,map(2)%ngr
  do ti=1,map(2)%ntind(g)
      write(ulog,*)'g,ti,counter,keep,current=',g,ti,counter2(g,ti),keep_fc2i(counter2(g,ti)),current2(g,ti)
@@ -453,6 +418,7 @@ real tim
       call write_out(ulog,'TEMP: SVD solution before kernel projection',xout)
       call project_on(dim_ac,nkernel,xout,kernelbasis(1:dim_ac,1:nkernel),fcs)
       deallocate(kernelbasis,mat,qmat)
+
   else
 
       if(enforce_inv.eq.1) then 
@@ -587,7 +553,7 @@ real tim
         write(ulog,*)'=================== Reading supercell #',i,'========================'
         poscar='POSCAR'//xt
         call read_supercell(poscar) ! equilibrium atomic positions in supercell from POSCARi
-        call write_supercell
+        call write_supercell(i)
 
         call make_r0g
 

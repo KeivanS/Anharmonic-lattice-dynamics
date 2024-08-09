@@ -1,0 +1,35 @@
+0      tolerance for equating to zero (2d-3)   # if 0 take the default value
+0      svd cutoff value for inversion/regularization (1d-10)
+0      cutoff for how many cells away (7 cells)
+0      maxterms(1)=40
+0      maxterms(2)=4000 
+0      maxterms(3)=5000 
+0      maxterms(4)=3000 
+0      maxterms(5)=3
+0      maxterms(6)=3
+0      maxterms(7)=3
+0      maxterms(8)=3
+0      maxtermzero(1)=20 
+0      maxtermzero(2)=1000 
+0      maxtermzero(3)=5000 
+0      maxtermzero(4)=3000 
+0      maxtermzero(5)=1
+0      maxtermzero(6)=1
+0      maxtermzero(7)=1
+0      maxtermzero(8)=1
+0      maxtermsindep(1)=10 
+0      maxtermsindep(2)=150 
+0      maxtermsindep(3)=150 
+0      maxtermsindep(4)=300 
+0      maxtermsindep(5)=1
+0      maxtermsindep(6)=1
+0      maxtermsindep(7)=1
+0      maxtermsindep(8)=1
+0      maxgroups(1)=10 
+0      maxgroups(2)=100 
+0      maxgroups(3)=150 
+0      maxgroups(4)=300 
+0      maxgroups(5)=1
+0      maxgroups(6)=1
+0      maxgroups(7)=1
+0      maxgroups(8)=1

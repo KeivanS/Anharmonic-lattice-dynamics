@@ -64,7 +64,7 @@
     read(uio,*) nkdir  ! number of kpoints along each direction
     write(*,*)'reading ',nkdir
     read(uio,*) ndir  ! number of directions for the band structure
-    write(ubs,*)'reading units,nkdir,ndir=',units,nkdir,ndir
+    write(ubs,*)'# reading units,nkdir,ndir=',units,nkdir,ndir
     write(ubs,*)'# k_name , k in primitive, k in gconv units, k in cartesian '
     nkp_bs = ndir*nkdir    ! +1 is for including the last point
     write(*,*)'reading nkp_bs= ',nkp_bs
@@ -91,7 +91,7 @@
           kf(:,i)=q
 
 ! conventional reduced and primitive
-          write(ubs,9)kname_bs(i),i, k_prim,k_conv,k_cart
+          write(ubs,9)'# '//kname_bs(i),i, k_prim,k_conv,k_cart
 
        else  ! reading in units of primitive
           q=kext_bs(:,i)
@@ -104,7 +104,7 @@
           k_conv=matmul(transpose(conv_to_cart),k_cart)/2/pi
 
 ! conventional reduced and primitive
-          write(ubs,9)kname_bs(i),i, kext_bs(:,i),k_conv,k_cart
+          write(ubs,9)'# '//kname_bs(i),i, kext_bs(:,i),k_conv,k_cart
 
        endif
     enddo
@@ -113,15 +113,15 @@
     if(units.eq.0) then ! reading in units of conventional
           k_cart=kext_bs(1,i)*g1conv+kext_bs(2,i)*g2conv+kext_bs(3,i)*g3conv
           k_prim=matmul(transpose(prim_to_conv),kext_bs(:,i))
-          write(ubs,9)kname_bs(i),i, k_prim,kext_bs(:,i),k_cart
+          write(ubs,9)'# '//kname_bs(i),i, k_prim,kext_bs(:,i),k_cart
     else
           k_cart=kext_bs(1,i)*g01+kext_bs(2,i)*g02+kext_bs(3,i)*g03
           k_conv=matmul(transpose(conv_to_cart),k_cart)/2/pi
-          write(ubs,9)kname_bs(i),i, kext_bs(:,i),k_conv,k_cart
+          write(ubs,9)'# '//kname_bs(i),i, kext_bs(:,i),k_conv,k_cart
     endif
 
     close(uio)
-    close(ubs)
+!   close(ubs)
 
   9 format(a,i4,9(1x,f9.5))
 
@@ -149,6 +149,7 @@
             dk_bs(nk) = 0 !dk_bs(nk-1)
           endif
           kp_bs(:,nk) = ki(:,i) + (j-1)*q(:)/(nkdir-1+1d-8) + rand
+          write(ubs,7)nk, kp_bs(:,nk)
        enddo
        kext_bs(1,i+1)=real(dk_bs(nk))   ! here using kext_bs(1,:) as a dummy variable
     enddo
@@ -162,6 +163,7 @@
 !   write(88,*)'set xtics ( ',(kname_bs(i),dk(i),",",i=1,ndir+1),' )'
     write(88,*)'set xtics ( ',(kname_bs(i),dk(i),",",i=1,ndir),kname_bs(ndir+1),dk(ndir+1),' )'
     close(88)
+    close(ubs)
 
     deallocate(ki,kf,kname_bs)
 3   format(9(2x,f10.4))
@@ -237,6 +239,7 @@
 ! a mesh N(1),N(2),N(3), this subroutine finds the three indices of q
 ! and its number nk based on the triple loop
 ! nk=0 do i=0,N(1)-1 ; do j=0,N(2)-1; do k=0,N(3)-1; nk=nk+1 ;q=i*G1/N1+j*G2/N2+k*G3/N3
+! it works even if q is outside because get_components finds i,j,k in the FBZ
  use geometry
  implicit none
  integer, intent(in):: N(3)
@@ -295,6 +298,54 @@
 ! write(*,*)'the corresponding nk=',nk
 
  end subroutine get_k_info_cent
+!----------------------------------------------
+ subroutine get_k_info2(q,N,nk,i,j,k,inside)
+! scans the kpoints to identify the index of the input q
+! also works is outside of the FBZ cell
+ use geometry
+ use params, only : tolerance
+ use constants, only : pi
+ use ios
+ use lattice, only : prim_to_cart,cart_to_prim
+ implicit none
+ integer, intent(in):: N(3)
+ real(r15), intent(in):: q(3)
+ integer, intent (out) :: nk,i,j,k,inside
+ integer l,nq
+ real(r15) q2(3),bring_to_prim_cell_caa
+
+! first bring q in between 0 and g0i 
+ call unitcell(transpose(prim_to_cart)/(2*pi),transpose(cart_to_prim)*2*pi,q,q2)
+ write(*,4)'q =',q ,reduce_g(q)
+ write(*,4)'q2=',q2,reduce_g(q2)
+ inside=0
+ nk=0; 
+ loop: do l=1,nkc
+    if( length(q2-kpc(:,l)) .lt. tolerance ) then
+       nk=l
+       inside=1
+       exit loop
+    endif
+ enddo loop
+! write(*,*)'nkt=',nkt
+ if (inside.eq.1) then
+ ! assumed i=1,n1; j=1,n2; k=1,n3 so that nk = k + (j-1)*n3 + (i-1)*n2*n3
+    k=1+mod(nk-1,N(3))
+    j=1+mod((nk-k)/N(3),N(2))
+    i=1+(nk-k-(j-1)*N(3))/(N(2)*N(3))
+    nq = k + (j-1)*N(3) + (i-1)*N(2)*N(3)
+ !  if (nk.eq.0 .or. nq.ne.nk) then
+       write(ulog,3)'GET_K_INFO2: qpoint not found! nk,nq,i,j,k,q ',nk,nq,i,j,k,reduce_g(q),q
+ !     stop
+ !  endif
+ else
+   i=0;j=0;k=0;nk=0
+ endif
+
+3 format(a,5i4,9(1x,f10.4))
+4 format(a,9(1x,f10.4))
+
+ end subroutine get_k_info2
 !----------------------------------------------
  subroutine get_k_info3(q,nkt,exists) 
 ! scans the kpoints to identify the index of the input q

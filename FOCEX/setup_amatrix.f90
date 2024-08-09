@@ -1033,11 +1033,7 @@
                  enddo
 
                  if ( include_fc(rnk) .eq. 1 ) then
-!                   if(rnk.eq.2) then
-!                      afrc(line,ired)=afrc(line,ired) + ux(ired)*map(rnk)%gr(g)%mat(t,ti)*keep_grp2(counter2(g,ti))
-!                   else
-                       afrc(line,ired)=afrc(line,ired) + ux(ired)*map(rnk)%gr(g)%mat(t,ti)
-!                   endif
+                    afrc(line,ired)=afrc(line,ired) + ux(ired)*map(rnk)%gr(g)%mat(t,ti)
                  elseif ( include_fc(rnk) .eq. 2 ) then
                     bfrc(line)=bfrc(line) - ux(ired) * fcs(ired)
                  endif

@@ -1,7 +1,7 @@
 !=====================================
 
  module ewald
- use constants, only : r15,pi
+ use constants, only : r15,pi,ci
  integer nr_ewald,ng_ewald
  real(r15), allocatable :: r_ewald(:,:),g_ewald(:,:)
  real(r15) rcutoff_ewa,gcutoff_ewa, eta
@@ -688,8 +688,8 @@
 !    if(tau.eq.taup) d3ew=d3ew - 4/3d0/sqrt(pi)*epsinv   !!! TO BE CHECKED !!!
     dhat=dhat* etaew*etaew*etaew/sqrt(det(epsil)) 
     d3ew=d3ew* etaew*etaew*etaew/sqrt(det(epsil)) 
-    write(6,*)'Last R-term(1,1)=',hout(1,1)*etaew*etaew*etaew/sqrt(det(epsil)) 
-    call write_out(6,'total of Rsum terms ',dhat)
+!   write(6,*)'Last R-term(1,1)=',hout(1,1)*etaew*etaew*etaew/sqrt(det(epsil)) 
+!   call write_out(6,'total of Rsum terms ',dhat)
 
 ! reciprocal space term  
     do igrid=1,ng
@@ -709,12 +709,13 @@
 !      if(igrid.eq.1) call write_out(6,'G=0 term of ewald ',hout*180.9557368)
     enddo
 !   write(*,3)'final EW2DERIV:dhat=',dhat
-    write(6,*)'Last G-term(1,1)=',hout(1,1)*4*pi/volume_r0 
+!   write(6,*)'Last G-term(1,1)=',hout(1,1)*4*pi/volume_r0 
 
     dhat=dhat /(4*pi*eps0)* ee*1d10
-    write(*,3)'final EW2DERIV:dhat_11 scaled by 1d10*ee/eps0=',dhat(1,1)
+!   write(*,3)'final EW2DERIV:dhat_11 scaled by 1d10*ee/eps0=',dhat(1,1)
 
-    d2ew=matmul(matmul(atom0(tau)%charge,dhat),transpose(atom0(taup)%charge))
+    d2ew=matmul(matmul(atom0(tau)%charge,dhat),transpose(atom0(taup)%charge)) * &
+&          exp(ci*(q.dot.(atom0(taup)%equilibrium_pos-atom0(tau)%equilibrium_pos)))  ! new phase convention
  !  do al=1,3
  !  do be=1,3
  !     do a2=1,3

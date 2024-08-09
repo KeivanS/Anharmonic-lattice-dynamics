@@ -86,8 +86,6 @@
 
       iatom = 0
  write(*,*) '************** entering findatom_sc2 with tau,n=',tau,n3
-!call write_out(6,'n_sc ',dble(n_sc))
-!call write_out(6,'invn_sc ',invn_sc)
       jloop: do j=1,natom_super_cell
  write(*,*)'FINDATOM_SC2:j_sc,tauj_sc,nj_sc=',j,atom_sc(j)%cell%tau,atom_sc(j)%cell%n
      !   cycle jloop
@@ -309,10 +307,6 @@
  g2=(r3 .cross. r1)/om
  g3=(r1 .cross. r2)/om
  om=abs(om)
-! call write_out(ulog,'om ',om)
-! call write_out(ulog,'g1 ',g1)
-! call write_out(ulog,'g2 ',g2)
-! call write_out(ulog,'g3 ',g3)
 
  end subroutine make_reciprocal_lattice_v
 !===============================================================
@@ -335,10 +329,6 @@
  g2=2*pi*(r3 .cross. r1)/om
  g3=2*pi*(r1 .cross. r2)/om
  om=abs(om)
-! call write_out(ulog,'om ',om)
-! call write_out(ulog,'g1 ',g1)
-! call write_out(ulog,'g2 ',g2)
-! call write_out(ulog,'g3 ',g3)
 
  end subroutine make_reciprocal_lattice_2pi
 !==========================================================
@@ -641,7 +631,7 @@
  end subroutine get_direct_components
 !============================================================
  subroutine comp1(q,rr,n,i,insid)
-! inside would be =1 if 0<q<1
+! inside would be =1 if 0=<q<1
  use constants, only : r15
  use geometry
  implicit none
@@ -696,7 +686,6 @@
 7 format(a,i5,9(1x,g12.5))
  end subroutine comp_c
 !============================================================
-! subroutine get_components_g(q,n,i,j,k,gg1,gg2,gg3,inside)
  subroutine get_components_g(q,n,i,j,k,inside)  ! g's  are primitive g0i
 ! for a given q-vector, it finds its integer components assuming it was
 ! created as: q=(i-1)/n1*g1 + (j-1)/n2*g2 + (k-1)/n3*g3; i=1,n1 j=1,n2 k=1,n3
@@ -709,17 +698,11 @@
  use constants, only : pi,r15
  implicit none
  real(r15), intent(in):: q(3)
-! type(vector),intent(in):: gg1,gg2,gg3
-! type(vector)rx1,rx2,rx3
  integer, intent(in):: n(3)
  integer, intent(out):: i,j,k,inside
  real(r15) i2pi
 
  i2pi=1d0/(2*pi)
-! call make_reciprocal_lattice(g1,g2,g3,rr1,rr2,rr3)
-! i = nint(1+ n(1)* q.dot.r1)
-! j = nint(1+ n(2)* q.dot.r2)
-! k = nint(1+ n(3)* q.dot.r3)
 ! if q.dot.r is larger than 1, we want to have its fractional part
  inside = 1
 
@@ -1447,7 +1430,7 @@
  integer i1,i2,i3,m,cnt,ns,nboundary,nbtot
  logical insid
  type(vector) b01,b02,b03,b1,b2,b3
- real(r15) v(3),omx,omx0,tol,matr(3,3),y1,y2,y3 
+ real(r15) v(3),omx,omx0,tol,matr(3,3),y1,y2,y3 ,gmax
  integer, allocatable :: save_boundary(:)
  real(r15), allocatable :: aux(:,:),grd(:,:)
  real(r15), allocatable :: weig(:)
@@ -1473,51 +1456,52 @@
  call calculate_volume(b1,b2,b3,omx)
  call calculate_volume(b01,b02,b03,omx0)
  ns=nint(omx/omx0)
- write(ulog,4)' grid size with Bs ,om0,om=',ns,omx0,omx
+ write(ulog,6)' grid size with Bs ,om0,om=',ns,ngrd,omx0,omx
 
  call calculate_volume(x1,x2,x3,omx)
  call calculate_volume(x01,x02,x03,omx0)
  ns=nint(omx/omx0)
- write(ulog,4)' grid size with Xs ,om0,om=',ns,omx0,omx
+ write(ulog,6)' grid size with Xs ,om0,om=',ns,ngrd,omx0,omx
 
 ! this is an upperbound to the points inside and on the WS boundaries
  ns=ns+nint(6*ns**0.67+12*ns**0.3333+8 )
 
-! aux contains the grid vectors inside or on the boundary
+ m=maxval(abs(n_sc))
+ write(ulog,*)' upper index to loop over to create grid =',m
+ ns = (2*m+1)**3
  allocate(aux(3,ns))
-! allocate(i1p(2),i2p(2),i3p(2))
- write(ulog,*)' allocated grid size, including boundary points=',ns
+ write(ulog,*)' allocated grid size, including boundary points=',(2*m+1)**3
+! aux contains the grid vectors inside or on the boundary
 
 ! create the grid within the WS supercell xi
- m=nint(ns**0.3333)+2 !1+floor(length(sx(:,26))/length(sx(:,1))/2) ! ratio of the longest to smallest lengths
  cnt=0
- write(ulog,*)' upper index to loop over to create grid =',m
- i1loop: do i1=-m,m
- do i2=-m,m
- i3loop: do i3=-m,m
+ i1loop: do i1= -m,m !-int(length(x1)/length(x01)),nint(length(x1)/length(x01))
+ do         i2= -m,m
+ i3loop: do i3= -m,m
 
 ! generate a grid of vectors from primitive translations x0i
-!    v= v2a(dble(i1)*b01 + dble(i2)*b02 + dble(i3)*b03)
     v= v2a(dble(i1)*x01 + dble(i2)*x02 + dble(i3)*x03)
 
 ! see if v is in the WS cell; throw away v outside of WS cell
-    call check_inside_ws(v,sx,insid)
-
+!   write(*,4)'* trying vector ',cnt,i1,i2,i3,v,matmul(matr,v)
+    call check_inside_ws(v,sx,insid,nboundary)
+!   if(insid) then
+!      write(*,4)' inside vector ',cnt,i1,i2,i3
+!   else
+!      cycle
+!   endif
 ! skip if it is outside
     if (.not. insid) cycle i3loop
 
 ! take only those points inside or on the boundary of WS (corresponding to in=1)
     cnt=cnt+1
-    write(*,4)'* New vector ',cnt,v,matmul(matr,v)
+    write(*,4)'* New vector ',cnt,i1,i2,i3,v,matmul(matr,v)
     aux(:,cnt)=v
     if(cnt.eq.ns) then
        write(*,*)'Max size of aux reached ',cnt,ns,' stopping the loop!'
        write(ulog,*)'Max size of aux reached ',cnt,ns,' stopping the loop!'
        stop !exit i1loop
     endif
-  !  i1p(cnt)=i1
-  !  i2p(cnt)=i2
-  !  i3p(cnt)=i3
 
  enddo i3loop
  enddo
@@ -1546,7 +1530,7 @@
  do cnt=1,ngrd
 
 ! identify vectors on the boundary
-    call is_on_boundary(grd(:,cnt), sx,nboundary,tol)  ! nboundary=on how many facets
+    call is_on_boundary(grd(:,cnt), sx,nboundary,tolerance)  ! nboundary=on how many facets;=0 means not on boundary
     if(nboundary.ne.0) then
        save_boundary(cnt)=nboundary
        nbtot=nbtot+1
@@ -1557,7 +1541,6 @@
  write(ulog,6)'CHECK: sum of saveboundary=',nbtot,sum(save_boundary)
 
  call find_ws_weights(ngrd,grd,save_boundary,sx,weig)
-
 
  if(space.eq.'r' .or. space.eq.'R') then
     if (allocated(rgrid)) deallocate(rgrid)
@@ -1576,7 +1559,16 @@
     endif
     open(98,file='rgrid_raw.xyz')
     open(99,file='rgridWS.xyz')
-    matr=cart_to_prim
+!   matr=cart_to_prim
+    call show_ws_boundary(v2a(x1),v2a(x2),v2a(x3),sx,17,'WSR_boundary.xyz',lgridmax) 
+
+    do cnt=1,ngrd
+       write(98,8)"Si ",grd(:,cnt),weig(cnt),matmul(matr,grd(:,cnt)),cnt,save_boundary(cnt)
+       write(99,7)"Si ",grd(:,cnt),matmul(matr,grd(:,cnt))
+    enddo
+    close(98)
+    close(99)
+    write(ulog,*)'lgridmax=',lgridmax
 
  elseif(space.eq.'g' .or. space.eq.'G') then
     if (allocated(ggrid)) deallocate(ggrid)
@@ -1591,93 +1583,188 @@
     write(ulog,*)'Gweights normalizartion is ',sum(weig) !(1:ngrd))
     open(98,file='ggrid_raw.xyz')
     open(99,file='ggridWS.xyz')
-    matr=transpose(prim_to_cart)/(2*pi)
+!   matr=transpose(prim_to_cart)/(2*pi)
+    call show_ws_boundary(v2a(x1),v2a(x2),v2a(x3),sx,17,'WSG_boundary.xyz',gmax) 
+
+    write(98,8)"# name ,grid(cnt),weig(cnt),grid_red(cnt),cnt,save_boundary(cnt)"
+    write(99,*)ngrd+26+8
+    write(99,*)"# name, cartesian grid, reduced grid "
+    do cnt=1,ngrd
+       write(98,8)"Si ",grd(:,cnt),weig(cnt),matmul(matr,grd(:,cnt)),cnt,save_boundary(cnt)
+       write(99,7)"Si ",grd(:,cnt),matmul(matr,grd(:,cnt))
+    enddo
+    do cnt=1,26
+       write(99,7)"Bi ",sx(:,cnt), matmul(matr,sx(:,cnt))
+    enddo
+    write(99,*)'Ge   0 0 0 '
+    write(99,7)'Ge ',x01
+    write(99,7)'Ge ',x02
+    write(99,7)'Ge ',x03
+    write(99,7)'Ge ',x01+x02
+    write(99,7)'Ge ',x03+x01
+    write(99,7)'Ge ',x03+x02
+    write(99,7)'Ge ',x03+x01+x02
+    close(98)
+    close(99)
 
  endif
-
- write(99,*)ngrd+26+8
-! write(98,*)ngrd
- write(99,*)" name, cart, red "
-! write(98,*)" name, cart, weight , red , count, save_boundary"
- do cnt=1,ngrd
-    write(98,8)"Si ",grd(:,cnt),weig(cnt),matmul(matr,grd(:,cnt)),cnt,save_boundary(cnt)
-    write(99,7)"Si ",grd(:,cnt),matmul(matr,grd(:,cnt))
- enddo
- close(98)
- do cnt=1,26
-    write(99,7)"Bi ",sx(:,cnt), matmul(matr,sx(:,cnt))
- enddo
- write(99,*)'Ge   0 0 0 '
- write(99,7)'Ge ',x01
- write(99,7)'Ge ',x02
- write(99,7)'Ge ',x03
- write(99,7)'Ge ',x01+x02
- write(99,7)'Ge ',x03+x01
- write(99,7)'Ge ',x03+x02
- write(99,7)'Ge ',x03+x01+x02
- close(99)
 
  deallocate(grd,save_boundary,weig)
 
  write(ulog,*) ' EXITING make_grid_weights_WS'
 
-!weights=0d0; weights(1:ngrd)=1 ; grid(:,1:ngrd)=grd(:,ngrd)
-!do cnt=1,ngrd
-!   v=grd(:,cnt)
-!   if (save_boundary(cnt).eq.1) then ! take vectors on the WS boundary
-
-! find reduced coordinates of vector v on the grid v=sum_i ai*xi
-!         vred(1) = v .dot. y1
-!         vred(2) = v .dot. y2
-!         vred(3) = v .dot. y3
-!         call get_allstars_k(vred,primitivelattice,narms,kvecstar,kvecop)
-!         write(97,4)'***** narms for vred,v=',narms,vred,v
-!         do i1=1,narms
-!            write(97,3)i1,kvecstar(:,i1)
-!         enddo
-
-! count how many of the stars are a grid vector on the boundary differing by a xi
-!         i3=0  ! counts the boundary stars which are also on the grid
-!         armloop: do i1=1,narms
-
-!            w= v2a(kvecstar(1,i1)*x1+kvecstar(2,i1)*x2+kvecstar(3,i1)*x3)
-!            call find_in_array(w,ngrd,grd,i2,1d-5)
-!            if(i2.eq.0) cycle ! the star #i1 must also be grid vector
-!              if(save_boundary(i2).eq.1) then  ! it is also on the boundary
-
-! check the difference and count if the difference is a xi vector (work with reduced)
-!                  wred=kvecstar(:,i1)-vred  ! this is reduced coords
-
-!         do k=1,3
-!           n=nint(wred(k))
-!           if(ncmp(wred(k)-n).ne.0)cycle armloop ! if wred non-integer skip to next arm
-!           if(k.eq.3) then
-!              i3=i3+1
-!              cycle armloop  ! goto next sym_op iff v3=integer : i.e. G-vector
-!           endif
-!         enddo
-
-!              endif
-
-!         enddo armloop
-
-! the weight should be the inverse of the number of arms in the grid which differ by a G
-!         weights(cnt)=(1d0)/i3
-!         write(ulog,6)'cnt,# of stars, v, boundary, weight:',cnt,i3,v,vred,weights(cnt)
-!   endif
-
-!   write(99,3)cnt,weights(cnt),v, vred
-!enddo
-
-2 format(9(1x,f10.5))
+2 format(9(1x,f10.4))
 3 format(i5,1x,f8.5,3x,3(1x,g10.3),3x,3(1x,f8.4))
-4 format(a,i5,9(1x,f13.5))
-5 format(3(1x,f10.5),i3,1x,g11.4)
+4 format(a,i5,2x,3i2,2x,9(1x,f13.5))
+5 format(3(1x,f10.4),i3,1x,g11.4)
+6 format(a,2i5,99(1x,f10.4))
+7 format(a,9(1x,f10.4))
+8 format(a,7(1x,f10.4),3i5)
+
+ end subroutine make_grid_weights_WS
+!============================================================
+ subroutine make_subrgrid(n,grd,sx,nsub)
+!! makes a subgrid of the translations grd that has the full symmetry of the crystal
+ use fourier
+ use geometry
+ use params, only : tolerance
+ use lattice, only : cart_to_prim
+ use ios, only : ulog,write_out
+ use atoms_force_constants , only : lattpgcount, op_matrix
+ implicit none
+ integer, intent(in) :: n
+ integer, intent(out) :: nsub
+ real(r15), intent(in) :: grd(3,n),sx(3,26)
+ real(r15), allocatable :: subg(:,:)
+ integer, allocatable :: save_boundary(:)
+ real(r15) v(3)
+ integer i,j,k,g,nboundary,nbtot
+ logical belongs,is_sub
+
+ allocate(subg(3,n))
+ nsub=0
+ gridloop: do g=1,n
+   !  write(ulog,6)'rgrid vectors ',n,g, grd(:,g)
+! make sure all arms of grd are in the grd set
+      is_sub=.false.
+      iloop: do i=1,lattpgcount
+! apply symmetry operation to grd
+!call write_out(ulog,'op_matrix ',op_matrix(:,:,i))
+        v=matmul(op_matrix(:,:,i),grd(:,g))
+        belongs=.false.
+        kloop: do k=1,n
+           if(length(v-grd(:,k)).lt.tolerance) then  ! arm belongs to the set, OK!
+              belongs=.true.
+ !    write(ulog,6)'g,k,v=',g,k,v
+              exit kloop
+           endif
+        enddo kloop
+        if (belongs) then ! try other point group operations 
+           cycle iloop
+        else
+           cycle gridloop
+        endif
+      enddo iloop
+      is_sub=.true. ! all point group symmetries mapped grd to another grd
+      nsub=nsub+1
+      subg(:,nsub)=grd(:,g)
+ enddo gridloop
+  
+! now find the weights
+ allocate(subgrid(3,nsub),save_boundary(nsub),subgrid_weights(nsub))
+ subgrid = subg(:,1:nsub)
+ deallocate(subg)
+ save_boundary=0
+ subgrid_weights=1
+ nbtot=0
+ do g=1,nsub
+! identify vectors on the boundary
+    call is_on_boundary(subgrid(:,g),sx,nboundary,tolerance)  ! nboundary=on how many facets;=0 means not on boundary
+    if(nboundary.ne.0) then
+       save_boundary(g)=nboundary
+       nbtot=nbtot+1
+    endif
+    write(ulog,6)'i,on how many boundaries, subgrid(i), subgrid_reduced ',g,nboundary,subgrid(:,g),matmul(cart_to_prim,subgrid(:,g))
+ enddo
+ write(ulog,*)'Of ',nsub,' subgrid points ',nbtot,' are on the boundary'
+ write(ulog,6)'CHECK: sum of sub_ saveboundary=',nbtot,sum(save_boundary)
+! now find the weight of subg set
+ call find_ws_weights(nsub,subgrid,save_boundary,sx,subgrid_weights)
+ subgrid_weights=subgrid_weights/sum(subgrid_weights(1:nsub))
+
+    open(98,file='subgrid_raw.xyz'); 
+    open(99,file='subgridWS.xyz')
+    do g=1,nsub
+       write(98,8)"Si ",subgrid(:,g),subgrid_weights(g),matmul(cart_to_prim,subgrid(:,g)),g,save_boundary(g)
+       write(99,7)"Si ",subgrid(:,g),matmul(cart_to_prim,subgrid(:,g))
+    enddo
+    close(98); close(99)
+
+ deallocate(save_boundary)
+
 6 format(a,2i5,99(1x,f10.5))
 7 format(a,9(1x,f12.5))
 8 format(a,7(1x,f12.5),3i5)
+ 
+ end subroutine make_subrgrid
+!============================================================
+ subroutine find_cutoff_from_largest_SC (volmax,rmax,r1,r2,r3,rshells)
+!! scans over all available supercell POSCARs and picks the one with
+!! largest volume, and check its consistency with the primitive cell
+ use params, only : fdfiles
+ use ios   , only : ulog
+ use lattice, only : volume_r,cart_to_prim
+ use constants, only : r15
+ use atoms_force_constants , only : natom_super_cell,atom_sc
+ use geometry, only : vector ,v2a,a2v
+ implicit none
+! integer, intent(out) :: imax  ! index of largest supercell
+ real(r15), intent(out) :: r1(3),r2(3),r3(3),volmax,rmax,rshells(3,26)
+ real(r15) volum,rm1(3),rm2(3),rm3(3),lmax,sx(3,26)
+ type(vector) v1,v2,v3
+ integer i,imx
+ character xt*1,poscar*7
 
- end subroutine make_grid_weights_WS
+     volmax=0;rmax=0             !  pick the SC with largest length rmax
+     do i=1,fdfiles
+        write(xt,'(i1)')i
+        poscar='POSCAR'//xt
+! read the atomic coordinates of atoms in supercell (at equilibrium) from POSCAR
+        call read_supercell_vectors(poscar,volum,r1,r2,r3) 
+        call cube(r1,r2,r3,sx)
+        call show_ws_boundary(r1,r2,r3,sx,13,'transl.xyz',lmax) 
+        write(ulog,*) 'supercell ',i,' read, rmax,volume=',lmax,volum
+        if(lmax.gt.rmax) then
+          imx=i
+          rmax=lmax; rm1=r1; rm2=r2; rm3=r3
+        endif
+     end do
+!    call get_26shortest_shell(rm1,rm2,rm3,rshells,r1,r2,r3)
+     call get_26shortest_shell(a2v(rm1),a2v(rm2),a2v(rm3),rshells,v1,v2,v3)
+     r1=v2a(v1);r2=v2a(v2);r3=v2a(v3)
+     write(ulog,*)'FIND_CUTOFF_FROM LARGEST_SC: rmax=',rmax
+
+ end subroutine find_cutoff_from_largest_SC
+!============================================================
+ subroutine cube(r1,r2,r3,sx)
+ use constants, only : r15
+ implicit none
+ real(r15), intent(in) :: r1(3),r2(3),r3(3)
+ real(r15), intent(out) :: sx(3,26)
+ integer i,j,k,cnt
+
+ cnt=0
+ do i=-1,1
+ do j=-1,1
+ do k=-1,1
+    if (i*i+j*j+k*k .eq.0) cycle
+    cnt=cnt+1
+    sx(:,cnt)=i*r1+j*r2+k*r3
+ enddo
+ enddo
+ enddo
+
+ end subroutine cube
 !============================================================
  subroutine find_WS_largest_SC(imax,volmax)
 !! scans over all available supercell POSCARs and picks the one with
@@ -1710,6 +1797,7 @@
         endif
 
      enddo
+
      write(ulog,*) 'largest volume is found for ',i,' th supercell; volmax=',volmax
 
 ! work with this POSCAR
@@ -1717,79 +1805,73 @@
      poscar='POSCAR'//xt
      call read_supercell(poscar)
 
- open(745,file='supercell.xyz')
- write(745,*) natom_super_cell
- write(745,*)' name, x , y , z , i,tau,n(3), jatompos, reduced coordinates '
- do i=1,natom_super_cell
-! name has not been assigned yet
-   write(745,7)"Si ",atom_sc(i)%equilibrium_pos,i,atom_sc(i)%cell%tau,atom_sc(i)%cell%n  &
-&      ,atom_sc(i)%cell%atomposindx,matmul(cart_to_prim,v2a(atom_sc(i)%equilibrium_pos))
- enddo
- close(745)
+! open(745,file='supercell.xyz')
+! write(745,*) natom_super_cell
+! write(745,*)' name, x , y , z , i,tau,n(3), jatompos, reduced coordinates '
+! do i=1,natom_super_cell
+!! name has not been assigned yet
+!   write(745,7)'Si ',atom_sc(i)%equilibrium_pos,i,atom_sc(i)%cell%tau,atom_sc(i)%cell%n  &
+!&      ,atom_sc(i)%cell%atomposindx,matmul(cart_to_prim,v2a(atom_sc(i)%equilibrium_pos))
+! enddo
+! close(745)
 
 7 format(a,3(1x,f12.5),i5,i3,'(',3i2,')',i5,3(1x,f6.3))
      call check_input_poscar_consistency_new
 
  end subroutine find_WS_largest_SC
 !========================================
- subroutine update_nshells2(ng,grd) 
-!! finds the longest vector in grd(3,ng) and resets nshells(2,:) accordingly
+ subroutine update_nshells(ng,grd,lcut) 
+!! resets nshells(2,:) according to the rgrid vectors at the boundary of the WS of supercell
+!! if input range is larger than cutoff(SC) or if fc2flag=0, sets nshells(2,:) corresponding to that cutoff 
  use geometry
  use ios
-! use lattice, only : volume_r,volume_r0
+ use lattice, only : volume_r,volume_r0 
  use atoms_force_constants
- use params, only : nshells,lmax
+ use params, only : nshells !,lmax
  use constants, only : r15
  implicit none
-! type(vector), intent(in):: x01,x02,x03
  integer, intent(in):: ng
- real(r15), intent(in):: grd(3,ng)
+ real(r15), intent(in):: grd(3,ng),lcut
  integer i,shel_count,i0,shelmax(natom_prim_cell),shlmx
-! type(vector) b01,b02,b03,b1,b2,b3
- real(r15) rmx
 
-
-! find lmax, length of the longest vector in grid defined by grd
- lmax=0
- do i=1,ng
-    if( length(grd(:,i)) .gt. lmax  ) lmax = length(grd(:,i))
- enddo
- write(ulog,4)' LMAX=longest vector length in the grid is ',lmax
+!! find lmax, length of the shortest vector on the boundary of rgrid
+! lmax=0
+! do i=1,ng
+!    if( length(grd(:,i)) .gt. lmax  ) lmax = length(grd(:,i))
+! enddo
+ write(ulog,4)' UPDATING NSHELLS up to a cutoff length of ',lcut
 
 ! find shelmax, the largest shell
  shelmax=0
  do i0=1,natom_prim_cell
-    rmx=maxval(atom0(i0)%shells(:)%radius)
-    shlmx=atom0(i0)%nshells
-    write(*,*)'i0,shlmx,rmx=',i0,shlmx,rmx
-    write(ulog,*)'i0,shlmx,rmx=',i0,shlmx,rmx
+    shlmx=atom0(i0)%nshells ! is supposedly already too large (> lcut)
+    write(*,*)'i0,shlmx,lcut=',i0,shlmx,lcut
+    write(ulog,*)'i0,shlmx,lcut=',i0,shlmx,lcut
     shloop: do shel_count=0,shlmx
-!      if(rmx .myeq. atom0(i0)%shells(shel_count)%radius) then
-          write(ulog,*)'i0, shell_count,radius=',i0,shel_count,atom0(i0)%shells(shel_count)%radius
-       if( atom0(i0)%shells(shel_count)%radius .gt. lmax ) then
+!      write(ulog,*)'i0, shell_count,radius=',i0,shel_count,atom0(i0)%shells(shel_count)%radius
+       if( atom0(i0)%shells(shel_count)%radius .gt. lcut*1.001 ) then
           shelmax(i0)=shel_count
-!         write(ulog,*)'i0, lcutoff shell=',i0,shel_count
           exit shloop
        endif
-! did not reach lmax
+! did not reach lcut
        shelmax(i0)=shlmx
     enddo shloop
     write(ulog,*)'i0,shelmax(i0)=',i0,shelmax(i0)
  enddo
 
-! include all the shells up to distance lmax
+! include all the shells up to distance lcut
  do i0=1,natom_prim_cell
-    shell_loop: do shel_count = 0 , shelmax(i0) ! maxneighbors
-! we update nshells if lmax is reached, otherwise if lmax > rcut no update
-       if(lmax .myeq. atom0(i0)%shells(shel_count)%radius) then
-          nshells(2,i0) = shel_count+1
-          write(ulog,*)'UPDATE_NSHELLS: for atom ',i0,' the nshell is set to ',shel_count+1
+    shell_loop: do shel_count = 0 , shelmax(i0) 
+! we update nshells if lcut is reached, otherwise if lcut > rcut no update
+       if(lcut .myeq. atom0(i0)%shells(shel_count)%radius) then
+          nshells(2,i0) = shel_count
+          write(ulog,*)'UPDATE_NSHELLS: for atom ',i0,' the nshell is updated to ',shel_count 
           exit shell_loop
        else ! take the farthest shell available within rcut
           nshells(2,i0)=shelmax(i0)
        endif
     enddo shell_loop
-    atom0(i0)%nshells=shel_count+1
+    atom0(i0)%nshells=shel_count
  enddo
 
  write(ulog,5)' ****************************************'
@@ -1799,7 +1881,7 @@
 4 format(a,9(1x,f13.5))
 5 format(a,20(1x,i3))
 
- end subroutine update_nshells2
+ end subroutine update_nshells
 !==========================================================
  subroutine find_ws_weights(ngrd,grd,save_boundary,transl,weight)
 !! finds the # of times a point within FBZ is on its boundaries
@@ -1838,29 +1920,6 @@
  write(*,*)' sum of the weights=om/om0=',sum(weight)
 
  end subroutine find_ws_weights
-!===========================================================
- subroutine is_on_boundary(v,grid,indx,tolerance)
-!! checks whether the vector v is on the FBZ boundary within the tolerance
-!! where FBZ is defined by the grid(3,26)
-!! index is the number of boundaries to which v belongs
-!! index=0 means not on boundary
- use geometry
- use constants, only : r15
- implicit none
- real(r15), intent(in) :: v(3),grid(3,26),tolerance
- integer, intent(out) :: indx
- integer j
- real(r15) vgoverg2
-
- indx=0
- do j=1,26
-    vgoverg2 = 2 * dot_product(v,grid(:,j))/dot_product(grid(:,j),grid(:,j))
-    if ( abs(vgoverg2 - 1) .lt. tolerance) then
-       indx=indx+1
-    endif
- enddo
-
- end subroutine is_on_boundary
 !============================================================
  subroutine belongs_to_grid(v,n,grid,nj,tolerance)
 ! checks whether the vector v belongs to the array "grid" within the 1d-4;
@@ -2041,7 +2100,7 @@
  real(r15), intent(in):: gshel(3,26)
  real(r15), intent(in) :: q(3)
  real(r15), intent(out) :: qin(3)
- integer j
+ integer j,nboundary
  real(r15) leng,b1(3),b2(3)
  logical inside
 
@@ -2056,7 +2115,7 @@
 
 ! verify it is inside and the rest of 12 vectors do not change the answer
  inside= .false.
- call check_inside_ws(qin,gshel,inside)
+ call check_inside_ws(qin,gshel,inside,nboundary)
  write(ulog,5)' inside,q,q_red=',inside,qin, matmul(transpose(prim_to_cart),qin)/(2*pi) 
  if(.not. inside) then
     write(ulog,*)' now trying the remaining 12 vectors'  
@@ -2099,7 +2158,7 @@
       qin=matmul(cart_to_prim,b2)*2*pi  ! back to cartesian coords
 
  inside= .false.
- call check_inside_ws(qin,gshel,inside)
+ call check_inside_ws(qin,gshel,inside,nboundary)
  if(inside) then
     return 
  else
@@ -2121,7 +2180,7 @@
 !   endif
  enddo
 
- call check_inside_ws(qin,gshel,inside)
+ call check_inside_ws(qin,gshel,inside,nboundary)
  if(inside) then
     return
  else
@@ -2172,7 +2231,7 @@
  integer, intent(out) :: nbz,mapz(nk)
  real(r15), intent(in) :: kp(3,nk),gg(3,26)
  real(r15), intent(out) :: kz(3,nk)
- integer i,ns,j
+ integer i,ns,j,nboundary
  logical inside
  real(r15) qaux(3),dmin,dist
 
@@ -2182,7 +2241,7 @@
  do i=1,nk
  foldloop: do ns=1,26
      qaux = kp(:,i)+gg(:,ns)
-     call check_inside_ws(qaux,gg,inside)
+     call check_inside_ws(qaux,gg,inside,nboundary)
      if(inside) then
 ! make sure it is different from previous points: find smallest neighbor distance
         dmin = 1d9
@@ -2353,7 +2412,7 @@
 
  end subroutine get_short_rlatvecs
 !==========================================================
- subroutine get_weights3(nk,kp) !,nibz)
+ subroutine get_weights3(nk,kp ,mapibz)
 !! takes as input kp(3,nk) in cartesian and finds based on crystal symmetries, the
 !! weights associated with each kpoint, and then normalizes them
 !! nibz is the final number of kpoints stored in kibz in the irreducible BZ
@@ -2370,9 +2429,9 @@
  implicit none
  integer, intent(in):: nk
  real(r15), intent(in):: kp(3,nk)
-! integer, intent(out):: nibz
+ integer, intent(out):: mapibz(nk)
 ! real(r15), intent(out), allocatable :: kibz(:,:) ,wibz(:)
- integer, allocatable :: mcor(:),mapibz(:),mapinv(:)
+ integer, allocatable :: mcor(:),mapinv(:)
  real(r15), allocatable :: k2(:,:),lg(:),w2(:)
  real(r15) zro,q(3),kvecstar(3,48),sw,skc(3) !,k_corner(3)
  integer i,j,l,narms,kvecop(48),aux
@@ -2380,7 +2439,7 @@
 
  open(uibz,file='KPOINT.IBZ',status='unknown')
 
- allocate(k2(3,nk),w2(nk),mapibz(nk),mapinv(nk))
+ allocate(k2(3,nk),w2(nk),mapinv(nk))
  zro=0d0  ! shift
  write(ulog,*)'GET_WEIGHTS3: generating kpoints in the irreducible FBZ '
  write(*,*)'MAKE_KP_IBZ: nk,wk(nk),k2(:,nk)'
@@ -2405,9 +2464,9 @@
     exists=.False.
 
 !    call select_corner(narms,kvecstar(:,1:narms),k_corner)
-    lloop: do l=1,narms
+    armloop: do l=1,narms
 
-        if(verbose) write(ulog,4)'stars & red are:',l,kvecstar(:,l),reduce_g(kvecstar(:,l))
+        if(verbose) write(ulog,4)'stars & red are:',i,l,kvecstar(:,l),reduce_g(kvecstar(:,l))
 
 ! set weight for the first kpoint where nibz=0
         jloop: do j=1,nibz
@@ -2415,11 +2474,11 @@
              exists=.True.
              w2(j)=w2(j)+1d0
              mapibz(i)=j
-             exit lloop
+             exit armloop
           endif
         enddo jloop
 
-    enddo lloop
+    enddo armloop
 
 !   write(ulog,4)' kpoint, folded one  ',i,kp(:,i),exists,j,k2(:,j)
     if(exists ) then
@@ -2440,8 +2499,8 @@
 
        k2(:,nibz)=kp(:,i)
        q = reduce_g(k2(:,nibz))    ! to get it in reduced coordinates of g0i
-       write(ulog,4)'new vector*:',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz)),q
-       write(*   ,4)'new vector*:',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz)),q
+       write(ulog,4)'new vector*:',nibz,narms,w2(nibz),k2(:,nibz),length(k2(:,nibz)),q
+       write(*   ,4)'new vector*:',nibz,narms,w2(nibz),k2(:,nibz),length(k2(:,nibz)),q
 
     endif
 
@@ -2475,24 +2534,24 @@
 ! sort and write out the kpoints and their weights-------------------------
  write(uibz,*)'#i,kibz(:,i),wibz(i),kibz_reduced,length(kibz(i))'
  open(345,file='mapinv.dat')
- open(346,file='NEWKP.dat')
+! open(346,file='NEWKP.dat')
  write(345,*)'# i,mapinv(i)(i=1,nibz),mapibz(i)'
- write(346,*)'# i,        newkp(i)         newkp_reduced(i)'
+! write(346,*)'# i,        newkp(i)         newkp_reduced(i)'
  do i=1,nk !,nibz
     if(i.le.nibz) then
        j=mcor(i)
        write(uibz,3)i,kibz(:,j),wibz(j),reduce_g(kibz(:,j)),length(kibz(:,j))
     endif
     write(345,*)i,mapinv(i),mapibz(i)
-    write(346,3)i,kp(:,i),reduce_g(kp(:,i))
+!    write(346,3)i,kp(:,i),reduce_g(kp(:,i))
  enddo
  close(345)
- close(346)
+! close(346)
  close(uibz)
 
 2 format(3i7,2x,3(1x,f9.4),2x,f9.4,2x,3(1x,f9.5),3x,f14.8)
 3 format(i7,2x,3(1x,f9.4),2x,f9.5,2x,3(1x,f9.5),3x,f9.5)
-4 format(a,i7,2x,f9.5,2x,99(1x,f9.5))
+4 format(a,2i7,2x,f9.5,2x,99(1x,f9.5))
 5 format(a,2x,99(1x,f9.5))
 
  end subroutine get_weights3
@@ -2694,7 +2753,7 @@
  real(r15), allocatable:: aux(:,:)
  real(r15) q(3),nij(3,3),qred(3)
  type(vector) kred,rr1,rr2,rr3
- integer i,j,k,l,mxi,cnt,mxa
+ integer i,j,k,l,mxi,cnt,mxa,nboundary
  logical exists,inside
 
  mxi=7
@@ -2732,7 +2791,7 @@
  do j=-mxi,mxi
  do k=-mxi,mxi
     q=i*v2a(g1)+j*v2a(g2)+k*v2a(g3)
-    call check_inside_ws(q,gshells,inside)
+    call check_inside_ws(q,gshells,inside,nboundary)
     if(inside ) then
        write(ulog,5)"Q is inside; cnt ",cnt,q
 ! make sure it does not exist
@@ -2787,36 +2846,63 @@
 
  end subroutine K_mesh
 !===========================================================
- subroutine check_inside_ws(q,gshel,inside)
-!! checks if q is inside the the Wigner-Seitz cell defined by neighborshells
-!! vectors gshel, It is considered inside if on the WS facet/edge/vertex
+ subroutine is_on_boundary(v,grid,indx,tol)
+!! checks whether the vector v is on the FBZ boundary within the tolerance
+!! where FBZ is defined by the grid(3,26)
+!! index is the number of boundaries to which v belongs
+!! index=0 means not on boundary
  use geometry
- use constants
+ use constants, only : r15
  implicit none
-!integer, intent(out) :: inside
- logical, intent(out) :: inside
-! type(vector), intent(in):: g1,g2,g3
- real(r15), intent(in):: q(3),gshel(3,26)
- real(r15) qdotg,gg,sm
- integer i
+ real(r15), intent(in) :: v(3),grid(3,26),tol
+ integer, intent(out) :: indx
+ integer j
+ real(r15) vgoverg2
 
- sm = 1.001  ! a point on the boundary is also counted as inside
-
- inside = .false.
-
-! construct a lattice out of Gs and take the shortest vectors
-! this has to be modified for 1D or 2D systems or if one G is much larger than others
- do i=1,26
-
-    qdotg = ( q .dot. gshel(:,i))
-    gg = gshel(:,i) .dot. gshel(:,i)
-! check the Bragg condition |q.G| < G.G/2
-    if(abs(qdotg) .gt. gg/2d0 * sm) return  ! keep if on the border
-
+ indx=0
+ do j=1,26
+    vgoverg2 = 2 * dot_product(v,grid(:,j))/dot_product(grid(:,j),grid(:,j))
+    if ( abs(abs(vgoverg2) - 1) .lt. tol ) then
+       indx=indx+1
+    endif
  enddo
 
-! qdotg was smaller than all gg/2: q is therefore inside
+ end subroutine is_on_boundary
+!===========================================================
+ subroutine check_inside_ws(q,gshel,inside,nboundary)
+!! checks if q is inside the the Wigner-Seitz cell defined by neighborshells
+!! vectors gshel, It is considered inside if on the WS facet/edge/vertex
+! use geometry, only : dot
+ use ios, only : ulog
+ use constants, only : r15
+ implicit none
+ logical, intent(out) :: inside
+ integer, intent(out) :: nboundary
+ real(r15), intent(in):: q(3),gshel(3,26)
+ real(r15) qdotg,gg,tol
+ integer i
+
+ tol=0.002  ! a point on the boundary is also counted as inside
+
+ inside = .false.
+ nboundary = 0
+! write(ulog,*)'CHECK_INSIDE: q=',q
+
+! this has to be modified for 1D or 2D systems or if one G is much larger than others
+ do i=1,26
+    qdotg = dot_product(q,gshel(:,i))
+    gg    = dot_product(gshel(:,i),gshel(:,i))
+! write(ulog,4)'i,qdotg,gg/2=',i,qdotg,gg/2,gshel(:,i)
+! check the Bragg condition |q.G| < G.G/2
+    if(abs(qdotg) .gt. gg/2d0 * (1+tol)) return  ! exit if it is outside 
+ enddo
+
+! qdotg was smaller than ALL gg/2: q is therefore inside but not on boundary
  inside = .true.
+
+ call is_on_boundary(q,gshel,nboundary,tol)
+
+4 format(a,i6,9(1x,f11.4))
 
  end subroutine check_inside_ws
 !===========================================================
@@ -2830,7 +2916,7 @@
  type(vector), intent(in) :: gg1,gg2,gg3
  type(vector), intent(out):: x1,x2,x3  ! the 3 shortest vectors
  type(vector) xg1,xg2,xg3 
- real(r15)     , intent(out):: gshells(3,26)
+ real(r15) , intent(out):: gshells(3,26)
  real(r15) , allocatable :: aux(:,:),leng(:)
  integer , allocatable :: mcor(:)
  real(r15) junk,vol,gt(3),gmax,y1,y2,y3
@@ -3230,18 +3316,21 @@
  real(r15), intent(in) :: lat(3,n)
  character(*), intent(in) :: fn
  integer i
+ real(r15) r2pi
+
+ r2pi=(length(rs1)*length(rs2)*length(rs3))**0.67 /3.14 ! to rescale gs so that they are visible on the scale of rs 
 
  open(125,file=fn)
  write(125,*)n+15
- write(125,*)'supercell lattice'
+ write(125,*)'supercell lattice; rescaled G vectors followed by R-supercell vectors'
  write(125,*)'Ge   0 0 0 '
- write(125,4)'Ge ',gs1
- write(125,4)'Ge ',gs2
- write(125,4)'Ge ',gs3
- write(125,4)'Ge ',gs1+gs2
- write(125,4)'Ge ',gs3+gs1
- write(125,4)'Ge ',gs3+gs2
- write(125,4)'Ge ',gs3+gs1+gs2
+ write(125,4)'Ge ',r2pi*gs1 
+ write(125,4)'Ge ',r2pi*gs2
+ write(125,4)'Ge ',r2pi*gs3
+ write(125,4)'Ge ',r2pi*(gs1+gs2)
+ write(125,4)'Ge ',r2pi*(gs3+gs1)
+ write(125,4)'Ge ',r2pi*(gs3+gs2)
+ write(125,4)'Ge ',r2pi*(gs3+gs1+gs2)
  write(125,4)'Bi ',rs1
  write(125,4)'Bi ',rs2
  write(125,4)'Bi ',rs3
@@ -3444,7 +3533,7 @@
 
 !===========================================================
 subroutine sort3(n1,n2,n3,mp)
-!! sorts the 3 integers n1,n2,n3 in increasing order!!
+!! sorts the 3 integers n1,n2,n3 in increasing order!! that's stupid!
 implicit none
 integer n1,n2,n3,mp(3)
 
@@ -3720,7 +3809,7 @@ end subroutine sort3
  implicit none
  real(r15), intent(in) :: gs(3,26),qin(3)
  real(r15), intent(out):: qout(3)
- integer i
+ integer i,nboundary
  logical insid
 
  qout=qin
@@ -3733,11 +3822,52 @@ end subroutine sort3
     enddo
  enddo
 
- call check_inside_ws(qout,gs,insid) 
+ call check_inside_ws(qout,gs,insid,nboundary) 
  if(.not.insid) then
    write(*,*)'BRING_TO_WS ERROR: final q=',qout
    stop
  endif
  
  end subroutine bring_to_ws
+!============================================================
+ subroutine show_ws_boundary(r1,r2,r3,sx,m,fn,rmax) 
+!! for the 26 nearest vectors , generates a fine grid and outputs the points nearest to the WS cell boundary 
+!! m is the gridsize, fn is the output filename
+ use constants, only : r15
+ use geometry, only : length
+ use ios, only : ulog
+ implicit none
+ integer, intent(in) :: m 
+ real(r15), intent(in) :: sx(3,26),r1(3),r2(3),r3(3)
+ real(r15), intent(out) :: rmax
+ character(*), intent(in) :: fn
+ real(r15) x(3)
+ integer i,j,k,nb,iout,nboundary
+ logical insid
+
+ iout=567
+ open(iout,file=fn)
+ rmax=0
+ do i=-m,m
+ do j=-m,m
+ do k=-m,m
+    x= (i*r1+j*r2+k*r3)/(2d0*m)
+    call check_inside_ws(x,sx,insid,nboundary) 
+    if(insid .and. nboundary.gt.0) then
+          rmax=max(rmax,length(x))
+   !      write(*,*)'rmax,l(x)=',rmax,length(x)
+          write(iout,3)" Si ", x 
+    else
+       cycle
+    endif
+ enddo
+ enddo
+ enddo
+ close(iout)
+ write(ulog,*)'SHOW_WS_BOUNDARY generated ', nboundary,' points on the boundary with m=',m
+ write(ulog,*)'SHOW_WS_BOUNDARY rmax=',rmax
+3 format(a,9(1x,f9.4))
+4 format(5i4,9(1x,f9.4))
+
+ end subroutine show_ws_boundary
 

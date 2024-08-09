@@ -20,7 +20,7 @@
    read(uparams,*) svdcut    ! cutoff for smallest "eigenvalue" w to be included
    if(svdcut.eq.0) svdcut = 1d-10   ! default values
    read(uparams,*) icutoff    ! cutoff for neighborshells
-   if(icutoff.eq.0) icutoff = 10    ! default multiple of bond length; defines maxatoms
+   if(icutoff.eq.0) icutoff = 7     ! default multiple of bond length; defines maxatoms
    read(uparams,*) maxterms(1)
    if(maxterms(1).eq.0) maxterms(1)=40 !100
    read(uparams,*) maxterms(2)
@@ -40,7 +40,7 @@
    read(uparams,*) maxtermzero(1)
    if(maxtermzero(1).eq.0) maxtermzero(1)=20 !500
    read(uparams,*) maxtermzero(2)
-   if(maxtermzero(2).eq.0) maxtermzero(2)=1000 !2000
+   if(maxtermzero(2).eq.0) maxtermzero(2)=2000 !2000
    read(uparams,*) maxtermzero(3)
    if(maxtermzero(3).eq.0) maxtermzero(3)=5000!5000
    read(uparams,*) maxtermzero(4)
@@ -56,7 +56,7 @@
    read(uparams,*) maxtermsindep(1)
    if(maxtermsindep(1).eq.0) maxtermsindep(1)=10
    read(uparams,*) maxtermsindep(2)
-   if(maxtermsindep(2).eq.0) maxtermsindep(2)=150
+   if(maxtermsindep(2).eq.0) maxtermsindep(2)=250
    read(uparams,*) maxtermsindep(3)
    if(maxtermsindep(3).eq.0) maxtermsindep(3)=150
    read(uparams,*) maxtermsindep(4)
@@ -72,7 +72,7 @@
    read(uparams,*) maxgroups(1)
    if(maxgroups(1).eq.0) maxgroups(1)=10
    read(uparams,*) maxgroups(2)
-   if(maxgroups(2).eq.0) maxgroups(2)=100
+   if(maxgroups(2).eq.0) maxgroups(2)=200
    read(uparams,*) maxgroups(3)
    if(maxgroups(3).eq.0) maxgroups(3)=150
    read(uparams,*) maxgroups(4)
@@ -110,6 +110,7 @@
  read(uparams,*) (atname(i),i=1,natom_type)  ! in the same order as in POTCAR
  read(uparams,*) natom_prim_cell        ! # of atoms in primitive cell
  read(uparams,*) fc2flag  ! if zero, take the default range from largest supercell
+ allocate(nshells(8,natom_prim_cell))
  nshells(1,1:natom_prim_cell)=1
  read(uparams,*) nshells(2,1:natom_prim_cell)
  read(uparams,*) nshells(3,1:natom_prim_cell)
@@ -147,7 +148,12 @@
     endif
  endif
  write(fdf,'(i1)')fdfiles
- write(r4,'(i2.2,a1,i2.2,a1,i1)')nshells(2,1),'_',nshells(3,1),'_',nshells(4,1)
+ if (fc2flag.eq.1) then
+    write(r4,'(i2.2,a1,i2.2,a1,i1)')nshells(2,1),'_',nshells(3,1),'_',nshells(4,1)
+ else
+    r4='0000000'
+    write(r4(3:7),'(a1,i2.2,a1,i1)')'_',nshells(3,1),'_',nshells(4,1)
+ endif
  write(incl,'(8i1)')include_fc(:)
  invr='0000'
  if (itrans.ne.0) invr(1:1)='t'
@@ -172,18 +178,18 @@
  write(ulog,*) 'maxtermsindep=',maxtermsindep
  write(ulog,*) 'maxgroups    =',maxgroups
  write(ulog,*)' ---------------------------------------------------------'
- write(ulog,*) include_fc,'  which ranks of FCs to include '
  write(ulog,*) fc2flag,'  if 0 default range consistent with the largest supercell is chosen for FC2 '
- write(ulog,*)' itemp,tempk = ',itemp,tempk
- write(ulog,*)' How many (not default) shells to include for ranks 2,3,4  '
+ write(ulog,*) 'itemp,tempk  =',itemp,tempk
+ write(ulog,*) 'Whether and How many (not default) shells to include for ranks 2,3,4,5,6,7,8  '
+ write(ulog,*) 'rank,incl    = 1',include_fc(1)
        do i=2, maxrank
- write(ulog,*)' rank,shells :',i, nshells(i,1:natom_prim_cell)
+ write(ulog,*) 'rank,incl,shl=',i,include_fc(i), nshells(i,1:natom_prim_cell)
        enddo
  write(ulog,*) itrans,irot,ihuang,enforce_inv,'  transl, rot and Huang invce, enforcing inv'
  write(ulog,*) fdfiles,' FORCEDISP & POSCAR files to be read'
- write(ulog,*)' Included fcs and Imposed invariances: trans-rot-Huang=',invr
- write(ulog,*)'--------------------------------------------------'
- write(ulog,*)' Reading ',natom_type,' atom types with ',natom_prim_cell,'atoms in the primitive cell'
+ write(ulog,*) 'Included fcs and Imposed invariances: trans-rot-Huang=',invr
+ write(ulog,*) '--------------------------------------------------'
+ write(ulog,*) 'Reading ',natom_type,' atom types with ',natom_prim_cell,'atoms in the primitive cell'
 
  latticeparameters(1:3) = latticeparameters(1:3)*scal
  call write_out(ulog,'Conventional Lattice parameters a,b,c  ',latticeparameters(1:3))
@@ -239,7 +245,7 @@
  end subroutine read_structure
 !=========================================================
  subroutine read_dielectric
-! reads ! born ! effective ! charge ! and ! dielectric ! constants ! from ! para.born
+!! reads born effective charge and dielectric constant from dielectric.params
  use born
  use lattice
  use atoms_force_constants
@@ -326,7 +332,6 @@
   read(uparams,*)nc
   write(*,*) 'READ_PARAMS: kmesh= ',nc
   nkc=nc(1)*nc(2)*nc(3)
-  read(uparams,*)shift !x,shfty,shftz ! shift in units of mesh
   read(uparams,*)wmesh,wmax ! number of freq meshes for DOS and its upperbound 
   write(*,*) 'READ_PARAMS: wmax = ',wmax
   read(uparams,*)width  ! width of gaussian broadening for DOS
@@ -359,6 +364,51 @@
 
 3 format(a,6(1x,i6))
  end subroutine read_latdyn
+ !===========================================================
+ subroutine read_supercell_vectors(poscar,volum,rm1,rm2,rm3)
+!! the following reads the POSCAR file that is used by VASP
+!! reads supercell translation vectors and atomic coordinates therein
+ use ios
+ use params
+ use lattice
+ use geometry
+ use atoms_force_constants
+ use constants, only : r15
+ implicit none
+ character, intent(in) :: poscar*(*)
+ real(r15), intent(out) :: volum,rm1(3),rm2(3),rm3(3)
+ character line*90
+ integer i
+ real(r15) latt_const,om,a,b,c
+ type(vector) pos
+ logical exst
+
+ inquire(file=poscar,exist=exst)
+ if(exst) then
+      open (uposcar,file=poscar,status='old')
+ else
+      write(ulog,*)' poscar file ',poscar,' does not exist; check your files location and run again'
+      write(*   ,*)' poscar file ',poscar,' does not exist; check your files location and run again'
+      stop
+ endif
+ read(uposcar,'(a)') line
+ write(ulog,'(a)')' job title on line 1 of POSCAR is: '//line
+ read(uposcar,*)lattice_parameter
+ read(uposcar,*)rm1
+ read(uposcar,*)rm2
+ read(uposcar,*)rm3
+ if (lattice_parameter .lt.0) then  ! it is the -volume of the cell
+    volume_r = -lattice_parameter  ! need to find the volume(r1,r2,r3) for scaling
+    call calculate_volume(rm1,rm2,rm3,om)
+    latt_const = (volume_r/om)**(1./3.)
+ else
+    latt_const = lattice_parameter
+ endif
+ rm1=latt_const*rm1; rm2=latt_const*rm2; rm3=latt_const*rm3
+ call calculate_volume(rm1,rm2,rm3,volum)
+ close(uposcar)
+
+ end subroutine read_supercell_vectors
  !===========================================================
  subroutine read_supercell(poscar)
 !! the following reads the POSCAR file that is used by VASP
@@ -499,18 +549,18 @@
 ! this seems to be working for now....
  call check_input_poscar_consistency_new
 
- call write_out(6,' cart_to_prim ',cart_to_prim)
+! call write_out(6,' cart_to_prim ',cart_to_prim)
  write(ulog,*)' ASSIGNMENTS WERE DONE FOR ATOMS IN THE SUPER CELL '
- write(ulog,*)'i_sc,type(i),tau(i)      n(i)    ,                r_cart(i)              r_red(i) '
- open(777,file="supercell-1.xyz")
- do i=1,natom_super_cell
-    write(777,3)atom_sc(i)%cell%tau, atom_sc(i)%equilibrium_pos,  &
-&     matmul(cart_to_prim,v2a(atom_sc(i)%equilibrium_pos))
+! write(ulog,*)'i_sc,type(i),tau(i)      n(i)    ,                r_cart(i)              r_red(i) '
+! open(777,file="supercell-1.xyz")
+  do i=1,natom_super_cell
+!    write(777,3)atom_sc(i)%cell%tau, atom_sc(i)%equilibrium_pos,  &
+!&     matmul(cart_to_prim,v2a(atom_sc(i)%equilibrium_pos))
     write(ulog,8)' ',i,atom_sc(i)%at_type, &
 &     atom_sc(i)%cell%tau,atom_sc(i)%cell%n,atom_sc(i)%equilibrium_pos,  &
 &     matmul(cart_to_prim,v2a(atom_sc(i)%equilibrium_pos))
  enddo
- close(777)
+! close(777)
 
 3 format(i5,9(2x,f13.6))
 4 format(9(2x,f10.4))
@@ -715,7 +765,7 @@
 
  open(173,file='poscar.xyz')
  write(173,*) natom_super_cell
- write(173,*) 'poscar.xyz to visualize: name coords, type, n, tau'
+ write(173,*)'# poscar.xyz to visualize: name coords, type, n, tau'
  do i=1,natom_super_cell
 
     n1 =atom_sc(i)%at_type
@@ -934,7 +984,7 @@
 
 !  k1 ----------------- for rank=2 we always work with size_kept_fc2
  if(fc2flag.eq.0) then
-   write(ulog,*)'# of groups of rank 2 versus kept ones =',map(2)%ngr,sum(keep_fc2i)
+   write(ulog,*)'# of groups of rank 2, ngr, versus # of kept indep terms =',map(2)%ngr,sum(keep_fc2i)
    write(ulog,*)'# of indep terms versus # of kept terms=',map(2)%ntotind,size_kept_fc2
  endif
 !  k1 -----------------
@@ -988,7 +1038,7 @@
  use geometry
  use constants, only : r15
  implicit none
- integer, parameter :: mesh=600,mx=50
+ integer, parameter :: mesh=600,mx=60
  integer i0,j0,shel_count,j,nm(3),n5(3),ta,nbmx,jj,ier
  real(r15) dij(natom_prim_cell,mx),rr(3),eps(3)
  real(r15) ds(natom_prim_cell,mesh),dmesh(mesh),w0(mx),dmax
@@ -1011,7 +1061,7 @@
     write(*   ,*)' size  of shells=',atom0(i0)%nshells
     write(ulog,*)' i0, # of shells=',i0,atom0(i0)%nshells
 
-    do shel_count=1,mx
+    do shel_count=1,min(atom0(i0)%nshells , mx)
        write(*,*)' i0,mx,shell_count= ',i0,mx,shel_count
        if(shel_count.gt. atom0(i0)%nshells) cycle
        nbmx = atom0(i0)%shells(shel_count)%no_of_neighbors
@@ -1071,7 +1121,7 @@
  implicit none
  integer rnk,t,ti,i,res,j,rs,k
  integer iat(maxrank),ixyz(maxrank),g,ng,term,term2,cnt2,frm,cnt3,ntind(maxrank),ngroup(maxrank)
- real(r15) rij,bunit,one,fcd,trace_fc,dij
+ real(r15) rij,bunit,one,fcd,trace_fc,dij 
 ! character frmt*2,goh*48,ln*1,geh*47
  character frmt*2,goh*60,ln*1,geh*60,lm*1
 
@@ -1113,17 +1163,6 @@
     term2= 0
     groups: do g=1,map(rnk)%ngr  ! index of a given group of given rank
          
-!! K1 new change made on 2/13/23 ----------------
-    !  if(rnk.eq.2) then
-    !     if( keep_fc2i(g).ne.1) cycle
-    !     if(g.gt.1) then
-    !        if (keep_fc2i(g-1).eq.1) cnt2=cnt2+map(rnk)%ntind(g-1)
-    !     endif
-    !  else
-    !     if (g.gt.1)  cnt2=cnt2+map(rnk)%ntind(g-1)
-    !  endif
-!! K1 new change made on 2/13/23 ----------------
-
        cnt2=0
        if(rnk.eq.2) then
           if(g.gt.1) cnt2=sum(keep_fc2i(1:counter2(g-1,map(2)%ntind(g-1))))
@@ -1205,8 +1244,7 @@
 
 write(ulog,*)'******* Trace for the harmonic FCs ********'
  open(456,file='trace_fc.dat')
- open(876,file='springs.dat')
- open(877,file='springs0.dat')
+ write(456,*)'# dij,trace_fc,tau_i,tau_j,j,atompos(:,i),atompos(:,j)'
 
 ! write the trace of FC2
  rnk=2; res=map(1)%ntotind
@@ -1218,57 +1256,44 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
      if ( include_fc(rnk) .ne. 0 ) then
         ng=map(rnk)%ngr ! number of groups
   !     cnt2=0
-        term2= 0
         do g=1,map(rnk)%ngr  ! index of a given group
   !        if(g.gt.1) cnt2 = sum(keep_fc2i(1:sum(map(2)%ntind(1:g-1))))
            do t=1,map(rnk)%nt(g)  ! index of independent terms in that group g
               iat(1:rnk)  = map(rnk)%gr(g)%iat (:,t)
               ixyz(1:rnk) = map(rnk)%gr(g)%ixyz(:,t)
               if (iat(1).ne.i .or. iat(2).ne.j) cycle !iloop
-              if (ixyz(1).eq.1 .and. ixyz(2).eq.1) then
-                 write(877,2)atompos(:,iat(1)),atompos(:,iat(1))-atompos(:,iat(2)),length(atompos(:,iat(1))-atompos(:,iat(2)))
-              endif
-!             write(*,*)'i,j,term2,al,be=',i,j,term2,ixyz(1),ixyz(2)
               fcd = 0
   !           cnt3=0
        ! must find the corresponding index of the indep term t <-> ti
               do ti=1,map(rnk)%ntind(g)
-                 cnt3=ti
-                 if(g.gt.1) cnt3=sum(map(2)%ntind(1:g-1))+ti
-         ! this is the index of the indep FC coming in the A*FC=b matrix product
-!                if(map(rnk)%gr(g)%mat(t,ti) .ne.0) then
-!                  write(*,*)'g,t,ti,res,cnt2,cnt3=',g,t,ti,res,cnt2,cnt3
-!                endif
-     !           fcd = fcd + fcs(res+cnt2+cnt3)*map(rnk)%gr(g)%mat(t,ti)*keep_fc2i(cnt2+ti)
+       !         cnt3=ti
+       !         if(g.gt.1) cnt3=sum(map(2)%ntind(1:g-1))+ti
+       ! this is the index of the indep FC coming in the A*FC=b matrix product
+       !         fcd = fcd + fcs(res+cnt2+cnt3)*map(rnk)%gr(g)%mat(t,ti)*keep_fc2i(cnt2+ti)
                  fcd = fcd + fcs(res+current2(g,ti))*map(rnk)%gr(g)%mat(t,ti) !*keep_fc2i(counter2(g,ti))
-                 if(map(2)%gr(g)%mat(t,ti).ne.0 .and. keep_fc2i(cnt3).eq.1 .and. ixyz(1).eq.1 .and. ixyz(2).eq.1) then
-                     write(876,2)atompos(:,iat(1)),atompos(:,iat(1))-atompos(:,iat(2))
-                 endif
+                 dij = length(atompos(:,iat(1))-atompos(:,iat(2)))
               enddo
-              dij = length(atompos(:,iat(1))-atompos(:,iat(2)))
               if (ixyz(1).eq.ixyz(2)) then
-                 term2= term2+1
-                 trace_fc = trace_fc+ fcd
-  !       write(*,*)'al,term2,trace=',ixyz(1),term2,trace_fc
+                 trace_fc = trace_fc + fcd
               endif
            enddo
         enddo
-        if(trace_fc.ne.0) then
+! write(ulog,4)'i0,j,g,t,fcd,tr=',i,j,g,t,fcd,trace_fc
+        if(abs(trace_fc).gt.1d-5) then  ! .and. ixyz(1).eq.1 .and. ixyz(2).eq.1) then
            write(ulog,8) i,j,dij,trace_fc
-           write(456,3) dij,trace_fc,iat(1),iat(2),atompos(:,iat(1)),atompos(:,iat(2))
+           write(456,3) dij,trace_fc,i,iatomcell0(j),j,atompos(:,i),atompos(:,j)
         endif
      endif
   enddo jloop
   enddo iloop
 
   close(456)
-  close(876)
-  close(877)
 
   write(ulog,*)'***************** END OF FC Trace ******************'
 
 2 format(9(1x,f10.4))
-3 format(2(1x,f10.4),2i5,9(1x,f10.4))
+3 format(2(1x,f10.4),3i5,9(1x,f10.4))
+4 format(a,4i4,9(1x,f10.4))
 
 ! if (res.ne.nindepfc) then
 !    write(ulog,*)'WRITE_OUTPUT_FCS: sum(nterms),ngr=',res,nindepfc
@@ -1277,8 +1302,60 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
 
  end subroutine write_output_fcs
 !============================================================
- subroutine read_fcs(iunit,fn,rank,fc,nfc)
-!! reads irreducible force constants if given rank from file fn if the latter exists
+ subroutine write_springs
+ use svd_stuff
+ use ios
+ use atoms_force_constants
+ use params
+ use lattice
+ use constants
+ implicit none
+ integer rnk,t,ti,i,res,j,rs,k
+ integer iat(maxrank),ixyz(maxrank),g,ng,term,term2,cnt2,frm,ntind(maxrank),ngroup(maxrank)
+ real(r15) rij,bunit,one,fcd,trace_fc,dij , zero(3)
+ character lm*1
+
+ one =1d0
+ zero = 0
+
+ do i=1,natom_prim_cell
+ enddo
+
+ rnk=2; res=map(1)%ntotind
+ iloop: do i=1,natom_prim_cell
+    write(lm,'(i1)')i
+    open(875+i,file='springs'//lm//'.dat')
+    write(875+i,*)"# 0 0 0 ,atompos(:,iat(1))-atompos(:,iat(2)) , d12 "
+ jloop: do j=1,natoms
+     rij = length(atompos(:,i)-atompos(:,j))
+     rs=map(1)%ntotind
+     if ( include_fc(rnk) .ne. 0 ) then
+        ng=map(rnk)%ngr ! number of groups
+        term2= 0
+        do g=1,map(rnk)%ngr  ! index of a given group
+           do t=1,map(rnk)%nt(g)  ! index of independent terms in that group g
+              iat(1:rnk)  = map(rnk)%gr(g)%iat (:,t)
+              ixyz(1:rnk) = map(rnk)%gr(g)%ixyz(:,t)
+              if (iat(1).ne.i .or. iat(2).ne.j) cycle !iloop
+              dij = length(atompos(:,iat(1))-atompos(:,iat(2)))
+              do ti=1,map(rnk)%ntind(g)
+     !           if(map(2)%gr(g)%mat(t,ti).ne.0.and.keep_fc2i(counter2(g,ti)).eq.1 .and.ixyz(1).eq.1.and.ixyz(2).eq.1) then
+                 if(keep_fc2i(counter2(g,ti)).eq.1 .and.ixyz(1).eq.1.and.ixyz(2).eq.1) then
+                     write(875+i,2)zero ,atompos(:,iat(1))-atompos(:,iat(2)),dij
+                 endif
+              enddo
+           enddo
+        enddo
+     endif
+  enddo jloop
+     close(875+i)
+  enddo iloop
+
+2 format(9(1x,f10.4))
+ end subroutine write_springs
+!============================================================
+ subroutine read_fcs_3(iunit,fn,rank,fc,nfc)
+!! reads irreducible force constants of given rank from file fn if the latter exists
  use svd_stuff
  use ios
  use atoms_force_constants
@@ -1303,7 +1380,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
      endif
 
      if (nfc.ne.map(rank)%ntotind) then
-        write(ulog,*)' READ_FCS: rank=',rank
+        write(ulog,*)' READ_FCS_3: rank=',rank
         write(ulog,*)' number of groups ',nfc,' is not the same as one by setup_maps ',map(rank)%ntotind
         stop
      endif
@@ -1320,20 +1397,20 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
        enddo
      enddo groups
 
-91   write(ulog,*)'READ_FCS: rank=',rank,' reached end of file after ',term-1,' lines'
+91   write(ulog,*)'READ_FCS_3: rank=',rank,' reached end of file after ',term-1,' lines'
      write(ulog,3)fc
      if (term.eq.1) then
-        write(ulog,*)'READ_FCS: the file exists but is empty! rank=',rank
-        write(*   ,*)'READ_FCS: the file exists but is empty! rank=',rank
+        write(ulog,*)'READ_FCS_3: the file exists but is empty! rank=',rank
+        write(*   ,*)'READ_FCS_3: the file exists but is empty! rank=',rank
         stop
 !       include_fc(rank) = 0       ! if nothing, then exclude from fitting
      endif
      close(iunit)
 
 3 format(99(1x,f9.5))
- end subroutine read_fcs
+ end subroutine read_fcs_3
 !============================================================
- subroutine read_fcs_2(iunit,fn,rank,fc2,nfc)
+ subroutine read_fcs(iunit,fn,rank,fc2,nfc)
  use svd_stuff
  use ios
  use atoms_force_constants
@@ -1349,6 +1426,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
 
 ! read(iunit,'(a)') line
  t = 0
+!----------------------------------------
 if ( rank .eq. 1) then
 
  res = 0
@@ -1367,8 +1445,8 @@ if ( rank .eq. 1) then
     ampterm_1(1:1) = 0
     include_fc(rank) = 0       ! if nothing, then exclude from fitting
  endif
-!----------------------------------------
 
+!----------------------------------------
 elseif ( rank .eq. 2) then
 
  res =  igroup_1(nterms(1))
@@ -1487,7 +1565,7 @@ write(ulog,*)'READ_FCS: error!! should not have gotten here!'
 
 stop
 
- end subroutine read_fcs_2
+ end subroutine read_fcs
 !=================================================================
  subroutine calculate_and_write_displacements(ncfg,dsp,frc)
 !! equilibrium position already subtracted when reading the FORCEDISP files
@@ -1532,7 +1610,7 @@ stop
  if (step.eq.0) step=1
  write(*,*)'ncfg,step=',ncfg,step
 
- do t=1,ncfg ,step           ! write first and last displ-force data
+ do t=1,ncfg ! write all steps ,step           ! write first and last displ-force data
     do i=1,natom_super_cell
        write(ulog,6)t,i,dsp(:,i,t),frc(:,i,t)
     enddo
@@ -1766,6 +1844,26 @@ stop
  write(unt,*)'********************************************************************'
  end subroutine warn
 !============================================================
+ subroutine warn2(unt,mesg)
+ implicit none
+ integer, intent(in) :: unt
+ character(len=*), intent(in) :: mesg
+
+ write(unt,*)'********************************************************************'
+ write(unt,*)'|                                                                  |'
+ write(unt,*)'|                                                                  |'
+ write(unt,*)'|      W    W    AA    RRRRR   N    N  II  N    N   GGGG   !!!     |'
+ write(unt,*)'|      W    W   A  A   R    R  NN   N  II  NN   N  G    G  !!!     |'
+ write(unt,*)'|      W    W  A    A  R    R  N N  N  II  N N  N  G       !!!     |'
+ write(unt,*)'|      W WW W  AAAAAA  RRRRR   N  N N  II  N  N N  G  GGG   !      |'
+ write(unt,*)'|      WW  WW  A    A  R   R   N   NN  II  N   NN  G    G          |'
+ write(unt,*)'|      W    W  A    A  R    R  N    N  II  N    N   GGGG   !!!     |'
+ write(unt,*)'|                                                                  |'
+ write(unt,*)'|                                                                  |'
+ write(unt,*)'********************************************************************'
+ write(unt,*)'|   '//mesg
+ end subroutine warn2
+!============================================================
  subroutine write_lat_fc(ntindep,ntrms,fn)
  use svd_stuff
  use ios
@@ -1797,7 +1895,7 @@ stop
  do i=1,natom_prim_cell
    write(ufco,6)i,atom0(i)%name, atom0(i)%at_type,atom0(i)%equilibrium_pos,atom0(i)%mass
  enddo
- write(ufco,*)' Crystal data written ************************************'
+ write(ufco,*)' Crystal data: groups ',map(1:8)%ngr,' indepterms=',map(1:8)%ntotind,' all terms=',map(1:8)%ntot
  write(ufco,*)' Included ranks of FCs '
  write(ufco,*)  include_fc(:)
  write(ufco,*)' Number of FCs for each rank '
@@ -1828,7 +1926,7 @@ stop
 
  open(173,file='primlatt.xyz')
  write(173,*) natom_prim_cell
- write(173,*) ntindep(:)
+ write(173,*)'# ', ntindep(:)
  do i=1,natom_prim_cell
    write(173,8)atom0(i)%name,atom0(i)%equilibrium_pos
  enddo
@@ -1836,7 +1934,7 @@ stop
 
  open(173,file=fn//'.xyz')
  write(173,*) nat !oms
- write(173,*) ntindep(:)
+ write(173,*)'# ', ntindep(:)
  do i=1,natoms
 !  if (length(atompos(:,i)).le.lmax) then  ! write up to lmax
        write(173,8)atom0(iatomcell0(i))%name,(atompos(j,i),j=1,3)
@@ -1850,6 +1948,76 @@ stop
 8 format(a,6(2x,f19.10))
 9 format(9(2x,f19.10))
  end subroutine write_lat_fc
+!============================================================
+ subroutine read_latfc_allocate
+ use svd_stuff
+ use ios
+ use atoms_force_constants
+ use params
+ use lattice
+ use constants
+ implicit none
+! integer, intent(in) :: ntindep(maxrank),ntrms(maxrank)
+! character(len=*), intent(in):: fn
+ integer i,j,l,tau,nat,nm(3),largest,uio
+ real(r15) ri,rr(3)
+ character(LEN=99) line
+ character(LEN=22) wrd1
+ character(LEN=12) wrd2
+ character(LEN=11) wrd3
+
+
+ uio=987
+ open(uio,file='lat_fc.dat',status='old')
+
+ write(uio,*)line
+ write(uio,*)line
+ write(uio,*)line
+ write(uio,*)line
+ write(uio,*)line
+ write(uio,*)line
+ do i=1,natom_prim_cell
+   write(uio,*)line
+ enddo
+ read(uio,4)wrd1,map(1:8)%ngr,wrd2,map(1:8)%ntotind,wrd3,map(1:8)%ntot
+
+4 format(a22,4i4,a12,4i4,a11,4i5)
+ read(uio,*)line
+ read(uio,*) include_fc !(1:8)
+ read(uio,*)line
+ read(uio,*)line !  ntrms(:)
+ read(uio,*)line
+ read(uio,*)line !  ntindep(:)
+ read(uio,*)line
+ read(uio,*)  maxshells,largest,natoms
+! write up to the used shells
+ if(largest.ne.natoms)write(ulog,*)"WARNING ERROR in reading lat_fc.dat: largest,natoms='largest, natoms"
+ nat=0
+ do l=1,largest !natoms
+   ri = length(atompos(:,i)) !-atompos(:,1))
+      nat=nat+1
+      read(uio,*)i,(atompos(j,i),j=1,3), iatomcell0(i),(iatomcell(j,i),j=1,3),ri
+      nm = iatomcell(:,i)
+      tau= iatomcell0(i)
+      rr=nm(1)*r01+nm(2)*r02+nm(3)*r03
+      if (length(rr+atom0(tau)%equilibrium_pos-atompos(:,i)).gt.1d-4) then
+             write(*,*)' WRITE_LAT_FC error: n,tau does not correspond to atompos '
+             write(*,8)' taui   = ',atom0(tau)%equilibrium_pos
+             write(*,8)' ni*r0i = ',rr
+             write(*,8)' atompos= ',atompos(:,i)
+             write(*,5)' n,tau,j= ',nm,tau,i
+          stop
+      endif
+ enddo
+ close(uio)
+
+
+5 format(a,2x,3(i3),3x,i2,3x,i5,9(1x,f11.5))
+6 format(2x,i5,1x,a2,2x,i5,9(2x,f19.10))
+7 format(1(2x,i5),3(2x,f19.10),4(2x,i5),2x,f9.5)
+8 format(a,6(2x,f19.10))
+9 format(9(2x,f19.10))
+ end subroutine read_latfc_allocate
 !============================================================
  subroutine write_atompos
  use svd_stuff
@@ -1865,7 +2033,7 @@ stop
 
  open(iunit,file='atompos.xyz')
  write(iunit,*)natoms
- write(iunit,*)' name, x , y , z , i,tau,n(3), reduced coordinates '
+ write(iunit,*)'# name, x , y , z , i,tau,n(3), reduced coordinates '
  do i=1,natoms
    tau = iatomcell0(i)
    n   = iatomcell(:,i)
@@ -1877,7 +2045,7 @@ stop
 8 format(a,3(1x,f12.5),i5,i3,'(',3i2,')',3(1x,f6.3))
  end subroutine write_atompos
 !============================================================
- subroutine write_supercell
+ subroutine write_supercell(j)
 ! use svd_stuff
 ! use ios
  use atoms_force_constants, only: atom_sc, natom_super_cell
@@ -1886,20 +2054,22 @@ stop
  use lattice, only: cart_to_prim
  use constants, only : pi
  implicit none
+ integer, intent(in) :: j
  integer i,iunit
-
+ character(len=1) fdfil
  iunit=123
-
- open(iunit,file='supercell.xyz')
- write(iunit,*) natom_super_cell
- write(iunit,*)' name, x , y , z , i,tau,n(3), jatompos, reduced coordinates '
+ write(fdfil,'(i1)')j
+ open(iunit,file='supercell_'//fdfil//'.xyz')
+ write(iunit,*)'# ', natom_super_cell
+ write(iunit,*)'# name,  x(i)  ,  y(i)  ,  z(i)  , i ,tau,n(3), atompos(i), reduced coordinates '
  do i=1,natom_super_cell
     write(iunit,7)atom_sc(i)%name,atom_sc(i)%equilibrium_pos,i,atom_sc(i)%cell%tau, &
     atom_sc(i)%cell%n,atom_sc(i)%cell%atomposindx,matmul(cart_to_prim,v2a(atom_sc(i)%equilibrium_pos))
  enddo
  close(iunit)
 
-7 format(a,3(1x,f12.5),i5,i3,'(',3i2,')',i5,3(1x,f6.3))
+7 format(a,3(1x,f12.5),i5,i3,'(',i2,2(',',i2),')',i5,3(1x,f9.5))
+
  end subroutine write_supercell
 !============================================================
  subroutine write_invariance_violations(ulog,n,fcs)
