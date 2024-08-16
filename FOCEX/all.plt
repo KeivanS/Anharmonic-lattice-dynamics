@@ -56,7 +56,7 @@ set y2label 'Frequency (THz)'
 set y2tics nomirror
 set format y ""
 set xrange [0 : 3.44 ]
-############# Get the following line for "KTICS.BS"  #################
+############# Get the following line from "KTICS.BS"  #################
  set xtics ( "L" 0.000,"G" 0.500,"K" 1.112,"X" 1.316,"W" 1.605,"L" 2.013,"K" 2.367,"W" 2.571,"X" 2.860,"G" 3.435 )
 set grid xtics
 set xlabel "Wavenumbers"
