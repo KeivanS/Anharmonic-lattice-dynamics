@@ -1,6 +1,6 @@
 set term pdfcairo #postscript solid color enhanced # pdfcairo
-set output "all-RbBr.pdf"
-set  multiplot layout 1,3 margins 0.10 ,0.95,0.15,0.90 spacing 0.13,0.02  title "Phonons of RbBr" #, 0.01 , 0.01
+set output "all-Ge.pdf"
+set  multiplot layout 1,3 margins 0.10 ,0.95,0.15,0.90 spacing 0.13,0.02  title "Phonons of Germanium" #, 0.01 , 0.01
 
 # freq versus gruneisen ===========================
 
@@ -8,7 +8,7 @@ set  multiplot layout 1,3 margins 0.10 ,0.95,0.15,0.90 spacing 0.13,0.02  title 
 #set size 0.3 ,1
 #set lmargin 0
 #set rmargin 0
-a=150
+a=500
 set yrange [0:a]
 set ylabel 'Frequency (1/cm)'
 #set label  'Gruneisen' at graph 0.2,0.8 font ',8'
@@ -55,8 +55,9 @@ set y2range [0:a*3/100]
 set y2label 'Frequency (THz)'
 set y2tics nomirror
 set format y ""
-set xrange [0 : 2.6 ]
- set xtics ( "G" 0.000,"X" 0.577,"K" 0.781,"G" 1.394,"L" 1.894,"W" 2.302,"X" 2.589 )
+set xrange [0 : 3.44 ]
+############# Get the following line for "KTICS.BS"  #################
+ set xtics ( "L" 0.000,"G" 0.500,"K" 1.112,"X" 1.316,"W" 1.605,"L" 2.013,"K" 2.367,"W" 2.571,"X" 2.860,"G" 3.435 )
 set grid xtics
 set xlabel "Wavenumbers"
 set palette maxcolors 30  # adjust the number of colors as needed
@@ -66,14 +67,9 @@ set cbtics
 #set bmargin 5
 set colorbox user origin 0.92,0.05  # Places box at 95% right, 5% up from bottom
 set colorbox size 0.02,0.85     
-set cbrange [0:6 ] # same range as palette definition
+set cbrange [0:7 ] # same range as palette definition
 
-plot 'bands.dat' u 2:6:12  w l lc palette z  notitle ,\
-     'bands.dat' u 2:7:13  w l lc palette z  notitle ,\
-     'bands.dat' u 2:8:14  w l lc palette z  notitle ,\
-     'bands.dat' u 2:9:15  w l lc palette z  notitle ,\
-     'bands.dat' u 2:10:16 w l lc palette z  notitle ,\
-     'bands.dat' u 2:11:17 w l lc palette z  notitle
+plot 'bs_freq.dat' u 3:7:11 w p pt 10 ps 0.23 lc palette z notitle
 
 pause -1
 
