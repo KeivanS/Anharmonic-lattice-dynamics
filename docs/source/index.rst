@@ -10,7 +10,9 @@ Anharmonic-LAttice-DYNamics (ALADYN)
    theory
    download
    install
-   run
+   runfocex
+   runthermacond
+   runscop8
    faq
 
 .. note::
