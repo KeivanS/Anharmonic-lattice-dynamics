@@ -74,7 +74,7 @@ Description of input and output files
 
 * **Preparing input files**
 
-    The input file(s) required to run FOCEX are ``structure.params``, ``dielectric.params``, ``kpbs.params``, POSCAR1 and FORCEDISP1.  
+    The input file(s) required to run FOCEX are ``structure.params``, ``dielectric.params``, ``kpbs.params``,``latdyn.params``,``defaults.params``, POSCAR1 and FORCEDISP1.  
 
 .. collapse:: structure.params
 
@@ -83,6 +83,18 @@ Description of input and output files
 .. collapse:: dielectric.params
 
     something about dielectric.params file
+
+.. collapse:: kpbs.params
+
+    something about kpbs.params file
+
+.. collapse:: defaults.params
+
+    something about defaults.params file
+
+.. collapse:: latdyn.params
+
+    something about latdyn.params file
 
 .. collapse:: POSCAR1
 
