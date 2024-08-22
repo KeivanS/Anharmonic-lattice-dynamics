@@ -1,3 +1,14 @@
+![ALADYN Logo](https://github.com/KeivanS/Anharmonic-lattice-dynamics/blob/main/docs/source/_static/aladyn-logo.png)
+
+## Users
+Anharmonic-LAttice-DYNamics (ALADYN) is a lattice dynamics code. For installation and usage instructions, please read our [documentation](https://aladyn.readthedocs.io/en/latest/index.html).
+
+If you have any queries and want to know more about our code, please visit [our forum](https://matsci.org/c/aladyn/57) hosted at the MATSCI Community Discourse.
+
+## Developers
+
+### Code contribution
+
 The developers should follow these conventions when adding their contribution to the project:
 - **Documentation**: at the beginning of every fortran subroutine add a comment which explains what the subroutine does and why. The comments at the top of the subroutine should start with `!!`
 
@@ -17,3 +28,14 @@ The developers should follow these conventions when adding their contribution to
     Intent of every variable must be specified (`IN`, `OUT`, or `INOUT`)
 
     `END` statements should be followed with the name of the corresponding subroutine
+
+### Local build
+To build the docs webpage locally:
+
+```bash
+pip install sphinx sphinx-rtd-theme
+cd docs
+make html
+```
+
+Open build/html/index.html in your browser.
