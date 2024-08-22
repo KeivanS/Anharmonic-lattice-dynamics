@@ -1,11 +1,11 @@
-![ALADYN Logo](https://github.com/KeivanS/Anharmonic-lattice-dynamics/blob/main/docs/source/_static/aladyn-logo.png)
+![ALADYN Logo](https://github.com/KeivanS/Anharmonic-lattice-dynamics/blob/main/docs/source/_static/img/aladyn-logo.png)
 
-## Users
+## For Users
 Anharmonic-LAttice-DYNamics (ALADYN) is a lattice dynamics code. For installation and usage instructions, please read our [documentation](https://aladyn.readthedocs.io/en/latest/index.html).
 
 If you have any queries and want to know more about our code, please visit [our forum](https://matsci.org/c/aladyn/57) hosted at the MATSCI Community Discourse.
 
-## Developers
+## For Developers
 
 ### Code contribution
 
