@@ -926,7 +926,6 @@ contains
  type(vector) r01,r02,r03,g01,g02,g03  ! tr vect of prim cell and its recip spce
  type(vector) r1conv,r2conv,r3conv,g1conv,g2conv,g3conv
  real(8) volume_r,volume_g,lattice_parameter,latticeparameters(6),primitivelattice(3,3)
- real(8) conv_to_cart(3,3),conv_to_prim(3,3), cart_to_prim(3,3), prim_to_cart(3,3),prim_to_conv(3,3)
  real(8) box(3),boxg(3)
  real(8) r0g(3,3)
  integer n1min,n2min,n3min,n1max,n2max,n3max !,NC(3),NF(3)
@@ -1305,50 +1304,38 @@ real(8), allocatable:: F1_old(:,:,:)
 real(8), allocatable:: Qvalue_N(:,:), Qvalue_U(:,:), tauinv_N(:,:), tauinv_U(:,:), tauinv_tot(:,:), tauinv_eff(:,:)
 real(8), allocatable:: diff_kap(:,:,:,:),kappa(:,:,:), kappa_k(:,:,:,:), kappa_RTA(:,:,:), kappa_k_RTA(:,:,:,:)
 ! F1,F2: (kp1,la1,xyz)    , Qvalue,Avalue,iselfenergy: (kp,la)
-real(8), allocatable:: P1(:,:,:,:,:), P2(:,:,:,:,:),Piso(:,:),Pisos(:,:),giso(:)
+real(8), allocatable:: P1(:,:,:,:,:), P2(:,:,:,:,:),Piso(:,:,:,:),Pisos(:,:,:,:)
 ! P1,P2: (kp1,kp2,la1,la2,la3)   don't need kp3 since it is determined by momentum conservation.
 real(8), allocatable:: frequency(:,:),dist(:,:)   ! BE distribution function
 !real(8), allocatable:: v33sq(:,:,:,:,:)
 
-real(8),allocatable::DirectSolution(:),sig(:),col_matrix(:,:),RHS(:),sy_matrix(:,:),coll(:,:),F_MRHS(:),Collision_Matrix(:,:),Collision_Matrixmpi(:,:),FFF(:,:,:),kappa_new(:,:,:),kappa_old(:,:,:),e(:,:,:)!,giso(:)
+real(8), allocatable::DirectSolution(:),sig(:),col_matrix(:,:),RHS(:),sy_matrix(:,:),coll(:,:),F_MRHS(:),Collision_Matrix(:,:),FFF(:,:,:),kappa_new(:,:,:),kappa_old(:,:,:),e(:,:,:)
 real(8) errorr,ermax,svdcut
 
 contains
 
-!subroutine allocate_iter (ni,nk,ndn)
-!implicit none
-!integer, intent(in) :: ni,nk,ndn
-!allocate (F_RTA(ni,ndn,3),Qvalue(ni,ndn),iselfenergy(ni,ndn),tau(ni,ndn,3)) 
-!allocate (F1(nk,ndn,3),F2(nk,ndn,3),F1_old(nk,ndn,3),error(nk,ndn,3),diff(nk,ndn,3)) 
-!allocate (diff_kap(nk,ndn,3,3),kappa(ndn,3,3),kappa_RTA(ndn,3,3))    ! 3 for xyz
-!allocate (kappa_k(ni,ndn,3,3),kappa_k_RTA(ni,ndn,3,3))    ! 3 for xyz
-!allocate (dist(nk,ndn),frequency(nk,ndn))
-!allocate (Qvalue_N(ni,ndn),Qvalue_U(ni,ndn),tauinv_N(ni,ndn),tauinv_U(ni,ndn),tauinv_tot(ni,ndn),tauinv_eff(ni,ndn))
-!end subroutine allocate_iter
-
 subroutine allocate_iter (ni,nk,ndn)
 implicit none
 integer, intent(in) :: ni,nk,ndn
-!allocate (F_RTA(ni,ndn,3),Qvalue(ni,ndn),iselfenergy(ni,ndn),tau(ni,ndn,3))
-!allocate (F1(nk,ndn,3),F2(nk,ndn,3),F1_old(nk,ndn,3),error(nk,ndn,3),diff(nk,ndn,3))
-!allocate (diff_kap(nk,ndn,3,3),kappa(ndn,3,3),kappa_RTA(ndn,3,3))    ! 3 for xyz
-!allocate (kappa_k(ni,ndn,3,3),kappa_k_RTA(ni,ndn,3,3))    ! 3 for xyz
+allocate (F_RTA(ni,ndn,3),Qvalue(ni,ndn),iselfenergy(ni,ndn),tau(ni,ndn,3)) 
+allocate (F1(nk,ndn,3),F2(nk,ndn,3),F1_old(nk,ndn,3),error(nk,ndn,3),diff(nk,ndn,3)) 
+allocate (diff_kap(nk,ndn,3,3),kappa(ndn,3,3),kappa_RTA(ndn,3,3))    ! 3 for xyz
+allocate (kappa_k(ni,ndn,3,3),kappa_k_RTA(ni,ndn,3,3))    ! 3 for xyz
 allocate (dist(nk,ndn),frequency(nk,ndn))
 allocate (Qvalue_N(ni,ndn),Qvalue_U(ni,ndn),tauinv_N(ni,ndn),tauinv_U(ni,ndn),tauinv_tot(ni,ndn),tauinv_eff(ni,ndn))
-allocate (Qvalue(ni,ndn),kappa(ndn,3,3))
 end subroutine allocate_iter
 
 subroutine allocate_FGR (n1,n2,l1,l2,l3)
 implicit none
 integer, intent(in) :: n1,n2,l1,l2,l3
-allocate (P1(n1,n2,l1,l2,l3),P2(n1,n2,l1,l2,l3),Piso(n1,l1))      
+allocate (P1(n1,n2,l1,l2,l3),P2(n1,n2,l1,l2,l3),Piso(n1,n2,l1,l2))      
 end subroutine allocate_FGR
 
 subroutine deallocate_iter
-!deallocate(F_RTA,F1,F2,Qvalue,iselfenergy,tau,error,diff,F1_old)
-!deallocate(diff_kap,kappa,kappa_k,kappa_RTA,kappa_k_RTA)
-!deallocate(dist,frequency)
-!deallocate(Qvalue_N,Qvalue_U,tauinv_N,tauinv_U,tauinv_tot,tauinv_eff)
+deallocate(F_RTA,F1,F2,Qvalue,iselfenergy,tau,error,diff,F1_old)
+deallocate(diff_kap,kappa,kappa_k,kappa_RTA,kappa_k_RTA)
+deallocate(dist,frequency)
+deallocate(Qvalue_N,Qvalue_U,tauinv_N,tauinv_U,tauinv_tot,tauinv_eff)
 end subroutine deallocate_iter
 
 subroutine deallocate_FGR
@@ -1444,8 +1431,7 @@ end module exactBTE2
 !==========================================================
  module phi3
  complex(8), allocatable :: selfN(:,:,:) ,selfU(:,:,:) !v3(:,:,:,:,:),
- real(8), allocatable :: v33sq(:),v33sq_5(:,:,:,:,:),v33s8(:,:,:,:,:),P1smpi(:,:,:,:,:),P2smpi(:,:,:,:,:),p1sm_mpi(:,:,:,:,:),p2sm_mpi(:,:,:,:,:)
- real(8), allocatable :: isempi(:,:),tsempi(:,:),ise_mpi(:,:),tse_mpi(:,:)
+ real(8), allocatable :: v33sq(:),v33sq_5(:,:,:,:,:),v33s8(:,:,:,:,:)
  integer, allocatable:: nq1(:),nq2(:),nq3(:),la1(:),la2(:),la3(:)
  integer nv3,readv3,writev3, iter, split, calc_kappa, max_iter, job, iso ! sy added iter,split, calk, max_iter
  real(8) v3_threshold,const33, conv_error , conv_max_error, conv_max_diff, conv_diff, conv_diff_kap, conv_max_diff_kap,conv_iter,update_mix   ! sy added conv_norm, conv_max, update
@@ -1507,27 +1493,27 @@ end module exactBTE2
  !! list written in the file kpbs.params (given in direct coordinates of the CONVENTIONAL cell)
    use ios
    use geometry
-   use lattice !, only : g01,g02,g03
+   use lattice , only : g01,g02,g03
    use constants, only : pi
      implicit none
-     integer :: i,j,nk,uio,nkdir,ubs1,units ,ndir
-     real(kind=8) lk,q(3),k_conv(3),k_prim(3),k_cart(3)
-     real(kind=8), allocatable :: ki(:,:),kf(:,:) ,kext_bs(:,:)
+     integer :: i,j,nk,uio,nkdir,ubs,units ,ndir
+     real(r15) lk,q(3),k_conv(3),k_prim(3),k_cart(3)
+     real(r15), allocatable :: ki(:,:),kf(:,:) ,kext_bs(:,:)
      character(LEN=6), allocatable :: dk(:)
 
      write(*,*)'entering MAKE_KP_BS'
      uio = 67
-     ubs1 = 68
+     ubs = 68
      open(uio,file='kpbs.params',status='old')
-     open(ubs1,file='redtocart')
+     open(ubs,file='redtocart')
 
      read(uio,*) units  ! if 0 conventional, else primitive
      write(*,*)'reading ',units,nkdir,ndir
      read(uio,*) nkdir  ! number of kpoints along each direction
      write(*,*)'reading ',units,nkdir,ndir
      read(uio,*) ndir  ! number of directions for the band structure
-     write(ubs1,*)'reading units,nkdir,ndir=',units,nkdir,ndir
-     write(ubs1,*)'# k_name , k in primitive, k in gconv units, k in cartesian '
+     write(ubs,*)'reading units,nkdir,ndir=',units,nkdir,ndir
+     write(ubs,*)'# k_name , k in primitive, k in gconv units, k in cartesian '
      nkp_bs = ndir*nkdir    ! +1 is for including the last point
      write(*,*)'reading nkp_bs= ',nkp_bs
      allocate(kp_bs(3,nkp_bs),ki(3,ndir),kf(3,ndir),dk_bs(nkp_bs),kname_bs(ndir+1),kext_bs(3,ndir+1),dk(ndir+1))
@@ -1553,7 +1539,7 @@ end module exactBTE2
            kf(:,i)=q
 
  ! conventional reduced and primitive
-           write(ubs1,9)kname_bs(i),i, k_prim,k_conv,k_cart
+           write(ubs,9)kname_bs(i),i, k_prim,k_conv,k_cart
 
         else  ! reading in units of primitive
            q=kext_bs(:,i)
@@ -1566,7 +1552,7 @@ end module exactBTE2
            k_conv=matmul(transpose(conv_to_cart),k_cart)/2/pi
 
  ! conventional reduced and primitive
-           write(ubs1,9)kname_bs(i),i, kext_bs(:,i),k_conv,k_cart
+           write(ubs,9)kname_bs(i),i, kext_bs(:,i),k_conv,k_cart
 
         endif
      enddo
@@ -1575,39 +1561,33 @@ end module exactBTE2
      if(units.eq.0) then ! reading in units of conventional
            k_cart=kext_bs(1,i)*g1conv+kext_bs(2,i)*g2conv+kext_bs(3,i)*g3conv
            k_prim=matmul(transpose(prim_to_conv),kext_bs(:,i))
-           write(ubs1,9)kname_bs(i),i, k_prim,kext_bs(:,i),k_cart
+           write(ubs,9)kname_bs(i),i, k_prim,kext_bs(:,i),k_cart
      else
            k_cart=kext_bs(1,i)*g01+kext_bs(2,i)*g02+kext_bs(3,i)*g03
            k_conv=matmul(transpose(conv_to_cart),k_cart)/2/pi
-           write(ubs1,9)kname_bs(i),i, kext_bs(:,i),k_conv,k_cart
+           write(ubs,9)kname_bs(i),i, kext_bs(:,i),k_conv,k_cart
      endif
 
      close(uio)
-     close(ubs1)
+     close(ubs)
 
    9 format(a,i4,9(1x,f9.5))
 
    write(ulog,*)' Kpoints for band structure generated from kpbs.params'
    write(*,*)' Kpoints for band structure generated from kpbs.params'
 
-   write(ulog,*) g01
-   write(ulog,*) length(g01)
-   write(ulog,*) g02
-   write(ulog,*) length(g02)
-   write(ulog,*) g03
-   write(ulog,*) length(g03)
 
-  open(ubs1,file='KPOINT.BS',status='unknown')
-  write(ubs1,*)'# k in cartesian and in direct units of primitive and conventional reciprocal lattice'
+  open(ubs,file='KPOINT.BS',status='unknown')
+  write(ubs,*)'# k in cartesian and in direct units of primitive and conventional reciprocal lattice'
   open(88,file='KTICS.BS',status='unknown')
      nk = 0
  !    dk_bs(1) = 0
  ! now for each direction set up the coordinates of the kpoints
      kext_bs(1,1)=0    ! here using kext_bs(1,:) as a dummy variable
      do i = 1,ndir !-1
-        write(ubs1,7) i, matmul(prim_to_cart,ki(:,i)),ki(:,i), matmul(transpose(conv_to_prim),ki(:,i))
+        write(ubs,7) i, matmul(prim_to_cart,ki(:,i)),ki(:,i), matmul(transpose(conv_to_prim),ki(:,i))
         q(:) = kf(:,i)-ki(:,i)  ! length of each section
-        lk = length(q) !/length(g01)  ! length of each section
+        lk = length(q)/length(g01)  ! length of each section
         do j = 1,nkdir
            nk = nk+1
           if ( nk.ge.2) then
@@ -1620,9 +1600,6 @@ end module exactBTE2
              dk_bs(nk) = 0 !dk_bs(nk-1)
            endif
            kp_bs(:,nk) = ki(:,i) + (j-1)*q(:)/(nkdir-1+1d-8)
- 
-    write(*,*)' dk_bs =', nk,dk_bs(nk)
-
         enddo
         kext_bs(1,i+1)=real(dk_bs(nk))   ! here using kext_bs(1,:) as a dummy variable
      enddo
@@ -1635,7 +1612,7 @@ end module exactBTE2
 
  !   write(88,*)'set xtics ( ',(kname_bs(i),dk(i),",",i=1,ndir+1),' )'
      write(88,*)'set xtics ( ',(kname_bs(i),dk(i),",",i=1,ndir),kname_bs(ndir+1),dk(ndir+1),' )'
-     close(ubs1)
+     close(ubs)
      close(88)
 
      deallocate(ki,kf,kname_bs)

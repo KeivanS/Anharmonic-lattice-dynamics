@@ -69,9 +69,9 @@
  end subroutine make_r0g
 !============================================================
  subroutine check(r,a1,a2,a3,ier,g1,g2,g3)
-! subroutine to check whether r is an integer multiple of (r01,r02,r03)
-! output ai are the coefficients of its linear combination on this basis
-! ier=0 means r is an integer multiple of the basis
+!! subroutine to check whether r is an integer multiple of (r01,r02,r03)
+!! output ai are the coefficients of its linear combination on this basis
+!! ier=0 means r is an integer multiple of the basis
  use geometry
  use params
  use ios
@@ -81,22 +81,20 @@
  real(8) a1,a2,a3,ep
  integer ier
 
+ ier=1
  ep = tolerance ! 0.001 ! displacements larger than 0.001 A are not tolerated 
 !call write_out(ulog,'CHECK: R ',r)
  a1 = r .dot. g1
  a2 = r .dot. g2
  a3 = r .dot. g3
- if(abs(a1-nint(a1)).ge.ep .or.abs(a2-nint(a2)).ge.ep   &
-&   .or.abs(a3-nint(a3)).ge.ep ) then
-!  write(ulog,*) ' R is not a multiple of r0s , check your inputs '
-!  write(ulog,*) ' R.r0i=',a1,a2,a3
-   ier = 1
-!  stop
- else
+ if(abs(a1-nint(a1)).le.ep .and. abs(a2-nint(a2)).le.ep   &
+&   .and. abs(a3-nint(a3)).le.ep ) then
+   ier = 0
 !  write(ulog,*) ' R is a multiple of r0s'
 !  write(ulog,3) ' n1,n2,n3  =',a1,a2,a3
-   ier = 0
  endif
+!  write(ulog,*) ' R is not a multiple of r0s , check your inputs '
+!  write(ulog,*) ' R.r0i=',a1,a2,a3
 3 format(a,3(1x,g12.6))
 
  end subroutine check
@@ -190,8 +188,8 @@ end subroutine calculate_volume
  subroutine make_reciprocal_lattice(r1,r2,r3,g1,g2,g3)
 ! be careful it does not have the factor of 2*pi in it!
  use geometry
- use constants
- use ios
+! use constants
+! use ios
  implicit none
  type(vector) :: r1,r2,r3,g1,g2,g3
  real(8) om
@@ -222,10 +220,10 @@ end subroutine calculate_volume
  g1=2*pi*(r2 .cross. r3)/om
  g2=2*pi*(r3 .cross. r1)/om
  g3=2*pi*(r1 .cross. r2)/om
- call write_out(ulog,'om ',om)
- call write_out(ulog,'g1 ',g1)
- call write_out(ulog,'g2 ',g2)
- call write_out(ulog,'g3 ',g3)
+! call write_out(ulog,'om ',om)
+! call write_out(ulog,'g1 ',g1)
+! call write_out(ulog,'g2 ',g2)
+! call write_out(ulog,'g3 ',g3)
 
  end subroutine make_reciprocal_lattice_2pi
 !==========================================================
@@ -379,7 +377,6 @@ end subroutine calculate_volume
        qdotg = ( q .dot. gt) + sm
        gg = gt .dot. gt
        if(abs(qdotg) .gt. gg/2) return
-
        gt = g3+g2
        qdotg = ( q .dot. gt) + sm
        gg = gt .dot. gt
@@ -525,7 +522,6 @@ end subroutine calculate_volume
  subroutine make_sorted_gs(g1,g2,g3,nshell,gg)
 ! from the basis (g1,g2,g3) generate the nshell shortest linear combinations including 0
  use geometry
-! use io2
  implicit none
  integer nshell,i,j,k,n5,ik,ns
  type(vector) :: g1,g2,g3
@@ -535,7 +531,7 @@ end subroutine calculate_volume
 
  ns = (2*nshell+1)**(0.3333)
  n5 = (2*ns+1)**3
- allocate ( g5(3,n5),gs(n5),xmap(n5) )
+ allocate ( g5(3,n5),gs(n5),xmap(n5) ) ! not fullproof!!
 
  ik = 0
  do i=-ns,ns
@@ -729,24 +725,32 @@ end subroutine calculate_volume
  end subroutine set_neighbork
 !===========================================================
  subroutine send_to_fbz(kp,nshl,gg,q,ns)
-! folds the kpoint kp into the FBZ and stores the result in q
+! folds the kpoint kp into the FBZ and stores the shortest vector in q
 ! also returns ns : ns=1 means it was inside, ns=16 means too far , it failed
  use lattice
-!! use io2
  implicit none
  integer, intent(in) :: nshl
  real(8), intent(in) :: kp(3),gg(3,nshl)
  integer, intent(out) :: ns
  real(8), intent(out) :: q(3)
+ real(8) lmin,lkplusg
+ integer nsmin
  logical inside
 
- foldloop: do ns=1,nshl
-     q = kp(:)+gg(:,ns)
-     call check_inside_fbz(q,g1,g2,g3,inside)
-     if(inside) then
-       return
+! find the shortest length for q=kp+gg and then check_inside
+ lmin=1d8;ns=16
+ do ns=1,nshl
+     lkplusg = length(kp(:)+gg(:,ns))
+     if (lkplusg.lt.lmin) then
+        lmin=lkplusg
+        nsmin=ns
      endif
- enddo foldloop
+ enddo 
+ q = kp(:)+gg(:,nsmin)
+ call check_inside_fbz(q,g1,g2,g3,inside)
+ if(inside) then
+    ns=1
+ endif
 
 3 format(3(i6),9(2x,f8.4))
 
@@ -755,7 +759,6 @@ end subroutine calculate_volume
  subroutine send_to_primcell(kp,q)
 ! folds the kpoint kp into the primitive cell (between 0 and G) stores the result in q
  use lattice
-!! use io2
  implicit none
  real(8), intent(in) :: kp(3)
  real(8), intent(out) :: q(3)
@@ -770,4 +773,14 @@ end subroutine calculate_volume
  q=a1*g1+a2*g2+a3*g3
 
  end subroutine send_to_primcell
+!============================================================
+ subroutine dirconv2cart(q,k)
+! takes q in direct coordinates of the conventional cell and outputs k in cartesian
+ use geometry
+ use lattice 
+ real(8) q(3),k(3)
+
+ k(:) = q(1)*g1conv + q(2)*g2conv + q(3)*g3conv
+
+ end subroutine dirconv2cart 
 !============================================================

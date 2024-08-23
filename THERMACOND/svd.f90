@@ -1,5 +1,5 @@
 !===========================================================
- subroutine svd_set(m3,n,a,b,x,sig,svdcut,error,ermax,sigma,fnsvd)
+ subroutine svd_solver(m3,n,a,b,x,sig,svdcut,error,ermax,sigma,fnsvd)
 ! use mappings
  implicit none
  integer i,j,m3,n,k,uio,natsupercell,fcid,fctemp
@@ -26,7 +26,7 @@
  open(uio,file=fnsvd,status='unknown')
 if (m3 .ne. n) then
 open(fcid,file='force-value.dat')
-write(fcid,*) natsupercell, n 
+!! K1 write(fcid,*) natsupercell, n 
 endif
 if (m3 .eq. n) then
 open(fctemp,file='fc-temp-all.dat')
@@ -150,7 +150,7 @@ endif
   if (m3 .eq. n) then
    close(fctemp)
   endif
- end subroutine svd_set
+ end subroutine svd_solver
 !===================================================
       SUBROUTINE svdcmp(a,m,n,mp,np,w,v)
       implicit none

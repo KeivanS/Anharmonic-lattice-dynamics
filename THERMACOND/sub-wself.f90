@@ -1093,7 +1093,7 @@ close(uv3)
 
  call cal_eiqr2(nk,ndn)    ! calculate eiqr2, eivec2
 
- !write(*,*)'exited cal_eiqr2...'
+ write(*,*)'exited cal_eiqr2...'
 
 !! v33 = cmplx(0d0,0d0)
 ! v33sq = 0d0
@@ -1131,7 +1131,7 @@ s=s+1
       write(ulog,*)'ijk1=',i1,j1,k1
       stop
     endif
-!write(*,*)'first loop after checking mapinv(n1).e.nk1'
+write(*,*)'first loop after checking mapinv(n1).e.nk1'
  call cpu_time(cputim)  !date_and_time(time=tim)
  write(ulog,*) 'entering q1...',n1,q1
  write(ulog,'(a,f12.4)')'  TIME IS ',cputim
@@ -1153,7 +1153,7 @@ do l1=1,ndn
       write(ulog,*)'ijk2=',i2,j2,k2
       stop
     endif
-!write(*,*)'second k-loop after checking mapinv(n1).e.nk1'
+write(*,*)'second k-loop after checking mapinv(n1).e.nk1'
     q3 = -q2-q1
 
    call get_k_info(q3,NC,nk3,i3,j3,k3,g1,g2,g3,inside)
@@ -1314,10 +1314,10 @@ ukapiter = 9400
 tot_kap=0
 
 kappa=0
-!kappa_k=0
-!kappa_RTA=0
-!kappa_k_RTA=0
-!diff_kap=0
+kappa_k=0
+kappa_RTA=0
+kappa_k_RTA=0
+diff_kap=0
 
 temp = tempk*k_b/(100*h_plank*c_light)   ! convert to cm^-1
 const1 = h_plank *c_light *100* c_light / (nkc*volume_r/1d30)
@@ -1429,10 +1429,10 @@ ukapiter = 9400
 tot_kap=0
 
 kappa=0
-!kappa_k=0
-!kappa_RTA=0
-!kappa_k_RTA=0
-!diff_kap=0
+kappa_k=0
+kappa_RTA=0
+kappa_k_RTA=0
+diff_kap=0
 
 temp = tempk*k_b/(100*h_plank*c_light)   ! convert to cm^-1
 const1 = h_plank *c_light *100* c_light / (nkc*volume_r/1d30)
@@ -2870,177 +2870,6 @@ close(601)
 
 end subroutine CollisionMatrix
 !===========================================================
-!==========================================================
-subroutine CollisionMatrix_mpi(ksbst,ndn)!Cs) !!Saf!!
-!subroutine sycollisionM(ksbst,nibbz,kibbz,ndn,nk,kp,Cs) !!Saf!!
-!Collision matrix(IBZ*FBZ)*Symmerty matrix(FBZ*IBZ)=Cs(IBZ*IBZ) :output
-
-use constants
-use exactBTE2
-use params
-use lattice
-use ios
-use mod_ksubset2
-use phi3
-use kpoints
-use atoms_force_constants
-implicit none
-
-integer n1,l1,n2,l2,ns, s1,s2
-integer ndn,narms
-integer i,j,kil,ii,jj,d,kil1,kil2
-real(8) q(3),q1(3),q2(3),q3_p1(3),q3_p2(3)
-integer i3,j3,k3,inside,nk3_p1
-real(8) C_d, C_of, C
-real(8) kvecstars(3,48)
-integer kvecops(48),n0,n22,nl2,l3,nl3,ni0,n1i,d1,d2
-integer ksbst(2)
-
-s1=0
-s2=0
-!Cs=0
-C=0
-! kil=nibbz*ndn*3
-Collision_Matrixmpi=0
-!!!!Collision_Matrixmpi
-!kil1=((ksbst(2)-ksbst(1))+1)*ndn*3
-!kil2=nibz*ndn*3
-
-!open(701,file='sycmatrix.dat')
-  do n1=ksbst(1),ksbst(2)
-!    do n1=1,nibbz
-       n1i=mapinv(n1)
-    do l1=1,ndn
-      s1=s1+1
-      d1=s1
-
-      do n2=1,nibz
-           q=kibz(:,n2)
-           ni0=mapinv(n2)
-           call kstarsinfbz1(q,nkc,kpc,narms,kvecstars,kvecops)
- !     write(701,*) '**************',n2,narms
-       do l2=1,ndn
-          s2=s2+1
-          d2=s2
-         !C_d=0
-         !C_of=0
- !      write(701,*)'n1,  n1i,  l1,  n2,  ni0,  n0,  l2,  narms,  ns,  s1,  s2,C_d,  C_of,   Cs(s1,s2)'
-       do ns=1,narms
-          call get_k_info(kvecstars(:,ns),NC,n0,i3,j3,k3,g1,g2,g3,inside)
-      ! do l2=1,ndn
-     !    C_d=0
-     !    C_of=0
-        ! C2=0
-        ! C3=0
-        ! C4=0
-        ! C5=0
-           if (n1i.eq.n0 .and. l1.eq.l2) then
-               C=0
-                 do nl2=1,ndn
-                   do l3=1,ndn
-                    do n22=1,nkc
-
-! K1                    C = C + (-P1(n1i,n22,l1,nl2,l3) - 0.5*P2(n1i,n22,l1,nl2,l3))
-                        C = C + (-P1(n1 ,n22,l1,nl2,l3) - 0.5*P2(n1,n22,l1,nl2,l3))
-
-                    enddo
-                   enddo
-                enddo
-            ! C2 = C_d
-            ! C3 = C_d
-
-           else
-
-         q1 = kibz(:,n1)
-         q2 = kvecstars(:,ns)
-         q3_p1 = q1+q2
-         q3_p2 = q1-q2
-
-        ! write(*,*)'here', n1,n1i,l1,n2,ns,narms,n0,l2
-
-         call get_k_info(q3_p1,NC,nk3_p1,i3,j3,k3,g1,g2,g3,inside)
-               C=0
-      loopnl3:  do nl3=1,ndn
-
-! K1              C = C + (-P1(n1i,n0,l1,l2,nl3) + P1(n1i,nk3_p1,l1,l2,nl3) +  P2(n1i,n0,l1,l2,nl3))
-                  C = C + (-P1(n1 ,n0,l1,l2,nl3) + P1(n1 ,nk3_p1,l1,l2,nl3) + P2(n1 ,n0,l1,l2,nl3))
-                enddo loopnl3
-         !    C4 = C_of
-         !    C5 = C_of
-           endif
-         s2=d2
-         s1=d1
-         do i=1,3
-           s2=d2
-           s1=d1+(i-1)
-            do j=1,3
-                s2=d2+(j-1)
-                ! i=1
-                ! j=1
-                Collision_Matrixmpi(s1,s2) = Collision_Matrixmpi(s1,s2) + (C * op_kmatrix(i,j,kvecops(ns)))
-                !write(*,*)'n1,n1i,l1,n2,l2,ni0,narms,ns,n0,s1,s2, C'
-!! K1 write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_kmatrix(i,j,kvecops(ns)),kvecops(ns),Cs(s1,s2)
-        !        write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_kmatrix(i,j,kvecops(ns)),kvecops(ns), Collision_Matrix(s1,s2)
-                !s2=s2+1
-            enddo
-           !s1=s1+1
-         enddo
-        !s1=d1
-        !if (s2.lt.kil) then
-        !s2=s2+1
-        !else
-        !cycle
-        !endif
-       enddo   !narms loop
-!      write(*,*)'after summation over narms'
-!       d2=s2
-!       d1=s1
-!         do i=1,3
-!           do j=1,3
-!             s2=d2+(j-1)
-!             Cs(s1,s2) = C * op_kmatrix(i,j,kvecops(ns))
-!             write(*,*) s1,s2,C,ns, op_kmatrix(1,1,kvecops(1)), Cs(s1,s2),i,j
-!           enddo
-!          s1=s1+1
-!         enddo
-
-!        s1=d1
-!        if (s2.lt.kil) then
-!        s2=s2+1
- !       else
- !       cycle
- !       endif
-
-       enddo    !l2 loop
-!      s2=d2
-!      s1=s1+1
-      enddo     !n2 loop
-
-!   if (s1.le.(kil-3)) then
-!    s1=s1+3
-!    else
-!    exit
-!    endif
-   s2=0
-   !s1=s1+1
-  enddo
-   enddo
-
-!close(701)
-
-!open(601,file='Cs_sycollisionm.dat',status='unknown',form='unformatted')
-!do ii=1,kil1
-!   do jj=1,kil2
-!      write(601) Collision_Matrix(ii,jj)
-!   enddo
-!enddo
-!close(601)
-
-
-
-end subroutine CollisionMatrix_mpi
-!===========================================================
-
 
 !==========================================================
 subroutine CollisionMatrix_split(ksbst,ndn)!Cs) !!Saf!!
@@ -4884,10 +4713,7 @@ enddo
 
 end subroutine read_Piso
 !==========================================================
-
-
-!==========================================================
-subroutine selfenergyw3(kbsubset,ndn,tmp,tmpk,nkpbss,kpbss,dkbss) !!Saf!!
+subroutine selfenergyw3(kbsubset,ndn,tmp,tmpk,nkpbss,kpbss,dkbss)
 
 
 use constants
@@ -4900,7 +4726,7 @@ use phi3
 use kpoints
 use atoms_force_constants
 
-implicit none
+implicit none          
 
   integer kbsubset(2)
   integer nbss,ndn,la,lll,nkpbss
@@ -4909,23 +4735,25 @@ implicit none
   complex(8) , allocatable ::evcbbs(:,:,:)
   real(8) omegab0(ndn),kbbss(3),kpbss(3,nkpbss),dkbss(nkpbss)
   real(8) tmp,tmpk
-
-lll = 5322
+ 
+lll = 5322 
  !        call make_kp_bs
-
+!write(*,*)'***********************************************************'
 
          allocate(evlbbs(ndn,nkpbss),evcbbs(ndn,ndn,nkpbss),vlcbbs(3,ndn,nkpbss))!,omega0(ndyn),tse(ndyn))
+!write(*,*)'????????????????????????????????????????????????????????????????'
+
          call get_frequencies(nkpbss,kpbss,dkbss,ndn,evlbbs,ndn,evcbbs,lll,vlcbbs)
-
-
+write(*,*)'%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+ 
       do nbss=kbsubset(1),kbsubset(2)
-
+write(*,*)'^^^^^^^^^^^^^^^^',nbss
               do la=1,ndn
                  kbbss=kp_bs(:,nbss)
                  omegab0(la)=sqrt(abs(evlbbs(la,nbss))) * cnst
-
+      
                 call function_self_w3(kbbss,la,omegab0(la),tmp,nselfss,uselfss)
-
+     
                 isempi(nbss,la)=2*aimag(nselfss+uselfss)
                  tsempi(nbss,la)=1d10/c_light/isempi(nbss,la)
 !                 write(lwse,*)tempk,la,nkbss,kbss,dk_bs(nkbss),omega0(la),aimag(nselfs+uselfs),ise,tse(la),1/tse(la)
@@ -4937,10 +4765,9 @@ lll = 5322
 
  !       enddo
 
+
+
 end subroutine selfenergyw3
-!==========================================================
-
-
 
 !===========================================================
 
@@ -7108,7 +6935,7 @@ do n1=1,ksub_size2
 
 
                 V3sq1=v33s8(n1,j,ii,jj,kk) * (2*pi)**2 / nkc
-           !     write(*,*)'v3sq1',v3sq1
+                write(*,*)'v3sq1',v3sq1
                 if (jj<=3 .and. i2.eq.NC(1)/2+1 .and. j2.eq.NC(2)/2+1 .and. k2.eq.NC(3)/2+1 ) then  ! Acoustic modes at Gamma point
                     V3sq1=0.0                                                                        ! to enforce matrix_elt = 0
                 endif
@@ -7920,8 +7747,8 @@ nkI1_loop: do ibz=1,nibz
 
 
 
-   ! call cpu_time(cputim2)
-   ! write(*,*) indx,'th ksubset for Pmatrix3 done...', cputim2-cputim1
+    call cpu_time(cputim2)
+    write(*,*) indx,'th ksubset for Pmatrix3 done...', cputim2-cputim1
 
 
 enddo nkI1_loop

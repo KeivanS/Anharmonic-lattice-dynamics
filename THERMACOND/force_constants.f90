@@ -12,7 +12,9 @@
 !     atompos_in(j,i) (input), jth dimensionless coordinate of the ith atom
 
       use lattice
-      use force_constants_module
+      use ios 
+      use atoms_force_constants
+      use params , only : nsmax
       implicit none
       integer maxshell
 !      parameter(maxshell=10)
@@ -25,8 +27,11 @@
       logical foundit,foundone
       double precision d2save(maxneighbors),r(3),d2, d2r,   &
      &     lattparams(6),primlatt(3,3),      tempi(3,3),latp(6),   &
-     &     conv_to_cart(3,3),prim_to_cart(3,3),cart_to_prim(3,3),   &
-     &     prim_to_conv(3,3),conv_to_prim(3,3),atompos_in(3,natoms_in),   &
+!    &     conv_to_cart(3,3),  &
+! prim_to_cart(3,3),cart_to_prim(3,3),   &
+!    &     prim_to_conv(3,3),
+!    &     conv_to_prim(3,3),
+     &     atompos_in(3,natoms_in),   &
      &     atomposconv(3,natoms_in),fract(3),v(3),v2(3),temp(3,3)
 
 !k1
@@ -47,15 +52,7 @@
       allocate(iatomop(natoms0,natoms0),atomopfract(3,natoms0,natoms0))
       iatomneighbor=maxneighbors+1
       iatomop=0
-      write(*,*)'primlatt=',primlatt
-! get primitive lattice vectors in terms of conventional lattice vectors
-      prim_to_conv(1:3,1:3)=primlatt(1:3,1:3)
-      call xmatinv(prim_to_conv,conv_to_prim,ier)
-      if(ier.ne.0)then
-        write(6,*)'Error in force_constants_init: primitive_lattice '   &
-     &       //'is singular'
-        stop
-      endif
+
 ! get conventional lattice parameters in cartesian coordinates
       conv_to_cart=0
       latp=lattparams
@@ -68,16 +65,47 @@
      &     -dcos(latp(6))*dcos(latp(5)))  /dsin(latp(6))
       conv_to_cart(3,3)=sqrt(latp(3)**2-conv_to_cart(1,3)**2   &
      &     -conv_to_cart(2,3)**2)
-      write(*,*)'conv_to_cart=',conv_to_cart
+  !   write(*,*)'conv_to_cart=',conv_to_cart
+      call write_out(6,'conv_to_cart ',conv_to_cart)
+      call write_out(6,'primlatt ',primlatt)
+
 ! get primitive lattice parameters in cartesian coordinates
+      prim_to_conv(1:3,1:3)=primlatt(1:3,1:3)
       call xmatmlt(conv_to_cart,prim_to_conv,prim_to_cart,3,3,3,3,3,3)
+      
+      call write_out(6,'prim_to_cart ',prim_to_cart)
+
       call xmatinv(prim_to_cart,cart_to_prim,ier)
+      call write_out(6,'cart_to_prim ',cart_to_prim)
       if(ier.ne.0)then
         write(6,*)'Error in force_constants_init: primitive_lattice '   &
      &       //'is singular'
         stop
       endif
-      write(*,*)'cart_to_prim=',cart_to_prim
+
+! get primitive lattice vectors in terms of conventional lattice vectors
+      call xmatinv(prim_to_conv,conv_to_prim,ier)
+      call write_out(ulog,'conv_to_prim ',conv_to_prim)
+      if(ier.ne.0)then
+        write(6,*)'Error in force_constants_init: primitive_lattice '   &
+     &       //'is singular'
+        stop
+      endif
+
+      call write_out(ulog,' cart_to_prim cell(1) =',cart_to_prim(:,1))
+      call write_out(ulog,' cart_to_prim cell(2) =',cart_to_prim(:,2))
+      call write_out(ulog,' cart_to_prim cell(3) =',cart_to_prim(:,3))
+      call write_out(ulog,' conventional cell(1) =',conv_to_cart(:,1))
+      call write_out(ulog,' conventional cell(2) =',conv_to_cart(:,2))
+      call write_out(ulog,' conventional cell(3) =',conv_to_cart(:,3))
+      r1conv=conv_to_cart(:,1)
+      r2conv=conv_to_cart(:,2)
+      r3conv=conv_to_cart(:,3)
+
+      call make_reciprocal_lattice_2pi(r1conv,r2conv,r3conv,g1conv,g2conv,g3conv)
+      call write_out(ulog,' conventional recip(1) =',g1conv)
+      call write_out(ulog,' conventional recip(2) =',g2conv)
+      call write_out(ulog,' conventional recip(3) =',g3conv)
 
 ! added by k1 --------
 ! prim_to_cart(i,j) is the ith cartesian coordinate of the jth translation 
@@ -86,8 +114,8 @@
       r01 = prim_to_cart(:,1)
       r02 = prim_to_cart(:,2)
       r03 = prim_to_cart(:,3)
-!     call write_out(ulog,'transpose(g) ',3,3,cart_to_prim)
-      write(*,*)'transpose(g) ',cart_to_prim
+      call write_out(ulog,'transpose(g) ',cart_to_prim)
+!     write(*,*)'transpose(g) ',cart_to_prim
 ! added by k1 --------
 
 ! get atomic positions in cartesian coordinates
@@ -253,7 +281,7 @@
         m=0
 ! collect distances to nearest neighbors
 ! do one shell of unit cells at a time
-        do n=0,maxshell
+        do n=0,nsmax !maxshell
           foundone=.false.
           do i1=-n,n
           do i2=-n,n
@@ -308,8 +336,8 @@
 ! list is filled
           if(nd2save.eq.maxneighbors.and.m.eq.0)m=1
 ! we reached the last shell before we finished the list
-          if(n.eq.maxshell)then
-            write(6,*)'Error:  maxshell is not large enough ',maxshell
+          if(n.eq.nsmax)then
+            write(6,*)'Error:  maxshell is not large enough ',nsmax
             close(20)
             stop
           endif
@@ -408,7 +436,7 @@
 !     maxtermszero (input), number columns in arrays iatomtermzero and
 !          ixyztermzero
 
-      use force_constants_module
+      use atoms_force_constants
       implicit none
       integer nrank,maxrank,maxterms,maxtermsindep,maxtermszero
       integer ierz,iert,ieri
@@ -798,7 +826,7 @@
 !          in arrays iatomtermzero and ixyztermzero
 !     maxgroups (input), maximum number of groups
 
-      use force_constants_module
+      use atoms_force_constants
       implicit none
       integer nrank,maxrank,maxterms,maxtermsindep,maxgroups,  &
      &     maxtermszero,ierz,iert,ieri,ierg
@@ -996,7 +1024,7 @@
 !     iatomout(i) (output), atom at ith location in denominator
 !     ixyzout(i) (output), x,y,z coordinate of atom
 
-      use force_constants_module
+      use atoms_force_constants
       implicit none
       integer nrank
       integer i,j,k,m,n,iatomin(nrank),iatomout(nrank),  &
@@ -1079,7 +1107,7 @@
 !     icell0 (input), identity of equivalent atom in unit cell at origin
 !     iatom (output), location of atom in data base.  Returns zero if not found
 !          in data base
-      use force_constants_module
+      use atoms_force_constants
       implicit none
       integer icell(3),icell0,iatom,i,j
       do i=1,natoms
@@ -1101,7 +1129,7 @@
 !     pos(i) (input), ith cartesian coordinate of atomic position
 !     iatom (output), location of atom in data base.  Returns zero if not found
 !          in data base
-      use force_constants_module
+      use atoms_force_constants
       implicit none
       integer iatom,i,j,ncmp
       double precision pos(3)
@@ -1724,7 +1752,7 @@
 !     narms (output), number of star vectors associated with kvec
 !     kvecstar(3,1:narms), all the stars of kvec
 !     kvecop(i), the symmetry operation number for the star vecor i
-      use force_constants_module
+      use atoms_force_constants
       implicit none
       integer i,j,k,m,n,narms,kvecop(48),ier,ncmp
       double precision kvec(3),kvecstar(3,48),primlatt(3,3),v(3),  &
@@ -1794,7 +1822,7 @@
 !          in arrays iatomtermzero and ixyztermzero
 !     maxgroups (input), maximum number of groups
 
-      use force_constants_module
+      use atoms_force_constants
       implicit none
       integer nrank,maxrank,maxterms,maxtermsindep,maxgroups,  &
      &     maxtermszero,ierz,iert,ieri,ierg

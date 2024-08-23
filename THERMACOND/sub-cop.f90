@@ -1093,7 +1093,7 @@ close(uv3)
 
  call cal_eiqr2(nk,ndn)    ! calculate eiqr2, eivec2
 
- !write(*,*)'exited cal_eiqr2...'
+ write(*,*)'exited cal_eiqr2...'
 
 !! v33 = cmplx(0d0,0d0)
 ! v33sq = 0d0
@@ -1131,7 +1131,7 @@ s=s+1
       write(ulog,*)'ijk1=',i1,j1,k1
       stop
     endif
-!write(*,*)'first loop after checking mapinv(n1).e.nk1'
+
  call cpu_time(cputim)  !date_and_time(time=tim)
  write(ulog,*) 'entering q1...',n1,q1
  write(ulog,'(a,f12.4)')'  TIME IS ',cputim
@@ -1153,7 +1153,7 @@ do l1=1,ndn
       write(ulog,*)'ijk2=',i2,j2,k2
       stop
     endif
-!write(*,*)'second k-loop after checking mapinv(n1).e.nk1'
+
     q3 = -q2-q1
 
    call get_k_info(q3,NC,nk3,i3,j3,k3,g1,g2,g3,inside)
@@ -1173,11 +1173,11 @@ call cpu_time(cputim3)
 cputim_matrix_elt=cputim_matrix_elt + (cputim3-cputim2)
 
 v33sq1_temp=xx*conjg(xx)
-!write(*,*)xx,v33sq1_temp
+
 !s=s+1
 !v33sq_8(s) = v33sq1_temp
   v33s8(s,n2,l1,l2,l3)=v33sq1_temp !v33sq_8(s)
-!***write(*,*)s,n2,l1,l2,l3,v33sq1_temp
+
 
 !***write(uv3) v33sq1_temp
 !write(uv3,9) nk1,nk2,nk3,l1,l2,l3,v33sq1_temp
@@ -1235,7 +1235,7 @@ write(ulog,*)' V33: total size of this array is =',nv3
 
 
 !=============================================================================
-subroutine calculate_RTA_distributionfunction(nk,nkk,kp,ndn,tempk,veloc,eigenval)!,FRTA)
+subroutine calculate_RTA_distributionfunction(nk,kp,ndn,tempk,veloc,eigenval)!,FRTA)
 ! calculate F value using only diagonal terms in collision matrix (equivalent as RTA)
 
 use constants
@@ -1246,9 +1246,9 @@ use kpoints, only : mapinv
 
 implicit none
 
-integer i,ii,iii,indx,nk,nkk,ndn
+integer i,ii,iii,indx,nk,ndn
 real(8) nbe,temp,tempk,nb,omega!,FRTA(nk,ndn,3)
-real(8) veloc(3,ndn,nkk), eigenval(ndn,nk), kp(3,nk)
+real(8) veloc(3,ndn,nk), eigenval(ndn,nk), kp(3,nk)
 
 temp = tempk*k_b/(100*h_plank*c_light)   ! convert to cm^-1
 
@@ -1314,10 +1314,10 @@ ukapiter = 9400
 tot_kap=0
 
 kappa=0
-!kappa_k=0
-!kappa_RTA=0
-!kappa_k_RTA=0
-!diff_kap=0
+kappa_k=0
+kappa_RTA=0
+kappa_k_RTA=0
+diff_kap=0
 
 temp = tempk*k_b/(100*h_plank*c_light)   ! convert to cm^-1
 const1 = h_plank *c_light *100* c_light / (nkc*volume_r/1d30)
@@ -1429,10 +1429,10 @@ ukapiter = 9400
 tot_kap=0
 
 kappa=0
-!kappa_k=0
-!kappa_RTA=0
-!kappa_k_RTA=0
-!diff_kap=0
+kappa_k=0
+kappa_RTA=0
+kappa_k_RTA=0
+diff_kap=0
 
 temp = tempk*k_b/(100*h_plank*c_light)   ! convert to cm^-1
 const1 = h_plank *c_light *100* c_light / (nkc*volume_r/1d30)
@@ -2292,170 +2292,9 @@ end subroutine update
 !==================================      
 
 
-!===========================================================
-subroutine update_iso(ndn)!!Saf!!
-!subroutine cal_F2m23(nk,kp,nibbz,kibbz,ndn,tempk) !!Saf!!
-! calculate F value based on F value from previous iteration.
-! This subroutine uses symmetry operations to calculate F in FBZ through F in
-! IBZ.
-! Summation over k1 and k2 in IBZ, but in the case of k2, F(k2 in FBZ) = S*F(k
-! in IBZ)
-! Finally, F2 are calculated in IBZ
-
-
-use constants
-use exactBTE2
-use params
-use lattice
-use ios
-use mod_ksubset2
-use phi3
-use kpoints
-use atoms_force_constants
-implicit none
-
-integer ndn
-integer i1,j1,k1, i2,j2,k2, i3,j3,k3, inside
-integer nk1,nk2,nk3, nk3_proc1, nk3_proc2,xyz
-real(8) q1(3), q2(3), q3_proc1(3), q3_proc2(3), q3(3), qq3_proc1(3)
-real(8) q3_proc1_i(3), q3_proc2_i(3)
-
-
-real(8) Avalue(nibz,ndn,3)
-!real(8) Avalue(nibbz,ndn,3)
-real(8) kvecstar(3,48), kvecstarp1(3,48), kvecstarp2(3,48)
-real(8) kvecstar1(3,48), q10(3)
-real(8) Fsp1(3), Fsp2(3), Fsq2(3)
-real xp1,xp2, ssigma
-
-integer n1,n2,n3,l1,l2,l3, nk2n
-integer indx,nk_subset
-integer ksub_size2, ksubset(2)
-integer narms, s,sq2,ss1,ss2,sp1,sp2,sp1f,sp2f,narmsp1, narmsp2,ns,kvecop(48),kvecopp1(48),kvecopp2(48)
-integer kvecop1(48),narms1,s1
-integer nk3_proc1_i, nk3_proc2_i, ns_star_i
-integer nq,n2i0
-logical ins
-integer ms1, ms2
-
-
-real cputim1,cputim2
-real(8) cputim1_wall, cputim2_wall, wtime
-
-real(8) temp, tempk
-!temp = tempk*k_b/(100*h_plank*c_light)   ! convert to cm^-1
-
-
-call cpu_time(cputim1)
-cputim1_wall = wtime()
-write(ulog,*) 'entering cal_F2m23...'
-
-
-indx=0
-Avalue=0
-
-loop1 : do n1=1,nibz
-
-           q1=kibz(:,n1)
-
-           call get_k_info(q1,NC,nk1,i1,j1,k1,g1,g2,g3,inside)
-
-
-       do l1=1,ndn
-    loopxyz : do xyz=1,3
-
-       loop2: do n2=1,nibz
-
-                q2=kibz(:,n2)
-                n2i0=mapinv(n2)
-                call get_k_info(q2,NC,nk2,i2,j2,k2,g1,g2,g3,inside)
-                call kstarsinfbz1(q2,nkc,kpc,narms,kvecstar,kvecop)
-
-                do s=1,narms
-
-                   q3_proc1=q1+kvecstar(:,s)   ! for class1 process, coalescence process
-                   q3_proc2=q1-kvecstar(:,s)   ! for class2 process, decay process
-
-                   call get_k_info(kvecstar(:,s),NC,ns,i3,j3,k3,g1,g2,g3,inside)
-                   call get_k_info(q3_proc1,NC,nk3_proc1,i3,j3,k3,g1,g2,g3,inside)
-                   call get_k_info(q3_proc2,NC,nk3_proc2,i3,j3,k3,g1,g2,g3,inside)
-
-                   !  find the index of q3_proc in the IBZ
-                   nk3_proc1_i = mapibz(nk3_proc1)
-                   nk3_proc2_i = mapibz(nk3_proc2)
-                   ns_star_i = mapibz(ns)
-
-                   ! q3_proc1,2 in IBZ
-                   q3_proc1_i=kibz(:,nk3_proc1_i)
-                   q3_proc2_i=kibz(:,nk3_proc2_i)
-
-                   !kvecop for q2
-                   sq2= kvecop(s)
-                   ! find kvecop number for q3_proc1,2
-                   call get_kvecopn2(q3_proc1_i,q3_proc1,nkc,kpc,sp1f)
-                   call get_kvecopn2(q3_proc2_i,q3_proc2,nkc,kpc,sp2f)
-
-
-                  do l2=1,ndn
-                   do l3=1,ndn
-
-                    !F(FBZ)=S*F(IBZ)
-!                    call syop_f(sq2,F1(n2i0,l2,:),Fsq2)
-!                    call syop_f(sp1f,F1(mapinv(nk3_proc1_i),l3,:),Fsp1)
-!                    call syop_f(sp2f,F1(mapinv(nk3_proc2_i),l3,:),Fsp2)
-!changetoIBZ
-                    call syop_f(sq2,FFF(n2,l2,:),Fsq2)
-                    call syop_f(sp1f,FFF(nk3_proc1_i,l3,:),Fsp1)
-                    call syop_f(sp2f,FFF(nk3_proc2_i,l3,:),Fsp2)
-
-
-
-!changetoIBZ
-!Avalue(mapinv(n1),l1,xyz)=Avalue(mapinv(n1),l1,xyz)+P1(mapinv(n1),ns,l1,l2,l3)*(Fsp1(xyz)-Fsq2(xyz))+0.5*P2(mapinv(n1),ns,l1,l2,l3)*(Fsq2(xyz)+Fsp2(xyz))
-                   Avalue(n1,l1,xyz)=Avalue(n1,l1,xyz)+P1(n1,ns,l1,l2,l3)*(Fsp1(xyz)-Fsq2(xyz))+0.5*P2(n1,ns,l1,l2,l3)*(Fsq2(xyz)+Fsp2(xyz))
-                  enddo
-                 ! Avalue(n1,l1,xyz)=Avalue(n1,l1,xyz)+Piso(n1,ns,l1,l2)*Fsq2(xyz)
-                 enddo
-           enddo !loop s(narms)
-        enddo loop2
-               Avalue(n1,l1,xyz)=Avalue(n1,l1,xyz)+Piso(n1,l1)*Fsq2(xyz)
-!changetoIBZ   F2(mapinv(n1),l1,xyz)=F_RTA(mapinv(n1),l1,xyz) + Avalue(mapinv(n1),l1,xyz)/Qvalue(mapinv(n1),l1)
-               F2(n1,l1,xyz)=F_RTA(n1,l1,xyz) + Avalue(n1,l1,xyz)/Qvalue(n1,l1)
-
-    enddo loopxyz
-
-    enddo
-
-!    if (n1 .eq. ksubset2(indx2,2)) then
-!         indx2=indx2+1
-!         call deallocate_iter2
-!    endif
-!@@enddo
-enddo loop1
-
-
-
-3 format(g11.4,2(3x,3(g11.4,1x)))
-!if(indx-1 .ne. num_pfiles) then
-!   write(ulog,*) 'error in reading col_matrix.dat during cal_F2m...'
-!   stop
-!endif
-!   stop
-!endif
-4 format(2i3,99(1x,g11.4))
-8 format(3i3,99(1x,g11.4))
-
-66 format(10i6,2x,99(1x,f9.3))
-
-end subroutine update_iso
-!==================================
-
-
-
-
 
 !=============================================================================
-subroutine cal_RHS_IBZ(ndn,nkk,tempk,veloc,eigenval)!,RHSS) !!Saf!!
+subroutine cal_RHS_IBZ(ndn,tempk,veloc,eigenval)!,RHSS) !!Saf!!
 ! (equivalent as RTA) 
 ! Right hand side of the linearized BTE in just IBZ.
 
@@ -2467,9 +2306,9 @@ use kpoints
 
 implicit none
 
-integer i,ii,iii,indx,ndn,s,kl,j,n0,nkk
+integer i,ii,iii,indx,ndn,s,kl,j,n0
 real(8) nbe,temp,tempk,nb0,omega
-real(8) veloc(3,ndn,nkk), eigenval(ndn,nibz)
+real(8) veloc(3,ndn,nibz), eigenval(ndn,nibz)
 
 
 temp = tempk*k_b/(100*h_plank*c_light)   ! convert to cm^-1
@@ -2870,177 +2709,6 @@ close(601)
 
 end subroutine CollisionMatrix
 !===========================================================
-!==========================================================
-subroutine CollisionMatrix_mpi(ksbst,ndn)!Cs) !!Saf!!
-!subroutine sycollisionM(ksbst,nibbz,kibbz,ndn,nk,kp,Cs) !!Saf!!
-!Collision matrix(IBZ*FBZ)*Symmerty matrix(FBZ*IBZ)=Cs(IBZ*IBZ) :output
-
-use constants
-use exactBTE2
-use params
-use lattice
-use ios
-use mod_ksubset2
-use phi3
-use kpoints
-use atoms_force_constants
-implicit none
-
-integer n1,l1,n2,l2,ns, s1,s2
-integer ndn,narms
-integer i,j,kil,ii,jj,d,kil1,kil2
-real(8) q(3),q1(3),q2(3),q3_p1(3),q3_p2(3)
-integer i3,j3,k3,inside,nk3_p1
-real(8) C_d, C_of, C
-real(8) kvecstars(3,48)
-integer kvecops(48),n0,n22,nl2,l3,nl3,ni0,n1i,d1,d2
-integer ksbst(2)
-
-s1=0
-s2=0
-!Cs=0
-C=0
-! kil=nibbz*ndn*3
-Collision_Matrixmpi=0
-!!!!Collision_Matrixmpi
-!kil1=((ksbst(2)-ksbst(1))+1)*ndn*3
-!kil2=nibz*ndn*3
-
-!open(701,file='sycmatrix.dat')
-  do n1=ksbst(1),ksbst(2)
-!    do n1=1,nibbz
-       n1i=mapinv(n1)
-    do l1=1,ndn
-      s1=s1+1
-      d1=s1
-
-      do n2=1,nibz
-           q=kibz(:,n2)
-           ni0=mapinv(n2)
-           call kstarsinfbz1(q,nkc,kpc,narms,kvecstars,kvecops)
- !     write(701,*) '**************',n2,narms
-       do l2=1,ndn
-          s2=s2+1
-          d2=s2
-         !C_d=0
-         !C_of=0
- !      write(701,*)'n1,  n1i,  l1,  n2,  ni0,  n0,  l2,  narms,  ns,  s1,  s2,C_d,  C_of,   Cs(s1,s2)'
-       do ns=1,narms
-          call get_k_info(kvecstars(:,ns),NC,n0,i3,j3,k3,g1,g2,g3,inside)
-      ! do l2=1,ndn
-     !    C_d=0
-     !    C_of=0
-        ! C2=0
-        ! C3=0
-        ! C4=0
-        ! C5=0
-           if (n1i.eq.n0 .and. l1.eq.l2) then
-               C=0
-                 do nl2=1,ndn
-                   do l3=1,ndn
-                    do n22=1,nkc
-
-! K1                    C = C + (-P1(n1i,n22,l1,nl2,l3) - 0.5*P2(n1i,n22,l1,nl2,l3))
-                        C = C + (-P1(n1 ,n22,l1,nl2,l3) - 0.5*P2(n1,n22,l1,nl2,l3))
-
-                    enddo
-                   enddo
-                enddo
-            ! C2 = C_d
-            ! C3 = C_d
-
-           else
-
-         q1 = kibz(:,n1)
-         q2 = kvecstars(:,ns)
-         q3_p1 = q1+q2
-         q3_p2 = q1-q2
-
-        ! write(*,*)'here', n1,n1i,l1,n2,ns,narms,n0,l2
-
-         call get_k_info(q3_p1,NC,nk3_p1,i3,j3,k3,g1,g2,g3,inside)
-               C=0
-      loopnl3:  do nl3=1,ndn
-
-! K1              C = C + (-P1(n1i,n0,l1,l2,nl3) + P1(n1i,nk3_p1,l1,l2,nl3) +  P2(n1i,n0,l1,l2,nl3))
-                  C = C + (-P1(n1 ,n0,l1,l2,nl3) + P1(n1 ,nk3_p1,l1,l2,nl3) + P2(n1 ,n0,l1,l2,nl3))
-                enddo loopnl3
-         !    C4 = C_of
-         !    C5 = C_of
-           endif
-         s2=d2
-         s1=d1
-         do i=1,3
-           s2=d2
-           s1=d1+(i-1)
-            do j=1,3
-                s2=d2+(j-1)
-                ! i=1
-                ! j=1
-                Collision_Matrixmpi(s1,s2) = Collision_Matrixmpi(s1,s2) + (C * op_kmatrix(i,j,kvecops(ns)))
-                !write(*,*)'n1,n1i,l1,n2,l2,ni0,narms,ns,n0,s1,s2, C'
-!! K1 write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_kmatrix(i,j,kvecops(ns)),kvecops(ns),Cs(s1,s2)
-        !        write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_kmatrix(i,j,kvecops(ns)),kvecops(ns), Collision_Matrix(s1,s2)
-                !s2=s2+1
-            enddo
-           !s1=s1+1
-         enddo
-        !s1=d1
-        !if (s2.lt.kil) then
-        !s2=s2+1
-        !else
-        !cycle
-        !endif
-       enddo   !narms loop
-!      write(*,*)'after summation over narms'
-!       d2=s2
-!       d1=s1
-!         do i=1,3
-!           do j=1,3
-!             s2=d2+(j-1)
-!             Cs(s1,s2) = C * op_kmatrix(i,j,kvecops(ns))
-!             write(*,*) s1,s2,C,ns, op_kmatrix(1,1,kvecops(1)), Cs(s1,s2),i,j
-!           enddo
-!          s1=s1+1
-!         enddo
-
-!        s1=d1
-!        if (s2.lt.kil) then
-!        s2=s2+1
- !       else
- !       cycle
- !       endif
-
-       enddo    !l2 loop
-!      s2=d2
-!      s1=s1+1
-      enddo     !n2 loop
-
-!   if (s1.le.(kil-3)) then
-!    s1=s1+3
-!    else
-!    exit
-!    endif
-   s2=0
-   !s1=s1+1
-  enddo
-   enddo
-
-!close(701)
-
-!open(601,file='Cs_sycollisionm.dat',status='unknown',form='unformatted')
-!do ii=1,kil1
-!   do jj=1,kil2
-!      write(601) Collision_Matrix(ii,jj)
-!   enddo
-!enddo
-!close(601)
-
-
-
-end subroutine CollisionMatrix_mpi
-!===========================================================
-
 
 !==========================================================
 subroutine CollisionMatrix_split(ksbst,ndn)!Cs) !!Saf!!
@@ -3291,13 +2959,13 @@ open(701,file='sycmatrix.dat')
             ! C2 = C_d
             ! C3 = C_d
 
-           !     do nl2=1,ndn
-           !       do n22=1,nkc
+                do nl2=1,ndn
+                  do n22=1,nkc
                      
-                     C = C - Piso(n1,l1)
+                     C = C - Piso(n1,n22,l1,nl2)
 
-            !      enddo
-            !    enddo
+                  enddo
+                enddo
 
            else
 
@@ -3318,13 +2986,13 @@ open(701,file='sycmatrix.dat')
          !    C4 = C_of
          !    C5 = C_of
 
-           !     do nl2=1,ndn
-            !      do n22=1,nkc
+                do nl2=1,ndn
+                  do n22=1,nkc
 
-                     C = C + Piso(n1,l1)
+                     C = C + Piso(n1,n22,l1,nl2)
 
-             !     enddo
-              !  enddo
+                  enddo
+                enddo
 
 
            endif
@@ -3402,199 +3070,8 @@ end subroutine CollisionMatrix_iso
 !===========================================================
 
 
-
-!==========================================================
-subroutine CollisionMatrix_iso_split(ndn)!(nibbz,kibbz,ndn,nk,kp)!,Cs) !!Saf!!
-!subroutine sycollisionM(ksbst,nibbz,kibbz,ndn,nk,kp,Cs) !!Saf!!
-!Collision matrix(IBZ*FBZ)*Symmerty matrix(FBZ*IBZ)=Cs(IBZ*IBZ) :output
-
-use constants
-use exactBTE2
-use params
-use lattice
-use ios
-use mod_ksubset2
-use phi3
-use kpoints
-use atoms_force_constants
-implicit none
-
-integer n1,l1,n2,l2,ns, s1,s2
-integer ndn,narms
-integer i,j,kil,ii,jj,d
-!***real(8), intent(in) ::
-real(8) q(3),q1(3),q2(3),q3_p1(3),q3_p2(3)
-integer i3,j3,k3,inside,nk3_p1
-!***real(8) Cs(nibbz*ndn*3,nibbz*ndn*3)
-real(8) C_d, C_of, C
-real(8) kvecstars(3,48)
-integer kvecops(48),n0,n22,nl2,l3,nl3,ni0,n1i,d1,d2
-s1=0
-s2=0
-!***Cs=0
-C=0
-Collision_Matrix=0
-
- kil=nibz*ndn*3
-
-open(701,file='sycmatrix.dat')
-
-    do n1=1,nibz
-       n1i=mapinv(n1)
-    do l1=1,ndn
-      s1=s1+1
-      d1=s1
-
-      do n2=1,nibz
-           q=kibz(:,n2)
-           ni0=mapinv(n2)
-           call kstarsinfbz1(q,nkc,kpc,narms,kvecstars,kvecops)
-      write(701,*) '**************',n2,narms
-       do l2=1,ndn
-          s2=s2+1
-          d2=s2
-         !C_d=0
-         !C_of=0
-       write(701,*)'n1,  n1i,  l1,  n2,  ni0,  n0,  l2,  narms,  ns,  s1,  s2, C_d,  C_of,   Cs(s1,s2)'
-       do ns=1,narms
-          call get_k_info(kvecstars(:,ns),NC,n0,i3,j3,k3,g1,g2,g3,inside)
-      ! do l2=1,ndn
-     !    C_d=0
-     !    C_of=0
-        ! C2=0
-        ! C3=0
-        ! C4=0
-        ! C5=0
-           if (n1i.eq.n0 .and. l1.eq.l2) then
-               C=0
-                 do nl2=1,ndn
-                   do l3=1,ndn
-                    do n22=1,nkc
-
-! K1                    C = C + (-P1(n1i,n22,l1,nl2,l3) - 0.5*P2(n1i,n22,l1,nl2,l3))
-                        C = C + (-P1(n1 ,n22,l1,nl2,l3) - 0.5*P2(n1,n22,l1,nl2,l3))!+Piso(n1,n22,l1,nl2))
-
-                    enddo
-                   enddo
-                enddo
-            ! C2 = C_d
-            ! C3 = C_d
-
-                !do nl2=1,ndn
-                !  do n22=1,nkc
-
-                     C = C - Piso(n1,l1)
-
-                 ! enddo
-                !enddo
-
-           else
-
-         q1 = kibz(:,n1)
-         q2 = kvecstars(:,ns)
-         q3_p1 = q1+q2
-         q3_p2 = q1-q2
-
-        ! write(*,*)'here', n1,n1i,l1,n2,ns,narms,n0,l2
-
-         call get_k_info(q3_p1,NC,nk3_p1,i3,j3,k3,g1,g2,g3,inside)
-               C=0
-      loopnl3:  do nl3=1,ndn
-
-! K1              C = C + (-P1(n1i,n0,l1,l2,nl3) + P1(n1i,nk3_p1,l1,l2,nl3) + P2(n1i,n0,l1,l2,nl3))
-                  C = C + (-P1(n1 ,n0,l1,l2,nl3) + P1(n1 ,nk3_p1,l1,l2,nl3) + P2(n1 ,n0,l1,l2,nl3))
-                enddo loopnl3
-         !    C4 = C_of
-         !    C5 = C_of
-
-               ! do nl2=1,ndn
-                !  do n22=1,nkc
-
-                     C = C + Piso(n1,l1)
-
-                 ! enddo
-                !enddo
-
-
-           endif
-         s2=d2
-         s1=d1
-         do i=1,3
-           s2=d2
-           s1=d1+(i-1)
-            do j=1,3
-                s2=d2+(j-1)
-                ! i=1
-                ! j=1
-                Collision_Matrix(s1,s2) = Collision_Matrix(s1,s2) + (C * op_kmatrix(i,j,kvecops(ns)))
-                !write(*,*)'n1,n1i,l1,n2,l2,ni0,narms,ns,n0,s1,s2, C'
-!! K1
-!write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_kmatrix(i,j,kvecops(ns)),kvecops(ns), Cs(s1,s2)^M
-                write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_kmatrix(i,j,kvecops(ns)),kvecops(ns),Collision_Matrix(s1,s2)
-                !s2=s2+1
-            enddo
-           !s1=s1+1
-         enddo
-        !s1=d1
-        !if (s2.lt.kil) then
-        !s2=s2+1
-        !else
-        !cycle
-        !endif
-       enddo   !narms loop
-!      write(*,*)'after summation over narms'
-!       d2=s2
-!       d1=s1
-!         do i=1,3
-!           do j=1,3
-!             s2=d2+(j-1)
-!             Cs(s1,s2) = C * op_kmatrix(i,j,kvecops(ns))
-!             write(*,*) s1,s2,C,ns, op_kmatrix(1,1,kvecops(1)), Cs(s1,s2),i,j
-!           enddo
-!          s1=s1+1
-!         enddo
-
-!        s1=d1
-!        if (s2.lt.kil) then
-!        s2=s2+1
- !       else
- !       cycle
- !       endif
-
-       enddo    !l2 loop
-!      s2=d2
-!      s1=s1+1
-      enddo     !n2 loop
-
-!   if (s1.le.(kil-3)) then
-!    s1=s1+3
-!    else
-!    exit
-!    endif
-   s2=0
-   !s1=s1+1
-  enddo
-   enddo
-
-close(701)
-
-open(601,file='Cs_sycollisionm.dat')
-do ii=1,kil
-   do jj=1,kil
-      write(601,*) ii,jj, Collision_Matrix(ii,jj)
-   enddo
-enddo
-close(601)
-
-
-
-end subroutine CollisionMatrix_iso_split
 !===========================================================
-
-
-
-!===========================================================
-subroutine cal_g(attname,g)
+subroutine cal_g(g)
 
  use ios
  use params
@@ -3614,8 +3091,7 @@ implicit none
  !character*2 isoname(287)
 !character isoname(287)
 character*2, allocatable:: isoname(:)
-character*2 attname
-real(8) isomass(287), isof(287), mave,g !geatom(natom_type),g
+real(8) isomass(287), isof(287), mave, g
 integer numiso,nn,ii,isosize
 isosize=287
 allocate(isoname(isosize) )
@@ -4490,75 +3966,31 @@ allocate(isoname(isosize) )
  numiso=size(isoname)
  mave=0
 write(*,*) 'natom_type', natom_type
-!do nn=1,natom_type
+do nn=1,natom_type
 !write(*,*)'atname(nn)', atname(nn)
 !write(*,*)'numiso', numiso
      do ii=1,numiso
 ! write(*,*)'isoname(ii)', isoname(ii),atname(nn)
-          if (isoname(ii).eq.attname) then
+          if (isoname(ii).eq.atname(nn)) then
            mave=mave+isomass(ii)*isof(ii)
-write(*,*) ii, isoname(ii), attname, mave
+write(*,*) nn, natom_type, isoname(ii), atname(nn)
         endif
      enddo
-!enddo
+enddo
 
 g=0
-mave=mave/100
-!do nn=1,natom_type
+
+do nn=1,natom_type
    do ii=1,numiso
-       if(isoname(ii).eq.attname) then
+       if(isoname(ii).eq.atname(nn)) then
            g=g+isof(ii)*(1-(isomass(ii)/mave))**2
        endif
    enddo
-!enddo
-!g=0
-!do nn=1,natom_type
+enddo
 
-!g=g+geatom(nn)
-
-!enddo
-
-g=g/100
-write(*,*)'cal_gggg',g,mave
+write(*,*)'cal_gggg',mave,g
 
 end subroutine cal_g
-!==========================================================
-subroutine cal_giso(gis)
-
-  use ios
-  use params
-  use lattice
-  use atoms_force_constants
-
-
-implicit none
-
-real(8) g(natom_type),gis(natoms)
-integer i,j
-
-write(*,*)'natom_type-natoms0',natom_type, natoms0
-
-          do i=1,natom_type
-           call cal_g(atname(i),g(i))
-           write(*,*)'g',atname(i),g(i)
-          enddo
-          write(*,*)'safoura-after-calg'
-          do i=1,natoms0
-             do j=1,natom_type
-               if (atom_type(i).eq.j) then
-                 gis(i)=g(j)
-                 write(*,*)'natom,natom_type',i,j,g(j),gis(i) 
-               endif
-            enddo
-         enddo
-
-
-end subroutine cal_giso
-!===========================================================
-
-
-
-
 !==========================================================
 subroutine P_iso(g,ndn,evec)
 
@@ -4582,7 +4014,7 @@ real(8) q1(3),q2(3),nb1,nb2
 complex(8)  evec(ndn,ndn,nkc)
 integer j_tet, k_tet,w
 integer nx, ny, nz
-!integer s
+
 nx=NC(1); ny=NC(2); nz=NC(3)
 
 
@@ -4591,11 +4023,11 @@ Piso=0
 
 
 do n1=1,nibz
-   i=mapinv(n1)
+   i=n1
   do l1=1,ndn
 
-     nb1=dist(i,l1)
-     omega1=frequency(i,l1)
+     nb1=dist(n1,l1)
+     omega1=frequency(n1,l1)
 
      do n2=1,nkc
         do l2=1,ndn
@@ -4622,7 +4054,6 @@ do n1=1,nibz
 
 
                     tet(j_tet)%p(k_tet)%w=frequency(w,l2)! CHECK frequency(w,jj)!+frequency(nk3_proc1,kk) !assigns eigenvalue for each band. eival(l,w) l=band#,w=kpt#
-                    ! s=frequency(w,l2)
                 enddo
              enddo
 
@@ -4633,7 +4064,7 @@ do n1=1,nibz
                      w = tet(j_tet)%p(k_tet)%i                ! k point
                      !nb2=dist(w,l2)
                      !omega2=frequency(w,l2)
-           !          Piso(n1,w,l1,l2) =  nb1*(nb2+1)*omega1*omega2*g* tet(j_tet)%p(k_tet)%c/6d0 *(abs(dot_product(evec(:,l1,i),evec(:,l2,w))))**2!* F_arbi(w)
+                     Piso(n1,w,l1,l2) =  nb1*(nb2+1)*omega1*omega2*g* tet(j_tet)%p(k_tet)%c/6d0 *(abs(dot_product(evec(:,l1,mapinv(n1)),evec(:,l2,w))))**2!* F_arbi(w)
                      !Piso(n1,w,l1,l2) =  nb1*(nb2+1)*omega1*omega2*g* tet(j_tet)%p(k_tet)%c/6d0*(abs(sum(conjg(eigenvec(:,l1,n1))*eigenvec(:,l2,w))))**2
 
            !          write(*,*)n1,w,l1,l2,Piso(n1,w,l1,l2) 
@@ -4649,484 +4080,6 @@ enddo
 
 endsubroutine P_iso
 !=========================================================
-
-
-
-!==========================================================
-subroutine P_iso_split(ksubset,g,ndn,evec)
-
-
-use ios
-use exactBTE2
-use mod_ksubset2
-use params
-use constants
-use phi3
-use lattice
-use tetrahedron
-use kpoints
-use atoms_force_constants
-implicit none
-
-
-
-integer n1,i,l1,n2,l2,ndn
-real(8) omega1,omega2,g(natoms0) !,g(natom_type)!,Piso(nkc,nkc,ndn,ndn)
-real(8) q1(3),q2(3),nb1,nb2,gs
-complex(8)  evec(ndn,ndn,nkc)
-integer j_tet, k_tet,w
-integer nx, ny, nz,ai
-integer ksubset(2), indx, k_shift,ii,jj
-integer ksub_size2
-nx=NC(1); ny=NC(2); nz=NC(3)
-
-
-!g=?
-Pisos=0
-
-
-if (ksubset(2) .eq. nibz) then   ! if this is the last file in v33sq.xxx.dat
-   ksub_size2=ksubset(2)-ksubset(1)+1
-   indx=(ksubset(1)-1)/ksub_size + 1
-   if (mod(ksubset(1)-1,ksub_size) .ne. 0 ) then
-       write(ulog,*) 'wrong indx. stop',ksubset(1),ksub_size
-       stop
-   endif
-
-else
-    ksub_size2=ksubset(2)-ksubset(1)+1
-    indx=ksubset(2)/ksub_size           ! ksub_size is from params.phon
-    if (mod(ksubset(2),ksub_size) .ne. 0) then
-       write(ulog,*) 'wrong indx. stop',ksubset(2),ksub_size
-       stop
-    endif
-
-endif
-
-k_shift=ksubset(1)-1
-
-
-!do n1=1,nibz
-do n1=1,ksub_size2
-   i=mapinv(n1+k_shift)
-  do l1=1,ndn
-
-     nb1=dist(i,l1)
-     omega1=frequency(i,l1)
-
-     do n2=1,nkc
-        do l2=1,ndn
-
-           nb2=dist(n2,l2)
-           !omega2=frequency(n2,l2)
-
-      !**      do ai=1,natoms0
-             ! eigen_tet: set omega2+omega3
-             do j_tet=1,nkc*6                       !iterate over all tetrahedrons
-                 do k_tet=1,4       !iterate over four corners of tetrahedron
-                      w = tet(j_tet)%p(k_tet)%i !label for kpt(3,i)
-
-                      q1=kpc(:,i)
-                      q2=kpc(:,w)
-
-                    ! q3=-q1-q2
-                    ! q3_proc1=q1+q2
-
-                    !call get_k_info(q3,NC,nk3,i3,j3,k3,g1,g2,g3,inside)
-                    !call
-                    !get_k_info(q3_proc1,NC,nk3_proc1,i3,j3,k3,g1,g2,g3,inside1)
-
-
-
-                    tet(j_tet)%p(k_tet)%w=frequency(w,l2)! CHECK!frequency(w,jj)!+frequency(nk3_proc1,kk) !assigns eigenvalue for each band. eival(l,w) l=band#,w=kpt#
-                    ! s=frequency(w,l2)
-                enddo
-             enddo
-
-             call weight_tet(nx,ny,nz,omega1)   ! calculate weighting factors in tetrahedron method
-
-           do j_tet=1,nkc*6                       !iterate over all tetrahedrons
-                 do k_tet=1,4   !iterate over four corners of tetrahedron
-                     w = tet(j_tet)%p(k_tet)%i                ! k point
-    !                 nb2=dist(w,l2)
-    !                 omega2=frequency(w,l2)
-                      gs=0
-                     do ai=1,natoms0
-
-                       gs = gs + g(ai) * (abs(dot_product(evec(((ai-1)*3+1):((ai-1)*3+3),l1,i),evec(((ai-1)*3+1):((ai-1)*3+3),l2,w))))**2
-                     enddo
-
-
-                    Pisos(n1,l1) = Pisos(n1,l1)  + gs * tet(j_tet)%p(k_tet)%c/6d0 !&
-                          !*(abs(dot_product(evec(((ai-1)*3+1):((ai-1)*3+3),l1,i),evec(((ai-1)*3+1):((ai-1)*3+3),l2,w))))**2!* F_arbi(w)
-                     !Piso(n1,w,l1,l2) =  nb1*(nb2+1)*omega1*omega2*g*
-                     !tet(j_tet)%p(k_tet)%c/6d0*(abs(sum(conjg(eigenvec(:,l1,n1))*eigenvec(:,l2,w))))**2
-
-           !          write(*,*)n1,w,l1,l2,Piso(n1,w,l1,l2)
-           !      enddo
-           enddo
-         enddo
-       !write(*,*)n1,i,n2,w,l1,l2, Pisos(n1,w,l1,l2)
-!       Pisos(n1,l1) = Pisos(n1,w) * nb1*(nb2+1)*omega1**2* pi/(2*nkc)
-      enddo
-    enddo
-       Pisos(n1,l1) = Pisos(n1,l1) *omega1**2* pi/(2*nkc)
-  enddo
-enddo
-
-
-open(901,file='Piso.dat',status='unknown',form='unformatted')
-do ii=1,ksub_size2
-   do l1=1,ndn
-!   do jj=1,nkc
-!   do l2=1,ndn
-      write(901) Pisos(ii,l1)
-!   enddo
-!   enddo
-   enddo
-enddo
-
-!close(901)
-
-
-endsubroutine P_iso_split
-!=========================================================
-
-
-
-
-!===========================================================
-
-subroutine read_Piso(ndn,piss) !!Saf!!
-! this subroutine reads the Cs_sycollisionm.dat
- use ios
- use phi3
- use kpoints
- implicit none
- integer ndn,n1,n2,l1,l2!kil,i,j,kil1,s,kil2
- character(99) filename_temp, filename
- !real(8), allocatable :: col_sy(:,:)
- integer indx, pis, ksubset(2), ksub_size2,k_shift !colsy
- real(8) xxs, piss(nibz,ndn)!, cs(nibz*ndn*3,nibz*ndn*3)
-
-!kil=nibz*ndn*3
-!kil1=ksub_size*ndn*3
-pis=1004
-indx=0
-piss=0
-!    if(allocated(col_sy) ) then
-!        deallocate(col_sy)
-!    endif
-
-!    allocate(col_sy(kil,kil))
- do while (indx .lt. ((nibz/ksub_size)+mod(nibz,ksub_size)))
-
-     indx=indx+1
-
-!open(colsy,file='ksubset.inp', status='old') Cs_sycollisionm.k001.dat
-
-    write(filename_temp,fmt="(a,i3.3,a)") "Piso.",indx,".dat"
-    filename=trim(v3path)//filename_temp
-    open(pis,file=filename,status='old',form='unformatted')
-!    open(colsy,file=filename,status='old')
-
-    if (indx .eq. ((nibz/ksub_size)+mod(nibz,ksub_size))) then
-       ksub_size2=nibz-((indx-1)*ksub_size)
-     else
-      ksub_size2=ksub_size
-    endif
-!ksub_size2=ksubset(2)-ksubset(1)+1
-k_shift = (indx-1)*ksub_size
-!s=(kil1*(indx-1))+1
-do n1=1,ksub_size2
-   ! s=s+1
-   do l1=1,ndn
-    !do n2=1,nkc
-    !do l2=1,ndn
-
-     read(pis) piss((n1+k_shift),l1) !xxs !col_sy(s,j)
-
-        !piss((n1+k_shift),n2,l1,l2) = xxs
-
-    ! write(*,*) s, j, cs(s,j)
-    !enddo
-   !enddo
-  enddo
-enddo
-! if (s.lt.kil1) then
-!    s=s+1
-! endif
-! enddo
-!write(*,*)'%%%%%%%%%%%%%%%%%%out'
-! close(colsy)
-enddo
-
-
-
-!do n1=1,nibz
-   ! s=s+1
-!   do l1=1,ndn
-!    do n2=1,nkc
-!    do l2=1,ndn
-
-!     Piso(n1,n2,l1,l2)= piss(n1,n2,l1,l2) !xxs !col_sy(s,j)
-
-        !piss((n1+k_shift),n2,l1,l2) = xxs
-
-    ! write(*,*) s, j, cs(s,j)
-!    enddo
-!   enddo
-!  enddo
-!enddo
-
-
-
-
-end subroutine read_Piso
-!==========================================================
-
-
-!==========================================================
-subroutine selfenergyw3(kbsubset,ndn,tmp,tmpk,nkpbss,kpbss,dkbss) !!Saf!!
-
-
-use constants
-use exactBTE2
-use params
-use lattice
-use ios
-use mod_ksubset2
-use phi3
-use kpoints
-use atoms_force_constants
-
-implicit none
-
-  integer kbsubset(2)
-  integer nbss,ndn,la,lll,nkpbss
-  complex(8) nselfss,uselfss
-  real(8) , allocatable ::evlbbs(:,:),vlcbbs(:,:,:)!,giso(:)
-  complex(8) , allocatable ::evcbbs(:,:,:)
-  real(8) omegab0(ndn),kbbss(3),kpbss(3,nkpbss),dkbss(nkpbss)
-  real(8) tmp,tmpk
-
-lll = 5322
- !        call make_kp_bs
-
-
-         allocate(evlbbs(ndn,nkpbss),evcbbs(ndn,ndn,nkpbss),vlcbbs(3,ndn,nkpbss))!,omega0(ndyn),tse(ndyn))
-         call get_frequencies(nkpbss,kpbss,dkbss,ndn,evlbbs,ndn,evcbbs,lll,vlcbbs)
-
-
-      do nbss=kbsubset(1),kbsubset(2)
-
-              do la=1,ndn
-                 kbbss=kp_bs(:,nbss)
-                 omegab0(la)=sqrt(abs(evlbbs(la,nbss))) * cnst
-
-                call function_self_w3(kbbss,la,omegab0(la),tmp,nselfss,uselfss)
-
-                isempi(nbss,la)=2*aimag(nselfss+uselfss)
-                 tsempi(nbss,la)=1d10/c_light/isempi(nbss,la)
-!                 write(lwse,*)tempk,la,nkbss,kbss,dk_bs(nkbss),omega0(la),aimag(nselfs+uselfs),ise,tse(la),1/tse(la)
-                 write(*,*)'nbss,la', nbss,la !nselfs, uselfs
-               enddo
-!               write(lwse2,*)tempk,dk_bs(nkbss),(omega0(la),la=1,ndyn),((1/tse(la)),la=1,ndyn)
-              ! write(*,*)tempk,dk_bs(nkbss),(omega0(la),la=1,ndyn),((1/tse(la)),la=1,ndyn)
-            enddo
-
- !       enddo
-
-end subroutine selfenergyw3
-!==========================================================
-
-
-
-!===========================================================
-
-subroutine read_lw(ndn,nks) !!Saf!!
-! this subroutine reads the Cs_sycollisionm.dat
- use ios
- use phi3
- use kpoints
- implicit none
- integer ndn,n1,l1,nks!,l2!kil,i,j,kil1,s,kil2
- character(99) filename_temp, filename
- !real(8), allocatable :: col_sy(:,:)
- integer indx, lws, ksubset(2), ksub_size2!,k_shift !colsy
- !real(8) xxs, piss(nibz,nkc,ndn,ndn)!, cs(nibz*ndn*3,nibz*ndn*3)
-real(8) ls1,ls2,ls3, ls4,ls5,ls6,ls7,ls8,ls9,ls10,ls11,ls12
-!kil=nibz*ndn*3
-!kil1=ksub_size*ndn*3
-lws=1004
-indx=0
-!piss=0
-!    if(allocated(col_sy) ) then
-!        deallocate(col_sy)
-!    endif
-!open(1005,file=)
-open(1005,file='lw-selfenergy.dat')
-!    allocate(col_sy(kil,kil))
- do while (indx .lt. ((nks/ksub_size)+mod(nks,ksub_size)))
-
-     indx=indx+1
-
-!open(colsy,file='ksubset.inp', status='old') Cs_sycollisionm.k001.dat
-
-    write(filename_temp,fmt="(a,i3.3,a)") "lws.",indx,".dat"
-    filename=trim(v3path)//filename_temp
-    open(lws,file=filename,status='old')!,form='unformatted')
-!    open(colsy,file=filename,status='old')
-
-    if (indx .eq. ((nks/ksub_size)+mod(nks,ksub_size))) then
-       ksub_size2=nks-((indx-1)*ksub_size)
-     else
-      ksub_size2=ksub_size
-    endif
-!ksub_size2=ksubset(2)-ksubset(1)+1
-!k_shift = (indx-1)*ksub_size
-!s=(kil1*(indx-1))+1
-do n1=1,ksub_size2
-   ! s=s+1
-   do l1=1,ndn
-!    do n2=1,nkc
-!    do l2=1,ndn
-
-     read(lws,*) ls1,ls2,ls3, ls4,ls5,ls6,ls7,ls8,ls9,ls10,ls11,ls12
-        !piss((n1+k_shift),n2,l1,l2) = xxs
-     write(1005,*)ls1,ls2,ls3, ls4,ls5,ls6,ls7,ls8,ls9,ls10,ls11,ls12
-    ! write(*,*) s, j, cs(s,j)
-  !  enddo
- !  enddo
-  enddo
-enddo
-! if (s.lt.kil1) then
-!    s=s+1
-! endif
-! enddo
-!write(*,*)'%%%%%%%%%%%%%%%%%%out'
-! close(colsy)
-enddo
-
-close(1005)
-
-!do n1=1,nibz
-   ! s=s+1
-!   do l1=1,ndn
-!    do n2=1,nkc
-!    do l2=1,ndn
-
-!     Piso(n1,n2,l1,l2)= piss(n1,n2,l1,l2) !xxs !col_sy(s,j)
-
-        !piss((n1+k_shift),n2,l1,l2) = xxs
-
-    ! write(*,*) s, j, cs(s,j)
-!    enddo
-!   enddo
-!  enddo
-!enddo
-
-
-
-
-end subroutine read_lw
-!==========================================================
-
-
-
-!===========================================================
-
-subroutine read_lw2(ndn,nks) !!Saf!!
-! this subroutine reads the Cs_sycollisionm.dat
- use ios
- use phi3
- use kpoints
- implicit none
- integer ndn,n1,l1,nks!,l2!kil,i,j,kil1,s,kil2
- character(99) filename_temp, filename
- !real(8), allocatable :: col_sy(:,:)
- integer indx, lws, ksubset(2), ksub_size2!,k_shift !colsy
- !real(8) xxs, piss(nibz,nkc,ndn,ndn)!, cs(nibz*ndn*3,nibz*ndn*3)
-real(8) ls1,ls2,ls3, ls4,ls5,ls6,ls7,ls8,ls9,ls10,ls11,ls12
- real(8) lwssf2(2+2*ndn)
-!kil=nibz*ndn*3
-!kil1=ksub_size*ndn*3
-lws=1004
-indx=0
-!piss=0
-!    if(allocated(col_sy) ) then
-!        deallocate(col_sy)
-!    endif
-!open(1005,file=)
-open(1005,file='lw-selfenergy2.dat')
-!    allocate(col_sy(kil,kil))
- do while (indx .lt. ((nks/ksub_size)+mod(nks,ksub_size)))
-
-     indx=indx+1
-
-!open(colsy,file='ksubset.inp', status='old') Cs_sycollisionm.k001.dat
-
-    write(filename_temp,fmt="(a,i3.3,a)") "lws2.",indx,".dat"
-    filename=trim(v3path)//filename_temp
-    open(lws,file=filename,status='old')!,form='unformatted')
-!    open(colsy,file=filename,status='old')
-
-    if (indx .eq. ((nks/ksub_size)+mod(nks,ksub_size))) then
-       ksub_size2=nks-((indx-1)*ksub_size)
-     else
-      ksub_size2=ksub_size
-    endif
-!ksub_size2=ksubset(2)-ksubset(1)+1
-!k_shift = (indx-1)*ksub_size
-!s=(kil1*(indx-1))+1
-do n1=1,ksub_size2
-   ! s=s+1
-   !do l1=1,ndn
-!    do n2=1,nkc
-!    do l2=1,ndn
-
-     read(lws,*) lwssf2 !ls1,ls2,ls3, ls4,ls5,ls6,ls7,ls8,ls9,ls10,ls11,ls12
-        !piss((n1+k_shift),n2,l1,l2) = xxs
-     write(1005,*) lwssf2 !ls1,ls2,ls3, ls4,ls5,ls6,ls7,ls8,ls9,ls10,ls11,ls12
-    ! write(*,*) s, j, cs(s,j)
-  !  enddo
- !  enddo
-  !enddo
-enddo
-! if (s.lt.kil1) then
-!    s=s+1
-! endif
-! enddo
-!write(*,*)'%%%%%%%%%%%%%%%%%%out'
-! close(colsy)
-enddo
-
-close(1005)
-
-!do n1=1,nibz
-   ! s=s+1
-!   do l1=1,ndn
-!    do n2=1,nkc
-!    do l2=1,ndn
-
-!     Piso(n1,n2,l1,l2)= piss(n1,n2,l1,l2) !xxs !col_sy(s,j)
-
-        !piss((n1+k_shift),n2,l1,l2) = xxs
-
-    ! write(*,*) s, j, cs(s,j)
-!    enddo
-!   enddo
-!  enddo
-!enddo
-
-
-
-
-end subroutine read_lw2
-!==========================================================
-
-
-
 
 
 !===========================================================
@@ -6956,309 +5909,6 @@ close(unt+1)
 
 end subroutine calculate_FGR
 
-!---------------------------------------------------------------------------------------
-subroutine calculate_FGR_mpi2(ksubset,ndn,nv3oi)!,v33sq_8) !  ,nk,kp)
-!- read v33sq from v33sq from v33sq.xxx.dat
-!- calculate delta function for coalescence and decay processes
-!- write v33sq * delta to files
-
-use ios
-use exactBTE2
-use mod_ksubset2
-use params
-use constants
-use phi3
-use lattice
-use tetrahedron
-use kpoints
-
-implicit none
-
-integer i,ii,indx,ndn,j,jj,kk
-integer nk_subset, k_shift, ksub_size2
-real(8) q1(3), q2(3), q2n(3), q3_proc1(3), q3_proc2(3), q3(3), q3_proc1n(3), q3_proc2n(3)
-real(8) temp, tempk, nb1   ! in cm^-1
-integer ksubset(2)
-integer nx, ny, nz
-
-integer i2,ii2,j2,jj2,k2,kk2, inside1, inside2, inside, inside1n, inside2n
-integer i3,j3,k3,nk3_proc1,nk3_proc2, nk3, nk2
-integer n1,n2,l1,l2,l3,nk2n,i2n,j2n,k2n
-integer j_tet, k_tet,w
-
-character(99) filename_temp, filename
-
-integer uQ, nv3_2,unt,nv3oi,s
-
-real(8) cputim0, cputim1, cputim2, cputim3, cputim0_wall, cputim1_wall, wtime
-real(8) omega1, V3sq1!,v33sq_8((ksubset(2)-ksubset(1)+1)*nkc*ndn*ndn*ndn)
-real(8) F_arbi(nkc)
-!*****real(8), allocatable :: P1sm(:,:,:,:,:), P2sm(:,:,:,:,:)  ! v33sq_5(:,:,:,:,:), 
-! P1sm and P2sm are v33sq*delta(proc1) and v33sq*delta(proc2)
-
-nx=NC(1); ny=NC(2); nz=NC(3)
-unt=9400
-
-call allocate_iter(nibz,nkc,ndn)
-call cal_freq(nkc,ndn)
-write(ulog,*) 'cal_freq done'
-
-write(ulog,*) 'entering calculate_FGR ...'
-
-! calculate indx using nk and ksubset
-! calculate ksub_size2
-!***if (ksubset(2) .eq. nibz) then   ! if this is the last file in v33sq.xxx.dat
-!***   ksub_size2=ksubset(2)-ksubset(1)+1
-!***   indx=(ksubset(1)-1)/ksub_size + 1
-!***   if (mod(ksubset(1)-1,ksub_size) .ne. 0 ) then
-!***       write(ulog,*) 'wrong indx. stop',ksubset(1),ksub_size
-!***       stop
-!***   endif
-
-!***else
-!***    ksub_size2=ksubset(2)-ksubset(1)+1
-!***    indx=ksubset(2)/ksub_size           ! ksub_size is from params.phon
-!***    if (mod(ksubset(2),ksub_size) .ne. 0) then
-!***       write(ulog,*) 'wrong indx. stop',ksubset(2),ksub_size
-!***       stop
-!***    endif
-
-!***endif
-
- ksub_size2=ksubset(2)-ksubset(1)+1
-
-k_shift=ksubset(1)-1
-
-!***write(ulog,*) 'Check indx is same as folder name, indx=',indx
-
-
-
-! Read v33sq from v33sq.xxx.dat in the main directory
-!***write(filename_temp,fmt="(a,i3.3,a)") "v33sq.",indx,".dat"
-!***filename=trim(v3path)//filename_temp
-!***write(ulog,*) 'opening file ',filename
-!***open(unt,file=filename,status='old',form='unformatted')
-!***read(unt) nv3_2
-nv3_2=nv3oi
-!****if (allocated(v33sq_5)) then
-!****   deallocate(v33sq_5)
-!****endif
-
-!****allocate(v33sq_5(ksub_size2,nkc,ndn,ndn,ndn))
-!s=0
-!do n1=1,ksub_size2
-!do l1=1,ndn
-!do n2=1,nkc
-!do l2=1,ndn
-!do l3=1,ndn
-!    s=s+1
-!    v33sq_5(n1,n2,l1,l2,l3)=v33sq_8(s)
-!enddo
-!enddo
-!enddo
-!enddo
-!enddo
-!***close(unt)
-
-
-! calculate delta function
-!*****if (allocated(P1sm)) then
-!*****    deallocate(P1sm)
-!*****endif
-!*****if (allocated(P2sm)) then
-!*****    deallocate(P2sm)
-!*****endif
-
-!*****allocate(P1sm(ksub_size2,nkc,ndn,ndn,ndn))
-!*****allocate(P2sm(ksub_size2,nkc,ndn,ndn,ndn))
-
-
-do n1=1,ksub_size2
-
-    i=mapinv(n1+k_shift)   ! n1 is the ibz index, i is the FBZ index
-
-    laF1_loop: do ii=1,ndn
-
-    write(ulog,*) 'i,ii=',i,ii
-
-    omega1=frequency(i,ii)        ! set fixed omega1 in delta(omega1-omega2+-omega3)
-
-           laF2_loop: do jj=1,ndn
-           laF3_loop: do kk=1,ndn
-
-
-           ! process 1
-           ! set arbitrary function here. (distribution function...)
-           ! call eigen_tet using w2-w3
-           ! call weight_tet
-
-           ! set arbitrary function, F_arbi(j)
-           do j=1,nkc  ! for set arbitrary function
-
-                q1=kpc(:,i)
-                q2=kpc(:,j)
-
-!                q3=-q1-q2
-                q3_proc1=q1+q2
-!                q3_proc2=q1-q2
-
-                call get_k_info(q2,NC,nk2,i2,j2,k2,g1,g2,g3,inside)
-                call get_k_info(q3_proc1,NC,nk3_proc1,i3,j3,k3,g1,g2,g3,inside1)
-!                call get_k_info(q3_proc2,NC,nk3_proc2,i3,j3,k3,g1,g2,g3,inside2)
-
-
-                V3sq1=v33s8(n1,j,ii,jj,kk) * (2*pi)**2 / nkc
-           !     write(*,*)'v3sq1',v3sq1
-                if (jj<=3 .and. i2.eq.NC(1)/2+1 .and. j2.eq.NC(2)/2+1 .and. k2.eq.NC(3)/2+1 ) then  ! Acoustic modes at Gamma point
-                    V3sq1=0.0                                                                        ! to enforce matrix_elt = 0
-                endif
-                if (kk<=3 .and. i3.eq.NC(1)/2+1 .and. j3.eq.NC(2)/2+1 .and. k3.eq.NC(3)/2+1 ) then
-                    V3sq1=0.0
-                endif
-
-                F_arbi(j)=V3sq1  
-
-            enddo
-
-            ! eigen_tet: set omega2+omega3
-            do j_tet=1,nkc*6                       !iterate over all tetrahedrons
-               do k_tet=1,4                                         !iterate over four corners of tetrahedron
-                    w = tet(j_tet)%p(k_tet)%i                          !label for kpt(3,i)
-
-                    q1=kpc(:,i)
-                    q2=kpc(:,w)
-
-                    q3=-q1-q2
-                    q3_proc1=q1+q2
-
-                    call get_k_info(q3,NC,nk3,i3,j3,k3,g1,g2,g3,inside)
-                    call get_k_info(q3_proc1,NC,nk3_proc1,i3,j3,k3,g1,g2,g3,inside1)
-
-                    tet(j_tet)%p(k_tet)%w=-frequency(w,jj)+frequency(nk3_proc1,kk)     !assigns eigenvalue for each band. eival(l,w) l=band#,w=kpt#
-               enddo
-            enddo
-
-           call weight_tet(nx,ny,nz,omega1)   ! calculate weighting factors in tetrahedron method
-
-           do j_tet=1,nkc*6                       !iterate over all tetrahedrons
-               do k_tet=1,4                                         !iterate over four corners of tetrahedron
-                   w = tet(j_tet)%p(k_tet)%i                ! k point
-                   P1smpi(n1,w,ii,jj,kk) = P1smpi(n1,w,ii,jj,kk) + tet(j_tet)%p(k_tet)%c/6d0 * F_arbi(w) 
-               enddo
-           enddo
-
-
-           ! process 2
-           ! set arbitrary function here. (distribution function...)
-           ! call eigen_tet using w2-w3
-           ! call weight_tet
-
-           do j=1,nkc  ! for set arbitrary function
-
-                q1=kpc(:,i)
-                q2=kpc(:,j)
-                q2n=-kpc(:,j)
-
-!                q3=-q1-q2n
-!                q3_proc1=q1+q2
-                q3_proc2=q1+q2
-
-                call get_k_info(q2,NC,nk2,i2,j2,k2,g1,g2,g3,inside)
-                call get_k_info(q2n,NC,nk2n,i2n,j2n,k2n,g1,g2,g3,inside)
-!                call get_k_info(q3_proc1,NC,nk3_proc1,i3,j3,k3,g1,g2,g3,inside1)
-                call get_k_info(q3_proc2,NC,nk3_proc2,i3,j3,k3,g1,g2,g3,inside2)
-
-
-                V3sq1=v33s8(n1,j,ii,jj,kk) * (2*pi)**2 / nkc
-                if (jj<=3 .and. i2n.eq.NC(1)/2+1 .and. j2n.eq.NC(2)/2+1 .and. k2n.eq.NC(3)/2+1 ) then  ! Acoustic modes at Gamma point
-                    V3sq1=0.0                                                                        ! to enforce matrix_elt = 0
-                endif
-                if (kk<=3 .and. i3.eq.NC(1)/2+1 .and. j3.eq.NC(2)/2+1 .and. k3.eq.NC(3)/2+1 ) then
-                    V3sq1=0.0
-                endif
-
-                F_arbi(nk2n)=V3sq1        ! no 2pi at the front since delta is in linear frequency.
-
-            enddo
-
-            ! eigen_tet: set omega2+omega3
-            do j_tet=1,nkc*6                       !iterate over all tetrahedrons
-               do k_tet=1,4                                         !iterate over four corners of tetrahedron
-                    w = tet(j_tet)%p(k_tet)%i                          !label for kpt(3,i)
-
-                    q1=kpc(:,i)
-                    q2=kpc(:,w)
-
-!                    q3=-q1-q2
-                    q3_proc2=q1-q2
-
-!                    call get_k_info(q3,NC,nk3,i3,j3,k3,g1,g2,g3,inside)
-                    call get_k_info(q3_proc2,NC,nk3_proc2,i3,j3,k3,g1,g2,g3,inside1)
-
-                    tet(j_tet)%p(k_tet)%w=frequency(w,jj)+frequency(nk3_proc2,kk)     !assigns eigenvalue for each band. eival(l,w) l=band#,w=kpt#
-               enddo
-            enddo
-
-           call weight_tet(nx,ny,nz,omega1)   ! calculate weighting factors
-
-           do j_tet=1,nkc*6                       !iterate over all tetrahedrons
-               do k_tet=1,4                                         !iterate over four corners of tetrahedron
-                   w = tet(j_tet)%p(k_tet)%i                ! k point
-                   P2smpi(n1,w,ii,jj,kk) = P2smpi(n1,w,ii,jj,kk) + tet(j_tet)%p(k_tet)%c/6d0 * F_arbi(w)
-               enddo
-           enddo
-
-           enddo laF3_loop
-           enddo laF2_loop
-
-
-    enddo laF1_loop
-
-
-!! K1    call cpu_time(cputim2)
-!!    write(*,*) indx,'th ksubset for Pmatrix3 done...', cputim2-cputim1  ! cputim1 unknown!
-
-enddo
-
-
-
-! write P1sm and P2sm
-!*****open(unt+1,file='v33sq_delta.dat',status='unknown',form='unformatted')
-!*****write(unt+1) nv3_2
-!write(*,*) 'nv3_2=',nv3_2
-!*****do n1=1,ksub_size2
-!*****do l1=1,ndn
-!*****do n2=1,nkc
-!*****do l2=1,ndn
-!*****do l3=1,ndn
-!*****   write(unt+1) P1sm(n1,n2,l1,l2,l3), P2sm(n1,n2,l1,l2,l3)
-!write(*,*) 'n1,n2,l1,l2,l3',n1,n2,l1,l2,l3
-!write(*,*) 'P1sm,P2sm',P1sm(n1,n2,l1,l2,l3),P2sm(n1,n2,l1,l2,l3)
-
-!*****enddo
-!*****enddo
-!*****enddo
-!*****enddo
-!write(*,*) 'n1,n2,l1,l2,l3',n1,n2,l1,l2,l3
-!write(*,*) 'P1sm,P2sm',P1sm(n1,n2,l1,l2,l3),P2sm(n1,n2,l1,l2,l3)
-!*****enddo
-
-!*****close(unt+1)
-
-
-!***deallocate(v33sq_5)
-
-7 format(5(i6),2(2x,g14.8))
-
-!if(indx2-1 .ne. num_pfiles) then
-!   write(ulog,*) 'error in reading col_matrix.dat during cal_Qm...'
-!   stop
-!endif
-
-
-
-end subroutine calculate_FGR_mpi2
-
 
 
 !============================================================================================
@@ -7711,239 +6361,6 @@ end subroutine calculate_tauRTA
 
 
 !============================================================================================
-subroutine calculate_tauRTA_mpi2(ndn,tempk)!,P1sm,P2sm)
-!! calculates sum of diagonal terms in collision matrix
-!! calculates Pmatrix and save it to memory
-!! BEWARE ******
-!! the first index ibz is in IBZ, if you want to get the corresponding FBZ index 
-!! use i=mapinv(ibz)
-!!
-use ios
-use exactBTE2
-use mod_ksubset2
-use params
-use constants
-use phi3
-use lattice , only : g1,g2,g3
-use tetrahedron
-use kpoints
-
-implicit none
-
-integer i,ii,indx,ndn,j,jj,kk
-integer nk_subset, k_shift, ksub_size2
-real(8) q1(3), q2(3), q3_proc1(3), q3_proc2(3), q3(3), q3_proc1n(3), q3_proc2n(3)
-real(8) temp, tempk, nb1   ! in cm^-1
-integer ksubset(2)
-integer nx, ny, nz
-integer i2,ii2,j2,jj2,k2,kk2, inside1, inside2, inside, inside1n, inside2n
-integer i3,j3,k3,nk3_proc1,nk3_proc2, nk3, nk2,nk1,ibz,i1,j1,k1
-integer n1,n2,l1,l2,l3,nk2n,i2n,j2n,k2n
-integer j_tet, k_tet,w
-
-character(99) filename_temp, filename
-
-integer uQ, nv3_2,unt
-
-real(8) cputim0, cputim1, cputim2, cputim3, cputim0_wall, cputim1_wall, wtime
-real(8) omega1, V3sq1
-real(8) F_arbi(nkc)
-!***real(8), allocatable :: P1sm(:,:,:,:,:), P2sm(:,:,:,:,:)  
-
-nx=NC(1); ny=NC(2); nz=NC(3)
-
-uQ=9402
-unt=9400
-open(uQ,file='Qvalue.dat',status='unknown')
-write(uQ,*) 'nk,la,Q'
-
-Qvalue(:,:)=0    ! in cm^-1
-Qvalue_N(:,:)=0
-Qvalue_U(:,:)=0
-tauinv_N(:,:)=0
-tauinv_U(:,:)=0
-indx=0
-
-temp = tempk*k_b/(100*h_plank*c_light)   ! convert to cm^-1
-
-!write(*,*) 'entering cal_Qm2...'
-
-call cpu_time(cputim1)
-write(*,*) 'entering calculate_tauRTA...'
-
-nkI1_loop: do ibz=1,nibz
-                i=mapinv(ibz)
-                call get_k_info(kibz(:,ibz) ,NC,nk1,i1,j1,k1,g1,g2,g3,inside)
-                if (nk1.ne.i) then
-                   write(*,*)'calculate_tauRTA error: i.ne.nk1 ',i,nk1
-                   stop
-                endif
-
- ! call Pmatrix3(i)
-     ! -> read V33.xxx.dat
-     ! -> allocate P1,P2 subset
-     ! -> calculate P1, P2
-     ! -> close V33.xxx.dat
-!*** if (mod(ibz,ksub_size) .eq. 1) then   ! start point of each v33.xxx.dat
-
-!***    if(allocated(P1sm) .or. allocated(P2sm)) then
-!***        deallocate(P1sm)
-!***        deallocate(P2sm)
-!***    endif
-
-!***    indx=indx+1
-!***    if (indx*ksub_size > nibz) then
-!***        ksub_size2=nibz - (indx-1)*ksub_size
-!***        ksubset(1)=ksub_size*(indx-1)+1    ! starting point of k subset
-!***        ksubset(2)=nibz
-!***    else
-!***        ksub_size2=ksub_size
-!***        ksubset(1)=ksub_size*(indx-1)+1
-!***        ksubset(2)=ksub_size*indx
-!***    endif
-!***    k_shift=ksub_size*(indx-1)    ! P1 of n1,n2,l1,l2,l3 will be saved in P1(n1-k_shift,n2,l1,l2,l3).
-
-!    call Pmatrix4(indx,ksub_size2,ksubset,nk,kp,ndn,temp,k_shift)
-!***    call cpu_time(cputim0)
-!***    cputim0_wall = wtime()
-
-!***    allocate(P1sm(ksub_size2,nkc,ndn,ndn,ndn))
-!***    allocate(P2sm(ksub_size2,nkc,ndn,ndn,ndn))
-
-!***    P1sm=0d0
-!***    P2sm=0d0
-
-! read v33sq_delta.xxx.dat
-
-!***    write(filename_temp,fmt="(a,i3.3,a)") "v33sq_delta.",indx,".dat"
-!***    filename=trim(v3path)//filename_temp
-!***    open(unt,file=filename,status='old',form='unformatted')
-!***    read(unt) nv3_2
-
-
-!***    do n1=1,ksub_size2
-!***    do l1=1,ndn
-!***    do n2=1,nkc
-!***    do l2=1,ndn
-!***    do l3=1,ndn
-!***       read(unt) P1sm(n1,n2,l1,l2,l3), P2sm(n1,n2,l1,l2,l3)
-!***    enddo
-!***    enddo
-!***    enddo
-!***    enddo
-!***    enddo
-
- !***   call cpu_time(cputim1)
- !***   cputim1_wall = wtime()
- !***   write(ulog,*) indx,' read v3sq_delta.dat done, TIME=',(cputim1-cputim0),'WALL TIME=',(cputim1_wall-cputim0_wall)
-
- !*** endif
-
-! Here call calc_tet
-! Calculate Q_N, Q_U, Q_tot
-
-    laI1_loop: do ii=1,ndn
-
-    write(ulog,*) 'i,ii=',i,ii
-
-    omega1=frequency(i,ii)        ! set fixed omega1 in delta(omega1-omega2+-omega3)
-
-           laF2_loop: do jj=1,ndn
-           laF3_loop: do kk=1,ndn
-
-
-           ! process 1
-           ! set arbitrary function here. (distribution function...)
-           ! call eigen_tet using w2-w3
-           ! call weight_tet
-
-           ! set arbitrary function, F_arbi(j)
-           do j=1,nkc   ! for set arbitrary function
-                q1=kpc(:,i)
-                q2=kpc(:,j)
-
-                q3=-q1-q2
-                q3_proc1=q1+q2
-                q3_proc2=q1-q2
-
-                call get_k_info(q2,NC,nk2,i2,j2,k2,g1,g2,g3,inside)
-                if (nk2.ne.j) then
-                   write(*,*)'calculate_tauRTA error: j.ne.nk2 ',j,nk2
-                   stop
-                endif
-                call get_k_info(q3_proc1,NC,nk3_proc1,i3,j3,k3,g1,g2,g3,inside1)
-                call get_k_info(q3_proc2,NC,nk3_proc2,i3,j3,k3,g1,g2,g3,inside2)
-
-
-                F_arbi(j)=dist(i,ii)*dist(j,jj)*(dist(nk3_proc1,kk)+1)   ! no 2pi at the front since delta is in linear frequency.
-           !***     P1(ibz,j,ii,jj,kk) = P1sm(ibz-k_shift,j,ii,jj,kk) * F_arbi(j)    
-                    P1(ibz,j,ii,jj,kk) = p1sm_mpi(ibz,j,ii,jj,kk) * F_arbi(j)
-
-                F_arbi(j)=dist(i,ii)*(dist(j,jj)+1)*(dist(nk3_proc2,kk)+1)   
-           !***     P2(ibz,j,ii,jj,kk) = P2sm(ibz-k_shift,j,ii,jj,kk) * F_arbi(j)     
-                    P2(ibz,j,ii,jj,kk) = p2sm_mpi(ibz,j,ii,jj,kk) * F_arbi(j)
-
-! K1   Qvalue(ibz,ii)=Qvalue(ibz,ii) + P1(ibz,j,ii,jj,kk) + 0.5*P2(ibz,j,ii,jj,kk)
-                Qvalue(ibz,ii)=Qvalue(ibz,ii) + ( P1(ibz,j,ii,jj,kk)  &
-                &              + 0.5*P2(ibz,j,ii,jj,kk) ) 
-
-                if (inside1 .eq. 1) then    ! normal process in coalescence process
-                    Qvalue_N(ibz,ii)=Qvalue_N(ibz,ii) + P1(ibz,j,ii,jj,kk)
-                else
-                    Qvalue_U(ibz,ii)=Qvalue_U(ibz,ii) + P1(ibz,j,ii,jj,kk)
-                endif
-
-                if (inside2 .eq. 1) then    ! normal process in decay process
-                    Qvalue_N(ibz,ii)=Qvalue_N(ibz,ii) + 0.5*P2(ibz,j,ii,jj,kk)
-                else
-                    Qvalue_U(ibz,ii)=Qvalue_U(ibz,ii) + 0.5*P2(ibz,j,ii,jj,kk)
-                endif
-
-           enddo
-
-
-           enddo laF3_loop
-           enddo laF2_loop
-
-           nb1=dist(i,ii)
-
-           write(uQ,*) ibz,ii,Qvalue(ibz,ii),Qvalue(ibz,ii)/(nb1*(nb1+1))
-
-! tauinv_N in 1/sec
-           tauinv_N(ibz,ii) = Qvalue_N(ibz,ii)/(nb1*(nb1+1)) * c_light*100    
-           tauinv_U(ibz,ii) = Qvalue_U(ibz,ii)/(nb1*(nb1+1)) * c_light*100
-           tauinv_tot(ibz,ii) = tauinv_N(ibz,ii) + tauinv_U(ibz,ii)
-
-
-
-    enddo laI1_loop
-
-
-
-   ! call cpu_time(cputim2)
-   ! write(*,*) indx,'th ksubset for Pmatrix3 done...', cputim2-cputim1
-
-
-enddo nkI1_loop
-
-
-
-close(uQ)
-
-7 format(5(i6),2(2x,g14.8))
-
-!if(indx2-1 .ne. num_pfiles) then
-!   write(ulog,*) 'error in reading col_matrix.dat during cal_Qm...'
-!   stop
-!endif
-
-
-end subroutine calculate_tauRTA_mpi2
-!=========================================================
-
-
-
-!============================================================================================
 subroutine calculate_tauRTA_iso(ndn,tempk)
 !! calculates sum of diagonal terms in collision matrix
 !! calculates Pmatrix and save it to memory
@@ -8136,17 +6553,17 @@ nkI1_loop: do ibz=1,nibz
            enddo laF3_loop
            enddo laF2_loop
 
-         !  do jj=1,ndn
-         !     do j=1,nkc
+           do jj=1,ndn
+              do j=1,nkc
 
            !write(*,*)Qvalue_N(ibz,ii),Piso(ibz,j,ii,jj)
-           Qvalue(ibz,ii)=Qvalue(ibz,ii) + Piso(ibz,ii)
-           Qvalue_N(ibz,ii)=Qvalue_N(ibz,ii) + Piso(ibz,ii)
-           Qvalue_U(ibz,ii)=Qvalue_U(ibz,ii) + Piso(ibz,ii)
+           Qvalue(ibz,ii)=Qvalue(ibz,ii) + Piso(ibz,j,ii,jj)
+           Qvalue_N(ibz,ii)=Qvalue_N(ibz,ii) + Piso(ibz,j,ii,jj)
+           Qvalue_U(ibz,ii)=Qvalue_U(ibz,ii) + Piso(ibz,j,ii,jj)
 
            !write(*,*)ibz,j,ii,jj, Qvalue_N(ibz,ii),Piso(ibz,j,ii,jj)
-          !    enddo
-          !enddo
+              enddo
+          enddo
 
 
            nb1=dist(i,ii)

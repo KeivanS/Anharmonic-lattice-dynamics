@@ -1,6 +1,6 @@
 !==========================================================
  subroutine read_params
- use io2
+ use ios
  use om_dos
  use params
  use lattice
@@ -10,53 +10,51 @@
  implicit none
 ! integer i
 
-  open(uparams,file='params.phon',status='old')
-  write(6,*) 'READ_PARAMS: opening params.phon'
-!  read(uparams,*) natom_type   ! # of different elements present in prim cell
-!  write(6,*) 'READ_PARAMS: just read natom_type ',natom_type
-! call allocate_mass(natom_type)
-! read(uparams,*) (mas(i),i=1,natom_type)  ! in the same order as in POTCAR
-! read(uparams,*) (atname(i),i=1,natom_type)  ! in the same order as in POTCAR
-! read(uparams,*) natoms        ! # of atoms in primitive cell
-
-!  read(uparams,*)nbs1,nbs2,nbs3 ! kmesh for band structure calculation
-!  write(*,*) 'READ_PARAMS: just read nib ',nbs1
-  read(uparams,*)nc1,nc2,nc3,dos_bs_only ! coarse kmesh for big calculations
-  NC(1)=nc1 ;NC(2)=nc2 ;NC(3)=nc3
-  write(*,*) 'READ_PARAMS: just read nib ',nc1
-  read(uparams,*)lamin,lamax
-! read(uparams,*)nib1,nib2,nib3 ! fine kmesh for dos calculations
-!  NF(1)=nib1 ;NF(2)=nib2 ;NF(3)=nib3
-! write(*,*) 'READ_PARAMS: just read nib ',nib1
-  read(uparams,*)shftx,shfty,shftz ! kmesh for dos calculation
+  open(uparams,file='latdyn.params',status='old')
+  write(6,*) 'READ_PARAMS: opening latdyn.params'
+  read(uparams,*)nc,dos_bs_only ! kmesh 
+  write(*,*) 'READ_PARAMS: kmesh= ',nc
+  read(uparams,*)shft !x,shfty,shftz ! shift in units of mesh
   read(uparams,*)wmesh,wmax  ! no of w mesh points and max frequency for DOS
-  write(*,*) 'READ_PARAMS: just read wmax ',wmax
+  write(*,*) 'READ_PARAMS: just read wmesh,wmax ',wmesh,wmax
   read(uparams,*)width,etaz  ! width of gaussian broadening for DOS,imag part of om
   write(*,*) 'READ_PARAMS: just read width,etaz ',width,etaz
-  read(uparams,*)tau0        ! large relaxation time: 1/tau0 to be added to gamma
-  write(*,*) 'READ_PARAMS: just read tau0 ',tau0
+  tau0=1e-11
+  write(*,*) 'READ_PARAMS: default tau0 set to ',tau0
   read(uparams,*)verbose
   write(*,*) 'READ_PARAMS: just read verbose ',verbose
-  read(uparams,*)wshift      ! small shift added to make negative modes go away
-  write(*,*) 'READ_PARAMS: just read wshift ',wshift
   read(uparams,*)tmin,tmax,ntemp      ! temps in Kelvin to calculate thermal expansion and other thermal ppties
-  read(uparams,*)iter,split,readv3,writev3,calk      ! if=1 then read from a file, else generate  ! sy added iter,split,calk
-  read(uparams,*)ksub_size           ! each v33sq.xxx.dat file contains V33sq(ksub_size,nkc,ndn,ndn,ndn)
+  write(*,*) 'READ_PARAMS: tmin,tmax,ntemp=',tmin,tmax,ntemp
+  read(uparams,*)job      ! if=1 then read from a file, else generate  ! sy added iter,split,calk
+  write(*,*)'iter,split,readv3,writev3,calk=',iter,split,readv3,writev3,calc_kappa
+  read(uparams,*)ksub_size  ! each v33sq.xxx.dat file contains V33sq(ksub_size,nkc,ndn,ndn,ndn)
   read(uparams,'(a)') v3path              ! path to v33sq.dat files
-  read(uparams,*)max_iter, conv_error, conv_max_error, conv_diff, conv_max_diff, conv_diff_kap, conv_max_diff_kap,conv_iter,update   
-   ! maximum iteration number for iterative solution, convergence criteria, update ratio
-  read(uparams,*)v3_threshold        ! in 1/cm keep all v33 of norm above v3_threshold
+  read(uparams,*)iso
+! initialize some default parameters
+ tolerance =0.0001
+  max_iter=150
+  conv_error=1E-5
+  conv_max_error=1E-4
+  conv_diff=1E-8
+  conv_max_diff=1E-6
+  conv_diff_kap=1E-5
+  conv_max_diff_kap=1E-4
+  Conv_iter=1E-6
+  update_mix=0.4  ! mixing of new iteration
+  write(*,*)'max_iter, conv_error, conv_max_error, conv_diff, conv_max_diff, conv_diff_kap, conv_max_diff_kap,conv_iter,update_mix'   
+  write(*,*)max_iter, conv_error, conv_max_error, conv_diff, conv_max_diff, conv_diff_kap, conv_max_diff_kap,conv_iter,update_mix   
+  v3_threshold=1E-7        ! in 1/cm keep all v33 of norm above v3_threshold
+  write(*,*)'v3_threshold=',  v3_threshold  
   read(uparams,*)classical     ! if =1 then use classical distribution (kT/hw)
-  read(uparams,*)cal_cross,qcros     ! if =1 then calculate the cross section at qcros (reduced U)
-  read(uparams,*)threemtrx          ! if =1 then calculate the 3-phonon matrix elements
+  read(uparams,*)calc_cross,q_cross  ! if =1 then calculate the cross section at qcros (reduced U)
+  read(uparams,*)lmicron     ! sample length in microns
 
 !!mine
-  read(uparams,*)alphamix
 
   close(uparams)
 
   write(ulog,*) 'READ_PARAMS: read and kpoints allocated'
-  write(ulog,3)'nc1,nc2,nc3=',nc1,nc2,nc3
+  write(ulog,3)'nc1,nc2,nc3=',nc
   write(ulog,*)'wmesh, wmax=',wmesh,wmax
   write(ulog,*)'read/writev3=',readv3,writev3
 ! etaz = max(etaz,wmax/wmesh)
@@ -69,7 +67,7 @@
      write(ulog,*)'Calculation is done in the QUANTUM limit'
   endif
   if (dos_bs_only) then
-     write(ulog,*)' DOS will only be calculated (on the coarse mesh) ',nc1,nc2,nc3
+     write(ulog,*)' DOS will only be calculated (on the coarse mesh) ',nc
 !    write(ulog,*)' and the program will stop after that!'
   endif
 
@@ -77,39 +75,36 @@
  end subroutine read_params
 !==========================================================
  subroutine read_input_fit
- use io2
+ use ios
  use params
  use lattice
- use force_constants_module
  use atoms_force_constants
  implicit none
  integer i,counter,label
  real(8) scal,junk
  character jjj*1
- open(uparams,file='params.inp',status='old')
+ open(uparams,file='structure.params',status='old')
 
  read(uparams,*) latticeparameters   ! (a,b,c,alpha,beta,gamma)
  read(uparams,*) primitivelattice     ! prim latt vectors in terms of conventional above
  read(uparams,*) lattice_parameter
- read(uparams,*) maxneighbors
+ latticeparameters(1:3) = latticeparameters(1:3)*lattice_parameter
  read(uparams,*) include_fc    ! if=1 include this rank
- read(uparams,*) nshells       ! # of neigr-shells to use for each rank
- read(uparams,*) i  ! junk
-! read(uparams,*) junk
-! read(uparams,*) junk
- read(uparams,*) tolerance  ! this really the flags...
- read(uparams,*) junk
- read(uparams,*) junk
+ read(uparams,*) junk ! itrans,irot,ihunag,all
+ read(uparams,*) junk ! use temperature weighting, Tempk
+ read(uparams,*) junk ! # of FORCEDISP files, verbosity
  read(uparams,*) natom_type   ! # of different elements present in prim cell
-!read(uparams,*) jjj
-! allocate(natom(natom_type))
  write(ulog,*) 'READ_INPUT_FIT: natom_type ',natom_type
- call allocate_mass(natom_type)
+ call allocate_mass(natom_type) ! and atname and natom
  read(uparams,*) (mas(i),i=1,natom_type)  ! in the same order as in POTCAR
  read(uparams,*) (atname(i),i=1,natom_type)  ! in the same order as in POTCAR
  read(uparams,*) natoms0        ! # of atoms in primitive cell
  write(ulog,*)'reading ',natoms0,' atoms in the primitive cell'
  call allocate_primcell(natoms0)
+ read(uparams,*) junk ! fc2flag
+ read(uparams,*) junk ! nshells(2)
+ read(uparams,*) junk ! nshells(3)
+ read(uparams,*) junk ! nshells(4)
 ! indices of atoms in primitive cell must be same order as in POSCAR1
  counter = 0
  natom = 0
@@ -126,49 +121,35 @@
  write(ulog,*)'reading  atom #',i, counter
  enddo
 
- write(ulog,*)'reading done, closing the params.inp file'
+ write(ulog,*)'reading done, closing the structure.params file'
  close(uparams)
+
+ maxneighbors=50
 
  do i=1,natoms0
     atom0(i)%name = atname(atom_type(i))
     atom0(i)%at_type  = atom_type(i)
     atom0(i)%mass = mas(atom_type(i))
+    atom0(i)%tau  = i  ! assumes labels are ordered in increasing order
     atompos0(:,i) = atom0(i)%equilibrium_pos
  enddo
 
- maxshells = maxneighbors
-
- do i=1,4
-    if (nshells(i) .gt. maxshells) then
-       write(ulog,*)' READ_INPUT: nshell> maxshells ',i,nshells(i),maxshells
-       write(ulog,*)' Either increase maxshells or lower nshell for that rank'
-       stop
-    endif
- enddo
-
-! open(uparams,file='POSCAR1',status='old')
-! read(uparams,*)
-! read(uparams,*) scal  !lattice_parameter
-! close(uparams)
-!! if (lattice_parameter .gt.0) then
-!!    latticeparameters(1:3) = latticeparameters(1:3)*lattice_parameter
-!! else
-! if (scal .gt.0) then
-!    latticeparameters(1:3) = latticeparameters(1:3)*scal
-! else
-!    write(ulog,*)' lattice_parameter in POSCAR1 is negative, input it by hand'
-!    stop
-! endif
+! do i=1,4
+!    if (nshells(i) .gt. maxshells) then
+!       write(ulog,*)' READ_INPUT: nshell> maxshells ',i,nshells(i),maxshells
+!       write(ulog,*)' Either increase maxshells or lower nshell for that rank'
+!       stop
+!    endif
+! enddo
 
 end subroutine read_input_fit
 !==========================================================
  subroutine read_lattice
- use io2
+ use ios
  use params
  use lattice
  use geometry
  use atoms_force_constants
- use force_constants_module
  use svd_stuff
  use constants
  implicit none
@@ -185,11 +166,13 @@ enddo
  read(ufc0,*) r1   ! coordinates of the primitive cell vectors
  read(ufc0,*) r2
  read(ufc0,*) r3
+ r01=r1; r02=r2; r03=r3
 
 ! now generate the lattice ppties in real and recip spaces
   call make_reciprocal_lattice_2pi(r1,r2,r3,g1,g2,g3)
   call calculate_volume(r1,r2,r3,volume_r)
   call calculate_volume(g1,g2,g3,volume_g)
+ g01=g1; g02=g2; g03=g3
   box(1) = length(r1)
   box(2) = length(r2)
   box(3) = length(r3)
@@ -197,7 +180,7 @@ enddo
   boxg(2) = length(g2)
   boxg(3) = length(g3)
   write(ulog,3)' r1= ',r1
-
+  write(ulog,3)' r2= ',r2
   write(ulog,3)' r3= ',r3
   write(ulog,3)' box  = ',box
   write(ulog,3)' g1= ',g1
@@ -211,23 +194,21 @@ enddo
 ! ############ check compatibiliy with input file "params.inp" ###########
  read(ufc0,*) n1
  if (n1 .ne. natoms0) then
-    write(ulog,*)' error in reading natoms0, lat_fc.dat is incompatible with params.in ',n1,natoms0
+    write(ulog,*)' natoms0 in lat_fc.dat incompatible with structure.params ',n1,natoms0
     stop
  endif
 ! call allocate_primcell(natoms0)
  do i=1,natoms0
 !  read(ufc1,*)atom0(i)%tau, atom_type(i),atom0(i)%equilibrium_pos,atom0(i)%mass
-    read(ufc0,*)tt,name,ttyp,tau1,mss  ! this has the coordinates and atomic types and masses
-!   atompos0(:,i) = atom0(i)%equilibrium_pos
+    read(ufc0,*)tt,name,ttyp,tau1,mss  ! atomic types names coordinates and and masses 
     vv%x= tau1.dot.g1 ; vv%y= tau1.dot.g2 ; vv%z= tau1.dot.g3
-    vv = (1/2d0/pi)*vv
+    vv = (1/2d0/pi)*vv  ! reduced coordinates of atoms in primcell
     if(tt .eq. i .and. ttyp .eq. atom0(i)%at_type .and. atom0(i)%mass .eq. mss) then
-!&     length(atom0(i)%equilibrium_pos-vv).lt.1d-4 .and.
-      write(ulog,*)'####### compatibility with params.inp checked  ######### ',i
+      write(ulog,*)'####### compatibility with structure.params checked  ######### ',i
     else
-      write(ulog,*)'READ_LATTICE: data in params.inp and lat_fc.dat are not compatible'
+      write(ulog,*)'READ_LATTICE: structure.params and lat_fc.dat are not compatible'
       write(ulog,*)' i, atom type, mass '
-      write(ulog,*) i, tt, atom0(i)%at_type,ttyp, atom0(i)%mass,mss
+      write(ulog,*) i,tt,  atom0(i)%at_type,ttyp, atom0(i)%mass,mss
 ! fix it so that if eq pos are the same module translarion vectors, it's OK
       write(ulog,3)' reduced coordinates ',atom0(i)%equilibrium_pos,vv
       stop
@@ -249,10 +230,11 @@ enddo
  write(ulog,*) (ngroups(j),j=1,4)
  read(ufc0,*) line
  write(ulog,*) line
- read(ufc0,*) natoms2
- write(ulog,*) natoms2
+ read(ufc0,*) nsmax,natoms2
+ write(ulog,*) nsmax,natoms2
 
-  maxatoms=2500; imaxat=1
+  maxatoms=natoms2-300 
+  imaxat=1
   do while (imaxat.ne.0)
      maxatoms=maxatoms+300
      write(6,*)' maxatoms=',maxatoms
@@ -261,21 +243,26 @@ enddo
      if (allocated(iatomcell))  deallocate(iatomcell)
      if (allocated(atompos))    deallocate(atompos)
      allocate(atompos(3,maxatoms), iatomcell(3,maxatoms),iatomcell0(maxatoms))
+! maxneighbors is an output of force_constants_init
+!      call force_constants_init(lattparams,primlatt,natoms_in, &
+!     &     iatomtype,atompos_in)
+!     call force_constants_init(natoms0,atom_type,atompos0)
      call force_constants_init(latticeparameters,primitivelattice,natoms0,  &
       &     atom_type,atompos0)  !(n,natom_type,atompos0)
   enddo
 
+  write(ulog,*)'After force_constants_init, maxneighbors=',maxneighbors
 
  if (natoms.ne.natoms2) then
     write(ulog,*) "natoms read in lat_fc=",natoms2
     write(ulog,*) "while natoms generated by fc_init=",natoms
-    write(ulog,*) "check the number of shells in params.inp, "
+    write(ulog,*) "check the number of shells in structure.params, "
     write(ulog,*) "it is probably too large if natoms in fc_init is larger than in lat_fc"
-    write(ulog,*) "in which case the program will stop"
+    write(ulog,*) "in which case the program may stop"
  endif
 
  
- do j=1,natoms
+ do j=1,natoms2
     read(ufc0,*,end=99)i,atompos(:,i), iatomcell0(i),iatomcell(:,i)
     write(ulog,4)i,atompos(:,i), iatomcell0(i),iatomcell(:,i)
  enddo
@@ -292,17 +279,17 @@ enddo
 
  end subroutine read_lattice
 !===========================================================
- subroutine read_fc23
- use io2
+ subroutine read_fc234
+ use ios
  use params
  use lattice
  use geometry
- use force_constants_module
  use atoms_force_constants
  use svd_stuff
  implicit none
  character line*90
  integer t,rank,res,j,mx
+ logical ex
 
 ! read(ufc2,'(a)') line
 ! read(ufc,*)include_fc(1),include_fc(2),include_fc(3),include_fc(4)
@@ -327,18 +314,25 @@ enddo
 ! endif
 !----------------------------------------
  rank=2
-! if ( include_fc(rank) .eq. 1 ) then
- mx = nterms(rank)
+ inquire ( file='fc2.dat', exist=ex)
+ if (ex) then
+    open(ufc2,file='fc2.dat',status='old')
+ else
+    write(*,*)'READ_FC234: file fc2.dat does not exist'
+    stop
+ endif
  read(ufc2,'(a)') line
- do j=1,mx
+ do j=1,10000000
        read(ufc2,*,end=92)t
  enddo
 92 mx=j-1
+ if (mx.ne.nterms(rank)) then
+    write(*,*)'READ_FC2: number of lines read=',mx,' inconsistent with ',nterms(2),' from lat_fc.dat'
+    stop
+ endif
  rewind(ufc2)
- nterms(rank)=mx
  write(ulog,*)'Rank=2, reading nterms(2)=',mx,' terms'
- allocate(iatomterm_2(rank,mx),ixyzterm_2(rank,mx),igroup_2(mx)) !,ampterm_2(mx))
-! allocate(fcs_2(ngroups(rank)))
+ allocate(iatomterm_2(rank,mx),ixyzterm_2(rank,mx),igroup_2(mx)) 
  allocate(fcs_2(mx),grun_fc(mx))
  read(ufc2,'(a)') line
  write(*  ,'(a)') line
@@ -348,7 +342,6 @@ enddo
        read(ufc2,*)t,igroup_2(j), &
 & iatomterm_2(1,j),ixyzterm_2(1,j),  &
 & iatomterm_2(2,j),ixyzterm_2(2,j),  &
-!& fcs_2(igroup_2(j)),ampterm_2(j)
 & fcs_2(j)
  enddo
  res = res + igroup_2(nterms(rank))
@@ -356,40 +349,77 @@ enddo
 !----------------------------------------
  rank=3
  if ( include_fc(rank) .eq. 1 ) then
- mx = nterms(rank)
- write(*,*) '********** FCs for rank=3',mx
- read(ufc3,'(a)') line
- do j=1,nterms(rank)
+   inquire ( file='fc3.dat', exist=ex)
+   if (ex) then
+      open(ufc3,file='fc3.dat',status='old')
+   else
+      write(*,*)'READ_FC234: file fc3.dat does not exist'
+      stop
+   endif
+   read(ufc3,'(a)') line
+   do j=1,10000000
        read(ufc3,*,end=93)t
- enddo
+   enddo
 93 mx=j-1
- rewind(ufc3)
- nterms(rank)=mx
- write(ulog,*)'Rank=3, reading nterms(3)=',mx,' terms'
- allocate(iatomterm_3(rank,mx),ixyzterm_3(rank,mx),igroup_3(mx) ) !,ampterm_3(mx),fcs_3(ngroups(rank)))
- allocate(fcs_3(mx))
- read(ufc3,'(a)') line
- write(*  ,'(a)') line
- do j=1,mx
-!       read(ufc3,*)t,igroup_3(t), &
-!& iatomterm_3(1,t),ixyzterm_3(1,t),  &
-!& iatomterm_3(2,t),ixyzterm_3(2,t),  &
-!& iatomterm_3(3,t),ixyzterm_3(3,t),  &
-!& fcs_3(igroup_3(t)),ampterm_3(t)
+   if (mx.ne.nterms(rank)) then
+      write(*,*)'READ_FC3: number of lines read=',mx,' inconsistent with ',nterms(3),' from lat_fc.dat'
+      stop
+   endif
+   write(*,*) '********** FCs for rank=3',mx
+   rewind(ufc3)
+   write(ulog,*)'Rank=3, reading nterms(3)=',mx,' terms'
+   allocate(iatomterm_3(rank,mx),ixyzterm_3(rank,mx),igroup_3(mx), fcs_3(mx))
+   read(ufc3,'(a)') line
+   write(*  ,'(a)') line
+   do j=1,mx
        read(ufc3,*)t,igroup_3(j), &
-& iatomterm_3(1,j),ixyzterm_3(1,j),  &
-& iatomterm_3(2,j),ixyzterm_3(2,j),  &
-& iatomterm_3(3,j),ixyzterm_3(3,j),  &
-& fcs_3(j)
-!& fcs_3(igroup_3(j)),ampterm_3(j)
- write(*,*) j,fcs_3(j)
- enddo
- res = res + igroup_3(nterms(rank))
+&   iatomterm_3(1,j),ixyzterm_3(1,j),  &
+&   iatomterm_3(2,j),ixyzterm_3(2,j),  &
+&   iatomterm_3(3,j),ixyzterm_3(3,j),  &
+&   fcs_3(j)
+!   write(*,*) j,fcs_3(j)
+   enddo
+   res = res + igroup_3(nterms(rank))
  endif
- write(ulog,*)'READ_FC23: done!, number of groups read is=',res
- write(ulog,*)'READ_FC23:',fcs_2
+!--------------------------------
+ rank=4
+ if ( include_fc(rank) .eq. 1 ) then
+ inquire ( file='fc4.dat', exist=ex)
+ if (ex) then
+    open(ufc4,file='fc4.dat',status='old')
+ else
+    write(*,*)'READ_FC4: file fc4.dat does not exist'
+    stop
+ endif
+ read(ufc4,'(a)') line
+ do j=1,10000000
+       read(ufc4,*,end=94)t
+ enddo
+94 mx=j-1
+ if (mx.ne.nterms(rank)) then
+    write(*,*)'READ_FC4: number of lines read=',mx,' inconsistent with ',nterms(4),' from lat_fc.dat'
+    stop
+ endif
+ rewind(ufc4)
+ write(ulog,*)'Rank=4, reading nterms(4)=',mx,' terms'
+ allocate(iatomterm_4(rank,mx),ixyzterm_4(rank,mx),igroup_4(mx), fcs_4(mx) )
+ read(ufc4,'(a)') line
+ write(*  ,'(a)') line
+ write(*,*) '********** FCs for rank=4',mx
 
- end subroutine read_fc23
+ do j=1,mx
+       read(ufc4,*)t,igroup_4(j), &
+& iatomterm_4(1,j),ixyzterm_4(1,j),  &
+& iatomterm_4(2,j),ixyzterm_4(2,j),  &
+& iatomterm_4(3,j),ixyzterm_4(3,j),  &
+& iatomterm_4(4,j),ixyzterm_4(4,j),  &
+& fcs_4(j)
+ enddo
+ res = res + igroup_4(nterms(rank))
+ endif
+ write(ulog,*)'READ_FC234: done!, number of groups read is=',res
+
+ end subroutine read_fc234
 !==========================================================
  subroutine set_dynamical_matrix(kpt,dynmat,ndim,ddyn)
  use params
@@ -406,6 +436,19 @@ enddo
  real(8) mi,mj,all,rr(3),delt(3)
  integer i0,j,j0,al,be,i3,j3,t !,ired
 
+! write(*,*)'set dynamical matrix: fc2=',size(fcs_2)
+! write(*,3)fcs_2
+!
+! write(*,*)'set dynamical matrix: iatomterm=',size(iatomterm_2) !(1,:))
+! write(*,2)iatomterm_2(1,:)
+! write(*,2)iatomterm_2(2,:)
+!
+! write(*,*)'set dynamical matrix: ixyzterm=',size(ixyzterm_2) !(1,:))
+! write(*,2)ixyzterm_2(1,:)
+! write(*,2)ixyzterm_2(2,:)
+
+2 format(9999(1x,i4))
+3 format(9999(1x,g9.3))
 4 format(a,4(1x,i5),9(2x,f9.4))
  delt = wshift !*wshift
  ddyn   = cmplx(0d0,0d0)
@@ -414,7 +457,7 @@ enddo
  do al=1,3
     i3 = al+3*(i0-1)
     mi = atom0(i0)%mass
-! write(ulog,*) 'i,al,mass=',i0,al,i3,mi
+!  write(*,*) 'i,al,mass=',i0,al,i3,mi
     tloop: do t=1,nterms(2)
        if ( i0 .eq. iatomterm_2(1,t) .and. al .eq. ixyzterm_2(1,t) ) then
           be =  ixyzterm_2(2,t)
@@ -440,14 +483,16 @@ enddo
 ! this leaves  gamma eivals unchanged
 !   dynmat(i3,i3) = dynmat(i3,i3) + delt(al)*(1-cos(kpt .dot. r1))
 ! but this one shifts everything up by delt=wshift
-    dynmat(i3,i3) = dynmat(i3,i3) + delt(al)
+!   dynmat(i3,i3) = dynmat(i3,i3) + delt(al)
  enddo
  enddo
+! write(*,*) ' Terms loop done, dynmat is defined '
 
 5 format(a,5i5,9(f8.3))
  all = sum(cdabs(dynmat(:,:)))/(ndim*ndim)
 ! make sure it is hermitian
  do t=1,ndim
+!    call write_out(6,'dynmat=',dynmat(t,:))
     if (abs(aimag(dynmat(t,t))) .gt. 9d-4*abs(real(dynmat(t,t))) ) then
        write(ulog,*)' dynmat is not hermitian on its diagonal'
        write(ulog,*)' diagonal element i=',t,dynmat(t,t)
@@ -486,6 +531,7 @@ enddo
   enddo
  endif
 
+! write(*,*)'Exiting set_dynamical_matrix'
  end subroutine set_dynamical_matrix
 !==========================================================
  subroutine diagonalize(n,mat,eival,nv,eivec,ier)
@@ -548,13 +594,13 @@ enddo
     endif
  enddo
  !write(ueiv,3)i-1,kp,(cnst*sig(j)*sqrt(eival(j)),j=1,n)
- write(uio,3)i-1,dk,kp,(cnst*sig(j)*sqrt(eival(j)),j=1,n)
+ write(uio,3)i,dk,kp,(cnst*sig(j)*sqrt(eival(j)),j=1,n)
 
 3 format(i5,1x,4(1x,f8.3),999(1x,g11.5))
  end subroutine write_eigenvalues
 !==========================================================
  subroutine store_2d_to_1d(eigenval,eival1d,n,m)
- use io2
+ use ios
  implicit none
  integer n1d,n,m,i,j,k
  real(8), dimension(n*m) :: eival1d
@@ -582,9 +628,9 @@ enddo
 
  end subroutine store_2d_to_1d
 !==========================================================
- subroutine calculate_dos(mx,eival,wkp,mesh,omega,ds)
+ subroutine calculate_dos_g(mx,eival,wkp,mesh,omega,ds)
 ! use gaussian broadening
- use io2
+ use ios
  use params
  use om_dos
  use constants
@@ -607,11 +653,11 @@ enddo
 
 3 format(i5,9(3x,g11.5))
 
- end subroutine calculate_dos
+ end subroutine calculate_dos_g
 !==========================================================
  subroutine calculate_jdos(mx,eival,wkp,mesh,omega,udosj)
 ! use gaussian broadening to calculate the joint dos
- use io2
+ use ios
  use params
  use om_dos
  use constants
@@ -665,60 +711,62 @@ enddo
 
  end subroutine calculate_jdos
 !==========================================================
- subroutine lifetime_dos(q,omq,dosp,dosm)
-! use gaussian broadening to calculate the joint dos
-! for given q and mode index la, calculates sum_1,2
-! delta(1-q1-/+q2)delta(w_q-w1-/+w2)
- use io2
+ subroutine lifetime_dos_l(q,ndn,omq,dosp,dosm)
+! use lorentzian broadening to calculate the joint dos
+! for given q, calculates sum_1,2  delta(q-q1-/+q2)delta(w_q-w1-/+w2)
+ use ios
  use params
  use om_dos
  use constants
  use eigen
  use kpoints
  implicit none
- integer i,j,k,l,nq,la,i1,j1,k1,nq1,ip,jp,kp,im,jm,km,nqp,nqm,la1,la2,inside
- real(8) q(3),q1(3),qp(3),qm(3),dosp(ndyn),dosm(ndyn),om1,omp,omm,omq(ndyn),delta_l,evlp(ndyn),evlm(ndyn),evl1(ndyn)
- complex(8) oc2,omz,evcp(ndyn,ndyn),evcm(ndyn,ndyn),evc1(ndyn,ndyn)
+ integer, intent(in) :: ndn
+ real(8), intent(in) ::  q(3)
+ real(8), intent(out) ::  omq(ndn),dosp(ndn),dosm(ndn)
+ integer l,la,la1,la2
+ real(8) q1(3),qp(3),qm(3),delta_l,   &  
+ &       om1(ndn),omp(ndn),omm(ndn),evl1(ndn),evlp(ndn),evlm(ndn)
+ complex(8) evc1(ndn,ndn),evcp(ndn,ndn),evcm(ndn,ndn)
 
-! call get_k_info(q,NC,nq,i,j,k,g1,g2,g3,inside)
-! omq = sqrt(abs(eigenval(la,nq))) * cnst 
+ call get_freq(q,ndn,evl1,evc1)
+ omq = sqrt(abs(evl1)) * cnst   ! convert to 1/cm
+ write(*,8) 'omq=',omq
 
  dosp=0; dosm=0
  do l=1,nkc
     q1=kpc(:,l)
-    call get_k_info(q1,NC,nq1,i1,j1,k1,g1,g2,g3,inside)
-    if(l.ne.nq1) then
-      write(ulog,*)'n1,nq1,inside=',l,nq1,inside
-      write(ulog,*)'q1=',q1
-      write(ulog,*)'ijk1=',i1,j1,k1
-      stop
-    endif
     qp=-q-q1
     qm=-q+q1
-!   call get_freq(q1,ndyn,evl1,evc1)
-    call get_freq(qp,ndyn,evlp,evcp)
-    call get_freq(qm,ndyn,evlm,evcm)
+    call get_freq(q1,ndn,evl1,evc1)
+    call get_freq(qp,ndn,evlp,evcp)
+    call get_freq(qm,ndn,evlm,evcm)
+    om1 = sqrt(abs(evl1)) * cnst 
+    omp = sqrt(abs(evlp)) * cnst 
+    omm = sqrt(abs(evlm)) * cnst 
 
-    do la1=1,ndyn
-    do la2=1,ndyn
-    do la =1,ndyn
+    do la1=1,ndn
+    do la2=1,ndn
+    do la =1,ndn
 
-       om1 = sqrt(abs(eigenval(la1,l))) * cnst 
-       omp = sqrt(abs(evlp(la2))) * cnst 
-       omm = sqrt(abs(evlm(la2))) * cnst 
-       dosp(la)=dosp(la)+delta_l(omq(la)-om1-omp,etaz)
-       dosm(la)=dosm(la)+delta_l(omq(la)-om1+omm,etaz)
+       dosp(la)=dosp(la)+delta_l(omq(la)-om1(la1)-omp(la2),etaz) 
+       dosm(la)=dosm(la)+delta_l(omq(la)-om1(la1)+omm(la2),etaz)
 
     enddo
     enddo
     enddo
  enddo
+
+! normalize and convert to ps to get in in per unit cell per THz (or ps)
+ dosp=dosp/nkc*100*c_light*1e-12
+ dosm=dosm/nkc*100*c_light*1e-12
+
 ! write(*,8)'LIFETIME_DOS: q,omqdosp,dosm=',q,omq,dosp,dosm
 8 format(a,99(1x,g10.3))
- end subroutine lifetime_dos
+ end subroutine lifetime_dos_l
 !===========================================================
  subroutine phase_space_lifetime_bs
- use io2
+ use ios
  use om_dos
  use kpoints
  use eigen
@@ -726,25 +774,24 @@ enddo
  integer i,la
  real(8) q(3),omq(ndyn),dosp(ndyn),dosm(ndyn)
 
- open(udos,file='lifetime_dos_bs.dat ',status='unknown')
- write(udos,*)'# la,q,,dq,omega(q,la),jdsm(i),jdsp(i)'
+ write(*,*)'Enetering phase_space_bs'
+ open(udos,file='bs_phase_space.dat ',status='unknown')
+ write(udos,*)'# dk,q,(omega(q,la),jdsm(la)[ps],jdsp(la)[ps], la=1,ndyn'
 
-    do i=1,nkp_bs
-       q=kp_bs(:,i)
-       do la=1,ndyn
-          omq(la) = sqrt(abs(eigenval_bs(la,i))) * cnst 
-       enddo
-       call lifetime_dos(q,omq,dosp,dosm)
-       write(udos,3) dk_bs(i),q,(omq(la),dosm(la),dosp(la),la=1,ndyn)
-    enddo
+ do i=1,nkp_bs
+    q=kp_bs(:,i)
+    call lifetime_dos_l(q,ndyn,omq,dosp,dosm)
+    write(udos,3) dk_bs(i),q,(omq(la),dosm(la),dosp(la),la=1,ndyn)
+ enddo
  close(udos)
 
 3 format(99(1x,g11.4))
 
  end subroutine phase_space_lifetime_bs
 !===========================================================
- subroutine phase_space_lifetime
- use io2
+ subroutine phase_space_lifetime_FBZ
+!! calculates for  given q the integral sum_k delta(w(q) pm w2(k) - w3(-k-q)) 
+ use ios
  use om_dos
  use kpoints
  use eigen
@@ -752,22 +799,19 @@ enddo
  integer i,la
  real(8) q(3),omq(ndyn),dosp(ndyn),dosm(ndyn)
 
- open(udos,file='lifetime_dos.dat ',status='unknown')
- write(udos,*)'# la,q,omega(q,la),jdsm(i),jdsp(i)'
+ open(udos,file='FBZ_phase_space.dat ',status='unknown')
+ write(udos,*)'# q,(omega(q,la),jdsm(la),jdsp(la), la=1,ndyn'
 
-    do i=1,nkc
-       q=kpc(:,i)
-       do la=1,ndyn
-          omq(la) = sqrt(abs(eigenval(la,i))) * cnst 
-       enddo
-       call lifetime_dos(q,omq,dosp,dosm)
-       write(udos,3) i,q,(omq(la),dosm(la),dosp(la),la=1,ndyn)
-    enddo
+ do i=1,nkc
+    q=kpc(:,i)
+    call lifetime_dos_l(q,ndyn,omq,dosp,dosm)
+    write(udos,3) q,(omq(la),dosm(la),dosp(la),la=1,ndyn)
+ enddo
  close(udos)
 
-3 format(99(2x,g16.8))
+3 format(99(1x,g11.4))
 
- end subroutine phase_space_lifetime
+ end subroutine phase_space_lifetime_FBZ
 !===========================================================
  subroutine calculate_v3  (ndn,nk,kp,eival,eivec)
 ! check correctness of v3 by numerical differentiation of dynmat
@@ -777,17 +821,16 @@ enddo
 ! with k1=-k2-k3+G so that all k1,k2,k3 are within the primitive cell of the recip space i.e.
 ! between 0 and gi; i=1,2,3 ; units are in cm^-1
 ! this works for two k's (k2,k3) in the prim cell on the k-mesh, defined by sum_i=1,3 ni/Ni*gi
-! this subroutine calculates V3(k1,la1,k2,la2,k3,la3)  with k1=-k2-k3+G  and all ki in the primitive G-cell
+! this subroutine calculates |V3(k1,la1,k2,la2,k3,la3)|^2  with k1=-k2-k3+G  and all ki in the primitive G-cell
 ! to avoid ambiguity in the case of degenerate eigenstates, and to satisfy symmetry exactly,
 ! not to mention saving time, we calculate only for 0<q_i<G/2 and complete by symmetry
 !
  use kpoints
- use io2
+ use ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
- use force_constants_module
  use svd_stuff
  use params
  use constants
@@ -796,6 +839,7 @@ enddo
  integer i1,i2,i3,j1,j2,j3,k1,k2,k3,inside  !,mp1,mp3
  integer nk1,nk2,nk3,np,nq,ns  !,i5,j5,k5,mk1,mk2,mk3
  real(8) q1(3),q2(3),q3(3),mi,mj,mk,const,rr2(3),rr3(3),den,eival(ndn,nk),kp(3,nk) !,eivl
+! real(8), allocatable :: v33sq_5(:,:,:,:,:)
  complex(8) eivec(ndn,ndn,nk),xx,eiqr
 
  const = ee*1d30   ! convert ev/A^3 to SI units (kg s^-2 m^-1)
@@ -810,7 +854,8 @@ enddo
 
  write(ulog,*)'writing V3(k2,k3,l1,l2,l3) ##########################'
 
- v3 = cmplx(0d0,0d0)
+ allocate(v33sq_5(nk,nk,ndn,ndn,ndn))
+ v33sq_5 = 0d0 !cmplx(0d0,0d0)
  write(ulog,*)'V3: nc(123)=',nc
 
  loop2: do n2=1,nk   ! second argument k2 needs to be only in the IFBZ
@@ -907,13 +952,13 @@ enddo
        write(ulog,*)'eivs123=',eival(l2,n2),eival(l3,nk3),eival(l1,nk1)
        stop
     endif
-
-    v3(nk2,nk3,l1,l2,l3)=xx
-    v3(nk3,nk2,l1,l3,l2)=xx
-    v3(nk1,nk3,l2,l1,l3)=xx
-    v3(nk3,nk1,l2,l3,l1)=xx
-    v3(nk2,nk1,l3,l2,l1)=xx
-    v3(nk1,nk2,l3,l1,l2)=xx
+  
+    v33sq_5(nk2,nk3,l1,l2,l3)=xx  *conjg(xx)
+    v33sq_5(nk3,nk2,l1,l3,l2)=xx  *conjg(xx)
+    v33sq_5(nk1,nk3,l2,l1,l3)=xx  *conjg(xx)
+    v33sq_5(nk3,nk1,l2,l3,l1)=xx  *conjg(xx)
+    v33sq_5(nk2,nk1,l3,l2,l1)=xx  *conjg(xx)
+    v33sq_5(nk1,nk2,l3,l1,l2)=xx  *conjg(xx)
 !   xx = conjg(xx)
 !   v3(mk2,mk3,l1,l2,l3)=xx
 !   v3(mk3,mk2,l1,l3,l2)=xx
@@ -940,10 +985,8 @@ enddo
    do l1=1 ,ndn
    do l2=1 ,ndn
    do l3=1 ,ndn
-      xx=v3(n2,n3,l1,l2,l3)
-      if (abs(xx).gt.v3_threshold) then
-         write(uv3  )n2,n3,l1,l2,l3,xx
-!        write(uv3,5)n2,n3,l1,l2,l3,xx
+      if (v33sq_5(n2,n3,l1,l2,l3).gt.v3_threshold**2) then
+         write(uv3  )n2,n3,l1,l2,l3,v33sq_5(n2,n3,l1,l2,l3)
       endif
    enddo
    enddo
@@ -960,6 +1003,8 @@ enddo
 5 format(5(i6),9(2x,g14.8))
 6 format(a,6(i5),9(2x,g14.8))
 
+ deallocate(v33sq_5)
+
  end subroutine calculate_v3
 !===========================================================
  subroutine calculate_v3_new(ndn,nk,kp,eival,eivec)
@@ -975,12 +1020,11 @@ enddo
 ! not to mention saving time, we calculate only for 0<q_i<G/2 and complete by symmetry
 !
  use kpoints
- use io2
+ use ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
- use force_constants_module
  use svd_stuff
  use params
  use constants
@@ -1001,9 +1045,9 @@ enddo
 ! const = const/(100*h_plank*c_light) ! to convert from SI to cm^-1
 ! write(ulog,*)'const2=',const
 
- write(ulog,*)'writing V3(k2,k3,l1,l2,l3) ##########################'
+ write(ulog,*)'writing V3sq(k2,k3,l1,l2,l3) ##########################'
 
- v33 = cmplx(0d0,0d0)
+ v33sq = 0d0 ! cmplx(0d0,0d0)
  indx=0
  write(ulog,*)'V3: nc(123)=',nc
 
@@ -1104,7 +1148,7 @@ enddo
 
     if (abs(xx).gt.v3_threshold) then
        indx=indx+1
-       v33(indx)=xx
+       v33sq(indx)=xx * conjg(xx)
        nq1(indx)= nk1
        nq2(indx)= nk2
        nq3(indx)= nk3
@@ -1129,7 +1173,7 @@ enddo
    write(uv3)nv3
 !  write(uv3,*)nv3
    do j=1 ,nv3
-      write(uv3) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),v33(j)
+      write(uv3) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),v33sq(j)
 !     write(uv3,6)' ',nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),v33(j)
    enddo
    close(uv3)
@@ -1155,12 +1199,11 @@ enddo
 ! with the restriction of k2 in the IRREDUCIBLE BZ defined by ki(3,ni) included in kp(3,nk)
 !
  use kpoints
- use io2
+ use ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
- use force_constants_module
  use svd_stuff
  use params
  use constants
@@ -1185,7 +1228,7 @@ enddo
  write(ulog,*)'CALCULATE_V3: to convert v3 to cm^-1, const=',const
  write(ulog,*)'writing V3(k2,k3,l1,l2,l3) ##########################'
 
- v33 = cmplx(0d0,0d0)
+ v33sq = 0d0 !cmplx(0d0,0d0)
  indx=0
  write(ulog,*)'V3: nc(123)=',nc
 
@@ -1278,7 +1321,7 @@ enddo
 
 !    if (abs(xx).gt.v3_threshold) then
        indx=indx+1
-       v33(indx)=xx
+       v33sq(indx)=xx*conjg(xx)
        nq1(indx)= nk1
        nq2(indx)= nk2
        nq3(indx)= nk3
@@ -1302,7 +1345,7 @@ enddo
    open(uv3,file='v33.dat',status='unknown',FORM='UNFORMATTED')
    write(uv3)nv3
    do j=1 ,nv3
-      write(uv3) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),v33(j)
+      write(uv3) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),v33sq(j)
    enddo
 !  open(uv3,file='v33.dat',status='unknown')
 !  write(uv3,*)nv3
@@ -1324,7 +1367,7 @@ enddo
 !============================================================
  subroutine read_v3_all_formatted(nk2,nk3,ndn)
  use phi3
- use io2
+ use ios
  use lattice
  implicit none
  integer i,k2,k3,l1,l2,l3,nk2,nk3,ndn,unt ,ncc,n1,n2,n3,nd
@@ -1342,10 +1385,10 @@ enddo
     write(*,*) 'or ndyn in the file is different from that of the code ',nd,ndn
     write(ulog,*) 'or ndyn in the file is different from that of the code ',nd,ndn
  endif
- v3 = cmplx(0d0,0d0)
+ v33sq_5 = 0d0 !cmplx(0d0,0d0)
  do i=1,nk2*nk3*ndn*ndn*ndn
     read(unt,*,end=99) k2,k3,l1,l2,l3,xx,yy
-    v3(k2,k3,l1,l2,l3)=cmplx(xx,yy)
+    v33sq_5(k2,k3,l1,l2,l3)=xx*xx+yy*yy !cmplx(xx,yy)
  enddo
  close(unt)
  return
@@ -1355,51 +1398,14 @@ enddo
    stop
 
  end subroutine read_v3_all_formatted
-!===========================================================
- subroutine read_v3_red(nk2,nk3,ndn)
- use phi3
- use kpoints
- use lattice
- implicit none
- integer i,k1,k2,k3,l1,l2,l3,nk2,nk3,ndn,unt,i4,j4,k4,inside,ndn2
- real(8) q1(3),zz,yy
- complex(8) xx
 
- unt = 111
- open(unt,file='v3.dat',status='old')
- read(unt,*,end=99) l1,l2,l3,ndn2
- if (ndn.ne.ndn2) then
-    write(*,*)'READV3: Check input of v3.dat, ndyn,ndyn_file=',ndn,ndn2
-    stop
- endif
- if (l1*l2*l3.ne.nk2) then
-    write(*,*)'READV3: Check input of v3.dat, nkc,nkc_file=',nk2,l1*l2*l3
-    stop
- endif
- v3 = cmplx(0d0,0d0)
- do i=1,nk2*nk3*ndn*ndn*ndn
-    read(unt,*,end=99) k2,k3,l1,l2,l3,zz,yy
-    xx=cmplx(zz,yy)
-    v3(k2,k3,l1,l2,l3)=xx
-    v3(k3,k2,l1,l3,l2)=xx
-    q1 = -kpc(:,k2)-kpc(:,k3)
-    call get_k_info(q1,NC,k1,i4,j4,k4,g1,g2,g3,inside)
-    v3(k1,k3,l2,l1,l3)=xx
-    v3(k3,k1,l2,l3,l1)=xx
-    v3(k2,k1,l3,l2,l1)=xx
-    v3(k1,k2,l3,l1,l2)=xx
- enddo
-99 close(unt)
-
- end subroutine read_v3_red
 !============================================================
  subroutine read_v3_all_unformatted(nk2,nk3,ndn)
  use phi3
- use io2
+ use ios
  use lattice
  implicit none
  integer i,k2,k3,l1,l2,l3,nk2,nk3,ndn,unt ,ncc,n1,n2,n3,nd
- real(8) xx,yy
 
  unt = 111
 !open(unt,file='v3.dat',status='old')
@@ -1408,16 +1414,16 @@ enddo
  read(unt,end=99) n1,n2,n3,nd
  write(ulog,*)' OPENING v3.dat, reading ',n1,n2,n3,nd
  ncc =  n1*n2*n3
+ allocate(v33sq_5(nk2,nk3,ndn,ndn,ndn))
  if (ncc .ne. nk2 .or. nd .ne. ndn ) then
     write(*,*) 'nk in file v3 is different from nc1*nc2*nc3',ncc,nk2
     write(ulog,*) 'nk in file v3 is different from nc1*nc2*nc3',ncc,nk2
     write(*,*) 'or ndyn in the file is different from that of the code ',nd,ndn
     write(ulog,*) 'or ndyn in the file is different from that of the code ',nd,ndn
  endif
- v3 = cmplx(0d0,0d0)
+ v33sq_5 = 0d0 !cmplx(0d0,0d0)
  do i=1,nk2*nk3*ndn*ndn*ndn
-    read(unt,end=99) k2,k3,l1,l2,l3,xx,yy
-    v3(k2,k3,l1,l2,l3)=cmplx(xx,yy)
+    read(unt,end=99) k2,k3,l1,l2,l3,v33sq_5(k2,k3,l1,l2,l3)  !,yy 
  enddo
  close(unt)
  return
@@ -1428,27 +1434,25 @@ enddo
 
  end subroutine read_v3_all_unformatted
 !============================================================
- subroutine read_v3_new_unformatted
+ subroutine read_v3sq_new_unformatted
  use phi3
- use io2
+ use ios
  use lattice
  implicit none
  integer j,unt
  real(8) xx,yy
 
  unt = 111
-! open(unt,file='v33.dat',status='old',form='UNFORMATTED')
-open(unt,file='v33.dat',status='old')
+ open(unt,file='v33.dat',status='old',form='UNFORMATTED')
+!open(unt,file='v33.dat',status='old')
 
-! read(unt,end=99) nv3
- read(unt,*,end=99) nv3
- call allocate_v33(nv3)
+ read(unt,end=99) nv3
+! read(unt,*,end=99) nv3
+ call allocate_v33sq(nv3)
  write(ulog,*)' OPENING v33.dat, reading ',nv3
- v33= cmplx(0d0,0d0)
+ v33sq = 0d0 
  do j=1,nv3
-    read(unt,*,end=99) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),xx,yy
-!    read(unt,end=99) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),xx,yy
-    v33(j)=cmplx(xx,yy)
+    read(unt,end=99) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),v33sq(j)
  enddo
  close(unt)
  return
@@ -1456,26 +1460,24 @@ open(unt,file='v33.dat',status='old')
 99 write(*,*)'v33 file end reached at line j=',j
    stop
 
- end subroutine read_v3_new_unformatted
+ end subroutine read_v3sq_new_unformatted
 !============================================================
  subroutine read_v3_new_formatted
  use phi3
- use io2
+ use ios
  use lattice
  implicit none
  integer j,unt
- real(8) xx,yy
 
  unt = 111
  open(unt,file='v33.dat',status='old')
 
  read(unt,*,end=99) nv3
- call allocate_v33(nv3)
+ call allocate_v33sq(nv3)
  write(ulog,*)' OPENING v33.dat, reading ',nv3
- v33= cmplx(0d0,0d0)
+ v33sq = 0d0 ! cmplx(0d0,0d0)
  do j=1,nv3
-    read(unt,*,end=99) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),xx,yy
-    v33(j)=cmplx(xx,yy)
+    read(unt,*,end=99) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),v33sq(j) 
  enddo
  close(unt)
  return
@@ -1495,8 +1497,8 @@ open(unt,file='v33.dat',status='old')
  use phi3      ! v3 is declared as : v3(nibz,nkc,ndyn,ndyn,ndyn)
  implicit none
  integer ndyn,l1,l2,l3,n1,n2,n3,mk2,mk3,i1,j1,k1,i2,j2,k2,i3,j3,k3,inside
- real(8) q1(3),tol
- complex(8) dif,xx,yy
+ real(8) q1(3),tol,dif,xx,yy
+! complex(8) 
 
  tol = 0.0001
 
@@ -1510,23 +1512,23 @@ open(unt,file='v33.dat',status='old')
   call get_k_info(-kpc(:,n3),NC,mk3,i3,j3,k3,g1,g2,g3,inside)
 
   if (mk3.le.nibz) then
-    xx = v3(mk3,mk2,l1,l3,l2)
-    yy = v3(n3,n2,l1,l3,l2)
-    dif = xx-conjg(yy)
+    xx = v33sq_5(mk3,mk2,l1,l3,l2)
+    yy = v33sq_5(n3,n2,l1,l3,l2)
+    dif = xx-yy !xx-conjg(yy)
     if ( abs( dif ) .gt. tol ) call err4(n3,n2,mk3,mk2,l1,l3,l2,xx,yy)
   endif
 
   if (n2.le.nibz) then
-    dif= v3(n2,n3,l1,l2,l3)-v3(n3,n2,l1,l3,l2)
+    dif= v33sq_5(n2,n3,l1,l2,l3)-v33sq_5(n3,n2,l1,l3,l2)
     if ( abs( dif ) .gt. tol ) call err3(1,n3,n2,l1,l3,l2,dif)
   endif
 
   q1(:) = -kpc(:,n2)-kpc(:,n3)   ! there is inversion symmetry in k-space
   call get_k_info(q1,NC,n1,i1,j1,k1,g1,g2,g3,inside)
   if (n1.le.nibz) then
-    dif = v3(n3,n2,l1,l3,l2)-v3(n1,n2,l3,l1,l2)
+    dif = v33sq_5(n3,n2,l1,l3,l2)-v33sq_5(n1,n2,l3,l1,l2)
     if ( abs( dif ) .gt. tol ) call err3(2,n3,n2,l1,l3,l2,dif)
-    dif = v3(n3,n2,l1,l3,l2)-v3(n3,n1,l2,l3,l1)
+    dif = v33sq_5(n3,n2,l1,l3,l2)-v33sq_5(n3,n1,l2,l3,l1)
     if ( abs( dif ) .gt. tol ) call err3(3,n3,n2,l1,l3,l2,dif)
   endif
 
@@ -1540,21 +1542,21 @@ open(unt,file='v33.dat',status='old')
 !===========================================================
  subroutine err3(i,n3,n2,l1,l3,l2,dif)
  integer i,n3,n2,l1,l3,l2
- complex(8) dif
+ real(8) dif
  write(100,3)' CHECK_SUM_OF_V3: ERROR index=',i,n3,n2,l1,l3,l2,dif
 3 format(a,i2,2(1x,i6),2x,3(1x,i3),2x,9(1x,g11.5))
  end subroutine err3
 !===========================================================
  subroutine err4(n3,n2,m3,m2,l1,l3,l2,x,y)
  integer n3,n2,l1,l3,l2,m3,m2
- complex(8) x,y
- write(100,3)' CHECK_SUM_OF_V3 ERR4:n3,-n3,n2,-n2,l_i =',n3,m3,n2,m2,l1,l3,l2,x,conjg(y)
+ real(8) x,y
+ write(100,3)' CHECK_SUM_OF_V3 ERR4:n3,-n3,n2,-n2,l_i =',n3,m3,n2,m2,l1,l3,l2,x,y
 3 format(a,2(1x,i5),2x,2(1x,i5),3x,3(1x,i3),2x,9(1x,f10.4))
  end subroutine err4
 !===========================================================
  subroutine calculate_kappa(temp,kappau,kappat) !,kp,nkc)
  use kpoints
- use io2
+ use ios
  use phi3
  use eigen
  use params
@@ -1678,7 +1680,7 @@ open(unt,file='v33.dat',status='old')
 ! p(q,lambda)=sum_kla1la2 |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
 ! it assumes the input momentum q is on the already-generated kmesh
  use kpoints
- use io2
+ use ios
  use phi3
  use eigen
  use params
@@ -1690,8 +1692,7 @@ open(unt,file='v33.dat',status='old')
  real(8), intent(in) :: q(3),temp
  real(8), intent(out) :: normal,umklapp
  integer nq,nk1,l1,l2,iq,ik,jq,jk,kq,kk,i4,j4,k4,nk2,nk,inside  !,index_reg
- real(8) om1,om2,omq,k1(3),k2(3),nb1,nb2,nbe,nbq,delta_g,rate  !,kin(3),absorption,emission
- complex(8) w3
+ real(8) om1,om2,omq,k1(3),k2(3),nb1,nb2,nbe,nbq,delta_g,rate,w3  !,kin(3),absorption,emission
 
  call get_k_info(q,nc,nq,iq,jq,kq,g1,g2,g3,inside)
  omq = sqrt(abs(eigenval(la,nq))) * cnst  ! should be the same as without mapibz
@@ -1717,8 +1718,8 @@ open(unt,file='v33.dat',status='old')
       call get_k_info(k2,nc,nk2,i4,j4,k4,g1,g2,g3,inside)
       om2 = sqrt(abs(eigenval(l2,nk2))) * cnst ; nb2=nbe(om2,temp,classical)
 
-      w3 =v3(nk1,nk2,la,l1,l2)
-      rate = 0.5*w3*conjg(w3) * ((nbq+1)*nb1*nb2-nbq*(nb1+1)*(nb2+1))  &
+      w3 =v33sq_5(nk1,nk2,la,l1,l2)
+      rate = 0.5*w3 * ((nbq+1)*nb1*nb2-nbq*(nb1+1)*(nb2+1))  &
 &            *delta_g(omq-om1-om2,etaz)
       if(inside.eq.1) then                   ! normal process
           normal = normal + rate
@@ -1730,8 +1731,8 @@ open(unt,file='v33.dat',status='old')
       k2(:)= q(:)+k1(:)
       call get_k_info(k2,nc,nk2,i4,j4,k4,g1,g2,g3,inside) ! use this inside
       om2 = sqrt(abs(eigenval(l2,mapibz(nk2)))) * cnst ; nb2=nbe(om2,temp,classical)
-      w3 =v3(nk1,nk2,la,l1,l2)
-      rate = w3*conjg(w3) * ((nbq+1)*(nb1+1)*nb2-nbq*nb1*(nb2+1))  &
+      w3 =v33sq_5(nk1,nk2,la,l1,l2)
+      rate = w3 * ((nbq+1)*(nb1+1)*nb2-nbq*nb1*(nb2+1))  &
 &            *delta_g(omq+om1-om2,etaz)
       if(inside.eq.1) then                   ! normal process
           normal = normal + rate
@@ -1758,7 +1759,7 @@ open(unt,file='v33.dat',status='old')
 ! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
 ! it assumes the input momentum q is on the already-generated kmesh
  use kpoints
- use io2
+ use ios
  use phi3
  use eigen
  use params
@@ -1770,8 +1771,8 @@ open(unt,file='v33.dat',status='old')
  real(8), intent(in) :: q(3),temp,omega
  complex(8), intent(out) :: nself,uself
  integer nq,n1,l1,l2,iq,i3,jq,j3,kq,m3,inside,nk1,ik,jk,kk,nk2,mk2
- real(8) om1,om2,k1(3),k2(3),nb1,nb2,nbe,eta,tk,etas,tr,ti,w12,sr,si,vr,vi,term
- complex(8) omz,sumz,w33,self
+ real(8) om1,om2,k1(3),k2(3),nb1,nb2,nbe,eta,tk,etas,tr,ti,w12,sr,si,vr,vi,w33,term
+ complex(8) omz,sumz,self
 
  tk = temp*100*c_light*h_plank/k_b   ! 1.44 K = 1 /cm
  etas = eta(omega,tk)
@@ -1809,8 +1810,8 @@ open(unt,file='v33.dat',status='old')
       om1 = sqrt(abs(eigenval(l1,nk1))) * cnst ; nb1=nbe(om1,temp,classical)
       om2 = sqrt(abs(eigenval(l2,nk2))) * cnst ; nb2=nbe(om2,temp,classical)
 
-      w33 = v3(nk1,nk2,la,l1,l2)
-      if (abs(w33) .lt. v3_threshold)  cycle bnd2loop
+      w33 = v33sq_5(nk1,nk2,la,l1,l2)
+      if (abs(w33) .lt. v3_threshold**2)  cycle bnd2loop
 !     omz = cmplx(omega, eta(om1,tk)+eta(om2,tk)+eta(omega,tk))   ! this is in cm^-1
 
       w12=(om1+om2)
@@ -1824,8 +1825,7 @@ open(unt,file='v33.dat',status='old')
       term= 2*w12 /(tr*tr+ti*ti)
       vr=term*tr
       vi=term*ti
-      term = w33*conjg(w33)
-      sumz = sumz - term * cmplx((nb2+nb1+1)*sr+(nb2-nb1)*vr,(nb2+nb1+1)*si+(nb2-nb1)*vi)
+      sumz = sumz - w33 * cmplx((nb2+nb1+1)*sr+(nb2-nb1)*vr,(nb2+nb1+1)*si+(nb2-nb1)*vi)
 ! &              ((nb2+nb1+1)*(1d0/(om1+om2-omz)+ 1d0/(om1+om2+omz)) +  &
 ! &               (nb2-nb1)  *(1d0/(om1-om2-omz)+ 1d0/(om1-om2+omz)))
 !&             ((nb2+nb1+1)*cmplx(sr,si) +  (nb2-nb1)  *cmplx(vr,vi))
@@ -1864,7 +1864,7 @@ open(unt,file='v33.dat',status='old')
 ! it assumes the input momentum q is on the already-generated kmesh and
 ! is the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use io2
+ use ios
  use phi3
  use eigen
  use params
@@ -1895,7 +1895,7 @@ open(unt,file='v33.dat',status='old')
 !  q must be the 2nd argument in v33
     if (nq.ne.nq2(j)) cycle nv3loop
     if (la.ne.la2(j)) cycle nv3loop
-    term = v33(j)*conjg(v33(j))
+    term = v33sq(j) !v33(j)*conjg(v33(j))
     if (term.lt.v32) cycle nv3loop
 
     jk1 = nq1(j)+(la1(j)-1)*nkc
@@ -1977,7 +1977,7 @@ open(unt,file='v33.dat',status='old')
 ! it assumes the input momentum q is on the already-generated kmesh and
 ! is the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use io2
+ use ios
  use phi3
  use eigen
  use params
@@ -2018,7 +2018,7 @@ do while(error.gt.etaz/50 .and. cnt2.lt.50)
 !  q must be the 2nd argument in v33
     if (nq.ne.nq2(j)) cycle nv3loop
     if (la.ne.la2(j)) cycle nv3loop
-    term = v33(j)*conjg(v33(j))
+    term = v33sq(j) ! v33(j)*conjg(v33(j))
     if (term.lt.v32) cycle nv3loop
 
     jk1 = nq1(j)+(la1(j)-1)*nkc
@@ -2073,7 +2073,7 @@ enddo
 ! res=sum_q,la sum_12 0.5*|v3(q,la;1;2)|^2 delta(omega-w(q,la))  wk(q)
 ! it assumes the input momentum q is on the already-generated kmesh
  use kpoints
- use io2
+ use ios
  use phi3
  use eigen
  use params
@@ -2102,7 +2102,7 @@ enddo
        jk1 = nq1(j)+(la1(j)-1)*nkc
        jk2 = nq2(j)+(la2(j)-1)*nkc
        jk3 = nq3(j)+(la3(j)-1)*nkc
-       sumz = sumz + term * (v33(j)*conjg(v33(j)))
+       sumz = sumz + term * v33sq(j)  !(v33(j)*conjg(v33(j)))
     enddo v3loop
 
     res = res+ sumz /nkc /2  *2*pi  ! should be comparable to iself in magnitude
@@ -2209,7 +2209,7 @@ enddo
  subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,uio,vg)
 ! also outputs the group velocities from HF theorem (exact) in units of c_light
  use params
- use io2
+ use ios
  use constants
  use born
  use geometry
@@ -2234,7 +2234,6 @@ enddo
 ! enddo
  open(uvel,file='veloc.dat')
  write(uvel,*)'# la,nk,kp(nk),eival(l,nk),vg(l,nk),length(vg(l,nk))'
- open(1000,file='veloc-wo-format.dat')
  nd2 = min(ndn,12)
 !allocate(dynmat(ndn,ndn),mp(ndn),eivl(ndn),eivc(ndn,ndn),ddyn(ndn,ndn,3))
  allocate(mp(ndn),eivl(ndn),eivc(ndn,ndn))
@@ -2246,6 +2245,7 @@ open(800,file='finitvel.dat')
 
 !mine
 write(800,*)i
+ write(*,*)'GET_FREQUENCIES: before setting up dynmat, kp number ',i
 
 ! write(uio,*)'############ before setting up dynmat, kp number ',i
     call finitedif_vel(kp(:,i),ndn,vg(:,:,i),eivl,eivc) 
@@ -2363,7 +2363,6 @@ write(800,*)i
  do i=1,nkp
     om=sqrt(abs(eival(l,i)))*cnst
     write(uvel,6)l,i,kp(:,i),om,vg(:,l,i)*c_light,length(vg(:,l,i))*c_light
-    write(1000,*)l,i,kp(:,i),om,vg(:,l,i)*c_light
  enddo
  enddo
 close(800)
@@ -2371,26 +2370,213 @@ close(800)
 !    close(uvel+l)
 ! enddo
 close(uvel)
-close(1000)
  deallocate(eivl,eivc,mp)  !,dynmat,ddyn)
  3 format(a,i5,9(1x,f19.9))
  4 format(99(1x,2(1x,g9.3),1x))
  5 format(a,i5,99(1x,2(1x,g9.3),1x))
- 6 format(2i6,2x,99(1x,f9.3))
+ 6 format(2i6,2x,99(1x,f11.3))
  7 format(i6,2x,3(1x,f7.3),1x,99(1x,f7.3))
 
  end subroutine get_frequencies
+!==========================================================
+
+
+
+!===========================================================
+ subroutine get_frequencies2(nkp,kp,dk,ndn,eival,nv,eivec,uio,vg)
+! also outputs the group velocities from HF theorem (exact) in units of c_light
+ use params
+ use ios
+ use constants
+ use born
+ use geometry
+ implicit none
+ integer, intent(in) :: nkp,ndn,uio,nv ! no of wanted eivecs
+ real(8), intent(in) :: kp(3,nkp),dk(nkp)
+ real(8), intent(out):: eival(ndn,nkp),vg(3,ndn,nkp)
+ complex(8), intent(out) :: eivec(ndn,ndn,nkp)
+ integer i,j,k,l,ier,nd2,al,ll
+ integer, allocatable :: mp(:)
+ real(8), allocatable :: eivl(:)
+ real(8) absvec,om
+ complex(8), allocatable:: dynmat(:,:),eivc(:,:),ddyn(:,:,:)
+ real(8) khat(3)
+ character ext*3
+
+! open files and write the group velocities
+! do l=1,ndn
+!    write(ext,'(i3.3)')l
+!    open(uvel+l,file='veloc-'//ext//'.dat')
+!    write(uvel+l,*)'#
+!    la,i1,i2,i3,nk,kp(nk),eival(l,mapibz(nk)),vg(l,nk),length(vg(l,nk))'
+! enddo
+!*** open(uvel,file='veloc.dat')
+!*** write(uvel,*)'# la,nk,kp(nk),eival(l,nk),vg(l,nk),length(vg(l,nk))'
+ nd2 = min(ndn,12)
+!allocate(dynmat(ndn,ndn),mp(ndn),eivl(ndn),eivc(ndn,ndn),ddyn(ndn,ndn,3))
+ allocate(mp(ndn),eivl(ndn),eivc(ndn,ndn))
+! write(uio,*)'# dynmat allocated, printing: Kpoint, eival(j),j=1,ndyn)'
+
+!***open(800,file='finitvel.dat')
+
+ kloop: do i=1,nkp
+
+!mine
+!***write(800,*)i
+!*** write(*,*)'GET_FREQUENCIES: before setting up dynmat, kp number ',i
+
+! write(uio,*)'############ before setting up dynmat, kp number ',i
+    call finitedif_vel(kp(:,i),ndn,vg(:,:,i),eivl,eivc)
+
+!   call set_dynamical_matrix(kp(:,i),dynmat,ndn,ddyn)
+!
+!!JS: call nonanalytical term for born effective change
+!    if (kp(1,i)==0.d0 .AND. kp(2,i)==0.d0 .AND. kp(3,i)==0.d0) then
+!        khat=kp(:,i)+1.0D-10
+!    else
+!        khat=kp(:,i)
+!    endif
+!    call nonanal(khat,dynmat,ndn,ddyn)
+!
+!    if (verbose) then
+!       write(ulog,3)'
+!       ======================================================================'
+!       write(ulog,3)' THE DYNAMICAL MATRIX IS:',i,kp(:,i)
+!       do l=1,ndn
+!          write(ulog,4)(dynmat(l,j),j=1,nd2)
+!       enddo
+!    endif
+!
+!    call diagonalize(ndn,dynmat,eivl,nv,eivc,ier)
+!
+! sort eivals in ascending order
+    call sort(ndn,eivl(:),mp,ndn)
+
+!   if (ier.ne.0 .or. verbose) then
+!     write(   *,*)' ier=',ier
+!     write(ulog,*)' ier=',ier, ' EIGENVALUES ARE...'
+!     write(ulog,*)
+!   endif
+
+    do j=1,ndn
+       eival(j,i) = eivl(mp(j))
+       do l=1,nv
+          eivec(j,l,i) = eivc(j,mp(l))
+       enddo
+    enddo
+
+! if pure imaginary make eigenvectors real as they can be multiplied by any
+! arbitrary number
+!    do l=1,nv
+!       absvec = sum(abs(real(eivec(:,l,i)))**2)
+!       if (absvec .lt. 1d-1) then
+!          eivec(:,l,i)=cmplx(0,1)*eivec(:,l,i)   ! this does not hurt anything
+!       endif
+!    enddo
+!
+!! put the acoustic bands in the first 3 branches 1:Ta 2:Ta 3:La
+!! eivl(mp(i)) is the properly sorted array
+!
+!!   call sort_polarizations(ndn,eival(:,i),eivec(:,:,i),mp,kp(:,i))
+!    do j=1,ndn
+!       eivl(j)=eival(mp(j),i)
+!       do l=1,nv
+!          eivc(j,l) = eivec(j,mp(l),i)
+!       enddo
+!    enddo
+!    call write_eigenvalues(i,dk(i),kp(:,i),eivl,ndn,uio)
+!
+!    if (verbose) then
+!      do l=1,nv
+!        write(ulog,3)' -----------  BAND ',l,eivl(l)
+!        ll=l !mp(l)
+!        do j=1,ndn/3
+!           write(ulog,5)'atom
+!           ',j,eivec(3*(j-1)+1,ll,i),eivec(3*(j-1)+2,ll,i),eivec(3*(j-1)+3,ll,i)
+!!          write(ulog,5)'atom
+!',j,eivc(3*(j-1)+1,l),eivc(3*(j-1)+2,l),eivc(3*(j-1)+3,l)
+!         enddo
+!      enddo
+!    endif
+
+! now calculate the group velocities from Hellman-Feynmann formula(dynmat=dummy)
+!    do al=1,3
+!    do l=1,ndn
+!      vg(al,l,i)=0
+!      do k=1,ndn
+!         dynmat(k,l)=0
+!         do j=1,ndn
+!            dynmat(k,l)=dynmat(k,l)+ddyn(k,j,al)*eivec(j,l,i)
+!         enddo
+!      enddo
+!      do k=1,ndn
+!         vg(al,l,i)=vg(al,l,i)+dynmat(k,l)*conjg(eivec(k,l,i))
+!      enddo
+!      vg(al,l,i)=vg(al,l,i)/2/sqrt(abs(eival(l,i)))*cnst*1d-10*100*2*pi
+!    enddo
+!    enddo
+!
+!    do l=1,ndn
+!       om=sqrt(abs(eival(l,i)))*cnst
+!       write(uvel+l,6)l,i,kp(:,i),om,vg(:,l,i)*c_light,length(vg(:,l,i))*c_light
+!    enddo
+!
+!!   do j=1,ndn
+!!      eival(j,i)=eivl(j)
+!!      do l=1,nv
+!!         eivec(j,l,i)=eivc(j,l)
+!!      enddo
+!!   enddo
+!
+!     if(ier .ne. 0) stop
+! write(uio,*)'==============='
+! write(uio,4)(eivl(j),j=1,ndn)
+! write(uio,*)'==============='
+! do l=1,ndn
+!    write(uio,4)(eivc(l,j),j=1,ndn)
+! enddo
+    call write_eigenvalues(i,dk(i),kp(:,i),eival(:,i),ndn,uio)
+!   write(uio,7)i,kp(:,i),(eivl(j),j=1,ndn)
+
+ enddo kloop
+
+
+!*** do l=1,ndn
+!*** do i=1,nkp
+!***    om=sqrt(abs(eival(l,i)))*cnst
+!***    write(uvel,6)l,i,kp(:,i),om,vg(:,l,i)*c_light,length(vg(:,l,i))*c_light
+!*** enddo
+!*** enddo
+!***close(800)
+! do l=1,ndn
+!    close(uvel+l)
+! enddo
+!****close(uvel)
+ deallocate(eivl,eivc,mp)  !,dynmat,ddyn)
+ 3 format(a,i5,9(1x,f19.9))
+ 4 format(99(1x,2(1x,g9.3),1x))
+ 5 format(a,i5,99(1x,2(1x,g9.3),1x))
+ 6 format(2i6,2x,99(1x,f11.3))
+ 7 format(i6,2x,3(1x,f7.3),1x,99(1x,f7.3))
+
+ end subroutine get_frequencies2
+!=====================================================
+
 !=====================================================
   subroutine finitedif_vel(q0,ndn,vgr,evl0,evc0)
 ! calculates the group velocities in units of c_light from finite difference
   use constants
+  use params, only : verbose
   implicit none
-  integer ndn,i
-  real(8) q0(3),vgr(3,ndn),q1(3),dq,om0,om1
-  real(8) evl0(ndn),evlp(ndn),evlm(ndn)
-  complex(8) evc0(ndn,ndn),evct(ndn,ndn)
+  integer, intent(in) ::  ndn
+  real(8), intent(in) ::  q0(3)
+  real(8), intent(out) ::  vgr(3,ndn),evl0(ndn)
+  complex(8), intent(out) ::  evc0(ndn,ndn)
+  real(8) q1(3),dq,om0,om1
+  real(8) evlp(ndn),evlm(ndn)
+  complex(8) evct(ndn,ndn)
 !mine
-integer n
+integer n,i
 
   dq=0.001
 
@@ -2410,14 +2596,15 @@ integer n
 !  write(30,*)'*******************************************'
 
 !mine
-!open(800,file='vfinitvel.dat')
-do n=1,ndn
-write(800,*)q0,n,vgr(:,n)*c_light
-enddo
-!close(800)
+if (verbose) then
+   do n=1,ndn
+      write(800,6)n,q0,vgr(:,n)*c_light
+   enddo
+endif
 
  4 format(a,3(1x,f9.3),a)
  5 format(a,i5,99(1x,f9.3))
+ 6 format(i5,99(1x,g11.4))
 
   end subroutine finitedif_vel
 !============================================================
@@ -2425,11 +2612,10 @@ enddo
 ! takes the eigenvalues (w^2) and eigenvectors calculated along some
 ! crystalline directions and calculates the corresponding mode
 ! gruneisen parameters
- use io2
+ use ios
  use lattice
  use geometry
  use atoms_force_constants
- use force_constants_module
  use svd_stuff
  use eigen
  use constants
@@ -2495,11 +2681,10 @@ enddo
 !============================================================
  subroutine gruneisen_fc
  use phi3
- use io2
+ use ios
  use lattice
  use geometry
  use atoms_force_constants
- use force_constants_module
  use svd_stuff
  use eigen
  use constants
@@ -2545,11 +2730,10 @@ enddo
  end subroutine gruneisen_fc
 !============================================================
  subroutine mechanical(bulk,c11,c44,dlogv)
- use io2
+ use ios
  use lattice
  use geometry
  use atoms_force_constants
- use force_constants_module
  use svd_stuff
  use constants
  implicit none
@@ -2586,7 +2770,7 @@ enddo
  end subroutine mechanical
 !============================================================
  subroutine calculate_thermal(nk,wk,ndyn,eival,grn,tmn,tmx,ual)
- use io2
+ use ios
  use lattice
  use constants
  use params
@@ -2685,7 +2869,7 @@ enddo
 !============================================================
  subroutine energies(nk,wk,ndyn,eival,grn,temp,etot,free,pres,pres0,cv)
 ! calculate total and free energies within QHA, at a given temperature (temp in Kelvin)
- use io2
+ use ios
  use params
  use lattice
  use constants
@@ -2741,7 +2925,7 @@ enddo
 ! output is vg(3,ndyn,nkpoint) in units of c_light
  use constants
  use lattice
- use io2
+ use ios
  implicit none
  integer nk,n1,n2,n3,la,ndyn,i1,i2,i3,ip1,ip2,ip3,im1,im2,im3,nibz
  integer ipp1,ipp2,ipp3,imm1,imm2,imm3
@@ -2945,10 +3129,11 @@ enddo
  use phi3
  use lattice
  use params
+ use kpoints , only : nc
  implicit none
  integer l1,l2,l3,nk1,nk2,nk3,nkp,ndyn,i,j,k,inside
- real(8) w0,eival(ndyn,nkp),kp(3,nkp),nbe,temp,nb1,q(3),x1,rate,delta_l,x2,x3 !,nb2,nb3
- complex(8) w3
+ real(8) w0,eival(ndyn,nkp),kp(3,nkp),nbe,temp,nb1,q(3),x1,rate,delta_l,x2,x3 ,w3!,nb2,nb3
+
 
 ! print*,'FGR: used broadening w0 for this calculation is=',w0,' cm^-1'
 
@@ -2963,9 +3148,9 @@ enddo
 ! nb3 = nbe(x3,temp,classical)
 
  x1=(x1-x2-x3)
- w3 = v3(nk2,nk3,l1,l2,l3)
+ w3 = v33sq_5(nk2,nk3,l1,l2,l3)
 ! rate = 2*pi*delta_l(x1,w0) * w3*conjg(w3) *2*pi * (nb1+1)*nb2*nb3
- rate = 2*pi*delta_l(x1,w0) * w3*conjg(w3) *2*pi * (nb1+1)*nb1
+ rate = 2*pi*delta_l(x1,w0) * w3 *2*pi * (nb1+1)*nb1
  if ( rate.lt.0 ) then
     write(*,*)'FGR: rate<0 ',rate
     stop
@@ -3005,7 +3190,7 @@ enddo
 ! the negative k's are kp(:,map(i)), i=nps+1,nk
  use kpoints
  use lattice
- use io2
+ use ios
  use params
  implicit none
  integer nk,i,map(nk),nps,i1,j1,k1,inside,mk,i2,j2,k2,k,match,cnt
@@ -3058,7 +3243,8 @@ enddo
 ! other eivec(q') (for q'=-q) by the conjugate of eivec(q) in order to get
 ! rid of the ambiguity in the case of the degenerate case, and assure e(-q)=conjg(e(q)).
  use lattice  ! needed to access NC,g1,g2,g3
- use io2
+ use ios
+ use kpoints , only : nc
  implicit none
  integer nk,ndyn,npos,map(nk),i1,j1,k1,n,inside,mk3,n3,la,mu
  real(8) kp(3,nk) !,q(3)
@@ -3089,21 +3275,22 @@ enddo
 ! form the dynamical matrix from existing eigenvectors and eigenvalues
 ! and diagonalize and verify consistency :eivec(-q)=-conjg(eivec(q))
  use lattice  ! needed to access NC,g1,g2,g3
+ use kpoints , only : nc
  implicit none
- integer ndyn,nk,j,k,l,i,ier,i1,j1,k1,mi,inside
+ integer ndyn,nk,j,k,l,ik,ier,i1,j1,k1,mi,inside
  real(8) kp(3,nk),eival(ndyn,nk),eivl(ndyn)
  complex(8) eivec(ndyn,ndyn,nk),dynm(ndyn,ndyn),eivc(ndyn,ndyn),d2(ndyn,ndyn)
 
- do i=1,nk
+ do ik=1,nk
     dynm=0
     do j=1,ndyn
     do k=1,ndyn
       do l=1,ndyn
-        dynm(j,k)=dynm(j,k)+eival(l,i)*eivec(j,l,i)*conjg(eivec(k,l,i))
+        dynm(j,k)=dynm(j,k)+eival(l,ik)*eivec(j,l,ik)*conjg(eivec(k,l,ik))
       enddo
     enddo
     enddo
-    call get_k_info(-kp(:,i),NC,mi,i1,j1,k1,g1,g2,g3,inside)
+    call get_k_info(-kp(:,ik),NC,mi,i1,j1,k1,g1,g2,g3,inside)
     d2=0
     do j=1,ndyn
     do k=1,ndyn
@@ -3124,13 +3311,13 @@ enddo
 
     call diagonalize(ndyn,dynm,eivl,ndyn,eivc,ier)
     do j=1,ndyn
-       if(abs(eivl(j)-eival(j,i)).gt.1d-4) then
-          write(*,3)'CHECK_MDYN:j,eivl,eival=',j,eivl(j),eival(j,i)
+       if(abs(eivl(j)-eival(j,ik)).gt.1d-4) then
+          write(*,3)'CHECK_MDYN:j,eivl,eival=',j,eivl(j),eival(j,ik)
        endif
        do k=1,ndyn
-         if(abs(eivc(k,j)-eivec(k,j,i)).gt.1d-4) then
-         if(abs(eivc(k,j)+eivec(k,j,i)).gt.1d-4) then
-            write(*,4)'CHECK_MDYN:j,k,eiv(j),eivecs(k,j)=',j,k,eivl(j),eivc(k,j),eivec(k,j,i)
+         if(abs(eivc(k,j)-eivec(k,j,ik)).gt.1d-4) then
+         if(abs(eivc(k,j)+eivec(k,j,ik)).gt.1d-4) then
+            write(*,4)'CHECK_MDYN:j,k,eiv(j),eivecs(k,j)=',j,k,eivl(j),eivc(k,j),eivec(k,j,ik)
          endif
          endif
        enddo
@@ -3143,9 +3330,10 @@ enddo
 !===========================================================
  subroutine write_eivecs(ndyn,nk,kp,eigenvec)
  use lattice
- use io2
+ use ios
  use geometry
  use constants
+ use kpoints , only : nc
  implicit none
  integer nk,ndyn,i,la,j,i2,j2,k2,inside,l,i3,j3,k3
  real(8) kp(3,nk),w(3)
@@ -3321,7 +3509,8 @@ enddo
  eps_scale=8.8541878176D-12/1D10/ee
  gg=(length(g1)*length(g2)*length(g3))**0.33
 ! if ( gg .lt. 4*rho) then
- if (born_flag.eq.0)  rho = gg/4d0
+! if (born_flag.eq.0)  rho = gg/4d0
+  rho = gg/4d0
 ! write(30,*)'ADOPTED VALUE of RHO = ',rho
 ! endif
  rho2=rho*rho
@@ -3339,8 +3528,15 @@ enddo
    mb = atom0(nb)%mass
    rr = atompos(:,na)-atompos(:,nb)
    do i=1,3
-      zag(i) = q(1)*zeu(1,i,na)+q(2)*zeu(2,i,na)+q(3)*zeu(3,i,na)
-      zbg(i) = q(1)*zeu(1,i,nb)+q(2)*zeu(2,i,nb)+q(3)*zeu(3,i,nb)
+!     zag(i) = q(1)*zeu(1,i,na)+q(2)*zeu(2,i,na)+q(3)*zeu(3,i,na)
+!     zbg(i) = q(1)*zeu(1,i,nb)+q(2)*zeu(2,i,nb)+q(3)*zeu(3,i,nb)
+      zag(i) = q(1)*atom0(na)%charge(1,i)+ &
+      &        q(2)*atom0(na)%charge(2,i)+ &
+      &        q(3)*atom0(na)%charge(3,i)
+      zbg(i) = q(1)*atom0(nb)%charge(1,i)+ &
+      &        q(2)*atom0(nb)%charge(2,i)+ &
+      &        q(3)*atom0(nb)%charge(3,i)
+
    end do
    do i = 1,3
    do j = 1,3
@@ -3368,30 +3564,31 @@ enddo
  use ios
  integer i,j,k
 
- open(uborn,file='params.born',status='old')
- read(uborn,*) rho,born_flag   ! if 0 use default
+ open(uborn,file='dielectric.params',status='old')
+ read(uborn,*) born_flag   ! if 0 use default
  do i=1,3
     read(uborn,*)(epsil(i,j),j=1,3)
  end do
  do k=1,natoms0
     do i=1,3
-       read(uborn,*)(zeu(i,j,k),j=1,3)
+       read(uborn,*)atom0(k)%charge(i,:)
+!       read(uborn,*)(zeu(i,j,k),j=1,3)
     end do
  end do
+ close(uborn)
 
  end subroutine read_born
 !============================================================
  subroutine matrix_elt(q1,q2,l1,l2,l3,w33,inside)
 ! for input modes (qi,li) i=1,2,3 calculates the 3-phonon matrix element w33(1,2,3) on the fly
  use kpoints
- use io2
+ use ios
  use phi3
  use svd_stuff
  use eigen
  use params
  use constants
  use atoms_force_constants
- use force_constants_module
  use om_dos
  use lattice
  implicit none
@@ -3446,14 +3643,13 @@ enddo
  subroutine matrix_elt_full(q,q2,q3,omq,om2,om3,evq,ev2,ev3,w33)
 ! for input modes (qi,li) i=1,2,3 calculates the 3-phonon matrix element w33(1,2,3) on the fly
  use kpoints
- use io2
+ use ios
  use phi3
  use svd_stuff
  use eigen
  use params
  use constants
  use atoms_force_constants
- use force_constants_module
  use om_dos
  use lattice
  implicit none
@@ -3501,7 +3697,7 @@ enddo
 
  end subroutine matrix_elt_full
 !===========================================================
- subroutine calculate_w3_ibz(ndn,ni,ki,nk,kp,eival,eivec)
+ subroutine calculate_w3sq_ibz(ndn,ni,ki,nk,kp,eival,eivec)
 ! this subroutine computes the sum_R2,R3,Tau1,Tau2,Tau3,al,be,ga of  (hbar/2)**1.5
 ! Psi_R2,R3,Tau1,Tau2,Tau3^al,be,ga e^{i k2.R2+i k3.R3} /sqrt(m_tau1*m_tau2*m_tau3) *
 ! e_la1^{tau1,al}(k1)*e_la2^{tau2,be}(k2)*e_la3^{tau3,ga}(k3)/sqrt(w_la1(k1)*w_la2(k2)*w_la3(k3))
@@ -3512,12 +3708,11 @@ enddo
 ! with the restriction of k2 in the IRREDUCIBLE BZ defined by ki(3,ni) included in kp(3,nk)
 !
  use kpoints
- use io2
+ use ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
- use force_constants_module
  use svd_stuff
  use params
  use constants
@@ -3529,7 +3724,7 @@ enddo
  real(8) ki(3,ni),kp(3,nk)
  complex(8) eivec(ndn,ndn,nk),xx
 
- v33 = cmplx(0d0,0d0)
+ v33sq = 0d0 !cmplx(0d0,0d0)
  indx=0
  write(ulog,*)'V3: nc(123)=',nc
 
@@ -3567,7 +3762,7 @@ enddo
  do l1=1 ,ndn
     call matrix_elt(q2,q3,l2,l3,l1,xx,inside)
     indx=indx+1
-    v33(indx)=xx
+    v33sq(indx)=xx*conjg(xx)
     nq1(indx)= nk1
     nq2(indx)= nk2
     nq3(indx)= nk3
@@ -3592,8 +3787,7 @@ enddo
 !  open(uv3,file='v33.dat',status='unknown')
 !  write(uv3,*)nv3
    do j=1 ,nv3
-      write(uv3) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),v33(j)
-!     write(uv3,7) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),v33(j)
+      write(uv3) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),v33sq(j)
    enddo
    close(uv3)
  endif
@@ -3605,7 +3799,7 @@ enddo
 6 format(a,6(i5),9(2x,g14.8))
 7 format(6(i6),9(2x,g14.8))
 
- end subroutine calculate_w3_ibz
+ end subroutine calculate_w3sq_ibz
 !============================================================
  subroutine function_self_w(q,la,omega,temp,nself,uself)
 ! frequencies, temperatures are in cm^-1 (same unit as wmax)
@@ -3614,7 +3808,7 @@ enddo
 ! it assumes the input momentum q is on the already-generated kmesh and
 ! is the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use io2
+ use ios
  use phi3
  use eigen
  use params
@@ -3708,7 +3902,7 @@ enddo
 ! it assumes the input momentum q is on the already-generated kmesh and
 ! is the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use io2
+ use ios
  use phi3
  use eigen
  use params
@@ -3804,7 +3998,7 @@ enddo
 ! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
 ! the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use io2
+ use ios
  use phi3
  use eigen
  use params
@@ -3918,7 +4112,7 @@ enddo
 ! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
 ! the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use io2
+ use ios
  use phi3
  use eigen
  use params
@@ -4028,12 +4222,11 @@ enddo
 ! this subroutine computes for each q the sum_q2 delta(w-w_q2 \pm w_q3)
 ! and finds the kpoints available
  use kpoints
- use io2
+ use ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
- use force_constants_module
  use svd_stuff
  use params
  use constants
@@ -4045,7 +4238,7 @@ enddo
  real(8) ki(3,ni),kp(3,nk)
  complex(8) eivec(ndn,ndn,nk),xx
 
- v33 = cmplx(0d0,0d0)
+ v33sq = 0d0 !cmplx(0d0,0d0)
  indx=0
  write(ulog,*)'V3: nc(123)=',nc
 
@@ -4084,14 +4277,14 @@ enddo
  nv3 = indx
  write(ulog,*)' V33: total size of this array is =',nv3
 
- if( writev3.eq.1) then
-   open(uv3,file='v33.dat',status='unknown',FORM='UNFORMATTED')
-   write(uv3)nv3
-   do j=1 ,nv3
-      write(uv3) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),v33(j)
-   enddo
-   close(uv3)
- endif
+! if( writev3.eq.1) then
+!   open(uv3,file='v33.dat',status='unknown',FORM='UNFORMATTED')
+!   write(uv3)nv3
+!   do j=1 ,nv3
+!      write(uv3) nq1(j),nq2(j),nq3(j),la1(j),la2(j),la3(j),v33sq(j)
+!   enddo
+!   close(uv3)
+! endif
 
 2 format(a,3(3x,i5),9(2x,g11.5))
 3 format(a,2(3x,3i2,1x,i5),9(2x,g11.5))
@@ -4104,7 +4297,7 @@ enddo
 !===========================================================
  subroutine get_freq(kp,ndn,eival,eivec)
  use params
- use io2
+ use ios
  use constants
  use born
  implicit none
@@ -4122,7 +4315,6 @@ enddo
  nd2 = min(ndn,12)
  allocate(dynmat(ndn,ndn),mp(ndn),eivl(ndn),eivc(ndn,ndn),ddyn(ndn,ndn,3),temp(ndn,ndn))
 ! write(uio,*)'# dynmat allocated, printing: Kpoint, eival(j),j=1,ndyn)'
-! write(uio,*)'############ before setting up dynmat, kp number ',i
 
     call set_dynamical_matrix(kp,dynmat,ndn,ddyn)
 
@@ -4136,7 +4328,7 @@ enddo
 
     if (verbose) then
        write(ulog,3)' ======================================================================'
-       write(ulog,3)' THE DYNAMICAL MATRIX for KP=',ndn,kp(:)
+       write(ulog,3)' THE DYNAMICAL MATRIX for nd , KP=',nd2,kp(:)
        do l=1,ndn
           write(ulog,8)(dynmat(l,j),j=1,nd2)
        enddo
@@ -4150,7 +4342,7 @@ enddo
     call sort(ndn,eivl,mp,ndn)
 !   write(ulog,6)'map=',mp
 
-    if (ier.ne.0 .or. verbose) then
+    if (ier.ne.0 ) then
       write(   *,*)' ier=',ier
       write(ulog,*)' ier=',ier, ' EIGENVALUES ARE...'
       write(ulog,4) eivl
@@ -4221,7 +4413,7 @@ enddo
 
  deallocate(eivl,eivc,dynmat,mp,ddyn,temp)
 
- 3 format(a,i5,9(1x,f19.9))
+ 3 format(a,i5,9(1x,f13.4))
  4 format(99(1x,2(1x,g9.3),1x))
  5 format(a,i5,99(1x,2(1x,g9.3),1x))
  6 format(a,99(1x,i5))
@@ -4236,7 +4428,7 @@ enddo
 ! mapping array mp so that mp(1,...,n/3) contains the indices of
 ! the longitudinal branches and mp(n/3+1,...,n) has those of transverse modes
 
-!use io2
+!use ios
 !implicit none
 !integer n,nk,i,j,l,mp(n),iless,igreat,ndeg
 !real(8) eivl(n,nk),q(3,nk),x,y,z,rr,ri,qq,dpi,dpr,mean(n),dp,sq12,tmp
@@ -4363,7 +4555,7 @@ enddo
 !subroutine sort_polarizations2(n,eivl,eivc,mp,q)
 ! sort according to E(k).E(k+dk)
 
-!use io2
+!use ios
 !implicit none
 !integer n,i,j,l,mp(n),iless,igreat,ndeg
 !real(8) eivl(n),q(3),x,y,z,rr,ri,qq,dpi,dpr,mean(n),dp,sq12

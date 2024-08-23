@@ -6,8 +6,8 @@
     use params
     use tetrahedron
     use lattice
-    use io2
-    use kpoints
+    use ios
+    use kpoints , only : nc,nkc
 
     implicit none
     integer :: i,j,k,l,nx,ny,nz,nk,nt,np,ierr,pt(8)
@@ -23,7 +23,6 @@
 
 !    allocate(tet((nx-1)*(ny-1)*(nz-1)*6), stat=ierr)
 !    if (ierr/=0) print*, "tet : Allocation failed"
-    
 
     nk = 0                                                                  
     do i = 1,nx
@@ -143,7 +142,7 @@
   end subroutine make_kp_reg_tet
 !============================================================================
 subroutine eigen_tet(nx,ny,nz,la,nkp)
-! calculate eigenvalues for each corner of tetrahedra
+! calculate eigenvalues at each corner of tetrahedra
 use constants
 use tetrahedron
 use eigen
@@ -385,84 +384,79 @@ enddo
 end subroutine weight_tet
 
 
-!===============================================================================================
-subroutine calc_tet(nx,ny,nz,mesh,max2,n,uio,uio2,kpt)        !nx,ny,nz are meshing params. mesh and max2 are energy meshing params. n is # of bands
-use tetrahedron                                                             !calct is the result of the integration method for a function F(k)
-use constants                                                               !doswt is the result of the integration method for a function F(k) = 1
-implicit none                                                               !tet is obvious, uio and uoi are labels for write file.  kpt(3,nkp) are the kpts from subroutine make_kp_reg
+!=======================================================================================
+subroutine calc_tet(nx,ny,nz,ndn,kpt)        
+!nx,ny,nz are meshing params. ndn is # of bands
+!! calct is the result of the integration method for a function F(k)
+!! doswt is the result of the integration method for a function F(k) = 1
+use tetrahedron                                                             
+use constants                                                               
+use om_dos
+use geometry
+use ios
+implicit none                                      
 
-integer :: i,j,k,kk,l,nx,ny,nz,mesh,n,uio,uio2
-real(8) :: max2,omt(mesh),kfunc(nx*ny*nz),kpt(3,nx*ny*nz),kq
+integer :: i,j,k,kk,l,nx,ny,nz,mesh,ndn
+real(8) :: kfunc(nx*ny*nz),kpt(3,nx*ny*nz),kq
 real(8) integrate_dos, total_dos
 
-!type(tetra), intent(inout) :: tet((nx-1)*(ny-1)*(nz-1)*6)
-
-
-do i=1,mesh
-   omt(i) = max2 *(0.0001 + (i-1)/(mesh-1.))
-enddo
+open(udos,file='dos_tet.dat',status='unknown')
+open(udos+1,file='weightet.dat',status='unknown')
 
 calct = 0
 doswt = 0
 
-do i=1,nx*ny*nz                                             !defines function F(k)
-   kq = sqrt(kpt(1,i)**2+kpt(2,i)**2+kpt(3,i)**2)
-   kfunc(i) = 1 !kq*kq     ! kfunc(i) is arbitrary function in sum(kfunc*delta)
+! kfunc(i)=coefficient of the delta function in sum_k  kfunc(k)*delta(om-om(k))
+do i=1,nx*ny*nz                                             
+   kfunc(i) = 1  ! 1 gives the dos
 
+!   kq = length(kpt(:,i)) 
 !   kfunc(i) = 1/(exp(100*kq)-1+1d-4)
 !   kfunc(i) = kq
-
 !   kfunc(i) = 1/(kq**2+1d-4)   !kfunc(i) = 1
-!   if (kq <= 1d-4) then
-!      kfunc(i) = 100
-!   endif
-!  kfunc(i)=1.0
 enddo
 
-do i=1,mesh   !for each energy omt(i), assigns weights to corners of all tetrahedrons
-
-!  write(*,*) 'dos2,i,mesh',i,mesh
-
-  do k=1,n
+do i=1,wmesh   !for each energy om(i), assigns weights to corners of all tetrahedrons
+  do k=1,ndn
      call eigen_tet(nx,ny,nz,k,nx*ny*nz)
-     call weight_tet(nx,ny,nz,omt(i))
+     call weight_tet(nx,ny,nz,om(i))
 
       do j=1,(nx)*(ny)*(nz)*6  
          do l=1,4
             doswt(i,k) = doswt(i,k) + tet(j)%p(l)%c/((nx)*(ny)*(nz)*6)      !dos calculation
-            calct(i,k) = calct(i,k) + tet(j)%p(l)%c/((nx)*(ny)*(nz)*6)*kfunc(tet(j)%p(l)%i)            !calc
+            calct(i,k) = calct(i,k) + tet(j)%p(l)%c/((nx)*(ny)*(nz)*6)*kfunc(tet(j)%p(l)%i) 
          enddo
       enddo 
   enddo
 enddo
 
-!do i=1,mesh
-!   write(uio,*)omt(i),(calct(i,j),j=1,n)
+!do i=1,wmesh
+!   write(udos,*)om(i),(calct(i,j),j=1,n)
 !enddo
 
 integrate_dos=0.0
 total_dos=0.0
-do i=1,mesh
+do i=1,wmesh
    total_dos=sum(doswt(i,:))
-   integrate_dos=integrate_dos+total_dos*max2/mesh
-   write(uio,15) omt(i),i,integrate_dos,total_dos,(doswt(i,n-j+1),j=1,n)
+   integrate_dos=integrate_dos+total_dos*wmax/wmesh
+   write(udos,15) om(i),i,integrate_dos,total_dos,(doswt(i,ndn-j+1),j=1,ndn)
 enddo
 
 integrate_dos=0.0
 total_dos=0.0
-do i=1,mesh
+do i=1,wmesh
    total_dos=sum(calct(i,:))
-   integrate_dos=integrate_dos+total_dos*max2/mesh
-   write(uio2,15) omt(i),i,integrate_dos,total_dos,(calct(i,n-j+1),j=1,n)
+   integrate_dos=integrate_dos+total_dos*wmax/wmesh
+   write(udos+1,15) om(i),i,integrate_dos,total_dos,(calct(i,ndn-j+1),j=1,ndn)
 enddo
 
-
+close(udos); close(udos+1)
 
 15 format(99(1x,g10.4))
 
 
 end subroutine calc_tet
-!===============================================================================================
+!=======================================================================================
 SUBROUTINE SSORT (X, IY, N)   !sorting algorithm, (insertion sort)
 IMPLICIT NONE
 
@@ -487,68 +481,3 @@ ENDIF
 RETURN
 END
 !===============================================================
-
-
-
-
-!===============================================================================================
-subroutine calc_tet2(nx,ny,nz,mesh,max2,n,uio,uio2,kpt)        !nx,ny,nz are meshing params. mesh and max2 are energy meshing params. n is # of bands
-use tetrahedron                                                             !calct is the result of the integration method for a function F(k)
-use constants                                                               !doswt is the result of the integration method for a function F(k) = 1
-implicit none                                                               !tet is obvious, uio and uoi are labels for write file.  kpt(3,nkp) are the kpts from subroutine make_kp_reg
-
-integer :: i,j,k,kk,l,nx,ny,nz,mesh,n,uio,uio2
-real(8) :: max2,omt(mesh),kfunc(nx*ny*nz),kpt(3,nx*ny*nz),kq
-real(8) integrate_dos, total_dos
-
-! set omt (maybe from input)
-!do i=1,mesh
-!   omt(i) = max2 *(0.0001 + (i-1)/(mesh-1.))
-!enddo
-
-! initialize calct
-calct = 0
-doswt = 0
-
-! define the arbitrary function.
-do i=1,nx*ny*nz                                             !defines function F(k)
-   kq = sqrt(kpt(1,i)**2+kpt(2,i)**2+kpt(3,i)**2)
-   kfunc(i) = 1/(kq**2+1d-4)
-enddo
-
-!do i=1,mesh                                                 !for each energy omt(i), assigns weights to corners of all tetrahedrons
-
-!   write(*,*) 'dos2,i,mesh',i,mesh
-
-! now calculate calct
-  do k=1,n
-     call eigen_tet(nx,ny,nz,k,nx*ny*nz)
-!!k1
-   ! call weight_tet(nx,ny,nz,omt(i),tet)
-     call weight_tet(nx,ny,nz,omt(i))
-!!k1
-
-      do j=1,(nx)*(ny)*(nz)*6        ! sy . what's 6 for?
-         do l=1,4
-            doswt(i,k) = doswt(i,k) + tet(j)%p(l)%c/((nx)*(ny)*(nz)*6)                          !dos calculation
-            calct(i,k) = calct(i,k) + tet(j)%p(l)%c/((nx)*(ny)*(nz)*6)*kfunc(tet(j)%p(l)%i)            !calc
-         enddo
-      enddo
-  enddo
-!enddo
-
-
-!integrate_dos=0.0
-!total_dos=0.0
-!do i=1,mesh
-!   total_dos=sum(calct(i,:))
-!   integrate_dos=integrate_dos+total_dos*max2/mesh
-!   write(uio2,15) omt(i),i,integrate_dos,total_dos,(calct(i,n-j+1),j=1,n)
-!enddo
-
-
-
-15 format(99(2x,g14.8))
-
-
-end subroutine calc_tet2
