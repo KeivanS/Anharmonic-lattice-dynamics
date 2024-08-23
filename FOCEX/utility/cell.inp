@@ -1,0 +1,8 @@
+1 1 1   90 90 90                # conventional cell 
+ 0 0.5 0.5 0.5 0 0.5 0.5 0.5 0  # primitive cell R01,R02,R03 in terms of conventional
+5.          # lengthscale of lattice parameters
+2           # of of atom types 
+1   1       # of atoms of each type
+23  35.45   # mass of each type
+Na  0 0 0   # name followed by reduced coordinates (in units of conventional cell)
+Cl  0 0 0.5   

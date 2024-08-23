@@ -1,0 +1,3 @@
+500    # Avg desired frequency (1/cm)  (500/cm = 15 THz)
+300    # temperature in K for canonical sampling of displacements and velocities
+15     # desired number of snapshots needed (typically 20-50 should suffice)
