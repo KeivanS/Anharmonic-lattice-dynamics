@@ -475,7 +475,7 @@ Direct
 
 .. math::
          \mathbf{F}_{{k}^{*}} = \sum_{{k}'^{*}} M_{k^{*}{k}'^{*}} \mathbf{F}^{0}_{{k}'^{*}}\\
-M_{k^{*}{k}'^{*}}=\sum_{{k}''} C_{k^{*}{k}''}\mathcal{S}_{{k}''{k}'^{*}}
+          M_{k^{*}{k}'^{*}}=\sum_{{k}''} C_{k^{*}{k}''}\mathcal{S}_{{k}''{k}'^{*}}
 
 
 .. [Ref] G. Leibfried and W. Ludwig, in Solid State Physics, edited by F. Seitz and D. Turnbull (Academic, New York, 1961), Vol. 12.
