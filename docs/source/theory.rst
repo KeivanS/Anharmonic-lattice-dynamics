@@ -457,7 +457,7 @@ different k-mesh size choices.
 
 
 Phonon Boltzmann Transport Equation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------
 The lattice thermal conductivity is calculated by using the phonon Boltzmann transport equation (BTE). In steady state, the linear phonon Boltzmann transport
 equations: 
 
@@ -467,8 +467,12 @@ equations:
 
 where :math:`\mathbf{v}_{k}` is the phonon velocity, and a phonon state :math:`k=(\lambda,\mathbf{k})` comprises both a phonon mode index :math:`\lambda` and a wave vector :math:`\mathbf{k}`.
 
-
-
+BTE Solvers
+^^^^^^^^^^^
+Iterative
+^^^^^^^^^
+Direct
+^^^^^^
 
 .. [Ref] G. Leibfried and W. Ludwig, in Solid State Physics, edited by F. Seitz and D. Turnbull (Academic, New York, 1961), Vol. 12.
 
