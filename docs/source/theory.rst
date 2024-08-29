@@ -463,7 +463,7 @@ equations:
 
 .. math::
 
-       v=v+1
+       -\mathbf{v_{k}}.\nabla T\frac{\partial n_{k }^{0} }{\partial T} =-\frac{\partial n_{k}^{1}}{\partial t}\bigg|_{coll}=\sum_{{k}'}C_{k{k}'}n_{{k}'}^{1}
 
 
 
