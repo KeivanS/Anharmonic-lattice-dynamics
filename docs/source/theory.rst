@@ -461,6 +461,10 @@ Phonon Boltzmann Transport Equation
 The lattice thermal conductivity is calculated by using the phonon Boltzmann transport equation (BTE). In steady state, the linear phonon Boltzmann transport
 equations: 
 
+..math::
+
+       -\mathbf{v_{k}}.\nabla T\frac{\partial n_{k }^{0} }{\partial T} =-\frac{\partial n_{k}^{1}}{\partial t}\bigg|_{coll}=\sum_{{k}'}C_{k{k}'}n_{{k}'}^{1}
+
 
 
 
