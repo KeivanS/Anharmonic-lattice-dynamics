@@ -465,7 +465,8 @@ equations:
 
        -\mathbf{v_{k}}.\nabla T\frac{\partial n_{k }^{0} }{\partial T} =-\frac{\partial n_{k}^{1}}{\partial t}\bigg|_{coll}=\sum_{{k}'}C_{k{k}'}n_{{k}'}^{1}
 
-
+where :math:`\mathbf{v}_{k}` 
+ is the phonon velocity, and a phonon state :math::`k=(\lambda,\mathbf{k})` comprises both a phonon mode index :math::`\lambda` and a wave vector ::math: `\mathbf{k}`.
 
 
 
