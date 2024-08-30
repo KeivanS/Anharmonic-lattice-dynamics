@@ -1,5 +1,4 @@
-FF=gfortran 
-FLAGS= -fcheck=all -O2 # -fbounds-check  -fbacktrace #-Wall #-Wimplicit-interface -Warray-temporaries  g -inline-debug-info #-p #for profiling with gprof
+include ../make.inc
 
 SUBF90=fc_modules.f90 dyn_modules.f90 kpoints.f90 modules_tetra.f90 ios.f90 fourier_stuff.f90 ewald_born.f90 svd_ridge.f90 extratools.f90 others.f90 setup_amatrix.f90 force_constant_symmetries.f90 dynamical.f90 zhegv.f 
 MAIN=fc234main.f90 
@@ -28,12 +27,12 @@ exe=fcx_$(ver).x
 $(exe): $(SUBO) $(MAINO) 
 	$(FF) $(FLAGS)  -o $@  $^  
 	echo 'executable was made on' $A
-	mv $(exe)  ~/BIN
+	mv $(exe)  $(DESTDIR)
 
 ph.x: $(SUBO) $(PHO)
 	$(FF) $(FLAGS)  -o $@  $^  
 	echo 'executable was made on' $A
-	mv ph.x  ~/BIN
+	mv ph.x  $(DESTDIR)
 
 # rules to make the "simple" object files from sources
 %.o: %.f90

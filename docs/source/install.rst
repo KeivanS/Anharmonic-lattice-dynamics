@@ -5,9 +5,12 @@ Requirement
 -----------
 
 * Fortran Compiler (GCC or Intel)
+* MPI
 
 Install
 -------
+
+Quick installation: In the root directory edit `make.inc` and type `make`.
 
 .. _focex-install:
 
