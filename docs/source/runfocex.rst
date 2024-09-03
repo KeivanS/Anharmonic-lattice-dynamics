@@ -10,6 +10,18 @@ Running FOCEX
 .. only:: html
 	:math:`\\require{mediawiki-texvc}`
 
+Preliminaries
+-----------------
+The input to FOCEX is a set of foce-displacement files, outputs of DFT calculation of supercells in which atoms have moved according to some scheme. There is a separate file for each supercell shape. Typically users use only one supercell, like 3x3x3, but you can generate more. The needed files by FOCEX are called ``POSCAR1`` and ``FORCEDISP1`` if there is only one supercell shape, otherwise you will also have ``POSCAR2`` and ``FORCEDISP2``, etc... 
+These files are generated using the utility ``sc_snaps.x`` which has 3 input files. ``cell.inp`` contains the information on atoms in the primitive or conventional cell. ``supercell.inp`` contains the three translation vectors of the supercell in terms of those of the primitive cell as defined in ``cell.inp``. Finally in ``snaps.inp`` the user specifies the temperature for canonical sampling, a typical frequency scale and the number of required snapshots (typically, depending on the size of the supercell, and the number of required force constants 10 to 50 should be enough). 
+1-Run `sc_snaps.x` to generate the needed ``POSCAR`` files corresponding to each snapshot. They have the standard VASP format. After running VASP on each of these files, you collect a bunch of ``OUTCAR`` files, which you can rename ``outcar1``, ``outcar2``, ... ``outcarn``. 
+2-Run ``xtract.sh`` script to generate the ``FORCEDISP1`` file which will be used by FOCEX. The ``POSCAR1`` file contains the equilibrium atomic coordinates (force=0) in the supercell.
+
+Before running FOCEX you also need to prepare its other input files: ``default.params`` (you need it but don't have to touch it), ``structure.params``, ``dielectric.params`` containing the dielectric tensor and Born effective charges, ``kpbs.params`` containing the k-point paths for phonon band structure calculation, ``latdyn.params`` for density of states and thermodynamic properties calculations. Example are provided, and explanation of each line is in the file itself.
+
+
+The  workflow of the FOCEX code is shown below to give a general understanding of how the code is structured and executed 
+
 Workflow of FOCEX
 -----------------
 The  workflow of the FOCEX code is shown below to give a general understanding of how the code is structured and executed as a black box. Many of the intermediate steps in this process flow may even not be necessary to actually run the code. The one which are important are highlighted on the workflow diagram and are later explained in detail. 
@@ -70,7 +82,7 @@ Description of input and output files
 
 .. collapse:: utility tool
 
-    To prepare the ``FORCEDISPi`` file there is a shell script inside ``utility`` folder.  The shell script ``process_dft.sh`` executes the ``readoutcar.x`` and ``readpwscf.x`` binary to generate force-displacement file for VASP and QE respectively.  
+  To prepare the ``FORCEDISPi`` file there is a shell script inside ``utility`` folder.  The shell script ``process_dft.sh`` executes the ``read_outcar.x`` and ``read_qe.x`` binary to generate force-displacement file for VASP and QE respectively.  
 
 * **Preparing input files**
 
