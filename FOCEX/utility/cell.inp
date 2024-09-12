@@ -4,5 +4,6 @@
 2           # of of atom types 
 1   1       # of atoms of each type
 23  35.45   # mass of each type
-Na  0 0 0   # name followed by reduced coordinates (in units of conventional cell)
-Cl  0 0 0.5   
+Na Mg
+ 0 0 0   # name followed by reduced coordinates (in units of conventional cell)
+ 0 0 0.5   
