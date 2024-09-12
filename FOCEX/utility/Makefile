@@ -1,6 +1,4 @@
-# Compiler
-FF=gfortran 
-FFLAGS= # -fcheck=all -O2 # -fbounds-check  -fbacktrace #-Wall  #-p #for profiling with gprof
+include ../../make.inc
 
 # List of source files
 SOURCES = $(wildcard *.f90)
@@ -13,7 +11,7 @@ EXECUTABLES = $(SOURCES:.f90=.x)
 
 # Default target: build all executables
 all: $(EXECUTABLES)
-	mv $(EXECUTABLES) ~/BIN/
+	mv $(EXECUTABLES) $(DESTDIR)
 
 # Rule to compile .f90 files into .x executables
 %.x: %.f90
@@ -22,3 +20,6 @@ all: $(EXECUTABLES)
 # tests , cleanup and archiving
 write:
 	echo $(ALL)
+
+clean:
+	rm -rf *.o *.mod
