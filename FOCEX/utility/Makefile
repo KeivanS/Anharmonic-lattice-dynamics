@@ -15,7 +15,7 @@ all: $(EXECUTABLES)
 
 # Rule to compile .f90 files into .x executables
 %.x: %.f90
-	$(FF) $(FFLAGS) $< -o $@
+	$(FF) $(FLAGS) $< -o $@
 
 # tests , cleanup and archiving
 write:
