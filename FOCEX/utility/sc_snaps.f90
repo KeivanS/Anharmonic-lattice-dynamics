@@ -123,7 +123,7 @@ character(3) csn
 !  open(70+s,file='snap_'//csn//'.xyz')
    open(70+s,file='poscar_'//csn)
    write(70+s,*)'# undistorted supercell '
-   write(70+s,*) s
+   write(70+s,*) ' 1 '
    write(70+s,3) rsc1 
    write(70+s,3) rsc2 
    write(70+s,3) rsc3 
@@ -141,8 +141,8 @@ character(3) csn
 
            write(csn,'(i3.3)')s
            open(70+s,file='poscar_'//csn)
-           write(70+s,*)'# distorted supercell '
-           write(70+s,*) s
+           write(70+s,*)'# distorted supercell number ',s
+           write(70+s,*) ' 1 '
            write(70+s,3) rsc1 
            write(70+s,3) rsc2 
            write(70+s,3) rsc3 
