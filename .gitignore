@@ -7,3 +7,4 @@ docs/build
 *.log
 FOCEX/Makefile.old
 FOCEX/FOCEX.tws
+.DS_Store
