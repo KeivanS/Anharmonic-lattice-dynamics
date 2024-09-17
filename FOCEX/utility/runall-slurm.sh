@@ -8,11 +8,11 @@ SNAPS="snaps.inp"
 SUPERCELL="supercell.inp"
 
 # Slurm parameters
-JOB1="job.slurm"
-JOB2="cat.slurm"
 ACCOUNT="myaccount"
 PARTITION="standard"
 CORES=8
+JOB1="job.slurm"
+JOB2="cat.slurm"
 
 # check input files
 if [ ! -e $CELL ]; then
@@ -60,7 +60,7 @@ cat >$SLURM <<EOF
 #SBATCH -t 1:0:0
 #SBATCH -a 0-$N
 
-i=$(printf %03g \$SLURM_ARRAY_TASK_ID)
+i=\$(printf %03g \$SLURM_ARRAY_TASK_ID)
 mkdir -p \$i
 cp INCAR KPOINTS POTCAR \$i
 cp poscar_\$i \$i/POSCAR
@@ -75,7 +75,12 @@ EOF
 
 # submit job array and capture job ID
 JOBID=$(sbatch --parsable $JOB1)
-echo Submitted batch job $JOBID
+if [ $? -ne 0 ]; then
+    echo "Exiting"
+    exit 1
+else
+    echo Submitted batch job $JOBID
+fi
 
 cat >$JOB1 <<EOF
 #!/bin/bash
