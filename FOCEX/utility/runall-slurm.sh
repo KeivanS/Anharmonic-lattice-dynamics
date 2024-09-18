@@ -51,7 +51,7 @@ done
 N=$(ls poscar_*|wc -l)
 N=$((N-1))
 
-cat >$SLURM <<EOF
+cat >$JOB1 <<EOF
 #!/bin/bash
 #SBATCH -A $ACCOUNT
 #SBATCH -p $PARTITION
@@ -82,7 +82,7 @@ else
     echo Submitted batch job $JOBID
 fi
 
-cat >$JOB1 <<EOF
+cat >$JOB2 <<EOF
 #!/bin/bash
 #SBATCH -A $ACCOUNT
 #SBATCH -p $PARTITION
