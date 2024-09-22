@@ -1,7 +1,7 @@
-18 18 18  # kmesh for Brilluoin zone integration
-0 0 0     # shift in units of mesh (should be less than 1)
-300  350  # frequency mesh sie for dos, omega_max(1/cm)
-10 30     # width of gaussian broadening (1/cm)
+12 12 12  # kmesh for Brillouin zone integration
+0 0 0  1 0 0   # shift in units of mesh (should be less than 1); normal to surface for reflectivity
+300 350.0 # frequency mesh sie for dos, omega_max(1/cm)
+10        # width of gaussian broadening (1/cm)
 .False.   # Verbosity
 0 900 31  # Tmin(K), Tmax(K), number of T values from Tmin to Tmax (here dT=900/30=30K)
-0         # 0 for quantum occupations; if 1 then classical ocupation n=kT/hbar*omega
+0         # 0 for quantum (BE) occupations; 1 for classical ocupation n=kT/hbar*omega
