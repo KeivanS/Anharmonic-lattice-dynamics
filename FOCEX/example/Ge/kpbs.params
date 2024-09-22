@@ -1,0 +1,11 @@
+0     # units for kpoints: 0 for conventional and 1 for primitive
+40    # number of kpoints along each direction
+7     # number of paths or directions
+X 0 1 1         # starting point (Name k1,k2,k3)
+K 0 0.75 0.75   # end of first direction
+G 0 0. 0.0001   # end of 2nd direction
+X 1 0 0         # end of 3rd direction
+L 0.5 0.5 0.5   # end of 4th direction
+W 0. 0.5 1      # end of 5th direction
+U 0.25 0.25 1   # end of 6th direction
+G 0 0. 0.0001   # end of 7th direction
