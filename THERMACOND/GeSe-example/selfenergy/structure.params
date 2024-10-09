@@ -1,0 +1,107 @@
+3.89483776683844  4.47037086485115   11.01331309762818  90 90 90
+1 0 0 0 1 0 0 0 1
+1 scaling factor
+1 1 1 0 0 0 0 0  include 1st 2nd 3rd and 4th order force constants
+1 1 1 0 flags for including translational and rotational invce constraints.
+0  300  whether or not weight snaps by Boltzmann factor
+1 .false.  number of OUTCAR files, verbosity
+2        natom_type
+72.61  78.96
+Ge  Se   names of atoms
+8       number of atoms in the primitive cell, coordinates are in reduced units (of cubic cell) 
+1     flag for setting the range of FCs (if=0 default defined by supercell size)
+34 34 34 34 35 35 35 35  !13 13 13 13 12 12 12 12    
+20 20 20 20 22 22 22 22 
+0 2 2 2 2 2 2 2 
+1 1  0.75000000000000   0.11350283893953   0.87791768989055     
+2 1  0.25000000000000   0.61350283893953   0.62208231010945      
+3 1  0.25000000000000   0.88649716106047   0.12208231010945      
+4 1  0.75000000000000   0.38649716106047   0.37791768989055      
+5 2  0.75000000000000   0.50235141881208   0.14687587478535     
+6 2  0.25000000000000   0.00235141881208   0.35312412521465    
+7 2  0.25000000000000   0.49764858118792   0.85312412521465      
+8 2  0.75000000000000   0.99764858118792   0.64687587478535
+
+
+
+
+3.89483776683844  4.47037086485115   11.01331309762818  90 90 90
+1 0 0 0 1 0 0 0 1
+1 scaling factor
+30   maxneighbors
+1 1 0 0  include 1st 2nd 3rd and 4th order force constants
+0 7 2 1 
+1  junk0.001  0.00001
+1d-4 tolerance
+1 .true.  junk1
+1  junk2
+2        natom_type
+72.61  78.96
+Ge  Se   names of atoms
+8       number of atoms in the primitive cell, coordinates are in reduced units (of cubic cell) 
+1 1  0.75000000000000   0.11350283893953   0.87791768989055     
+2 1  0.25000000000000   0.61350283893953   0.62208231010945      
+3 1  0.25000000000000   0.88649716106047   0.12208231010945      
+4 1  0.75000000000000   0.38649716106047   0.37791768989055      
+5 2  0.75000000000000   0.50235141881208   0.14687587478535     
+6 2  0.25000000000000   0.00235141881208   0.35312412521465    
+7 2  0.25000000000000   0.49764858118792   0.85312412521465      
+8 2  0.75000000000000   0.99764858118792   0.64687587478535
+
+
+
+
+
+
+1 1 1 90 90 90
+0 .5 .5 .5 0 .5 .5 .5 0
+4.    scale factor 5.1015 #
+1 1 1 1  include FC1234
+0 0 0 0 invariances to impose
+0 300  whether to weight snapshots by Boltzmann factor, tempk
+2 .true.  number  of OUTCAR files, verbosity
+1  natom_type
+15.9994 24.3050  #   masses 28.0855
+O   Mg    names
+2          # of atoms in the primitive cell
+1 flag for setting the range of FC2s (if 0 take default)
+2 2   number of shells for rank 2 for each atom if not default
+1 1   number of shells for rank 3 for each atom
+1 1   number of shells for rank 4 for each atom
+1 1 0 0 0 
+2 1 0.0 0.0 0.5
+1 0 0 0 1 0 0 0 1
+1.0
+   3.89483776683844  4.47037086485115   11.01331309762818  90 90 90
+2  
+72.61  78.96
+Ge   Se
+4    4
+Direct
+   0.75000000000000   0.11350283893953   0.87791768989055     
+   0.25000000000000   0.61350283893953   0.62208231010945      
+   0.25000000000000   0.88649716106047   0.12208231010945      
+   0.75000000000000   0.38649716106047   0.37791768989055      
+   0.75000000000000   0.50235141881208   0.14687587478535     
+   0.25000000000000   0.00235141881208   0.35312412521465    
+   0.25000000000000   0.49764858118792   0.85312412521465      
+   0.75000000000000   0.99764858118792   0.64687587478535
+
+
+1 1 1 90 90 90
+0 .5 .5 .5 0 .5 .5 .5 0
+4.    scale factor 5.1015 #
+1 1 1 1  include FC1234
+0 0 0 0 invariances to impose
+0 300  whether to weight snapshots by Boltzmann factor, tempk
+2 .true.  number  of OUTCAR files, verbosity
+1  natom_type
+15.9994 24.3050  #   masses 28.0855
+O   Mg    names
+2          # of atoms in the primitive cell
+1 flag for setting the range of FC2s (if 0 take default)
+2 2   number of shells for rank 2 for each atom if not default
+1 1   number of shells for rank 3 for each atom
+1 1   number of shells for rank 4 for each atom
+1 1 0 0 0 
+2 1 0.0 0.0 0.5
