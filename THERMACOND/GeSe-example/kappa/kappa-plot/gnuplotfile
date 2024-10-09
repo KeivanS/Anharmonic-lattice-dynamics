@@ -1,0 +1,51 @@
+set terminal postscript eps enhanced
+set term post eps enh colour
+set output "k-gese.eps"
+
+set border linewidth 2.5
+set xtics offset 0, -0.5 font "Times Roman   ,28"
+set ytics font "Times Roman   ,28"
+set lmargin 13
+set rmargin 5
+set tmargin 2
+set bmargin 7
+set size 1,1
+##set title "thermal conductivity of BaZrO3" font "Helvetica   ,13"
+set ylabel "{/Symbol k} (W/mK)" offset -2.5 font "Times Roman   ,30"
+set xlabel "Temperature (K)" offset -3, -1.5 font "Times Roman   ,30"
+#set logscale y
+#set logscale x
+##set format x "10^{%T}"
+###set format y "10^{%T}"
+set key font "Times Roman   ,27 
+###with line t TA_{|}" lc rgb 'red' pt 7 ps 1
+
+
+###set key font "Times Roman  ,26
+###set key at 1050,80
+##set key box dt 1 lw 2
+###set key samplen 1.7 spacing 1
+###set key width -2.5
+
+set xtics (100,200,300,400,500,600,800,1000)
+##set ytics (0,10,20,30)
+##set mytics 2
+##set mxtics 2
+##set ytics -2,2
+set yr[0.1:*]
+
+set xr[190:1080] 
+
+###set label 12 "(a)" at 220 , 75 font "Times Roman   ,30"
+###set label 20 "(in-plane direction)" at 520 , 0.2 font "Times Roman   ,27"
+
+plot "k-T-direct-cg" using 1:($2) with lp t "{/Symbol k}_{xx}" lc rgb 'light-red' lw 6 pt 6 ps 1 , "k-T-direct-cg" using 1:($3) with lp t "{/Symbol k}_{yy}" lc rgb 'light-blue' lw 6 pt 6 ps 1 , "k-T-direct-cg" using 1:($4) with lp t "{/Symbol k}_{zz}" lc rgb 'light-green' lw 6 pt 6 ps 1 , "k-T-direct-cg" using 1:($2+$3+$4)/3 with lp t "ave" lc rgb 'gray' lw 6 pt 6 ps 1 , "expdata.dat" using 1:2 with points t "exp" lc rgb 'black' ps 1 pt 7,
+
+
+
+
+
+
+
+
+
