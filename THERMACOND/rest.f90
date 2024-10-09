@@ -3233,9 +3233,9 @@ endif
     endif
  enddo
 3 format(a,3i5,2(3x,3i3))
- do i=1,nk
-    write(*,*)'i,map(i)=',i,map(i)
- enddo
+! do i=1,nk
+!    write(*,*)'i,map(i)=',i,map(i)
+! enddo
  end subroutine get_negatives
 !===========================================================
  subroutine subst_eivecs(ndyn,nk,eivec,kp,npos,map)

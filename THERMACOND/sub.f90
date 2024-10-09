@@ -1121,7 +1121,7 @@ s=0
  loop1: do n1=ibz_subset(1),ibz_subset(2)       ! calculate v33 only for subset of k points
 s=s+1
     q1 = kp(:,mapinv(n1))  ! should be = kp(:,mapinv(n1))
-    write(*,*) 'in V3 cal, n1=',n1
+    !write(*,*) 'in V3 cal, n1=',n1
     write(ulog,*) 'n1=', n1
     call get_k_info(q1,NC,nk1,i1,j1,k1,g1,g2,g3,inside)
       if(mapinv(n1).ne.nk1) then
@@ -2894,7 +2894,7 @@ integer i3,j3,k3,inside,nk3_p1
 real(8) C_d, C_of, C
 real(8) kvecstars(3,48)
 integer kvecops(48),n0,n22,nl2,l3,nl3,ni0,n1i,d1,d2
-integer ksbst(2)
+integer ksbst(2),k_shift,ksubsize3
 
 s1=0
 s2=0
@@ -2906,10 +2906,17 @@ Collision_Matrixmpi=0
 !kil1=((ksbst(2)-ksbst(1))+1)*ndn*3
 !kil2=nibz*ndn*3
 
+
+ksubsize3=(ksbst(2)-ksbst(1))+1
+k_shift=ksbst(1)-1
+
+!nkI1_loop: do ibz=1,ksubsize3
+
 !open(701,file='sycmatrix.dat')
-  do n1=ksbst(1),ksbst(2)
+ !** do n1=ksbst(1),ksbst(2)
+   do n1=1,ksubsize3
 !    do n1=1,nibbz
-       n1i=mapinv(n1)
+       n1i=mapinv(n1+k_shift)
     do l1=1,ndn
       s1=s1+1
       d1=s1
@@ -2951,7 +2958,7 @@ Collision_Matrixmpi=0
 
            else
 
-         q1 = kibz(:,n1)
+         q1 = kibz(:,n1+k_shift)
          q2 = kvecstars(:,ns)
          q3_p1 = q1+q2
          q3_p2 = q1-q2
@@ -5227,8 +5234,78 @@ xx=0
 
 end subroutine read_RHS
 !==========================================================
+!==========================================================
+ subroutine read_CM_1D_mpi(nik,ndn,CM3D)!!Saf!!
+! this subroutine reads RHS_IBZ.dat
+ use ios
+ implicit none
+ integer CM_f
+ integer i,j,s,nik,ndn,kil
+ !real(8), allocatable :: RHSi(:)
+ real(8) xx, CM3D(nik*ndn*3,nik*ndn*3)
+!write(*,*)'here%%%%%%%%%%#########'
 
+ kil=nik*ndn*3
+! write(*,*)'here%%%%%%%%%%@@@@@@@@@'
+ CM_f=5999
+! RHS2=0
+!write(*,*)'here%%%%%%%%%%@@@@@@@@@'
+  !  if(allocated(RHS2)) then
+  !      deallocate(RHS2)
+  !  endif
 
+ !   allocate(RHSi(kil))
+!write(*,*)'here%%%%%%%%%%'
+CM3D=0
+xx=0
+s=0
+ open(CM_f,file='CM-1D.dat', status='old')
+ do i=1,kil
+    do j=1,kil
+       s=s+1
+       read(CM_f,*) xx !RHS2(i)
+       CM3D(i,j)=xx
+ !write(*,*) RHSi(i)
+     enddo
+ enddo
+ close(CM_f)
+
+end subroutine read_CM_1D_mpi
+!==========================================================
+!==========================================================
+ subroutine read_DS(nik,ndn,DS1d)!!Saf!!
+! this subroutine reads RHS_IBZ.dat
+ use ios
+ implicit none
+ integer DS_f
+ integer i,nik,ndn,kil
+ !real(8), allocatable :: RHSi(:)
+ real(8) xx, DS1d(nik*ndn*3)
+!write(*,*)'here%%%%%%%%%%#########'
+
+ kil=nik*ndn*3
+! write(*,*)'here%%%%%%%%%%@@@@@@@@@'
+ DS_f=5999
+! RHS2=0
+!write(*,*)'here%%%%%%%%%%@@@@@@@@@'
+  !  if(allocated(RHS2)) then
+  !      deallocate(RHS2)
+  !  endif
+
+ !   allocate(RHSi(kil))
+!write(*,*)'here%%%%%%%%%%'
+DS1d=0
+xx=0
+ open(DS_f,file='DS.dat', status='old')
+ do i=1,kil
+ read(DS_f,*) xx !RHS2(i)
+ DS1d(i)=xx
+ !write(*,*) RHSi(i)
+ enddo
+ close(DS_f)
+
+end subroutine read_DS
+!==========================================================
 
 
 
@@ -7711,7 +7788,7 @@ end subroutine calculate_tauRTA
 
 
 !============================================================================================
-subroutine calculate_tauRTA_mpi2(ndn,tempk)!,P1sm,P2sm)
+subroutine calculate_tauRTA_mpi2(ibz_subset,ndn,tempk)!,rankmpi)!,P1sm,P2sm)
 !! calculates sum of diagonal terms in collision matrix
 !! calculates Pmatrix and save it to memory
 !! BEWARE ******
@@ -7749,6 +7826,8 @@ real(8) cputim0, cputim1, cputim2, cputim3, cputim0_wall, cputim1_wall, wtime
 real(8) omega1, V3sq1
 real(8) F_arbi(nkc)
 !***real(8), allocatable :: P1sm(:,:,:,:,:), P2sm(:,:,:,:,:)  
+integer ibz_subset(2), rankmpi, ksubsize3
+
 
 nx=NC(1); ny=NC(2); nz=NC(3)
 
@@ -7757,9 +7836,9 @@ unt=9400
 open(uQ,file='Qvalue.dat',status='unknown')
 write(uQ,*) 'nk,la,Q'
 
-Qvalue(:,:)=0    ! in cm^-1
-Qvalue_N(:,:)=0
-Qvalue_U(:,:)=0
+Qvaluempi(:,:)=0    ! in cm^-1
+Qvalue_Nmpi(:,:)=0
+Qvalue_Umpi(:,:)=0
 tauinv_N(:,:)=0
 tauinv_U(:,:)=0
 indx=0
@@ -7771,9 +7850,13 @@ temp = tempk*k_b/(100*h_plank*c_light)   ! convert to cm^-1
 call cpu_time(cputim1)
 write(*,*) 'entering calculate_tauRTA...'
 
-nkI1_loop: do ibz=1,nibz
-                i=mapinv(ibz)
-                call get_k_info(kibz(:,ibz) ,NC,nk1,i1,j1,k1,g1,g2,g3,inside)
+ksubsize3=(ibz_subset(2)-ibz_subset(1))+1
+k_shift=ibz_subset(1)-1
+
+nkI1_loop: do ibz=1,ksubsize3
+!nkI1_loop: do ibz=1,nibz
+                i=mapinv(ibz+k_shift)
+                call get_k_info(kibz(:,ibz+k_shift) ,NC,nk1,i1,j1,k1,g1,g2,g3,inside)
                 if (nk1.ne.i) then
                    write(*,*)'calculate_tauRTA error: i.ne.nk1 ',i,nk1
                    stop
@@ -7841,6 +7924,8 @@ nkI1_loop: do ibz=1,nibz
 
 ! Here call calc_tet
 ! Calculate Q_N, Q_U, Q_tot
+!ksubsize3=(ibz_subset(2)-ibz_subset(1))+1
+!k_shift=ksubsize3*rankmpi
 
     laI1_loop: do ii=1,ndn
 
@@ -7877,26 +7962,31 @@ nkI1_loop: do ibz=1,nibz
 
                 F_arbi(j)=dist(i,ii)*dist(j,jj)*(dist(nk3_proc1,kk)+1)   ! no 2pi at the front since delta is in linear frequency.
            !***     P1(ibz,j,ii,jj,kk) = P1sm(ibz-k_shift,j,ii,jj,kk) * F_arbi(j)    
-                    P1(ibz,j,ii,jj,kk) = p1sm_mpi(ibz,j,ii,jj,kk) * F_arbi(j)
-
+                    P1(ibz,j,ii,jj,kk) = P1smpi(ibz,j,ii,jj,kk) * F_arbi(j)
+                   ! P1(ibz,j,ii,jj,kk) = P1smpi(ibz-k_shift,j,ii,jj,kk) * F_arbi(j)
+                   
                 F_arbi(j)=dist(i,ii)*(dist(j,jj)+1)*(dist(nk3_proc2,kk)+1)   
            !***     P2(ibz,j,ii,jj,kk) = P2sm(ibz-k_shift,j,ii,jj,kk) * F_arbi(j)     
-                    P2(ibz,j,ii,jj,kk) = p2sm_mpi(ibz,j,ii,jj,kk) * F_arbi(j)
+                    P2(ibz,j,ii,jj,kk) = P2smpi(ibz,j,ii,jj,kk) * F_arbi(j)
+                 !   P2(ibz,j,ii,jj,kk) = P2smpi(ibz-k_shift,j,ii,jj,kk) * F_arbi(j)
 
 ! K1   Qvalue(ibz,ii)=Qvalue(ibz,ii) + P1(ibz,j,ii,jj,kk) + 0.5*P2(ibz,j,ii,jj,kk)
-                Qvalue(ibz,ii)=Qvalue(ibz,ii) + ( P1(ibz,j,ii,jj,kk)  &
+                Qvaluempi(ibz,ii)=Qvaluempi(ibz,ii) + ( P1(ibz,j,ii,jj,kk)  &
                 &              + 0.5*P2(ibz,j,ii,jj,kk) ) 
 
+
+!write(*,*)Qvaluempi(ibz,ii),ibz,ii
+
                 if (inside1 .eq. 1) then    ! normal process in coalescence process
-                    Qvalue_N(ibz,ii)=Qvalue_N(ibz,ii) + P1(ibz,j,ii,jj,kk)
+                    Qvalue_Nmpi(ibz,ii)=Qvalue_Nmpi(ibz,ii) + P1(ibz,j,ii,jj,kk)
                 else
-                    Qvalue_U(ibz,ii)=Qvalue_U(ibz,ii) + P1(ibz,j,ii,jj,kk)
+                    Qvalue_Umpi(ibz,ii)=Qvalue_Umpi(ibz,ii) + P1(ibz,j,ii,jj,kk)
                 endif
 
                 if (inside2 .eq. 1) then    ! normal process in decay process
-                    Qvalue_N(ibz,ii)=Qvalue_N(ibz,ii) + 0.5*P2(ibz,j,ii,jj,kk)
+                    Qvalue_Nmpi(ibz,ii)=Qvalue_Nmpi(ibz,ii) + 0.5*P2(ibz,j,ii,jj,kk)
                 else
-                    Qvalue_U(ibz,ii)=Qvalue_U(ibz,ii) + 0.5*P2(ibz,j,ii,jj,kk)
+                    Qvalue_Umpi(ibz,ii)=Qvalue_Umpi(ibz,ii) + 0.5*P2(ibz,j,ii,jj,kk)
                 endif
 
            enddo
@@ -7907,10 +7997,122 @@ nkI1_loop: do ibz=1,nibz
 
            nb1=dist(i,ii)
 
+          ! write(uQ,*) ibz,ii,Qvalue(ibz,ii),Qvalue(ibz,ii)/(nb1*(nb1+1))
+
+! tauinv_N in 1/sec
+          ! tauinv_N(ibz,ii) = Qvalue_N(ibz,ii)/(nb1*(nb1+1)) * c_light*100    
+          ! tauinv_U(ibz,ii) = Qvalue_U(ibz,ii)/(nb1*(nb1+1)) * c_light*100
+          ! tauinv_tot(ibz,ii) = tauinv_N(ibz,ii) + tauinv_U(ibz,ii)
+
+
+write(uQ,*)Qvaluempi(ibz,ii),ibz,ii,ibz+k_shift,ii
+!write(*,*)Qvaluempi(ibz,ii),ibz,ii,ibz+k_shift,ii
+    enddo laI1_loop
+
+
+
+   ! call cpu_time(cputim2)
+   ! write(*,*) indx,'th ksubset for Pmatrix3 done...', cputim2-cputim1
+
+
+enddo nkI1_loop
+
+
+
+close(uQ)
+
+7 format(5(i6),2(2x,g14.8))
+
+!if(indx2-1 .ne. num_pfiles) then
+!   write(ulog,*) 'error in reading col_matrix.dat during cal_Qm...'
+!   stop
+!endif
+
+
+end subroutine calculate_tauRTA_mpi2
+!=========================================================
+
+!============================================================================================
+subroutine Qandtau(ndn,tempk)!,P1sm,P2sm)
+!! calculates sum of diagonal terms in collision matrix
+!! calculates Pmatrix and save it to memory
+!! BEWARE ******
+!! the first index ibz is in IBZ, if you want to get the corresponding FBZ index
+!! use i=mapinv(ibz)
+!!
+use ios
+use exactBTE2
+use mod_ksubset2
+use params
+use constants
+use phi3
+use lattice , only : g1,g2,g3
+use tetrahedron
+use kpoints
+
+implicit none
+
+integer i,ii,indx,ndn!,j,jj,kk
+!integer nk_subset, k_shift, ksub_size2
+!real(8) q1(3), q2(3), q3_proc1(3), q3_proc2(3), q3(3), q3_proc1n(3), q3_proc2n(3)
+real(8) temp, tempk, nb1   ! in cm^-1
+!integer ksubset(2)
+!integer nx, ny, nz
+!integer i2,ii2,j2,jj2,k2,kk2, inside1, inside2, inside, inside1n, inside2n
+!integer i3,j3,k3,nk3_proc1,nk3_proc2, nk3, nk2,nk1,ibz!,i1,j1,k1
+ integer nk1,ibz,i1,j1,k1,inside
+!integer n1,n2,l1,l2,l3,nk2n,i2n,j2n,k2n
+!integer j_tet, k_tet,w
+
+!character(99) filename_temp, filename
+
+integer uQ, nv3_2,unt
+
+real(8) cputim0, cputim1, cputim2, cputim3, cputim0_wall, cputim1_wall, wtime
+real(8) omega1, V3sq1
+!real(8) F_arbi(nkc)
+!***real(8), allocatable :: P1sm(:,:,:,:,:), P2sm(:,:,:,:,:)
+
+!nx=NC(1); ny=NC(2); nz=NC(3)
+
+uQ=9402
+unt=9400
+open(uQ,file='Qvalue.dat',status='unknown')
+write(uQ,*) 'nk,la,Q'
+
+
+tauinv_N(:,:)=0
+tauinv_U(:,:)=0
+
+
+temp = tempk*k_b/(100*h_plank*c_light)   ! convert to cm^-1
+
+!write(*,*) 'entering cal_Qm2...'
+
+call cpu_time(cputim1)
+write(*,*) 'entering calculate_tauRTA...'
+
+nkI1_loop: do ibz=1,nibz
+                i=mapinv(ibz)
+                call get_k_info(kibz(:,ibz) ,NC,nk1,i1,j1,k1,g1,g2,g3,inside)
+                if (nk1.ne.i) then
+                   write(*,*)'calculate_tauRTA error: i.ne.nk1 ',i,nk1
+                   stop
+                endif
+
+    laI1_loop: do ii=1,ndn
+
+    write(ulog,*) 'i,ii=',i,ii
+
+    omega1=frequency(i,ii)        ! set fixed omega1 in delta(omega1-omega2+-omega3)
+     
+            
+           nb1=dist(i,ii)
+
            write(uQ,*) ibz,ii,Qvalue(ibz,ii),Qvalue(ibz,ii)/(nb1*(nb1+1))
 
 ! tauinv_N in 1/sec
-           tauinv_N(ibz,ii) = Qvalue_N(ibz,ii)/(nb1*(nb1+1)) * c_light*100    
+           tauinv_N(ibz,ii) = Qvalue_N(ibz,ii)/(nb1*(nb1+1)) * c_light*100
            tauinv_U(ibz,ii) = Qvalue_U(ibz,ii)/(nb1*(nb1+1)) * c_light*100
            tauinv_tot(ibz,ii) = tauinv_N(ibz,ii) + tauinv_U(ibz,ii)
 
@@ -7938,7 +8140,7 @@ close(uQ)
 !endif
 
 
-end subroutine calculate_tauRTA_mpi2
+end subroutine Qandtau
 !=========================================================
 
 

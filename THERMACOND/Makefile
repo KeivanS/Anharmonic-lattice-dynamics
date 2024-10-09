@@ -1,4 +1,5 @@
-include ../make.inc
+FF=mpif90  -fbounds-check -g #gfortran #ifort
+FLAGS= -ffree-line-length-0 -g #-fdec-math #-fbounds-check -fbacktrace #g -inline-debug-info #-p #for profiling with gprof
 
 MOD=modules.f90  
 SUBKAP=zhegv.f force_constants.f90 sub.f90 rest.f90  extratools.f90 svd.f90 tetrahedron.f90 cg.f90
@@ -16,27 +17,27 @@ SUBKAPS=$(addsuffix .o, $(basename $(SUBKAP)))
 version=8
 A=`date "+%F-%k_%M"`
 C=kap$(version).`date "+%F|%T"`
+#MYBIN=/Users/ke4c/BIN/
 
 
 kap$(version): $(MODS) $(SUBKAPS) $(KAPA) 
-	$(F90) $(FLAGS) $(MODS) $(SUBKAPS) $(KAPA) -o $@ 
-	mv kap$(version) $(DESTDIR)
+	$(FF) $(FLAGS) $(MODS) $(SUBKAPS) $(KAPA) -o $@ 
+#	mv kap$(version) $(MYBIN)
 
 mfpband: mfpthermal.f90
-	$(F90) mfpthermal.f90 -o $@
-	mv mfpband $(DESTDIR)
+	$(FF) mfpthermal.f90 -o $@
+#	mv mfpband $(MYBIN)
 
 # rules to make the "simple" object files from sources
 .SUFFIXES: .f90
-%.o : %.mod
 .f90.o:
-	$(F90) $(FLAGS) -c $<
+	$(FF) $(FLAGS) -c $<
 .f90 :
-	$(F90) $(FLAGS) $< -o $@
+	$(FF) $(FLAGS) $< -o $@
 .f.o:
-	$(F90) $(FLAGS) -c $<
+	$(FF) $(FLAGS) -c $<
 .f :
-	$(F90) $(FLAGS) $< -o $@
+	$(FF) $(FLAGS) $< -o $@
 
 # tests , cleanup and archiving
 ec:

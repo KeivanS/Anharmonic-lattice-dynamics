@@ -1303,6 +1303,7 @@ integer ncol
 real(8), allocatable:: F_RTA(:,:,:), F1(:,:,:), Fs1(:,:,:) ,F2(:,:,:), Qvalue(:,:), iselfenergy(:,:), tau(:,:,:), error(:,:,:), diff(:,:,:)
 real(8), allocatable:: F1_old(:,:,:)
 real(8), allocatable:: Qvalue_N(:,:), Qvalue_U(:,:), tauinv_N(:,:), tauinv_U(:,:), tauinv_tot(:,:), tauinv_eff(:,:)
+real(8), allocatable:: Qvaluempi(:,:), Qvalue_Nmpi(:,:), Qvalue_Umpi(:,:)
 real(8), allocatable:: diff_kap(:,:,:,:),kappa(:,:,:), kappa_k(:,:,:,:), kappa_RTA(:,:,:), kappa_k_RTA(:,:,:,:)
 ! F1,F2: (kp1,la1,xyz)    , Qvalue,Avalue,iselfenergy: (kp,la)
 real(8), allocatable:: P1(:,:,:,:,:), P2(:,:,:,:,:),Piso(:,:),Pisos(:,:),giso(:)
@@ -1621,7 +1622,7 @@ end module exactBTE2
            endif
            kp_bs(:,nk) = ki(:,i) + (j-1)*q(:)/(nkdir-1+1d-8)
  
-    write(*,*)' dk_bs =', nk,dk_bs(nk)
+   ! write(*,*)' dk_bs =', nk,dk_bs(nk)
 
         enddo
         kext_bs(1,i+1)=real(dk_bs(nk))   ! here using kext_bs(1,:) as a dummy variable
