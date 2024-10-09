@@ -1,0 +1,13 @@
+ Program kap8 was launched at    2024/09/24   12:07:45.664   -0400
+ At the start of the Program,        TIME IS       0.0121
+ After readings,                     TIME IS       1.0727
+ After band structure,               TIME IS      48.2514
+ After om(k) calculation within FBZ, TIME IS     531.4917
+ After calculate tetrahedron dos    TIME IS     620.3060
+ After calculation of phase space in FBZ,     TIME IS     620.3060
+ Start direct approach using cg method,                TIME IS    620.3060
+ RHS in IBZ done,                TIME IS   1105.3256
+satrt cg,                TIME IS   1105.3256
+ cg done,                TIME IS   1115.7925
+ thermal conductivty calculation, TIME IS   1167.9338
+ direct approach using cg method done,                 TIME IS   1167.9988
