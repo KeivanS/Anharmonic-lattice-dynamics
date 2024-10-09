@@ -1,0 +1,9 @@
+ Program kap8 was launched at    2024/10/05   04:39:21.899   -0400
+ At the start of the Program,        TIME IS       0.0168
+ After readings,                     TIME IS       0.6127
+ After band structure,               TIME IS      31.3768
+ After om(k) calculation within FBZ, TIME IS     355.9795
+ After calculate tetrahedron dos    TIME IS     404.9077
+ After calculation of phase space in FBZ,     TIME IS     404.9077
+ self-energy calculation,               TIME IS    404.9077
+ Self-energy calculation done,     TIME IS  98294.3281
