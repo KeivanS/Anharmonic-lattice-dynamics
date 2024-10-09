@@ -1,1 +1,0 @@
-rm -f *.mod *.o bs_freqs.dat kap8 bs_grun.dat dos.dat dos_tet.dat FBZ_freqs.dat FBZ_grun.dat finitvel.dat kibz.dat KPOINT.BS KPOINT.FBZ KPOINT.IBZ KPOINT.MP KPOINT_tet.MP KTICS.BS params.phon1 params.phon2 times.dat veloc.dat weightet.dat
