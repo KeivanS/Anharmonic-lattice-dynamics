@@ -750,8 +750,6 @@ call cpu_time(cputim)
   deallocate(CM_temp_mpi,cdispls_mpi,caksub_mpi)
   allocate(Collision_Matrix(num_k_mpi2*ndyn*3,nibz*ndyn*3))
 
-  deallocate(CM_temp_mpi,cdispls_mpi,caksub_mpi)
-  allocate(Collision_Matrix(num_k_mpi2*ndyn*3,nibz*ndyn*3))
 
 ! instead of using reshape function.
   cmkn1t=num_k_mpi2*ndyn*3
@@ -759,7 +757,7 @@ call cpu_time(cputim)
   do n1_mpi=1,cmkn1t       !ksub_size2=ksubset(2)-ksubset(1)+1
      do n2_mpi=1,cmkn2
 
-        smpi=smpi + !
+        smpi=smpi + 1
         Collision_Matrix(n1_mpi,n2_mpi) = CM_tempmpi(smpi)
 
     enddo
@@ -998,7 +996,7 @@ call MPI_Finalize(ierr_mpi)
 
 
 !-------------------------------------------------------
-if ( job .eq. 3 ) then   ! MPI for very-large kpoints (with job=4)
+elseif ( job .eq. 3 ) then   ! MPI for very-large kpoints (with job=4)
 !-------------------------------------------------------
   write(ulog,*) 'entering cal v33 in IBZ split...'
   write(*,*) 'entering cal v33 in IBZ split...'
@@ -2081,7 +2079,7 @@ write(utimes,'(a,f12.4)')' After the kappa loop,               TIME IS ',cputim
 endif
 endif
 endif
-
+!endif
  end program kappa_full
 
 

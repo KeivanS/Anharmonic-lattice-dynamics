@@ -1,6 +1,6 @@
 #!/bin/bash 
-#SBATCH -N 2
-#SBATCH --ntasks-per-node=37
+#SBATCH -N 5
+#SBATCH --ntasks-per-node=17
 #SBATCH -p parallel
 #SBATCH -A elmgroup_standard
 #SBATCH -t 1:20:00 
