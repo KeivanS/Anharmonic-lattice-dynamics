@@ -2,9 +2,9 @@
 
  module fourier
  use constants, only : r15
-  integer nrgrid,nggrid,nsubgrid
-  real(r15), allocatable :: rgrid(:,:),rws_weights(:)
-  real(r15), allocatable :: ggrid(:,:),gws_weights(:)
+  integer nrgrid,nggrid,nsubgrid,nreg,n3reg(3)
+  real(r15), allocatable :: rgrid(:,:),rws_weights(:),rgridreg(:,:),regweights(:)
+  real(r15), allocatable :: ggrid(:,:),gws_weights(:),ggridreg(:,:)
   real(r15), allocatable :: subgrid(:,:),subgrid_weights(:)
   integer, allocatable :: i1r(:),i2r(:),i3r(:),i1g(:),i2g(:),i3g(:)
 
@@ -17,7 +17,7 @@
 
   contains
 !-------------------------------------------
- subroutine fr2k_5(nr,fr,wei,ng,fk)
+ subroutine fr2k_5(nr,rgrid2,fr,wei,ng,ggrid2,fk)
 !! for an array of size nk defined on a mesh rmesh(3,nr), this subroutine
 !! calculates its cosine Fourier transform on the kmesh, conjugate to rmesh
 ! a cosine transform is enough for even functions, otherwise R,-R must be symmetrized
@@ -26,20 +26,20 @@
  use geometry
  implicit none
  integer, intent(in) :: nr,ng
- real(r15), intent(in) :: fr(nr),wei(nr)
+ real(r15), intent(in) :: fr(nr),wei(nr),rgrid2(3,nr),ggrid2(3,ng)
  real(r15), intent(out) :: fk(ng)
  integer ik,ir
 
  fk=0
  do ik=1,size(fk) !ng
     do ir=1,size(fr) !nr
-       fk(ik)=fk(ik)+cos(ggrid(:,ik).dot.rgrid(:,ir)) * fr(ir) * wei(ir)
+       fk(ik)=fk(ik)+cos(ggrid2(:,ik).dot.rgrid2(:,ir)) * fr(ir) * wei(ir)
     enddo
  enddo
 
  end subroutine fr2k_5
 !-------------------------------------------
- subroutine fk2r_5(nk,fk,wei,nr,fr)
+ subroutine fk2r_5(nk,ggrid2,fk,wei,nr,rgrid2,fr)
 !! for an array of size nk defined on a mesh rmesh(3,nr), this subroutine
 !! calculates its cosine Fourier transform on the kmesh, conjugate to rmesh
 ! a cosine transform is enough for even functions, otherwise R,-R must be symmetrized
@@ -48,14 +48,14 @@
  use geometry
  implicit none
  integer, intent(in) :: nr,nk
- real(r15), intent(in) :: fk(nk),wei(nk)
+ real(r15), intent(in) :: fk(nk),wei(nk),rgrid2(3,nr),ggrid2(3,nk)
  real(r15), intent(out) :: fr(nr)
  integer ik,ir
 
  fr=0
  do ir=1,size(fr) !nr
     do ik=1,size(fk) !nk
-       fr(ir)=fr(ir)+cos(ggrid(:,ik).dot.rgrid(:,ir)) * fk(ik) * wei(ik)
+       fr(ir)=fr(ir)+cos(ggrid2(:,ik).dot.rgrid2(:,ir)) * fk(ik) * wei(ik)
     enddo
  enddo
 
@@ -154,9 +154,9 @@
 !! output is the force constants phi (tau,R+tau') where R belongs to the R mesh (primitive lattice)
  use atoms_force_constants !, only : natom_prim_cell,op_matrix,op_kmatrix
  use svd_stuff
- use lattice, only : primitivelattice
+ use lattice, only : primitivelattice,cart_to_prim,prim_to_cart,red2cart_g,cart2red_g
  use kpoints, only : kibz,nibz !,wibz
- use ios !, only : ulog,umatrx,ufc2,utimes,write_out
+ use ios , only : ulog,umatrx ,ufc2,utimes,write_out
  use geometry
  use params, only : verbose
  use atoms_force_constants
@@ -168,7 +168,7 @@
  complex(r15), allocatable:: dynk(:,:,:) ,aux(:) ,d2(:,:),phi(:,:,:)
  integer nat0,icfg,ik,iarm,l,i,j,tau,ir,iatom,nu,nkstar,dim_l,dimdyn, &
  &       kvecop(48),narms,nsym,dim_c,n2,iop
- real(r15) error,ermax,sig,kvecstar(3,48),sk(3),s3(3,3)
+ real(r15) error,ermax,sig,kvecstar(3,48),sk(3),symk(3,3)
  real tim
 
 ! nat0=nat/nrmesh
@@ -185,7 +185,9 @@
 
   ibzloop: do ik=1,nibz
 
-     call getstar(kibz(:,ik),primitivelattice,narms,kvecstar,kvecop)
+!    call getstar(kibz(:,ik),primitivelattice,narms,kvecstar,kvecop)
+! getstar acts on reduced vectors
+     call getstar(cart2red_g(kibz(:,ik)),primitivelattice,narms,kvecstar,kvecop)
 
 ! solve for all the d(k) and its stars together
      dim_c=dimdyn*narms
@@ -200,15 +202,19 @@
      do iarm=1,narms  ! kvecop(iarm) is the label of the symmetry matrix
 
         iop=kvecop(iarm)
+        symk= matmul(transpose(cart_to_prim),matmul(  &
+&          op_kmatrix(:,:,iop),transpose(prim_to_cart)))
 ! first the symmetry relations between D(k) and D(S(k)): D(S(k))=D(k)SS
-        sk=matmul(op_kmatrix(:,:,iop),kibz(:,ik))   ! star of kibz
-        if(length(sk-kvecstar(:,iarm)) .gt. 1d-4) then
+!       sk=matmul(op_kmatrix(:,:,iop),kibz(:,ik))   ! star of kibz
+        sk=matmul(symk,kibz(:,ik))   ! star of kibz
+!       if(length(sk-kvecstar(:,iarm)) .gt. 1d-4) then
+        if(length(sk-red2cart_g(kvecstar(:,iarm))) .gt. 1d-4) then
             write(*,2)'PROBLEM IN SYMMETRY OPERATIONS for arm# and kibz=',iarm,kibz(:,ik)
             write(*,2)'symmetry operation # ',iop
-            write(*,3)op_kmatrix(1,:,iop)
-            write(*,3)op_kmatrix(2,:,iop)
-            write(*,3)op_kmatrix(3,:,iop)
-            write(*,3)'sk,kvecstar=',sk,kvecstar(:,iarm)
+            write(*,3)symk(1,:)
+            write(*,3)symk(2,:)
+            write(*,3)symk(3,:)
+            write(*,3)'sk,kvecstar=',sk,kvecstar(:,iarm),red2cart_g(kvecstar(:,iarm))
             stop
          else
             write(*,1)'for arm=',iarm,' symmetry matrix # ',kvecop(iarm),' was used'
@@ -226,9 +232,9 @@
 
 ! amatk((iarm-2)*dimdyn+1:(iarm-1)*dimdyn,1:dimdyn)  obtained by symmetry
 !         call get_relation_dynstar(nat0,kibz(:,ik),iarm,kvecstar,iop,op_kmatrix(:,:,iop),dimdyn,coefs)
-         call get_relation_dynstar(nat0,iop,op_kmatrix(:,:,iop),dimdyn,coefs)
+!        call get_relation_dynstar(nat0,iop,op_kmatrix(:,:,iop),dimdyn,coefs)
+         call get_relation_dynstar(nat0,iop,symk,dimdyn,coefs)
          amatk((iarm-2)*dimdyn+1:(iarm-1)*dimdyn,1:dimdyn)=coefs(1:dimdyn,1:dimdyn)
-
          bmatk((iarm-2)*dimdyn+1:(iarm-1)*dimdyn)=0d0
 
      enddo
@@ -238,7 +244,8 @@
      armloop: do iarm=1,narms  ! loop over columns
 
 ! find nkstar, the index of the Kvecstar(iarm) in the kmesh
-        call find_in_mesh(kvecstar(:,iarm),nkmesh,kmesh,nkstar)
+!       call find_in_mesh(kvecstar(:,iarm),nkmesh,kmesh,nkstar)
+        call find_in_mesh(red2cart_g(kvecstar(:,iarm)),nkmesh,kmesh,nkstar)
 
         snaploop: do icfg=1,ncfg
 
@@ -293,7 +300,8 @@
 ! transform aux to dynamical matrix for later Fourier transformation to get FCs
     do iarm=1,narms
 ! find the index in kmesh of all these kstars
-       call find_in_mesh(kvecstar(:,iarm),nkmesh,kmesh,nkstar)
+!      call find_in_mesh(kvecstar(:,iarm),nkmesh,kmesh,nkstar)
+       call find_in_mesh(red2cart_g(kvecstar(:,iarm)),nkmesh,kmesh,nkstar)
        do nu=1,dimdyn
           j=mod(nu,3*nat0)
           i=(nu-j)/(3*nat0)+1
@@ -305,16 +313,16 @@
           d2=dynk(:,:,1)
        else
 ! make sure dynk(iarm) for iarm.ge.2 can be obtained from dynk(1)=d2 by proper rotation
-          s3=op_kmatrix(:,:,kvecop(iarm))
+   !      s3=op_kmatrix(:,:,kvecop(iarm))
 !         call rotate(d2,s3,d2rotated)
-          do i=1,3*nat0
-          do j=1,3*nat0
-             if(iatomop(i,j).ne.0) then
+   !      do i=1,3*nat0
+   !      do j=1,3*nat0
+   !         if(iatomop(i,j).ne.0) then
 !            if(cdabs(dynk(i,j,iarm)-d2rotated(i,j)) .gt. 1d-4 ) then
 !               write(*,6)'i,j,dynk,d2rot=',i,j,dynk(i,j,iarm),d2rotated(i,j)
-             endif
-          enddo
-          enddo
+   !         endif
+   !      enddo
+   !      enddo
        endif
 
     enddo
@@ -371,7 +379,7 @@
 ! the 1D compression is: l(=1:ndim) = l=(i-1)*3N+j, for i=1:3N ; j=i:3N
 ! reverse transformation for given l: j=mod(l,3N) and i=(l-j)/3N + 1 and d(i,j)uk(j)=-fk(i)
 !! iop=symmetry operation number (1<iop<48)
-!! s3 = corrseponding rotation matrix=op_kmatrix(:,:,iop)
+!! symk = corresponding rotation matrix transformed to cartesian basis
 !! ndim = size of the uppder diagonal dynamical matrix = 3*nat*(3*nat+1)/2
  use geometry
  use atoms_force_constants

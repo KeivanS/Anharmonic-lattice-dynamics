@@ -27,7 +27,7 @@
    sumdos=0
    do i=1,wmesh
       sumdos=sumdos+dos(0,i)*wmax/wmesh
-      write(udos,3)om(i),i,sumdos,(dos(la,i),la=0,min(18,ndyn2))
+      write(udos,3)om(i),i,sumdos,(dos(la,i),la=0,min(24,ndyn2))
    enddo
    sumdos=sumdos-dos(0,1)*wmax/wmesh/2d0 ! first point comes with weight=1/2
 
@@ -45,6 +45,7 @@
  real(r15), allocatable :: eigenval_bs(:,:),eigenval(:,:),eivalibz(:,:)
  complex(r15), allocatable :: eigenvec_bs(:,:,:),eigenvec(:,:,:),eivecibz(:,:,:)
  complex(r15), allocatable :: grun(:,:),grun_bs(:,:),grunibz(:,:)
+ complex(r15), allocatable :: dcor(:,:,:) !,dcorrection(:,:)
 
   interface mysqrt
      module procedure mysqrt_a,mysqrt_1
@@ -140,8 +141,29 @@
  use eigen, only : ndyn
  implicit none
 
- real(r15) sigma0(3,3),atld0(3,3,3,3),sigmav(6) , bulkmod,youngmod,shearmod,poisson, elastic(6,6),compliance(6,6)
+ real(r15) sigma0(3,3),atld0(3,3,3,3),sigmav(6),poisson,elastic(6,6),compliance(6,6)
+ real(r15) vbulkmod,vyoungmod,vshearmod
+ real(r15) rbulkmod,ryoungmod,rshearmod
+ real(r15) hbulkmod,hyoungmod,hshearmod
  real(r15), allocatable :: phi(:,:),xi(:,:,:),qiu(:,:,:),zeta(:,:,:),teta(:,:,:),gama(:,:),y0(:),pi0(:)
  real(r15), allocatable :: qiuv(:,:),u0v(:)
 
  end module mech
+!===========================================================
+  module born
+  use constants, only : r15
+  real(r15) epsil(3,3),epsinv(3,3)
+  real(r15), allocatable:: dyn_naq0(:,:,:)
+  complex(r15), allocatable:: dyn_na(:,:,:,:,:)  ! new phase=old*e^iG.(taup-tau)
+  integer born_flag
+  complex(r15), allocatable :: fc_sr(:,:,:,:,:),dyn_g(:,:,:,:,:)
+
+ contains
+
+  subroutine allocate_fc_dyn(n,nr,ng)
+    integer n,nr,ng
+    allocate(fc_sr(n,n,3,3,nr),dyn_naq0(n,3,3),  &
+&           dyn_na(n,n,3,3,ng),dyn_g(n,n,3,3,ng))
+  end subroutine allocate_fc_dyn
+
+  end module born

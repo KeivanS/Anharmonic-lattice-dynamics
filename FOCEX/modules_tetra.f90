@@ -44,7 +44,7 @@ contains
 
     implicit none
     integer :: i,j,k,l,nk,nt,np,ierr,pt(8),mc(3)
-    real(8) q(3),ep(3) 
+    real(8) q(3),ep(3),sh(3) 
     real(8) q1(3),q2(3),q3(3),q4(3),q5(3),q6(3),q7(3),q8(3)
     integer inside , i1, j1, k1, nk1
     integer inside2, i2, j2, k2, nk2
@@ -54,7 +54,7 @@ contains
     open(127,file='tet.mp',status='unknown')
     write(127,*)'# i ,tet(i)%p(1...4)%i'
     ep = 0d0  ! shift by a small amount so that only one boundary K remains in the FBZ after folding
-!   sh = shift(1)/nc(1)*v2a(g01) + shift(2)/nc(2)*v2a(g02) + shift(3)/nc(3)*v2a(g03)
+    sh = shift(1)/nc(1)*v2a(g01) + shift(2)/nc(2)*v2a(g02) + shift(3)/nc(3)*v2a(g03)
     mc=nc !mc(1)=nc(1); mc(2)=nc(2); mc(3)=nc(3)
 
 !call mypause('entering make_kp_reg_tet',shft(1))
@@ -69,9 +69,9 @@ contains
 !      q = ((i-1+shftx)/nc(1))*g1 + ((j-1+shfty)/nc(2))*g2 + ((k-1+shftz)/nc(3))*g3 
 ! get_k_info works with the non-shifted kpoints
        q = ((i-1d0)/nc(1))*g01 + ((j-1d0)/nc(2))*g02 + ((k-1d0)/nc(3))*g03  
-       kpc(:,nk) = q  !+ sh shift works for tetra but IBZ gets much larger
+       kpc(:,nk) = q  + sh !shift works for tetra but IBZ gets much larger
        wk(nk)=1d0/nkc              !1 divided by number of points
-       write(126,2)nk,kpc(:,nk), wk(nk), reduce_g(kpc(:,nk))
+       write(126,2)nk,kpc(:,nk), wk(nk), cart2red_g(kpc(:,nk))
     enddo
     enddo
     enddo
@@ -85,7 +85,7 @@ contains
        np = np+1
 !       if (k.eq.nc(3) .or. j.eq.nc(2) .or. i.eq.nc(1)) cycle
 !  q1 = ((i-1+shftx)/nc(1))*g1 + ((j-1+shfty)/nc(2))*g2 + ((k-1+shftz)/nc(3))*g3 + shft
-          q1 = kpc(:,np)
+          q1 = kpc(:,np) - sh
           q2 = q1 + (1d0/nc(1))*g01
           q3 = q1 + (1d0/nc(2))*g02
           q4 = q1 + (1d0/nc(1))*g01 + (1d0/nc(2))*g02

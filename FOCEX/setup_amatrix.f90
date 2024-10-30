@@ -80,7 +80,7 @@
 !   if(verbose) write(ulog,11)'Rank1: counter,ared=',counter,ared1d(res+1:size(ared1d))  !res+map(rnk)%ntotind)
 
 ! compare with previous lines of ared; write if ared1d not repeated
-    if ( ared1d .myeqz. zero ) cycle
+    if ( ared1d .myeq. zero ) cycle
     call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
     if (new) then
        counter = counter+1
@@ -144,7 +144,7 @@
 !   write(ulog,11)'Rank2: counter,ared=',counter,ared1d(res+1:size(ared1d)) !res+map(rnk)%ntotind)
 
 ! compare with previous lines of ared; write if ared1d not repeated
-    if ( ared1d .myeqz. zero ) cycle
+    if ( ared1d .myeq. zero ) cycle
     call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
     if (new) then
        counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter) = 0d0
@@ -208,7 +208,7 @@
 !   write(ulog,11)'Rank3: counter,ared=',counter,ared1d(res+1:size(ared1d))  !res+map(rnk)%ntotind)
 
 ! compare with previous lines of ared; write if ared1d not repeated
-    if ( ared1d .myeqz. zero ) cycle
+    if ( ared1d .myeq. zero ) cycle
     call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
     if (new) then
        counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter) = 0d0
@@ -270,7 +270,7 @@
 !   write(ulog,11)'Rank4: counter,ared=',counter,ared1d(res+1:size(ared1d))  !res+map(rnk)%ntotind)
 
 ! compare with previous lines of ared; write if ared1d not repeated
-    if ( ared1d .myeqz. zero ) cycle
+    if ( ared1d .myeq. zero ) cycle
     call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
     if (new) then
        counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter) = 0d0
@@ -390,7 +390,7 @@
 !      write(ulog,11)'al,ared=',al,ared1d
 
 ! compare with previous lines of ared; write if ared1d not repeated
-      if ( ared1d .myeqz. zero ) cycle
+      if ( ared1d .myeq. zero ) cycle
       call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
       if (new) then
          counter = counter+1; atemp(counter,:) = ared1d(:);
@@ -545,7 +545,7 @@
 !     if(include_fc(1) .eq. 1) then
    !      ared1d( 1:ngroups(1) ) = aux
 !     endif
-      if ( ared1d .myeqz. zero ) cycle
+      if ( ared1d .myeq. zero ) cycle
       call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
       if (new) then
          counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter)=junk
@@ -683,7 +683,7 @@
 !     if(include_fc(2) .eq. 1) then
    !      ared1d( res-ngroups(2)+1:res ) = aux
 !     endif
-      if ( ared1d .myeqz. zero ) cycle
+      if ( ared1d .myeq. zero ) cycle
       call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
       if (new) then
          counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter)=junk
@@ -788,7 +788,7 @@
 !     if(include_fc(3) .eq. 1) then
    !      ared1d( res-ngroups(3)+1:res ) = aux
 !     endif
-      if ( ared1d .myeqz. zero ) cycle
+      if ( ared1d .myeq. zero ) cycle
       call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
       if (new) then
          counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter)=junk

@@ -25,7 +25,7 @@
       real(r15), intent(in) :: atompos_in(3,natoms_in)
       integer j,g,k,ier,iatom,tau,ncmp,   &
      &     iatom2,itype2,iatom3,ipntop,   &
-     &     itype,isg,iop_matrix(3,3,48),aux(3,3)
+     &     itype,isg,aux(3,3)
       real(r15) tempi(3,3),fract(3),v(3),v2(3),temp(3,3),at1star(3) !r(3),
 
 ! maxneighbors= largest # of neighbor shells <  50 usually unless very low symmetry
@@ -63,7 +63,7 @@
 !    &       //'is singular'
 !       stop
 !     endif
-!     write(*,*)'cart_to_prim has reciprocal vectors to primitive in its lines'
+!     write(*,*)'cart_to_prim has reciprocal vectors/2pi to primitive in its lines'
 !     write(*,3) cart_to_prim(1,:)
 !     write(*,3) cart_to_prim(2,:)
 !     write(*,3) cart_to_prim(3,:)
@@ -84,6 +84,7 @@
 !       call xvmlt(conv_to_cart,atomposconv(1,i),atompos(1,i),3,3,3)
         atompos(:,tau)=atompos_in(:,tau)  !matmul(conv_to_cart,atomposconv(:,tau))
 !       write(*,*)'before unitcell ',tau
+! bring atompos between [0,1(
         call unitcell(cart_to_prim,prim_to_cart,atompos(1,tau), atompos(1,tau))
         iatomcell0(tau)=atom0(tau)%tau   ! it is in the same order as in structure.params file
         iatomcell(:,tau)=0
@@ -97,68 +98,52 @@
 ! find symmetry of crystal.
 
       open(usym,file='symmetry.dat')
-! find point group of lattice
+! first find point group of the BRAVAIS lattice
 !k1   call dlatmat2(prim_to_cart,1d-6,lattpgcount,iop_matrix)
       call dlatmat2(prim_to_cart,1d-5,lattpgcount,iop_matrix)
+! this integer matrix finds the image of a vector under symmetry op IN REDUCED UNITS
+! it is a unimodular matrix with interger entries and det=1 or -1; its inverse is also integer
+
       do g=1,lattpgcount ! number of symmetries of the bravais lattice
-        do j=1,3
-        do k=1,3
-          temp(k,j)=iop_matrix(k,j,g)
-        enddo
-        enddo
-        temp=matmul(temp,cart_to_prim)
-        op_matrix(:,:,g)=matmul(prim_to_cart,temp)
-!       call xmatmlt(temp,cart_to_prim,temp,3,3,3,3,3,3)
-!       call xmatmlt(prim_to_cart,temp,op_matrix(1,1,i),3,3,3,3,3,3)
-        call write_out(usym,'Symmetry operation (op_matrix) ',op_matrix(:,:,g))
-!       write(ulog,'(3(1x,f9.5))') op_matrix(1,:,i)
-!       write(ulog,'(3(1x,f9.5))') op_matrix(2,:,i)
-!       write(ulog,'(3(1x,f9.5))') op_matrix(3,:,i)
+
+! this transforms the vector in cartesian coordinates; 
+! but better work with the integer iop_matrix which acts on reduced coordinates
+         op_matrix(:,:,g)=matmul(prim_to_cart,matmul(iop_matrix(:,:,g),cart_to_prim))
+
+         call write_out(usym,'Symmetry operation (op_matrix) ',op_matrix(:,:,g))
       enddo
       write(*,*)'after lattpgcount loop'
 
-! find transformation matrices for k vectors
+! find transformation matrices for k vectors if R'=S.R then q'=S^(-1)^T q also hods for the unimodular form
       do g=1,lattpgcount
-         do j=1,3
-         do k=1,3
-           temp(k,j)=iop_matrix(k,j,g)
-         enddo
-         enddo
-         temp=matmul(temp,conv_to_prim)
-         temp=matmul(prim_to_conv,temp)
-!        call xmatmlt(temp,conv_to_prim,temp,3,3,3,3,3,3)
-!        call xmatmlt(prim_to_conv,temp,temp,3,3,3,3,3,3)
-         call xmatinv(3,temp,tempi,ier)
-         temp = tempi
-         if(ier.ne.0) then
-           write(*,*)'After xmatinv in line 136: ier=',ier
+         write(usym,*) 'Symmetry operation (in reciprocal space k) #',g
+
+         temp=iop_matrix(:,:,g)
+ !       call write_out(usym,' temp before inversion ',temp)
+
+ !! original version used the conventional representation which gives non-integer matrices!!
+  !      temp=matmul(prim_to_conv,matmul(iop_matrix(:,:,g),conv_to_prim))
+ !! we modify to stay in the primitive reduced units so that the op_kmatrix remains integer.  
+
+         call xmatinv(3,temp,tempi,ier) ! inverse of symmetry matrix 
+!        call write_out(6,' before nint(transpose( ',tempi)
+         if(ier.ne.0 ) then
+!          write(*,*)'After xmatinv in p2con*iop*con2p :ier=',ier
+           write(*,*)'After xmatinv in iop_inverse :ier=',ier
            call bomb('matrix inversion error!')
          endif
+         if( maxval(abs(tempi-nint(tempi))).gt.1d-5) then
+           call write_out(6,'After xmatinv tempi=op_kmatrix is not integer ',tempi)
+           call bomb('op_kmatrix non-integer !')
+         endif
+
+         iop_kmatrix(:,:,g)=nint(transpose(tempi))   ! it should also be an integer (unimodular) matrix
+         call write_out(usym,' Op_kmatrix in reduced ',iop_kmatrix(:,:,g))
+         op_kmatrix(:,:,g)=matmul(transpose(cart_to_prim),  &
+&                   matmul(iop_kmatrix(:,:,g),transpose(prim_to_cart)))
+         call write_out(usym,' Op_kmatrix in cartesian ',op_kmatrix(:,:,g))
 
 !        write(*,*)' NOW GENERATING THE STARS OF K; lattpgcount=',g
-         do j=1,3
-         do k=1,3
-
-            op_kmatrix(k,j,g)=temp(j,k)
-            if(ncmp(temp(j,k)-temp(j,k)).ne.0) then
-!              write(ulog,*)'Op_kmatrix',temp(j,k),op_kmatrix(k,j,g)
-               aux=nint(temp)
-               write(usym,*)'****************************************************'
-               write(usym,*)' NON-INTEGER Op_kmatrix '
-               write(usym,*)'****************************************************'
-               call write_out(usym,'integer Op_kmatrix ',aux)
-               call write_out(usym,'Symmetry operation (op_Kmatrix) ',op_kmatrix(:,:,g))
-               write(*,*)' NON-INTEGER Op_kmatrix '
-           !   call bomb
-            endif
-
-         enddo
-         enddo
-         write(usym,*) 'Symmetry operation (in reciprocal space k) #',g
-         call write_out(usym,' Op_kmatrix ',op_kmatrix(:,:,g))
-!        write(ulog,'(3(1x,f9.5))') op_kmatrix(1,:,g)
-!        write(ulog,'(3(1x,f9.5))') op_kmatrix(2,:,g)
-!        write(ulog,'(3(1x,f9.5))') op_kmatrix(3,:,g)
       enddo
 
       call write_out(ulog,' total # of symmetry ops ',lattpgcount)
@@ -297,7 +282,7 @@
       close(usym)
 
 8 format(a,2(1x,i7),9(1x,f10.4))
-5 format(a,3i4,9(1x,f11.4))
+5 format(a,3i4,9(1x,f13.6))
 6 format(a,99(i4))
 
       end subroutine symmetry_init
@@ -403,7 +388,7 @@
 !      use params , only : tolerance
       implicit none
       integer i1,i2,i3,j,k,m,n,tau,nd2save,ncmp,iatom0,icell(3),g,iatom,nshl !(natom_prim_cell)
-      real(r15) d2save(maxneighbors),r(3),d2,a0 !,fract(3),v(3),v2(3)
+      real(r15) d2save(maxneighbors),r(3),d2,a0 
       logical already_found
 
       a0=100
@@ -663,7 +648,7 @@
                  atompos(:,natoms)=r+atompos(:,tau)
                  iatomcell(1:3,natoms)=icell(1:3)
                  iatomcell0(natoms)=tau
-                 write(*,3)'New atompos ',tau,natoms,atompos(:,natoms)
+!                write(*,3)'New atompos ',tau,natoms,atompos(:,natoms)
                  if(n.gt.mshl) mshl=n
              enddo tauloop
 
@@ -1244,7 +1229,7 @@
 !--------------------------------------------------------------------------------
       function ncmp(x)
       use params, only : tolerance
- use constants, only : r15
+      use constants, only : r15
       implicit none
 !
 !!	COMPARE X WITH ZERO
@@ -1758,7 +1743,7 @@
 !!     kvecstar(3,1:narms), all the stars of kvec
 !!     kvecop(i), the symmetry operation number for the star vector i
       use atoms_force_constants
- use constants, only : r15
+      use constants, only : r15
       implicit none
       integer, intent(out):: narms,kvecop(48)
       real(r15), intent(in) :: kvec(3),primlatt(3,3)
@@ -1771,7 +1756,7 @@
       iloop: do i=1,lattpgcount
 ! apply symmetry operation to k to get v=kstar
 !        call xvmlt(op_kmatrix(1,1,i),kvec,v,3,3,3)
-        v=matmul(op_kmatrix(:,:,i),kvec)
+        v=matmul(iop_kmatrix(:,:,i),kvec)
 ! find the reduced coordinates of v and store in v2
 !       call xmatmlt(v,primlatt,v2,1,3,3,1,3,1)
         v2=matmul(v,primlatt)
@@ -1795,6 +1780,53 @@
       enddo iloop
 
       end subroutine getstar
+!-------------------------------------------------------------------------------
+      subroutine getstarp(kvec,narms,kvecstar,kvecop)
+!! find the stars of a kvector; input k and output kstars are in reduced units of g0
+!! arguments:
+!!     kvec(i) (input), ith dimensionless component of k vector
+!!     narms (output), number of star vectors associated with kvec
+!!     kvecstar(3,1:narms), all the stars of kvec in reduced units 
+!!     kvecop(i), the symmetry operation number for the star vector i
+      use atoms_force_constants
+      use constants, only : r15
+      use ios, only: ulog
+      use lattice, only : red2cart_g
+      implicit none
+      integer, intent(out):: narms,kvecop(48)
+      real(r15), intent(in) :: kvec(3)
+      real(r15), intent(out):: kvecstar(3,48)
+      integer i,j,k,n,ncmp
+      real(r15) v(3),v2(3),v3(3),kvecstarp(3,48)
+
+      narms=0
+!      print*,'lattpgcount=',lattpgcount
+      iloop: do i=1,lattpgcount
+! apply symmetry operation to k to get v=kstar
+        v=matmul(iop_kmatrix(:,:,i),kvec)
+
+! now check if v - any_previous_v is integer (differ by a G vector)
+! if so, skip; else store this v as a new star vector
+        do j=1,narms
+! is v - any of the stars kvecstar(j) is a translation vector (i.e. integer)? 
+          if( is_integer(v-kvecstar(:,j))) then  ! it's already in the star list
+             cycle iloop
+          endif
+        enddo
+! add it to the lis
+        narms=narms+1
+        kvecstar(1:3,narms)=v(1:3)
+        kvecop(narms)=i
+      enddo iloop
+
+!      write(ulog,*)'# k_red, k_cart , kstar_red , kstar_cart '
+!      do j=1,narms
+!         write(ulog,4)j,kvec,red2cart_g(kvec),kvecstar(:,j),red2cart_g(kvecstar(:,j))
+!      enddo
+
+4 format(i4,4(2x,3(1x,f8.4)))
+
+      end subroutine getstarp
 !****************************************************************************
        subroutine collect_force_constants(nrank,nshell,   &
      &     maxrank,maxterms,maxtermsindep,maxtermszero,maxgroups,  &
@@ -2003,7 +2035,7 @@
      &           ierz,iert,ieri) !,ierg)
 
             write(*,3)'OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=',iatom0,ixyz,nrank,ngroups
-            write(*,3)'OUTPUT OF FORCE_CONSTANTS: ntermszero =',ntermszero
+!           write(*,3)'OUTPUT OF FORCE_CONSTANTS: ntermszero =',ntermszero
 !            write(ulog,3)'OUTPUT OF FORCE_CONSTANTS FOR RANK/ngroups=',nrank,ngroups
 !            write(ulog,3)'OUTPUT OF FORCE_CONSTANTS: ntermsindep=',ntermsindep(1:ngroups)
 !            write(ulog,3)'OUTPUT OF FORCE_CONSTANTS: nterms     =',ntermsall(1:ngroups)

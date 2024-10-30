@@ -14,7 +14,7 @@
  integer nib1,nib2,nib3,nbz_fine  ! for the fine mesh in the Irreducible BZ
  integer nshl,nbkmax,npos,nkmesh,nrmesh,ngibz         ! max no of neighbors=20
  integer, allocatable :: nb(:,:),nbk(:),mapbz(:) ,mapibz(:),mappos(:),mapinv(:)  ! nb_list of k
- real(r15) shift(3),deltak,kcutnbf,kcutnbc,k_cart(3),k_conv(3),k_prim(3)   ! kcutnb for nbrlst and interpolation
+ real(r15) shift(3),normal(3),deltak,kcutnbf,kcutnbc,k_cart(3),k_conv(3),k_prim(3)  ! kcutnb for nbrlst and interpolation
  real(r15), allocatable :: kpc(:,:),wk(:),kp_bs(:,:),dk_bs(:),dkc(:),gibz(:,:),wgibz(:)
  real(r15), allocatable :: kbzf(:,:) ,kibz(:,:),wibz(:),kbz(:,:),kpfbz(:,:),kmesh(:,:),rmesh(:,:)
  integer, allocatable :: fbz2ibz(:),kop_ibz2fbz(:),fbzKstar(:)
@@ -25,6 +25,7 @@
 
  contains
 
+!-------------------------------------------
   subroutine allocate_kp_bs(n)
   integer n
     allocate (kp_bs(3,n),dk_bs(n))
@@ -51,7 +52,7 @@
 ! but need to worry about band connections -> band_sort (in case finite_diff is used)
 ! if dk is small enough, but larger than dq=1d-4 below, then this should not affect bandsorting.
   call random_number(rand)
-  rand=(2*rand-1)*1d-4 *volume_g0**0.33333333 
+  rand=0 !(2*rand-1)*1d-4 *volume_g0**0.33333333 
 
     write(*,*)'entering MAKE_KP_BS'
     uio = 67
@@ -175,6 +176,41 @@
     write(*,*)' MAKE_KP_BS: Done! with ',nkp_bs,' points'
 
   end subroutine make_kp_bs
+!-------------------------------------------
+  subroutine make_grid(ncs,gg1,gg2,gg3,shft,kpt,wkt)
+!! generate a regular mesh integer multiples of g_i, with eventual shift
+    use geometry
+    use params
+    use lattice, only : cart2red_g
+    implicit none
+    integer, intent(in) :: ncs(3)
+    real(r15), intent(in) :: shft(3) 
+    real(r15), intent(out):: kpt(3,ncs(1)*ncs(2)*ncs(3)),wkt(ncs(1)*ncs(2)*ncs(3))
+    type(vector), intent(in) :: gg1,gg2,gg3
+    integer :: i,j,k,nk
+    open(126,file='grid.MP',status='unknown')
+    write(126,*)'# i ,kp(:,i), wk(i), kp_red'
+
+    nkc=ncs(1)*ncs(2)*ncs(3)
+
+    nk = 0
+    do i = 1,ncs(1)
+    do j = 1,ncs(2)
+    do k = 1,ncs(3)
+       nk = nk+1
+       kpt(:,nk) = (i-1+shft(1))*gg1 + (j-1+shft(2))*gg2 + (k-1+shft(3))*gg3 
+       wkt(nk)=1d0/nkc
+       write(126,2)nk,kpt(:,nk), wkt(nk), cart2red_g(kpt(:,nk))
+    enddo
+    enddo
+    enddo
+
+    write(ulog,*)'MAKE_GRID: Number of regular kpoints generated is=',nkc
+
+ 2  format(i7,2x,3(1x,f12.5),5x,f9.5,2x,3(1x,f10.5))
+    close(126)
+
+  end subroutine make_grid
 !-------------------------------------------
   subroutine make_kp_reg(ncs,gg1,gg2,gg3,shft,kpt,wkt)
 !! generate a regular mesh from 0 to g_i, with eventual shift
@@ -316,8 +352,8 @@
 
 ! first bring q in between 0 and g0i 
  call unitcell(transpose(prim_to_cart)/(2*pi),transpose(cart_to_prim)*2*pi,q,q2)
- write(*,4)'q =',q ,reduce_g(q)
- write(*,4)'q2=',q2,reduce_g(q2)
+ write(*,4)'q =',q ,cart2red_g(q)
+ write(*,4)'q2=',q2,cart2red_g(q2)
  inside=0
  nk=0; 
  loop: do l=1,nkc
@@ -335,7 +371,7 @@
     i=1+(nk-k-(j-1)*N(3))/(N(2)*N(3))
     nq = k + (j-1)*N(3) + (i-1)*N(2)*N(3)
  !  if (nk.eq.0 .or. nq.ne.nk) then
-       write(ulog,3)'GET_K_INFO2: qpoint not found! nk,nq,i,j,k,q ',nk,nq,i,j,k,reduce_g(q),q
+       write(ulog,3)'GET_K_INFO2: qpoint not found! nk,nq,i,j,k,q ',nk,nq,i,j,k,cart2red_g(q),q
  !     stop
  !  endif
  else
