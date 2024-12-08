@@ -6854,8 +6854,8 @@ END SUBROUTINE FixASR2
         CHARACTER :: wxt*3
 
         WRITE(*,*) 'running gaussian dos'
-
-        OPEN(udos,FILE='dos_gauss.dat',STATUS='unknown')
+        !UPDATE: path output
+        OPEN(udos,FILE=trim(path_out)//'dos_gauss.dat',STATUS='unknown')
 
 !        CALL set_omdos(ndyn,wmesh)  ! allocates om(:) and dos(:,:) arrays of size mesh
         CALL my_set_omdos(ndyn,wmesh) !should I use my own ?
@@ -6935,8 +6935,9 @@ END SUBROUTINE FixASR2
 
         WRITE(*,*)'running tetrahedron dos'
 
-        OPEN(104,FILE='dos_tet.dat',STATUS='unknown')
-        OPEN(105,FILE='dos2_tet.dat',STATUS='unknown')
+        !UPDATE: path output
+        OPEN(104,FILE=trim(path_out)//'dos_tet.dat',STATUS='unknown')
+        OPEN(105,FILE=trim(path_out)//'dos2_tet.dat',STATUS='unknown')
 
 !        CALL set_omdos(ndyn,wmesh)  ! allocates om(:) and dos(:,:) arrays of size mesh
         CALL my_set_omdos(ndyn,wmesh) !should I use my own?
@@ -7485,7 +7486,6 @@ subroutine gruneisen_fc
         ! call mechanical(b0,c11,c44)  ! this is the bulk_mod at T=0
 
         ! B(T,Veq)=B(T=0,Veq(T=0)) - pres0
-WRITE(*,*) 'CHECK MARK2'
         nat = ndyn/3
 !        OPEN(ual,FILE='thermal.dat',STATUS='unknown')
         WRITE(ual,'(a132)')'# temperature(K) ,alpha (1/K) , Cv (J/K/mol), gama , E_tot(J/mol) , &
@@ -8306,7 +8306,7 @@ subroutine mechanical2(elastic,uio) !ndn,atld1,sigma0,phi,zeta,xi,qiu,gama,elast
    ! enddo
    ! call convert_to_voigt(c1+c2+c3,elastic)
    ! elastic=c1+c2+c3
-    call write_out (6,' Elastic Tensor ',elastic)
+    call write_out (345,' Elastic Tensor ',elastic) !MODIFY: changed 6 to 345
     WRITE(ulog,*) ' Elastic Tensor ',elastic
    
 end subroutine mechanical2
