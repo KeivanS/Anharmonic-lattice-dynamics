@@ -548,8 +548,8 @@ WRITE(*,*) '!~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~'
 !CALL Get_Dispersion_SE
 
     !-----final phonon DOS------ !temporarily commented off for check
-!    CALL calc_dos_gauss
-!    CALL calc_dos_tet
+   CALL calc_dos_gauss
+   CALL calc_dos_tet
 
     !-----final elastic constants-----
     IF(atom_number.eq.1) THEN
