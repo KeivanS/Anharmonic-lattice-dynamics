@@ -141,18 +141,14 @@ SUBROUTINE ThreeVariableRoutine
     k_number=nk
     wmin=-0.1;  nband=1
     dk=(length(g1)+length(g2)+length(g3))/(nc1+nc2+nc3)
-WRITE(*,*) 'MARK a'
     CALL kvector_Update(nband,nk)!don't forget to turn this on for tetrahedron k mesh
-WRITE(*,*) 'MARK b'
 
     !~~~~~~~~~~~~~~~~GET THE FOURIER CONSTANTS LIST~~~~~~~~~~~~~~~~~
 
     !--------read params.born----------
     CALL read_born
-WRITE(*,*) 'MARK c'
 
     CALL Allocate_FFC(k_number)
-WRITE(*,*) 'MARK d'
 
     ! CALL Fourier_Force_Constants_Calculation(k_number) !MODIFY: 03/12/2024 this is useless
 
@@ -166,11 +162,8 @@ WRITE(*,*) 'MARK d'
     endif
 
     ! Probably OK for all process to read same file
-WRITE(*,*) 'MARK0'
     CALL read_iteration_parameters_file
-WRITE(*,*) 'MARK1'
     CALL initiate_var
-WRITE(*,*) 'MARK2'
 
     if (mpi_rank==0) then
     WRITE(*,*) 'tolerance for convergence of f: ',tolerance2
@@ -257,13 +250,13 @@ WRITE(*,*) '!~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~'
 
     !NOTE: <small_test(i, step, n)> calculates the free energy F and f(i)
     ! given selected variational variable x(i) move n steps
-    strain(1,1) = -0.2d0
-    CALL align_diag_strain
-    ! CALL updateK    
-    CALL initiate_yy(kvector)
-    CALL GetF0_and_V0
-    CALL small_test(7,0.01d0,40) 
-    STOP
+    ! strain(1,1) = -0.2d0
+    ! CALL align_diag_strain
+    ! ! CALL updateK    
+    ! CALL initiate_yy(kvector)
+    ! CALL GetF0_and_V0
+    ! CALL small_test(7,0.01d0,40) 
+    ! STOP
 
     !NOTE: <small_test_ex(i, j, step, n)> calculates the free energy F and f(i)
     ! given 2 selected variables x(i) and x(j) ranged in (-n*step, n*step]

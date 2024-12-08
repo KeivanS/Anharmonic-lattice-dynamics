@@ -101,23 +101,11 @@ CONTAINS
          IF(ALLOCATED(yy_value)) DEALLOCATE(yy_value)
          IF(ALLOCATED(atomic_deviation_sav)) DEALLOCATE(atomic_deviation_sav)
 
-WRITE(*,*) 'MARK2'
-
          ALLOCATE(atomic_deviation(d,atom_number))
-WRITE(*,*) 'MARK3'
-
          ALLOCATE(atomic_deviation_sav(d,atom_number))
-WRITE(*,*) 'MARK4'
-
          ALLOCATE(trialfc2_value(atom_number,tot_atom_number))
-WRITE(*,*) 'MARK5'
-
          ALLOCATE(strain(d,d))
-WRITE(*,*) 'MARK6'
-
          ALLOCATE(prev_trialfc2_value(atom_number,tot_atom_number))
-WRITE(*,*) 'MARK7'
-
          ALLOCATE(yy_value(atom_number,tot_atom_number))
          atomic_deviation=0d0;atomic_deviation_sav=0d0
 
@@ -333,15 +321,11 @@ WRITE(*,*) 'MARK7'
 
         INTEGER :: unit_number,n,i,j
         INTEGER,DIMENSION(:),ALLOCATABLE :: free_params
-WRITE(*,*) 'mark 1'
         unit_number = 60
 !        OPEN(unit_number,file='iteration_parameters.in',status='old',action='read')
         OPEN(unit_number,file='control.params',status='old',action='read') !modified 11/10/2023
         
-WRITE(*,*) 'mark 2'
         path_out = 'output/'
-
-WRITE(*,*) 'mark 3'
 
         READ(unit_number,*) rand_start !start randomly or not
         READ(unit_number,*) inherit !use results from last run to target initialize or not
@@ -356,7 +340,6 @@ WRITE(*,*) 'mark 3'
         READ(unit_number,*) max_it_number
         READ(unit_number,*) my_pmix
         READ(unit_number,*) temperature
-WRITE(*,*) 'mark 4'
 
         DO i=1,3
             READ(unit_number,*) stress(i,:) !read stress tensor
