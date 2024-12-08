@@ -1,0 +1,56 @@
+0
+20    # of kpoints along each direction (direct units of the conventional reciprocal unit cell)
+8 orthorhombic path
+X 0.000 0.000 0.500
+G 0.000 0.000 0.000
+Y 0.500 0.000 0.000
+P 0.500 0.000 0.500
+G 0.000 0.000 0.000
+A 0.000 0.500 0.500
+Z 0.000 0.500 0.000
+G 0.000 0.000 0.000
+T 0.500 0.500 0.500
+
+
+6  standard FCC path is G,X,W,L,G,K,X
+G 0.0001 0 0   
+X 1 0 0     
+W 1 0.5 0    
+L 0.5 0.5 0.5    
+G 0.0001 0.0001 0.00    
+K 0.75 0.75 0    
+X 1. 1. 0      
+
+
+
+
+
+5 standard BCC path (P-N missing)
+G 0 0.0001 0  
+H 0 1 0  
+N .5 .5 0  
+G 0.0001 0.0001 0   
+P .5 .5 .5
+H 0 1 0 
+
+
+5 simple cubic path (R-M missing)
+G 0 0 0
+X 0.5 0 0 
+M 0.5 0.5 0
+G 0 0 0 
+R 0.5 0.5 0.5
+X 0.5 0 0 
+
+
+
+
+30    # of kpoints along each direction (direct units)
+6    # of directions
+G 0.0 0 0    0.5 0.0 0    Gamma -> K -> X
+0.5 0.0 0.0   0.50 0.5 0   X -> Gamma 
+0 0.5 0.5   .0 0.5 .0   Gamma -> L
+ .0 .5 .0    .0  .5 .5    L -> X
+0.0 .5 .5   .0 .0 0.5    X -> W
+0 0 0.5      0 0 0       Z -> G
+

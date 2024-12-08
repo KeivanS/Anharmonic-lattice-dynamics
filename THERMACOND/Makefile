@@ -1,30 +1,32 @@
-FF=gfortran
-ZFLAGS=   #-C # to check everything O3 #g -p #for profiling with gprof
-FLAGS=-ffree-line-length-250 #-O3 -xHost  #-parallel # -pedantic -fbounds-check -fbacktrace #g -inline-debug-info #-p #for profiling with gprof
+FF=mpif90  -fbounds-check -g #gfortran #ifort
+FLAGS= -ffree-line-length-0 -g #-fdec-math #-fbounds-check -fbacktrace #g -inline-debug-info #-p #for profiling with gprof
 
-MOD=modules.f90  extratools.f90 force_constants.f90 
-SUBKAP=mods2.f90 tetrahedron.f90  rest.f90   sub.f90  zhegv.f svd.f90 
+MOD=modules.f90  
+SUBKAP=zhegv.f force_constants.f90 sub.f90 rest.f90  extratools.f90 svd.f90 tetrahedron.f90 cg.f90
 KAPA=kappa.f90
 
 # combine many of them into one name "ALL"
-ALL=$(SUBKAP) $(KAPA) $(MOD) 
+ALL=$(SUBKAP) $(KAPA) structure.params dielectric.params latdyn.params kpbs.params 
 
 # declare the list of object files associated with the .f90 files
 MODS=$(addsuffix .o, $(basename $(MOD)))
 SUBKAPS=$(addsuffix .o, $(basename $(SUBKAP)))
 
-OBJ2=$(MODS) $(SUBKAPS) #force_constants8.o 
 
 # this is how to attach today's date to the backup .tar file
+version=8
 A=`date "+%F-%k_%M"`
-C=kap.`date "+%F|%T"`.tar
+C=kap$(version).`date "+%F|%T"`
+#MYBIN=/Users/ke4c/BIN/
 
-# the use of the source file itself in the dependencies (1st line) is also necessary
 
-kaptet: $(OBJ2) $(KAPA) 
-	$(FF) $(FLAGS) $(OBJ2) $(KAPA) -o $@ 
-#	mv kaptet ../
+kap$(version): $(MODS) $(SUBKAPS) $(KAPA) 
+	$(FF) $(FLAGS) $(MODS) $(SUBKAPS) $(KAPA) -o $@ 
+#	mv kap$(version) $(MYBIN)
 
+mfpband: mfpthermal.f90
+	$(FF) mfpthermal.f90 -o $@
+#	mv mfpband $(MYBIN)
 
 # rules to make the "simple" object files from sources
 .SUFFIXES: .f90
@@ -37,29 +39,26 @@ kaptet: $(OBJ2) $(KAPA)
 .f :
 	$(FF) $(FLAGS) $< -o $@
 
-# explicit rules to make objects if there are some dependencies 
-force_constants8.o: force_constants8.f modules.o
-	$(FF) $(FLAGS) -c force_constants8.f
-
-extratools.o: extratools.f90 modules.o mods2.o
-	$(FF) $(FLAGS) -c extratools.f90
-
-zhegv.o: zhegv.f
-	$(FF) $(ZFLAGS) -c zhegv.f 
-
 # tests , cleanup and archiving
+ec:
+#	echo $(MYBIN)
 write:
 	echo $(ALL)
 clean:
 	rm  *.o *.mod 
 archive:
-	rm -rf LASTBACKUP kap.tar.gz
-	mkdir LASTBACKUP
-	cp $(ALL) Makefile LASTBACKUP  ##params.inp params.phon log.dat 
-	tar -cvf kap.tar LASTBACKUP
-	mv kap.tar $(C)
-	gzip $(C)
+	mkdir BACKUP-$(C)
+	cp $(ALL) Makefile BACKUP-$(C)
+	tar -cvf all.tar BACKUP-$(C)
+	mv all.tar $(C).tar
+	gzip $(C).tar
 
+tt:
+	rm -rf TEST test.tar.gz test.tar
+	mkdir TEST
+	cp $(MOD) $(MOD2) $(SUB3) Makefile params.inp TEST
+	tar -cvf test.tar TEST
+	gzip test.tar
 
 # $@ is the name of the file to be made
 # $? is the names of the changed dependents 

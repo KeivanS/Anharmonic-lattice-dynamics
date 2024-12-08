@@ -34,9 +34,8 @@ Contact
 -------
 
 | Prof. Keivan Esfarjani <k1 AT virginia DOT edu>
-| Dept of Mechanical and Aerospace Engineering
+| Dept of Materials Science and Engineering
 | University of Virginia
-| PO Box 400746,
-| Charlottesville, VA 22904-4746
+| Charlottesville, VA 22904
 | 434-924-8029
 | https://engineering.virginia.edu/faculty/keivan-esfarjani

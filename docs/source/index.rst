@@ -1,6 +1,9 @@
 Anharmonic-LAttice-DYNamics (ALADYN)
 ====================================
 
+.. image:: _static/img/aladyn-logo.png
+  :width: 400
+
 .. toctree::
    :maxdepth: 3
    :numbered: 2
@@ -10,7 +13,9 @@ Anharmonic-LAttice-DYNamics (ALADYN)
    theory
    download
    install
-   run
+   runfocex
+   runthermacond
+   runscop8
    faq
 
 .. note::

@@ -457,15 +457,27 @@ different k-mesh size choices.
 
 
 Phonon Boltzmann Transport Equation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------
 The lattice thermal conductivity is calculated by using the phonon Boltzmann transport equation (BTE). In steady state, the linear phonon Boltzmann transport
 equations: 
 
-..math::
+.. math::
 
-\frac{\partial n_{k}}{\partial t}+\mathbf{v}_{k}\cdot\nabla n_{k}=\frac{\partial n_{k}}{\partial t}_{coll}=-\sum_{{k}'}C_{k{k}'}n_{{k}}
+       -\mathbf{v_{k}}.\nabla T\frac{\partial n_{k }^{0} }{\partial T} =-\frac{\partial n_{k}^{1}}{\partial t}\bigg|_{coll}=\sum_{{k}'}C_{k{k}'}n_{{k}'}^{1}
+
+where :math:`\mathbf{v}_{k}` is the phonon velocity, and a phonon state :math:`k=(\lambda,\mathbf{k})` comprises both a phonon mode index :math:`\lambda` and a wave vector :math:`\mathbf{k}`.
 
 
+Iterative
+^^^^^^^^^
+Direct
+^^^^^^
+
+.. math::
+          \begin{aligned}
+          \mathbf{F}_{{k}^{*}} = \sum_{{k}'^{*}} M_{k^{*}{k}'^{*}} \mathbf{F}^{0}_{{k}'^{*}} \\
+                    M_{k^{*}{k}'^{*}}=\sum_{{k}''} C_{k^{*}{k}''}\mathcal{S}_{{k}''{k}'^{*}}
+           \end{aligned}
 
 .. [Ref] G. Leibfried and W. Ludwig, in Solid State Physics, edited by F. Seitz and D. Turnbull (Academic, New York, 1961), Vol. 12.
 

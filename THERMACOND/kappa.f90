@@ -1,5 +1,5 @@
 !=========================================================
- program kappa_sy
+ program kappa_full
 ! we define the GF as the displ-displ correlation function (pure real):
 ! G0(k,wn,aa)=2w_ka/betahbar(w_ka^2+wn^2-2w_ka S(k,wn;aa)) with wn=2 pi n/beta hbar (finite T)
 ! the self-energy is then (off diagonal in the polarization modes a,b :
@@ -46,10 +46,9 @@
 ! output the momentum and energy resolved jdos like the caltech paper
 !
 ! output the memory usage
- use io2
+ use ios
  use kpoints
  use om_dos
- use force_constants_module
  use atoms_force_constants
  use phi3
  use phi3_sy
@@ -57,75 +56,97 @@
  use params
  use constants
  use born
-! use exactBTE ! sy
  use exactBTE2
  use mod_ksubset2
  use tetrahedron
-
+ use mpi
 
  implicit none
  integer i,j,mx,la,ncm,ierr,i2,j2,k2,inside,indexg,itmp,igam,ig
  real(8), allocatable :: dkc(:),omega(:),sigp(:)
- integer, allocatable :: iw(:)
- real(8) temp,tempk,dq,qx,qy,qz,kappa_klem,kappa_q(3,3),q0(3),q1(3),om0,om1,vel0
- real(8) ommax,mass_cell,vgmax,mfp,sigma,qq(3),cross_section
- complex(8) selfw
  real(8) , allocatable :: tau_klem_inv(:,:),kap(:,:,:),vgr(:,:)
  real(8) , allocatable :: c_matrix(:,:),inv_relax_t(:),evc(:),evc1(:), evc2(:), fw(:),taud(:),evlt(:)
+ real(8), allocatable :: tau_inv_n(:,:), tau_inv_u(:,:), omega0(:),tse(:)!,v33s8(:)
  complex(8) , allocatable :: nself(:),uself(:),self(:,:,:,:),evct(:,:)
-! real(8), allocatable :: eivr(:,:,:)
  real cputim
  character now*10,today*8,zone*5,ext*2,wxt*3
 
- integer ksubset(2), nv3_split, ksubset_bs(2)! sy 
- integer mergemode, num_files                   ! sy
- real(8), allocatable :: tau_inv_n(:,:), tau_inv_u(:,:)   ! sy
- integer convergence,iter_cont ! sy
-
- !mine
-integer safo,nss,nsl,nxyz,nn, narms,kvecop(48)
-real(8) nqsi(3), fsRTA(3),kvecstar(3,48),kvecstarsd(3,48)
+ integer ksubset(2), nv3_split, ksubset_bs(2)
+ integer mergemode, num_files               
+ integer convergence,iter_cont 
+ integer safo,nss,nsl,nxyz,nn, narms,kvecop(48)
  integer i1,j1,k1,vs,vsdf
  integer ss,si,sa,ms,sd,kvecopsd(48)
- real(8) fs(3),qs(3), qsi(3),ve2(3), we2(3)
- real(8) kvecstars(3,48),qss(3),difvs
  integer ds, kvecops(48)
  integer ni,i3,j3,k3,nz,ni0,sz,ssz,szz
-integer rs,klrs,col1,col2
-integer colkil,coll1,coll2
- !integer nkc, ndyn
+ integer rs,klrs,col1,col2
+ integer colkil,coll1,coll2
+ real(8) temp,tempk,dq,qx,qy,qz,kappa_klem,kappa_q(3,3),q0(3),q1(3),om0,om1,vel0
+ real(8) fs(3),qs(3), qsi(3),ve2(3), we2(3)
+ real(8) kvecstars(3,48),qss(3),difvs
+ real(8) nqsi(3), fsRTA(3),kvecstar(3,48),kvecstarsd(3,48)
+ real(8) ommax,mass_cell,vgmax,mfp,sigma,qq(3),cross_section,boundary_rate
+ complex(8) selfw
+ integer nv3o
+ real(8) kbss(3),ise 
+ integer nkbss
+ complex(8) nselfs,uselfs
+ real(8) , allocatable ::evlbs(:,:),vlcbs(:,:,:)
+ complex(8) , allocatable ::evcbs(:,:,:)
+ integer kapRTA,tauf,kapd,tauef,tauefi,kappai,lwse,ll,lwse2
+ real(8) normk,fm
+ integer is,js,ks,s
 
-! integer, allocatable ::  mapibzs(:),mapinvs(:)
-  !!integer nibz
- call date_and_time(date=today,time=now,zone=zone)
- call cpu_time(cputim)
+!=========MPI=======================
+real(8), allocatable :: P1sm_temp_mpi(:),P1sm_tempmpi(:)
+real(8), allocatable :: P2sm_temp_mpi(:),P2sm_tempmpi(:)
+!***real(8), allocatable :: p1sm_mpi(:,:,:,:,:), p2sm_mpi(:,:,:,:,:)
+real(8), allocatable :: ise_temp_mpi(:),ise_tempmpi(:)
+real(8), allocatable :: tse_temp_mpi(:),tse_tempmpi(:)
+real(8), allocatable :: CM_temp_mpi(:),CM_tempmpi(:)
 
-  open(ufc2,file='fc2.dat'    ,status='old')
-  open(ufc3,file='fc3.dat'    ,status='unknown')
+real(8), allocatable :: Qvalue_tempi(:),Qvaluetemp(:)
+real(8), allocatable :: Qvalue_Ntempi(:),QvalueNtemp(:)
+real(8), allocatable :: Qvalue_Utempi(:),QvalueUtemp(:)
+
+
+integer, allocatable :: aksub_mpi(:), displs_mpi(:)
+integer, allocatable :: caksub_mpi(:), cdispls_mpi(:)
+integer            :: rank_mpi, nprocs_mpi
+integer            :: errcode_mpi, ierr_mpi
+integer, dimension(MPI_STATUS_SIZE) :: mpi_stat
+integer, parameter :: root_mpi=0, tag_mpi=0
+integer            :: local_num_k_mpi
+integer            :: values1_mpi, values2_mpi, ksub_mpi, smpi
+integer            :: num_k_mpi, num_k_mpi2
+integer            :: n1_mpi, n2_mpi, l1_mpi, l2_mpi, l3_mpi, n_mpi, k_mpi
+integer            :: ncount1_mpi, ncount2_mpi,cncount1_mpi
+logical            :: debugmpi
+integer            :: tt,tto, sts_mpi, i_rankmpi,tetttst,ksubmpiv,sbs
+character(99) filename_mpi, filename_mpii
+integer            ::cmkn1,cmkn1t,cmkn2,cksubmpiv
+character(len=100) :: filenamempi
+double precision :: start_timempi, end_timempi, elapsed_timempi
+integer          :: unit_numpi
+integer          :: CM_1D, DS_1D
+!===================================
+
+
+call date_and_time(date=today,time=now,zone=zone)
+call cpu_time(cputim)
+
   open(ulog,file='phonlog.dat',status='unknown')
   open(utimes,file='times.dat' ,status='unknown')
-  open(ueiv,file='eivals.dat',status='unknown')
-! open(uklem,file='klem.dat',status='unknown')
-! open(fbz,file='KPOINT.FBZ',status='unknown')
-! open(ibz,file='KPOINT.IBZ',status='unknown')
-  open(ibs,file='KPOINT.BS',status='unknown')
-  open(ucors,file='eiv-coarse.dat',status='unknown')
-! open(ufine,file='eiv-fine.dat',status='unknown')
-  open(ugrun,file='mode_grun.dat',status='unknown')
-  open(ugrun+1,file='all_grun.dat',status='unknown')
-  open(ualph,file='alpha.dat',status='unknown')
-! open(urate,file='rates.dat',status='unknown')
-  open(debug,file='debug.dat',status='unknown')       ! sy. temp
-  open(self_detail,file='selfenergy.dat',status='unknown')   ! sy.
-  open(ksubset_bs_inp,file='ksubset_bs.inp',status='unknown')   ! sy
- 
-  write(self_detail,*) 'T(K) nk, la, v33_square_sum, delta1_sum, delta2_sum, delta3_sum, delta4_sum, delta_tot_sum'  ! sy
+  open(ueiv,file='bs_freqs.dat',status='unknown')
+  open(ucors,file='FBZ_freqs.dat',status='unknown')
+  open(ugrun,file='bs_grun.dat',status='unknown')
+  open(ugrun+1,file='FBZ_grun.dat',status='unknown')
 
 
- write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' Program kap7 was launched at ',today(1:4)//'/'  &
+ write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' Program kap8 was launched at ',today(1:4)//'/'  &
 &  //today(5:6)//'/'//today(7:8),now(1:2)//':'//now(3:4)//':'//now(5:10),zone
  write(ulog,'(a,f12.4)')' STARTING TIME OF THE PROGRAM IS ',cputim
- write(utimes,'(a30,3x,a10,3x,a12,3x,a)')' Program kap7 was launched at ',today(1:4)//'/' &
+ write(utimes,'(a30,3x,a10,3x,a12,3x,a)')' Program kap8 was launched at ',today(1:4)//'/' &
 &  //today(5:6)//'/'//today(7:8),now(1:2)//':'//now(3:4)//':'//now(5:10),zone
  write(utimes,'(a,f12.4)')' At the start of the Program,        TIME IS ',cputim
 
@@ -137,7 +158,7 @@ integer colkil,coll1,coll2
 7 format(i6,9(2x,g11.5))
 8 format(2i6,99(1x,g11.5))
 9 format(i6,i6,3(1x,f7.3),1x,9(1x,g10.4))
-!mine
+
 20 format(2i6,2x,99(1x,f9.3))
 
 ! this is used to convert v33 to cm^_1
@@ -145,1000 +166,1886 @@ integer colkil,coll1,coll2
 
 
   call read_params
-  print*,' file params.phon read'
+  print*,' file latdyn.params read'
+
 
   call read_input_fit
-  print*,' file params.inp read'
+  print*,' file structure.params read'
 
 
-  allocate(zeu(3,3,natoms0)) !JS
+  call read_lattice  ! reads lat_fc.dat
+
+
   call read_born
-  print*,' file params.born read'
-
-
-  call read_lattice
+  print*,' file dielectric.params read'
  
 
-  nkc = nc1*nc2*nc3
+  nkc = nc(1)*nc(2)*nc(3)
   dq = (volume_g /nkc)**(1d0/3)
   write(ulog,*)' nkc, dq(ang^-1)=', nkc,dq
 
-  call read_fc23
 
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After readings,                     TIME IS ',cputim
+  call read_fc234
+
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After readings,                     TIME IS ',cputim
+
 
   ndyn = 3*natoms0
 
-
 !---------------------------------------------------------------
-! do a band structure calculation along the symmetry directions
+  if (job .ge. 0)  then
+!---------------------------------------------------------------
+! phonon band structure & gruneisen params along the symmetry directions
 
-  call make_kp_bs2
-  write(ulog,*)' Kpoints for band structure generated from kpbs.in'
+  call make_kp_bs
+  write(ulog,*)' Kpoints for band structure generated from kpbs.params'
+  
+
   call allocate_eig_bs(ndyn,nkp_bs,ndyn) !3rd index is for eivecs needed for gruneisen
+  write(*,*)' Eigenvalues allocated'
+
 
   call get_frequencies(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,ndyn,eigenvec_bs,ueiv,veloc)
+  write(*,*)' Frequencies calculated'
+
+
+  open(1008,file='nkpbs.dat')
+       write(1008,*)nkp_bs
+  close(1008)
+  
 
   call gruneisen(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,eigenvec_bs,ugrun,grun_bs)
-
-  deallocate(veloc)
-
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After band structure,               TIME IS ',cputim
+  write(*,*)' Gruneisen calculated'
 
 
-!write(debug,*) 'eigen vectors...nkp, eigenvec_bs'  ! sy
-!do i=1,nkp_bs   ! sy
-!write(debug,119) 'i,kp,eigenvec_bs',i,kp_bs(:,i),real(eigenvec_bs(1,1,i)), real(eigenvec_bs(4,1,i)), real(eigenvec_bs(2,1,i)), real(eigenvec_bs(5,1,i)), real(eigenvec_bs(3,1,i)), real(eigenvec_bs(6,1,i))  ! sy
-!enddo ! sy
-!119 format(99(2x,g10.3)) ! sy
+! first generate the COARSE mesh, kpc and set the weights
+  nkc = nc(1)*nc(2)*nc(3)
+  allocate(kpc(3,nkc),mappos(nkc),wk(nkc))
 
+
+! Need kpc for phase space integration 
+  call make_kp_reg(nc,g1,g2,g3,shft,kpc,wk)        ! original one.
+  write(*,*)' make_kp_reg called '
+
+
+! call phase_space_lifetime_bs
+  write(*,*)' Phase_space calculated; now deallocating'
+ 
+
+  call deallocate_eig_bs
+  call deallocate_kp_bs
+
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After band structure,               TIME IS ',cputim
 
 !---------------------------------------------------------------
 ! calculation of eigenvalues, Gruneisen in the FBZ, and DOS using the coarse mesh
 
-! first generate the COARSE mesh, kpc and set the weights
-  nkc = nc1*nc2*nc3
-  allocate(kpc(3,nkc),mappos(nkc),wk(nkc))
-
-! for even nci, they are shifted by -(g1+g2+g3)/2
-  call make_kp_reg(nc1,nc2,nc3,shftx,shfty,shftz,kpc,wk)        ! original one.
-!  call make_kp_reg_tet(nc1,nc2,nc3,shftx,shfty,shftz,kpc,wk,tet) ! tetrahedron method 
-
   call get_negatives(nkc,kpc,mappos,npos)
-!write(*,*)'nibz' nibz
-! ************** BEGIN: USE IBZ MESH ************************
-!mapibzs=0
-!mapinvs=0
-  !!!!allocate(mapibz(nc1*nc2*nc3),mapinv(nc1*nc2*nc3))  for mods2-final.f90
-!mapibzs=0
-!mapinvs=0
-      call get_weights(nc1*nc2*nc3,kpc)
-!!!!call get_weights(nc1*nc2*nc3,kpc,nibz,narms,kvecstar,kvecop)   !mods2-final.f90
-    !!call get_weights(nc1*nc2*nc3,kpc,nibz,mapibz,mapinv,sd,kvecstarsd,kvecopsd)
+  write(*,*)' get_negatives called '
 
-write(*,*)'safoura-code kappa7 can get in here'
 
-! test of group velocities by HF and finite diff
-
-! allocate(vgr(3,ndyn))
-! q0 =kpc(:,2 )
-! call finitedif_vel(q0,ndyn,vgr)
-! deallocate(vgr) !,evlt,evct)
-
-! output is nibz vectors kibz of weight wibz; mapibz is their mapping to IBZ
-! nibz = nkc
-! allocate(wibz(nibz),kibz(3,nibz),mapibz(nkc),mapinv(nkc))
-! do i=1,nkc
-!    kibz(:,i) = kpc(:,i)  !mappos(i))
-!    mapibz(i)=i
-!    mapinv(i)=i
-!    wibz(i)=wk(i)
-! enddo
-! ************** END:  USE IBZ MESH ************************
+! define the Irreducible BZ based on symmetry; output is nibz,kibz
+  call get_weights(nc(1)*nc(2)*nc(3),kpc)
+  write(*,*)' get_weights called '
 
 !---------------------------------------------------------------
  
-!- for merge v33 mode by sy
-! call read_merge(mergemode, num_files)           ! read mergemode, number of files, file names
-! if (mergemode .eq. 1)  then
-!    nv3 = nkc*nibz*ndyn**3
-!    write(ulog,*) 'ENTERING MERGE MODE....'
-!    call merge_v3(num_files)          ! merge splitted v3 files and make v3 for all k points in IBZ
-!    stop                   ! stop this program
-! endif
-! - end of merge v33 mode by sy
+! call allocate_eig(ndyn,nibz,nkc)   ! last one (nkc) is for veloc
+  call allocate_eig(ndyn,nkc,nkc)   ! last one (nkc) is for veloc
+ 
+
+  allocate(dkc(nkc))
+  dkc=0
+  write(ulog,*)' eigenval allocated, entering the loop for DOS calculation'
 
 
-! allocates eigenval,eigenvec and grun of size (ndyn,nibz) and veloc(3,ndyn,nkc)
-!    call allocate_eig(ndyn,nibz,nkc)   ! last one (nkc) is for veloc
-     call allocate_eig(ndyn,nkc,nkc)   ! last one (nkc) is for veloc
-     allocate(dkc(nkc),iw(nkc))
-     dkc=0
-     write(ulog,*)' eigenval allocated, entering the loop for DOS calculation'
+  call get_frequencies(nkc,kpc,dkc,ndyn,eigenval,ndyn,eigenvec,ucors,veloc)
 
-
-     call get_frequencies(nkc,kpc,dkc,ndyn,eigenval,ndyn,eigenvec,ucors,veloc)
-!    do i=1,nkc
-!       write(ulog,3)i,kpc(:,i),veloc(:,1,i)
-!    enddo
 
 ! gruneisen in the volume is needed for the thermal expansion coefficient
-!      call gruneisen(nkc,kpc,dkc,ndyn,eigenval,eigenvec,ugrun+1,grun)
-!!    call gruneisen(nibz,kibz,dkc,ndyn,eigenval,eigenvec,ugrun,grun)
-  do i=1,nkc
-     iw(i)=i
-  enddo
-!tst call get_group_velocity(nc1,nc2,nc3,kpc,ndyn,nkc,iw,eigenval,veloc)
-     deallocate(dkc,iw)
+! call gruneisen(nkc,kpc,dkc,ndyn,eigenval,eigenvec,ugrun+1,grun)
+! call gruneisen(nibz,kibz,dkc,ndyn,eigenval,eigenvec,ugrun,grun)
 
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After om(k) calculation within FBZ, TIME IS ',cputim
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After om(k) calculation within FBZ, TIME IS ',cputim
+
 
 ! check to see if D(-k)=conjg(D(k))
-     call check_mdyn(ndyn,nkc,kpc,eigenvec,eigenval) ! would not work with nkc.ne.nibz
+  call check_mdyn(ndyn,nkc,kpc,eigenvec,eigenval) ! would not work with nibz
+  write(*,*)' check_mdyn called'
 
-     call write_eivecs(ndyn,nkc,kpc,eigenvec)
 
-     call subst_eivecs(ndyn,nkc,eigenvec,kpc,npos,mappos)
+  if(verbose) call write_eivecs(ndyn,nkc,kpc,eigenvec)
+
+
+  call subst_eivecs(ndyn,nkc,eigenvec,kpc,npos,mappos)
+  write(*,*)' subst_eivec called'
+
 
 ! calculate dos and joint-dos (added over all bands)
-     call set_omdos(ndyn,wmesh)  ! allocates om and dos arrays of size mesh
-     open(udos,file='dos.dat',status='unknown')
-     allocate(evc(nibz))
-     dos = 0
-     do la=1,ndyn
-        j=0
-        do i=1,nibz
-          j=j+1
-          evc(j)=eigenval(la,mapinv(i))
-        enddo
-        call calculate_dos(nibz,evc,wibz,wmesh,om,dos(la,:))
-!       write(wxt,'(i2.2)')la
-        dos(ndyn+1,:) = dos(ndyn+1,:) + dos(la,:)
+ 
+  call set_omdos(ndyn,wmesh)  ! allocates om and dos arrays of size mesh
+  write(*,*)' set_omdos called'
+ 
+  allocate(evc(nibz))
+ 
+  dos = 0
+  do la=1,ndyn
+     j=0
+     do i=1,nibz
+        j=j+1
+        evc(j)=eigenval(la,mapinv(i))
      enddo
-     call write_dos
-     close(udos) ; deallocate(evc)
-     write(*,*) 'dos1 done'
+     call calculate_dos_g(nibz,evc,wibz,wmesh,om,dos(la,:))  ! with gaussian broadening 
+     dos(ndyn+1,:) = dos(ndyn+1,:) + dos(la,:)
+  enddo
+
+
+  call write_dos
+  deallocate(evc)
+  write(*,*) 'gaussian dos done'
+
 
 ! calculate dos using tetrahedron method
-     call allocate_tetra(nc1,nc2,nc3,wmesh,lamax)
-     call make_kp_reg_tet(nc1,nc2,nc3,shftx,shfty,shftz,kpc,wk)
-!     call eigen_tet(nc1,nc2,nc3,lamax,nkc)
-     open(udos,file='dos_tet.dat',status='unknown')
-     open(udos+1,file='dos2_tet.dat',status='unknown')
-     call calc_tet(nc1,nc2,nc3,wmesh,wmax,lamax,udos,udos+1,kpc)
-!     call dos_tet(nc1,nc2,nc3,wmesh,wmax,lamax,udos,kpc)
-     ! need to delcare calct, doswt, tet
-     close(udos)!; close(udos+1)
-     write(*,*) 'dos2 done'
+  call allocate_tetra(nc(1),nc(2),nc(3),wmesh,ndyn)
+  call make_kp_reg_tet(nc(1),nc(2),nc(3),shft(1),shft(2),shft(3),kpc,wk)
+  call calc_tet(nc(1),nc(2),nc(3),ndyn,kpc)
+  write(*,*) 'tetrahedron dos done'
+  deallocate(dos,dkc)
 
-!stop
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After calculate tetrahedron dos    TIME IS ',cputim
 
-! calculate the thermal expansion coefficient using phonons and gruneisen
-!    call read_grun(nkc,ndyn,kpc,grun)
+! call phase_space_lifetime_FBZ
+  write(*,*) 'phase space dos done'
 
-!     call gruneisen_fc
 
-!     call calculate_thermal(nkc,wk,ndyn,eigenval,grun,tmin,tmax,ualph)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After calculation of phase space in FBZ,     TIME IS ',cputim
 
-     close(ualph)
-     deallocate(grun)
+  deallocate(grun)
+! call deallocate_tetra
+    
+  if (dos_bs_only ) stop  
+  write(ulog,*) ' DOS_BS finished here '
 
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After calculate_dos, and thermal    TIME IS ',cputim
 
-     mx = ndyn*nibz !nkc
-     allocate(evc(mx),wkf(mx))
-     j=0
-     do la=1,ndyn
-     do i=1,nibz !nkc
-         j=j+1
-         evc(j)=eigenval(la,mapinv(i))
-         wkf(j)=wibz(i)  !1d0/mx
-     enddo
-     enddo
-
-!    call phase_space_lifetime
-    write(*,*) 'phase space lifetime done'
-!    call phase_space_lifetime_bs    ! sy
-!    write(*,*) 'start to calculate phase_space_lifetime_bs_occ...'  ! sy
-    !call jdos_bs_sy   ! sy
-!    write(*,*) 'phase space lifetime calculation done...'   ! sy
-    !write(ulog,*) 'phase space lifetime done...'     ! sy
-!   call jdos_sy   ! sy
-!    write(ulog,*) 'JDOS done...'    ! sy
-  !  call matrix_kpt_sy    ! sy
-   ! write(ulog,*) 'matrix_kpt done...'    ! sy
-
-     call deallocate_eig_bs
-
-!    open(udos,file='jdos.dat',status='unknown')
-!    call calculate_jdos(mx,evc,wkf,wmesh,om,udos)
-!    close(udos)
-     deallocate(evc,wkf,dos)
-    write(ulog,*) 'deallocate done'
-
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After calculate_jdos,               TIME IS ',cputim
-
-!     if (dos_bs_only ) stop             ! sy
-!    write(ulog,*) 'after stop point'    ! sy
-
-!----------------------------------------------------
-! the anharmonic V3 matrix will be calculated on the coarse mesh
-! call allocate_phi3(nkc,ndyn,wmesh,nibz)
-! nv3 = (nkc+1)*nkc*ndyn**3/2
+!----------The anharmonic V3 matrix calculation in IBZ and kappa RTA and Direct using MPI--------------------------------
   nv3 = nkc*nibz*ndyn**3
-
-! test to see whether the eivecs at opposite kpoints are now conjugate
-  call write_eivecs(ndyn,nkc,kpc,eigenvec)
-! call write_eivecs(ndyn,nibz,kibz,eigenvec)
-
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' Start V33 read or calculation,               TIME IS ',cputim
-
-write(*,*) 'iter,split,read,write,calk', iter, split, readv3, writev3, calk
-
-do i=1,nkc
-  
-    call get_k_info(kpc(:,i) ,NC,j,i1,j1,k1,g1,g2,g3,inside)
-    write(*,*)'i,j,inside=',i,j,inside
-
-enddo
-
-do i=1,nkc
-  
-    qq=kpc(:,i)+g1+g2+g3
-    call get_k_info(qq ,NC,j,i1,j1,k1,g1,g2,g3,inside)
-    write(*,*)'i,j,inside=',i,j,inside
-
-enddo
-
-!do i=1,nkc
-!    qq=kpc(:,i)
-!    qq(1)=qq(1)+0.1
-!    call get_k_info(qq ,NC,j,i1,j1,k1,g1,g2,g3,inside)
-!    write(*,*)'i,j,inside=',i,j,inside
-!
-!enddo
-!stop
-
-if ( iter .eq. 0)  then
-    
-    if ( split .eq. 0 ) then  ! no split. K1's original code
-        
-        ! Go from phi_3 (R,tau,alpha) to phi_3 (k,lambda)
-        if ( readv3 .eq. 0) then      ! calculate V33 from scratch and store
-             write(ulog,*) 'MAIN: calculating V3...'
-             call allocate_v33(nv3)
-!            call calculate_v3_new (ndyn,nkc,kpc,eigenval,eigenvec)
-!            call calculate_v3     (ndyn,nkc,kpc,eigenval,eigenvec)
-             call calculate_w3_ibz (ndyn,nibz,kibz,nkc,kpc,eigenval,eigenvec)
-
-        elseif ( readv3 .eq. 1) then      ! read V33 from file and store
-             write(ulog,*) 'MAIN: reading V3 from a file...'
-!            call read_v3_all_formatted  (nkc,nkc,ndyn)
-!            call read_v3_all_unformatted(nkc,nkc,ndyn)
-             if ( allocated(v33))  call deallocate_v33
-!            call read_v3_new_formatted
-             call read_v3_new_unformatted
-        endif
-!       if (readv3 .ge. 2) then self-energy calculation proceeds on the fly
-
-
-    elseif ( split .eq. 1 )  then  ! split IBZ. 
-        
-        !- for calculating v33 in split mode. sy
-        if ( readv3 .eq. 0 ) then   ! calculate v33_split from scratch and store
-             write(*,*) 'entering v33 calculation in split mode'   ! temp
-             write(ulog,*) 'MAIN: calculating v3_split...'
-             call read_ksubset(ksubset)
-             nv3_split=nkc*(ksubset(2)-ksubset(1)+1)*ndyn**3
-             write(ulog,*) 'nkc, ksubset, nv3_split',nkc,ksubset(1),ksubset(2),nv3_split
-             call allocate_v33(nv3_split)
-             call calculate_w3_ibz_split (ksubset,nv3_split,ndyn,nkc,kpc,nkc,kpc,eigenval,eigenvec)
-        !- end of calculating v33 in split mode. sy
-
-        
-        !- start calculating v33 on the fly in split mode. sy
-        elseif (readv3 .eq. 2) then    ! calculate v33 on the fly in split k space
-             write(ulog,*) 'MAIN: will v3_split on the fly...'
-             call read_ksubset(ksubset)
-             nv3_split=nkc*(ksubset(2)-ksubset(1)+1)*ndyn**3
-             write(ulog,*) 'nkc, ksubset, nv3_split',nkc,ksubset(1),ksubset(2),nv3_split
-        !- end calculating v33 on the fly in split mode. sy
-
-        endif
-    endif
-
-
-elseif ( iter .eq. 1 ) then   ! for exact solution of BTE
-    
-    if ( readv3 .eq. -1 )  then
-        call merge_Pmatrix    ! merge collision matrix. obsolete.
-
-    elseif ( readv3 .eq. 0 ) then
-        
-        write(*,*) 'entering cal v33 in FBZ split...'
-        call read_ksubset(ksubset)  ! read index of initial and final kpoints set in the shellscript
-        nv3_split=nkc*(ksubset(2)-ksubset(1)+1)*ndyn**3
-!       call allocate_v33_sq(ksubset(2)-ksubset(1)+1,nkc,ndyn,ndyn,ndyn)        
-  ! k1    allocate(v33(ksubset(2)-ksubset(1)+1,nkc,ndyn,ndyn,ndyn))        
-        call allocate_v33(nv3_split)
-        call calculate_w3_fbz_split_sq (ksubset,nv3_split,ndyn,nkc,kpc,eigenval,eigenvec)
- !       call deallocate_V33_sq
-         call cpu_time(cputim)  !date_and_time(time=tim)
-         write(utimes,'(a,f12.4)')' After v33 calculation,                TIME IS ',cputim
-
-    elseif ( readv3 .eq. 2) then     ! read v33sq.xxx.dat from the main directory and calculate v33sq*delta and write them into files.
-        
-        write(ulog,*) 'entering cal v33*delta...'
-        call read_ksubset(ksubset) ! read ksubset
-        write(ulog,*) 'read_ksubset done...'
-        call calculate_v3sq_delta (ksubset,ndyn,nkc,kpc)  ! calculate v3sq*delta
-
-        call cpu_time(cputim)  !date_and_time(time=tim)
-        write(utimes,'(a,f12.4)')' After v33_delta calculation,            TIME IS ',cputim
-
-    elseif  ( readv3 .eq. 1 .and. calk .eq. 0)  then     ! obsolete
-
-        write(*,*) 'entering cal Pmatrix...'      
-
-        call read_v3_new_unformatted_sq(nkc,ndyn)   ! this will allocate v33. also read nv3 (=nv3_split)
-!        call allocate_P (nv3)
-        write(*,*) 'read_v3 done...'
-
-        call read_ksubset(ksubset)
-        nv3_split=nkc*(ksubset(2)-ksubset(1)+1)*ndyn**3
-
-        temp=tmin*k_b/(100*h_plank*c_light)   ! Kelvin to cm^-1. tmin in params.phon will be used for iterative solution
-        call Pmatrix(ksubset,nkc,kpc,ndyn,eigenval,temp)           ! calculate collision matrix, save it to file
-!        call Pmatrix2(ksubset,nkc,kpc,ndyn,eigenval,temp)           ! read v33, calculate P matrix and save it to file
-!        call allocate_iter1(nkc*ndyn)
-!        call allocate_iter1(nkc,ndyn)
-
-!        call selfenergy2(ksubset,nkc,kpc,ndyn,eigenval,temp)
-        
-    endif
-
-endif
-
-
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After calculation/reading of V3,    TIME IS ',cputim
-
-!    call check_sym_of_v3(ndyn)
-
-!----------------------------------------------------
-! do statistics on the distribution of v33 matrix elements
-!   if ( readv3 .lt. 2) then
-!      mx=1000
-!      allocate(omega(nv3))
-!      omega = abs(v33)
-!      call histogram(nv3,omega,mx)
-!      deallocate(omega)
-!   endif 
-
-!call cpu_time(cputim)  !date_and_time(time=tim)
-!write(utimes,'(a,f12.4)')' After calculation of V33-histogram, TIME IS ',cputim
-
-!----------------------------------------------------
-! calculate the cubic matrix elements^2 at each frequency
-   if (threemtrx .eq. 1 .and. readv3 .lt. 2) then
-
-     open(udos,file='3mtrx.dat',status='unknown')
-     do i=1,wmesh/2
-        ommax = om(2*i)
-        call three_ph_matrix(ommax,etaz,vgmax)
-        write(udos,6)ommax,vgmax
-     enddo
-     close(udos)
-
-   endif
-
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After calculation of 3-ph-matrix    TIME IS ',cputim
-
-
-if (threemtrx .eq. 1 .and. readv3 .lt. 2) then
-call matrix_kpt_sy  ! sy
-endif
-
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After calculation of matrix_kpt_sy    TIME IS ',cputim
-
-!----------------------------------------------------
-! calculate the self-energy of the LA mode at (K=0) versus (omega and) T
-
-   if( allocated(omega) ) deallocate(omega)
-   if( allocated(uself) ) deallocate(uself)
-   if( allocated(nself) ) deallocate(nself)
-   allocate(omega(ndyn),uself(ndyn),nself(ndyn),kap(ndyn,3,3))
-
-!----------------------------------------------------
-! calculate the cross section at (K_red=qcros) versus omega and T
- if (cal_cross.eq.1) then
-
-   open(ucross,file='cross-section.dat')
-   allocate(sigp(ndyn))
-
-   qq = qcros(1)*g1+qcros(2)*g2+qcros(3)*g3
-   crloop: do itmp=1,ntemp
-     tempk=tmin+(tmax-tmin)*(itmp-1)**3/(ntemp-1.0000001d0)**3   ! this temp is in Kelvin
-     temp = tempk*k_b/(100*h_plank*c_light) ! to convert from SI to cm^-1
-     write(ucross,*)"# la,tempk,omega,nself(la),uself(la),sigp(la)"
-     do la=lamin,lamax
-     do j=1,wmesh/2
-        ommax=om(2*j)*1.2  ! take fewer om points to save time and go beyond band-range
-!       call get_kindex(qq,nkc,kpc,igam)
-!       omega(la)=sqrt(eigenval(la,igam)) * cnst
-        call self_energy(qq ,la,ommax,temp,nself(la),uself(la),readv3)
-        selfw = nself(la)+uself(la)
-        sigp(la) = cross_section(qq,la,ommax,eigenval(la,igam),selfw)
-        write(ucross,7)la,tempk,ommax,nself(la),uself(la),sigp(la)
-     enddo
-        write(ucross,*)" "
-     enddo
-   enddo crloop
-
-   close(ucross)
-   deallocate(sigp)
-
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After calculation of cross(Gama,T)  TIME IS ',cputim
-
- endif
-
-
-!-------------------------------------------------------------------------------------------
-!-------------------------------------------------------------------------------------------
-!------------- Keivan's original code (serial calculation with RTA)
-!not tested.
-
-if  (iter .eq. 0  .and.  split .eq. 0 .and. calk .eq. 1) then  ! Keivan's original code
-
-!----------------------------------------------------
-! temperature loop for calculation of relaxation times and kappa
-  open(ukap,file='kappa.dat',status='unknown')
-  write(ukap,2)'# i, temperature(K) , kappa(la) (W/mK) ...    , kappa_total (W/mK) '
-  mass_cell = sum( atom0(:)%mass )
-
-! do la=1,ndyn
-!    write(wxt,'(i2.2)')la
-!    open(uslf+100+la,file='rself-'//wxt//'.temp')
-!    open(uslf+200+la,file='iself-'//wxt//'.temp')
-!    open(ukap+la,file='mode_kap_'//wxt//'.temp',status='unknown')
-!    write(ukap+la,2)'# i, temperature(K) , kappa(la,i,j) (W/mK)'
-! enddo
-  open(uslf+1  ,file='rself.temp')
-  open(uslf+500,file='iself.temp')
-  open(umod,file='mode_kap.temp',status='unknown')
-  write(umod,2)'# la, i, temperature(K) , kappa(la,i,j) (W/mK)'
-
-  allocate(tau_klem_inv(ndyn,nkc))
-  temploop: do itmp=1,ntemp
-    allocate(evc(nibz))
-    tempk=tmin+(tmax-tmin)*(itmp-1)**2/(ntemp-1.0000001d0)**2   ! this temp is in Kelvin
-    temp = tempk*k_b/(100*h_plank*c_light) ! to convert from SI to cm^-1
-    tau_klem_inv = 0d0
-    modeloop: do la=1,ndyn
-!     write(uslf+100+la,2)'#nk,tempk,omega(k,la),real(self(la)),normal,umklapp '
-!     write(uslf+200+la,2)'#nk,tempk,omega(k,la),imag(self(la)),normal,umklapp,tau(ps),MFP(nm) '
-      write(uslf+1  ,2)'#la,nk,tempk,omega(k,la),real(self(la)),normal,umklapp '
-      write(uslf+500,2)'#la,nk,tempk,omega(k,la),imag(self(la)),normal,umklapp,tau(ps),MFP(nm) '
-! SELF-ENEGY calculation on the coarse mesh
-      do j=1,nibz
-         call get_kindex(kibz(:,j),nkc,kpc,igam)
-         if(igam.ne.mapinv(j)) then
-            write(*,*)'MAIN: temp,mode,kibz=',tempk,la,j
-            write(*,*)'get_kindex found igam-',igam,mapinv(j)
-            stop
-         endif
-
-         omega(la) = sqrt(eigenval(la,igam)) * cnst
-         call self_energy(kibz(:,j),la,omega(la),temp,nself(la),uself(la),readv3)
-         evc(j)=2*aimag(nself(la)+uself(la))   ! used for inverse relaxation time
-! find relaxation times of all bands over the full zone (stored in tau_klem_in)
-         do k2=1,nkc
-            if(mapibz(k2).eq.j) then
-               if (tau_klem_inv(la,k2) .ne.0) then
-                  write(ulog,*)'tau_inv already assigned!!',la,k2,tau_klem_inv(la,k2)
-                  stop
-               else
-               tau_klem_inv(la,k2)=evc(j)
-               endif
-            endif
-         enddo
-         mfp=length(veloc(:,la,igam)) / evc(j) * 1d7   ! in nanometers
-!        write(uslf+200+la,7)j,tempk,omega(la),aimag(nself(la)+uself(la)),aimag(nself(la)),aimag(uself(la)),1d10/c_light/evc(j) ,mfp
-!        write(uslf+100+la,7)j,tempk,omega(la),real (nself(la)+uself(la)),real (nself(la)),real (uself(la))
-         write(uslf+500,8)la,j,tempk,omega(la),aimag(nself(la)+uself(la)),aimag(nself(la)),aimag(uself(la)),1d10/c_light/evc(j) ,mfp
-         write(uslf+1  ,8)la,j,tempk,omega(la),real (nself(la)+uself(la)),real (nself(la)),real (uself(la))
-      enddo
-      write(uslf+1  ,*)' '
-      write(uslf+500,*)' '
-
-! Thermal conductivity from the RTA to the solution of Boltzmann equation
-!     call mode_thermal_conductivity(nkc,wk,ndyn,la,evc,veloc,eigenval,temp,kappa_q)
-
-! this is from k's in the full FBZ
-      call mode_thermal_conductivity(nkc,wk,tau_klem_inv(la,:),veloc(:,la,:),eigenval(la,:),temp,kappa_q)
-
-      kap(la,:,:) = kappa_q(:,:)    ! here used as a dummy array
-      omega(la)=(kap(la,1,1)+kap(la,2,2)+kap(la,3,3))/3
-      write(umod,8)la,itmp,tempk,(kap(la,i,i),i=1,3),((kap(la,i,j),j=i+1,3),i=1,2)
-
-    enddo modeloop
-
-    write(ukap,3)itmp,tempk,(omega(la),la=1,ndyn),sum(omega)
-
-    deallocate(evc)
-  enddo temploop
-  deallocate(tau_klem_inv)
-  close(uslf+1  )
-  close(uslf+500)
-  close(umod)
-  close(ukap)
-
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After calculation of linewidth,     TIME IS ',cputim
-
-!================================================================================
-  close(ukap)
-
- call date_and_time(date=today,time=now,zone=zone)
- call cpu_time(cputim)
-write(ulog,'(a,f12.4)')' ENDING TIME OF THE PROGRAM IS ',cputim
-write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' This program was ended at ',today(1:4)//'/'  &
-&  //today(5:6)//'/'//today(7:8),now(1:2)//':'//now(3:4)//':'//now(5:10),zone
-write(utimes,'(a,f12.4)')' At the end of the Program,          TIME IS ',cputim
-write(utimes,'(a30,3x,a10,3x,a12,3x,a)')' This program was ended at ',today(1:4)//'/'  &
-&  //today(5:6)//'/'//today(7:8),now(1:2)//':'//now(3:4)//':'//now(5:10),zone
-
-!----------------------------------------------------
-
- deallocate(kpc,wk)
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After the kappa loop,               TIME IS ',cputim
-
- close(ulog)
- close(ueiv)
- close(ufc2)
- close(ufc3)
- close(utimes)
- close(ibz)
- close(bzf)
- close(fbz)
- close(ibs)
- close(ucors)
- close(ualph)
-! close(urate)
-
-
-
-
-
-!-------------------------------------------------------------------------------------------
-!-------------------------------------------------------------------------------------------
-!------------- Keivan's original code + split (split calculation with RTA) 
-!not tested
-elseif (iter .eq. 0 .and. split .eq. 1 .and. calk .eq. 1) then  ! Keivan's original code + distribute k-poitns to many cores
-  
-  open(ukap,file='kappa.dat',status='unknown')
-  write(ukap,2)'# i, temperature(K) , kappa(la) (W/mK) ...    , kappa_total (W/mK) '
-  open(k_kappa,file='k_kappa.dat',status='unknown')    ! sy
-  write(k_kappa,*)'# T(K), ki, kpc(3), la, freq(cm-1), tau_inv_tot, tau_inv_normal, tau_inv_umklapp, group_vel(3), mfp(nm), cv, nBE, kxx,kyy,kzz,kxy,kxz,kyz, k_tot(W/mK)'  ! sy
-  mass_cell = sum( atom0(:)%mass )
-
-! do la=1,ndyn
-!    write(wxt,'(i2.2)')la
-!    open(uslf+100+la,file='rself-'//wxt//'.temp')
-!    open(uslf+200+la,file='iself-'//wxt//'.temp')
-!    open(ukap+la,file='mode_kap_'//wxt//'.temp',status='unknown')
-!    write(ukap+la,2)'# i, temperature(K) , kappa(la,i,j) (W/mK)'
-! enddo
-  open(uslf+1  ,file='rself.temp')
-  open(uslf+500,file='iself.temp')
-  open(umod,file='mode_kap.temp',status='unknown')
-  write(umod,2)'# la, i, temperature(K) , kappa(la,i,j) (W/mK)'
-
- ! allocate(tau_klem_inv(ndyn,nkc))
-  temploop2: do itmp=1,ntemp
-
-    call cpu_time(cputim)  !date_and_time(time=tim)      ! sy
-    write(utimes,'(a,i1,a,i1,a,f15.8)')' Start Kappa calculation at',itmp,'/',ntemp,' TIME IS ',cputim   ! sy
-
-    allocate(evc(nibz))
-    allocate(evc1(nibz))     ! sy
-    allocate(evc2(nibz))     ! sy
-    allocate(tau_inv_n(ndyn,nkc))    ! sy
-    allocate(tau_inv_u(ndyn,nkc))    ! sy
-    allocate(tau_klem_inv(ndyn,nkc)) ! sy
-    tau_inv_n=0; tau_inv_u=0    ! sy
-
-    tempk=tmin+(tmax-tmin)*(itmp-1)**2/(ntemp-1.0000001d0)**2   ! this temp is in Kelvin
-    temp = tempk*k_b/(100*h_plank*c_light) ! to convert from SI to cm^-1
-    tau_klem_inv = 0d0
-    modeloop2: do la=1,ndyn
-!     write(uslf+100+la,2)'#nk,tempk,omega(k,la),real(self(la)),normal,umklapp '
-!     write(uslf+200+la,2)'#nk,tempk,omega(k,la),imag(self(la)),normal,umklapp,tau(ps),MFP(nm) '
-      write(uslf+1  ,2)'#la,nk,tempk,omega(k,la),real(self(la)),normal,umklapp '
-      write(uslf+500,2)'#la,nk,tempk,omega(k,la),imag(self(la)),normal,umklapp,tau(ps),MFP(nm) '
-
-! SELF-ENEGY calculation on the coarse mesh
-!     do j=1,nibz
-      do j=ksubset(1),ksubset(2)  ! modified by sy. for split mode
-         call get_kindex(kibz(:,j),nkc,kpc,igam)
-         if(igam.ne.mapinv(j)) then
-            write(*,*)'MAIN: temp,mode,kibz=',tempk,la,j
-            write(*,*)'get_kindex found igam-',igam,mapinv(j)
-            stop
-         endif
-
-         omega(la) = sqrt(eigenval(la,igam)) * cnst
-!! k1
-  !      call self_energy2(j,kibz(:,j),la,omega(la),temp,nself(la),uself(la),readv3)
-    call function_self_w2_sy(j,kibz(:,j),la,omega(la),temp,nself(la),uself(la))   ! sy
-!! k1
-         evc(j)=2*aimag(nself(la)+uself(la))   ! used for inverse relaxation time
-         evc1(j)=2*aimag(nself(la))    ! sy
-         evc2(j)=2*aimag(uself(la))    ! sy
-         write(ulog,*) 'self energy calculation done....la, ibz',la,j    ! sy
-
-! find relaxation times of all bands over the full zone (stored in tau_klem_in)
-        do k2=1,nkc
-            if(mapibz(k2).eq.j) then
-               if (tau_klem_inv(la,k2) .ne.0) then
-                  write(ulog,*)'tau_inv already assigned!!',la,k2,tau_klem_inv(la,k2)
-                  stop
-               else
-               tau_klem_inv(la,k2)=evc(j)
-               tau_inv_n(la,k2)=evc1(j)     ! sy
-               tau_inv_u(la,k2)=evc2(j)     ! sy
-               endif
-            endif
-         enddo
-
-         mfp=length(veloc(:,la,igam)) / evc(j) * 1d7   ! in nanometers
-!        write(uslf+200+la,7)j,tempk,omega(la),aimag(nself(la)+uself(la)),aimag(nself(la)),aimag(uself(la)),1d10/c_light/evc(j) ,mfp
-!        write(uslf+100+la,7)j,tempk,omega(la),real (nself(la)+uself(la)),real (nself(la)),real (uself(la))
-         write(uslf+500,8)la,j,tempk,omega(la),aimag(nself(la)+uself(la)),aimag(nself(la)),aimag(uself(la)),1d10/c_light/evc(j) ,mfp
-         write(uslf+1  ,8)la,j,tempk,omega(la),real (nself(la)+uself(la)),real (nself(la)),real (uself(la))
-      enddo
-      write(uslf+1  ,*)' '
-      write(uslf+500,*)' '
-
-! Thermal conductivity from the RTA to the solution of Boltzmann equation
-!     call mode_thermal_conductivity(nkc,wk,ndyn,la,evc,veloc,eigenval,temp,kappa_q)
-
-! this is from k's in the full FBZ
-      write(ulog,*) 'entering kappa calculation...'    ! sy
-      call mode_thermal_conductivity_sy(tempk,la,nkc,kpc,wk,tau_klem_inv(la,:),tau_inv_n(la,:),tau_inv_u(la,:),veloc(:,la,:),eigenval(la,:),temp,kappa_q)
-      kap(la,:,:) = kappa_q(:,:)    ! here used as a dummy array
-      omega(la)=(kap(la,1,1)+kap(la,2,2)+kap(la,3,3))/3
-      write(umod,8)la,itmp,tempk,(kap(la,i,i),i=1,3),((kap(la,i,j),j=i+1,3),i=1,2)
-
-    enddo modeloop2
-
-    write(ukap,3)itmp,tempk,(omega(la),la=1,ndyn),sum(omega)
-
-    deallocate(evc)
-    deallocate(evc1)    ! sy
-    deallocate(evc2)    ! sy
-    deallocate(tau_inv_n)    ! sy
-    deallocate(tau_inv_u)    ! sy
-    deallocate(tau_klem_inv)
- enddo temploop2
-  close(uslf+1  )
-  close(uslf+500)
-  close(umod)
-  close(ukap)
-
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After calculation of linewidth,     TIME IS ',cputim
-
-
-!================================================================================
-
- call date_and_time(date=today,time=now,zone=zone)
- call cpu_time(cputim)
-write(ulog,'(a,f12.4)')' ENDING TIME OF THE PROGRAM IS ',cputim
-write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' This program was ended at ',today(1:4)//'/'  &
-&  //today(5:6)//'/'//today(7:8),now(1:2)//':'//now(3:4)//':'//now(5:10),zone
-write(utimes,'(a,f12.4)')' At the end of the Program,          TIME IS ',cputim
-write(utimes,'(a30,3x,a10,3x,a12,3x,a)')' This program was ended at ',today(1:4)//'/'  &
-&  //today(5:6)//'/'//today(7:8),now(1:2)//':'//now(3:4)//':'//now(5:10),zone
-
-!----------------------------------------------------
-
- deallocate(kpc,wk)
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After the kappa loop,               TIME IS ',cputim
-
- close(ulog)
- close(ueiv)
- close(ufc2)
- close(ufc3)
- close(utimes)
- close(ibz)
- close(bzf)
- close(fbz)
- close(ibs)
- close(ucors)
- close(ualph)
-! close(urate)
-
-
-
-
-
-
-!-------------------------------------------------------------------------------------------
-!-------------------------------------------------------------------------------------------
-!------------- Exact solution of BTE by sy
-!elseif (iter .ne.0  .and. readv3 .eq. 1 .and. calk .eq. 1) then  ! Exact solution of BTE sy
-elseif (iter .eq.1  .and. readv3 .eq. 1 .and. calk .eq. 1) then  ! Exact solution of BTE sy
-
-write(ulog,*) 'entering solving BTE iteratively'
-write(ulog,*) 'convergence criteria',conv_diff_kap,conv_max_diff_kap
-write(ulog,*) 'continuous iterations',conv_iter
-write(ulog,*) 'update ratio',update
-
-call allocate_iter1 (nkc,ndyn)    ! allocate memory for iterative solution
-call allocate_iter2 (nkc,nkc,ndyn,ndyn,ndyn)
-
-write(ulog,*) 'allocate_iter done'
-
-!call read_col_matrix(nkc,ndyn)    ! read col_matrix.dat
-!write(*,*) 'read_col_matrix done'
-!write(*,*) 'P1(1)=', P1(1,1,1,1,1)
-
-tempk = tmin     ! use tmin in params.phon as temperature. tmax is not being used.
-
-call distribution(nkc,ndyn,tempk)  ! calculate BE distribution function for each state
-write(ulog,*) 'distribution done'
-
-
-!call mode_thermal_RTA(tempk,nkc,ndyn,kpc)  ! calculate thermal conductivity based on relaxation time from direct_RTA
-!write(ulog,*) 'mode_thermal_RTA done'
-!write(*,*) 'mode_thermal_RTA done'
-
-
-!call cal_Q(nkc,ndyn)              ! calculate Q value
-!call cal_Qm2(nkc,ndyn,kpc,tempk)        ! read v33 files and calculate P matrix on the fly
-!call allocate_iter2(nkc,nkc,ndyn,ndyn,ndyn)   ! allocate collision matrix P1, P2
-!P1=0.0; P2=0.0
-!call cal_Qm3(nkc,ndyn,kpc,tempk)              ! calculat P1, P2 first, then calculate sum of diagonal terms in collision matrix
-!call cal_Qm3_tet(nkc,ndyn,kpc,tempk)           ! same as cal_Qm3, but tetrahedron method is used.
-call cal_Qm3_tet2(nkc,ndyn,kpc,tempk)           ! read v33sq_delta.xxx.dat, calculate P1, P2, Qvalue, and save them into memory
-
-
-write(ulog,*) 'cal_Q done'
-
-
-call RTA(nkc,kpc,ndyn,tempk,veloc,eigenval)               ! calculate RTA solution
-
-write(ulog,*) 'RTA done'
-
-
-
-
-
-
-
-
-
-
-
-!if(iter .eq. 2) then  ! use collision matrix 
-
-
-!******* for collision(FBZ*FBZ) and only x-axis for velocity and F *******!
-
-!allocate(col_matrix(nkc*ndyn,nkc*ndyn),RHS2(nkc*ndyn),xx2(nkc*ndyn),sig(nkc*ndyn) )
-!call cal_RHS_x(nkc,kpc,ndyn,tempk,veloc,eigenval,RHS2)
+!-------------------------------------------------------
+  if ( job .eq. 1 ) then   ! MPI 
+!-------------------------------------------------------
+  write(ulog,*) 'entering cal v33 in IBZ split...'
+  write(*,*) 'entering cal v33 in IBZ split...'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')'V33 calculation start,                TIME IS', cputim
+       
+ !Initialize MPI, get the local number of k_point
+  call MPI_INIT(ierr_mpi)
+  call MPI_COMM_SIZE(MPI_COMM_WORLD,nprocs_mpi,ierr_mpi)
+  call MPI_COMM_RANK(MPI_COMM_WORLD,rank_mpi,ierr_mpi)
+
+! Create a unique filename for each rank
+! write(filenamempi, '("timing_rank_", I0.2, ".txt")') rank_mpi
+
+! Open the file for writing
+! unit_numpi = 10 + rank_mpi
+! open(unit=unit_numpi, file=filenamempi, status='replace', action='write')
+
+  if (rank_mpi==0) then
+
+      num_k_mpi=nibz
+
+  endif
+
+
+! At this point, only root knows these values.  Send them out.
+  call MPI_Bcast(num_k_mpi,1,MPI_INTEGER,root_mpi,MPI_COMM_WORLD,ierr_mpi)
+
+      local_num_k_mpi = num_k_mpi/nprocs_mpi
+      write(*,*) 'num_k_mpi, local_num_k_mpi, nprocs_mpi',num_k_mpi, local_num_k_mpi, nprocs_mpi
+
+! ksubset(1) and ksubset(2) are needed for the loops in the follwoing subroutines (calculate_w3_ibz_split_sq,calculate_FGR_mpi)
+  ksubset(1) = rank_mpi * local_num_k_mpi + 1
+  ksubset(2) = rank_mpi * local_num_k_mpi + local_num_k_mpi
+       
+  if (mod(num_k_mpi,nprocs_mpi).ne.0) then
+     if  (rank_mpi.eq.(nprocs_mpi-1)) then
+         ksubset(2) = rank_mpi * local_num_k_mpi + local_num_k_mpi + mod(num_k_mpi,nprocs_mpi)
+     endif
+  endif  
+! write(*,*)'rank_mpi,ksubset1,ksubset2',rank_mpi,ksubset(1),ksubset(2)
+
+  nv3_split=nkc*(ksubset(2)-ksubset(1)+1)*ndyn**3        
+  call allocate_v33sq(nv3_split)
+
+  allocate(v33s8((ksubset(2)-ksubset(1)+1),nkc,ndyn,ndyn,ndyn))
+! call calculate_w3_fbz_split_sq(ksubset,nv3_split,ndyn,nkc,kpc,eigenval,eigenvec)
+! start_timempi = MPI_Wtime()
+  call calculate_w3_ibz_split_sq (ksubset,nv3_split,ndyn,nkc,kpc,eigenval,eigenvec,nv3o)
+  write(*,*)'after v3'
+
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-v33: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
  
-!xopen(451,file='RHStest.dat')
-!xklrs=nkc*ndyn
-!xdo rs=1,klrs
-!x write(401,*)rs, RHS2(rs)
-!xenddo
-!xclose(451) 
 
-!call cal_collisionM_FBZ_x(nkc,kpc,ndyn,col_matrix)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After v33 calculation,                TIME IS ',cputim
+
+  ksub_mpi = (ksubset(2) - ksubset(1)) + 1
+
+! write(*,*)'rank_mpi,ksubset1,ksubset2,ksub_mpi',rank_mpi,ksubset(1),ksubset(2), ksub_mpi
+! writing v33 for each rank
+! sts_mpi=1
+! tt = 1333
+
+! write(filename_mpi,fmt="(a,i3.3,a)") "v33.",rank_mpi,".dat"
+! open(tt,file=filename_mpi,status='replace')
+
+! do n1_mpi=1,ksub_mpi
+!    do n2_mpi=1,nkc
+!       do l1_mpi =1,ndyn
+!          do l2_mpi=1,ndyn
+!             do l3_mpi=1,ndyn
+
+!                 write(tt,*) rank_mpi, n1_mpi, n2_mpi, l1_mpi, l2_mpi, l3_mpi, v33s8(n1_mpi,n2_mpi,l1_mpi,l2_mpi,l3_mpi)
+!              enddo
+!           enddo
+!        enddo
+!     enddo
+! enddo
+
+! close(tt)
+
+  allocate(P1smpi((ksubset(2)-ksubset(1)+1),nkc,ndyn,ndyn,ndyn))
+  allocate(P2smpi((ksubset(2)-ksubset(1)+1),nkc,ndyn,ndyn,ndyn))
+        
+  write(ulog,*) 'entering cal v33*delta...'
+  write(*,*) 'entering cal v33*delta...'
+ 
+! start_timempi = MPI_Wtime()
+! changed to IBZ  call calculate_v3sq_delta (ksubset,ndyn,nkc,kpc)  
+  call calculate_FGR_mpi2(ksubset,ndyn,nv3o)!,v33s8)
+  write(*,*)'after FGR'
+! call deallocate_iter
+
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-v33delta: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After v33_delta calculation,            TIME IS ',cputim
+
+  deallocate(v33s8)
+! call deallocate_v33sq
+
+! writng P1sm and P2sm for each rank
+! sts_mpi=1
+! tt = 1333
+! write(filename_mpi,fmt="(a,i3.3,a)") "P1smpi.",rank_mpi,".dat"
+! write(filename_mpii,fmt="(a,i3.3,a)") "P2smpi.",rank_mpi,".dat"
+! open(tt,file=filename_mpi,status='replace')
+! open(tt+1,file=filename_mpii,status='replace')
+
+! do n1_mpi=1,ksub_mpi
+!    do n2_mpi=1,nkc
+!       do l1_mpi =1,ndyn
+!          do l2_mpi=1,ndyn
+!             do l3_mpi=1,ndyn
+!                 write(tt,*) rank_mpi, n1_mpi, n2_mpi, l1_mpi, l2_mpi, l3_mpi,P1smpi(n1_mpi,n2_mpi,l1_mpi,l2_mpi,l3_mpi)
+!                 write(tt+1,*) rank_mpi, n1_mpi, n2_mpi, l1_mpi, l2_mpi, l3_mpi,P2smpi(n1_mpi,n2_mpi,l1_mpi,l2_mpi,l3_mpi)
+!              enddo
+!           enddo
+!        enddo
+!     enddo
+! enddo
+
+! close(tt)
+
+!----------------------------------------------------------
+  if (iso.eq.1) then     !Piso calculation in IBZ split 
+!-----------------------------------------------------------
+  write(ulog,*) 'entering Piso calculation in IBZ split'
+  write(*,*) 'entering Piso calculation in IBZ split'
+  write(ulog,*) 'job', job
+
+  allocate (dist(nkc,ndyn),frequency(nkc,ndyn))
+  allocate(Pisos((ksubset(2)-ksubset(1)+1),ndyn))
+  tempk = tmin     ! use tmin in params.phon as temperature. tmax is not being used.
+  call distribution(nkc,ndyn,tempk)  ! calculate BE distribution function for each state
+
+  write(*,*)'natoms0', natoms0
+
+  allocate(giso(natoms0))
+  call cal_giso(giso)
+  call P_iso_split(ksubset,giso,ndyn,eigenvec)
+  deallocate(dist,frequency)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After Piso calculation,            TIME IS ',cputim
+  write(ulog,*) 'Piso calculation done'
+  write(ulog,*) 'Piso calculation done'
+  endif
+!------------------------------------------------------------------------------------------
+
+!------------- Exact solution of BTE--------------------------------------------------------
+  write(ulog,*) 'entering to the direct and iterative BTE solver'
+  write(*,*) 'entering to the direct and iterative BTE solver'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' entering to the direct and iterative BTE solver,      TIME IS',cputim
+
+! call allocate_iter (nibz,nkc,ndyn)    ! allocate memory
+  call allocate_FGR (ksub_mpi,nkc,ndyn,ndyn,ndyn)
+  write(ulog,*) 'allocate_iter done'
+
+  tauf=3450
+  kapRTA=6450
+  open(tauf,file='tau_RTA.dat',status='unknown')
+  open(kapRTA,file='kappa_RTA.dat',status='unknown')
+
+  tempk = tmin     ! use tmin in params.phon as temperature. tmax is not being used.
+
+  call distribution(nkc,ndyn,tempk)  ! calculate BE distribution function for each state
+  write(ulog,*) 'distribution done'
+
+  allocate(Qvaluempi((ksubset(2)-ksubset(1)+1),ndyn))
+  allocate(Qvalue_Nmpi((ksubset(2)-ksubset(1)+1),ndyn))
+  allocate(Qvalue_Umpi((ksubset(2)-ksubset(1)+1),ndyn))
+
+!--------------------------------------------
+  if (iso.eq.1) then   !reaind Piso if iso=true
+!---------------------------------------------  
+  call read_Piso(ndyn,Piso) 
+  write(ulog,*) 'reading Piso done'
+  call calculate_tauRTA_iso(ndyn,tempk)
+  else
+! start_timempi = MPI_Wtime()
+  call calculate_tauRTA_mpi2(ksubset,ndyn,tempk)!,rank_mpi)        
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-Q: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
+  endif
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' Q and tau_RTA in IBZ done,    TIME IS',cputim
+  write(ulog,*) 'Q and tau_RTA in IBZ done'
+
+
+  deallocate(P1smpi,P2smpi)!,Qvalue_N,Qvalue_U,Qvalue_Nmpi,Qvalue_Umpi)
+  deallocate(Piso)
+  call deallocate_v33sq
+
+  allocate(Qvalue_tempi((ksubset(2)-ksubset(1)+1)*ndyn))
+  allocate(Qvalue_Ntempi((ksubset(2)-ksubset(1)+1)*ndyn))
+  allocate(Qvalue_Utempi((ksubset(2)-ksubset(1)+1)*ndyn))
+
+  Qvalue_tempi=0
+  Qvalue_Ntempi=0
+  Qvalue_Ntempi=0
+  
+  smpi=0 
+  do n1_mpi=1,ksub_mpi
+     do l1_mpi=1,ndyn
+      
+        smpi=smpi+1
+        Qvalue_tempi(smpi) = Qvaluempi(n1_mpi,l1_mpi)
+        Qvalue_Ntempi(smpi) = Qvalue_Nmpi(n1_mpi,l1_mpi)
+        Qvalue_Utempi(smpi) = Qvalue_Umpi(n1_mpi,l1_mpi)
+
+    enddo
+  enddo
+
+  deallocate(Qvaluempi,Qvalue_Nmpi,Qvalue_Umpi)
+! Allocate array to gather ksubs from all processes
+  allocate(aksub_mpi(nprocs_mpi))
+  allocate(displs_mpi(nprocs_mpi))
+
+  ksubmpiv=ksub_mpi*ndyn
+
+! Gather ksubs from all processes
+  call MPI_Allgather(ksubmpiv, 1, MPI_INTEGER, aksub_mpi, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
+
+  displs_mpi(1) = 0
+  do i = 2, nprocs_mpi
+     displs_mpi(i) = displs_mpi(i-1) + aksub_mpi(i-1)
+!    write(*,*)'displs_mpi(i-1),displs_mpi(i),aksub_mpi(i-1),aksub_mpi(i),',i, displs_mpi(i-1),displs_mpi(i),aksub_mpi(i-1),aksub_mpi(i)
+  end do
+
+  allocate(Qvaluetemp(num_k_mpi*ndyn))
+  allocate(QvalueNtemp(num_k_mpi*ndyn))
+  allocate(QvalueUtemp(num_k_mpi*ndyn))
+  ncount1_mpi=size(Qvaluempi)
+
+! start_timempi = MPI_Wtime()
+
+  call MPI_Allgatherv(Qvalue_tempi,ncount1_mpi,MPI_DOUBLE_PRECISION,Qvaluetemp,aksub_mpi,displs_mpi,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,ierr_mpi)
+  call MPI_Allgatherv(Qvalue_Ntempi,ncount1_mpi,MPI_DOUBLE_PRECISION,QvalueNtemp,aksub_mpi,displs_mpi,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,ierr_mpi)
+  call MPI_Allgatherv(Qvalue_Utempi,ncount1_mpi,MPI_DOUBLE_PRECISION,QvalueUtemp,aksub_mpi,displs_mpi,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,ierr_mpi)
+
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-gatherv_RTA: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
+
+
+  smpi=0
+  do n1_mpi=1,num_k_mpi
+     do l1_mpi=1,ndyn
+
+        smpi=smpi+1
+        Qvalue(n1_mpi,l1_mpi) = Qvaluetemp(smpi)
+        Qvalue_N(n1_mpi,l1_mpi) = QvalueNtemp(smpi)
+        Qvalue_U(n1_mpi,l1_mpi) = QvalueUtemp(smpi)
+!       write(*,*)n1_mpi,l1_mpi,Qvalue(n1_mpi,l1_mpi),smpi,Qvaluetemp(smpi)
+     enddo
+  enddo
 
-!xopen(453,file='collisiontest.dat')
-!xdo col1=1,klrs
-!x   do col2=1,klrs
-!x write(403,*)col1,col2,col_matrix(col1,col2)
-!xenddo
-!xenddo
-!xclose(453)
 
-!svdcut = 1d-9
-!call svd_set(nkc*ndyn,nkc*ndyn,col_matrix,RHS2,xx2,sig,svdcut,errorr,ermax,sigma,'svd_output_FBZx.dat')
+  deallocate(Qvalue_tempi,Qvaluetemp,aksub_mpi,displs_mpi)
+  deallocate(Qvalue_Ntempi,QvalueNtemp,Qvalue_Utempi,QvalueUtemp)
 
-!*******  end (for FBZ and only x-axis)  *******!
+  call Qandtau(ndyn,tempk)
 
+  allocate(FFF(nibz,ndyn,3))
+! start_timempi = MPI_Wtime()
+! calculates F_RTA(kibz) 
+  call calculate_RTA_distributionfunction(nibz,nkc,kibz,ndyn,tempk,veloc,eigenval)
+  write(ulog,*) 'FRTA done'
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' FRTA in IBZ done,    TIME IS',cputim
+
+  call mode_kappa(ndyn,tempk,veloc,eigenval)
+  call write_kappa(ndyn,tempk,veloc,eigenval,kapRTA,tauf)
+
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-FRTA and kappa_RTA: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' kappa_RTA calculation done,   TIME IS',cputim
+
+  close(tauf)
+  close(kapRTA)
+
+  deallocate(Qvalue)
+
+  write(ulog,*) 'Start direct approach using cg method'
+  write(*,*) 'Start direct approach using cg method'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' Start direct approach using cg method,                TIME IS',cputim
+
+  tauef=7450
+  kapd=8450
+  open(tauef,file='tau_RTAandeff-cg.dat',status='unknown')
+  open(kapd,file='kappa_direct-cg.dat',status='unknown')
+
+  ksub_mpi = (ksubset(2) - ksubset(1)) + 1
+
+  allocate(Collision_Matrixmpi(ksub_mpi*ndyn*3,nibz*ndyn*3))
+
+!---------------------------------
+  if (iso.eq.1) then !for iso scattering
+!---------------------------------
+      Piso=0
+      call read_Piso(ndyn,Piso)
+      write(ulog,*) 'reading Piso done'
+      call CollisionMatrix_iso(ndyn)
+  else
+!     start_timempi = MPI_Wtime()
+      call CollisionMatrix_mpi(ksubset,ndyn)
+!     end_timempi = MPI_Wtime()
+!     elapsed_timempi = end_timempi - start_timempi
+!     write(unit_numpi, '(A, F6.2)') "Time after subroutine-CM: ", elapsed_timempi
+!     flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
 
+  endif
 
-!****** for collision(FBZ,FBZ) with all axes for velocity and F *******!
+! Allocate array to gather ksubs from all processes
+  allocate(caksub_mpi(nprocs_mpi))
+  allocate(cdispls_mpi(nprocs_mpi))    
 
-!allocate(col_matrix(nkc*ndyn*3,nkc*ndyn*3),RHS2(nkc*ndyn*3),xx2(nkc*ndyn*3),sig(nkc*ndyn*3))
-!call cal_RHS(nkc,kpc,ndyn,tempk,veloc,eigenval,RHS2)
-!call cal_collisionM2(nkc,kpc,ndyn,col_matrix)
-!svdcut = 1d-9
-!call svd_set(nkc*ndyn*3,nkc*ndyn*3,col_matrix,RHS2,xx2,sig,svdcut,errorr,ermax,sigma,'svd_output_FBZ.dat')
+  cksubmpiv=ksub_mpi*nibz*ndyn*3*ndyn*3
 
-!******* end (for FBZ and all axes) *******!
+! Gather ksubs from all processes
+  call MPI_Allgather(cksubmpiv, 1, MPI_INTEGER, caksub_mpi, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
 
 
+  cdispls_mpi(1) = 0
+  do i = 2, nprocs_mpi
+     cdispls_mpi(i) = cdispls_mpi(i-1) + caksub_mpi(i-1)
+!    write(*,*)'cdispls_mpi(i-1),cdispls_mpi(i),caksub_mpi(i-1),caksub_mpi(i),',i, cdispls_mpi(i-1),cdispls_mpi(i),caksub_mpi(i-1),caksub_mpi(i)
+  end do
 
-!******* for collision matrix(IBZ*FBZ)*Symmetry matrix(FBZ*IBZ) & RHS in IBZ *******!
+! write(*,*) displs_mpi,aksub_mpi
 
-!*allocate(col_matrix(nibz*ndyn*3,nkc*ndyn*3),RHS2(nibz*ndyn*3),sy_matrix(nkc*ndyn*3,nibz*ndyn*3))
-!call sy_matrix_IBZ_FBZ2(nibz,kibz,nkc,kpc,ndyn,sy_matrix)
-!*call sy_matrix_IBZ_FBZ2(nibz,kibz,nkc,kpc,ndyn,sy_matrix)
-!*call cal_RHS_IBZ(nibz,kibz,ndyn,tempk,veloc,eigenval,RHS2)
-!*call cal_collisionM2_IBZ2(nkc,kpc,nibz,kibz,ndyn,col_matrix)
-!*allocate(coll(nibz*ndyn*3,nibz*ndyn*3))
-!*coll=MATMUL(col_matrix,sy_matrix)
-!*deallocate(col_matrix,sy_matrix)
+  allocate(CM_temp_mpi(ksub_mpi*nibz*ndyn*3*ndyn*3))
 
-!*open(607,file='colsy.dat')
+  if (mod(num_k_mpi,nprocs_mpi).ne.0) then
+      num_k_mpi2 = local_num_k_mpi * nprocs_mpi + mod(num_k_mpi,nprocs_mpi)
+  else 
+      num_k_mpi2= num_k_mpi
+  endif
 
-!*colkil=nibz*ndyn*3
-!*do coll1=1,colkil
-!*   do coll2=1,colkil
-!*      write(607,*) coll1,coll2,coll(coll1,coll2)
-!*   enddo
-!*enddo
-!*close(607)
+! write(*,*)num_k_mpi2,num_k_mpi,local_num_k_mpi, nprocs_mpi, mod(num_k_mpi,nprocs_mpi)
 
+! allocate(CM_tempmpi(num_k_mpi2*nibz*ndyn*3*ndyn*3))
+  
 
-!*allocate(xx2(nibz*ndyn*3),sig(nibz*ndyn*3))
-!*svdcut = 1d-9
-!*call svd_set(nibz*ndyn*3,nibz*ndyn*3,coll,RHS2,xx2,sig,svdcut,errorr,ermax,sigma,'svd_output_IBZ.dat')
-!allocate(F_MRHS(nkc*ndyn*3))
-!F_MRHS = MATMUL(sy_matrix,xx2)
-!call mode_thermal_noniter2(nkc,ndyn,tempk,veloc,eigenval,F_MRHS) 
-!*call mode_thermal_noniter22(nibz,nkc,kibz,kpc,ndyn,tempk,veloc,eigenval,xx2)
-!*call write_thermal_noniter2(nkc,ndyn,tempk,veloc,eigenval,kpc)
+! allocate(CM_mpi(num_k_mpi2,nibz,ndyn,ndyn,ndyn))
+! allocate(Collision_Matrix(num_k_mpi2*ndyn*3,nibz*ndyn*3))
 
-!****** end ( C-matrix* S-matrix) *******!
 
+!  values1_mpi=product(shape(p1sm_mpi(1,:,:,:,:)))
+!  values2_mpi=product(shape(p2sm_mpi(1,:,:,:,:)))
 
-!******* collision matrix and symmetry matrix in one matrix (IBZ*IBZ) & RHS in IBZ *******!
+  CM_temp_mpi =0
+! P2sm_temp_mpi =0
+  cmkn1=ksub_mpi*ndyn*3
+  cmkn2=nibz*ndyn*3
+  smpi=0
+  do n1_mpi=1,cmkn1       !ksub_size2=ksubset(2)-ksubset(1)+1
+     do n2_mpi=1,cmkn2
 
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' Before svd approach,                TIME IS ',cputim
+        smpi = smpi +1
+        CM_temp_mpi(smpi) = Collision_Matrixmpi(n1_mpi,n2_mpi)
+!       write(*,*)rank_mpi,cmkn1,cmkn2,n1_mpi, n2_mpi, Collision_Matrixmpi(n1_mpi,n2_mpi)         
+     enddo
+  enddo
 
-allocate(xx2(nibz*ndyn*3),sig(nibz*ndyn*3))
-allocate(col_sy(nibz*ndyn*3,nibz*ndyn*3),RHS2(nibz*ndyn*3))
-call sycollisionM(nibz,kibz,ndyn,nkc,kpc,col_sy)
-call cal_RHS_IBZ(nibz,kibz,ndyn,tempk,veloc,eigenval,RHS2)
-!allocate(xx2(nibz*ndyn*3),sig(nibz*ndyn*3))
-svdcut = 1d-9
-call svd_set(nibz*ndyn*3,nibz*ndyn*3,col_sy,RHS2,xx2,sig,svdcut,errorr,ermax,sigma,'svd_output_IBZ2.dat')
-call mode_thermal_noniter23(nibz,nkc,kibz,kpc,ndyn,tempk,veloc,eigenval,xx2)
-call write_thermal_noniter2(nkc,ndyn,tempk,veloc,eigenval,kpc)
+  deallocate(Collision_Matrixmpi,P1,P2)
+  cncount1_mpi=size(Collision_Matrixmpi)
+  
+  allocate(CM_tempmpi(num_k_mpi2*nibz*ndyn*3*ndyn*3))
+  
+ 
+! write(*,*)'rank_mpi,ncount1_mpi,ncount2_mpi,tetttst',rank_mpi,ncount1_mpi,ncount2_mpi,tetttst 
 
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' after svd approach,                 TIME IS ',cputim
+ 
+! start_timempi = MPI_Wtime()
 
+  call MPI_Allgatherv(CM_temp_mpi,cncount1_mpi,MPI_DOUBLE_PRECISION,CM_tempmpi,caksub_mpi,cdispls_mpi,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,ierr_mpi)
 
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-gatherv-CM: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
 
-!allocate( col_matrix(nkc*ndyn*3,nkc*ndyn*3), RHS2(nkc*ndyn*3),xx2(nkc*ndyn*3),sig(nkc*ndyn*3) )
 
+  deallocate(CM_temp_mpi,cdispls_mpi,caksub_mpi)
+  allocate(Collision_Matrix(num_k_mpi2*ndyn*3,nibz*ndyn*3))
 
-!call cal_RHS(nkc,kpc,ndyn,tempk,veloc,eigenval,RHS2)           
-!open(401,file='RHStest.dat')
-!klrs=nkc*ndyn*3
-!do rs=1,klrs
-!   write(401,*)rs, RHS2(rs)
-!enddo
-!close(401)
 
+! instead of using reshape function.
+  cmkn1t=num_k_mpi2*ndyn*3
+  smpi=0
+  do n1_mpi=1,cmkn1t       !ksub_size2=ksubset(2)-ksubset(1)+1
+     do n2_mpi=1,cmkn2
 
+        smpi=smpi + 1
+        Collision_Matrix(n1_mpi,n2_mpi) = CM_tempmpi(smpi)
 
-!call cal_collisionM(nkc,kpc,ndyn,col_matrix)
+    enddo
+  enddo
 
-!open(403,file='collisiontest.dat')
+  deallocate(CM_tempmpi)
 
-!do col1=1,klrs
-!   do col2=1,klrs
-!   write(403,*)col1,col2,col_matrix(col1,col2)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' collision-symmetry matrix(IBZ*IBZ) done TIME IS',cputim
 
-!enddo
-!enddo
-!close(403)
+  allocate(RHS(nibz*ndyn*3))
 
+! start_timempi = MPI_Wtime()
+  call cal_RHS_IBZ(ndyn,nkc,tempk,veloc,eigenval)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' RHS in IBZ done,                TIME IS',cputim
 
-!svdcut = 1d-9
-!call svd_set(nkc*ndyn*3,nkc*ndyn*3,col_matrix,RHS2,xx2,sig,svdcut,errorr,ermax,sigma,'svd_output.dat')
 
-write(ulog,*) 'SVD done'
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')'satrt cg,                TIME IS',cputim
+! FFF=RESHAPE(FFF,(/nibz,ndyn,3/),order=[1,2,3])
+! DirectSolution=RESHAPE(FFF,(/(nibz*ndyn*3)/))
 
-!******* end (collision matrix and symmetry matrix in one matrix (IBZ*IBZ))*******!
 
+  allocate(DirectSolution(nibz*ndyn*3))
 
+  s=0
+  do is=1,nibz
+     do js=1,ndyn
+        do ks=1,3
+           s=s+1
+           DirectSolution(s)=FFF(is,js,ks)
+        enddo
+     enddo
+  enddo
 
 
+  call cg_quadratic(nibz*ndyn*3,Collision_Matrix,RHS,DirectSolution,fm,100,2)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' cg done,                TIME IS',cputim
 
+! FFF=RESHAPE(DirectSolution,(/nibz,ndyn,3/),order=[3,2,1])
+  call mode_kappa_d(ndyn,tempk,veloc,eigenval,DirectSolution)  !Thermal conductivity and tau_eff
+! call mode_kappa(ndyn,tempk,veloc,eigenval)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' thermal conductivty calculation, TIME IS',cputim
 
+  call write_kappa(ndyn,tempk,veloc,eigenval,kapd,tauef)
 
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-RHS and kappa: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
 
 
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' direct approach using cg method done,                 TIME IS',cputim
+  write(ulog,*) 'cg done'
 
-!write the distribution functioni xx  here
+  close(7450)
+  close(8450)
 
-!elseif (iter.eq.1) then  ! iterative solution here
+call MPI_Finalize(ierr_mpi)
+!---------------------------------------end of MPI part------------------------------------- 
 
 
-!endif 
-F1(:,:,:)=1.0*F_RTA(:,:,:) ! for iteration (initial guess)
+!-------------------Self-energy calculation-MPI-----------------------------------
+  elseif ( job .eq. 2 ) then
+!---------------------------------------
+  write(*,*)'self-energy calculation start'
+  write(ulog,*) 'self-energy calculation start'
+  write(ulog,*) 'job', job
 
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' self-energy calculation,               TIME IS',cputim
 
+  lwse=531
+  lwse2=553
+  ll = 532
 
-convergence=0              ! if converged, convergence = 1
-iter_cont=0                ! number of iterations while satisfying convergence criteria
+  call make_kp_bs
+  allocate(evlbs(ndyn,nkp_bs),evcbs(ndyn,ndyn,nkp_bs),vlcbs(3,ndyn,nkp_bs),omega0(ndyn),tse(ndyn))
+  call get_frequencies(nkp_bs,kp_bs,dk_bs,ndyn,evlbs,ndyn,evcbs,ll,vlcbs)
+  
+  open(lwse,file='lw-selfenergy.dat')
+  open(lwse2,file='lw-selfenergy2.dat')
+! do itmp=1,ntemp
 
+  tempk=tmin+(tmax-tmin)*(itmp-1)**2/(ntemp-1.0000001d0)**2   ! this temp is in Kelvin
+  temp = tempk*k_b/(100*h_plank*c_light) ! to convert from SI to cm^-1
 
-!open(170,file='fRTA.dat')
+! Initialize MPI, get the local number of k_point
+  call MPI_INIT(ierr_mpi)
+  call MPI_COMM_SIZE(MPI_COMM_WORLD,nprocs_mpi,ierr_mpi)
+  call MPI_COMM_RANK(MPI_COMM_WORLD,rank_mpi,ierr_mpi)
 
-  ! allocate(dkc(nibz))
-  ! dkc=0
 
-do i=1, max_iter     ! max_iter : maximum iteration allowed by params.phon
+  if (rank_mpi==0) then
 
-    write(ulog,*) '================= iteration',i
+      num_k_mpi = nkp_bs
 
-!   call cal_F2(nkc,kpc,ndyn)
-  !!nkc=nc1*nc2*nc3 
-   !call get_weights(nkc,kpc)
-   !call cal_F2m2(nkc,kpc,nibz,kibz,ndyn,tempk)              ! calculate F value
-   call cal_F2m23(nkc,kpc,nibz,kibz,ndyn,tempk)
-   
+  endif
 
-    write(ulog,*) 'cal_F2 done'
-   F1_old(:,:,:) = F1(:,:,:)         ! F1_old for convergence check.
-   F1(:,:,:) = F1(:,:,:) + update*(F2(:,:,:)-F1(:,:,:))  ! update F. update is read from params.phon (0.5 is recommended for Bi)
 
-   !allocate(dkc(nibz))
-   !dkc=0
-   !call get_frequencies(nibz,kibz,dkc,ndyn,eivalibz,ndyn,eivecibz,velocibz)
+! At this point, only root knows these values.  Send them out.
+  call MPI_Bcast(num_k_mpi,1,MPI_INTEGER,root_mpi,MPI_COMM_WORLD,ierr_mpi)
 
- !@@@  call mode_thermal_iter(nibz,nkc,ndyn,tempk,veloc,eigenval)  ! thermal conductivity calculation based on F values from above.
-   call mode_thermal_iter2(nibz,nkc,kibz,kpc,ndyn,tempk,veloc,eigenval)
-   write(ulog,*) 'mode_thermal_iter done...'
+  local_num_k_mpi = num_k_mpi/nprocs_mpi
+  write(*,*) 'num_k_mpi, local_num_k_mpi, nprocs_mpi',num_k_mpi, local_num_k_mpi, nprocs_mpi
 
-!   call check_conv(i,nkc,kpc,ndyn,tempk,convergence,iter_cont)
-!@@@   call check_conv2(i,nkc,kpc,ndyn,tempk,convergence,iter_cont)   ! check convergence.
-   call check_conv23(i,nkc,kpc,nibz,kibz,ndyn,tempk,convergence,iter_cont)
+! ksubset(1) and ksubset(2) are needed for the loops in the follwoing subroutines (calculate_w3_ibz_split_sq,calculate_FGR_mpi)
+  ksubset(1) = rank_mpi * local_num_k_mpi + 1
+  ksubset(2) = rank_mpi * local_num_k_mpi + local_num_k_mpi
 
-   write(ulog,*) 'check_conv done...'
+  if (mod(num_k_mpi,nprocs_mpi).ne.0) then
+     if  (rank_mpi.eq.(nprocs_mpi-1)) then
+         ksubset(2) = rank_mpi * local_num_k_mpi + local_num_k_mpi + mod(num_k_mpi,nprocs_mpi)
+     endif
+  endif
 
-   !write(ulog,*) 'i,convergence,iter_cont',i,convergence,iter_cont
-   !write(ulog,*) 'conv_diff_kap,conv_max_diff_kap,conv_iter',conv_diff_kap,conv_max_diff_kap,conv_iter
+  write(*,*)'rank_mpi,ksubset(1),ksubset(2)',rank_mpi,ksubset(1),ksubset(2)
 
-   call write_thermal(i,nkc,ndyn,tempk,veloc,eigenval,kpc)         ! write output file for thermal conductivity
+  allocate(isempi((ksubset(2)-ksubset(1)+1),ndyn))
+  allocate(tsempi((ksubset(2)-ksubset(1)+1),ndyn))
 
-   if (convergence .ne. 0 .and. iter_cont .gt. conv_iter) then      ! If converged
+  sbs=0
+
+! call selfenergyw3(ksubset,ndyn,temp,tempk,nkp_bs,kp_bs,dk_bs)
+
+  do nkbss=ksubset(1),ksubset(2)
+     kbss=kp_bs(:,nkbss)             
+     sbs = sbs + 1
+     do la=1,ndyn
+        kbss=kp_bs(:,nkbss)
+        omega0(la)=sqrt(abs(evlbs(la,nkbss))) * cnst
+        call function_self_w3(kbss,la,omega0(la),temp,nselfs,uselfs)
+        isempi(sbs,la)=2*aimag(nselfs+uselfs)
+        tsempi(sbs,la)=1d10/c_light/isempi(sbs,la)
+!       write(lwse,*)tempk,la,nkbss,kbss,dk_bs(nkbss),omega0(la),aimag(nselfs+uselfs),ise,tse(la),1/tse(la)
+!       write(*,*) itmp,ntemp,temp, la, nkbss, nselfs, uselfs
+     enddo
+!    write(lwse2,*)tempk,dk_bs(nkbss),(omega0(la),la=1,ndyn),((1/tse(la)),la=1,ndyn)
+!    write(*,*)tempk,dk_bs(nkbss),(omega0(la),la=1,ndyn),((1/tse(la)),la=1,ndyn)
+  enddo
+
+! enddo
+
+  ksub_mpi = (ksubset(2) - ksubset(1)) + 1
+! Allocate array to gather ksubsets from all processes
+  allocate(aksub_mpi(nprocs_mpi))
+  allocate(displs_mpi(nprocs_mpi))
+
+  ksubmpiv=ksub_mpi*ndyn
+
+! Gather ksubs from all processes
+  call MPI_Allgather(ksubmpiv, 1, MPI_INTEGER, aksub_mpi, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
+
+  displs_mpi(1) = 0
+  do i = 2, nprocs_mpi
+     displs_mpi(i) = displs_mpi(i-1) + aksub_mpi(i-1)
+!    write(*,*)'displs_mpi(i-1),displs_mpi(i),aksub_mpi(i-1),aksub_mpi(i),',i, displs_mpi(i-1),displs_mpi(i),aksub_mpi(i-1),aksub_mpi(i)
+  end do
+
+! write(*,*) displs_mpi,aksub_mpi
+
+  allocate(ise_temp_mpi(ksub_mpi*ndyn))
+  allocate(tse_temp_mpi(ksub_mpi*ndyn))
+
+  if (mod(num_k_mpi,nprocs_mpi).ne.0) then
+      num_k_mpi2 = local_num_k_mpi * nprocs_mpi + mod(num_k_mpi,nprocs_mpi)
+  else
+      num_k_mpi2= num_k_mpi
+  endif
+
+! write(*,*)num_k_mpi2,num_k_mpi,local_num_k_mpi, nprocs_mpi, mod(num_k_mpi,nprocs_mpi)
+
+  allocate(ise_tempmpi(num_k_mpi2*ndyn))
+  allocate(tse_tempmpi(num_k_mpi2*ndyn))
+
+  allocate(ise_mpi(num_k_mpi2,ndyn))
+  allocate(tse_mpi(num_k_mpi2,ndyn))
+
+
+  ise_temp_mpi =0
+  tse_temp_mpi =0
+
+  smpi=0
+  do n1_mpi=1,ksub_mpi       !ksub_size2=ksubset(2)-ksubset(1)+1
+     do l3_mpi=1,ndyn
+
+        smpi = smpi +1
+        ise_temp_mpi(smpi) = isempi(n1_mpi,l3_mpi)
+        tse_temp_mpi(smpi) = tsempi(n1_mpi,l3_mpi)
+
+    enddo
+  enddo
+
+
+  ncount1_mpi=size(isempi)
+  ncount2_mpi=size(tsempi)
+
+  call MPI_Allgatherv(ise_temp_mpi,ncount1_mpi,MPI_DOUBLE_PRECISION,ise_tempmpi,aksub_mpi,displs_mpi,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,ierr_mpi)
+  call MPI_Allgatherv(tse_temp_mpi,ncount2_mpi,MPI_DOUBLE_PRECISION,tse_tempmpi,aksub_mpi,displs_mpi,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,ierr_mpi)
+
+
+! instead of using reshape function.
+  smpi=0
+  do n1_mpi=1,num_k_mpi2       !ksub_size2=ksubset(2)-ksubset(1)+1
+     kbss=kp_bs(:,n1_mpi)
+     do l1_mpi=1,ndyn
+        omega0(l1_mpi)=sqrt(abs(evlbs(l1_mpi,n1_mpi))) * cnst
+        smpi=smpi + 1
+        ise_mpi(n1_mpi,l1_mpi) = ise_tempmpi(smpi)
+        tse_mpi(n1_mpi,l1_mpi) = tse_tempmpi(smpi)
+!       write(lwse,*)tempk,la,nkbss,kbss,dk_bs(nkbss),omega0(la),aimag(nselfs+uselfs),ise,tse(la),1/tse(la)
+write(lwse,*)tempk,l1_mpi,n1_mpi,kbss,dk_bs(n1_mpi),omega0(l1_mpi),ise_mpi(n1_mpi,l1_mpi)/2,ise_mpi(n1_mpi,l1_mpi),tse_mpi(n1_mpi,l1_mpi),1/tse_mpi(n1_mpi,l1_mpi)
+
+     enddo
+! write(lwse2,*)tempk,dk_bs(nkbss),(omega0(la),la=1,ndyn),((1/tse(la)),la=1,ndyn) 
+  write(lwse2,*)tempk,dk_bs(n1_mpi),(omega0(l1_mpi),l1_mpi=1,ndyn),((1/tse_mpi(n1_mpi,l1_mpi)),l1_mpi=1,ndyn)
+  
+  enddo
+
+
+
+  close(lwse)
+  close(lwse2)
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' Self-energy calculation done,     TIME IS',cputim
+  write(ulog,*) ' Self-energy calculation finished here '
+  write(*,*)' Self-energy calculation done'
+call MPI_Finalize(ierr_mpi)
+!----------------------------------------------------------------------------------------------
+
+
+
+!-------------------------------------------------------
+elseif ( job .eq. 3 ) then   ! MPI for very-large kpoints (with job=4)
+!-------------------------------------------------------
+  write(ulog,*) 'entering cal v33 in IBZ split...'
+  write(*,*) 'entering cal v33 in IBZ split...'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')'V33 calculation start,                TIME IS', cputim
+       
+ !Initialize MPI, get the local number of k_point
+  call MPI_INIT(ierr_mpi)
+  call MPI_COMM_SIZE(MPI_COMM_WORLD,nprocs_mpi,ierr_mpi)
+  call MPI_COMM_RANK(MPI_COMM_WORLD,rank_mpi,ierr_mpi)
+
+! Create a unique filename for each rank
+! write(filenamempi, '("timing_rank_", I0.2, ".txt")') rank_mpi
+
+! Open the file for writing
+! unit_numpi = 10 + rank_mpi
+! open(unit=unit_numpi, file=filenamempi, status='replace', action='write')
+
+  if (rank_mpi==0) then
+
+      num_k_mpi=nibz
+
+  endif
+
+
+ !At this point, only root knows these values.  Send them out.
+  call MPI_Bcast(num_k_mpi,1,MPI_INTEGER,root_mpi,MPI_COMM_WORLD,ierr_mpi)
+
+      local_num_k_mpi = num_k_mpi/nprocs_mpi
+      write(*,*) 'num_k_mpi, local_num_k_mpi, nprocs_mpi',num_k_mpi, local_num_k_mpi, nprocs_mpi
+
+ !ksubset(1) and ksubset(2) are needed for the loops in the follwoing subroutines (calculate_w3_ibz_split_sq,calculate_FGR_mpi)
+  ksubset(1) = rank_mpi * local_num_k_mpi + 1
+  ksubset(2) = rank_mpi * local_num_k_mpi + local_num_k_mpi
+       
+  if (mod(num_k_mpi,nprocs_mpi).ne.0) then
+     if  (rank_mpi.eq.(nprocs_mpi-1)) then
+         ksubset(2) = rank_mpi * local_num_k_mpi + local_num_k_mpi + mod(num_k_mpi,nprocs_mpi)
+     endif
+  endif  
+! write(*,*)'rank_mpi,ksubset1,ksubset2',rank_mpi,ksubset(1),ksubset(2)
+
+  nv3_split=nkc*(ksubset(2)-ksubset(1)+1)*ndyn**3        
+  call allocate_v33sq(nv3_split)
+
+  allocate(v33s8((ksubset(2)-ksubset(1)+1),nkc,ndyn,ndyn,ndyn))
+! call calculate_w3_fbz_split_sq(ksubset,nv3_split,ndyn,nkc,kpc,eigenval,eigenvec)
+! start_timempi = MPI_Wtime()
+  call calculate_w3_ibz_split_sq (ksubset,nv3_split,ndyn,nkc,kpc,eigenval,eigenvec,nv3o)
+  write(*,*)'after v3'
+
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-v33: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
+ 
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After v33 calculation,                TIME IS ',cputim
+
+  ksub_mpi = (ksubset(2) - ksubset(1)) + 1
+
+! write(*,*)'rank_mpi,ksubset1,ksubset2,ksub_mpi',rank_mpi,ksubset(1),ksubset(2), ksub_mpi
+! writing v33 for each rank
+! sts_mpi=1
+! tt = 1333
+
+! write(filename_mpi,fmt="(a,i3.3,a)") "v33.",rank_mpi,".dat"
+! open(tt,file=filename_mpi,status='replace')
+
+! do n1_mpi=1,ksub_mpi
+!    do n2_mpi=1,nkc
+!       do l1_mpi =1,ndyn
+!          do l2_mpi=1,ndyn
+!             do l3_mpi=1,ndyn
+
+!                 write(tt,*) rank_mpi, n1_mpi, n2_mpi, l1_mpi, l2_mpi, l3_mpi, v33s8(n1_mpi,n2_mpi,l1_mpi,l2_mpi,l3_mpi)
+!              enddo
+!           enddo
+!        enddo
+!     enddo
+! enddo
+
+! close(tt)
+
+  allocate(P1smpi((ksubset(2)-ksubset(1)+1),nkc,ndyn,ndyn,ndyn))
+  allocate(P2smpi((ksubset(2)-ksubset(1)+1),nkc,ndyn,ndyn,ndyn))
+        
+  write(ulog,*) 'entering cal v33*delta...'
+  write(*,*) 'entering cal v33*delta...'
+ 
+! start_timempi = MPI_Wtime()
+! changed to IBZ  call calculate_v3sq_delta (ksubset,ndyn,nkc,kpc)  
+  call calculate_FGR_mpi2(ksubset,ndyn,nv3o)!,v33s8)
+  write(*,*)'after FGR'
+! call deallocate_iter
+
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-v33delta: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After v33_delta calculation,            TIME IS ',cputim
+
+  deallocate(v33s8)
+! call deallocate_v33sq
+
+! writng P1sm and P2sm for each rank
+! sts_mpi=1
+! tt = 1333
+! write(filename_mpi,fmt="(a,i3.3,a)") "P1smpi.",rank_mpi,".dat"
+! write(filename_mpii,fmt="(a,i3.3,a)") "P2smpi.",rank_mpi,".dat"
+! open(tt,file=filename_mpi,status='replace')
+! open(tt+1,file=filename_mpii,status='replace')
+
+! do n1_mpi=1,ksub_mpi
+!    do n2_mpi=1,nkc
+!       do l1_mpi =1,ndyn
+!          do l2_mpi=1,ndyn
+!             do l3_mpi=1,ndyn
+!                 write(tt,*) rank_mpi, n1_mpi, n2_mpi, l1_mpi, l2_mpi, l3_mpi,P1smpi(n1_mpi,n2_mpi,l1_mpi,l2_mpi,l3_mpi)
+!                 write(tt+1,*) rank_mpi, n1_mpi, n2_mpi, l1_mpi, l2_mpi, l3_mpi,P2smpi(n1_mpi,n2_mpi,l1_mpi,l2_mpi,l3_mpi)
+!              enddo
+!           enddo
+!        enddo
+!     enddo
+! enddo
+
+! close(tt)
+
+!----------------------------------------------------------
+  if (iso.eq.1) then     !Piso calculation in IBZ split 
+!-----------------------------------------------------------
+  write(ulog,*) 'entering Piso calculation in IBZ split'
+  write(*,*) 'entering Piso calculation in IBZ split'
+  write(ulog,*) 'job', job
+
+  allocate (dist(nkc,ndyn),frequency(nkc,ndyn))
+  allocate(Pisos((ksubset(2)-ksubset(1)+1),ndyn))
+  tempk = tmin     ! use tmin in params.phon as temperature. tmax is not being used.
+  call distribution(nkc,ndyn,tempk)  ! calculate BE distribution function for each state
+
+  write(*,*)'natoms0', natoms0
+
+  allocate(giso(natoms0))
+  call cal_giso(giso)
+  call P_iso_split(ksubset,giso,ndyn,eigenvec)
+  deallocate(dist,frequency)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After Piso calculation,            TIME IS ',cputim
+  write(ulog,*) 'Piso calculation done'
+  write(ulog,*) 'Piso calculation done'
+  endif
+!------------------------------------------------------------------------------------------
+
+!------------- Exact solution of BTE--------------------------------------------------------
+  write(ulog,*) 'entering to the direct and iterative BTE solver'
+  write(*,*) 'entering to the direct and iterative BTE solver'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' entering to the direct and iterative BTE solver,      TIME IS',cputim
+
+! call allocate_iter (nibz,nkc,ndyn)    ! allocate memory
+  call allocate_FGR (ksub_mpi,nkc,ndyn,ndyn,ndyn)
+  write(ulog,*) 'allocate_iter done'
+
+  tauf=3450
+  kapRTA=6450
+  open(tauf,file='tau_RTA.dat',status='unknown')
+  open(kapRTA,file='kappa_RTA.dat',status='unknown')
+
+  tempk = tmin     ! use tmin in params.phon as temperature. tmax is not being used.
+
+  call distribution(nkc,ndyn,tempk)  ! calculate BE distribution function for each state
+  write(ulog,*) 'distribution done'
+
+  allocate(Qvaluempi((ksubset(2)-ksubset(1)+1),ndyn))
+  allocate(Qvalue_Nmpi((ksubset(2)-ksubset(1)+1),ndyn))
+  allocate(Qvalue_Umpi((ksubset(2)-ksubset(1)+1),ndyn))
+
+!--------------------------------------------
+  if (iso.eq.1) then   !reaind Piso if iso=true
+!---------------------------------------------  
+  call read_Piso(ndyn,Piso) 
+  write(ulog,*) 'reading Piso done'
+  call calculate_tauRTA_iso(ndyn,tempk)
+  else
+! start_timempi = MPI_Wtime()
+  call calculate_tauRTA_mpi2(ksubset,ndyn,tempk)!,rank_mpi)        
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-Q: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
+  endif
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' Q and tau_RTA in IBZ done,    TIME IS',cputim
+  write(ulog,*) 'Q and tau_RTA in IBZ done'
+
+
+  deallocate(P1smpi,P2smpi)!,Qvalue_N,Qvalue_U,Qvalue_Nmpi,Qvalue_Umpi)
+  deallocate(Piso)
+  call deallocate_v33sq
+
+  allocate(Qvalue_tempi((ksubset(2)-ksubset(1)+1)*ndyn))
+  allocate(Qvalue_Ntempi((ksubset(2)-ksubset(1)+1)*ndyn))
+  allocate(Qvalue_Utempi((ksubset(2)-ksubset(1)+1)*ndyn))
+
+  Qvalue_tempi=0
+  Qvalue_Ntempi=0
+  Qvalue_Ntempi=0
+  
+  smpi=0 
+  do n1_mpi=1,ksub_mpi
+     do l1_mpi=1,ndyn
+      
+        smpi=smpi+1
+        Qvalue_tempi(smpi) = Qvaluempi(n1_mpi,l1_mpi)
+        Qvalue_Ntempi(smpi) = Qvalue_Nmpi(n1_mpi,l1_mpi)
+        Qvalue_Utempi(smpi) = Qvalue_Umpi(n1_mpi,l1_mpi)
+
+    enddo
+  enddo
+
+  deallocate(Qvaluempi,Qvalue_Nmpi,Qvalue_Umpi)
+! Allocate array to gather ksubs from all processes
+  allocate(aksub_mpi(nprocs_mpi))
+  allocate(displs_mpi(nprocs_mpi))
+
+  ksubmpiv=ksub_mpi*ndyn
+
+! Gather ksubs from all processes
+  call MPI_Allgather(ksubmpiv, 1, MPI_INTEGER, aksub_mpi, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
+
+  displs_mpi(1) = 0
+  do i = 2, nprocs_mpi
+     displs_mpi(i) = displs_mpi(i-1) + aksub_mpi(i-1)
+!    write(*,*)'displs_mpi(i-1),displs_mpi(i),aksub_mpi(i-1),aksub_mpi(i),',i, displs_mpi(i-1),displs_mpi(i),aksub_mpi(i-1),aksub_mpi(i)
+  end do
+
+  allocate(Qvaluetemp(num_k_mpi*ndyn))
+  allocate(QvalueNtemp(num_k_mpi*ndyn))
+  allocate(QvalueUtemp(num_k_mpi*ndyn))
+  ncount1_mpi=size(Qvaluempi)
+
+! start_timempi = MPI_Wtime()
+
+  call MPI_Allgatherv(Qvalue_tempi,ncount1_mpi,MPI_DOUBLE_PRECISION,Qvaluetemp,aksub_mpi,displs_mpi,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,ierr_mpi)
+  call MPI_Allgatherv(Qvalue_Ntempi,ncount1_mpi,MPI_DOUBLE_PRECISION,QvalueNtemp,aksub_mpi,displs_mpi,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,ierr_mpi)
+  call MPI_Allgatherv(Qvalue_Utempi,ncount1_mpi,MPI_DOUBLE_PRECISION,QvalueUtemp,aksub_mpi,displs_mpi,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,ierr_mpi)
+
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-gatherv_RTA: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
+
+
+  smpi=0
+  do n1_mpi=1,num_k_mpi
+     do l1_mpi=1,ndyn
+
+        smpi=smpi+1
+        Qvalue(n1_mpi,l1_mpi) = Qvaluetemp(smpi)
+        Qvalue_N(n1_mpi,l1_mpi) = QvalueNtemp(smpi)
+        Qvalue_U(n1_mpi,l1_mpi) = QvalueUtemp(smpi)
+!       write(*,*)n1_mpi,l1_mpi,Qvalue(n1_mpi,l1_mpi),smpi,Qvaluetemp(smpi)
+     enddo
+  enddo
+
+
+  deallocate(Qvalue_tempi,Qvaluetemp,aksub_mpi,displs_mpi)
+  deallocate(Qvalue_Ntempi,QvalueNtemp,Qvalue_Utempi,QvalueUtemp)
+
+  call Qandtau(ndyn,tempk)
+
+  allocate(FFF(nibz,ndyn,3))
+! start_timempi = MPI_Wtime()
+! calculates F_RTA(kibz) 
+  call calculate_RTA_distributionfunction(nibz,nkc,kibz,ndyn,tempk,veloc,eigenval)
+  write(ulog,*) 'FRTA done'
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' FRTA in IBZ done,    TIME IS',cputim
+
+  call mode_kappa(ndyn,tempk,veloc,eigenval)
+  call write_kappa(ndyn,tempk,veloc,eigenval,kapRTA,tauf)
+
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-FRTA and kappa_RTA: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' kappa_RTA calculation done,   TIME IS',cputim
+
+  close(tauf)
+  close(kapRTA)
+
+  deallocate(Qvalue)
+
+  write(ulog,*) 'Start direct approach using cg method'
+  write(*,*) 'Start direct approach using cg method'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' Start direct approach using cg method,                TIME IS',cputim
+
+! tauef=7450
+! kapd=8450
+! open(tauef,file='tau_RTAandeff-cg.dat',status='unknown')
+! open(kapd,file='kappa_direct-cg.dat',status='unknown')
+
+
+  ksub_mpi = (ksubset(2) - ksubset(1)) + 1
+
+  allocate(Collision_Matrixmpi(ksub_mpi*ndyn*3,nibz*ndyn*3))
+
+!---------------------------------
+  if (iso.eq.1) then !for iso scattering
+!---------------------------------
+     Piso=0
+     call read_Piso(ndyn,Piso)
+     write(ulog,*) 'reading Piso done'
+     call CollisionMatrix_iso(ndyn)
+  else
+! start_timempi = MPI_Wtime()
+  call CollisionMatrix_mpi(ksubset,ndyn)
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-CM: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
+  endif
+
+! Allocate array to gather ksubs from all processes
+  allocate(caksub_mpi(nprocs_mpi))
+  allocate(cdispls_mpi(nprocs_mpi))    
+
+  cksubmpiv=ksub_mpi*nibz*ndyn*3*ndyn*3
+
+! Gather ksubs from all processes
+  call MPI_Allgather(cksubmpiv, 1, MPI_INTEGER, caksub_mpi, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
+
+  cdispls_mpi(1) = 0
+  do i = 2, nprocs_mpi
+     cdispls_mpi(i) = cdispls_mpi(i-1) + caksub_mpi(i-1)
+!    write(*,*)'cdispls_mpi(i-1),cdispls_mpi(i),caksub_mpi(i-1),caksub_mpi(i),',i, cdispls_mpi(i-1),cdispls_mpi(i),caksub_mpi(i-1),caksub_mpi(i)
+  end do
+
+! write(*,*) displs_mpi,aksub_mpi
+
+  allocate(CM_temp_mpi(ksub_mpi*nibz*ndyn*3*ndyn*3))
+  
+
+  if (mod(num_k_mpi,nprocs_mpi).ne.0) then
+      num_k_mpi2 = local_num_k_mpi * nprocs_mpi + mod(num_k_mpi,nprocs_mpi)
+  else 
+      num_k_mpi2= num_k_mpi
+  endif
+
+! write(*,*)num_k_mpi2,num_k_mpi,local_num_k_mpi, nprocs_mpi, mod(num_k_mpi,nprocs_mpi)
+
+! allocate(CM_tempmpi(num_k_mpi2*nibz*ndyn*3*ndyn*3))
+  
+
+! allocate(CM_mpi(num_k_mpi2,nibz,ndyn,ndyn,ndyn))
+! allocate(Collision_Matrix(num_k_mpi2*ndyn*3,nibz*ndyn*3))
+
+
+! values1_mpi=product(shape(p1sm_mpi(1,:,:,:,:)))
+! values2_mpi=product(shape(p2sm_mpi(1,:,:,:,:)))
+
+  CM_temp_mpi =0
+! P2sm_temp_mpi =0
+  cmkn1=ksub_mpi*ndyn*3
+  cmkn2=nibz*ndyn*3
+  smpi=0
+  do n1_mpi=1,cmkn1       !ksub_size2=ksubset(2)-ksubset(1)+1
+     do n2_mpi=1,cmkn2
+
+        smpi = smpi +1
+        CM_temp_mpi(smpi) = Collision_Matrixmpi(n1_mpi,n2_mpi)
+!       write(*,*)rank_mpi,cmkn1,cmkn2,n1_mpi, n2_mpi, Collision_Matrixmpi(n1_mpi,n2_mpi)         
+     enddo
+  enddo
+
+  deallocate(Collision_Matrixmpi,P1,P2)
+  cncount1_mpi=size(Collision_Matrixmpi)
+  
+  allocate(CM_tempmpi(num_k_mpi2*nibz*ndyn*3*ndyn*3))
+  
+ 
+! write(*,*)'rank_mpi,ncount1_mpi,ncount2_mpi,tetttst',rank_mpi,ncount1_mpi,ncount2_mpi,tetttst 
+
+! start_timempi = MPI_Wtime()
+  ! call MPI_Allgatherv(P1sm_temp_mpi,ncount1_mpi,MPI_DOUBLE_PRECISION,P1sm_tempmpi,aksub_mpi,displs_mpi,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,ierr_mpi)
+   call MPI_Allgatherv(CM_temp_mpi,cncount1_mpi,MPI_DOUBLE_PRECISION,CM_tempmpi,caksub_mpi,cdispls_mpi,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,ierr_mpi)
+
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-gatherv-CM: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
+
+
+  deallocate(CM_temp_mpi,cdispls_mpi,caksub_mpi)
+! allocate(Collision_Matrix(num_k_mpi2*ndyn*3,nibz*ndyn*3))
+  CM_1D=2109
+  open(CM_1D,file='CM-1D.dat')
+! instead of using reshape function.
+  cmkn1t=num_k_mpi2*ndyn*3
+  smpi=0
+  do n1_mpi=1,cmkn1t       !ksub_size2=ksubset(2)-ksubset(1)+1
+     do n2_mpi=1,cmkn2
+    
+        smpi=smpi + 1
+        write(CM_1D,*) CM_tempmpi(smpi) 
+              
+    enddo
+  enddo
+
+  close(CM_1D)
+
+
+  deallocate(CM_tempmpi)
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' collision-symmetry matrix(IBZ*IBZ) done TIME IS',cputim
+
+  allocate(RHS(nibz*ndyn*3))
+
+! start_timempi = MPI_Wtime()
+  call cal_RHS_IBZ(ndyn,nkc,tempk,veloc,eigenval)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' RHS in IBZ done,                TIME IS',cputim
+
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')'satrt cg,                TIME IS',cputim
+        !FFF=RESHAPE(FFF,(/nibz,ndyn,3/),order=[1,2,3])
+       ! DirectSolution=RESHAPE(FFF,(/(nibz*ndyn*3)/))
+
+
+!allocate(DirectSolution(nibz*ndyn*3))
+  DS_1D=2106
+  open(DS_1D,file='DS.dat')
+
+  s=0
+  do is=1,nibz
+     do js=1,ndyn
+        do ks=1,3
+           s=s+1
+      !    DirectSolution(s)=FFF(is,js,ks)
+          write(DS_1D,*) FFF(is,js,ks)
+        enddo
+     enddo
+  enddo
+
+  close(DS_1D)
+
+call MPI_Finalize(ierr_mpi)
+!---------------------------------------end of MPI part------------------------------------- 
+
+
+!----if CM is too big, this can be used as the second part to read CM and calculate kappa_direct-------------------
+  elseif (job .eq. 4) then !(after running job=3)
+!---------------------------------------------------
+  write(ulog,*) 'Start direct approach using cg method'
+  write(*,*) 'Start direct approach using cg method'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' Start direct approach using cg method,                TIME IS',cputim
+
+  call allocate_iter(nibz,nkc,ndyn)
+  tauef=7450
+  kapd=8450
+  open(tauef,file='tau_RTAandeff-cg.dat',status='unknown')
+  open(kapd,file='kappa_direct-cg.dat',status='unknown')
+  tempk = tmin     ! use tmin in params.phon as temperature. tmax is not being used.
+
+  allocate(Collision_Matrix(nibz*ndyn*3,nibz*ndyn*3),RHS(nibz*ndyn*3))
+
+  call read_CM_1D_mpi(nibz,ndyn,Collision_Matrix)
+
+  write(*,*)'after reading CM'
+
+! start_timempi = MPI_Wtime()
+  
+  call read_RHS(nibz,ndyn,RHS)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' RHS in IBZ done,                TIME IS',cputim       
+  write(*,*)'after reading RHS'
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')'satrt cg,                TIME IS',cputim
+  
+  allocate(DirectSolution(nibz*ndyn*3))
+
+  call read_DS(nibz,ndyn,DirectSolution)
+
+  write(*,*)'after reading DS'
+
+  call cg_quadratic(nibz*ndyn*3,Collision_Matrix,RHS,DirectSolution,fm,100,2)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' cg done,                TIME IS',cputim
+
+  allocate(FFF(nibz,ndyn,3))
+
+! FFF=RESHAPE(DirectSolution,(/nibz,ndyn,3/),order=[3,2,1])
+  call mode_kappa_d(ndyn,tempk,veloc,eigenval,DirectSolution)  !Thermal conductivity and tau_eff
+! call mode_kappa(ndyn,tempk,veloc,eigenval)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' thermal conductivty calculation, TIME IS',cputim
+
+  call write_kappa(ndyn,tempk,veloc,eigenval,kapd,tauef)
+
+! end_timempi = MPI_Wtime()
+! elapsed_timempi = end_timempi - start_timempi
+! write(unit_numpi, '(A, F6.2)') "Time after subroutine-RHS and kappa: ", elapsed_timempi
+! flush(unit=unit_numpi)  ! Ensure the data is written to the file immediately
+
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' direct approach using cg method done,                 TIME IS',cputim
+  write(ulog,*) 'cg done'
+  close(7450)
+  close(8450)
+stop
+!------------------------------------------------------------------------------------------
+
+
+
+!-------------------Self-energy calculation wihout MPI and split----------------------------
+  elseif ( job .eq. 5 ) then
+!---------------------------------------
+  write(*,*)'self-energy calculation start'
+  write(ulog,*) 'self-energy calculation start'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' self-energy calculation,               TIME IS',cputim
+
+  lwse=531
+  lwse2=553
+  ll=532
+
+  call make_kp_bs
+! write(*,*)' dk_bs =', dk_bs(: )
+  allocate(evlbs(ndyn,nkp_bs),evcbs(ndyn,ndyn,nkp_bs),vlcbs(3,ndyn,nkp_bs),omega0(ndyn),tse(la))
+  call get_frequencies(nkp_bs,kp_bs,dk_bs,ndyn,evlbs,ndyn,evcbs,ll,vlcbs)
+  open(lwse,file='lw-selfenergy.dat')
+  open(lwse2,file='lw-selfenergy2.dat')
+  do itmp=1,ntemp
+
+      tempk=tmin+(tmax-tmin)*(itmp-1)**2/(ntemp-1.0000001d0)**2   ! this temp is in Kelvin
+      temp = tempk*k_b/(100*h_plank*c_light) ! to convert from SI to cm^-1
+
+      do nkbss=1,nkp_bs
+        do la=1,ndyn
+!           do nkbss=1,nkp_bs
+
+               kbss=kp_bs(:,nkbss)
+               omega0(la)=sqrt(abs(evlbs(la,nkbss))) * cnst
+               call function_self_w3(kbss,la,omega0(la),temp,nselfs,uselfs)
+               ise=2*aimag(nselfs+uselfs)
+               tse(la)=1d10/c_light/ise
+               write(lwse,*)tempk,la,nkbss,kbss,dk_bs(nkbss),omega0(la),aimag(nselfs+uselfs),ise,tse(la),1/tse(la)
+               write(*,*) itmp,ntemp,temp, la, nkbss, nselfs, uselfs
+         enddo
+         write(lwse2,*)tempk,dk_bs(nkbss),(omega0(la),la=1,ndyn),((1/tse(la)),la=1,ndyn)
+      enddo
+  enddo
+
+  close(lwse)
+  close(lwse2)
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' Self-energy calculation done,     TIME IS',cputim
+  write(ulog,*) ' Self-energy calculation finished here '
+  write(*,*)' Self-energy calculation done'
+!------------------------------------------------------------------------------------------
+
+
+!-------------------Self-energy calculation-split (part1)-----------------------------------
+  elseif ( job .eq. 6 ) then
+!---------------------------------------
+  write(*,*)'self-energy calculation start'
+  write(ulog,*) 'self-energy calculation start'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' self-energy calculation,               TIME IS',cputim
+
+  lwse=531
+  lwse2=553
+  ll = 532
+
+  call make_kp_bs
+  allocate(evlbs(ndyn,nkp_bs),evcbs(ndyn,ndyn,nkp_bs),vlcbs(3,ndyn,nkp_bs),omega0(ndyn),tse(ndyn))
+  call get_frequencies(nkp_bs,kp_bs,dk_bs,ndyn,evlbs,ndyn,evcbs,ll,vlcbs)
+  call read_ksubset(ksubset)
+  open(lwse,file='lw-selfenergy.dat')
+  open(lwse2,file='lw-selfenergy2.dat')
+  do itmp=1,ntemp
+
+      tempk=tmin+(tmax-tmin)*(itmp-1)**2/(ntemp-1.0000001d0)**2   ! this temp is in Kelvin
+      temp = tempk*k_b/(100*h_plank*c_light) ! to convert from SI to cm^-1
+
+      do nkbss=ksubset(1),ksubset(2)
+         do la=1,ndyn
+             kbss=kp_bs(:,nkbss)
+             omega0(la)=sqrt(abs(evlbs(la,nkbss))) * cnst
+             call function_self_w3(kbss,la,omega0(la),temp,nselfs,uselfs)
+             ise=2*aimag(nselfs+uselfs)
+             tse(la)=1d10/c_light/ise
+             write(lwse,*)tempk,la,nkbss,kbss,dk_bs(nkbss),omega0(la),aimag(nselfs+uselfs),ise,tse(la),1/tse(la)
+!            write(*,*) itmp,ntemp,temp, la, nkbss, nselfs, uselfs
+          enddo
+          write(lwse2,*)tempk,dk_bs(nkbss),(omega0(la),la=1,ndyn),((1/tse(la)),la=1,ndyn)
+          write(*,*)tempk,dk_bs(nkbss),(omega0(la),la=1,ndyn),((1/tse(la)),la=1,ndyn)
+     enddo
+  enddo
+
+  close(lwse)
+  close(lwse2)
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' Self-energy calculation done,     TIME IS',cputim
+  write(ulog,*) ' Self-energy calculation finished here '
+  write(*,*)' Self-energy calculation done'
+!----------------------------------------------------------------------------------------------
+!-------------------Self-energy calculation-split (part2)--------------------------------------
+  elseif ( job .eq. 7 ) then
+!---------------------------------------
+  write(ulog,*) 'self-energy reaing part start split...'
+  write(*,*) 'self-energy reaing part start split...'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')'self-energy reaing part start split...,                TIME IS', cputim
+
+
+  call make_kp_bs
+  call read_lw(ndyn,nkp_bs)
+
+  call read_lw2(ndyn,nkp_bs)
+ 
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')'self-energy reaing part done, TIME IS', cputim
+  write(ulog,*) 'Self-energy calculation reaidng part done here '
+  write(*,*)'Self-energy reading part done'
+!------------------------------------------------------------------------------------------------
+
+
+
+!----------The anharmonic V3 matrix calculation in IBZ-------------------------------------
+  nv3 = nkc*nibz*ndyn**3
+!-------------------------------------------------------
+  elseif ( job .eq. 8 ) then   ! v33 in IBZ split...
+!-------------------------------------------------------
+  write(ulog,*) 'entering cal v33 in IBZ split...'
+  write(*,*) 'entering cal v33 in IBZ split...'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')'V33 calculation start,                TIME IS', cputim
+       
+  call read_ksubset(ksubset)  ! read index of initial and final kpoints set in the shellscript
+  write(*,*)'after read_ksub'
+  nv3_split=nkc*(ksubset(2)-ksubset(1)+1)*ndyn**3        
+  call allocate_v33sq(nv3_split)
+
+  allocate(v33s8((ksubset(2)-ksubset(1)+1),nkc,ndyn,ndyn,ndyn))
+!  call calculate_w3_fbz_split_sq(ksubset,nv3_split,ndyn,nkc,kpc,eigenval,eigenvec)
+   call calculate_w3_ibz_split_sq (ksubset,nv3_split,ndyn,nkc,kpc,eigenval,eigenvec,nv3o)
+   write(*,*)'after v3'
+   call cpu_time(cputim)  !date_and_time(time=tim)
+   write(utimes,'(a,f12.4)')' After v33 calculation,                TIME IS ',cputim
+
+      
+   write(ulog,*) 'entering cal v33*delta...'
+   write(*,*) 'entering cal v33*delta...'
+! changed to IBZ        call calculate_v3sq_delta (ksubset,ndyn,nkc,kpc)  
+  call calculate_FGR(ksubset,ndyn,nv3o)!,v33s8)
+  write(*,*)'after FGR'
+  call deallocate_iter
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After v33_delta calculation,            TIME IS ',cputim
+! write(*,*)'iso',iso
+!----------------------------------------------------------
+  if (iso.eq.1) then     !Piso calculation in IBZ split 
+!-----------------------------------------------------------
+   write(ulog,*) 'entering Piso calculation in IBZ split'
+   write(*,*) 'entering Piso calculation in IBZ split'
+   write(ulog,*) 'job', job
+
+   allocate (dist(nkc,ndyn),frequency(nkc,ndyn))
+   allocate(Pisos((ksubset(2)-ksubset(1)+1),ndyn))
+   tempk = tmin     ! use tmin in params.phon as temperature. tmax is not being used.
+   call distribution(nkc,ndyn,tempk)  ! calculate BE distribution function for each state
+   write(ulog,*) 'distribution done'
+   write(*,*)'after distribution'
+
+   allocate(giso(natoms0))
+
+   call cal_giso(giso)
+
+   call P_iso_split(ksubset,giso,ndyn,eigenvec)
+   write(*,*)'after P_iso_split'
+   deallocate(dist,frequency)
+   call cpu_time(cputim)  !date_and_time(time=tim)
+   write(utimes,'(a,f12.4)')' After Piso calculation,            TIME IS ',cputim
+   write(ulog,*) 'Piso calculation done'
+   write(ulog,*) 'Piso calculation done'
+  endif
+ 
+!------------------------------------------------------------------------------------------
+
+ 
+!------------- Exact solution of BTE--------------------------------------------------------
+  elseif (job .ge. 9) then
+!------------------------------------------
+  write(ulog,*) 'entering to the direct and iterative BTE solver'
+  write(*,*) 'entering to the direct and iterative BTE solver'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' entering to the direct and iterative BTE solver,      TIME IS',cputim
+
+  call allocate_iter (nibz,nkc,ndyn)    ! allocate memory
+  call allocate_FGR (nibz,nkc,ndyn,ndyn,ndyn)
+  write(ulog,*) 'allocate_iter done'
+
+  tauf=3450
+  kapRTA=6450
+  open(tauf,file='tau_RTA.dat',status='unknown')
+  open(kapRTA,file='kappa_RTA.dat',status='unknown')
+
+  tempk = tmin     ! use tmin in params.phon as temperature. tmax is not being used.
+
+  call distribution(nkc,ndyn,tempk)  ! calculate BE distribution function for each state
+  write(ulog,*) 'distribution done'
+!--------------------------------------------
+  if (iso.eq.1) then   !reaind Piso if iso=true
+!---------------------------------------------  
+      call read_Piso(ndyn,Piso) 
+      write(ulog,*) 'reading Piso done'
+      call calculate_tauRTA_iso(ndyn,tempk)
+  else
+      call calculate_tauRTA(ndyn,tempk)        
+  endif
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' Q and tau_RTA in IBZ done,    TIME IS',cputim
+  write(ulog,*) 'Q and tau_RTA in IBZ done'
+
+  allocate(FFF(nibz,ndyn,3))
+! call calculate_RTA_distributionfunction(nibz,kibz,ndyn,tempk,veloc,eigenval)  ! calculates F_RTA(kibz) 
+  call calculate_RTA_distributionfunction(nibz,nkc,kibz,ndyn,tempk,veloc,eigenval)
+  write(ulog,*) 'FRTA done'
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' FRTA in IBZ done,    TIME IS',cputim
+
+  call mode_kappa(ndyn,tempk,veloc,eigenval)
+  call write_kappa(ndyn,tempk,veloc,eigenval,kapRTA,tauf)
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' kappa_RTA calculation done,   TIME IS',cputim
+
+  close(tauf)
+  close(kapRTA)
+ 
+!-------------------------------------------------------
+  if(job .eq. 10) then  ! Direct noniterative method-svd 
+!-------------------------------------------------------
+  write(ulog,*) 'Start direct approach'
+  write(*,*) 'Start direct approach'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' Start direct approach,                TIME IS ',cputim
+
+  tauef=7450
+  kapd=8450
+  open(tauef,file='tau_RTAandeff.dat',status='unknown')
+  open(kapd,file='kappa_direct.dat',status='unknown')
+
+  allocate(DirectSolution(nibz*ndyn*3),sig(nibz*ndyn*3))
+  allocate(Collision_Matrix(nibz*ndyn*3,nibz*ndyn*3),RHS(nibz*ndyn*3))
+!-------------------------------------
+  if (iso.eq.1) then !for iso scattering 
+!-------------------------------------
+     call read_Piso(ndyn,Piso)
+     write(ulog,*) 'reading Piso done'
+
+     call CollisionMatrix_iso(ndyn)
+  else
+     call CollisionMatrix(ndyn)
+  endif
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' collision-symmetry matrix(IBZ*IBZ) done                TIME IS',cputim
+
+  call cal_RHS_IBZ(ndyn,nkc,tempk,veloc,eigenval)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' RHS in IBZ done,                TIME IS',cputim
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')'satrt SVD,                TIME IS',cputim
+  svdcut = 1d-9
+  call svd_solver(nibz*ndyn*3,nibz*ndyn*3,Collision_Matrix,RHS,DirectSolution,sig,svdcut,errorr,ermax,sigma,'svd_output_IBZ2.dat')
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' SVD done,                TIME IS',cputim
+
+  FFF=RESHAPE(DirectSolution,(/nibz,ndyn,3/),order=[3,2,1])
+! call mode_kappa_d(ndyn,tempk,veloc,eigenval,DirectSolution)  !Thermal conductivity and tau_eff
+  call mode_kappa(ndyn,tempk,veloc,eigenval)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' thermal conductivty calculation, TIME IS',cputim
+  call write_kappa(ndyn,tempk,veloc,eigenval,kapd,tauef)
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' direct approach done,                 TIME IS ',cputim
+  write(ulog,*) 'SVD done'
+
+  close(7450)
+  close(8450)
+
+
+
+!---------------------------------------------------------------
+  elseif(job .eq. 11) then   ! Direct noniterative method-split-svd
+!---------------------------------------------------------------
+  write(ulog,*) 'direct approach-split start'
+  write(*,*) 'direct approach-split start'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' Start direct approach-split,                TIME IS',cputim
+
+  call read_ksubset(ksubset)
+  allocate(Collision_Matrix((ksubset(2)-ksubset(1)+1)*ndyn*3,nibz*ndyn*3))
+  call CollisionMatrix_split(ksubset,ndyn)
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' collision-symmetry matrix(IBZ*IBZ)-split done, TIME IS',cputim
+
+!----------------------------------------------------------------------------
+  elseif (job .eq. 12) then  !reading collision Matrix_split calculated by job=11  
+!----------------------------------------------------------------------------
+  write(ulog,*) 'direct approach-spit reading colliaion Matrix'
+  write(*,*) 'direct approach-spiit reading collision matrix'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' Start reading CollisionMatrix for direct approach-split,          TIME IS',cputim
+
+  tauef=7450
+  kapd=8450
+  open(tauef,file='tau_RTAandeff.dat',status='unknown')
+  open(kapd,file='kappa_direct.dat',status='unknown')
+
+  allocate(DirectSolution(nibz*ndyn*3),sig(nibz*ndyn*3))
+  allocate(Collision_Matrix(nibz*ndyn*3,nibz*ndyn*3),RHS(nibz*ndyn*3))
+
+  call read_Collision_Matrix(ndyn,Collision_Matrix)
+! call read_RHS(nibz,ndyn,RHS2)
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' reading collision matrix, TIME IS',cputim
+
+  call cal_RHS_IBZ(ndyn,nkc,tempk,veloc,eigenval)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' RHS in IBZ done,                TIME IS',cputim
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' start svd approach,                TIME IS ',cputim
+
+  svdcut = 1d-9
+  call svd_solver(nibz*ndyn*3,nibz*ndyn*3,Collision_Matrix,RHS,DirectSolution,sig,svdcut,errorr,ermax,sigma,'svd_output_IBZ2.dat')
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' svd done,                TIME IS ',cputim
+
+  FFF=RESHAPE(DirectSolution,(/nibz,ndyn,3/),order=[3,2,1])
+  call mode_kappa(ndyn,tempk,veloc,eigenval)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' After kappa calculation,                TIME IS ',cputim
+  call write_kappa(ndyn,tempk,veloc,eigenval,kapd,tauef)
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' direct approach-split done,                 TIME IS',cputim
+  write(ulog,*) 'direct approach done'
+
+
+  close(7450)
+  close(8450)
+
+
+
+!-------------------------------------------------------
+  elseif(job .eq. 13) then  ! Direct noniterative method-cg
+!-------------------------------------------------------
+  write(ulog,*) 'Start direct approach using cg method'
+  write(*,*) 'Start direct approach using cg method'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' Start direct approach using cg method,                TIME IS',cputim
+
+  tauef=7450
+  kapd=8450
+  open(tauef,file='tau_RTAandeff-cg.dat',status='unknown')
+  open(kapd,file='kappa_direct-cg.dat',status='unknown')
+
+  allocate(DirectSolution(nibz*ndyn*3))
+  allocate(Collision_Matrix(nibz*ndyn*3,nibz*ndyn*3),RHS(nibz*ndyn*3))
+! call CollisionMatrix(ndyn)
+!---------------------------------
+  if (iso.eq.1) then !for iso scattering        
+!---------------------------------
+      Piso=0
+      call read_Piso(ndyn,Piso)
+      write(ulog,*) 'reading Piso done'
+      call CollisionMatrix_iso(ndyn)
+  else
+      call CollisionMatrix(ndyn)
+  endif
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' collision-symmetry matrix(IBZ*IBZ) done TIME IS',cputim
+
+
+  call cal_RHS_IBZ(ndyn,nkc,tempk,veloc,eigenval)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' RHS in IBZ done,                TIME IS',cputim
+
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')'satrt cg,                TIME IS',cputim
+! FFF=RESHAPE(FFF,(/nibz,ndyn,3/),order=[1,2,3])
+! DirectSolution=RESHAPE(FFF,(/(nibz*ndyn*3)/))
+
+  s=0
+  do is=1,nibz
+     do js=1,ndyn
+        do ks=1,3
+           s=s+1
+           DirectSolution(s)=FFF(is,js,ks)
+        enddo
+     enddo
+  enddo
+
+
+  call cg_quadratic(nibz*ndyn*3,Collision_Matrix,RHS,DirectSolution,fm,100,2)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' cg done,                TIME IS',cputim
+
+
+! FFF=RESHAPE(DirectSolution,(/nibz,ndyn,3/),order=[3,2,1])
+  call mode_kappa_d(ndyn,tempk,veloc,eigenval,DirectSolution)  !Thermal conductivity and tau_eff
+! call mode_kappa(ndyn,tempk,veloc,eigenval)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' thermal conductivty calculation, TIME IS',cputim
+
+  call write_kappa(ndyn,tempk,veloc,eigenval,kapd,tauef)
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' direct approach using cg method done,                 TIME IS',cputim
+  write(ulog,*) 'cg done'
+
+  close(7450)
+  close(8450)
+
+
+
+
+!------------------------------------------------------
+  elseif (job.eq.14) then  ! iterative solution here
+!------------------------------------------------------
+  write(ulog,*) 'iterative approach start'
+  write(*,*) 'iterative approach start'
+  write(ulog,*) 'job', job
+
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' start iterative approach,                 TIME IS',cputim
+
+  tauefi=9450
+  kappai=4451
+  open(tauefi,file='tau_RTAandeff_iter.dat',status='unknown')
+  open(kappai,file='kappa_iter.dat',status='unknown')
+ 
+  allocate(kappa_old(ndyn,3,3),kappa_new(ndyn,3,3),e(ndyn,3,3))
+  F_RTA=FFF
+
+  do i=1, max_iter     ! max_iter : maximum iteration allowed by params.phon
+
+     write(ulog,*) '================= iteration',i
+     call mode_kappa(ndyn,tempk,veloc,eigenval)
+     kappa_old=kappa
+     call cpu_time(cputim)  !date_and_time(time=tim)
+     write(utimes,'(a,f12.4)')' kappa_old calculation done,              TIME IS',cputim
+
+! calculate F value by using symmetry operations and using P, Qvalue in IBZ. 
+    call update(ndyn)
+    !------------------------------
+    if (iso.eq.1) then !for iso scattering
+    !-----------------------------        
+       call update_iso(ndyn)
+    else
+       call update(ndyn)
+    endif
+    write(ulog,*) 'update F done'
+    FFF(:,:,:) = FFF(:,:,:) + update_mix*(F2(:,:,:)-FFF(:,:,:))  ! update F with mixing
+    write(ulog,*) 'update F done'
+    call cpu_time(cputim)  !date_and_time(time=tim)
+    write(utimes,'(a,f12.4)')' update F done,             TIME IS',cputim
+
+    call mode_kappa(ndyn,tempk,veloc,eigenval)
+    kappa_new=kappa
+    write(ulog,*) 'mode_kappa done for kappa_new iteration',i
+    write(kappai,*)'================= iteration',i
+    call write_kappa(ndyn,tempk,veloc,eigenval,kappai,tauefi)
+    call cpu_time(cputim)  !date_and_time(time=tim)
+    write(utimes,'(a,f12.4)')' kappa_new calculation and writing it done ,    TIME IS',cputim
+
+    write(*,*)'================= iteration',i
+    normk=0
+    e=0
+    e=(kappa_new-kappa_old)**2/(ndyn*3*3)
+    normk=sqrt( sum(e(:,:,:)))
+    write(*,*)'normk2', normk
+    if (normk .lt. 0.0001 ) then
         exit
-   endif
- 
-enddo
+    else
+        cycle
+    endif
+    write(ulog,*) 'check_conv done...'
+    call cpu_time(cputim)  !date_and_time(time=tim)
+    write(utimes,'(a,f12.4)')' check_conv done ,TIME IS',cputim
 
+  enddo
 
-
-!close(170)
-  !deallocate(dkc)
-call deallocate_iter2
-
-call cpu_time(cputim)  !date_and_time(time=tim)
-write(utimes,'(a,f12.4)')' After calculation of linewidth,     TIME IS ',cputim
+  call deallocate_FGR
+  close(tauefi)
+  close(kappai)
+  call cpu_time(cputim)  !date_and_time(time=tim)
+  write(utimes,'(a,f12.4)')' iterative approach done,     TIME IS ',cputim
 
 
 !================================================================================
@@ -1163,25 +2070,22 @@ write(utimes,'(a,f12.4)')' After the kappa loop,               TIME IS ',cputim
  close(ufc2)
  close(ufc3)
  close(utimes)
- close(ibz)
+ close(uibz)
  close(bzf)
  close(fbz)
  close(ibs)
  close(ucors)
- close(ualph)
-! close(urate)
-
-
 
 endif
-
- end program kappa_sy
+endif
+endif
+!endif
+ end program kappa_full
 
 
 
 !===============================================================
-  subroutine get_kindex(q,nkc,kpc,ik)
-  use  geometry
+ subroutine get_kindex(q,nkc,kpc,ik)
   implicit none
   integer ik,nkc,i,j
   real(8) kpc(3,nkc),q(3)
@@ -1189,7 +2093,7 @@ endif
   ik=0
   mainlp: do i=1,nkc
      do j=1,3
-        if (.not. (abs(q(j)-kpc(j,i)) .myeq. 0d0) ) exit
+        if (abs(q(j)-kpc(j,i)) .ge. 1d-4) exit
         if (j.eq.3) then
            ik=i
            exit mainlp
@@ -1214,43 +2118,6 @@ endif
   sd   = sqrt(sd2 - mean*mean)
 
   end subroutine mean_sd
-!=====================================================
-  subroutine histogram(m,x,mesh)
-! calculates the histogram of the data set x (needs not be sorted)
-! and writes the distribution function in the file 'histo.dat'
-  implicit none
-  integer, intent(in):: m,mesh
-  real(8), intent(in):: x(m)
-  integer i,j,cnt,unit
-  real(8) xmin,xmax,dx,sume,cume,e(mesh)
-
-  unit=123
-  open(unit,file='histo.dat')
-  write(unit,*)'# j,  x(j) , e(j) , e(j)/sume/dx,accumulated e '
-
-  cnt = size(x)
-  xmax= maxval(x)
-  xmin= minval(x)
-  dx  = (xmax-xmin)/mesh
-  write(*,5)'HISTO: size,xmin,xmax,dx=',cnt,xmin,xmax,dx
-
-  e=0
-  do i=1,cnt
-! j=position of the bin to which x(i) belongs
-     j= int((x(i)-xmin)/dx)+1
-     if(j.eq.mesh+1) j=mesh
-     if (j.lt.1 .or. j.gt.mesh) then
-        write(*,*)'j is out of range ',j
-        stop
-     endif
-     write(unit,4)j,xmin+(j-0.5)*dx,e(j),e(j)/sume/dx,cume
-  enddo
- 4 format(i8,9(2x,g12.6))
- 5 format(a,i8,9(2x,g12.6))
-
-  close(unit)
-
-  end subroutine histogram
 !=====================================================
 !! k1
 ! subroutine self_energy(q_ibz,k,la,omega,temp,nself,uself,iread)

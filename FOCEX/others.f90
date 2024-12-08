@@ -8,9 +8,9 @@
  use ios
  use geometry
  implicit none
- character lineout*80
+ character lineout*80,frmt*90
  integer i0,j,i,n,m,mxzero,mx,mxi,l,rnk,ichkloop   &
- &      ,ntermszero,nd,ntindp,ierz,iert,ieri,ierg,mzero(4),mxgrps
+ &      ,ntermszero,nd,ntindp,ierz,iert,ieri,ierg,mzero(maxrank),mxgrps
  integer, allocatable:: iatmtermzero(:,:),ixyztermzero(:,:)
 ! type arraysize
 !    integer rnk
@@ -23,10 +23,15 @@
  call write_out(ulog,' #r=2 nshells ',nshells(2,:))
  call write_out(ulog,' #r=3 nshells ',nshells(3,:))
  call write_out(ulog,' #r=4 nshells ',nshells(4,:))
+ call write_out(ulog,' #r=5 nshells ',nshells(5,:))
+ call write_out(ulog,' #r=6 nshells ',nshells(6,:))
+ call write_out(ulog,' #r=7 nshells ',nshells(7,:))
+ call write_out(ulog,' #r=8 nshells ',nshells(8,:))
  write(ulog,*)'# trans,rot,huang,enforce_inv=',itrans,irot,ihuang,enforce_inv
 
 !! K1 2/12/23
-    mzero(1:4) = maxtermzero(1:4)
+!   mzero(1:4) = maxtermzero(1:4)
+    mzero = maxtermzero  ! 3/20/24
 !! K1 2/12/23
 
  nd = sum(include_fc)
@@ -41,7 +46,7 @@
 
 ! loop over ranks that are supposed to be included
 ! -----------------------------------
- rankloop: do rnk=1,4 !,1,-1
+ rankloop: do rnk=1,maxrank !,1,-1
   if ( include_fc(rnk) .ne. 0 ) then
 
     ierz=1; iert=1;  ieri=1; ierg=0
@@ -160,12 +165,12 @@
 
   enddo checkloop
 
-     write(umap,'(a,i1,a,20(1x,i2),a,i8,a,i5,a)')   &
-&     '************ rank ',rnk,', shell ',nshells(rnk,:),', groups ',ngroups(rnk)
+     write(frmt,'(a,i3,a)') '(a,i1,a,',natom_prim_cell,'(1x,i2),a,i8,a,i5,a)'   
+
+!    write(umap,'(a,i1,a,20(1x,i2),a,i8,a,i5,a)')   &
+     write(umap,frmt)    &
+&     '************ rank ',rnk,', shell ',nshells(rnk,1:natom_prim_cell),', groups ',ngroups(rnk)
      if(ngroups(rnk).gt.0) then
-!        write(umap,'(a,i2,a,99(i5))')'rank=',rnk,' indepterms=',ntermsindep(1:ngroups(rnk))
-!        write(umap,'(a,i2,a,99(i5))')'rank=',rnk,' all  terms=',nterm(1:ngroups(rnk))
-!        write(ulog,*)'Rank, size of allocated array, real size=',rnk,mx,nterm(ngroups(rnk))
 
         allocate(map(rnk)%gr   (ngroups(rnk)),    &
         &        map(rnk)%nt   (ngroups(rnk)),    &
@@ -195,6 +200,7 @@
        &         map(rnk)%gr(i)%ixyzind(rnk,ntermsindep(i))  )
         enddo
 
+        write(umap,*)'rank=',rnk,' groups ',map(rnk)%ngr,' indepterms=',map(rnk)%ntotind,' all terms=',map(rnk)%ntot
         write(umap,'(a,i2,a,99(i5))')'rank=',rnk,' indepterms=',map(rnk)%ntind(:)
         write(umap,'(a,i2,a,99(i5))')'rank=',rnk,' all  terms=',map(rnk)%nt(:)
 
@@ -239,7 +245,7 @@
 
  write(*,*) 'SETUP_MAPS: Exited the main rank loop , and going to write by calling ustring'
 
- do rnk=1,4
+ do rnk=1,maxrank
   if ( include_fc(rnk) .ne. 0 ) then
     if(ngroups(rnk).gt.0) then
       n=7+4*rnk
@@ -275,7 +281,7 @@
  enddo !rankloop
 
  nindepfc = 0
- do rnk=1,4
+ do rnk=1,maxrank
     if ( include_fc(rnk) .eq. 1 ) then ! exclude them if they already exist and will be read
 ! get the total number of independent and full terms for each rank
        call get_dim(map(rnk),map(rnk)%ntotind,map(rnk)%ntot)
@@ -905,9 +911,11 @@
 
  end subroutine truncate
 !===========================================================
- subroutine setup_FC2_in_supercell !(keep_grp2,size_kept_fc2)
-!! selects only the FC2s which are in the WS cell of the supercell, defined by nshells(2,:)
-!! defined by rws26(3,nrgrid). If keep_grp2(i)=1, then it is in the WS and is kept
+ subroutine setup_FC2_in_supercell 
+!! selects only the independent FC2s which are in the WS cell of the supercell, including its boundary, 
+!! defined by rws26(3,nrgrid). If keep_fc2i(i)=1, then it is in the WS and is kept
+!! for fc2flag=0 everything in WS and all its images by symmetry are kept
+!! for fc2flag\=0 all the requested shells are kept provided one of them is within the WS of the supercell
  use lattice
  use ios
  use atoms_force_constants
@@ -916,76 +924,88 @@
  use params
  use constants, only : r15
  implicit none
-! integer, intent(out) :: keep_grp2(:),size_kept_fc2
- integer g,ti,i0,j,inside,keep !,ishl
- real(r15) rij(3),dij(999)
+ integer g,ti,t,i0,j,cnt,nboundary
+ real(r15) rij(3),dij(999),transl(3),rij0(3)
+ logical inside
 
- write(ulog,*)'SETUP_FC2: dimension of keep_grp2=',size(keep_grp2)
- keep_grp2=0
+ write(ulog,*)'SETUP_FC2: dimension of keep_fc2i=',size(keep_fc2i)
+ keep_fc2i=0
  size_kept_fc2=0  ! this is the size in amatrix of the FC2s not eliminated<map(2)%ntind.
  do g=1,map(2)%ngr
-    keep=0 ! counts how many indepterms within this group are inside WS
-    ! do t=1,map(2)%nt(g)
-!    cnt=0  ! counts how many are inside within that group
     do ti=1,map(2)%ntind(g)
-! find the pairs in that group and see if they fit in the WS cell
-    !  i0=map(2)%gr(g)%iat(1,t)
-    !  j =map(2)%gr(g)%iat(2,t)  ! this j is for atompos
-       i0=map(2)%gr(g)%iatind(1,ti)
-       j =map(2)%gr(g)%iatind(2,ti)  ! this j is for atompos
+    cnt= counter2(g,ti)
+    tloop: do t =1,map(2)%nt(g) ! loop over t until one of them is in WS; id the (g,ti) pair
+       i0=map(2)%gr(g)%iat(1,t)
+       j =map(2)%gr(g)%iat(2,t)  ! this j is for atompos
        rij=atompos(:,j)-atompos(:,i0) ! is this within the WS cell?
-!      dij(cnt+1)=length(rij)
-       call check_inside_ws(rij,rws26,inside)
-       keep=keep+inside
+!      write(ulog,*)'g,t,cnt,rij=',g,ti,cnt,rij
+       call check_inside_ws(rij,rws26,inside,nboundary)
 ! Do we have elements of the same group, i.e. same distance, one being inside and one outside?
-       if(keep.lt.ti) then
-         write(ulog,*)'SETUP_FC2: ti=',ti,' was not kept in group ', g
+       if (inside .and. map(2)%gr(g)%mat(t,ti) .ne.0) then
+         keep_fc2i(cnt)=1 
+         write(ulog,5)'Group,ti ',g,ti,' term of distance rij=',length(rij),' is kept'     
+         exit tloop
        endif
+    enddo tloop
+    if(keep_fc2i(cnt).eq.0) write(ulog,5)'Group,ti ',g,ti,' term of distance rij=',length(rij),' NOT kept'     
     enddo
-    dij(g)=length(rij)
-    if(keep.ne.0) then ! if at least, one of them has to be kept,
-        keep_grp2(g)=1 ! if use keep instead of 1 check the ret of the code
-!! NEW
-!        size_kept_fc2=size_kept_fc2 + map(2)%ntind(g)   !we keep that whole group!
-        size_kept_fc2=size_kept_fc2 + keep    ! keep only group members that were inside
-!        write(ulog,5)'Group ',g,' is shell corresponding to rij=',dij(g),' kept nt_ind,sizekeptfc2 ', &
-!&                     map(2)%ntind(g),size_kept_fc2
-        write(ulog,5)'Group ',g,' is shell corresponding to rij=',dij(g),' kept,nt_ind,sizekeptfc2 ', &
-&                     keep,map(2)%ntind(g),size_kept_fc2
-!! NEW
-
-!        do ti=1,map(2)%ntind(g)
-!!          if (map(2)%ntind(g).gt.1) size_kept_fc2=size_kept_fc2+1
-!           write(ulog,3)' group,ti,count,i0,j,rij=',g,ti,cnt,i0,j,length(rij),' keep_grp2(count)=',keep_grp2(cnt)
-!       enddo
-! find which shell this rij corresponds to
-     !  if ( abs(atom0(iatomcell0(i0))%shells(ishl)%radius - dij).lt.1d-4 .and. inside.eq.1) then
-     !      write(ulog,5)'In group ',g,' the ',ishl,' th shell corresponding to rij=',dij,' is kept'
-     !      exit
-     !  endif
-!        write(ulog,3)' kept group, # of elements in it, cumulative size_kept_fc2=',g, &
-!   &                 map(2)%ntind(g),size_kept_fc2
-    else
-        write(ulog,6)'Group ',g,' is shell corresponding to rij,dij=',rij,dij(g),' is NOT kept'
-
-    endif
  enddo
+ size_kept_fc2=sum(keep_fc2i)  ! number of independent FC2 terms kept
 
-
+ write(ulog,*)'size of groups of FC2s:ngr, size(kept indep terms)=',map(2)%ngr,size(keep_fc2i,1)
  write(ulog,*)'size of kept FC2 indep terms=',size_kept_fc2, 'out of ',map(2)%ntotind
- write(ulog,*)'size of groups of FC2s, kept ones=',map(2)%ngr,size(keep_grp2)
- write(ulog,*)'Total # of groups kept =',sum(keep_grp2)
- write(ulog,*)'# i, keep_grp2(i)'
- do g=1, map(2)%ngr
-    write(ulog,*)g,keep_grp2(g),dij(g)
- enddo
+ write(ulog,*)'Total # of independent terms kept =',sum(keep_fc2i)
+ write(ulog,*)'# i, keep_fc2i(i)'
 
-3 format(a,i3,1x,i3,1x,i5,3x,i3,1x,i4,f9.4,a,i4)
-4 format(a,i4,1x,2i4,3x,i4,2x,i4,2x,f9.4)
-5 format(a,i4,a,f9.4,a,3i5)
-6 format(a,i4,a,4f9.4,a,2i5)
+5 format(a,2i4,a,f9.4,a,3i5)
 
  end subroutine setup_FC2_in_supercell
+!==============================================
+ subroutine exclude_beyond_sc(n,keep)
+!! selects only the independent FC2s which are in the WS cell of the supercell, including its boundary, 
+!! defined by rws26(3,nrgrid). If keep_fc2i(i)=1, then it is in the WS and is kept
+ use lattice
+ use ios
+ use atoms_force_constants
+ use geometry
+ use svd_stuff
+ use params
+ use constants, only : r15
+ implicit none
+ integer, intent(inout) :: n,keep(n)
+ integer g,ti,t,i0,j,cnt,nboundary
+ real(r15) rij(3),dij(999),transl(3),rij0(3)
+ logical inside
+
+ write(ulog,*)'EXCLUDE_BEYOND_SC: dimension of keep=',n
+ keep=0
+ do g=1,map(2)%ngr
+    do ti=1,map(2)%ntind(g)
+    tloop: do t =1,map(2)%nt(g)
+       i0=map(2)%gr(g)%iat(1,t)
+       j =map(2)%gr(g)%iat(2,t)  ! this j is for atompos
+       rij=atompos(:,j)-atompos(:,i0) ! is this within the WS cell?
+       cnt= counter2(g,ti)
+!      write(ulog,4)'g,t,cnt,rij=',g,ti,cnt,rij
+       call check_inside_ws(rij,rws26,inside,nboundary)
+!      write(ulog,*)'inside is ',inside
+! Do we have elements of the same group, i.e. same distance, one being inside and one outside?
+       if(inside) then  ! keep if at least one of the terms is inside
+          keep(cnt)=1 
+          write(ulog,5)'Group,ti ',g,ti,' term of distance rij=',length(rij),' is kept'     
+          exit tloop
+       endif
+    enddo tloop
+    write(ulog,*)'EXCLUDE_BEYOND_SC: Group,ti,cnt ',g,ti,cnt,' of rij=',length(rij),' kept?',keep(cnt)     
+    enddo
+ enddo
+
+ write(ulog,*)'Total # of independent terms kept, map2%ntotind =',sum(keep),map(2)%ntotind
+
+4 format(a,3i4,9f9.4)
+5 format(a,2i4,a,f9.4,a,3i5)
+
+ end subroutine exclude_beyond_sc
 !==============================================
  subroutine implement_temperature(m3,n,amat,bmat,nconfg,ene,nlines,tempk,mat,qmat)
 ! input is the inhomogeneous part of amat; output is a square matrix mat(n,n) and qmat(n)

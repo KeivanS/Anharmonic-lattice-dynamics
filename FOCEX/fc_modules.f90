@@ -31,11 +31,9 @@ module params
  use constants, only : r15
  real(r15) tolerance,margin,scalelengths,alfaborn,tempk,rcutoff
  integer nconfigs,classical,ntemp,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,itemp
- integer nshells(4,20)  ! up to which shell to include for each rank of FC (read from input file)
- integer include_fc(4) !,nsmax  ! whether to include FCs of that rank ,max# of shells looping
-! real(r15) rcut(4),tau0,wshift(3)
+ integer , allocatable :: nshells(:,:)  !nshells(8,natom_prim_cell) up to which shell to include for each rank of FC (read from input file)
+ integer include_fc(8), icutoff !,nsmax  ! whether to include FCs of that rank ,max# of shells looping
  real(r15) tmin,tmax,qcros(3),svdc,lmax ! lmax is the cutoff length of FC2 limited by the supercell WS
- real(r15) rcutoff_ewa,gcutoff_ewa,eta! these are for ewaldsums
  logical verbose
 
 end module params
@@ -49,6 +47,9 @@ end module params
   type point
     real(r15) :: x,y,z
   end type point
+  type svector
+    real(r15) :: s,v(3)
+  end type svector
 !-----------------------------
    interface operator(*)
      module procedure multiply_by_real,multiply_by_integer ; end interface
@@ -111,7 +112,7 @@ end module params
 !! checks if the variable is integer
  use params, only : tolerance
  implicit none
- real(r15) i
+ real(r15), intent(in):: i
  logical is
 
  if (abs(i-nint(i)).lt.tolerance ) then
@@ -125,7 +126,7 @@ end module params
 !! checks if the variable is integer
  use params, only : tolerance
  implicit none
- real(r15) i(:)
+ real(r15), intent(in):: i(:)
  logical is
  integer j,n
 
@@ -680,11 +681,11 @@ end subroutine calvol_v
 !==============================================
 module ios
  use constants, only : r15
- integer, parameter:: uposcar=10,uparams=11,uborn=12, &
+ integer, parameter:: uposcar=10,uparams=11,uborn=12,usym=29, &
 &         ufco=20,ulog=30,utraj=40,umatrx=50,umap=60,utimes=70,ufc=80, &
 &         ufc1=21,ufc2=22,ufc3=23,ufc4=24,  &
 &         ufit1=31,ufit2=32,ufit3=33,ufit4=34,  &
-&         ujunk=79,uibz=80,uibs=81,ugrun=82,uband=83,ucor=93,utherm=110
+&         ujunk=79,uibz=80,uibs=81,ugrun=82,uband=83,ucor=93,utherm=110,udos=111
 
 
   interface write_out
@@ -875,7 +876,6 @@ end module ios
 !      module force_constants_module
 ! maximum shells of nearest neighbors (along radial direction) , and actual # of neighborshells
       integer maxneighbors,maxshells
-!     parameter(maxneighbors=18 )
 ! maximum number of atoms out to maxneighbors
       integer maxatoms,imaxatm,imaxnei
 ! op_matrix(k,j,i), matrix for the ith point operator
@@ -1082,7 +1082,7 @@ contains
 ! integer nr1(3),nr2(3),nr3(3)
 ! real(r15), allocatable:: rgrid(:,:),ggrid(:,:),xgrid(:,:)
  real(r15) gws26(3,26),rws26(3,26),invn_sc(3,3)  ! superlattice shells defining the WS of SL
- real(r15) g0ws26(3,26),r0ws26(3,26)
+ real(r15) g0ws26(3,26),r0ws26(3,26) , lgridmax
  integer n_sc(3,3)
 
   interface make_rg
@@ -1110,6 +1110,24 @@ contains
   end interface
 
  contains
+
+!=========================================
+ function reduce_g(q) result(redq)
+!! converts cartesian coordinates of a kpoint to its reduced coordinates
+ use constants, only : pi,r15
+ implicit none
+ real(r15) , intent(in) :: q(3)
+ real(r15)  redq(3)
+ redq=matmul(transpose(prim_to_cart),q)/(2*pi)
+ end function reduce_g
+!=========================================
+ function reduce_r(q) result(redq)
+ use constants, only : pi,r15
+ implicit none
+ real(r15) , intent(in) :: q(3)
+ real(r15) redq(3)
+ redq=matmul(cart_to_prim,q) !/(2*pi)
+ end function reduce_r
 
 !-------------------------------------------
  subroutine make_r0g
@@ -1173,7 +1191,8 @@ contains
  a(2) = (r .dot. g2)/(2*pi)
  a(3) = (r .dot. g3)/(2*pi)
  n=floor(a)
- if(is_integer_a(a)) then
+! if(is_integer_a(a)) then
+ if(is_integer(a)) then
 !  write(ulog,*) ' R is a multiple of r0s'
 !  write(ulog,3) ' n1,n2,n3  =',a1,a2,a3
    ier = 0
@@ -1337,8 +1356,8 @@ contains
  use atoms_force_constants
  use constants
  implicit none
- integer i
- real(r15)particle_density,volcut  ! x1,x2,x3,
+ integer i,mx1
+ real(r15) particle_density,volcut,r1(3),r2(3),r3(3),volmax,rshells(3,26),rc1
  external unitcell,symmetry_init
 
 ! generate r0i and g0i rom latticeparameters, primitivelattice
@@ -1391,40 +1410,54 @@ contains
      write(ulog,8)'After unitcell '//atom0(i)%name,atom0(i)%at_type,atom0(i)%tau,atom0(i)%equilibrium_pos,atom0(i)%mass
   enddo
 
-! generate neighbors in atompos up to a disctance rcut(2)
-!  write(ulog,*)'A default cutoff range of ',rcut(2),' has been chosen for FC2s'
-
-! get largest # of atoms within rcut; and nsmax=rcut/shortest translation+2
-!  call get_upper_bounds(r01,r02,r03,rcut(2),maxatoms,nsmax)
-
   density=sum(atom0(:)%mass)/volume_r0*uma*1d27
-  write(ulog,*)' density (uma/Ang^3)=',sum(atom0(:)%mass)/volume_r0
-  write(ulog,*)' density (  g/ cm^3)=',density
+  particle_density=natom_prim_cell/volume_r0  
+  write(ulog,*)'       density (uma/Ang^3)=',sum(atom0(:)%mass)/volume_r0
+  write(ulog,*)'       density (  g/ cm^3)=',density
+  write(ulog,*)' particle density (1/Ang^3)=',particle_density
   write(ulog,*)' COORDINATES read successfully '
   write(   *,*)' COORDINATES read successfully '
 
-! hardwire maxatoms and maxneighbors; after fc_init maxatoms -> natoms, maxneighbors -> nshell
-  particle_density=natom_prim_cell/volume_r0
-  volcut=4*pi/3d0*rcutoff**3   ! volume of a sphare of radius rcutoff 
-  maxatoms = nint(volcut * particle_density)
-  write(ulog,*)'Rcutoff=',rcutoff,' suggests maxatoms=',maxatoms
-  maxatoms=max(maxatoms,1500)
-  write(ulog,*)' the value of maxatom will be updated to ',maxatoms
 
-!   rcutoff=(3*maxatoms/particle_density/4/pi)**0.333333
-!   write(ulog,*)'Initially, take Maxatoms=',maxatoms,' suggests Rcutoff=',rcutoff
+  call find_cutoff_from_largest_SC (volmax,rcutoff,r1,r2,r3,rshells)
 
-! FCs will exist at the most up to maxshells
-  maxshells=min(maxval(nshells)+2,20)  ! default for largest number of cubic shells < 20
-!  everything is based on maxneighbors, maxatoms and maxshells will be updatedaccordingly
-  maxneighbors=min(3*maxshells,((2*maxshells)**3)/48)
+! nshells should be within this cutoff
+  write(ulog,*)' the suggested value of rcutoff from SC is ',rcutoff
+  rcutoff=max(rcutoff, icutoff*volume_r0**0.333)
+  write(ulog,*)' rcutoff updated from icutoff is ',rcutoff
+! use this volume for atompos; the largest supercell will be fully included in this volume
+  volcut=4*pi/3d0*(rcutoff*1.3)**3   
+  maxatoms = nint(volcut * particle_density)  
+! this seems reasonably large, but can be increased if more is needed
+  maxneighbors=100
+  maxshells = icutoff   ! let the user decide it
 
-! maxshells=50
-! maxneighbors=800
+! FCs will exist at the most up to maxshells; it's ok if maxshell is too large
+! if (fc2flag .eq.0 ) then
+!    maxshells=nint(rcutoff / min(length(r01),length(r02),length(r03)))+1
+! else
+!    maxshells=max(maxval(nshells)+2,icutoff )  ! go with what the user prescribed
+! endif
 
-  write(ulog,*) 'Default maxatoms    =', maxatoms
-  write(ulog,*) 'Default maxshells   =', maxshells
-  write(ulog,*) 'Default maxneighbors=', maxneighbors
+
+!  mx1=nint(4*pi/3*icutoff**3)
+!  write(ulog,*)'reduced scutoff=',icutoff,' suggests maxatoms=',mx1
+!! Convert to actual distances
+!  rc1 = 1d0/particle_density**0.333333 * icutoff  ! based on average bond length
+! rcutoff=max(rcutoff,rc1)  ! to be able to change using the default if too small 
+! write(ulog,*)' if you need a larger value, increase the value of icutoff in default.params from 10'  
+
+
+
+!  everything is based on maxneighbors, maxatoms and maxshells will be updated accordingly
+! maxneighbors is the largest number of neighborshells; largest in a glass or 
+! huge unit cell
+! maxneighbors=min(3*maxshells,nint(((2*maxshells+1)**3)/48d0))
+
+  write(ulog,*)'Based on this rcutoff, volcut=4pi/3*(1.3rcut)^3, maxatoms=volcut*density'
+  write(ulog,*)'the default  maxatom=', maxatoms
+  write(ulog,*)'maxshells set to    =', maxshells
+  write(ulog,*)'Start   maxneighbors=', maxneighbors
   write(ulog,*)'*****************************************************************'
 
   imaxatm=1
@@ -1434,10 +1467,8 @@ contains
      allocate(atompos(3,maxatoms), iatomcell(3,maxatoms),iatomcell0(maxatoms))
 
   imaxnei=1
-! we'll fix maxatoms since the radius=15 is large enough, and adjust maxneighbors
+
   do while(imaxnei.eq.1)
-     maxneighbors=maxneighbors+100
-     write(*,*)' Increasing maxeighbors to ',maxneighbors
 
 ! find symmetry operations; the above allocation is for this subroutine
 ! requires maxneighbors to generate atoms within these shells
@@ -1537,7 +1568,8 @@ contains
  implicit none
  integer i0,j,jj,s,l,k,shel_count,minat,cnt,nbs,mxshell
  integer nb(0:maxneighbors),msort(maxatoms)  ! because dist is of size natoms
- real(r15) dist(maxatoms),d_old,d_min(0:maxneighbors),rmax,dij,d_new
+! real(r15) dist(maxatoms),d_old,d_min(0:maxneighbors),rmax,dij,d_new
+ real(r15) dist(maxatoms),d_old,d_min(0:maxatoms),rmax,dij,d_new
 
  call write_out(ulog,'SET_NEIGHBOR_LIST: entering with maxneighbors ',maxneighbors)
  call write_out(ulog,'SET_NEIGHBOR_LIST: entering with maxshells    ',maxshells )
@@ -1577,13 +1609,14 @@ contains
           d_old = d_new
           d_min(shel_count)=d_new
           write(*,4)' NEW shell , dij= ',shel_count,d_new
-          if ( shel_count .gt. maxneighbors ) then
-             write(   *,*)'maxneighbors=', maxneighbors,' shells completed up to distance ',d_new
+ !        if ( shel_count .gt. maxneighbors ) then
+          if ( d_new .gt. rcutoff ) then
+             write(   *,*) shel_count,' shells completed up to distance ',d_new
              write(   *,*)'It  corresponds to ',msort(j),' th nearest atom'
-             write(   *,*)'The largest # of shells is set to ',shel_count-1 ,' which should be ',maxneighbors
-             write(ulog,*)'maxneighbors=', maxneighbors,' shells completed up to distance ',d_new
+       !     write(   *,*)'The largest # of shells is set to ',shel_count-1 ,' which should be ',maxneighbors
+             write(ulog,*) shel_count,' shells completed up to distance ',d_new
              write(ulog,*)'It  corresponds to ',msort(j),' th nearest atom'
-             write(ulog,*)'The largest # of shells is set to ',shel_count-1 ,' which should be ',maxneighbors
+!             write(ulog,*)'The largest # of shells is set to ',shel_count-1 ,' which should be ',maxneighbors
              exit jloop
           endif
 
@@ -1598,10 +1631,10 @@ contains
        endif
     enddo jloop
 
-    shel_count=shel_count-1
+!   shel_count=shel_count-1  ! why is that necessary?
     atom0(i0)%nshells=shel_count
     write(*,*)'allocating atom0(',i0,')%shells(:) to size ',shel_count
-    if(allocated(atom0(i0)%shells)) deallocate(atom0(i0)%shells)
+!    if(allocated(atom0(i0)%shells)) deallocate(atom0(i0)%shells)
     allocate(atom0(i0)%shells(0:shel_count))  ! %neighbors dimension is fixed to 296
     cnt=0  ! counts atoms from nearest to farthest, shell by shell
     do s=0,shel_count
@@ -1678,13 +1711,13 @@ contains
 
  end subroutine set_neighbor_list
 !-------------------------------------
- subroutine cart_to_direct_v(v,w)
+ subroutine cart_to_direct_v(v,w,g01,g02,g03)
 ! takes cart coordinates and returns cart coordinates within the supercell
-! use lattice
  use geometry
  use constants, only : pi,r15
  implicit none
  type(vector), intent(in) :: v
+ type(vector), intent(in) :: g01,g02,g03
  type(vector), intent(out) :: w
 
  w%x = (v .dot. g01)/(2*pi)
@@ -1693,43 +1726,43 @@ contains
 
  end subroutine cart_to_direct_v
 !-----------------------------------
- subroutine cart_to_direct_av(a,w)
+ subroutine cart_to_direct_av(a,w,g01,g02,g03)
 ! takes cart coordinates and returns cart coordinates within the supercell
-! use lattice
  use geometry
  use constants, only : r15
  implicit none
  type(vector), intent(out) :: w
+ type(vector), intent(in) :: g01,g02,g03
  real(r15), intent(in) ::  a(3)
  type(vector) v
 
  v%x = a(1) ; v%y = a(2) ; v%z = a(3)
- call cart_to_direct_v(v,w)
+ call cart_to_direct_v(v,w,g01,g02,g03)
 
  end subroutine cart_to_direct_av
 !-----------------------------------
- subroutine cart_to_direct_aa(a,b)
+ subroutine cart_to_direct_aa(a,b,g01,g02,g03)
 ! takes cart coordinates and returns cart coordinates within the supercell
  use geometry
-! use lattice
  use constants, only : r15
  implicit none
  real(r15), intent(in) ::  a(3)
+ type(vector), intent(in) :: g01,g02,g03
  real(r15), intent(out) ::  b(3)
  type(vector) v,w
 
  v%x = a(1) ; v%y = a(2) ; v%z = a(3)
- call cart_to_direct_v(v,w)
+ call cart_to_direct_v(v,w,g01,g02,g03)
  b(1) = w%x ; b(2) = w%y ; b(3) = w%z
 
  end subroutine cart_to_direct_aa
 !-----------------------------------
- subroutine direct_to_cart_v(v,w)
+ subroutine direct_to_cart_v(v,w,r01,r02,r03)
 ! takes direct coordinates and returns cart coordinates
  use geometry
-! use lattice
  implicit none
  type(vector), intent(in) :: v
+ type(vector), intent(in) :: r01,r02,r03
  type(vector), intent(out) :: w
 
  w%x = v%x*r01%x + v%y*r02%x + v%z*r03%x
@@ -1738,33 +1771,33 @@ contains
 
  end subroutine direct_to_cart_v
 !-----------------------------------
- subroutine direct_to_cart_av(a,w)
+ subroutine direct_to_cart_av(a,w,r01,r02,r03)
 ! takes direct coordinates and returns cart coordinates
  use geometry
-! use lattice
  use constants, only : r15
  implicit none
  real(r15), intent(in) ::  a(3)
+ type(vector), intent(in) :: r01,r02,r03
  type(vector), intent(out) :: w
  type(vector) v
 
  v%x = a(1) ; v%y = a(2) ; v%z = a(3)
- call direct_to_cart_v(v,w)
+ call direct_to_cart_v(v,w,r01,r02,r03)
 
  end subroutine direct_to_cart_av
 !-----------------------------------
- subroutine direct_to_cart_aa(a,b)
+ subroutine direct_to_cart_aa(a,b,r01,r02,r03)
 ! takes direct coordinates and returns cart coordinates
  use geometry
-! use lattice
  use constants, only : r15
  implicit none
  real(r15), intent(in) ::  a(3)
+ type(vector), intent(in) :: r01,r02,r03
  real(r15), intent(out) ::  b(3)
  type(vector) v,w
 
  v%x = a(1) ; v%y = a(2) ; v%z = a(3)
- call direct_to_cart_v(v,w)
+ call direct_to_cart_v(v,w,r01,r02,r03)
  b(1) = w%x ; b(2) = w%y ; b(3) = w%z
 
  end subroutine direct_to_cart_aa
@@ -1893,22 +1926,22 @@ contains
     integer ngr,ntotind,ntot  ! number of groups, total number of independent terms and full terms
  end type fulldmatrix
 
- integer maxrank,itrans,irot,ihuang,enforce_inv, size_kept_fc2,ngrnk(4)
- integer, allocatable :: keep_grp2(:),nlines(:)
- integer nterms(4),maxterms(4),maxtermsindep(4),ngroups(4),maxtermzero(4),maxgroups(4)
-! integer ndindp(4),ndfull(4)
- parameter(maxrank=4)
+ integer maxrank,itrans,irot,ihuang,enforce_inv, size_kept_fc2
+ integer, allocatable :: keep_fc2i(:),nlines(:),tind2(:)
+ parameter(maxrank=8)
+ integer nterms(maxrank),maxterms(maxrank),maxtermsindep(maxrank),ngroups(maxrank), &
+&        maxtermzero(maxrank),maxgroups(maxrank),ngrnk(maxrank)
  integer, allocatable :: nterm(:),ntermsindep(:)
  integer, allocatable :: iatmtermindp(:,:,:),ixyztermindp(:,:,:)
  integer, allocatable :: iatmtrm(:,:,:),ixyztrm(:,:,:)
  real(r15), allocatable :: mapmat(:,:,:)
- real(r15) svdcut !,rayon(4)
+ real(r15) svdcut 
  integer, allocatable:: iatomterm_1(:,:),ixyzterm_1(:,:),igroup_1(:),map_1(:)
  integer, allocatable:: iatomterm_2(:,:),ixyzterm_2(:,:),igroup_2(:),map_2(:)
  integer, allocatable:: iatomterm_3(:,:),ixyzterm_3(:,:),igroup_3(:),map_3(:)
  integer, allocatable:: iatomterm_4(:,:),ixyzterm_4(:,:),igroup_4(:),map_4(:)
  character(1), allocatable:: err_1(:),err_2(:),err_3(:),err_4(:)
- type(fulldmatrix) map(4)
+ type(fulldmatrix) map(maxrank)
  real(r15), allocatable:: fcrnk(:,:)
  real(r15), allocatable:: ampterm_1(:),fcs_1(:)
  real(r15), allocatable:: ampterm_2(:),fcs_2(:),grun_fc(:)
@@ -1917,11 +1950,42 @@ contains
  real(r15), allocatable:: amat(:,:),bmat(:),sigma(:),fcs(:),ahom(:,:),kernelbasis(:,:)
  real(r15), allocatable:: a11ia12(:,:),fc1(:)
  real(r15), allocatable:: atransl(:,:),btransl(:),arot(:,:),brot(:),ahuang(:,:),bhuang(:), &
- &                      aforce(:,:),bforce(:),energies(:)
+ &                      aforce(:,:),bforce(:),energies(:) !,afrc(:,:),bfrc(:),engy(:)
  real(r15), allocatable:: fc_ind(:) ! This is for getting force constant by reading FC2.dat file
  integer inv_constraints,force_constraints,dim_al,dim_ac,n_indep,newdim_al,dim_hom   &
 &        ,transl_constraints, rot_constraints, huang_constraints,nindepfc
 contains
+
+ function counter2(g,ti) result(cnt)
+!! counter2(g,ti) counts the number of independent terms of rank 2 from all groups up to group g and term ti in it
+!! it is usually the argument of keep_fc2i()
+ implicit none
+ integer, intent(in) :: g,ti
+ integer cnt
+
+ if(g.eq.1) then
+    cnt=ti
+ else
+    cnt=sum(map(2)%ntind(1:g-1))+ti
+ endif
+
+ end function counter2
+!------------------------------------------------------
+ function current2(g,ti) result(cnt)
+!! current(g,ti) is the location of the the KEPT independent term ti in group g, of rank 2 in the fc2 list 
+!! it is smaller or equal to counter2
+ implicit none
+ integer, intent(in) :: g,ti
+ integer cnt,c2
+
+ if( counter2(g,ti).gt. size(keep_fc2i) ) then
+   write(*,*)'g,ti,counter2,size=',g,ti,counter2(g,ti),size(keep_fc2i)
+   stop
+ else
+   cnt = sum(keep_fc2i(1:counter2(g,ti)))
+ endif
+
+ end function current2
 
 ! subroutine set_maxterms
 !   maxterms(1)=40 !100
@@ -2257,8 +2321,93 @@ contains
  mat2=mean
  deallocate(mean)
  end subroutine symmetrize2
+!---------------------------------------
+ subroutine lin_solve(a,b,x)
+ use constants, only : r15
+ real(r15), intent(in) :: a(:,:),b(:) 
+ real(r15), intent(out) :: x(:)
+! integer, parameter :: n = size(A,1)
+ real(r15) factor
+ real(r15), allocatable:: aux(:,:),bb(:)
+ integer i,j,k,ier,n
 
+ n =size(a,1)
+! stupid way!!
+ allocate(aux(n,n),bb(n)) 
+! call xmatinv(n,a,ainv,ier)
+! if(ier.eq.0)  then
+!    x=matmul(ainv,b)
+! else
+!    write(*,*)' output of xmatinv from lin_solve has error ',ier
+!    stop
+! endif
 
+ aux=a; bb=b
+        ! Forward Elimination
+ do i=1,n-1
+     do k=i+1,n
+         ! Calculate elimination factor
+         factor = aux(k,i)/aux(i,i)  
+
+         ! Modify row k to subtract a multiple of row i
+         do j=i+1,n
+             aux(k,j) = aux(k,j) - factor*aux(i,j)
+         enddo
+         bb(k) = bb(k) - factor*bb(i)
+     enddo
+ enddo
+
+ ! Back Substitution
+ x(n) = bb(n) / aux(n,n)
+ do i=n-1,1,-1
+     sum = 0.0
+     do j=i+1,n
+         sum = sum + aux(i,j)*x(j)
+     enddo
+     x(i) = (bb(i) - sum)/aux(i,i)
+ enddo
+
+ deallocate(aux,bb)
+
+ end subroutine lin_solve
+
+!---------------------------------------
+ subroutine lin_solve33(a,b,x)
+ use constants, only : r15
+ real(r15), intent(in) :: a(3,3),b(3) 
+ real(r15), intent(out) :: x(3)
+ real(r15) factor,deta,d1,d2,d3,det
+ real(r15) aux(3,3),bb(3)
+ integer i,j,k,ier,n
+
+ n = 3
+ deta=det33(a)
+ if(abs(deta).gt.1d-9) then
+    aux=a ; aux(:,1)=b; x(1)=det33(aux)/deta
+    aux=a ; aux(:,2)=b; x(2)=det33(aux)/deta
+    aux=a ; aux(:,3)=b; x(3)=det33(aux)/deta
+ else
+    write(*,*)' lin_solve33 error : det=',deta
+    stop
+ endif
+
+ end subroutine lin_solve33
+!------------------------------------------------------------------------------
+      function det33(mat) result(y)
+ use constants, only : r15
+      implicit none
+!
+!!	FIND THE DETERMINANT OF A 3X3 MATRIX MAT
+!
+      real(r15) ,intent(in) :: mat(3,3)
+      real(r15) y
+
+      y=mat(1,1)*(mat(2,2)*mat(3,3)-mat(2,3)*mat(3,2))  &
+     & -mat(1,2)*(mat(2,1)*mat(3,3)-mat(2,3)*mat(3,1))  &
+     & +mat(1,3)*(mat(2,1)*mat(3,2)-mat(2,2)*mat(3,1))
+
+      end function det33
+!---------------------------------------
  end module linalgb
 
 

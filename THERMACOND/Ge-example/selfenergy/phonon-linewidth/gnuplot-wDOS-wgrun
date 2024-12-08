@@ -1,0 +1,216 @@
+set terminal postscript eps enhanced
+set term post eps enh colour
+set output "ge-dos.eps"
+
+set multiplot
+set size 0.5,1
+set origin 0.1,0.0
+set border linewidth 2.5
+set xtics offset 0, -0.5 font "Times Roman   ,35"
+set ytics font "Times Roman   ,25"
+#style fill transparent solid 0.5 noborder
+#set colorbox horiz user origin .56,.06 size .2,.04 
+set palette model RGB defined (0 "blue", 1 "red")
+#set palette maxcolors 7
+set lmargin 15
+set rmargin 10
+set tmargin 0.9
+set bmargin 15.1
+set size 1,1
+##set title "thermal conductivity of BaZrO3" font "Helvetica   ,13"
+set ylabel "Frequency(THz)" offset -17.5 font "Times Roman   ,25"
+set xlabel "Wave Vector K" offset -3, -13.1 font "Times Roman   ,25"
+##set logscale y
+###set logscale x
+##set format x "10^{%T}"
+###set format y "10^{%T}"
+set key font "Times Roman   ,27 
+###with line t TA_{|}" lc rgb 'red' pt 7 ps 1
+
+#set cbrange [0.0:0.02]
+set cbrange [0.0:*]
+#set cbtics 0.1
+###set key font "Times Roman  ,26
+###set key at 1050,80
+##set key box dt 1 lw 2
+###set key samplen 1.7 spacing 1
+###set key width -2.5
+
+###set xtics (100,200,300,400,500,600,800,1000)
+##set ytics (0,10,20,30)
+set mytics 2
+##set mxtics 2
+##set ytics -2,2
+set yr[0:*]
+##set ytics 0,.1
+
+set xr[0:6.5597730427437702] 
+set nokey
+
+set noxtics
+set arrow 1 from 0.95425347690119189, 0 to 0.95425347690119189, 10 nohead
+set arrow 2 from 2.1229705287435214 , 0 to 2.1229705287435214 , 10 nohead
+set arrow 3 from 2.5125428793576257, 0 to 2.5125428793576257, 10 nohead
+set arrow 4 from 3.0634813811216586, 0 to 3.0634813811216586, 10 nohead
+set arrow 5 from 3.8426260823498843, 0 to 3.8426260823498843, 10 nohead
+set arrow 6 from 4.5173851868375499 , 0 to 4.5173851868375499 , 10 nohead
+set arrow 7 from 4.9069575374516541, 0 to 4.9069575374516541, 10 nohead
+set arrow 8 from 5.4578960392157043, 0 to 5.4578960392157043, 10 nohead
+#set arrow 9 from  6.326, 0 to  6.326, 4 nohead
+
+
+#set label 2 "L" at 0.000, -0.5 font "Times Roman Bold,20"
+#set label 3 "{/Symbol G}" at 0.95425347690119189 , -0.5 font "Times Roman Bold,20"
+#set label 4 "K" at 2.1229705287435214 , -0.5 font "Times Roman Bold,20"
+#set label 5 "X" at 2.5125428793576257, -0.5 font "Times Roman Bold,20"
+#set label 6 "W" at 3.0634813811216586, -0.5 font "Times Roman Bold,20"
+#set label 7 "L" at 3.8426260823498843, -0.5 font "Times Roman Bold,20"
+#set label 8 "K" at 4.5173851868375499 , -0.5 font "Times Roman Bold,20"
+#set label 9 "W" at 4.9069575374516541, -0.5 font "Times Roman Bold,20"
+#set label 10 "X" at 5.4578960392157043, -0.5 font "Times Roman Bold,20"
+#set label 11 "{/Symbol G}" at  6.5597730427437702, -0.5 font "Times Roman Bold,20"
+#set label 12 "U" at 6.326, -0.5 font "Times Roman Bold,20"
+#set label 13 "X" at 6.694 , -0.5 font "Times Roman Bold,20"
+
+#set noytics
+set format y ""
+###set label 12 "(a)" at 220 , 75 font "Times Roman   ,30"
+###set label 20 "(in-plane direction)" at 520 , 0.2 font "Times Roman   ,27"
+
+plot "lw-selfenergy2.dat" using 2:($3/33.356):9 with lines t "" lt 2 lc palette lw 11 ,"lw-selfenergy2.dat" using 2:($4/33.356):10 with lines t "" lt 2 lc palette lw 11 ,"lw-selfenergy2.dat" using 2:($5/33.356):11 with lines t "" lt 2 lc palette lw 11 , "lw-selfenergy2.dat" using 2:($6/33.356):12 with lines t "" lt 2 lc palette lw 11 ,"lw-selfenergy2.dat" using 2:($7/33.356):13 with lines t "" lt 2 lc palette lw 11 ,"lw-selfenergy2.dat" using 2:($8/33.356):14 with lines t "" lt 2 lc palette lw 11 ,"expdata.dat" using ($1*6.5):2 with points t "" lt rgb 'gray40' pt 3
+
+set origin 0.0,0.0
+set size 0.3,1
+set border linewidth 2.5
+set xtics font "Times Roman Bold,13"
+set ytics font "Times Roman Bold,14"
+set ytics font "Times Roman   ,22"
+set key at 12,-3 font "Times Roman Bold,10
+##set xlabel "Energy(eV)" 
+set rmargin 3
+set lmargin 10
+set tmargin 0.9
+set bmargin 15.1
+#set nokey 
+set ylabel ""
+set xlabel ""
+#set noytics
+#set xrange [0:0.2]
+unset arrow 1 
+unset arrow 2
+unset arrow 3 
+unset arrow 4
+unset arrow 5 
+unset arrow 6
+unset arrow 7 
+unset arrow 8
+unset arrow 9 
+
+unset label 1 
+unset label 2
+unset label 3 
+unset label 4
+unset label 5 
+unset label 6
+unset label 7 
+unset label 8
+unset label 9 
+unset label 10 
+unset label 11 
+unset label 12
+unset label 14 
+unset label 15
+unset label 23
+set noxtics
+set xrange [0.16:0]
+unset format y 
+set yrange [0:10]
+
+set ytics (0,2,4,6,8,10)
+set mytics 2
+set label 13 "(b)" at 8 , 3.7 font "Times Roman Bold,20"
+plot 'dos_tet.dat' using 4:($1/33.356) with lines t "total" lt rgb 'black' lw  6, 
+
+set origin 0.1,-0.1
+set size 0.79,0.5
+set border linewidth 2.5
+set xtics font "Times Roman Bold,13"
+set ytics font "Times Roman Bold,14"
+set ytics font "Times Roman   ,20"
+set key at 12,-3 font "Times Roman Bold,10
+
+set ylabel "Gruneisen parameter" offset -1.5,-1 font "Times Roman   ,22"
+set xlabel "Wave Vector K" offset -3, -3.5 font "Times Roman   ,30"
+set lmargin 15
+set rmargin 1
+set tmargin 0
+set bmargin 7
+
+
+##set logscale y
+###set logscale x
+##set format x "10^{%T}"
+###set format y "10^{%T}"
+set key font "Times Roman   ,27 
+###with line t TA_{|}" lc rgb 'red' pt 7 ps 1
+
+#set cbrange [0.0:0.5]
+
+set key font "Times Roman  ,10
+set key at 6.1,0.9
+set key box dt 1 lw 2
+set key samplen 0.5 spacing 1
+set key width -1
+
+###set xtics (100,200,300,400,500,600,800,1000)
+##set ytics (0,10,20,30)
+set mytics 2
+##set mxtics 2
+##set ytics -2,2
+set yr[-2:2]
+
+set xr[0:6.5597730427437702] 
+set key
+
+set noxtics
+set arrow 1 from 0.95425347690119189, -2 to 0.95425347690119189, 2 nohead
+set arrow 2 from 2.1229705287435214 , -2 to 2.1229705287435214 , 2 nohead
+set arrow 3 from 2.5125428793576257, -2 to 2.5125428793576257, 2 nohead
+set arrow 4 from 3.0634813811216586, -2 to 3.0634813811216586, 2 nohead
+set arrow 5 from 3.8426260823498843, -2 to 3.8426260823498843, 2 nohead
+set arrow 6 from 4.5173851868375499 , -2 to 4.5173851868375499 , 2 nohead
+set arrow 7 from 4.9069575374516541, -2 to 4.9069575374516541, 2 nohead
+set arrow 8 from 5.4578960392157043, -2 to 5.4578960392157043, 2 nohead
+#set arrow 9 from  6.326, 0 to  6.326, 4 nohead
+
+
+set label 2 "L" at 0.000, -2.3 font "Times Roman Bold,20"
+set label 3 "{/Symbol G}" at 0.95425347690119189 , -2.3 font "Times Roman Bold,20"
+set label 4 "K" at 2.1229705287435214 , -2.3 font "Times Roman Bold,20"
+set label 5 "X" at 2.5125428793576257, -2.3 font "Times Roman Bold,20"
+set label 6 "W" at 3.0634813811216586, -2.3 font "Times Roman Bold,20"
+set label 7 "L" at 3.8426260823498843, -2.3 font "Times Roman Bold,20"
+set label 8 "K" at 4.5173851868375499 , -2.3 font "Times Roman Bold,20"
+set label 9 "W" at 4.9069575374516541, -2.3 font "Times Roman Bold,20"
+set label 10 "X" at 5.4578960392157043, -2.3 font "Times Roman Bold,20"
+set label 11 "{/Symbol G}" at  6.5597730427437702, -2.3 font "Times Roman Bold,20"
+#set label 12 "U" at 6.326, -0.5 font "Times Roman Bold,20"
+#set label 13 "X" at 6.694 , -0.5 font "Times Roman Bold,20"
+
+set yr[-2:2]
+set ytics (-2,-1,0,1,2)
+###set label 12 "(a)" at 220 , 75 font "Times Roman   ,30"
+###set label 20 "(in-plane direction)" at 520 , 0.2 font "Times Roman   ,27"
+
+plot "bs_grun.dat" using 2:6 with lines  t "TA_{|}" lt rgb 'red' lw 5, "bs_grun.dat" using 2:7 with lines  t "TA_{||}" lt rgb 'blue' lw 5,"bs_grun.dat" using 2:8 with lines  t "LA" lt rgb 'green' lw 5,"bs_grun.dat" using 2:9 with lines  t "TO_{|}" lt rgb 'gray0' lw 5,"bs_grun.dat" using 2:10 with lines  t "TO_{||}" lt rgb 'dark-yellow' lw 5,"bs_grun.dat" using 2:11 with lines  t "LO" lt rgb 'dark-magenta' lw 5,"expdata-grun.dat" using ($1):2 with points t "" lt rgb 'black' pt 7 ps 1.3
+
+
+
+
+
+
+
+
+
+
+

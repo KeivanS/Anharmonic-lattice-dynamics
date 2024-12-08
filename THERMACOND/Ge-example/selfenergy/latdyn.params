@@ -1,0 +1,19 @@
+30 30 30  .false.
+0 0 0   shift
+300  350  dosmesh, omega_max
+10 30
+.False.   Verbosity
+300 300 1  Tempk
+2   iter 
+2   ksub_size and below path to where to write
+./      
+0
+0       if 1 then classical calculation lse quantum
+0 0 0 0    calc_cross q_cross
+100       sample length in microns (for boundary scattering)
+
+
+
+# for RTA         run1: 0 0 0 1 0   ; run2: 0 0 1 0 1
+# for iterative   run1: 1 1 0 1 0   ; run2: 1 1 2 1 0  ; run3: 1 1 1 1 1
+ 

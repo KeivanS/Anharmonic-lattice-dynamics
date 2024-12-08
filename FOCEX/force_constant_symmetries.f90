@@ -16,7 +16,7 @@
       use lattice
       use atoms_force_constants
       use ios !, only : ulog
-      use params , only : tolerance
+      use params , only : tolerance,rcutoff
  use constants, only : r15
       implicit none
 
@@ -25,11 +25,10 @@
       real(r15), intent(in) :: atompos_in(3,natoms_in)
       integer j,g,k,ier,iatom,tau,ncmp,   &
      &     iatom2,itype2,iatom3,ipntop,   &
-     &     itype,isg,iop_matrix(3,3,48),aux(3,3)
+     &     itype,isg,aux(3,3)
       real(r15) tempi(3,3),fract(3),v(3),v2(3),temp(3,3),at1star(3) !r(3),
 
 ! maxneighbors= largest # of neighbor shells <  50 usually unless very low symmetry
-
 
 !-------------------------------------------------------------------------------
 ! some preliminary stuff
@@ -49,6 +48,7 @@
       allocate(iatomneighbor(natom_prim_cell,maxatoms))
       allocate(iatomop(natom_prim_cell,natom_prim_cell), &
  &       atomopfract(3,natom_prim_cell,natom_prim_cell))
+
       iatomneighbor=maxneighbors+1
       iatomop=0
 
@@ -63,7 +63,7 @@
 !    &       //'is singular'
 !       stop
 !     endif
-!     write(*,*)'cart_to_prim has reciprocal vectors to primitive in its lines'
+!     write(*,*)'cart_to_prim has reciprocal vectors/2pi to primitive in its lines'
 !     write(*,3) cart_to_prim(1,:)
 !     write(*,3) cart_to_prim(2,:)
 !     write(*,3) cart_to_prim(3,:)
@@ -84,6 +84,7 @@
 !       call xvmlt(conv_to_cart,atomposconv(1,i),atompos(1,i),3,3,3)
         atompos(:,tau)=atompos_in(:,tau)  !matmul(conv_to_cart,atomposconv(:,tau))
 !       write(*,*)'before unitcell ',tau
+! bring atompos between [0,1(
         call unitcell(cart_to_prim,prim_to_cart,atompos(1,tau), atompos(1,tau))
         iatomcell0(tau)=atom0(tau)%tau   ! it is in the same order as in structure.params file
         iatomcell(:,tau)=0
@@ -95,71 +96,58 @@
       enddo
 !-------------------------------------------------------------------------------
 ! find symmetry of crystal.
-! find point group of lattice
+
+      open(usym,file='symmetry.dat')
+! first find point group of the BRAVAIS lattice
 !k1   call dlatmat2(prim_to_cart,1d-6,lattpgcount,iop_matrix)
       call dlatmat2(prim_to_cart,1d-5,lattpgcount,iop_matrix)
+! this integer matrix finds the image of a vector under symmetry op IN REDUCED UNITS
+! it is a unimodular matrix with interger entries and det=1 or -1; its inverse is also integer
+
       do g=1,lattpgcount ! number of symmetries of the bravais lattice
-        do j=1,3
-        do k=1,3
-          temp(k,j)=iop_matrix(k,j,g)
-        enddo
-        enddo
-        temp=matmul(temp,cart_to_prim)
-        op_matrix(:,:,g)=matmul(prim_to_cart,temp)
-!       call xmatmlt(temp,cart_to_prim,temp,3,3,3,3,3,3)
-!       call xmatmlt(prim_to_cart,temp,op_matrix(1,1,i),3,3,3,3,3,3)
-        call write_out(ulog,'Symmetry operation (op_matrix) ',op_matrix(:,:,g))
-!       write(ulog,'(3(1x,f9.5))') op_matrix(1,:,i)
-!       write(ulog,'(3(1x,f9.5))') op_matrix(2,:,i)
-!       write(ulog,'(3(1x,f9.5))') op_matrix(3,:,i)
+
+! this transforms the vector in cartesian coordinates; 
+! but better work with the integer iop_matrix which acts on reduced coordinates
+         op_matrix(:,:,g)=matmul(prim_to_cart,matmul(iop_matrix(:,:,g),cart_to_prim))
+
+         call write_out(usym,'Symmetry operation (op_matrix) ',op_matrix(:,:,g))
       enddo
       write(*,*)'after lattpgcount loop'
 
-! find transformation matrices for k vectors
+! find transformation matrices for k vectors if R'=S.R then q'=S^(-1)^T q also hods for the unimodular form
       do g=1,lattpgcount
-         do j=1,3
-         do k=1,3
-           temp(k,j)=iop_matrix(k,j,g)
-         enddo
-         enddo
-         temp=matmul(temp,conv_to_prim)
-         temp=matmul(prim_to_conv,temp)
-!        call xmatmlt(temp,conv_to_prim,temp,3,3,3,3,3,3)
-!        call xmatmlt(prim_to_conv,temp,temp,3,3,3,3,3,3)
-         call xmatinv(3,temp,tempi,ier)
-         temp = tempi
-         if(ier.ne.0) then
-           write(*,*)'After xmatinv in line 136: ier=',ier
+         write(usym,*) 'Symmetry operation (in reciprocal space k) #',g
+
+         temp=iop_matrix(:,:,g)
+ !       call write_out(usym,' temp before inversion ',temp)
+
+ !! original version used the conventional representation which gives non-integer matrices!!
+  !      temp=matmul(prim_to_conv,matmul(iop_matrix(:,:,g),conv_to_prim))
+ !! we modify to stay in the primitive reduced units so that the op_kmatrix remains integer.  
+
+         call xmatinv(3,temp,tempi,ier) ! inverse of symmetry matrix 
+!        call write_out(6,' before nint(transpose( ',tempi)
+         if(ier.ne.0 ) then
+!          write(*,*)'After xmatinv in p2con*iop*con2p :ier=',ier
+           write(*,*)'After xmatinv in iop_inverse :ier=',ier
            call bomb('matrix inversion error!')
          endif
+         if( maxval(abs(tempi-nint(tempi))).gt.1d-5) then
+           call write_out(6,'After xmatinv tempi=op_kmatrix is not integer ',tempi)
+           call bomb('op_kmatrix non-integer !')
+         endif
+
+         iop_kmatrix(:,:,g)=nint(transpose(tempi))   ! it should also be an integer (unimodular) matrix
+         call write_out(usym,' Op_kmatrix in reduced ',iop_kmatrix(:,:,g))
+         op_kmatrix(:,:,g)=matmul(transpose(cart_to_prim),  &
+&                   matmul(iop_kmatrix(:,:,g),transpose(prim_to_cart)))
+         call write_out(usym,' Op_kmatrix in cartesian ',op_kmatrix(:,:,g))
 
 !        write(*,*)' NOW GENERATING THE STARS OF K; lattpgcount=',g
-         do j=1,3
-         do k=1,3
-
-            op_kmatrix(k,j,g)=temp(j,k)
-            if(ncmp(temp(j,k)-temp(j,k)).ne.0) then
-!              write(ulog,*)'Op_kmatrix',temp(j,k),op_kmatrix(k,j,g)
-               aux=nint(temp)
-               write(ulog,*)'****************************************************'
-               write(ulog,*)' NON-INTEGER Op_kmatrix '
-               write(ulog,*)'****************************************************'
-               call write_out(ulog,'integer Op_kmatrix ',aux)
-               call write_out(ulog,'Symmetry operation (op_Kmatrix) ',op_kmatrix(:,:,g))
-               write(*,*)' NON-INTEGER Op_kmatrix '
-           !   call bomb
-            endif
-
-         enddo
-         enddo
-         write(ulog,*) 'Symmetry operation (in reciprocal space k) #',g
-         call write_out(ulog,' Op_kmatrix ',op_kmatrix(:,:,g))
-!        write(ulog,'(3(1x,f9.5))') op_kmatrix(1,:,g)
-!        write(ulog,'(3(1x,f9.5))') op_kmatrix(2,:,g)
-!        write(ulog,'(3(1x,f9.5))') op_kmatrix(3,:,g)
       enddo
 
       call write_out(ulog,' total # of symmetry ops ',lattpgcount)
+      call write_out(usym,' total # of symmetry ops ',lattpgcount)
 
 ! find elements of space group
 ! count them
@@ -221,9 +209,9 @@
 ! do next element of point group (ipg)
       enddo ipntoploop
 
-      write(ulog,*)' # of space group translation vectors=',isgopcount
+      write(usym,*)' # of space group translation vectors=',isgopcount
       do isg=1,isgopcount
-         write(ulog,8)' isg, isgop, sgfract=',isg,isgop(isg),sgfract(:,isg)
+         write(usym,8)' isg, isgop, sgfract=',isg,isgop(isg),sgfract(:,isg)
       enddo
 
 !----------------------------------------------------------------------------
@@ -281,28 +269,36 @@
 
 
       do while(imaxnei.eq.1)
-         maxneighbors=maxneighbors+100
-         call set_atompos
+!        maxatoms=nint(maxatoms*3.5)
+!        write(ulog,*)'Maxatoms updated to ',maxatoms
+!        maxneighbors=nint(maxneighbors*1.5)
+!        write(ulog,*)'Maxneighbors updated to ',maxneighbors
+!        maxshells=nint(maxshells*1.5)
+!        write(ulog,*)'Maxshells updated to ',maxshells
+!        call set_atompos(maxshells)
+         call set_atompos3(rcutoff)
       enddo
 
+      close(usym)
+
 8 format(a,2(1x,i7),9(1x,f10.4))
-5 format(a,3i4,9(1x,f11.4))
+5 format(a,3i4,9(1x,f13.6))
 6 format(a,99(i4))
 
       end subroutine symmetry_init
 
 !-------------------------------------------------------------------------------
 
-      subroutine set_atompos
-!! uses maxatoms and maxneighbors to construct atoms around the primitive unitcell
+      subroutine set_atompos(mxshl)
+!! uses maxatoms and mxshl to construct atoms around the primitive unitcell
       use lattice
       use atoms_force_constants !force_constants_module
       use ios !, only : ulog
-      use params , only : rcutoff  !tolerance,
- use constants, only : r15
+      use constants, only : r15
       implicit none
-      integer i1,i2,i3,j,n,tau,nd2save,ncmp,icell(3),mshl !,iatom,k
-      real(r15) r(3),d2,a0 !d2save(maxneighbors),fract(3),v(3),v2(3)
+      integer, intent(in) :: mxshl
+      integer i1,i2,i3,j,n,tau,nd2save,ncmp,icell(3),mshl
+      real(r15) r(3),d2,a0 
       logical already_found
 
       a0=100
@@ -318,9 +314,9 @@
 ! collect nearest neighbor atoms (up to a maxshells or maxneighbors, whichever happens first)
         nd2save=0 ; mshl=0
         natoms=natom_prim_cell
-! collect distances to nearest neighbors up to maxneighbors shells
+! collect distances to nearest neighbors up to maxshells
 ! do one shell of unit cells at a time
-        shelloop: do n=0,maxshells
+        shelloop: do n=0,mxshl
           already_found=.false.
           firstloop: do i1=-n,n  ! generated shells are cubic shells
           icell(1)=i1
@@ -335,23 +331,15 @@
 !              if(n.eq.0.and.tau.eq.iatom0)cycle   ! only iatom0=tau i.e. same primcell atom
 !  position of atom and distance squared
 !              r(1:3)=atompos(1:3,tau)  !! what is this for??
-             d2=0
-             do j=1,3
-                r(j)= i1*prim_to_cart(j,1)+i2*prim_to_cart(j,2)+i3*prim_to_cart(j,3)
-!  atompos(j,tau) -atompos(j,iatom0) + &
-                d2=d2+r(j)**2
-!  d2= |R+r_tau-r_i0|^2  to find shells centered at r_i0??
-             enddo
-!            if (d2.gt.rcutoff*rcutoff) then
-!   !            write(*,*)'d>rcut^2 ',sqrt(d2),rcutoff
-!                cycle
-!            endif
+             r = i1*r01 + i2*r02 + i3*r03
+             d2= dot_product(r,r)
              if (ncmp(d2).eq.0)  then
                  write(*,*)'d2 = 0 ',d2
                  cycle
              endif
              if(natoms.gt.maxatoms-natom_prim_cell)  then
-                 write(*,*)'natoms > maxatoms ', natoms , maxatoms
+                 write(*   ,*)'Exiting loop: natoms > maxatoms ', natoms , maxatoms
+                 write(ulog,*)'Exiting loop: natoms > maxatoms ', natoms , maxatoms
                  exit shelloop
              endif
 ! do each atom in primitive unit cell
@@ -362,7 +350,7 @@
                  iatomcell(1:3,natoms)=icell(1:3)
                  iatomcell0(natoms)=tau
 !         !      iatomneighbor(tau,m)=  ?? ! m is the shell#
-                 write(6,3)'New atompos ',tau,natoms,atompos(:,natoms)
+                 write(*,3)'New atompos ',tau,natoms,atompos(:,natoms)
                  if(n.gt.mshl) mshl=n
              enddo iloop
 
@@ -400,7 +388,7 @@
 !      use params , only : tolerance
       implicit none
       integer i1,i2,i3,j,k,m,n,tau,nd2save,ncmp,iatom0,icell(3),g,iatom,nshl !(natom_prim_cell)
-      real(r15) d2save(maxneighbors),r(3),d2,a0 !,fract(3),v(3),v2(3)
+      real(r15) d2save(maxneighbors),r(3),d2,a0 
       logical already_found
 
       a0=100
@@ -609,6 +597,82 @@
 
       end subroutine set_atompos2
 
+!-------------------------------------------------------------------------------
+
+  subroutine set_atompos3(rcut)
+      use lattice
+      use atoms_force_constants !force_constants_module
+      use ios !, only : ulog
+      use constants, only : r15
+      implicit none
+      real(r15), intent(in) :: rcut
+      integer i1,i2,i3,tau,nd2save,n,icell(3),mshl 
+      real(r15) r(3),d2,a0 !d2saveyy(maxneighbors),fract(3),v(3),v2(3)
+      logical already_found
+
+      a0=100
+      do tau=2,natom_prim_cell
+         d2=length(atompos(:,1)-atompos(:,tau))
+         if(d2.lt.a0) a0=d2
+      enddo
+      write(*   ,*) 'SET_ATOMPOS: shortest distance with atom1 within primcell is a0=',a0
+      write(ulog,*) 'SET_ATOMPOS: shortest distance with atom1 within primcell is a0=',a0
+
+!-------------------------------------------------------------------------------
+! collect nearest neighbor atoms (up to a maxshells or maxneighbors, whichever happens first)
+        nd2save=0 ; mshl=0 ; natoms=0
+! collect distances to nearest neighbors up to rcut
+! do one shell of unit cells at a time
+        shelloop: do n=0,maxshells
+          already_found=.false.
+          firstloop: do i1=-n,n  ! generated shells are cubic shells
+          icell(1)=i1
+          do i2=-n,n
+          icell(2)=i2
+          do i3=-n,n
+          icell(3)=i3
+! walk only on the facets of the cube of length 2n+1
+             if(iabs(i1).ne.n.and.iabs(i2).ne.n.and.iabs(i3).ne.n)cycle
+             r = i1*r01 + i2*r02 + i3*r03
+             if (length(r).gt.rcut) cycle
+
+             if(natoms.gt.maxatoms)  then
+                 write(*   ,*)'Exiting loop: natoms > maxatoms ', natoms , maxatoms
+                 write(ulog,*)'Exiting loop: natoms > maxatoms ', natoms , maxatoms
+                 exit shelloop
+             endif
+! do each atom in primitive unit cell
+!  did we find any new ones in this shell? save new shells in d2save(nd2save) up to maxneighbors
+             tauloop: do tau=1,natom_prim_cell
+                 natoms=natoms+1
+                 atompos(:,natoms)=r+atompos(:,tau)
+                 iatomcell(1:3,natoms)=icell(1:3)
+                 iatomcell0(natoms)=tau
+!                write(*,3)'New atompos ',tau,natoms,atompos(:,natoms)
+                 if(n.gt.mshl) mshl=n
+             enddo tauloop
+
+           enddo
+           enddo
+           enddo firstloop
+         enddo shelloop
+
+
+!     write(ulog,*) 'FC_INIT: maxshells now updated to ',maxshells
+      write(*   ,*) 'FC_INIT: last shell #',mshl,' corresponding to rcut=',rcut
+      write(ulog,*) 'FC_INIT: last shell #',mshl,' corresponding to rcut=',rcut
+      write(*   ,*) 'FC_INIT: generated natoms= ',natoms,' atoms in the neighborhood of primcell'
+      write(ulog,*) 'FC_INIT: generated natoms= ',natoms,' atoms in the neighborhood of primcell'
+      imaxatm=0
+      imaxnei=0
+
+3 format(a,2(1x,i7),9(1x,f10.4))
+4 format(a,3(1x,i7),9(1x,f10.4))
+6 format(a,99(i4))
+
+
+ end subroutine set_atompos3
+
 !******************************************************************************
 ! get force constants
       subroutine force_constants(nrank,amat,iatomd,ixyzd,   &
@@ -729,7 +793,7 @@
           v=matmul(op_matrix(:,:,isgop(isg)),atompos(:,iatomterm(irank,jterm)))
           v=v+sgfract(:,isg)
 ! can I first find the n,tau of this vector v?
-! find atom
+! find atom among atompos
           call findatom_cart(v,iatom(irank))
   !       call get_n_tau_r_mod(v,nv,tauv)
   !       call find_atompos(nv,tauv,iat2)
@@ -1165,7 +1229,7 @@
 !--------------------------------------------------------------------------------
       function ncmp(x)
       use params, only : tolerance
- use constants, only : r15
+      use constants, only : r15
       implicit none
 !
 !!	COMPARE X WITH ZERO
@@ -1487,7 +1551,7 @@
 
  use constants, only : r15
       implicit none
-      integer i,nrow
+      integer nrow
       real(r15) v1(nrow),v2(nrow),v3(nrow)
 
       v3=v1+v2
@@ -1679,7 +1743,7 @@
 !!     kvecstar(3,1:narms), all the stars of kvec
 !!     kvecop(i), the symmetry operation number for the star vector i
       use atoms_force_constants
- use constants, only : r15
+      use constants, only : r15
       implicit none
       integer, intent(out):: narms,kvecop(48)
       real(r15), intent(in) :: kvec(3),primlatt(3,3)
@@ -1692,7 +1756,7 @@
       iloop: do i=1,lattpgcount
 ! apply symmetry operation to k to get v=kstar
 !        call xvmlt(op_kmatrix(1,1,i),kvec,v,3,3,3)
-        v=matmul(op_kmatrix(:,:,i),kvec)
+        v=matmul(iop_kmatrix(:,:,i),kvec)
 ! find the reduced coordinates of v and store in v2
 !       call xmatmlt(v,primlatt,v2,1,3,3,1,3,1)
         v2=matmul(v,primlatt)
@@ -1716,6 +1780,53 @@
       enddo iloop
 
       end subroutine getstar
+!-------------------------------------------------------------------------------
+      subroutine getstarp(kvec,narms,kvecstar,kvecop)
+!! find the stars of a kvector; input k and output kstars are in reduced units of g0
+!! arguments:
+!!     kvec(i) (input), ith dimensionless component of k vector
+!!     narms (output), number of star vectors associated with kvec
+!!     kvecstar(3,1:narms), all the stars of kvec in reduced units 
+!!     kvecop(i), the symmetry operation number for the star vector i
+      use atoms_force_constants
+      use constants, only : r15
+      use ios, only: ulog
+      use lattice, only : red2cart_g
+      implicit none
+      integer, intent(out):: narms,kvecop(48)
+      real(r15), intent(in) :: kvec(3)
+      real(r15), intent(out):: kvecstar(3,48)
+      integer i,j,k,n,ncmp
+      real(r15) v(3),v2(3),v3(3),kvecstarp(3,48)
+
+      narms=0
+!      print*,'lattpgcount=',lattpgcount
+      iloop: do i=1,lattpgcount
+! apply symmetry operation to k to get v=kstar
+        v=matmul(iop_kmatrix(:,:,i),kvec)
+
+! now check if v - any_previous_v is integer (differ by a G vector)
+! if so, skip; else store this v as a new star vector
+        do j=1,narms
+! is v - any of the stars kvecstar(j) is a translation vector (i.e. integer)? 
+          if( is_integer(v-kvecstar(:,j))) then  ! it's already in the star list
+             cycle iloop
+          endif
+        enddo
+! add it to the lis
+        narms=narms+1
+        kvecstar(1:3,narms)=v(1:3)
+        kvecop(narms)=i
+      enddo iloop
+
+!      write(ulog,*)'# k_red, k_cart , kstar_red , kstar_cart '
+!      do j=1,narms
+!         write(ulog,4)j,kvec,red2cart_g(kvec),kvecstar(:,j),red2cart_g(kvecstar(:,j))
+!      enddo
+
+4 format(i4,4(2x,3(1x,f8.4)))
+
+      end subroutine getstarp
 !****************************************************************************
        subroutine collect_force_constants(nrank,nshell,   &
      &     maxrank,maxterms,maxtermsindep,maxtermszero,maxgroups,  &
@@ -1771,7 +1882,6 @@
       implicit none
       integer, intent(in) :: nrank,maxrank,maxterms,maxtermsindep,maxgroups,  &
      &     maxtermszero,nshell(natom_prim_cell)
-!  make sure natom_prim_cell < 20
       integer, intent(out):: ierz,iert,ieri,ierg,ngroups,ntermszero,ntermsall(maxgroups), &
      &     ntermsindep(maxgroups),iatomtermindep(maxrank,maxterms,maxgroups),  &
      &     ixyztermindep(maxrank,maxterms,maxgroups), &
@@ -1890,14 +2000,14 @@
               cycle ixyzloop
             enddo iloop3
             enddo
-           iloop5: do i=ntermszerosave+1,ntermszero
-             do j=1,nrank
-               if(iatomtermzero(j,i).ne.iatomd2(j))cycle iloop5
-               if(ixyztermzero(j,i).ne.ixyzd2(j))cycle iloop5
-             enddo
+            iloop5: do i=ntermszerosave+1,ntermszero
+              do j=1,nrank
+                if(iatomtermzero(j,i).ne.iatomd2(j))cycle iloop5
+                if(ixyztermzero(j,i).ne.ixyzd2(j))cycle iloop5
+              enddo
 ! found it: try next set of coordinates
-             cycle ixyzloop
-           enddo iloop5
+              cycle ixyzloop
+            enddo iloop5
 ! did not find it: generate terms
             ngroups=ngroups+1
 
@@ -1924,10 +2034,8 @@
      &           maxrank,maxterms,maxtermsindep,maxtermszero-ntermszero,  &
      &           ierz,iert,ieri) !,ierg)
 
-            write(*,3)'OUTPUT OF FORCE_CONSTANTS FOR RANK/ngroups=',nrank,ngroups
-            write(*,3)'OUTPUT OF FORCE_CONSTANTS: ntermsindep=',ntermsindep(1:ngroups)
-            write(*,3)'OUTPUT OF FORCE_CONSTANTS: nterms     =',ntermsall(1:ngroups)
-            write(*,3)'OUTPUT OF FORCE_CONSTANTS: ntermszero =',ntermszero
+            write(*,3)'OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=',iatom0,ixyz,nrank,ngroups
+!           write(*,3)'OUTPUT OF FORCE_CONSTANTS: ntermszero =',ntermszero
 !            write(ulog,3)'OUTPUT OF FORCE_CONSTANTS FOR RANK/ngroups=',nrank,ngroups
 !            write(ulog,3)'OUTPUT OF FORCE_CONSTANTS: ntermsindep=',ntermsindep(1:ngroups)
 !            write(ulog,3)'OUTPUT OF FORCE_CONSTANTS: nterms     =',ntermsall(1:ngroups)
@@ -1955,6 +2063,10 @@
           enddo ixyzloop
 ! next set of atoms
         enddo nextatomloop
+        write(*,3)'OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=',iatom0,ixyz,nrank,ngroups
+        write(*,3)'OUTPUT OF FORCE_CONSTANTS: ntermsindep=',ntermsindep(1:ngroups)
+        write(*,3)'OUTPUT OF FORCE_CONSTANTS: nterms     =',ntermsall(1:ngroups)
+        write(*,3)'OUTPUT OF FORCE_CONSTANTS: ntermszero =',ntermszero
       enddo iatom0loop
 
       write(ulog,*)' ngroups=',ngroups
@@ -1971,3 +2083,19 @@
  3    format(a,99(i6))
       end subroutine collect_force_constants
 !****************************************************************************
+      subroutine find_natoms_within_shell(nshell,nat)
+      use atoms_force_constants
+      implicit none
+      integer, intent(in) :: nshell
+      integer, intent(out):: nat
+      integer i0,j
+
+      nat=0
+      do i0=1,natom_prim_cell
+      do j=1,natoms
+         if(iatomneighbor(i0,j).le.nshell) nat=nat+1
+      enddo
+      enddo
+
+      end subroutine find_natoms_within_shell
+

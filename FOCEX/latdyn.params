@@ -1,0 +1,12 @@
+4 4 4   # of kpoints along each reciprocal vector directionn for Brillouin zone summations
+0 0 0   eventual shift of the above kpoint grid 
+300  350  dosmesh, omega_max
+2  30     width
+.False.   Verbosity
+00 900 10 Tempk
+7   iter 
+11   ksub_size and below path to where to write
+./      
+0       if 1 then classical calculation lse quantum
+0 0 0 0    calc_cross q_cross
+100       sample length in microns (for boundary scattering)

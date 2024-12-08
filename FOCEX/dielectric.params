@@ -1,0 +1,24 @@
+0   flag for inclusion of Born charges
+19.56 0 0  dielectric tensor
+0 19.56 0
+0 0 10.38
+3.35 0 0   born effective charge of atom 1
+0 3.35 0
+0 0 1.71
+3.35 0 0    born effective charge of atom 2
+0 3.35 0
+0 0 1.71
+-1.676 0 0    born effective charge of atom 3
+0 -1.676 0
+0 0 -0.8555
+-1.676 0 0    born effective charge of atom 4
+0 -1.676 0
+0 0 -0.8555
+-1.676 0 0    born effective charge of atom 5
+0 -1.676 0
+0 0 -0.8555
+-1.676 0 0    born effective charge of atom 6
+0 -1.676 0
+0 0 -0.8555
+
+
