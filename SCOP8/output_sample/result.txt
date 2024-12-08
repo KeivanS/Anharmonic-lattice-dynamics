@@ -1,95 +1,18 @@
- first Unpertubed Free Energy F0= (-0.50804915997951727     ,  0.0000000000000000     )
+ first Unpertubed Free Energy F0=         (7.00765537346731276E-002,0.0000000000000000)
  final translational vector =   0.0000000000000000        2.8511282499999999        2.8511282499999999        2.8511282499999999        0.0000000000000000        2.8511282499999999        2.8511282499999999        2.8511282499999999        0.0000000000000000     
- final F0 =  (-0.50759261385992971     ,  0.0000000000000000     )
- final Free Energy F=F0+<V-V0> =  (-0.50507405624069601     ,  0.0000000000000000     )
- Temperature   800.00000000000000     
- Current Volume is:   46.800007833722496   
- my calculated gruneisen:  0.57238645664833043     
- my calculated specific heat:   24.668309071092928     
- my calculated bulk modulus:  0.50543824754709621     
- calculated beta =    1.2490710394933209E-005
- Check the Symmetry of X: 
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   7.9053864120015103E-008
- The Actual X value:  -1.7704758068406952E-005
- The Actual X value:   1.7711287525529028E-005
- The Actual X value:  -2.0185542633917432E-005
- The Actual X value:  -1.9489921756637576E-005
- The Actual X value: -0.84167389386500369     
- The Actual X value:   2.0188808341115886E-005
- The Actual X value: -0.84165595928302417     
- The Actual X value:   1.6379241802968988E-005
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:  -2.1900016470782739E-005
- The Actual X value:  -1.9662928076411009E-005
- The Actual X value: -0.84167454780438233     
- The Actual X value:  -1.1436121742891257E-005
- The Actual X value:   6.1618732340316963E-006
- The Actual X value:   1.8171556442951225E-005
- The Actual X value: -0.84166347986148882     
- The Actual X value:   1.3292255812403979E-005
- The Actual X value:  -9.1620939080923895E-007
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   0.0000000000000000     
- The Actual X value:   2.1900153279005083E-005
- The Actual X value: -0.84163867861335362     
- The Actual X value:   1.6206262207966643E-005
- The Actual X value: -0.84164554526579693     
- The Actual X value:   7.6467635351796461E-006
- The Actual X value:  -1.6825358433775737E-006
- The Actual X value:   6.4984733412320517E-006
- The Actual X value:  -9.9238523019715812E-006
- The Actual X value:  -6.1553461114653085E-006
-
- Atilda from (7.58):
-  -0.00000     0.00114    -0.00105    23.15615    -0.00192     0.00192
-   0.00114    -0.00034    -0.00019    -0.00042    23.15691    -0.00009
-  -0.00105    -0.00019     0.00034     0.00065     0.00025    23.15715
-  23.15615    -0.00042     0.00065     0.00096     0.00056    23.15691
-  -0.00192    23.15691     0.00025     0.00056     0.00017    46.31425
-   0.00192    -0.00009    23.15715    23.15691    46.31425     0.00017
-
- Ahat:
- 127.66350    36.83620    36.83504     0.11601    -0.11538     0.11538
-  36.83620   127.89528    36.95140    -0.00039    -0.00051    -0.00102
-  36.83504    36.95140   127.89528     0.00077     0.00124     0.00065
-   0.11601    -0.00039     0.00077    50.69896     0.00009    -0.00002
-  -0.11538    -0.00051     0.00124     0.00009    50.69888     0.00005
-   0.11538    -0.00102     0.00065    -0.00002     0.00005    50.69976
-
- Atilda from (7.32):
- 127.66350    64.56308    64.56308    -0.11607     0.00051    -0.00051
-  64.56308   127.89528    64.44710    -0.00040     0.00041    -0.00107
-  64.56308    64.44710   127.89528     0.00078     0.00129    -0.00046
-  -0.11607    -0.00040     0.00078    36.95256     0.00123    -0.00077
-   0.00051     0.00041     0.00129     0.00123    36.95165    -0.00003
-  -0.00051    -0.00107    -0.00046    -0.00077    -0.00003    36.95165
-
-Elastic from speed of sound when delta=    0.00100
-C11=  86.83190
-C12=  30.38555
-C44=  37.16152
-
+ final F0 =          (7.00768074315369777E-002,0.0000000000000000)
+ final Free Energy F=F0+<V-V0> =          (7.01844057205848193E-002,0.0000000000000000)
+ Temperature   9.9999999999999982     
+ Current Volume is:   46.489493864212484     
+ ==========modulus==========
+ Bulk=   85.413210304540499        85.413210304538893     
+ E=   69.962531833216275     
+ niu=  0.36348221860964586     
+ G=   25.655828465647421     
+ temperature:   9.9999999999999982     
+ current eta_xx:   9.7874155419539139E-004
+ current volume   46.489493864212484     
+ my calculated gruneisen:  -9.6436777199138179E-002
+ my calculated bulk modulus:  0.52114106694128026     
+ calculated beta =   -6.7160288525409570E-009
+ my calculated specific heat:   8.1409148771670978E-002
