@@ -1,10 +1,3 @@
-include ../make.inc
-
-OPT = -O2
-FFLAGS = $(OPT) -ffpe-summary=invalid,zero,overflow
-F90FLAGS = $(OPT) -ffpe-summary=invalid,zero,overflow
-LDFLAGS = 
-
 PROG = test
 
 SRCS =	check.f90 ConjugateGradient.f90 constants.f90 extratools.f90 \
@@ -22,6 +15,12 @@ OBJS =	check.o ConjugateGradient.o constants.o extratools.o \
 
 LIBS =	
 
+OPT = -O
+FC = mpif90
+FFLAGS = $(OPT) -ffpe-summary=invalid,zero,overflow 
+F90 = mpif90
+F90FLAGS = $(OPT) -ffpe-summary=invalid,zero,overflow 
+LDFLAGS = 
 all: $(PROG)
 
 $(PROG): $(OBJS)
@@ -70,12 +69,12 @@ C=scp.`date "+%F|%T"`.tar
 # the use of the source file itself in the dependencies (1st line) is also necessary
 oldscp: $(SUBS)  $(MAIN)
 	$(FF) $(FLAGS) $(SUBS) $(MAIN)  -o $@
-	mv oldscp $(DESTDIR)
+	mv oldscp ~/BIN
 
 scp: $(SUBS)
 	ar rcs libAll.a *.o
 	$(FF) libAll.a $(MAIN) -o $@
-	mv scp $(DESTDIR)
+	mv scp ~/BIN
 	make clean
 
 write:
@@ -90,6 +89,9 @@ archive:
 	mv scp.tar $(C)
 	gzip $(C)
 
+%.o : %.mod
+
+# the above line is added because of a 'm2c' error
 # $@ is the name of the file to be made
 # $? is the names of the changed dependents
 # $< the name of the related file that caused the action
