@@ -1,0 +1,35 @@
+0      tolerance for equating to zero (2d-3) 
+0      svd cutoff value for inversion (1d-10)
+0      cutoff length (Ang) for including neighbors (15 Ang)
+0      maxterms(1)=40
+5000      maxterms(2)=4000 
+8000      maxterms(3)=5000 
+0      maxterms(4)=3000 
+0      maxterms(5)=3
+0      maxterms(6)=3
+0      maxterms(7)=3
+0      maxterms(8)=3
+0      maxtermzero(1)=20 
+2000      maxtermzero(2)=1000 
+8000      maxtermzero(3)=5000 
+0      maxtermzero(4)=3000 
+0      maxtermzero(5)=1
+0      maxtermzero(6)=1
+0      maxtermzero(7)=1
+0      maxtermzero(8)=1
+0      maxtermsindep(1)=10 
+250      maxtermsindep(2)=150 
+550      maxtermsindep(3)=150 
+0      maxtermsindep(4)=300 
+0      maxtermsindep(5)=1
+0      maxtermsindep(6)=1
+0      maxtermsindep(7)=1
+0      maxtermsindep(8)=1
+0      maxgroups(1)=10 
+180      maxgroups(2)=100 
+500      maxgroups(3)=150 
+0      maxgroups(4)=300 
+0      maxgroups(5)=1
+0      maxgroups(6)=1
+0      maxgroups(7)=1
+0      maxgroups(8)=1
