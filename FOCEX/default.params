@@ -1,6 +1,7 @@
 0      tolerance for equating to zero (2d-3)   # if 0 take the default value
-0      svd cutoff value for inversion/regularization (1d-10)
-0      cutoff for how many cells away (7 cells)
+0      force error value for inversion/regularization (1d-5)
+0      cutoff for how many cells away (6 cells)
+0      margin for eliminatinf small force constants (1d-6)
 0      maxterms(1)=40
 0      maxterms(2)=4000 
 0      maxterms(3)=5000 
