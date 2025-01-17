@@ -2,8 +2,8 @@
  module constants
  implicit none
 !--! specific precisions, usually same as real and double precision
-! integer, parameter :: r6 = selected_real_kind(6)
-integer, parameter,public :: r15 = kind(1.0d0)
+! integer, parameter :: r6 = selected_real_kind(6)  ! for single precision
+integer, parameter,public :: r15 = kind(1.0d0)  ! for double precision
 ! integer, parameter,public :: r15 = selected_real_kind(15) ! should work on any compiler
 integer, parameter,public :: c15 = 8
 !integer, parameter :: c6 = selected_complex_kind(6)
@@ -29,12 +29,12 @@ integer, parameter,public :: c15 = 8
 !==============================================
 module params
  use constants, only : r15
- real(r15) tolerance,margin,scalelengths,alfaborn,tempk,rcutoff
+ real(r15) tolerance,margin,scalelengths,alfaborn,tempk,rcutoff,coef
  integer nconfigs,classical,ntemp,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,itemp
  integer , allocatable :: nshells(:,:)  !nshells(8,natom_prim_cell) up to which shell to include for each rank of FC (read from input file)
  integer include_fc(8), icutoff !,nsmax  ! whether to include FCs of that rank ,max# of shells looping
  real(r15) tmin,tmax,qcros(3),svdc,lmax ! lmax is the cutoff length of FC2 limited by the supercell WS
- logical verbose
+ logical verbose,readfc
 
 end module params
 !============================================================
@@ -72,12 +72,13 @@ end module params
 
    interface operator(.cross.)
      module procedure crossproduct_v,crossproduct_a; end interface
-   interface operator(.myeqz.)
-     module procedure myequal0, myequal0array, myequal0vector ; end interface
 
    interface operator(.myeq.)
      module procedure myequal, myequal_i,myequalarray_i, &
 &         myequalarray_r, myequalvector ; end interface
+
+   interface myeqz
+     module procedure myequal0, myequal0array, myequal0vector ; end interface
 
   interface length
      module procedure lengthv,lengtha,lengthi ; end interface
@@ -106,8 +107,61 @@ end module params
      module procedure is_integer_1,is_integer_a
   end interface is_integer
 
+  interface trace
+     module procedure trace_r,trace_c,trace_i
+  end interface trace
+
    contains
 
+!-----------------------------------------
+ function trace_r(mat) result(tr)
+ use constants, only : r15
+ implicit none
+ integer i,n
+ real(r15), dimension(:,:), intent(in) :: mat
+ real(r15) tr 
+
+ n=size(mat,1) !; write(*,*)'TRACE: n=',n
+! write(*,*)'TRACE: n=',n,' mat=',mat
+ tr=0
+ do i=1,n
+    tr=tr+mat(i,i)
+ enddo
+
+ end function trace_r
+!-----------------------------------------
+ function trace_c(mat) result(tr)
+ use constants, only : r15
+ implicit none
+ integer i,n
+ complex(r15), dimension(:,:), intent(in) :: mat
+ complex(r15) tr 
+
+ n=size(mat,1) !; write(*,*)'TRACE: n=',n
+! write(*,*)'TRACE: n=',n,' mat=',mat
+ tr=0
+ do i=1,n
+    tr=tr+mat(i,i)
+ enddo
+
+ end function trace_c
+!-----------------------------------------
+ function trace_i(mat) result(tr)
+ use constants, only : r15
+ implicit none
+ integer i,n
+ integer, dimension(:,:), intent(in) :: mat
+ integer tr 
+
+ n=size(mat,1); 
+! write(*,*)'TRACE: n=',n,' mat=',mat
+ tr=0
+ do i=1,n
+    tr=tr+mat(i,i)
+ enddo
+
+ end function trace_i
+!-----------------------------------------
  function is_integer_1(i) result(is)
 !! checks if the variable is integer
  use params, only : tolerance
@@ -115,11 +169,13 @@ end module params
  real(r15), intent(in):: i
  logical is
 
- if (abs(i-nint(i)).lt.tolerance ) then
-    is=.true.
- else
+ if (abs(i-nint(i)).gt.tolerance ) then
+! if (abs(i-nint(i)).gt.1d-6 ) then
     is=.false.
+    return
  endif
+ is=.true.
+
  end function is_integer_1
 !-----------------------------------------
  function is_integer_a(i) result(is)
@@ -132,7 +188,8 @@ end module params
 
  n=size(i)
  do j=1,n
-    if(abs(i(j)-nint(i(j))).gt.tolerance ) then
+   if(abs(i(j)-nint(i(j))).gt.tolerance ) then
+!  if(abs(i(j)-nint(i(j))).gt.1d-6 ) then
        is=.false.
        return
     endif
@@ -149,6 +206,11 @@ real(r15) r1(3),r2(3),r3(3),cross12(3)
 
 cross12 = r1 .cross. r2
 om = abs(r3 .dot. cross12)
+ if(myeqz(om)) then
+    write(*,*)'CALVOL: Volume is zero! check your basis vectors!'
+    write(*,'(a,9(1x,g12.5))')'r1,r2,r3=',r1,r2,r3
+!   stop
+ endif
 
 end subroutine calvol_a
 !-----------------------------------
@@ -159,6 +221,11 @@ type(vector) cross12,r1,r2,r3
 
 cross12 = r1 .cross. r2
 om = abs(r3 .dot. cross12)
+ if(myeqz(om)) then
+    write(*,*)'CALVOL: Volume is zero! check your basis vectors!'
+    write(*,'(a,9(1x,g12.5))')'r1,r2,r3=',r1,r2,r3
+!   stop
+ endif
 
 end subroutine calvol_v
 !------------------------------------------------------------------------------
@@ -229,12 +296,12 @@ end subroutine calvol_v
      dot = v(1)*w%x + v(2)*w%y + v(3)*w%z
    end function dotproduct_va
 !-----------------------------------
-   function myequal0(v,w) result(eq)
+   function myequal0(v) result(eq)
      use params
-     real(r15), intent(in)::  v,w
+     real(r15), intent(in)::  v
      logical eq !, intent(out) :: eq
 
-        if (abs(v-w) .lt. tolerance) then
+        if (abs(v) .lt. tolerance) then
            eq=.true.
         else
            eq=.false.
@@ -268,10 +335,10 @@ end subroutine calvol_v
 
    end function myequal_i
 !-----------------------------------
-   function myequal0vector(v,w) result(eq)
-     type(vector), intent(in)::  v,w
+   function myequal0vector(v) result(eq)
+     type(vector), intent(in)::  v
      logical eq !, intent(out) :: eq
-  if ( (v%x .myeqz. w%x) .and. (v%y .myeqz. w%y) .and. (v%z .myeqz. w%z) ) then
+  if ( (v%x .myeq. 0d0) .and. (v%y .myeq. 0d0) .and. (v%z .myeq. 0d0) ) then
            eq=.true.
      else
            eq=.false.
@@ -288,26 +355,23 @@ end subroutine calvol_v
      endif
    end function myequalvector
 !-----------------------------------
-   function myequal0array(v,w) result(eq)
-     real(r15), dimension(:), intent(in) ::  v,w
+   function myequal0array(v) result(eq)
+     real(r15), dimension(:), intent(in) ::  v
      logical eq !, intent(out) :: eq
      integer i,n
-     i = size(v) ; n=size(w)
-     if (n .ne. i) then
-        print*, 'MYEQUAL0ARRAY: the input arrays are of different size ',i,n
-        stop
-     else
+     i = size(v) 
         eq = .true.
         loop: do n=1,i
-           if ( .not. myequal0(v(n),w(n)) ) then
+           if ( .not. myequal0(v(n)) ) then
               eq = .false.
               exit loop
            endif
         enddo loop
-     endif
+     
    end function myequal0array
 !-----------------------------------
    function myequalarray_r(v,w) result(eq)
+     use params
      real(r15), dimension(:), intent(in) ::  v,w
      logical eq !, intent(out) :: eq
      integer i,n
@@ -318,7 +382,7 @@ end subroutine calvol_v
      else
         eq = .true.
         loop: do n=1,i
-           if ( .not. myequal(v(n),w(n)) ) then
+           if ( abs(v(n)-w(n)) .gt. tolerance ) then
               eq = .false.
               exit loop
            endif
@@ -327,6 +391,7 @@ end subroutine calvol_v
    end function myequalarray_r
 !-----------------------------------
    function myequalarray_i(v,w) result(eq)
+     use params
      integer, dimension(:), intent(in) ::  v,w
      logical eq !, intent(out) :: eq
      integer i,n
@@ -337,7 +402,8 @@ end subroutine calvol_v
      else
         eq = .true.
         loop: do n=1,i
-           if ( .not. myequal_i(v(n),w(n)) ) then
+           if ( abs(v(n)-w(n)) .gt. tolerance ) then
+  !        if ( .not. myequal_i(v(n),w(n)) ) then
               eq = .false.
               exit loop
            endif
@@ -685,12 +751,13 @@ module ios
 &         ufco=20,ulog=30,utraj=40,umatrx=50,umap=60,utimes=70,ufc=80, &
 &         ufc1=21,ufc2=22,ufc3=23,ufc4=24,  &
 &         ufit1=31,ufit2=32,ufit3=33,ufit4=34,  &
-&         ujunk=79,uibz=80,uibs=81,ugrun=82,uband=83,ucor=93,utherm=110,udos=111
+&         ujunk=79,uibz=80,uibs=81,ugrun=82,uband=83,ufbz=84,ucor=93,utherm=110,udos=111
 
 
   interface write_out
      module procedure write_outim, write_outrm, write_outiv, write_outrv, &
-&    write_outv , write_outi, write_outr,write_outcv,write_outrm3
+&    write_outv, write_outi, write_outr, write_outcv, write_outrm3,  &
+&    write_outc, write_outcm 
   end interface
 
  contains
@@ -712,6 +779,22 @@ module ios
   enddo
 4 format(a,99(1x,g11.4))
   end subroutine write_outrm3
+!-----------------------------
+  subroutine write_outcm(unt,string,var)
+  implicit none
+  character*(*), intent(in) :: string
+  integer n,m,unt,l,i,j
+  complex(r15), dimension(:,:), intent(in) :: var
+
+  l=len_trim(string)
+  n=size(var,1) ; m=size(var,2)
+! write(unit,*)' write_outrm called;nl,nc=',n,m
+  write(unt,*)string(1:l)//' is='
+  do i=1,n
+     write(unt,4)var(i,:)
+  enddo
+4 format(99(1x,f13.5))
+  end subroutine write_outcm
 !-----------------------------
   subroutine write_outrm(unt,string,var)
   implicit none
@@ -749,7 +832,7 @@ module ios
   implicit none
   character*(*), intent(in) :: string
   integer unt,l,i
-  real(r15), dimension(:) :: var
+  real(r15), intent(in) :: var(:)
 
   l=len_trim(string)
   write(unt,4)string(1:l)//' is=',var(:)
@@ -760,7 +843,7 @@ module ios
   implicit none
   character*(*), intent(in) :: string
   integer unt,l,i
-  complex(r15), dimension(:) :: var
+  complex(r15), intent(in) :: var(:)
 
   l=len_trim(string)
   write(unt,4)string(1:l)//' is=',var(:)
@@ -771,7 +854,7 @@ module ios
   implicit none
   character*(*), intent(in) :: string
   integer unt,i,l
-  integer, dimension(:) :: var
+  integer, intent(in):: var(:)
 
   l=len_trim(string)
   write(unt,4)string(1:l)//' is=',var(:)
@@ -779,11 +862,22 @@ module ios
 
 end subroutine write_outiv
 !-----------------------------
+  subroutine write_outc(unt,string,var)
+  implicit none
+  character*(*), intent(in) :: string
+  integer unt,l
+  complex(r15), intent(in):: var
+
+  l=len_trim(string)
+  write(unt,4)string(1:l)//' is=',var
+4 format(a,99(1x,f13.5))
+end subroutine write_outc
+!-----------------------------
   subroutine write_outr(unt,string,var)
   implicit none
   character*(*), intent(in) :: string
   integer unt,l
-  real(r15) var
+  real(r15), intent(in):: var
 
   l=len_trim(string)
   write(unt,4)string(1:l)//' is=',var
@@ -794,7 +888,7 @@ end subroutine write_outr
   implicit none
   character*(*), intent(in) :: string
   integer unt,l
-  integer var
+  integer, intent(in):: var
 
   l=len_trim(string)
   write(unt,4)string(1:l)//' is=',var
@@ -807,10 +901,10 @@ end subroutine write_outi
   implicit none
   character*(*), intent(in) :: string
   integer unt,l
-  type(vector) var
+  type(vector), intent(in):: var
 
   l=len_trim(string)
-  write(unt,4)string(1:l)//' is=',var
+  write(unt,4)string(1:l)//' is=',var%x,var%y,var%z
 4 format(a,3(1x,f13.5))
 end subroutine write_outv
 
@@ -823,7 +917,7 @@ end module ios
  use constants, only : r15
  use geometry
  implicit none
- integer natom_super_cell,nmax, fc2flag
+ integer natom_super_cell,nmax, fc2range
 
 !-------------------------
  type cell_id         ! id of atoms: position within cell, and cell coordinates
@@ -878,9 +972,13 @@ end module ios
       integer maxneighbors,maxshells
 ! maximum number of atoms out to maxneighbors
       integer maxatoms,imaxatm,imaxnei
-! op_matrix(k,j,i), matrix for the ith point operator
+! op_matrix(k,j,i), matrix for the ith point operator acting on cartesian coordinates
+! iop_matrix(k,j,i), matrix for the ith point operator acting on reduced coordinates
+      integer iop_matrix(3,3,48)
       double precision op_matrix(3,3,48)
-! op_kmatrix(k,j,i), matrix for the ith point operator acting on k vector
+! op_kmatrix(k,j,i), matrix for the ith point operator acting on cartesian kvector
+! iop_kmatrix(k,j,i), matrix for the ith point operator acting on reduced kvector
+      integer iop_kmatrix(3,3,48)
       double precision op_kmatrix(3,3,48)
       integer lattpgcount
 ! isgopcount, number of operators in space group
@@ -907,6 +1005,9 @@ end module ios
 ! cell at the origin that contains the ith atom
       integer iatomneighbor(:,:)
       allocatable iatomneighbor,iatomop,atomopfract
+
+      logical has_inversion
+
 !      end module force_constants_module
 ! -------------------------------------
 
@@ -1081,9 +1182,9 @@ contains
 ! real(r15), allocatable:: rws_weights(:),gws_weights(:)
 ! integer nr1(3),nr2(3),nr3(3)
 ! real(r15), allocatable:: rgrid(:,:),ggrid(:,:),xgrid(:,:)
- real(r15) gws26(3,26),rws26(3,26),invn_sc(3,3)  ! superlattice shells defining the WS of SL
+ real(r15) gws26(3,26),rws26(3,26) ! superlattice shells defining the WS of SL
  real(r15) g0ws26(3,26),r0ws26(3,26) , lgridmax
- integer n_sc(3,3)
+ integer n_sc(3,3),invn_sc(3,3)  
 
   interface make_rg
      module procedure make_rga,make_rgv
@@ -1111,23 +1212,165 @@ contains
 
  contains
 
-!=========================================
- function reduce_g(q) result(redq)
+!-------------------------------------------
+ function cart2red(x,space) result(red)
+!! converts reduced coordinates of a real space vector to its cartesian coordinates
+ use constants, only : r15,pi
+ implicit none
+ real(r15) , intent(in) :: x(3)
+ character(len=1), intent(in) :: space
+ real(r15)  red(3)
+ if (space.eq.'r' .or. space .eq. 'R') then
+     red=matmul(cart_to_prim,x)
+ elseif (space.eq.'g' .or. space .eq. 'G') then
+     red=matmul(transpose(prim_to_cart),x)/(2*pi)
+ else
+     write(*,*)'CART2RED: space should either be r or g not ',space
+     stop
+ endif
+   
+ end function cart2red
+!-------------------------------------------
+ function red2cart(x,space) result(cartx)
+!! converts reduced coordinates of a real space vector to its cartesian coordinates
+ use constants, only : r15,pi
+ implicit none
+ real(r15) , intent(in) :: x(3)
+ character(len=1), intent(in) :: space
+ real(r15)  cartx(3)
+ if (space.eq.'r' .or. space .eq. 'R') then
+     cartx=matmul(prim_to_cart,x)
+ elseif (space.eq.'g' .or. space .eq. 'G') then
+     cartx=matmul(transpose(cart_to_prim),x)*(2*pi)
+ else
+     write(*,*)'RED2CART: space should either be r or g not ',space
+     stop
+ endif
+   
+ end function red2cart
+!-------------------------------------------
+ function red2cart_r(x) result(cartx)
+!! converts reduced coordinates of a real space vector to its cartesian coordinates
+ use constants, only : r15
+ implicit none
+ real(r15) , intent(in) :: x(3)
+ real(r15)  cartx(3)
+ cartx=matmul(prim_to_cart,x)
+ end function red2cart_r
+!-------------------------------------------
+ function red2cart_g(q) result(cartq)
+!! converts reduced coordinates of a kpoint to its cartesian coordinates
+ use constants, only : pi,r15
+ implicit none
+ real(r15) , intent(in) :: q(3)
+ real(r15)  cartq(3)
+ cartq=matmul(transpose(cart_to_prim),q)*(2*pi)
+ end function red2cart_g
+!-------------------------------------------
+ function cart2red_g(q) result(redq)
 !! converts cartesian coordinates of a kpoint to its reduced coordinates
  use constants, only : pi,r15
  implicit none
  real(r15) , intent(in) :: q(3)
  real(r15)  redq(3)
  redq=matmul(transpose(prim_to_cart),q)/(2*pi)
- end function reduce_g
-!=========================================
- function reduce_r(q) result(redq)
+ end function cart2red_g
+!-------------------------------------------
+ function cart2red_r(x) result(redx)
  use constants, only : pi,r15
  implicit none
- real(r15) , intent(in) :: q(3)
- real(r15) redq(3)
- redq=matmul(cart_to_prim,q) !/(2*pi)
- end function reduce_r
+ real(r15) , intent(in) :: x(3)
+ real(r15) redx(3)
+ redx=matmul(cart_to_prim,x)
+ end function cart2red_r
+!-------------------------------------------
+ function fold_ws(q,gs,space) result(qout)
+!! for WS cell defined by gs(3,1:26), this folds q in the ws cell of gsi
+ use constants, only : r15
+ use geometry, only : v2a,length
+ use params, only : tolerance
+ implicit none
+ real(r15), intent(in):: q(3),gs(3,26)
+ real(r15) x,c(3),qin(3),test_vec(3),dist,dmin,qout(3)
+ character(len=1), intent(in) :: space
+ integer i,j,k,m,nboundary
+ logical inside,folded
+
+! first bring it in -G/2;G2 by using the reduced coordinates
+  qin=q
+  do i=1,26
+     x=dot_product(qin,gs(:,i))/dot_product(gs(:,i),gs(:,i))
+     qin=qin-gs(:,i)*nint(x)
+     call check_inside_ws(qin,gs,inside,nboundary)
+     if (inside) then
+        qout=qin    
+        return
+     endif
+  enddo
+
+  dmin=length(qin)
+  do i = 1, 26
+     dist = length(qin+gs(:,i))
+     if(dist.lt.dmin) then
+        dmin=dist
+        qout = qin+gs(:,i)
+     endif
+  enddo
+
+! make sure it is inside
+  call check_inside_ws(qout,gs,inside,nboundary)
+  if(inside) then
+     return
+  else
+     write(*,*)' final vector is not inside!!',qout
+     stop
+  endif
+
+   folded = .false.
+   k=0 ; dmin=1d8
+   do while (.not. folded .and. k.lt.4)
+      folded = .true.
+      k=k+1
+      write(*,*)'FOLD_WS: k=',k
+      call check_inside_ws(q,gs,inside,nboundary)
+      if (inside) then
+         qin=q    
+         return
+      endif
+
+      do i = 1, 26
+         qin = q+gs(:,i)*k
+         dist = length(qin) !   )) sqrt(sum(folded_vec**2))
+
+      !  call check_inside_ws(qin,gs,inside,nboundary)
+      !  if (inside) then
+      !    return
+      !  endif
+!        folded = .false.
+          
+          if (dist < dmin) then
+            dmin = dist
+            qout=qin
+            folded = .false.
+          end if
+      end do
+   end do
+
+ return
+ 
+! first find its reduced units
+! c=cart2red_g(q)
+  !    if(x.gt.0.5001) then
+  !      m=nint(x) 
+  !      qin=qin-m*gs(:,i)
+  
+ do i=1,26
+    x=dot_product(qin,gs(:,i))/dot_product(gs(:,i),gs(:,i))
+    m=nint(x) !=floor(x) !mod(x,1) !m=x-y
+    qin=qin-m*gs(:,i)  
+ enddo
+ 
+ end function fold_ws
 
 !-------------------------------------------
  subroutine make_r0g
@@ -1202,7 +1445,7 @@ contains
 !  write(ulog,3) 'ier=1;r and r.gi/2pi=',r,a
 !  stop
  endif
-3 format(a,9(1x,g11.4))
+3 format(a,9(1x,f11.6))
 
  end subroutine check_a
 !-------------------------------------------
@@ -1236,7 +1479,7 @@ contains
 !  write(ulog,3) ' n1,n2,n3  =',a1,a2,a3
    ier = 0
  endif
-3 format(a,9(1x,g11.4))
+3 format(a,9(1x,f11.6))
 
  end subroutine check3
 !-------------------------------------------
@@ -1323,16 +1566,12 @@ contains
 ! prim_to_cart(i,j) is the ith cartesian coordinate of the jth primitive translation vector
       prim_to_cart=matmul(conv_to_cart,prim_to_conv)
       call write_out(ulog,' Primitive translations: prim_to_cart ( on columns ) ',prim_to_cart)
-
+! i.e. multiplied by primitive reduced coordinates will give you cartesian coordinates
       r01 = prim_to_cart(:,1)
       r02 = prim_to_cart(:,2)
       r03 = prim_to_cart(:,3)
 
       call make_reciprocal_lattice_2pi(r01,r02,r03,g01,g02,g03)
-
-!     call write_out(ulog,' g01= ' ,g01)
-!     call write_out(ulog,' g02= ' ,g02)
-!     call write_out(ulog,' g03= ' ,g03)
 
       call xmatinv(3,prim_to_cart,cart_to_prim,ier)
       if(ier.ne.0)then
@@ -1423,6 +1662,7 @@ contains
 
 ! nshells should be within this cutoff
   write(ulog,*)' the suggested value of rcutoff from SC is ',rcutoff
+! icutoff is an option to increase it if need be
   rcutoff=max(rcutoff, icutoff*volume_r0**0.333)
   write(ulog,*)' rcutoff updated from icutoff is ',rcutoff
 ! use this volume for atompos; the largest supercell will be fully included in this volume
@@ -1433,7 +1673,7 @@ contains
   maxshells = icutoff   ! let the user decide it
 
 ! FCs will exist at the most up to maxshells; it's ok if maxshell is too large
-! if (fc2flag .eq.0 ) then
+! if (fc2range .eq.0 ) then
 !    maxshells=nint(rcutoff / min(length(r01),length(r02),length(r03)))+1
 ! else
 !    maxshells=max(maxval(nshells)+2,icutoff )  ! go with what the user prescribed
@@ -1608,7 +1848,7 @@ contains
           nb(shel_count)=1
           d_old = d_new
           d_min(shel_count)=d_new
-          write(*,4)' NEW shell , dij= ',shel_count,d_new
+ !        write(*,4)' NEW shell , dij= ',shel_count,d_new
  !        if ( shel_count .gt. maxneighbors ) then
           if ( d_new .gt. rcutoff ) then
              write(   *,*) shel_count,' shells completed up to distance ',d_new
@@ -1626,7 +1866,7 @@ contains
 
        else  ! same shell
           nb(shel_count)=nb(shel_count)+1  ! counts how many atoms within shell=shel_count
-          if(j.lt.150) write(*,9)'shell# , nb# , j , dij= ',shel_count,nb(shel_count),j,d_new
+          if(j.lt.50) write(*,9)'shell#, nb#, j, dij= ',shel_count,nb(shel_count),j,d_new
           iatomneighbor(i0,msort(j))=shel_count
        endif
     enddo jloop
@@ -1920,14 +2160,16 @@ contains
     integer, allocatable:: iat(:,:),ixyz(:,:),iatind(:,:),ixyzind(:,:)
  end type groupmatrix
  type fulldmatrix
+    real(r15), allocatable:: amatrx(:,:),transinv(:,:),rotinv(:,:)
+    integer alines,tranlines,rotlines
     type(groupmatrix), allocatable :: gr(:)  ! groups of fcs
-    integer, allocatable:: nt(:),ntind(:)  ! full and independent fc terms for each group
+    integer, allocatable:: nt(:),ntind(:),keep(:)  ! full and independent fc terms for each group
     character(1), allocatable:: err(:)
-    integer ngr,ntotind,ntot  ! number of groups, total number of independent terms and full terms
+    integer ngr,ntotind,ntot,nkeptind  ! number of groups, total number of independent terms and full terms
  end type fulldmatrix
 
- integer maxrank,itrans,irot,ihuang,enforce_inv, size_kept_fc2
- integer, allocatable :: keep_fc2i(:),nlines(:),tind2(:)
+ integer maxrank,itrans,irot,ihuang,enforce_inv
+ integer, allocatable :: nlines(:),tind2(:)
  parameter(maxrank=8)
  integer nterms(maxrank),maxterms(maxrank),maxtermsindep(maxrank),ngroups(maxrank), &
 &        maxtermzero(maxrank),maxgroups(maxrank),ngrnk(maxrank)
@@ -1956,37 +2198,42 @@ contains
 &        ,transl_constraints, rot_constraints, huang_constraints,nindepfc
 contains
 
- function counter2(g,ti) result(cnt)
-!! counter2(g,ti) counts the number of independent terms of rank 2 from all groups up to group g and term ti in it
-!! it is usually the argument of keep_fc2i()
+ function counteri(rnk,g,ti) result(cnt)
+!! counteri(rnk,g,ti) counts the number of independent terms of rank=rnk from all groups  
+!! up to group g-1 and the extra ti terms in group g
  implicit none
- integer, intent(in) :: g,ti
+ integer, intent(in) :: rnk,g,ti
  integer cnt
 
  if(g.eq.1) then
     cnt=ti
  else
-    cnt=sum(map(2)%ntind(1:g-1))+ti
+    cnt=sum(map(rnk)%ntind(1:g-1))+ti
  endif
 
- end function counter2
+ end function counteri
 !------------------------------------------------------
- function current2(g,ti) result(cnt)
-!! current(g,ti) is the location of the the KEPT independent term ti in group g, of rank 2 in the fc2 list 
-!! it is smaller or equal to counter2
+ function current(rnk,g,ti) result(cnt)
+!! current(rnk,g,ti) is the location of the the KEPT independent term ti in group g, of rank
+!! rnk in the fc list; it is smaller or equal to counteri
  implicit none
- integer, intent(in) :: g,ti
+ integer, intent(in) :: rnk,g,ti
  integer cnt,c2
 
- if( counter2(g,ti).gt. size(keep_fc2i) ) then
-   write(*,*)'g,ti,counter2,size=',g,ti,counter2(g,ti),size(keep_fc2i)
-   stop
+ c2=counteri(rnk,g,ti)
+ if(rnk.eq.2) then
+   if( c2 .gt. size(map(rnk)%keep(:)) ) then
+     write(*,*)'g,ti,counter2,size=',g,ti,c2,size(map(rnk)%keep(:))
+     stop
+   else
+     cnt = sum(map(rnk)%keep(1:c2))
+   endif
  else
-   cnt = sum(keep_fc2i(1:counter2(g,ti)))
+   cnt = c2  ! everything is kept
  endif
 
- end function current2
-
+ end function current
+!------------------------------------------------------
 ! subroutine set_maxterms
 !   maxterms(1)=40 !100
 !   maxterms(2)=4000 !500
@@ -2209,20 +2456,15 @@ contains
   end module svd_stuff
 
 !===========================================================
-  module born
- use constants, only : r15
-  real(r15) epsil(3,3),epsinv(3,3)
-!  real(r15), allocatable:: zeu(:,:,:)
-! real(r15) rho
-  integer born_flag
-  end module born
-
-!===========================================================
  module linalgb
  use constants, only : r15
 
   interface append_array
      module procedure append_array_1d,append_array_2d
+  end interface
+
+  interface symmetrize_res
+     module procedure symmetrize_res1,symmetrize_res2
   end interface
 
  contains
@@ -2290,7 +2532,26 @@ contains
 
  end subroutine append_array_2d
 !---------------------------------------
- subroutine symmetrize_res(mat2,res)
+ subroutine symmetrize_res1(mat2,res)
+! enforces mat2(a,b)-mat2(b,a)=res(b); symmetrize mat then mat2=sym(mat)+res/2 and sym(mat)-res/2
+ use constants, only : r15
+ implicit none
+ real(r15), intent(inout) :: mat2(3,3) 
+ real(r15), intent(in) :: res(3) 
+ real(r15) mean(3,3) 
+ integer n
+
+ mean=(mat2+transpose(mat2))/2
+ mat2(1,2)=mean(1,2)+res(2)/2
+ mat2(2,1)=mean(1,2)-res(2)/2
+ mat2(2,3)=mean(3,2)+res(3)/2
+ mat2(3,2)=mean(3,2)-res(3)/2
+ mat2(3,1)=mean(1,3)+res(1)/2
+ mat2(1,3)=mean(1,3)-res(1)/2
+ 
+ end subroutine symmetrize_res1
+!---------------------------------------
+ subroutine symmetrize_res2(mat2,res)
 ! enforces mat2(a,b)-mat2(b,a)=res(a,b)-res(b,a); consider mat=mat2-res ; symmetrize mat then mat2=sym(mat)+res
  use constants, only : r15
  implicit none
@@ -2305,7 +2566,7 @@ contains
  mean=(mat2-res+transpose(mat2-res))/2
  mat2=mean+res
  deallocate(mean)
- end subroutine symmetrize_res
+ end subroutine symmetrize_res2
 
 !---------------------------------------
  subroutine symmetrize2(n,mat2)

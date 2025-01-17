@@ -127,7 +127,7 @@
 
  n=size(x)
  do i=1,n
-    y(i)=mysqrt(x(i))
+    y(i)=mysqrt_1(x(i))
  enddo
 
  end function mysqrt_a
@@ -141,12 +141,20 @@
  use eigen, only : ndyn
  implicit none
 
- real(r15) sigma0(3,3),atld0(3,3,3,3),sigmav(6),poisson,elastic(6,6),compliance(6,6)
+ real(r15) sigma0(3,3),atld0(3,3,3,3),sigmav(6),poisson,youngmod,elastic(6,6),compliance(6,6) &
+&          ,b0p,bulkmod
  real(r15) vbulkmod,vyoungmod,vshearmod
  real(r15) rbulkmod,ryoungmod,rshearmod
  real(r15) hbulkmod,hyoungmod,hshearmod
- real(r15), allocatable :: phi(:,:),xi(:,:,:),qiu(:,:,:),zeta(:,:,:),teta(:,:,:),gama(:,:),y0(:),pi0(:)
+ real(r15), allocatable :: phi(:,:),xi(:,:,:),qiu(:,:,:),zeta(:,:,:),teta(:,:,:),gama(:,:),y0(:),pi0(:),gam(:,:)
  real(r15), allocatable :: qiuv(:,:),u0v(:)
+
+ contains
+
+ subroutine allocate_mech(n)
+ integer, intent(in):: n
+ allocate(gam(n,n),y0(n),phi(n,n),xi(n,3,3),qiu(n,3,3),zeta(n,n,3),teta(n,n,3),pi0(n),qiuv(n,6),u0v(n))
+ end subroutine allocate_mech
 
  end module mech
 !===========================================================
@@ -154,15 +162,17 @@
   use constants, only : r15
   real(r15) epsil(3,3),epsinv(3,3)
   real(r15), allocatable:: dyn_naq0(:,:,:)
-  complex(r15), allocatable:: dyn_na(:,:,:,:,:)  ! new phase=old*e^iG.(taup-tau)
+  complex(r15), allocatable:: dyn_na(:,:,:,:,:)  
   integer born_flag
-  complex(r15), allocatable :: fc_sr(:,:,:,:,:),dyn_g(:,:,:,:,:)
+  complex(r15), allocatable :: dyn_g(:,:,:,:,:)
+  complex(r15), allocatable :: phib(:,:,:,:,:)  ! bare one from fitting 
+  complex(r15), allocatable :: phip(:,:,:,:,:)  ! periodic one from FT of dyn_G phip(t,R+tp)==sum_L phib(t,R+tp+L)
 
  contains
 
   subroutine allocate_fc_dyn(n,nr,ng)
     integer n,nr,ng
-    allocate(fc_sr(n,n,3,3,nr),dyn_naq0(n,3,3),  &
+    allocate(phip(n,n,3,3,nr),phib(n,n,3,3,nr),dyn_naq0(n,3,3),  &
 &           dyn_na(n,n,3,3,ng),dyn_g(n,n,3,3,ng))
   end subroutine allocate_fc_dyn
 

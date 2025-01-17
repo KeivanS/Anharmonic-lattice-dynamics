@@ -112,7 +112,8 @@
     cnt=cnt+1
     if (cnt.gt.maxx .and. maxx.ne.1) then
        write(ulog,*)'GLOOP: maxx size exceeded, need to increase variable maxx from ',maxx
-       stop
+       exit gshelloop
+!      stop
     endif
 
  enddo
@@ -802,20 +803,20 @@
        dd=sqrt(dot_product(sd,del))
        if(dd.lt.1d-6) cycle ! exclude self-interactions
        if (dd.gt.6) cycle
-       hout= hfunc(del,dd)
+       hout= hfunc(del,dd) * exp(ci*dot_product(q,rgrid(:,igrid))) 
 !      write(6,4)'rgrid,dd,hout=',igrid,dd,hout(1,1)
 !      dhat=dhat - hout * cos(dot_product(q,rgrid(:,igrid))) 
-       dhat=dhat - hout * exp(ci*dot_product(q,rgrid(:,igrid))) 
+       dhat=dhat - hout
        do ga=1,3
 !         d3ew(:,:,ga)=d3ew(:,:,ga) - matmul(matmul(atom0(tau )%charge,hout),transpose(atom0(taup)%charge))  &
 !  &                                * sin(dot_product(q,rgrid(:,igrid))) *rgrid(ga,igrid) 
 !         d3ew(:,:,ga)=d3ew(:,:,ga) - hout * sin(dot_product(q,rgrid(:,igrid))) *rgrid(ga,igrid) 
-          d3ew(:,:,ga)=d3ew(:,:,ga) - ci*rgrid(ga,igrid) *hout * exp(ci*dot_product(q,rgrid(:,igrid))) 
+          d3ew(:,:,ga)=d3ew(:,:,ga) - ci*rgrid(ga,igrid) *hout  
        enddo
 !      write(*,4)'R_sum: igrid,d,dhat_11=',igrid,dd, dhat(1,1)
     enddo
      if(tau.eq.taup) dhat=dhat - 4/3d0/sqrt(pi)*epsinv 
-!    if(tau.eq.taup) d3ew=d3ew - 4/3d0/sqrt(pi)*epsinv   !!! TO BE CHECKED !!!
+!    if(tau.eq.taup) d3ew=d3ew - 4/3d0/sqrt(pi)*epsinv   !!! TO BE CHECKED !!! not needed since does not depend on q
     dhat=dhat* etaew*etaew*etaew/sqrt(det(epsil)) 
     d3ew=d3ew* etaew*etaew*etaew/sqrt(det(epsil)) 
 !   write(6,*)'Last R-term(1,1)=',hout(1,1)*etaew*etaew*etaew/sqrt(det(epsil)) 
@@ -824,7 +825,7 @@
 ! reciprocal space term  
     do igrid=1,ng
        qpg=ggrid(:,igrid)+q
-       if(length(qpg).lt.1d-10*gscale) cycle  ! exclude G+q=0
+       if(length(qpg).lt.1d-5*gscale) cycle  ! exclude G+q=0
        geg=dot_product(qpg,matmul(epsil,qpg))
        if (geg.gt.100*etaew*etaew) exit  ! assumes ggrid is sorted 
        termg=exp(-geg/4/etaew/etaew)/geg
@@ -851,6 +852,26 @@
     d2ew= matmul(matmul(atom0(tau)%charge,dhat),transpose(atom0(taup)%charge))
  !  d2ew= d2ew*exp(-ci*(q.dot.dta))   ! smooth phase convention
      
+! Fix d3ew here ; this is copied from old NA PArlinski term
+ !      rtp  = v2a(atom0(taup)%equilibrium_pos-atom0(tau)%equilibrium_pos)
+ !      phase= exp(ci*(q.dot.rtp))
+ !      mysf = sf * phase
+ !      mydsf=(dsf + ci*rtp*sf) * phase
+ !         do ga=1,3
+
+ !            ddyn(al,be,ga) = dyn(al,be) * ( &
+ !    &         atom0(tau )%charge(al,ga)/dot_product(atom0(tau )%charge(al,:),q) + &
+ !    &         atom0(taup)%charge(be,ga)/dot_product(atom0(taup)%charge(be,:),q) - &
+ !    &         dqeq(ga)/qeq  + ci*rtp(ga) + mydsf(ga)/mysf ) 
+
+ !         enddo
+
+
+
+
+
+
+
 
 3 format(a,99(1x,g14.7))
 4 format(a,i4,99(1x,g11.4))
@@ -874,7 +895,6 @@
  real(r15), intent(in) :: q(3),ggrid(3,ng),etaew
  complex(r15), intent(out) :: d2ew(3,3),d3ew(3,3,3)
  complex(r15) phase
-! complex(r15)mysf,mydsf(3)
  integer igrid,al,be,ga
  real(r15) termg,geg,ep,dta(3),qpg(3),gscale,hout(3,3),qal(3),qbe(3)
 
@@ -886,7 +906,7 @@
     gloop: do igrid=1,ng
        qpg=ggrid(:,igrid)+q
        phase = 1 ! exp(-ci*dot_product(ggrid(:,igrid),dta))
-       if(length(qpg).lt.1d-10*gscale) then 
+       if(length(qpg).lt.1d-6*gscale) then 
           cycle
 !          d2ew = d2ew+ 1/3d0*matmul(matmul(atom0(tau )%charge,epsinv),  &
 ! &               transpose(atom0(taup)%charge)) * phase 
@@ -896,7 +916,7 @@
           termg=exp(-geg/4/etaew/etaew)/geg                
           qal(:)=matmul(atom0(tau )%charge,qpg)
           qbe(:)=matmul(atom0(taup)%charge,qpg)
-!         write(6,4)'ggrid,gg,term=',igrid,sqrt(geg),termg
+ !        write(6,4)'ggrid,gg,term=',igrid,sqrt(geg),termg
           do al=1,3
           do be=1,3
              hout(al,be)= termg * qal(al)*qbe(be)*exp(-ci*dot_product(qpg,dta)) 

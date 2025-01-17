@@ -209,9 +209,16 @@
 ! do next element of point group (ipg)
       enddo ipntoploop
 
+      has_inversion=.false.
       write(usym,*)' # of space group translation vectors=',isgopcount
       do isg=1,isgopcount
          write(usym,8)' isg, isgop, sgfract=',isg,isgop(isg),sgfract(:,isg)
+! check for inversion symetry
+         if(iop_matrix(1,1,isg).eq.-1 .and.iop_matrix(2,2,isg).eq.-1 &
+&  .and.iop_matrix(3,3,isg).eq.-1 .and. length(sgfract(:,isg)).lt.tolerance) then
+            write(ulog,*)'INVERSION SYMMETRY: for op#',isg
+            has_inversion=.True.
+         endif
       enddo
 
 !----------------------------------------------------------------------------
@@ -802,7 +809,7 @@
             write(6,*)'Error0 in force_constants: atom not found,for irank,iatom=',irank,iatom(irank)
   !         write(6,*)'the atom moved by the space group operation is not there!tau,n=',tauv,nv
             write(6,9)'noncorresponding vector,length, reduced=',v,length(v),matmul(cart_to_prim,v)
-            write(6,*)'you probably need to increase the cutoff length in 3rd line of default.params'
+            write(6,*)'you probably need to increase the cutoff length in 3rd line of default.params from the default of 6'
             stop
           endif
         enddo
@@ -2069,14 +2076,14 @@
         write(*,3)'OUTPUT OF FORCE_CONSTANTS: ntermszero =',ntermszero
       enddo iatom0loop
 
-      write(ulog,*)' ngroups=',ngroups
-      write(ulog,3)' ntermsindep        (1:ngroups)=', ntermsindep(1:ngroups)
-      write(ulog,3)' ntermsall             (1:ngroups)=', ntermsall(1:ngroups)
-      write(ulog,3)' iatomtrmindep(rnk,1,1:ngroups)=', iatomtermindep(nrank,1,1:ngroups)
-      write(ulog,3)' ixyztermindep(rnk,1,1:ngroups)=', ixyztermindep(nrank,1,1:ngroups)
-      write(ulog,3)' iatomterm    (rnk,1,1:ngroups)=', iatomterm(nrank,1,1:ngroups)
-      write(ulog,3)' ixyzterm     (rnk,1,1:ngroups)=', ixyzterm(nrank,1,1:ngroups)
-      write(ulog,3)' ntermszero =', ntermszero
+!      write(ulog,*)' ngroups=',ngroups
+!      write(ulog,3)' ntermsindep        (1:ngroups)=', ntermsindep(1:ngroups)
+!      write(ulog,3)' ntermsall             (1:ngroups)=', ntermsall(1:ngroups)
+!      write(ulog,3)' iatomtrmindep(rnk,1,1:ngroups)=', iatomtermindep(nrank,1,1:ngroups)
+!      write(ulog,3)' ixyztermindep(rnk,1,1:ngroups)=', ixyztermindep(nrank,1,1:ngroups)
+!      write(ulog,3)' iatomterm    (rnk,1,1:ngroups)=', iatomterm(nrank,1,1:ngroups)
+!      write(ulog,3)' ixyzterm     (rnk,1,1:ngroups)=', ixyzterm(nrank,1,1:ngroups)
+!      write(ulog,3)' ntermszero =', ntermszero
 
       ierz=0 ; iert=0 ; ieri=0 ; ierg=0
 

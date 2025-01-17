@@ -12,7 +12,7 @@
  real(r15), intent(out) :: error,ermax,x(n),sigma(n),sig
  character(LEN=*), intent(in) :: fnsvd
  integer i,j,k,uio,umat
- real(r15) wmax,wmin,wcut,num,denom !,prod,junk
+ real(r15) wmax,wmin,wcut,num,denom !,y(n) !,prod,junk
 
  uio = 345
  umat= 346
@@ -28,7 +28,7 @@
 ! allocate( v(n,n),w(n),u(m3,n) )
 
 !u = a
- call svdcmp(a,m3,n,w,v)
+ call svdcmp(a,m3,n,w,v) ! a now contains u
 
 ! write svd matrices in a file
  write(uio,*)' W (better not be too small) is:  '
@@ -40,10 +40,12 @@
  wmin=minval(abs(w))
  wmax=maxval(abs(w))
  wcut = wmax*svdcut
-! write(uio,*)' Its condition number w_max/w_min = ',wmax/wmin
- write(uio,*)' w larger than ',wcut,' will be used in the inversion'
-! write(umat,*)' Its condition number w_max/w_min = ',wmax/wmin
- write(umat,*)' w larger than ',wcut,' will be used in the inversion'
+ write(uio,*)' Its condition number w_max/w_min = ',wmax/wmin
+! write(uio,*)' w larger than ',wcut,' will be used in the inversion'
+ write(uio,*)' w larger than ',svdcut,' will be used in the inversion'
+ write(umat,*)' Its condition number w_max/w_min = ',wmax/wmin
+! write(uio,*)' w larger than ',wcut,' will be used in the inversion'
+ write(uio,*)' w larger than ',svdcut,' will be used in the inversion'
 
 ! write(umat,*)' Matrix u is  '
 ! do i=1,m3
@@ -89,30 +91,35 @@
 ! enddo
 
 ! Solve the system using x=V(1/W)(U^T) b; after eliminating w=0 terms
-  call svbksb(a,w,v,m3,n,b,x,wcut)
+   call svbksb(a,w,v,m3,n,b,x,wcut)
+!  call svbksb(a,w,v,m3,n,b,x,svdcut)
 
   write(uio,*)' results of SVD solution, variance, error are: x,sigma,Dx'
   w2=0
   do j=1,n
-     sigma(j) = 0
+     sigma(j) = 0  ! error is V W^-2 V+
      w2(j,j)=w(j)
      do k=1,n
-        if (w(k).ge.wcut) then
-           sigma(j) = sigma(j) + v(j,k)*v(j,k) / w(k)/w(k)
-        endif
+!        if (w(k).ge.svdcut) then
+!           sigma(j) = sigma(j) + v(j,k)*v(j,k) / w(k)/w(k)
+!           sigma(j) = sigma(j) + v(j,k)*v(j,k) *w(k)*w(k)/ (w(k)*w(k)+svdcut*svdcut)**2
+            sigma(j) = sigma(j) + v(j,k)*v(j,k) *w(k)**4/( w(k)**6+wcut**6 )
+!        endif
      enddo
      sigma(j) = sqrt(sigma(j))
-     write(uio,7) j,x(j),sigma(j),sigma(j)/sqrt(m3*1.)
+     write(uio,7) j,x(j),sigma(j),sigma(j)/sqrt(m3*1d0)
+
   enddo
 
 ! deallocate(v,w,u) !,aux,eye)
 
 ! reconstruct a from u,v,w2: a=u*w2*v^T
- w2=matmul(w2,transpose(v))
- a=matmul(a,w2) !matmul(w2,transpose(v)))
+! y = matmul(transpose(v),x)
+! w2=matmul(w2,transpose(v))
+! a=matmul(a,w2)
  write(uio,*)' residual of SVD solution is: Ax,b,|Ax-b|,|Ax-b|/Ax'
 !  error = 0; ermax = 0; num=0; denom=0
-  ax=matmul(a,x)
+  ax=matmul(a,(matmul(w2,(matmul(transpose(v),x)))))
   num=dot_product((ax-b),(ax-b))
   denom=dot_product(ax,ax)
   error=sum(abs(ax-b))/m3
@@ -121,7 +128,7 @@
      write(uio,*)' Ax-b ',i,ax(i)-b(i)
   enddo
   sig=sqrt(num/denom)*100
-  write(uio,3)' Average, largest errors in force,percent deviation=',error,ermax,sig
+  write(uio,3)' Average, largest errors in force(eV/Ang),percent deviation=',error,ermax,sig
 
 6 format(i6,3(1x,g13.6),3x,g11.4)
 3 format(a,3(1x,g13.6))
@@ -483,7 +490,7 @@
       END SUBROUTINE isvbksb
 !=================
       SUBROUTINE svbksb(u,w,v,m,n,b,x,wcut)
-!! back substitutes u,w,v to solve for x, given b after small W terms are set to zero
+!! back substitutes u,w,v to solve for x, using ridge regression with wcut 
  use constants, only : r15
       implicit none
       INTEGER, intent(in) :: m,n
@@ -496,7 +503,9 @@
       do j=1,n
         if(w(j).ne.0d0)then
 !          tmp(j)=tmp(j)/w(j)
-           tmp(j)=tmp(j)*w(j)/(w(j)*w(j)+wcut*wcut)
+!          tmp(j)=tmp(j)*w(j)/(w(j)*w(j)+wcut*wcut)
+!          tmp(j)=tmp(j)*w(j)*w(j)/(w(j)*w(j)*w(j)+wcut*wcut*wcut)
+           tmp(j)=tmp(j)*w(j)*w(j)/sqrt(w(j)**6+wcut**6)
          endif
       enddo
       x= matmul(v,tmp)
@@ -554,7 +563,8 @@
  wmin=minval(abs(w))
  wcut=wmax*svdcut
  write(uio,4)'SOLVE_SVD: largest w, condition number is ',wmax,wmax/wmin
- write(uio,4)'SOLVE_SVD: will only keep svs larger than ',wcut
+! write(uio,4)'SOLVE_SVD: will only keep svs larger than ',wcut
+ write(uio,4)'SOLVE_SVD: will only keep svs larger than ',svdcut
  call write_out(uio,'=========================== SOLVE_SVD: W ',w)
 
 ! this is to eliminate the v vectors with small w
@@ -562,14 +572,17 @@
 !    if(abs(w(i)).lt.wcut) w(i)=0d0
 ! enddo
 
- call svbksb(u,w,v,ndim,n,b,xout,wcut)
+! call svbksb(u,w,v,ndim,n,b,xout,wcut)
+ call svbksb(u,w,v,ndim,n,b,xout,svdcut)
 
  write(uio,*)' SOLVE_SVD: solution, variance, error are: x,sigma,Dx'
  do i=1,n
     sig(i) = 0
     do k=1,n
-       if (w(k).ge.wcut) then
-          sig(i) = sig(i) + v(i,k)*v(i,k) / w(k)/w(k)
+       if (w(k).ge.wcut) then  ! error is V W^-2 V+
+!          sig(i) = sig(i) + v(i,k)*v(i,k) / w(k)/w(k)
+!         sig(i) = sig(i) + v(i,k)*v(i,k) *w(k)*w(k)/( w(k)*w(k)+wcut*wcut )**2
+          sig(i) = sig(i) + v(i,k)*v(i,k) *w(k)**4/( w(k)**6+wcut**6 )
        endif
     enddo
     sig(i) = sqrt(sig(i))

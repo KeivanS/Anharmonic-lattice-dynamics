@@ -1,5 +1,5 @@
  ! In the following 3 subroutines, only the treatment of FC2s has changed: instead
- ! of using all map(2)%ngr, we only use the groups for which keep_grp2(g)=1
+ ! of using all map(2)%ngr, we only use the groups for which keep(counteri(2,g,ti))=1
  ! and map(2)%ngr should be replaced by map(2)%nindepfc !! REALLY ??
  subroutine set_translational_inv_constraints
 !! outputs atransl, transl_constraints part of amatrix
@@ -77,7 +77,7 @@
       enddo
     enddo gloop1
 
-!   if(verbose) write(ulog,11)'Rank1: counter,ared=',counter,ared1d(res+1:size(ared1d))  !res+map(rnk)%ntotind)
+!   if(verbose) write(ulog,11)'Rank1: counter,ared=',counter,ared1d(res+1:size(ared1d)) !res+map(rnk)%ntotind)
 
 ! compare with previous lines of ared; write if ared1d not repeated
     if ( ared1d .myeq. zero ) cycle
@@ -90,7 +90,7 @@
        if (counter.eq.dim_al-1) write(ulog,*)' DIM_AL TOO SMALL tr_inv rnk=',rnk
     endif
  enddo
- if(map(rnk)%ngr.gt.0) res = res + map(rnk)%ntotind
+ if(map(rnk)%ngr.gt.0) res = res + map(rnk)%nkeptind !+ map(rnk)%ntotind
 
  write(ulog,*)' RANK=1; residual index is=',res
  write(ulog,*)' NUMBER OF TRANSLATIONAL CONSTRAINTS of rank=1 is ', counter
@@ -108,34 +108,19 @@
  do be=al,3  ! avoid redundancies in the constraints
 
     ared1d = zero
-!   cnt2=0  ! cnt2 counts the previous independent terms
-
     gloop2: do g=1,map(rnk)%ngr  ! ineq. terms and identify neighbors
-
-!! K1 new change made on 2/13/23 ----------------
-  !   if(keep_grp2(g).ne.1) cycle gloop2
-!! K1 new change made on 2/13/23 ----------------
-
-  !   if(g.gt.1) then
-  !      if (keep_grp2(g-1).eq.1) cnt2=cnt2+map(rnk)%ntind(g-1)
-  !   endif
-    ! cnt2 = sum(keep_grp2(sum(map(2)%ntind(1:g)))) 
-!     if(g.gt.1) cnt2 = sum(keep_grp2(1:sum(map(2)%ntind(1:g-1))))
-!! K1 new change made on 9/21/23 ----------------
       do t=1,map(rnk)%nt(g)
-        if ( map(rnk)%gr(g)%iat(1,t) .ne. i0 .or.  &
- & map(rnk)%gr(g)%ixyz(1,t) .ne. al .or. map(rnk)%gr(g)%ixyz(2,t) .ne. be ) cycle
+        if ( map(rnk)%gr(g)%iat (1,t) .ne. i0 .or.  &
+ &           map(rnk)%gr(g)%ixyz(1,t) .ne. al .or.  &
+ &           map(rnk)%gr(g)%ixyz(2,t) .ne. be ) cycle
         do ti=1,map(rnk)%ntind(g)
-!          cnt= ti
-!          if(g.gt.1) cnt=sum(map(2)%ntind(1:g-1))+ti  ! cumulative index up to indep term ti in group g 
-!          ired = res+sum(keep_grp2(1:cnt))    ! this is the corresponding index of i in ared
-           ired = res+ current2(g,ti)
-!         if(verbose)   write(ulog,*)'TRANS_INVCE: rnk=2 g,ti,ired=',g,ti,ired
-          if (ired.gt.nindepfc .or. ired.lt.1) then
-             write(ulog,*)'TRANS_INVCE: rnk=2 g,ti,ired=',g,ti,ired,'> nindepfc =',nindepfc
-             stop
-          endif
-          ared1d(ired) = ared1d(ired) + map(rnk)%gr(g)%mat(t,ti) !*keep_grp2(counter2(g,ti))
+           if(map(2)%keep(counteri(2,g,ti)).ne.1) cycle
+           ired = res+ current(2,g,ti)
+           if (ired.gt.nindepfc .or. ired.lt.1) then
+              write(ulog,*)'TRANS_INVCE: rnk=2 g,ti,ired=',g,ti,ired,'> nindepfc =',nindepfc
+              stop
+           endif
+           ared1d(ired) = ared1d(ired) + map(rnk)%gr(g)%mat(t,ti) 
         enddo
 !     write(ulog,6)'term,ti,red_indx,ared=',t,ti,ired,ared1d(ired)
       enddo
@@ -148,7 +133,7 @@
     call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
     if (new) then
        counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter) = 0d0
-       if(verbose) write(umatrx,8)'TRANS2:ared1d(res+1:res+ size_kept_fc2)=',ared1d(res+1:res+ size_kept_fc2)
+       if(verbose) write(umatrx,8)'TRANS2:ared1d(res+1:res+ map(2)%nkeptind)=',ared1d(res+1:res+ map(2)%nkeptind)
        if (counter.eq.dim_al-1) write(ulog,*)' DIM_AL TOO SMALL tr_inv rnk=',rnk
     endif
  enddo
@@ -159,7 +144,7 @@
 !! K1 new change made on 2/13/23 ----------------
 
 ! if(map(rnk)%ngr.gt.0) res  = res  + sum(map(rnk  )%ntind(:))
- if(map(rnk)%ngr.gt.0) res  = res  +  size_kept_fc2  ! res counts the cumulative # of previous groups of previous rank
+ if(map(rnk)%ngr.gt.0) res  = res  +  map(2)%nkeptind  ! res counts the cumulative # of previous groups of previous rank
 
 !! K1 new change made on 2/13/23 ----------------
 
@@ -212,7 +197,7 @@
     call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
     if (new) then
        counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter) = 0d0
-       if(verbose) write(umatrx,7) ared1d(res+1:res+map(rnk)%ntotind)
+       if(verbose) write(umatrx,7) ared1d(res+1:res+map(rnk)%nkeptind) !ntotind)
        if (counter.eq.dim_al-1) write(ulog,*)' DIM_AL TOO SMALL tr_inv rnk=',rnk
     endif
  enddo
@@ -220,7 +205,7 @@
  enddo
  enddo
  enddo
- if(map(rnk  )%ngr.gt.0) res  = res  + map(rnk)%ntotind
+ if(map(rnk  )%ngr.gt.0) res  = res  + map(rnk)%nkeptind  !ntotind
  write(ulog,*)' RANK=3; residual index is=',res
  write(ulog,*)' NUMBER OF CUMULATIVE TRANSLATIONAL CONSTRAINTS up to rank 3 is ', counter
  endif
@@ -284,7 +269,7 @@
  enddo
  enddo
  enddo
- if(map(rnk)%ngr.gt.0) res = res + map(rnk)%ntotind
+ if(map(rnk)%ngr.gt.0) res = res + map(rnk)%nkeptind  !ntotind
  write(ulog,*)' RANK=4 res=tot# of independent terms=',res
  write(ulog,*)' NUMBER OF CUMULATIVE TRANSLATIONAL CONSTRAINTS up to rank 4 is ', counter
  endif
@@ -412,7 +397,7 @@
          endif
       endif
    enddo
-   if(map(rnk)%ngr.gt.0) res = res + map(rnk)%ntotind
+   if(map(rnk)%ngr.gt.0) res = res + map(rnk)%nkeptind  !ntotind
    write(ulog,*)' RANK=1; residual index is=',res
    write(ulog,*)' NUMBER OF CUMULATIVE ROTATIONAL CONSTRAINTS up to rank 1 is ', counter
  endif
@@ -435,27 +420,17 @@
       if(include_fc(2).eq.1) then
       gloop12: do g=1,map(rnk)%ngr  ! ineq. terms and identify neighbors
 
-!! K1 new change made on 2/13/23 ----------------
-  !   if(keep_grp2(g).ne.1) cycle gloop12
-  !     if(g.gt.1) then
-  !        if (keep_grp2(g-1).eq.1) cnt2=cnt2+map(rnk)%ntind(g-1)
-  !     endif
-!      cnt2 = sum(keep_grp2(1:sum(map(2)%ntind(1:g)))) 
-!! K1 new change made on 9/21/23 ----------------
         do t=1,map(rnk)%nt(g)
           if ( map(rnk)%gr(g)%iat(1,t) .ne. i0 .or. map(rnk)%gr(g)%ixyz(1,t) .ne. al ) cycle
           j  = map(rnk)%gr(g)%iat(2,t) ;       be = map(rnk)%gr(g)%ixyz(2,t)
           do ti=1,map(rnk)%ntind(g)
-!            cnt=ti
-!            if(g.gt.1) cnt=sum(map(2)%ntind(1:g-1))+ti  ! cumulative index up to indep term ti in group g 
-!            ired = res+sum(keep_grp2(1:cnt))    ! this is the corresponding index of i in ared
-             ired = res+ current2(g,ti)
+             ired = res+ current(2,g,ti)
              if (ired.gt.nindepfc .or. ired.lt.1) then
                write(ulog,*)'rnk=2:ired=',ired,'> nindepfc=',nindepfc
                stop
              endif
              do ga=1,3
-               ared1d(ired) = ared1d(ired) + map(rnk)%gr(g)%mat(t,ti)*atompos(ga,j)*lc(be,ga,de) !*keep_grp2(counter2(g,ti))
+               ared1d(ired) = ared1d(ired) + map(rnk)%gr(g)%mat(t,ti)*atompos(ga,j)*lc(be,ga,de)
              enddo
           enddo
 !          if(verbose) write(ulog,5)'i0,g,t,ired,ared=',i0,g,t,ired,ared1d(ired)
@@ -468,18 +443,11 @@
 !btemp(counter)=-sum(ared1d)
 !endif
       gloop13: do g=1,map(rnk)%ngr  ! ineq. terms and identify neighbors
-    !    if(keep_grp2(g).ne.1) cycle gloop13
-    !    if(g.gt.1) then
-    !       if (keep_grp2(g-1).eq.1) cnt2=cnt2+map(rnk)%ntind(g-1)
-    !    endif
-!! K1 new change made on 9/21/23 ----------------
         do t=1,map(rnk)%nt(g)
           if ( map(rnk)%gr(g)%iat(1,t) .ne. i0 .or. map(rnk)%gr(g)%ixyz(1,t) .ne. al ) cycle
           j  = map(rnk)%gr(g)%iat(2,t) ;       be = map(rnk)%gr(g)%ixyz(2,t)
           do ti=1,map(rnk)%ntind(g)
-    !      cnt=ti
-    !      if(g.gt.1) cnt=sum(map(2)%ntind(1:g-1))+ti  ! cumulative index up to indep term ti in group g 
-           ired = res+ current2(g,ti) !sum(keep_grp2(1:cnt))    ! this is the corresponding index of i in ared
+             ired = res+ current(2,g,ti) 
 !!!
 !!!  CHECK TO SEE WHETHER  RES IS NEEDED HERE
 !!!
@@ -517,7 +485,7 @@
 
       do g=1,map(rnk-1)%ngr  ! ineq. terms and identify neighbors
            if(g.gt.1) then
-              if (keep_fc2i(g-1).eq.1) cnt3=cnt3+map(rnk)%ntind(g-1)
+              if (map(2)%keep(g-1).eq.1) cnt3=cnt3+map(rnk)%ntind(g-1)
            endif
 !! K1 new change made on 9/21/23 ----------------
 !       if(g.gt.1) cnt3 = cnt3 + map(rnk-1)%ntind(g-1)  ! this is wrong it should be rnk not rnk-1 !
@@ -549,7 +517,7 @@
       call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
       if (new) then
          counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter)=junk
-         if(verbose) write(umatrx,7) ared1d(res+1:res+size_kept_fc2) !size(ared1d))!res+map(rnk)%ntotind),btemp(counter)
+         if(verbose) write(umatrx,7) ared1d(res+1:res+map(2)%nkeptind) !size(ared1d))!res+map(rnk)%ntotind),btemp(counter)
        if (counter.eq.dim_al-1) write(ulog,*)'DIM_AL TOO SMALL rot_inv rnk=',rnk
       endif
    enddo
@@ -561,7 +529,7 @@
 
    if(include_fc(2) .eq. 1) then
 ! if(map(rnk  )%ngr.gt.0) res  = res  + sum(map(rnk  )%ntind(:))
-     if(map(rnk  )%ngr.gt.0) res  = res  +  size_kept_fc2
+     if(map(rnk  )%ngr.gt.0) res  = res  +  map(2)%nkeptind
      if(map(rnk-1)%ngr.gt.0) res1 = res1 + sum(map(rnk-1)%ntind(:))
    elseif(include_fc(2) .eq. 2) then
       if(map(rnk-1)%ngr.gt.0) then
@@ -579,10 +547,10 @@
  rnk = 3  !********************************************
  if ( include_fc(rnk) .ne. 0 ) then
 !   mx=nterms(rnk)
-   allocate(aux(map(2)%ntotind))
+   allocate(aux(map(2)%nkeptind))  !ntotind))
 !!    allocate(aux(ngroups(2)))
 !!   write(ulog,*)' allocated size of igroup arrays, mx=nterms(rnk) is=',rnk,mx
-   write(ulog,*)' allocated size of aux(:) is=',map(2)%ntotind
+   write(ulog,*)' allocated size of aux(:) is=',map(2)%nkeptind  !ntotind
 
    do i0=1,natom_prim_cell
    do j =1,natoms
@@ -648,7 +616,7 @@
              do t=1,map(rnk-1)%nt(g)
                 if ( map(rnk-1)%gr(g)%iat(1,t) .ne.i0 .or. map(rnk-1)%gr(g)%iat(2,t) .ne.j ) cycle
                 do ti=1,map(rnk-1)%ntind(g)
-                   ired = current2(g,ti)
+                   ired = current(2,g,ti)
          !         ired = cnt3+ti    ! this is the corresponding index of i in ared
          !          ired = res1+ cnt3+ti    ! this is the corresponding index of i in ared ! was this before
 !                 write(*,*) "value of ired is: ", ired
@@ -658,11 +626,11 @@
                  endif
                    if ( map(rnk-1)%gr(g)%ixyz(2,t) .eq. be ) then
                       ga = map(rnk-1)%gr(g)%ixyz(1,t)
-                      aux(ired) = aux(ired) + map(rnk-1)%gr(g)%mat(t,ti)*lc(ga,al,nu)  !* keep_grp2(counter2(g,ti))
+                      aux(ired) = aux(ired) + map(rnk-1)%gr(g)%mat(t,ti)*lc(ga,al,nu)  
                      ! ared1d(ired) = ared1d(ired) + map(rnk-1)%gr(g)%mat(t,ti)*lc(ga,al,nu) ! was this before
                    elseif ( map(rnk-1)%gr(g)%ixyz(1,t) .eq. al ) then
                       ga = map(rnk-1)%gr(g)%ixyz(2,t)
-                       aux(ired) = aux(ired) + map(rnk-1)%gr(g)%mat(t,ti)*lc(ga,be,nu)  !* keep_grp2(counter2(g,ti))
+                       aux(ired) = aux(ired) + map(rnk-1)%gr(g)%mat(t,ti)*lc(ga,be,nu)  
                      ! ared1d(ired) = ared1d(ired) + map(rnk-1)%gr(g)%mat(t,ti)*lc(ga,be,nu) ! was like this before
                    endif
                 enddo
@@ -687,7 +655,8 @@
       call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
       if (new) then
          counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter)=junk
-         if(verbose) write(umatrx,7) ared1d(res+1:res+map(rnk)%ntotind),btemp(counter)
+  !      if(verbose) write(umatrx,7) ared1d(res+1:res+map(rnk)%ntotind),btemp(counter)
+         if(verbose) write(umatrx,7) ared1d(res+1:res+map(rnk)%nkeptind),btemp(counter)
        if(verbose) write(ulog,5)'ROT:new term for:i0,j,al,be,nu=',i0,j,al,be,real(nu)
        if (counter.eq.dim_al-1) write(ulog,*)'DIM_AL TOO SMALL rot_inv rnk=',rnk
       endif
@@ -700,8 +669,8 @@
 
 !! K1 new change made on 2/13/23 ----------------
 
-   if(map(rnk)%ngr.gt.0) res = res + map(rnk)%ntotind
-   if(map(rnk-1)%ngr.gt.0) res1  = res1  +  size_kept_fc2
+   if(map(rnk)%ngr.gt.0) res = res + map(rnk)%nkeptind  !ntotind
+   if(map(rnk-1)%ngr.gt.0) res1  = res1  +  map(2)%nkeptind
 
 !! K1 new change made on 2/13/23 ----------------
 
@@ -792,7 +761,8 @@
       call compare2previous_lines(dim_al,nindepfc,ared1d,atemp,counter,new)
       if (new) then
          counter = counter+1; atemp(counter,:) = ared1d(:); btemp(counter)=junk
-         if(verbose) write(umatrx,7) ared1d(res+1:res+map(rnk)%ntotind),btemp(counter)
+ !       if(verbose) write(umatrx,7) ared1d(res+1:res+map(rnk)%ntotind),btemp(counter)
+         if(verbose) write(umatrx,7) ared1d(res+1:res+map(rnk)%nkeptind),btemp(counter)
        if (counter.eq.dim_al-1) write(ulog,*)'DIM_AL TOO SMALL rot_inv rnk=',rnk
       endif
    enddo
@@ -803,7 +773,7 @@
    enddo
    enddo
    deallocate(aux)
-   if(map(rnk)%ngr.gt.0) res = res + map(rnk)%ntotind
+   if(map(rnk)%ngr.gt.0) res = res + map(rnk)%nkeptind  !ntotind
    write(ulog,*)' RANK=4; residual index is=',res
    write(ulog,*)' NUMBER OF CUMULATIVE ROTATIONAL CONSTRAINTS up to rank 4 is ', counter
  endif
@@ -860,7 +830,7 @@
    rnk = 2;
 !  res = sum(map(1)%ntind(:))
    if(map(1)%ngr.gt.0) then
-     res = map(1)%ntotind
+     res = map(1)%nkeptind 
    else
      res=0
    endif
@@ -879,52 +849,36 @@
       vcd = voigt(ga,de)
       if ( vab.le.vcd ) cycle
       huang = 0
-      mterm = 0
       ared1d = zero  !! K1 :: this comes after the al,be,ga,de loop !!
       atomloop: do i=1,natom_prim_cell
-   !  cnt2=0     ! cnt2 counts the previous independent terms
       gloop: do g=1,map(2)%ngr
-
-!! K1 new change made on 2/13/23 ----------------
-!     if(keep_grp2(g).ne.1) cycle gloop
-!     if(g.gt.1) then
-!        if (keep_grp2(g-1).eq.1) cnt2=cnt2+map(rnk)%ntind(g-1)
-!     endif
-!! K1 new change made on 9/21/23 ----------------
-   !  if(g.gt.1) cnt2 = sum(keep_grp2(1:sum(map(2)%ntind(1:g-1))))
+      do ti =1,map(2)%ntind(g)
+         if(map(2)%keep(counteri(2,g,ti)).ne.1) cycle ! skip if term is not kept
+         ired = res+ current(2,g,ti)
       do t=1,map(2)%nt(g)
          if ( map(2)%gr(g)%iat(1,t).ne.i ) cycle
-            mterm = mterm+1
             j  =  map(2)%gr(g)%iat(2,t)
             rr = atompos(:,j)-atompos(:,i)
-            do ti =1,map(2)%ntind(g)
-               ired = res+ current2(g,ti)
-               term = map(2)%gr(g)%mat(t,ti) !*keep_grp2(counter2(g,ti))
+            term = map(2)%gr(g)%mat(t,ti) 
          if     ( map(2)%gr(g)%ixyz(1,t).eq.al .and. map(2)%gr(g)%ixyz(2,t).eq.be ) then
                ared1d(ired) = ared1d(ired) + rr(ga)*rr(de)*term
          elseif ( map(2)%gr(g)%ixyz(1,t).eq.ga .and. map(2)%gr(g)%ixyz(2,t).eq.de ) then
                ared1d(ired) = ared1d(ired) - rr(al)*rr(be)*term
          endif
-            enddo
-    !       mterm = mterm+1
-    !       j  =  map(2)%gr(g)%iat(2,t)
-    !       rr = atompos(:,j)-atompos(:,i)
-    !       do ti =1,map(2)%ntind(g)
-    !          ired = res+ current2(g,ti)
-    !       enddo
+      enddo
       enddo
       enddo gloop
       enddo atomloop
 
       counter = counter+1
-      if(verbose) write(ulog,6)'counter,mterm,vab,vcd=',counter,mterm,al,be,ga,de,vab,vcd
+      if(verbose) write(ulog,6)'counter,vab,vcd=',counter,al,be,ga,de,vab,vcd
       if (counter.eq.dim_h+1) then
          write(ulog,*)' DIM_H TOO SMALL, huang_inv=15, counter= ',counter
          write(*   ,*)' DIM_H TOO SMALL, huang_inv=15, counter= ',counter
          stop
       endif
       ahuang(counter,:) = ared1d(:)
-      if(verbose) write(umatrx,7) ared1d(res+1:res+size_kept_fc2) !map(2)%ntotind)
+      if(verbose) write(umatrx,7) ared1d(res+1:res+map(2)%nkeptind) 
       bhuang(counter)=0d0
    enddo
    enddo
@@ -1011,12 +965,8 @@
 ! ired is the full index of the indep FC coming in the A*FC=b matrix product
 ! res is for the reank, cnt2 is for the group, ti is for the element in that group
                   if(rnk.eq.2) then
-                     ired = res+ current2(g,ti)
-!                    if(cnt2.ne.sum(map(2)%ntind(1:g-1))) write(*,*)'SETUP_FD: cnt2,sum=', cnt2,sum(map(2)%ntind(1:g-1))
-!                    cnt=ti
-!                    if(g.gt.1) cnt=sum(map(2)%ntind(1:g-1))+ti  ! cumulative index up to ti in group g 
-!                    cnt3=sum(keep_grp2(1:cnt))  ! number of kept indep terms up to now
-!                    ired = res+cnt3 
+                     if(map(2)%keep(counteri(2,g,ti)).ne.1) cycle ! skip if term is not kept
+                     ired = res+ current(rnk,g,ti)
                   else
                      ired = res+cnt2+ti  ! should be the same as res+sum(map(2)%ntind(1:g-1))+ti 
                   endif
@@ -1042,15 +992,9 @@
            enddo
         enddo
      
-        if(rnk.eq.2) then
-           res = res + size_kept_fc2
-        else
-           res = res + map(rnk)%ntotind 
-        endif
+        res = res + map(rnk)%nkeptind
 
      enddo
-
-!    if(verbose) write(umatrx,7)afrc(line,:),bfrc(line)
 
  enddo
  enddo

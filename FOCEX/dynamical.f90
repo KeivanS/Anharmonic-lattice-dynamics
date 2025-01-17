@@ -1,5 +1,4 @@
-!===========================================================
-! this version uses a dynamical matrix with phases continuously varying with distance 
+! thim version uses a dynamical matrix with phases continuously varying with distance 
  subroutine set_band_structure 
  use svd_stuff, only : map
  use kpoints
@@ -17,13 +16,13 @@
  use tetrahedron
  implicit none
  integer i,j,k,uio,tau,taup,l,ll,narms,ier
- real(r15) vkms(3),vbar,t_debye,qr(3),q2(3),sf,etot,free,cv,entropy,eq_vol,tempk,cvte
+ real(r15) vkms(3),vbar,t_debye,qr(3),q2(3),sf,etot,free,cv,cp,entropy,eq_vol,tempk,cvte
  real(r15) deteps3,grune,boft,epsilon0(3,3),velocfbz(3),mat(3,3)
  complex(r15) dyn_coul(3,3),ddn(6,6,3)
- real(r15), allocatable :: foldedk(:,:),aux(:),array(:),eivaux(:),velaux(:,:)
+ real(r15), allocatable :: aux(:),array(:),eivaux(:),velaux(:,:)
  complex(r15), allocatable :: evcaux(:,:) 
  real(r15) kvecstar(3,48),tempi(3,3),v3(3),v4(3),velred(3) 
- integer kvecop(48)
+ integer kvecop(48),f
  character(Len=4) nam
  real tim
 
@@ -33,13 +32,13 @@
   write(*,*)'Entered set_band_structure '
   write(ulog,*)'map(ntotind)=',map(:)%ntotind
 
- q2=(/0.2,0.3,0.4/)
- call set_dynamical_matrix_new(q2,dyn_g(:,:,:,:,1),3*natom_prim_cell,ddn)
- do tau =1,natom_prim_cell
- do taup=1,natom_prim_cell
-    call write_out(724,'Dyn4(.2,.3,.4) ',dyn_g(tau,taup,:,:,1))
- enddo
- enddo
+! q2=(/0.2,0.3,0.4/)
+! call set_dynamical_matrix_new(q2,dyn_g(:,:,:,:,1),3*natom_prim_cell,ddn)
+! do tau =1,natom_prim_cell
+! do taup=1,natom_prim_cell
+!    call write_out(724,'Dyn4(.2,.3,.4) ',dyn_g(tau,taup,:,:,1))
+! enddo
+! enddo
   
 !  if(born_flag.eq.2) then  ! use this  for ewald sums of the non-analytical term
 !     deteps3=det(epsil)**0.3333
@@ -100,6 +99,7 @@
 ! now output eigenval is directly frequencies in 1/cm
 
 ! call enforce_asr_phi
+  open(330,file='veltest.dat')
 
   write(*,*)' calling get_freqs'
   call get_frequencies(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,ndyn,eigenvec_bs,veloc_bs)
@@ -125,8 +125,9 @@
 ! ------------ Mechanical properties ------------------------------------------------------
   uio=321
   open(uio,file='mech.dat')
-  allocate(phi(ndyn,ndyn),xi(ndyn,3,3),qiu(ndyn,3,3),zeta(ndyn,ndyn,3),teta(ndyn,ndyn,3) &
-&            ,y0(ndyn),pi0(ndyn),qiuv(ndyn,6),u0v(ndyn)) 
+  call allocate_mech(ndyn)
+!  allocate(phi(ndyn,ndyn),xi(ndyn,3,3),qiu(ndyn,3,3),zeta(ndyn,ndyn,3),teta(ndyn,ndyn,3) &
+!&            ,y0(ndyn),pi0(ndyn),qiuv(ndyn,6),u0v(ndyn)) 
   if(ndyn.gt.3) then ! only makes sense for non-bravais lattices
     allocate(gama(ndyn-3,ndyn-3))
     call get_phi_zeta_Xi(uio) !ndyn,atld0,gama,phi,zeta,teta,xi,qiu,uio)
@@ -183,16 +184,16 @@
 !  write(ulog,8)' Average Shear modulus(GPa) =',shearmod
 
 
-  write(ulog,8)' Average Young modulus(GPa) =',9*hshearmod*hbulkmod/(3*hbulkmod+hshearmod)
-  write(ulog,8)' Average Poisson ratio =',(1.5*hbulkmod-hshearmod)/(3*hbulkmod+hshearmod)
+  Youngmod=9*hbulkmod*hshearmod/(3*hbulkmod+hshearmod)
+  write(ulog,8)'Average (from Hill) Young modulus(GPa) =9BG/(3B+G)=',youngmod
+  write(uio ,8)'Average (from Hill) Young modulus(GPa) =9BG/(3B+G)=',youngmod
+  poisson=(1.5*hbulkmod-hshearmod)/(3*hbulkmod+hshearmod)
+  write(ulog,8)'Average (from Hill) Poisson ratio=(1.5B-G)/(3B+G) =',poisson
+  write(uio ,8)'Average (from Hill) Poisson ratio=(1.5B-G)/(3B+G) =',poisson
 
-!  shearmod= 1/(2*compliance(1,1)-2*compliance(1,2))
-!  write(ulog,8)'Shear modulus(GPa) 0.5/(S11-S12) (if isotropic)=',shearmod
-!  write(uio ,8)'Shear modulus(GPa) 0.5/(S11-S12) (if isotropic)=',shearmod
-
-!  poisson = -compliance(1,2)/compliance(1,1)
-!  write(ulog,8)'Poisson ratio from -S12/S11 compliance tensor (if isotropic)=',poisson
-!  write(uio ,8)'Poisson ratio from -S12/S11 compliance tensor (if isotropic)=',poisson
+  poisson = -compliance(1,2)/compliance(1,1)
+  write(ulog,8)'Poisson ratio from -S12/S11 compliance tensor     =',poisson
+  write(uio ,8)'Poisson ratio from -S12/S11 compliance tensor     =',poisson
 
 
   close(uio)
@@ -208,28 +209,21 @@
   call deallocate_kp_bs  ! also deallocates dk_bs
 
 ! now calculating average sound speeds and Debye temperature along 100, 110, and 111
-! call sound_speeds(v2a(g01),atld0,vkms)
-! vbar = (3/sum(1d0/vkms**3))**0.33333
-! t_debye=hbar/k_b*(6*pi*pi*natom_prim_cell/volume_r0)**0.33333 *1d10 * vbar*1000
-! write(ulog,8)' Sound velocities along g01         (km/s)  =',vkms 
-! write(ulog,8)' vbar(km/s), Debye Temperature              =',vbar,t_debye
+ do f=0,2  ! loop for 100,110,111 for f=0,1,2 respectively
 
-! call sound_speeds(v2a(g01+g02),atld0,vkms)
-! vbar = (3/sum(1d0/vkms**3))**0.33333
-! t_debye=hbar/k_b*(6*pi*pi*natom_prim_cell/volume_r0)**0.33333 *1d10 * vbar*1000
-! write(ulog,8)' Sound velocities along g01+g02     (km/s)  =',vkms 
-! write(ulog,8)' vbar(km/s), Debye Temperature              =',vbar,t_debye
+    q2(1)=1
+    q2(2)=nint((f+0.6)/2) 
+    q2(3)=nint((f-0.1)/2) 
+
+    call sound_speeds(q2,atld0,vkms)
+
+ enddo
 
   call sound_speeds(v2a(g01+g02+g03),atld0,vkms)
   vbar = (3/sum(1d0/vkms**3))**0.33333
   t_debye=hbar/k_b*(6*pi*pi*natom_prim_cell/volume_r0)**0.33333 *1d10 * vbar*1000
   write(ulog,8)' vbar(km/s), Debye Temperature              =',vbar,t_debye
   
-  call sound_speed_avg(atld0,vkms)
-  vbar = (3/sum(1d0/vkms**3))**0.33333
-  t_debye=hbar/k_b*(6*pi*pi*natom_prim_cell/volume_r0)**0.33333 *1d10 * vbar*1000
-  write(ulog,8)' Sound velocities along x,y,z(km/s)  =',vkms 
-  write(ulog,8)' vbar(km/s), Debye Temperature     =',vbar,t_debye
 
  call cpu_time(tim)
  write(utimes,'(a,f10.4)')'DYNAMICAL after mechanical,             TIME  IS ',tim
@@ -252,6 +246,8 @@
   call allocate_eig_ibz(ndyn,nibz) ;  allocate(dk_bs(nibz)) ; grunibz=0; dk_bs=0
   write(*,*)' calling get_freq in IBZ with nibz=', nibz 
   call get_frequencies(nibz,kibz,dk_bs,ndyn,eivalibz,ndyn,eivecibz,velocibz)
+
+  close(330)
 
   open(uband,file='ibz_bands.dat')
   call write_all_eigenvalues(nibz,kibz,dk_bs,ndyn,eivalibz,velocibz,uband)
@@ -303,16 +299,16 @@
   call write_dos(udos)
   close(udos)
 
-! -------------- count number of modes along "normal" for conductance
+! -------------- count number of modes along "normal" direction for conductance
 !!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!     TO BE FIXED
 !
 !!!!!!!!!!!!!!!!!!!
   dos = 0; 
-  do i=1,wmesh
-  do j=1,ndyn
-     do k=1,nkc
+! do i=1,wmesh
+! do j=1,ndyn
+!    do k=1,nkc
 !       l=mapibz(k)
 !       eig(k) = mysqrt(eivalibz(j,l)) * cnst
 !    write(ulog,2)'k, mapibz(k)=',k,l,kpc(:,k),kibz(:,l)
@@ -335,33 +331,44 @@
       ! velred=matmul(mat,reduce_g(velocibz(:,j,l)))
       ! velocfbz=velred(1)*v2a(g01)+velred(2)*v2a(g02)+velred(3)*v2a(g03)
       ! afunc(k) = dot_product(normal, velocfbz)
-     enddo
+!    enddo
 !    call tet_sum(om(i),nkc,eig,afunc,dos(j,i))  ! tetrahedron DOS
 !    dos(0,i)=dos(0,i)+dos(j,i)
-  enddo
-  enddo
+! enddo
+! enddo
 ! open(udos,file='modes_along_n.dat')
 ! call write_dos(udos)
 ! close(udos)
 2 format(a,2i5,9(1x,f10.5))
   call deallocate_tetra
 
+ call cpu_time(tim)
+ write(utimes,'(a,f10.4)')'DYNAMICAL after FBZ DOS_TETRA ,           TIME  IS ',tim
+
 ! ------------- Thermodynamic properties within the QHA
   open(utherm,file='thermo_QHA.dat')
-  write(utherm,*)'# T(K) , E_eq(kJ/mol) , F_eq(kJ/mol),V_eq(Ang^3),strain , Cv(J/K.mol), S(kJ/K.mol) , lin_CTE(1/K),Grun , B(T)'
+  write(utherm,'(a120)')"# T(K) , E_eq(kJ/mol) , F_eq(kJ/mol),V_eq/V0,strain , Cv, "// &
+ &      "Cp(J/K.mol), S(J/K.mol) , lin_CTE(1/K),Grun , B(T)/B(0)"
 !  write(nam,'(i4.4)')nint(tempk)
   open(uio,file='temp_free.dat')
-  write(uio,*)'# temperature, strain , E_free(kJ/mol) , Pressure (GPa) '
-  do i=1,ntemp
-     tempk=tmin+(tmax-tmin)*(i-1d0)/(ntemp-1d0)
-     if(tempk.lt.10) tempk=10
-     if(i.eq.1) boft=hbulkmod
+  write(uio,*)'# temperature, strain , E_free(kJ/mol) , Pressure (GPa) , imin,bulkmod,boft,gruneisen,prob'
+  tempk=0 
+  temploop: do i=1,50 ! this allows to from 5K to Tmax 
+!     tempk=tmin+(tmax-tmin)*(i-1d0)/(ntemp-1d0)
+     if(tempk.lt.150) then ! at t<150 put more T values differing by 10 K 
+        tempk=tempk+5
+     else
+        tempk=tempk+50  !(tmax-tmin)*(i-1d0)/(ntemp-1d0+1d-12)
+        if (tempk .gt. Tmax) exit temploop
+     endif
+
+     boft=hbulkmod
 
      call QHA_free_energy_vs_strain(nibz,wibz,ndyn,eivalibz,real(grunibz),tempk, &
-&                                 free,etot,cv,eq_vol,entropy,cvte,grune,boft,uio)
+&              free,etot,cv,cp,eq_vol,entropy,cvte,grune,boft,uio)
 
-     write(utherm,7) tempk,etot,free,eq_vol,(eq_vol/volume_r0-1)/3d0,cv,entropy,cvte/3,grune,boft
-  enddo
+     write(utherm,7) tempk,etot,free,eq_vol,(eq_vol)**0.33333-1,cv,cp,entropy,cvte/3,grune,boft/hbulkmod
+  enddo temploop
 
  call cpu_time(tim)
  write(utimes,'(a,f10.4)')'DYNAMICAL after QHA THERMO,             TIME  IS ',tim
@@ -369,7 +376,7 @@
   close(uio)
   close(utherm)
 6 format(i5,99(1x,g11.4))
-7 format(99(1x,g11.4))
+7 format(99(1x,g11.5))
 8 format(a,9(1x,g11.4))
 
   call deallocate_eig_ibz 
@@ -394,7 +401,6 @@
  real(r15) sf,dsf(3),mysf
 
 ! open files and write the group velocities
-  open(330,file='veltest.dat')
 
  kloop: do i=1,nkp
 
@@ -408,7 +414,6 @@
     !   call structure_factor_recip(kp(:,i),nsubgrid,subgrid,subgrid_weights,sf,dsf)
     !   write(345,4)dk(i),sf,mysf(kp(:,i)),parlinski_sf(kp(:,i))
  enddo kloop
- close(330)
 
  2 format(i5,1x,4(1x,f8.3),999(1x,g11.4))
  3 format(a,i5,9(1x,f19.9))
@@ -494,7 +499,7 @@
 !write(*,3)'get_freq for ik,k=',nksave,kp
 
 !   write(*,*) ' calling set_dynamical_matrix'
-!   call set_dynamical_matrix(kp,dynmat,ndn,ddyn)
+!   call set_dynamical_matrix    (kp,dynmat,ndn,ddyn)
     call set_dynamical_matrix_new(kp,dynmat,ndn,ddyn)
 !      do l=1,ndn
 !         write(*,8)(dynmat(l,j),j=1,nd2)
@@ -557,14 +562,6 @@
        eival(j) = eivl(mp(j))  ! so that all frequencies are positive
        eivec(:,j) = eivc(:,mp(j))
     enddo
-
-! if pure imaginary make eigenvectors real as they can be multiplied by any arbitrary number
-!   do l=1,ndn
-!      absvec = sum(abs(real(eivec(:,l))))
-!      if (absvec .lt. 1d-3) then
-!         eivec(:,l)=-dcmplx(0,1)*eivec(:,l)
-!      endif
-!   enddo
 
   if (verbose) then
 
@@ -630,9 +627,10 @@
 
  end subroutine get_freq
 !==========================================================
- subroutine set_dynamical_matrix4D(kpt,dynmat,ndim)
+ subroutine set_dynamical_matrix4D(kpt,dynmat,ndim) !,ddyn)
 !! calculates from the fitted FC2s the dynamical matrix without NA, mass term 
 !! or soft phase; it is just the fourier transform of the FC2s at kpt
+!! but it is G-periodic for superlattice reciprocal vectors if the soft phase is used
  use params
  use lattice
  use atoms_force_constants
@@ -642,24 +640,26 @@
  use ios, only : ulog
  implicit none
  integer, intent(in) :: ndim
- complex(r15), intent(out) :: dynmat(natom_prim_cell,natom_prim_cell,3,3) !,ddyn(ndim,ndim,3)
+ complex(r15), intent(out) :: dynmat(natom_prim_cell,natom_prim_cell,3,3) ! ,ddyn(natom_prim_cell,natom_prim_cell,3,3,3) 
  real(r15), intent(in) :: kpt(3)
  complex(r15) junk
- real(r15) mi,mj,rr(3)
- integer tau,j,taup,al,be,i3,j3,t,ti,ired,g
+ real(r15) mi,mj,rr(3),rfold(3),rs(3),dta(3)
+ integer tau,j,taup,al,be,i3,j3,t,ti,ired,g,nb
+ logical insid
 
 4 format(a,4(1x,i5),9(2x,f9.4))
 9 format(i6,99(1x,f9.3))
 
-!ddyn   = dcmplx(0d0,0d0)
+! ddyn   = dcmplx(0d0,0d0)
  dynmat = dcmplx(0d0,0d0)
- do tau=1,natom_prim_cell
- do al=1,3
+ do tau = 1,natom_prim_cell
+ do al  = 1,3
     i3 = al+3*(tau-1)
     gloop: do g=1,map(2)%ngr
        tiloop: do ti=1,map(2)%ntind(g)  ! index of independent terms in that group g
-          ired = map(1)%ntotind + current2(g,ti)
-          if( sum(keep_fc2i(1:counter2(g,ti) )) .gt. size_kept_fc2) then
+          if( map(2)%keep(counteri(2,g,ti) ) .eq. 0 ) cycle 
+          ired = map(1)%nkeptind + current(2,g,ti)
+          if( sum(map(2)%keep(1:counteri(2,g,ti) )) .gt. map(2)%nkeptind) then
              write(*,*)'SET_DYNMAT4D: size of fc2 exceeded, ired=',ired
              stop
           endif
@@ -670,9 +670,21 @@
              j  = map(2)%gr(g)%iat(2,t)
              taup = iatomcell0(j)    
              j3 = be+3*(taup-1)
-             rr = atompos(:,j) - atompos(:,taup) ! this is just R 
-             junk = fcs(ired) * map(2)%gr(g)%mat(t,ti) * exp(ci*(kpt .dot. rr))
+             rr = atompos(:,j) - atompos(:,taup) ! this is just R  used for standard phase; makes a G-periodic dynmat
+             rs = atompos(:,j) - atompos(:,tau) ! this is  R+taup-tau  used for soft phase 
+             dta = atompos(:,taup) - atompos(:,tau) ! this is  taup-tau 
+! Is that necessary??
+        !    call check_inside_ws(rs,rws26,insid,nb) 
+        !    if(.not. insid) then
+        !       write(ulog,*)' setdynmat4D: rj-rtau was outside the WS!',tau,j,rs 
+        !       rfold = fold_ws(rs,rws26,'r') - dta ! the dta subtraction is to make it G-periodic
+        !    else
+          !     rfold = rs - dta  ! for hard phase
+                rfold = rs        ! for soft phase
+        !    endif
+             junk = fcs(ired) * map(2)%gr(g)%mat(t,ti) * exp(ci*(kpt .dot. rfold)) 
              dynmat(tau,taup,al,be) = dynmat(tau,taup,al,be) + junk
+ !            ddyn(tau,taup,al,be,:) = ddyn(tau,taup,al,be,:) + junk*ci*rfold(:)
  !           dynmat(i3,j3) = dynmat(i3,j3) + junk
  !           ddyn(i3,j3,:) = ddyn(i3,j3,:) + junk*ci*rr(:)
           enddo tloop
@@ -682,57 +694,48 @@
  enddo
  enddo
 
+3 format(a,2i4,9(1x,f9.4))
 
  end subroutine set_dynamical_matrix4D
 !==========================================================
  subroutine set_dynamical_matrix(kpt,dynmat,ndim,ddyn)
+! calculates dynmat with fitted FCs and using the smooth phase
  use params
  use lattice
-! use kpoints
  use atoms_force_constants
  use geometry
  use svd_stuff
  use constants, only : r15,ci
  use ios, only : ulog
+ use born, only: dyn_naq0,dyn_na,born_flag
  implicit none
  integer, intent(in) :: ndim
  complex(r15), intent(out) :: dynmat(ndim,ndim) ,ddyn(ndim,ndim,3)
  real(r15), intent(in) :: kpt(3)
  complex(r15) junk
- real(r15) mi,mj,rr(3)
- integer tau,j,taup,al,be,i3,j3,t,cnt,cnt2,ti,ired,g
- logical inside
+ real(r15) mi,mj,rr(3),rfold(3),dta(3)
+ integer tau,j,taup,al,be,i3,j3,t,cnt,ti,ired,g,nb
+ logical insid
+ complex(r15) phase ,d2ew(3,3),d3ew(3,3,3)
 
 4 format(a,4(1x,i5),9(2x,f9.4))
 9 format(i6,99(1x,f9.3))
 
  ddyn   = dcmplx(0d0,0d0)
  dynmat = dcmplx(0d0,0d0)
- do tau=1,natom_prim_cell
- do al=1,3
+ do tau = 1,natom_prim_cell
+ do al  = 1,3
     i3 = al+3*(tau-1)
     mi = atom0(tau)%mass
 ! write(ulog,*) 'i,al,mass=',tau,al,i3,mi
-    cnt2=0   ! counter of ntotind, to find position of each term in the array fc2
     gloop: do g=1,map(2)%ngr
-
-!      if(keep_fc2i(g).ne.1) cycle gloop
-!      if(g.gt.1) then
-!        if (keep_fc2i(g-1).eq.1) cnt2=cnt2+map(2)%ntind(g-1)
-!      endif
        tiloop: do ti=1,map(2)%ntind(g)  ! index of independent terms in that group g
-  !        cnt=ti
-  !        if(g.gt.1) cnt=sum(map(2)%ntind(1:g-1))+ti  ! cumulative index up to indep term ti in group g 
-  !        ired = map(1)%ntotind + sum(keep_fc2i(1:cnt))    ! this is the corresponding index of i in ared
-           ired = map(1)%ntotind + current2(g,ti)
-  !       ired=cnt2+ti + map(1)%ntotind  ! the latter is the size of fc1
-  !       if(cnt2+ti .gt. size_kept_fc2) then
-  !       if(g.gt.1 ) then
-          if( sum(keep_fc2i(1:counter2(g,ti) )) .gt. size_kept_fc2) then
+          if( map(2)%keep(counteri(2,g,ti) ) .eq. 0 ) cycle 
+          ired = map(1)%nkeptind + current(2,g,ti)
+          if( sum(map(2)%keep(1:counteri(2,g,ti) )) .gt. map(2)%nkeptind) then
              write(*,*)'SET_DYNMAT: size of fc2 exceeded, ired=',ired
              stop
           endif
-  !       endif
 
           tloop: do t=1,map(2)%nt(g)
              if ( tau .ne. map(2)%gr(g)%iat(1,t) .or. al .ne. map(2)%gr(g)%ixyz(1,t) ) cycle tloop
@@ -742,15 +745,42 @@
              mj = atom0(taup)%mass
              j3 = be+3*(taup-1)
 !            rr = atompos(:,j) - atompos(:,taup) ! this is just R 
-! k1 6-22-24  this is with a different phase
+! k1 6-22-24  this is with the smooth phase
              rr = atompos(:,j) - atompos(:,tau)   ! this is R+taup-tau  ! new phase convention
-! k1 6-22-24  this is ith a different phase
-             junk = fcs(ired) * map(2)%gr(g)%mat(t,ti) * exp(ci*(kpt .dot. rr))/sqrt(mi*mj)  ! &
+             call check_inside_ws(rr,rws26,insid,nb) 
+             if(.not. insid) then
+                rfold = fold_ws(rr,rws26,'r') 
+             else
+                rfold=rr
+             endif
+! k1 6-22-24  this is ith the smooth phase
+!            junk = fcs(ired) * map(2)%gr(g)%mat(t,ti) * exp(ci*(kpt .dot. rr))/sqrt(mi*mj)  ! &
+             junk = fcs(ired) * map(2)%gr(g)%mat(t,ti) * exp(ci*(kpt .dot. rfold))/sqrt(mi*mj)  ! &
              dynmat(i3,j3) = dynmat(i3,j3) + junk
              ddyn(i3,j3,:) = ddyn(i3,j3,:) + junk*ci*rr(:)
           enddo tloop
        enddo tiloop
     enddo gloop
+
+    if(born_flag.ne.0) then
+       do taup=1,natom_prim_cell
+          mj = atom0(taup)%mass
+          call dyn_coulomb(tau,taup,kpt,d2ew,d3ew)
+          dta= atompos(:,taup)-atompos(:,tau)
+          phase= exp(ci*dot_product(kpt,dta))  
+          do be = 1,3
+             j3 = be+3*(taup-1)
+             dynmat(i3,j3) = dynmat(i3,j3) + d2ew(al,be)*phase/sqrt(mi*mj) 
+             ddyn(i3,j3,:) = ddyn(i3,j3,:) + (d3ew(al,be,:)+ci*dta*d2ew(al,be)) &
+&                         *phase/sqrt(mi*mj)
+
+!      if(tau.eq.taup .and. born_flag.ne.0) then
+!            dynmat(i3,j3)=dynmat(i3,j3)-dyn_naq0(tau,al,be)*phase/sqrt(mi*mj)
+ 
+          enddo
+       enddo
+    endif
+
  enddo
  enddo
 
@@ -761,7 +791,7 @@
  end subroutine set_dynamical_matrix
 !===========================================================
  subroutine set_dynamical_matrix_new(kpt,dynmat,ndim,ddyn)
-!! uses fft or fourier interpolation from fc_sr and then adds the NA correction
+!! uses fourier interpolation from phip and then adds back the NA correction, followed by smooth phase at the end
  use params
  use lattice
  use atoms_force_constants
@@ -776,9 +806,9 @@
  integer, intent(in) :: ndim
  complex(r15), intent(out) :: dynmat(ndim,ndim) ,ddyn(ndim,ndim,3)
  real(r15), intent(in) :: kpt(3)
- real(r15) mi,mj,rr(3),dta(3)
+ real(r15) mi,mj,rr(3),dta(3),qq(3,1),error
  integer tau,i,taup,al,be,i3,j3
- complex(r15) phase ,d2ew(3,3),d3ew(3,3,3)
+ complex(r15) phase ,d2ew(3,3),d3ew(3,3,3),dynp(1,1,3,3,1)
 
 4 format(a,4(1x,i5),9(2x,f9.4))
 9 format(i6,99(1x,f9.3))
@@ -796,6 +826,19 @@
    !   call ewald_2nd_deriv_Gnew(kpt,tau,taup,ng_ewald,g_ewald,eta,d2ew,d3ew)
        call ewald_2nd_deriv_hat (kpt,tau,taup,nr_ewald,ng_ewald,r_ewald,g_ewald,eta,d2ew,d3ew)
    !   call dyn_coulomb(tau,taup,kpt,d2ew,d3ew)
+
+
+!      qq(:,1)=kpt(:)
+!      call calculate_dyn_na(1,qq,dynp)
+
+       if(tau.eq.taup) d2ew=d2ew-dyn_naq0(tau,:,:)
+
+!      error = maxval(abs(dynp(1,1,:,:,1)-d2ew))
+!      if (error .gt. 1d-8) then
+!         write(*,*)'Error in set_dynamical_matrix_new ',error 
+!         d2ew=dynp(1,1,:,:,1)
+!  !      stop
+!      endif
     else
        d2ew=0; d3ew=0
     endif
@@ -808,21 +851,21 @@
        j3 = be+3*(taup-1)
 
        do i=1,nrgrid
-          dynmat(i3,j3) = dynmat(i3,j3)+fc_sr(tau,taup,al,be,i) & ! * rws_weights(i) &
+          dynmat(i3,j3) = dynmat(i3,j3)+phip(tau,taup,al,be,i) &   ! phip has the proper weights at grid i
 &         *phase*exp(ci*dot_product(kpt,rgrid(:,i)))/sqrt(mi*mj)  
 
-          ddyn(i3,j3,:) = ddyn(i3,j3,:)+fc_sr(tau,taup,al,be,i) & ! * rws_weights(i) &
+          ddyn(i3,j3,:) = ddyn(i3,j3,:)+phip(tau,taup,al,be,i) & 
 &         *phase*exp(ci*dot_product(kpt,rgrid(:,i)))/sqrt(mi*mj)*ci*(rgrid(:,i)+dta)
        enddo
 
-! add NA correction rom ewald sums
+! add NA correction from ewald sums
        dynmat(i3,j3) = dynmat(i3,j3) + d2ew(al,be)*phase/sqrt(mi*mj)
        ddyn(i3,j3,:) = ddyn(i3,j3,:) + (d3ew(al,be,:)+ci*dta*d2ew(al,be)) &
 &                         *phase/sqrt(mi*mj)
 
-       if(tau.eq.taup .and. born_flag.ne.0) then
-          dynmat(i3,j3)=dynmat(i3,j3)-dyn_naq0(tau,al,be)*phase/sqrt(mi*mj)
-       endif
+  !    if(tau.eq.taup .and. born_flag.ne.0) then
+  !       dynmat(i3,j3)=dynmat(i3,j3)-dyn_naq0(tau,al,be)*phase/sqrt(mi*mj)
+  !    endif
 
     enddo
     enddo
@@ -844,16 +887,19 @@
  integer t,j,i3
 
  nrm1 = max(maxval(cdabs(dyn)),1d0)  
-! make sure it is hermitian
+! make sure dyn and ddyn are both hermitian
  do t=1,n
     if (abs(aimag(dyn(t,t))) .gt. 1d-6*nrm1) then !abs(real(dynmat(t,t))) ) then
        call warn2(ulog,' dynmat is not hermitian on its diagonal')
        write(ulog,*)' diagonal element i=',t,dyn(t,t)
        write(ulog,*)' setting its imaginary part to zero!'
-!      stop
-!   else
-       dyn(t,t) = dcmplx(real(dyn(t,t)),0d0)
-       ddyn(t,t,:)= 0
+       dyn(t,t  ) = dcmplx(real( dyn(t,t  )),0d0)
+    endif
+    if (maxval(abs(aimag(ddyn(t,t,:)))) .gt. 1d-6*nrm1) then !abs(real(dynmat(t,t))) ) then
+       call warn2(ulog,' D(dynmat)/dk is not hermitian on its diagonal')
+       write(ulog,*)' diagonal elements =',t,ddyn(t,t,:)
+       write(ulog,*)' setting its imaginary part to zero!'
+       ddyn(t,t,:  ) = dcmplx(real( ddyn(t,t,: )),0d0)
     endif
     do j=t+1,n-1
       if (abs(aimag(dyn(t,j))+aimag(dyn(j,t))) .gt. 1d-6*nrm1 ) then
@@ -873,16 +919,11 @@
       mj=(real (dyn(t,j))+real (dyn(j,t)))/2
       dyn(t,j) = dcmplx(mj, mi)
       dyn(j,t) = dcmplx(mj,-mi)
-      do i3=1,3  ! ddyn is anti hermitian (ddyn^*T = -ddyn)
-   !     mi=(aimag(ddyn(t,j,i3))+aimag(ddyn(j,t,i3)))/2
-   !     mj=(real (ddyn(t,j,i3))-real (ddyn(j,t,i3)))/2
+      do i3=1,3  ! ddyn is hermitian (ddyn^*T = ddyn)
          mi=(aimag(ddyn(t,j,i3))-aimag(ddyn(j,t,i3)))/2
          mj=(real (ddyn(t,j,i3))+real (ddyn(j,t,i3)))/2
-   !     mi=(aimag(ddyn(t,j,i3))+real (ddyn(j,t,i3)))/2
-   !     mj=(real (ddyn(t,j,i3))-aimag(ddyn(j,t,i3)))/2
          ddyn(t,j,i3) = dcmplx(mj, mi)   ! ddyn is anti-hermitian
          ddyn(j,t,i3) = dcmplx(mj,-mi)  ! Transpose(conjg(ddyn))= ddyn
-   !     ddyn(j,t,i3) = dcmplx(mi,-mj)  ! Transpose(conjg(ddyn))=-ddyn
       enddo
    enddo
  enddo
@@ -1013,7 +1054,7 @@
 
 ! make sure sf does not break crystal symmetry!! even if the supercell does!!
         if (fc2range.eq.0)then ! mixed space formulation if default fc2 range
-            call structure_factor_recip(q, nrgrid,rgrid,rws_weights,  sf,  dsf)
+            call structure_factor_recip(q, nrgrid,rgrid,rws_weights,  sf,  dsf)  ! uses hard phase
     !       call structure_factor_reg(q,nreg,rgridreg,sf,dsf)
     !       call structure_factor_complx(q,nrgrid,rgrid,rws_weights,mysf,mydsf)
     !      mysf=0; mydsf=0
@@ -1028,7 +1069,7 @@
         endif
 
 ! new phase convention sf=oldsf*e^(iq.(taup-tau));dsf=(olddsf+i(taup-tau)oldsf)*e^(iq.(taup-tau))
-        rtp  = 0 !v2a(atom0(taup)%equilibrium_pos-atom0(tau)%equilibrium_pos)
+        rtp  = v2a(atom0(taup)%equilibrium_pos-atom0(tau)%equilibrium_pos)
         phase= exp(ci*(q.dot.rtp))
         mysf = sf * phase
         mydsf=(dsf + ci*rtp*sf) * phase
@@ -1065,13 +1106,13 @@
   elseif(born_flag.eq.2 ) then  ! ewald correction (includes charge multiplication) in real space
 
      etaew=eta
- !   call ewald_2nd_deriv_hat(q,tau,taup,nr_ewald,ng_ewald,r_ewald,g_ewald,etaew,dyn,ddyn)
-     call ewald_2nd_deriv_G  (q,tau,taup,ng_ewald,g_ewald,etaew,dyn,ddyn)
+     call ewald_2nd_deriv_hat(q,tau,taup,nr_ewald,ng_ewald,r_ewald,g_ewald,etaew,dyn,ddyn)
+ !   call ewald_2nd_deriv_G  (q,tau,taup,         ng_ewald,        g_ewald,etaew,dyn,ddyn)
 !    if(tau.eq.taup) then
 !       q0=0d0
 !       do tau2=1,natom_prim_cell
 !!         call ewald_2nd_deriv_hat(q0,tau,tau2,nr_ewald,ng_ewald,r_ewald,g_ewald,etaew,d2ew0,d3ewald)
-!          call ewald_2nd_deriv_G  (q0,tau,tau2,ng_ewald,g_ewald,etaew,d2ew0,d3ewald)
+!          call ewald_2nd_deriv_G  (q0,tau,tau2,         ng_ewald,        g_ewald,etaew,d2ew0,d3ewald)
 !          dyn =  dyn - d2ew0
 !          ddyn= ddyn - d3ewald   !!! TO BE CHECKED !!!  
 !       enddo
@@ -1120,6 +1161,7 @@
  use atoms_force_constants
  use svd_stuff
  use eigen
+ use mech
  use constants
  implicit none
  integer, intent(in) :: nkp,ndn,ugr2
@@ -1127,7 +1169,7 @@
  complex(r15), intent(in) :: eivc(ndn,ndn,nkp)
  complex(r15), intent(out) :: grn(ndn,nkp)
  integer ik,tau,la,al,be,ga,j,k,taup,k0,ta1,ta2,t,cnt3,g,ti,ired
- real(r15) mi,mj,rr3(3),rr2(3),qq(3),omk !,mysqrt
+ real(r15) mi,mj,rr3(3),rr2(3),qq(3),omk,rot(3,ndn/3,ndn/3) 
  complex(r15) zz,one,term
 
  one = dcmplx(1d0,0d0)
@@ -1140,14 +1182,18 @@
 !    write(ulog,*)' fcs_3(t),term(2),6*eival(la,i),rr3(3),grun(la,i)'
      grn(la,ik) = 0
      omk = mysqrt(eivl(la,ik))*cnst
+
+     if(la.le.4 .and. ik.le.2)  rot=0
+
      do tau=1,natom_prim_cell
         mi = atom0(tau)%mass
         cnt3=0
+       
         gloop: do g=1,map(3)%ngr
            if(g.gt.1) then
               cnt3=cnt3+map(3)%ntind(g-1)  ! cnt3 counts all the terms in the previous groups
            endif
-           tloop: do t=1,map(3)%nt(g)  !nterms(3)
+           tloop: do t=1,map(3)%nt(g)  
 
               if ( tau .ne. map(3)%gr(g)%iat(1,t) ) cycle tloop
               al = map(3)%gr(g)%ixyz(1,t)  !ixyzterm_3(1,t)
@@ -1167,24 +1213,35 @@
 ! K1 2-9-24 this one is consistent with exp(iq.(r+taup-tau))
               zz = cdexp( ci * ( qq .dot. rr2) )
               do ti=1,map(3)%ntind(g)  ! index of independent terms in that group g
-                 ired=cnt3+ti + map(1)%ntotind + size_kept_fc2 !map(2)%ntotind
+!                 ired=cnt3+ti + map(1)%ntotind + map(2)%nkeptind 
+                 ired=counteri(3,g,ti) + map(1)%ntotind + map(2)%nkeptind 
                  term = zz * eivc(ta2,la,ik)*conjg(eivc(ta1,la,ik))/sqrt(mi*mj) &
-         &             * (fcs(ired) * rr3(ga)*map(3)%gr(g)%mat(t,ti))
-                 grn(la,ik) = grn(la,ik) + term
+         &             * fcs(ired) * (rr3(ga) - dot_product(gam(3*(k0-1)+ga,:), &
+         &             (qiu(:,1,1)+qiu(:,2,2)+qiu(:,3,3)) ))
+                 grn(la,ik) = grn(la,ik) + term * map(3)%gr(g)%mat(t,ti)
 
 ! if (ik.eq.nkp .and. map(3)%gr(g)%mat(t,ti).ne.0) then
 !    write(*,9)'t,ti,la,g,tau,ired,R2,R3,zz,fc,term=',t,ti,la,g,tau,ired,rr2,rr3,zz,fcs(ired),term
 ! endif
+                 if(la.le.4 .and. ik.le.2) then ! verify rotational invce sum_R2 psi^{al,al,ga} R2^ga =0 (forall tau,r1,al)
+                    if(al.eq.be) rot(al,tau,taup)=rot(al,tau,taup)+fcs(ired)*rr3(ga)
+                 endif
               enddo
            enddo tloop
         enddo gloop
      enddo
      
+     if(la.le.4 .and. ik.le.2) then
+        call write_out(777,'rot invce in grun ',rot(1,:,:))
+        call write_out(777,'rot invce in grun ',rot(2,:,:))
+        call write_out(777,'rot invce in grun ',rot(3,:,:))
+     endif
+
      grn(la,ik) = -grn(la,ik)/6/eivl(la,ik)
      if(abs(grn(la,ik)).gt.1d3) grn(la,ik)=0  ! substitute very large gama by zero
 
      if (aimag(grn(la,ik)) .gt. 5d-4) then
-       write(ulog,*)' GRUNEISEN: ... has large imaginary part!! for nk,la=',ik,la,grn(la,ik)
+       write(ulog,6)' GRUNEISEN: ... has large imaginary part!! for nk,la=',ik,la,grn(la,ik)
 
      endif
 !   write(ugr2,6)' ',ik,la,dk(ik),kp(:,ik),omk,grn(la,ik)
@@ -1219,29 +1276,21 @@
 ! real(r15), intent(out) :: gama(max(1,ndn-3),max(1,ndn-3)),phi(ndn,ndn),zeta(ndn,ndn,3), &
 !&            xi(ndn,3,3),teta(ndn,ndn,3),atld0(3,3,3,3),qiu(ndn,3,3)
  integer tau,taup,al,be,ga,de,j,t,g,ti,s,cnt2,ired,la,nl,nc,nq !,cnt
- real(r15)  rij(3),junk,sumt,sump,gam(ndyn,ndyn),tm(max(1,ndyn-3),max(1,ndyn-3))
- real(r15)  matr(3,3),c1(6,6),c0(6,6),aux(ndyn,ndyn),constr(3,3,3) !,am(3,3,3,3)
+ real(r15)  rij(3),junk,sumt,sump,tm(max(1,ndyn-3),max(1,ndyn-3))
+ real(r15)  matr(3,3),c1(6,6),c0(6,6),aux(ndyn,ndyn),constr(3,3,3) 
 
  write(  * ,*)' ********** ENTERING get_phi_zeta_x *************'
  write(ulog,*)' ********** ENTERING get_phi_zeta_x *************'
 
- zeta=0; phi=0; xi=0;  teta=0; atld0=0
+ zeta=0; phi=0; teta=0; atld0=0; bulkmod=0;
  do al=1,3
  do ga=1,3
  do tau=1,natom_prim_cell
- cnt2=0  ! cumulative number of independent terms up to group (g-1)
  gloop: do g=1,map(2)%ngr
- !  if(keep_fc2i(g).ne.1) cycle
- !  if(g.gt.1) then
- !     if (keep_fc2i(g-1).eq.1) cnt2=cnt2+map(2)%ntind(g-1)
- !  endif
     do ti=1,map(2)%ntind(g)  ! index of independent terms in that group g
-  !    cnt=ti
-  !    if(g.gt.1) cnt=sum(map(2)%ntind(1:g-1))+ti  ! cumulative index up to indep term ti in group g 
-       ired = map(1)%ntotind + current2(g,ti)  !sum(keep_fc2i(1:cnt))    ! this is the corresponding index of i in ared
-!      ired=cnt2+ti + map(1)%ntotind  ! index of the indep FC2 in the list fcs
-!      if(cnt2+ti .gt. size_kept_fc2) then
-       if(sum(keep_fc2i(1:counter2(g,ti))) .gt. size_kept_fc2) then
+       if(map(2)%keep(counteri(2,g,ti)).ne.1) cycle
+       ired = map(1)%nkeptind + current(2,g,ti)  
+       if( sum(map(2)%keep(1:counteri(2,g,ti) )) .gt. map(2)%nkeptind) then
           write(*,*)'GET_PHI_ZETA: size of fc2 exceeded, ired=',ired
           stop
        endif
@@ -1251,13 +1300,14 @@
           j  = map(2)%gr(g)%iat(2,t)
           taup = iatomcell0(j)    ! atom_sc(j)%cell%tau  is incorrect
           rij = atompos(:,j) - atompos(:,tau)
-          junk = fcs(ired)* map(2)%gr(g)%mat(t,ti) ! * keep_fc2i(counter2(g,ti))
+          junk = fcs(ired)* map(2)%gr(g)%mat(t,ti) 
           nl=al+3*(tau-1) ; nc=ga+3*(taup-1)    ! dynmat dimensions
           phi(nl,nc) =phi(nl,nc)+junk ! = sum_R fc2(0,tau;R,Taup)
           do la=1,3
              teta(nl,nc,la)=teta(nl,nc,la)+junk * atompos(la,j)  ! = sum_R fc2(0,tau;R,Taup) (R+taup)_la
              zeta(nl,nc,la)=zeta(nl,nc,la)+junk * rij(la)  ! = sum_R fc2(0,tau;R,Taup) (R+taup-tau)_la
           enddo
+          bulkmod=bulkmod-junk*rij(al)*rij(ga)/18d0
           do be=1,3
           do de=1,3
              atld0(al,be,ga,de)=atld0(al,be,ga,de) - junk*rij(be)*rij(de)/2
@@ -1275,29 +1325,31 @@
  do la=1,3
     do al=1,3
     do ga=1,3
-    do taup=1,natom_prim_cell
-    junk=0;sumt=0;sump=0
     do tau=1,natom_prim_cell
-       nl=al+3*(tau-1) ; nc=ga+3*(taup-1)    ! dynmat dimensions
+       junk=0;sumt=0;sump=0
+       do taup=1,natom_prim_cell
+          nl=al+3*(tau-1) ; nc=ga+3*(taup-1)    ! dynmat dimensions
 ! eta and zeta sums should be the same if ASR exact, otherwise zeta satisfies it exactly!
-       qiu(nl,ga,la)=qiu(nl,ga,la)+zeta(nl,nc,la)
-       sump=sump+phi(nl,nc)
-       sumt=sumt+teta(nl,nc,la)
-       junk=junk+zeta(nl,nc,la) 
-    enddo
-    enddo
-       if(abs(junk).gt.1d-9 .or. abs(sump).gt.1d-5) then
-          write(ulog,3)'al,ga,la,sum_tau phi,teta,zeta=',al,ga,la,sump,sumt,junk 
+          qiu(nl,ga,la)=qiu(nl,ga,la)+zeta(nl,nc,la)
+          sump=sump+phi(nl,nc)
+          sumt=sumt+teta(nl,nc,la)
+          junk=junk+zeta(nl,nc,la) 
+       enddo
+       if(abs(junk).gt.1d-9 .and. has_inversion ) then
+          write(ulog,4)'SUM_TAU ZETA ne 0!! al,be,ga,taup=',al,ga,la,taup,junk 
+       endif
+       if(abs(sump).gt.1d-5) then
+          write(ulog,3)'ASR violated in phi: tau,al,be=',taup,al,ga,sump 
+       endif
+       if(abs(sumt-junk).gt.1d-5) then
+          write(ulog,4)'sum_taup(eta-zeta) ne 0 !! tau,al,be,la=',taup,al,ga,la,sumt-junk 
        endif
     enddo
     enddo
-! qiu is not symmetric ; but its symmetric part comes in the residual stress 
- !  matr=qiu(la,:,:)
-!! if(maxval(abs(qiu(la,:,:)-transpose(qiu(la,:,:)))).gt.1d-6) call symmetrize2(3,qiu(la,:,:))
- ! if(maxval(abs(matr-transpose(matr))) .gt.1d-6) call symmetrize2(3,matr)
- ! qiu(la,:,:)=matr
+    enddo
  enddo
 
+! check if phi is symmetric
  junk=maxval((phi-transpose(phi))*(phi-transpose(phi)))
  if (junk.gt.1d-12) then
     call write_out(   6,' PHI NOT SYMMETRIC ',phi)
@@ -1311,13 +1363,27 @@
     aux=zeta(:,:,la)+transpose(zeta(:,:,la))
     junk=maxval(aux*aux)
     if (junk.gt.1d-12) then
-       call write_out(   6,' Zeta NOT ANTISYMMETRIC:z+z^T ',aux)
-       call write_out(ulog,' Zeta NOT ANTISYMMETRIC:z+z^T ',aux)
+       call warn5(   6,' Zeta NOT ANTISYMMETRIC:z+z^T ',aux)
+       call warn5(ulog,' Zeta NOT ANTISYMMETRIC:z+z^T ',aux)
+       stop
+    endif
+ enddo
+
+! check if Qiu is symmetric wr to its last 2 indices if defined with eta
+! qiu should be symmetric if ASR exact; its symmetric part comes in residual stress 
+ do s=1,ndyn
+    matr=qiu(s,:,:)
+    if( maxval(abs(matr-transpose(matr))) .gt. 1d-4 ) then
+       write(ulog,*)'Qiu(s,:,:) not symmetric for s=',s
+       call warn5(ulog,'QIU not symmetric ',matr) 
+       call symmetrize2(3,matr)
+       qiu(s,:,:)=matr
     endif
  enddo
 
 2 format(a,2i5,9(1x,f10.4))
 3 format(a,3i5,9(1x,f10.4))
+4 format(a,4i5,9(1x,f10.4))
 
 ! to get gama, invert phi: gam.phi=1a ---------------------------------------
   gam=phi  ! force constants and the images sum_R K(tau,R+taup)
@@ -1340,84 +1406,38 @@
 !    call write_out(ulog,' Gamma (should be symmetric) ',gam)
   endif
 
-! this part calculates xi(tau,ga;al,be) = du(tau,ga)/d eta_al,be = - Gam. qiu  ! should be symmetric under al <-> be
-! xi=0 
-! do al=1,3
-! do be=1,3
-!    do tau=1,natom_prim_cell
-!    do ga=1,3
-!       j=ga+3*(tau-1)
-!
-!       do s=1,natom_prim_cell
-!          nc=al+3*(s-1)
-!! Should not symmetrize; strictly speaking, the formula below is correct
-!          xi(j,al,be)=xi(j,al,be)-dot_product(gam(j,:),teta(:,nc,be))
-!       enddo 
-!
-!    enddo 
-!    enddo 
-! enddo 
-! enddo 
-
-!  xi=-gama*qiu ; this way both xi and qiu are symmetric wrt al<->be
- constr=0
- do s=1,ndyn
-    ga=mod(s-1,3)+1
+! this part calculates xi(tau,ga;al,be) = du(tau,ga)/d eta_al,be = - Gam.qiu  
+! should be symmetric under al <-> be since Qiu already symmetrized
+ xi=0
  do al=1,3
  do be=1,3
-    xi(s,al,be)= -dot_product(gam(s,:),qiu(:,al,be))
-    constr(al,be,ga)=constr(al,be,ga)+qiu(s,al,be)
+ do ga=1,3 
+    constr=0
+    do tau=1,natom_prim_cell
+       s=3*(tau-1)+ga
+       xi(s,al,be)= -dot_product(gam(s,:),qiu(:,al,be))
+       constr(al,be,ga)=constr(al,be,ga)+qiu(s,al,be)
+    enddo
+    if(maxval(abs(constr)).gt.1d-5) then
+       call warn2(ulog,' SUM RULE ASR FOR QIU sum_tau(qiu) non zero!')
+       call write_out(6   ,' sum_tau(qiu) non zero! ',constr)
+       call write_out(ulog,' sum_tau(qiu) non zero! ',constr)
+    endif
  enddo
  enddo
-    call write_out(uio,' Symmetrized xi (Ang) ', xi(s,:,:))
  enddo
 
- if(maxval(abs(constr)).gt.1d-5) then
-    call write_out(6   ,' sum_tau(qiu) non zero! ',constr)
-    call write_out(ulog,' sum_tau(qiu) non zero! ',constr)
-!   stop
- endif
-
-
-! do tau=1,ndyn
-!     junk=maxval((xi(tau,:,:)-transpose(xi(tau,:,:)))*(xi(tau,:,:)-transpose(xi(tau,:,:))))
-!     if (junk.gt.1d-12) then
-!        write(   6,5)' for tau, |Xi-Xi^T|^2 ',tau,junk
-!        write(ulog,5)' for tau, |Xi-Xi^T|^2 ',tau,junk
-!        call write_out(   6,' Xi NOT SYMMETRIC ',xi(tau,:,:))
-!        call write_out(ulog,' Xi NOT SYMMETRIC ',xi(tau,:,:))
-!!       stop
-!     endif
-!     call symmetrize2(xi(tau,:,:))
-!     call symmetrize2(qiu(tau,:,:))
-!     if (verbose) then
-!        call write_out(ulog,' Symmetrized xi (Ang) ', xi(tau,:,:))
-!        call write_out(ulog,' Symmetrized qiu(Ang) ',qiu(tau,:,:))
-!     endif 
-! enddo
-
-! calculate A from teta
-! am=0
-! do al=1,3
-! do be=1,3
-! do ga=1,3
-! do de=1,3
-!    do tau=1,natom_prim_cell 
-!       am(al,be,ga,de)=am(al,be,ga,de)+qiu(3*(tau-1)+al,ga,de)* atompos(be,tau)
-!    enddo
-! enddo
-! enddo
-! enddo
-! enddo
-
-! am   =am   /volume_r0*ee*1d30*1d-9
- atld0=atld0/volume_r0*ee*1d30*1d-9
+ atld0   = atld0   /volume_r0*ee*1d30*1d-9
+ call symmetrize4(3,atld0) 
+ bulkmod = bulkmod /volume_r0*ee*1d30*1d-9
  call convert_to_voigt(atld0,c0)
 
+ call write_out (ulog,' GET_PHI_ZETA_XI: Bulk modulus(GPa)  ',bulkmod)
  call write_out (ulog,' Elastic Tensor (standard term; old formula) in GPa, in voigt ',c0)
-! call write_out (ulog,' Elastic Tensor AM=teta*tau in GPa, in voigt ',c1)
 
-4 format(a,99(1x,f10.4))
+ call cubic_elastic
+
+1 format(a,99(1x,f10.4))
 5 format(a,i5, 99(1x,f10.4))
  end subroutine get_phi_zeta_Xi
 !============================================================
@@ -1510,17 +1530,10 @@
  do tau=1,natom_prim_cell
 ! cnt2=0  ! cumulative number of independent terms up to group (g-1)
  gloop: do g=1,map(2)%ngr
-!   if(keep_fc2i(g).ne.1) cycle
-!   if(g.gt.1) then
-!      if (keep_fc2i(g-1).eq.1) cnt2=cnt2+map(2)%ntind(g-1)
-!   endif
+    if(map(2)%keep(counteri(2,g,ti)).ne.1) cycle
     do ti=1,map(2)%ntind(g)  ! index of independent terms in that group g
-  !    cnt=ti
-  !    if(g.gt.1) cnt=sum(map(2)%ntind(1:g-1))+ti  ! cumulative index up to indep term ti in group g 
-       ired = map(1)%ntotind + current2(g,ti) !sum(keep_fc2i(1:cnt))    ! this is the corresponding index of i in ared
-    !  ired=cnt2+ti + map(1)%ntotind  ! index of the indep FC2 in the list fcs
-    !  if(cnt2+ti .gt. size_kept_fc2) then
-       if( sum(keep_fc2i(1:counter2(g,ti))) .gt. size_kept_fc2) then
+       ired = map(1)%nkeptind + current(2,g,ti)   ! this is the corresponding index of i in ared
+       if( sum(map(2)%keep(1:counteri(2,g,ti))) .gt. map(2)%nkeptind) then
           write(*,*)'MECHANICAL0: size of fc2 exceeded, ired=',ired
           stop
        endif
@@ -1530,7 +1543,7 @@
           j  = map(2)%gr(g)%iat(2,t)
           taup = iatomcell0(j)    ! atom_sc(j)%cell%tau  is incorrect
           rij = atompos(:,j) - atompos(:,tau)
-          junk = fcs(ired)* map(2)%gr(g)%mat(t,ti) ! * keep_fc2i(counter2(g,ti))
+          junk = fcs(ired)* map(2)%gr(g)%mat(t,ti)
           nl=al+3*(tau-1) ; nc=ga+3*(taup-1)  ! dynmat dimensions
           do la=1,3
              constr(al,ga,la)=constr(al,ga,la) + junk * rij(la)  ! = sum_R,tau,taup fc2(0,tau;R,Taup) (R+taup-tau)_la
@@ -1547,6 +1560,7 @@
  enddo
  enddo
  atld0=atld0/volume_r0*ee*1d30*1d-9
+ call symmetrize4(3,atld0) 
 
  do la =1,3
     call write_out(uio,' CONSTR=\sum_R,tau,taup phi_ij * R_ij (eV/Ang) = 0',constr(:,:,la))
@@ -1596,7 +1610,7 @@
        if ( map(1)%gr(g)%iat(1,t) .ne. tau ) cycle
        do ti=1,map(1)%ntind(g)
           ired = cnt2+ti    ! this is the corresponding index of i in ared
-     !    ired = map(1)%ntotind + current2(g,ti)
+     !    ired = map(1)%ntotind + current(2,g,ti)
           pi0(i)=pi0(i)+fcs(ired) * map(1)%gr(g)%mat(t,ti)
        enddo
     enddo
@@ -1607,7 +1621,7 @@
 
 3 format(a,i4,99(1x,f11.5))
 
- y0=0 ! y0 = -Gama*pi correction to equilibrium positions  at eta=0----------------------
+ y0=0 ! y0 = -Gama*pi correction to equilibrium positions at eta=0----------------------
  do tau=2,natom_prim_cell
     do al=1,3
     i=3*(tau-1)+al
@@ -1615,7 +1629,7 @@
        y0(i)=y0(i)-gama(i-3,j-3)*pi0(j)
     enddo
     enddo
-    write(uio,3)' Residual displacement on tau,y0(tau,:)(Ang)=',tau,(y0(3*(tau-1)+al),al=1,3)
+    write(uio,3)' Residual displacement, y0(tau,:)=-gama*Pi(tau)=',tau,(y0(3*(tau-1)+al),al=1,3)
  enddo
 
 ! residual Stress tensor (under no strain) ------------------------------------
@@ -1643,8 +1657,11 @@
  enddo
  call write_out(ulog,'Residual stress sigma(eta) (eV) ',sigmav)
  sigma0 = sigma0/volume_r0*1d30*ee*1d-9 
+ sigmav = sigmav/volume_r0*1d30*ee*1d-9 
  call write_out(uio,' sigma(eta=0) after symmetrization (GPa) ',sigma0)
+ call write_out(uio,' sigma(eta  ) = sigma0-Pi Gamma Qiu(GPA) ',sigmav)
  call write_out(uio,' Qiu(1:ndyn,1:6)=d^2F/d u0_tau d eta (GPa) ',qiuv)
+
 ! enforces mat2(a,b)-mat2(b,a)=res(a,b)-res(b,a); consider mat=mat2-res ; symmetrize mat then mat2=sym(mat)+res
 ! check below
  s=0
@@ -1658,7 +1675,7 @@
           enddo
           junk=junk + (pi0(3*(tau-1)+be)*delta_k(al,ga)-pi0(3*(tau-1)+ga)*delta_k(al,be))
           if(abs(junk).gt.1d-5) then
-             write(ulog,*)'GET_PHI_XI: rot invce violation in theta:tau,al,be,ga,rot=',tau,al,be,ga,junk
+             write(ulog,'(a,4i4,f10.5)')'GET_PHI_XI: rot invce violation in theta:tau,al,be,ga,rot=',tau,al,be,ga,junk
              s=1
           endif
        enddo
@@ -1686,6 +1703,8 @@
 !    enddo
 !
 ! endif
+
+ write(uio,*)'Suggested relaxations: eta=1/(A-QGQ) (QGPi-sigma0); u0=-G(Pi+Q eta)'
 
  end subroutine residuals
 !===================================================
@@ -1732,9 +1751,8 @@
  enddo
  enddo
  qgq  =qgq  /volume_r0*ee*1d30*1d-9
-!atld2=atld2/volume_r0*ee*1d30*1d-9
-!call convert_to_voigt(atld2,c2)
-!call write_out (uio,' Elastic Tensor (second term in GPa) in voigt ',c2)
+ call symmetrize4(3,qgq) 
+
   write(uio,*)'checking symmetry for QGQ'
   do al=1,3
   do be=1,3
@@ -1754,8 +1772,6 @@
  call convert_to_voigt(qgq,cq)
  call write_out (uio,' Elastic Tensor correction QGQ in voigt ',cq)
 
-
-! atld3=0  ! last term  phi xi xi ; it leads to a symmetric 6x6 tensor ---------------------------
  do al=1,3
  do be=1,3
  do ga=1,3
@@ -1774,9 +1790,6 @@
  enddo
  enddo
  enddo
-! atld3=atld3/volume_r0*ee*1d30*1d-9
-! call convert_to_voigt(atld3,c3)
-! call write_out (uio,' Xi^2 term in Elastic Tensor in voigt ',c3)
  
   write(uio,*)'checking symmetry for atld0'
   do al=1,3
@@ -1794,55 +1807,29 @@
   enddo
   enddo
 
-! should have c2+c3=-cq
-
-! call write_out (uio,' Total Elastic Tensor (new formula in GPa) in voigt ',c1+c2+c3-cq)
-
  atld0=atld0-qgq
 ! call symmetrize4(3,atld0)
-
 ! these should be symmetric wr (al,be <-> ga,de)
 ! can(?) symmetrize wr (al<->be) and (ga<->de) 
 !
-  call convert_to_voigt(atld0,elastic)
-
-! do al=1,3
-! do be=1,3
-! do ga=1,3
-! do de=1,3
-! !  ct(al,be,ga,de)=ahat(al,ga,be,de)+ahat(be,ga,al,de)-ahat(al,be,ga,de)
-!    ct(al,be,ga,de)=atld1(al,ga,be,de)+atld2(al,ga,be,de)+atld3(al,ga,be,de)
-! enddo
-! enddo
-! enddo
-! enddo
-! call convert_to_voigt(c1+c2+c3,elastic)
-! elastic=c1+c2+c3
- call write_out (uio,' Elastic Tensor(GPa) ',elastic)
- call write_out (uio,' Elastic Tensor(GPa) c1-cq ',c1-cq)
+ call convert_to_voigt(atld0,elastic)
+ call write_out (uio,' Elastic Tensor A0-QGQ (GPa) ',elastic)
 
 ! to avoid signular matrix for 2D (in xy plane)
  if (elastic(3,3) .myeq. 0d0) elastic (3,3)=1d-2
  if (elastic(4,4) .myeq. 0d0) elastic (4,4)=1d-2
  if (elastic(5,5) .myeq. 0d0) elastic (5,5)=1d-2
-
+ if (elastic(6,6) .myeq. 0d0) elastic (6,6)=1d-2
 
  call xmatinv(6,elastic,compliance,ier)
 
  call write_out (uio,' Compliance Tensor(1/GPa) ',compliance)
 
- sigmav  =sigmav  /volume_r0*ee*1d30*1d-9
  u0v=-matmul(compliance,sigmav)
 
  call write_out (uio,' Total residual strain',u0v)
 
  y0(4:ndyn) =y0(4:ndyn)-matmul(gama,matmul(qiuv(4:ndyn,:),u0v))
-
-!!!
-!!!
-!!! VERIFY sum_tau Qtau,al;be ga =0
-!!!
-!!!
 
  call write_out (uio,' Total residual displacements (Ang)',y0)
 
@@ -2119,300 +2106,219 @@
 ! vkms(2)=vkms(1)
 ! vkms(3)=sqrt((2*lame_mu+lame_la)*1d9/rho_SI)/1000
 
-  vkms(1)=sqrt(hshearmod/rho_SI*1000)
-  vkms(2)=vkms(1)
-  vkms(3)=sqrt(((hbulkmod+4*hshearmod/3d0)*1000)/rho_SI)
-  write(ulog,8)'Sound speeds from hshear and hbulk:v_T,v_L (km/s)=',vkms(2),vkms(3)
+! vkms(1)=sqrt(hshearmod/rho_SI*1000)
+! vkms(2)=vkms(1)
+! vkms(3)=sqrt(((hbulkmod+4*hshearmod/3d0)*1000)/rho_SI)
+! write(ulog,8)'Sound speeds from hshear and hbulk:v_T,v_L (km/s)=',vkms(2),vkms(3)
+
+  dynr2=0
+  do i=1,3
+  do j=1,3
+     do k=1,3
+     do l=1,3
+        dynr2(i,j)=dynr2(i,j)+calbe(i,k,l,j)*qhat(l)*qhat(k)*1d9   ! to convert to Pa
+     enddo
+     enddo
+  enddo
+  enddo
+
+! diagonalize dynr2 to get speeds of sound
+  call diagonalize(ndn,dynr2,eivl,ndn,eivc,ier)
+
+! eivals are in units of phi*R^2, i.e. in eV
+  vkms(:)=mysqrt(eivl(:))/sqrt(rho_SI)/1000 ! to convert to (km/s)
+  write(ulog,3)' sound speeds along ',q,' in (km/s)=',vkms
+
   vbar = (3/sum(1d0/vkms**3))**0.33333
   t_debye=hbar/k_b*(6*pi*pi*natom_prim_cell/volume_r0)**0.33333 *1d10 * vbar*1000
   write(ulog,8)' vbar(km/s), Debye Temperature              =',vbar,t_debye
 
-  return
-
- dynr2=0
- do i=1,3
- do j=1,3
-    do k=1,3
-    do l=1,3
-       dynr2(i,j)=dynr2(i,j)+calbe(i,k,l,j)*qhat(l)*qhat(k)*1d9   ! to convert to Pa
-    enddo
-    enddo
- enddo
- enddo
-
-! diagonalize dynr2 to get speeds of sound
-    call diagonalize(ndn,dynr2,eivl,ndn,eivc,ier)
-
-! eivals are in units of phi*R^2, i.e. in eV
-    vkms(:)=mysqrt(eivl(:))/sqrt(rho_SI)/1000 ! to convert to (km/s)
-!   write(ulog,3)' sound speeds(km/s)=',vkms
-
-3 format(a,9(1x,g11.4))
+3 format(2(a,3(1x,g11.4)))
 8 format(a,9(1x,g11.4))
 
  end subroutine sound_speeds
 !============================================================
- subroutine sound_speed_avg(calbe,vavg)
-!! uses the elastic constant tensor to find sound speeds along q
- use ios
- use lattice
- use geometry
- use atoms_force_constants
- use svd_stuff
- use eigen, only : mysqrt
- use constants, only : r15,ee,uma
- implicit none
- real(r15), intent(in) :: calbe(3,3,3,3) !elastic tensor in GPa
- real(r15), intent(out) :: vavg(3)
- integer i,j,k,l,ier,ndn,n
- real(r15) vkms(3),eivl(3),qhat(3),rho_SI
- complex(r15) eivc(3,3),dynr2(3,3)
-
- write(ulog,*)' ********** ENTERING SOUND SPEED_AVG *************'
- rho_SI=sum(atom0(:)%mass)*uma/volume_r0*1d30   ! density in kg/m^3
- ndn=3
- vavg=0
- do n=1,3
-    qhat=0
-    qhat(n)=1
-
-    dynr2=0
-    do i=1,3
-    do j=1,3
-    do k=1,3
-    do l=1,3
-       dynr2(i,j)=dynr2(i,j)+calbe(i,k,l,j)*qhat(l)*qhat(k)*1d9 
-    enddo
-    enddo
-    enddo
-    enddo
-
-! diagonalize dynr2 to get speeds of sound
-    call diagonalize(ndn,dynr2,eivl,ndn,eivc,ier)
-
-! eivals are in units of phi*R^2, i.e. in eV
-    vkms(:)=mysqrt(eivl(:))/sqrt(rho_SI)/1000 ! to convert to (km/s)
-    write(ulog,3)' sound speed(km/s) along i=',n,vkms
-    vavg=vavg+vkms/3
- enddo 
-3 format(a,i3,9(1x,g11.4))
-
- end subroutine sound_speed_avg
-!============================================================
- subroutine thermo(nk,wk,ndyn,eival,grn,temprk,etot,free,pres,cv,entropy,cvte)
-! calculate total and free energies within QHA, at a given temperature (temp in Kelvin)
- use ios
- use params
- use lattice
- use constants
- use mech, only : sigma0,hbulkmod
- implicit none
- integer, intent(in) :: nk,ndyn
- integer b,k,nat
- real(r15), intent(in) :: wk(nk),eival(ndyn,nk), temprk,grn(ndyn,nk)
- real(r15), intent(out):: etot,free,pres,cv,cvte
- real(r15) x,cv_nk,hw,nbe,mdedv,pres0,nbx,entropy
-! real(r15) trace !, external :: trace
-
-    nat = ndyn/3
-    if (temprk.le.0) then
-       write(ulog,*)'temperature not in the proper range!!',temprk
-       stop
-    endif
-    etot=0 ; cv=0 ; free=0 ; pres=0
-! assuming E0=0.5*a(V-V0)^2, p0=-dE0/dV=-a(V-V0) ; B=Vd^2E0/dV^2=aV (taken at V0 B=a*V0); P0=B(V0/V-1)
-    mdedv = -sum( (/ (sigma0(b,b),b=1,3)/) )/3 ! this is -dE/dV in GPa at T=0K =0 at equilibrium volume
-    write(ulog,*)' Residual pressure in GPa = -dE0/dV=',mdedv
-    do k=1,nk
-    do b=1,ndyn
-       if(eival(b,k) .lt.-1d-5) then
-          write(ulog,*) 'THERMO: negative eival for band,kp# ',b,k,eival(b,k)
-          write(ulog,*) ' will use its absolute value instead!'
-       endif
-! to convert eV/A^2/mass to Hz we need to take the sqrt, multiply by cnst*100*c_light
-       x=(h_plank*sqrt(abs(eival(b,k)))*cnst*100*c_light)/k_b/temprk !+ 1d-10
-       if (x.gt.60) then
-           nbx=0
-           cv_nk = 0
-       else
-           nbx=nbe(x,1d0,classical)
-           cv_nk = x*x*nbx*(1+nbx) !/4/sinh(x/2)/sinh(x/2)
-       endif
-       hw = x*k_b*temprk  ! hbar*omega in Joules
-       cv  = cv + cv_nk*wk(k)   ! this is in J/K units : per unit cell
-       etot= etot + hw * (nbx + 0.5d0) * wk(k)
-       free= free + (0.5d0*hw + k_b*temprk*log(1-exp(-x))) * wk(k)
-!      pres= pres + hw * (nbx + 0.5d0 + x*(1+nbx)*nbx) * wk(k) * real(grn(b,k))
-       pres= pres + hw * (nbx + 0.5d0) * wk(k) * grn(b,k)
-!      write(*,4)' ik,b,hw,nbx,pres=',k,b,hw,nbx,pres
-    enddo
-    enddo
-    cv = cv/nat*n_avog*k_b   ! this is per mole    )/(volume_r0*1d-30)  !
-    etot = etot/nat*n_avog/1000d0   ! convert from Joule/cell to KJoule per mole
-    free = free/nat*n_avog/1000d0   ! convert from Joule/cell to KJoule per mole
-    pres = pres/(volume_r0*1d-30)  * 1d-9  ! 1d-9 to convert to GPa; 1d-8 is to convert to kbar
-    CVTE = pres/hbulkmod/temprk ! all units in GPa
-    pres = pres + mdedv
-    entropy=(etot-free)/temprk  ! in J/K/mol
-
-
-3 format(9(2x,g11.4))
-4 format(a,2i5,9(2x,g11.4))
-
- end subroutine thermo
-!============================================================
- subroutine QHA_free_energy_vs_strain(nk,wk,ndyn,eival,grn,temprk,eq_free,eq_etot,eq_cv,eq_vol,entropy,cvte,eq_grun,boft,uio)
+ subroutine QHA_free_energy_vs_strain(nk,wk,ndyn,eival,grn,temprk,eq_free,eq_etot,eq_cv,eq_cp,eq_vol,entropy,cvte,eq_grun,boft,uio)
 !! QHA : for a given T the free energy vs strain assuming gruneisen gives w(V)=w(V0)-gama*w(V0) trace(strain) (=dV/V)
 !! can also try w(V)=w(V0)/(1+gama*trace(strain)); this is the result of free energy minimization versus volume at a given T
+!! BM EOS: E=E0 +(9*V0*B0/16) * [ ( (eta)**3 ) * B0_prime + ( (eta)**2 ) * (6 - 4*(V0/V)**(2/3)) ] where eta = (V0 / V)**(2/3) - 1
+!! BM EOS interms of Lagrangian strain: P=p0-3eta B*(1-1.5*(b0p-4)*eta)
+!! we will use E(V)=E(V0)+1/2 (V-V0)^2 * (d^2E)/(dV^2)=1/18 B*V0 (V-V0)^2/V0^2  or 1/2 eta^2 (d^2E)/(d eta^2)
+!! and the next-order term involves cubic derivatives or b0p: E^(3)(V)= 1/6 eta^3 (d^3E)/(d eta^3) used if energy_strain called
+!! otherwise use B(V)=B(V0)+ dB/dV (V-V0)=B(V0)*(1-(V-V0)/V0 b0p) =B(V0)*(1-3*eta*b0p) <=  Correct within QHA
+!! b0P is the pressure derivative of bulk modulus (dimensionless) =(-1/3)* sum_123 psi_123 R1 R2 R3 / sum_12 phi_12 R1 R2 only if du^0/deta=0
+!! b0p = dB/dP = (dB/dV)/(dP/dV)=(dB/dV)/-(B/V) =-(d ln B)/(d ln V)=-d ln B/d(3 eta) 
+
  use ios
  use params
  use lattice
  use constants
- use mech, only : sigma0,hbulkmod  ! both in GPa
+ use mech, only : sigma0,hbulkmod,b0p  ! both in GPa
  use linalgb
+ use eigen, only : mysqrt
  implicit none
  integer, intent(in) :: nk,ndyn,uio
  real(r15), intent(in) :: wk(nk),eival(ndyn,nk),grn(ndyn,nk), temprk
- real(r15), intent(out):: cvte,eq_free,eq_vol,eq_cv,eq_etot,entropy,eq_grun
+ real(r15), intent(out):: cvte,eq_free,eq_vol,eq_cv,eq_cp,eq_etot,entropy,eq_grun
  real(r15), intent(inout):: boft
  integer, parameter :: imax=20 ! 3*imax+1 =number of volume points
- integer b,k,nat,i,imin,imin2
+ integer b,k,nat,i,imin,imin2,rk,factorial
  real(r15) x0,x1,x2,cv_nk,cv,etot,hw,nbe,mdedv,pres0,nbx,s0,s1,s2,f0,f1,f2,mtx(3,3),fx(3),abc(3),grune
- real(r15) eq_strain ,strain(3*imax+1),free(3*imax+1),pres(3*imax+1),prob(3*imax+1),resid
- real(r15) eq_free2,eq_volm2,eq_strain2,frac,cvt2,sump
+ real(r15) eq_strain ,strain(3*imax+1),free(3*imax+1),pres(3*imax+1),prob(3*imax+1)
+ real(r15) eq_free2,eq_volm2,eq_strain2,frac,cvt2,sump,dvbyv,bmod,ev2kjpermol  !,grad(maxrank)
+ real(r15) ,save :: vol0
 
     nat = ndyn/3
+    write(ulog,*)'Entering QHA with B,B0p=',boft,b0p
+    ev2kjpermol = n_avog/(nat*1000d0)   ! convert from Joule/cell to KJoule per mole
     if (temprk.le.0) then
        write(ulog,*)'temperature not in the proper range!!',temprk
        stop
     endif
-    imin=0 ; eq_free=1d90 ; prob=0; sump=0
+    imin=0 ; eq_free=1d90 ; eq_grun=0 ; prob=0 ; sump=0
 ! assuming E0=0.5*a(V-V0)^2, p0=-dE0/dV=-a(V-V0) ; B=Vd^2E0/dV^2=aV (taken at V0 B=a*V0); P0=-B*strain 
+! Assuming BM EOS: let 2f=[(V0/V)^2/3-1] be the Eulerian strain => 1+2f=(V0/V)^2/3 then E=E0+(9B0*V0/2)*(f^3*B0P+f^2*(5-4f))
 
-    write(uio,*)'# temprk , strain(i) , free(i) , pres(i) , dble(imin),bulkmod,boft'
-
-    strainloop: do i=1,1+3*imax ! volume or strain loop
-       etot=0 ; cv=0 ; grune=0
-       strain(i)= (i-1-imax)/(20d0*imax)  ! linear strain from -5% to +10%
-       resid = -sum( (/ (sigma0(b,b),b=1,3)/) )/3 
-       pres(i) = resid - boft*3*strain(i)  ! this is in GPa
-       free(i) = 0.5*boft*volume_r0 * 9*strain(i)*strain(i) *1d+9 * 1d-30 /nat*n_avog/1000d0 ! to convert to SI and then to kJ/mol
- !     pres(i) = resid - bulkmod*3*strain(i)  ! this is in GPa
- !     free(i) = 0.5*bulkmod*volume_r0 * 9*strain(i)*strain(i) *1d+9 * 1d-30 /nat*n_avog/1000d0 ! to convert to SI and then to kJ/mol
-!      write(*,5)' strain, Residual pressure in GPa = -dE0/dV, pressure',strain(i),resid,pres(i)
-
+    write(uio,*)' ' 
+  
+! calculate free energy and pressure for every volume or strain
+    strainloop: do i=1,1+3*imax ! volume or Lagrangian strain loop 
+       cv=0 ; grune=0
+       strain(i)= (i-1-imax)/(20d0*imax)  ! linear strain from -5% to +10% ! this is with respect to volume_r0
+       dvbyv = (1+strain(i))**3 - 1 ! used to be  (1+2*strain(i))**1.5 - 1
+       pres(i) =  -sum( (/ (sigma0(b,b),b=1,3)/) )/3   ! this is in GPa
+       pres(i) = pres(i) - dvbyv * hbulkmod
+       etot=4.5*strain(i)*strain(i)*volume_r0* hbulkmod/1d30/1d-9 * ev2kjpermol
+ !     call energy_strain(strain(i),etot,grad) 
+ !     write(*,5)'strain,ene,grad=',strain(i),etot,grad
+       free(i)=etot
+ !     bulkmod0=grad(2)/3/volume_r0  *ee*1d30*1d-9 ! d^2E/deta^2=V_0\sum C_ij=V_0*3B ; B= VE''(V)=grad(2)/3/V0
+   !   bmod=0
+   !   do rk=1,maxrank
+   !      bmod=bmod+grad(rk)*strain(i)**(rk-1)/factorial(rk-1)
+   !   enddo
+   !   bmod=grad(1)*(1+3*strain(i))
+   !   bmod=bmod /3/volume_r0  *ee*1d30*1d-9 ! d^2E/deta^2=V_0\sum C_ij=V_0*3B ; B= VE''(V)=grad(2)/3/V0
+      
        do k=1,nk
        do b=1,ndyn
-          x0=h_plank*sqrt(abs(eival(b,k)))*cnst*100*c_light/(k_b*temprk) 
-     !    x1= x0 * (1-3*grn(b,k)*strain(i)) 
-          x1= x0 / (1+3*grn(b,k)*strain(i)) ! is also possible
+          x0=h_plank*mysqrt(abs(eival(b,k)))*cnst*100*c_light/(k_b*temprk)  ! could be negative!
+! xhage x0 to x1 to include volume or strain effect on phonon frequencies
+        if (x0.gt.0) then
+          if (strain(i)*grn(b,k).lt. 0) then ! use the following to avoid divergence or negative x1
+             x1= x0 * (1-3*grn(b,k)*strain(i))  
+          else
+             x1= x0 / (1+3*grn(b,k)*strain(i)) 
+          endif
           if (x1.gt.60) then
              nbx=0
-             cv_nk = 0
           elseif(x1.gt.x0/100) then
              nbx=nbe(x1,1d0,classical)
-             cv_nk = x1*x1*nbx*(1+nbx) !/4/sinh(x/2)/sinh(x/2)
-          else ! for negative x due to  large negative gama, limit x1 to x0/100
+          else ! limit x1 to x0/100
              x1=x0/100d0
              nbx=nbe(x1,1d0,classical)
-             cv_nk = x1*x1*nbx*(1+nbx) !/4/sinh(x/2)/sinh(x/2)
           endif
+        else
+          x1=abs(x0)/100 ! treat negative freqs as near zero =0.001*kT  
+          nbx=nbe(x1,1d0,classical)
+        endif
+          cv_nk = x1*x1*nbx*(1+nbx) ![x/2/sinh(x/2)]^2  
           hw = x1*k_b*temprk  ! hbar*omega in Joules
           cv  = cv + cv_nk*wk(k)   ! this is in J/K units : per unit cell
           grune  = grune + cv_nk*wk(k)*grn(b,k)   ! this is in J/K units : per unit cell
-          etot= etot + hw * (nbx + 0.5d0) * wk(k)/nat*n_avog/1000d0   ! convert from Joule/cell to KJoule per mole
-          free(i)= free(i) + k_b*temprk*(x1/2+log(1-exp(-x1))) * wk(k)/nat*n_avog/1000d0 
-          pres(i)= pres(i) + hw * (nbx + 0.5d0) * wk(k) * grn(b,k)/(volume_r0*1d-30)*1d-9  
+          etot   = etot    + hw * (nbx + 0.5d0)                * wk(k) * ev2kjpermol 
+          free(i)= free(i) + k_b*temprk*(x1/2+log(1-exp(-x1))) * wk(k) * ev2kjpermol  
+          pres(i)= pres(i) + hw * (nbx + 0.5d0) * wk(k) * grn(b,k)/(volume_r0*1d-30)*1d-9 ! in GPa 
  !        write(*,7)' kp,band,x,hw,nbx,pres,free=',k,b,x1,hw,nbx,pres(i),free(i)
        enddo
        enddo
-       
+       grune=grune/cv
+       bmod=hbulkmod*(1-3*strain(i)*b0p) ! + pres(i)*b0p   ! this is the strain-dependent second derivative
+       write(ulog,5)'tempK,strain,etot,B0,bulk(eta),bulk(pres)=',temprK,strain(i),etot,hbulkmod,bmod,hbulkmod+pres(i)*b0p
+
+!       pres(i)= pres(i)- hbulkmod*3*strain(i)*(1-(1.5*b0p-4)*strain(i) +3*strain(i)*strain(i)*(b0p-4))
+!       free(i)= free(i)+4.5*hbulkmod*volume_r0*strain(i)*strain(i)*(strain(i)*(1-b0p)+0.25) *1d+9*1d-30 *ev2kjpermol
+!      free(i)= free(i)+0.5*boft*volume_r0 * 9*strain(i)*strain(i)*1d+9*1d-30 /nat*n_avog/1000d0 
        if (free(i).lt.eq_free) then
          imin=i
          eq_cv=cv
          eq_etot=etot
          eq_free=free(i)
-         eq_grun=grune/cv
+         eq_grun=grune
+   !     boft=hbulkmod + b0p*volume_r0/ee/1d30/1d-9 * (-27*hbulkmod) * strain(imin)
+         boft=hbulkmod *(1 - 3* b0p * strain(imin))
        endif
 
-       if(imin.ne.0) then
-          boft=hbulkmod*(1-(1+2*eq_grun)*3*strain(imin))
-       else
-          boft=hbulkmod
-       endif
 ! subtracting free(1) helps normalizing prob
-       prob(i) = exp(-(free(i)-free(1))/((k_b*temprk)/nat*n_avog/1000d0)) 
+       prob(i) = exp(-(free(i)-free(1))/((k_b*temprk)*ev2kjpermol)) 
        sump=sump+prob(i)
-       write(uio,3)temprk,strain(i),free(i),pres(i),dble(imin),hbulkmod,boft,prob(i)
+       write(uio,3)temprk,strain(i),free(i),pres(i),dble(imin),hbulkmod,bmod,grune,prob(i)
 
     enddo strainloop
     prob=prob/sump
 
-! do averages according to prob 
+! #################       Now do strain minimization     #########################
+! do averages according to prob , which gives a weighted average not really the true minimum
 ! strictly speaking prob should be =1 at the minimum and zero elsewhere; 
 ! but a finite value smears out the result and does not require a minimization
     eq_free2=0 ; eq_volm2=0
     do i=1,3*imax+1
        eq_free2 = eq_free2 + free(i)* prob(i)
        if(prob(i).ne.0) then
-          eq_free2 = eq_free2 + k_b*temprk*prob(i)*log(prob(i))/nat*n_avog/1000d0 
+          eq_free2 = eq_free2 + k_b*temprk*prob(i)*log(prob(i)) * ev2kjpermol 
        endif
-       eq_volm2 = eq_volm2 + volume_r0*(1+strain(i)*3)* prob(i)
+       eq_volm2 = eq_volm2 + volume_r0*(1+strain(i))**3 * prob(i)
     enddo 
     
-    eq_strain2 = (eq_volm2 / volume_r0 -1)/3d0
-    imin2 = int((eq_strain2-strain(1))*20*imax)
-    frac=((eq_strain2-strain(1))*20*imax) - imin2
-    CVT2 = 3*eq_strain2/temprk 
-    write(ulog,4)'imin2,frac,eq_strain2,eq_vol2,cvt2,T,eqfree=',imin2,frac,eq_strain2,eq_volm2,CVT2,temprk,eq_free2
+    if (temprk.lt.8) vol0 = eq_volm2   ! measure volume and strain wrt to this volume 
 
-
-    eq_cv = eq_cv/nat*n_avog*k_b   ! this is per mole    )/(volume_r0*1d-30)  !
-!   write(ulog,*)'T,imin,strain,Approximate pmin,eq_free=',temprk,imin,strain(imin),pres(imin),free(imin)
-!   write(*   ,*)'T,imin,strain,Approximate pmin,eq_free=',temprk,imin,strain(imin),pres(imin),free(imin)
+    eq_strain  = (eq_volm2 / vol0)**0.333333 -1
+    imin2 = int((eq_strain -strain(1))*20*imax)+1
+    if(imin2.lt.1 ) imin2=1
+    if(imin2.gt.3*imax+1) imin2=1+3*imax
+    frac=((eq_strain -strain(1))*20*imax) - imin2
+    boft=hbulkmod *(1 - 3* b0p * eq_strain )
+    CVT2 = ((eq_volm2 / vol0) -1)/temprk 
+    eq_cv = eq_cv*k_b* ev2kjpermol*1000 ! in J/mol
+    eq_cp = eq_cv+cvt2*cvt2*temprk*boft*1d9*vol0*1d-30 * ev2kjpermol*1000  
+    write(ulog,4)'imin2,frac,eq_strain ,eq_vol2,cvt2,T,eqfree,eqpres,cv,cp=',imin2,frac,eq_strain , & 
+&                 eq_volm2, CVT2,temprk,eq_free2,pres(imin2),eq_cv,eq_cp
+    write(*   ,*)'T,imin,strain,Approximate pmin,eq_free=',temprk,imin,strain(imin),pres(imin),free(imin)
 
 ! find the min volume and free energy
-    if(imin.eq.0) then
-      write(*,*)' ERROR! imin=0; stopping '
-      stop
-    elseif(imin.eq.1) then
-!     fx(1)=free(1) ;s0=strain(1)
-!     fx(2)=free(2) ;s1=strain(2)
-!     fx(3)=free(3) ;s2=strain(3)
-      eq_free=free(1); eq_strain=strain(1)
-    elseif(imin.lt.3*imax+1) then
-      eq_free=free(imin); eq_strain=strain(imin)
-      fx(1)=free(imin-1) ;s0=strain(imin-1)
-      fx(2)=free(imin  ) ;s1=strain(imin  )
-      fx(3)=free(imin+1) ;s2=strain(imin+1)
-      mtx(1,1)=s0*s0; mtx(1,2)=s0; mtx(1,3)=1 ! a si^2+b si+c =fi
-      mtx(2,1)=s1*s1; mtx(2,2)=s1; mtx(2,3)=1
-      mtx(3,1)=s2*s2; mtx(3,2)=s2; mtx(3,3)=1
-!     call write_out(ulog,' freeng array  ',fx)
-!     call write_out(ulog,' strain array ',strain(imin-1:imin+1) )
-!     call write_out(ulog,' mtx matrix ',mtx)
-      call lin_solve33(mtx,fx,abc) 
-!     call write_out(ulog,' abc array ',abc)
-      if(abs(abc(1)).gt.1d-10) then
-        eq_strain=-abc(2)/2/abc(1)
-        eq_free = abc(3)-abc(2)*abc(2)/4d0/abc(1)
-      endif
-    elseif(imin.eq.3*imax+1) then
-!     fx(1)=free(3*imax-1) ;s0=strain(3*imax-1)
-!     fx(2)=free(3*imax+0) ;s1=strain(3*imax+0)
-!     fx(3)=free(3*imax+1) ;s2=strain(3*imax+1)
-      eq_free=free(3*imax+1); eq_strain=strain(3*imax+1)
-    endif
+ !  if(imin.eq.0) then
+ !    write(*,*)' ERROR! imin=0; stopping '
+ !    stop
+ !  elseif(imin.eq.1) then
+ !    eq_free=free(1); eq_strain=strain(1)
+ !  elseif(imin.lt.3*imax+1) then
+ !    eq_free=free(imin); eq_strain=strain(imin)
+ !    fx(1)=free(imin-1) ;s0=strain(imin-1)
+ !    fx(2)=free(imin  ) ;s1=strain(imin  )
+ !    fx(3)=free(imin+1) ;s2=strain(imin+1)
+ !    mtx(1,1)=s0*s0; mtx(1,2)=s0; mtx(1,3)=1 ! a si^2+b si+c =fi
+ !    mtx(2,1)=s1*s1; mtx(2,2)=s1; mtx(2,3)=1
+ !    mtx(3,1)=s2*s2; mtx(3,2)=s2; mtx(3,3)=1
+ !    call lin_solve33(mtx,fx,abc) 
+!!    call write_out(ulog,' abc array ',abc)
+ !    if(abs(abc(1)).gt.1d-10) then
+ !      eq_strain=-abc(2)/2/abc(1)
+ !      eq_free = abc(3)-abc(2)*abc(2)/4d0/abc(1)
+ !    endif
+ !  elseif(imin.eq.3*imax+1) then
+ !    eq_free=free(3*imax+1); eq_strain=strain(3*imax+1)
+ !  endif
+ !  eq_strain = eq_strain - eq_strain2
 !   write(ulog,4)'imin,T,Analytical strain, eq_free_energy=',imin,temprk,eq_strain,eq_free
 !   write(*   ,4)'imin,T,Analytical strain, eq_free_energy=',imin,temprk,eq_strain,eq_free
-    entropy=(eq_etot-eq_free)/temprk  ! in kJ/K/mol
+    entropy=(eq_etot-eq_free)/temprk*1000  ! in J/K/mol
     CVTE = 3*eq_strain/temprk 
-    eq_vol=volume_r0*(1+3*eq_strain)
-    boft=hbulkmod*(1-(1+2*eq_grun)*3*eq_strain)
+!   eq_vol=volume_r0*(1+3*eq_strain)
+    eq_vol=(1+eq_strain)**3
 
 3 format(9(2x,g13.6))
 4 format(a,i5,9(2x,g11.4))
-5 format(a,9(2x,g11.4))
+5 format(a,99(2x,g11.4))
 
  end subroutine QHA_free_energy_vs_strain
 !=======================================================
@@ -2547,37 +2453,24 @@ enddo
     mi = atom0(i0)%mass
 ! write(ulog,*) 'i,al,mass=',i0,al,i3,mi
     asr = 0 
-!    cnt2=0  ! counter of ntotind, to find position of each term in the array fc2
     gloop: do g=1,map(2)%ngr
-
-  !    if(keep_fc2i(g).ne.1) cycle gloop
-  !    if(g.gt.1) then
-  !      if (keep_fc2i(g-1).eq.1) cnt2=cnt2+map(2)%ntind(g-1)
-  !    endif
-       tiloop: do ti=1,map(2)%ntind(g)  ! index of independent terms in that group g
-      !    cnt=ti
-      !    if(g.gt.1) cnt=sum(map(2)%ntind(1:g-1))+ti  ! cumulative index up to indep term ti in group g 
-          ired = map(1)%ntotind + current2(g,ti) !sum(keep_fc2i(1:cnt))    ! this is the corresponding index of i in ared
-  !       ired=cnt2+ti + map(1)%ntotind  ! the latter is the size of fc1
-  !       if(cnt2+ti .gt. size_kept_fc2) then
-  !          write(*,*)'SET_DYNMAT: size of fc2 exceeded, ired=',ired
-  !          stop
-  !       endif
-
-          tloop: do t=1,map(2)%nt(g)
-             if ( i0 .ne. map(2)%gr(g)%iat(1,t) .or. al .ne. map(2)%gr(g)%ixyz(1,t)  &
-&                .or. be .ne. map(2)%gr(g)%ixyz(2,t) ) cycle tloop
-             j  = map(2)%gr(g)%iat(2,t)
-             j0 = iatomcell0(j)
+    tiloop: do ti=1,map(2)%ntind(g)  ! index of independent terms in that group g
+       if(map(2)%keep(counteri(2,g,ti)).ne.1) cycle
+       ired = map(1)%nkeptind + current(2,g,ti)    ! this is the corresponding index of i in ared
+       tloop: do t=1,map(2)%nt(g)
+          if ( i0 .ne. map(2)%gr(g)%iat(1,t) .or. al .ne. map(2)%gr(g)%ixyz(1,t)  &
+&             .or. be .ne. map(2)%gr(g)%ixyz(2,t) ) cycle tloop
+          j  = map(2)%gr(g)%iat(2,t)
+          j0 = iatomcell0(j)
 ! this produces the diagonal term fc(i0,al;i0,be)
-             if ( i0 .eq. map(2)%gr(g)%iat(2,t) ) iredsave=ired
-             mj = atom0(j0)%mass
-             j3 = be+3*(j0-1)
-             rr = atompos(:,j) - atompos(:,j0)
-             junk = fcs(ired) * map(2)%gr(g)%mat(t,ti) ! * keep_fc2i(counter2(g,ti))
-             asr=asr+junk
-          enddo tloop
-       enddo tiloop
+          if ( i0 .eq. map(2)%gr(g)%iat(2,t) ) iredsave=ired
+          mj = atom0(j0)%mass
+          j3 = be+3*(j0-1)
+          rr = atompos(:,j) - atompos(:,j0)
+          junk = fcs(ired) * map(2)%gr(g)%mat(t,ti) 
+          asr=asr+junk
+       enddo tloop
+    enddo tiloop
     enddo gloop
     fcold=fcs(iredsave)
     fcs(iredsave)=fcs(iredsave)-asr
@@ -3131,20 +3024,21 @@ end subroutine band_sort_bs
  use om_dos, only : width
  use constants, only : r15,pi,cnst,ci
  use kpoints, only : normal
+ use eigen , only : mysqrt
  implicit none
  integer, intent(in):: n,mesh
  real(r15),intent(in) :: om(mesh),eival(n)
  complex(r15),intent(in) :: eivec(n,n)
  real(r15),intent(out) :: epsilon0(3,3)
- complex(r15) chi(3,3),chinormal !,intent(out) :: chi(3,3,mesh)
+ complex(r15) chi(3,3),epsnormal !,intent(out) :: chi(3,3,mesh)
  real(r15) d1,d2,z(n,3),reflectivity
  integer i,j,k,b,al,be,ga,de,tau,taup
 
  if(maxval(abs(aimag(eivec))).gt.1d-6*maxval(abs(eivec))) then
-    write(ulog,*)'DIELECTRIC: eivec at gamma has imaginary parts '
+    write(ulog,*)'DIELECTRIC: eivec at gamma has imaginary parts!! '
     call write_out(ulog,' imag(eivec) ',aimag(eivec))
     call write_out(   6,' imag(eivec) ',aimag(eivec))
-    stop
+!   stop
  endif
 
 ! calculate Born chargs in the eivec basis 
@@ -3159,15 +3053,15 @@ end subroutine band_sort_bs
        enddo
        enddo
     enddo
-    write(ulog,2) sqrt(eival(b))*cnst, dot_product(z(b,:),z(b,:))
+    write(ulog,2) mysqrt(eival(b))*cnst, dot_product(z(b,:),z(b,:))
  enddo
  write(ulog,*)'#=============================================================================='
 
 ! calculate and write susceptibility on a frequency mesh
  open(345,file='chi_real.dat')
  open(346,file='chi_imag.dat')
- write(345,*)'# omega(1/cm) , chi_xx , chi_xy , chi_xz  , chi_yx  ,  chi_yy  ,  chi_yz  , chi_zx , chi_zy , chi_zz , R' 
- write(346,*)'# omega(1/cm) , chi_xx ,  chi_xy  ,  chi_xz  ,  chi_yx  ,  chi_yy  ,  chi_yz  ,  chi_zx  , chi_zy  , chi_zz' 
+ write(345,*)'# omega(1/cm) , chi_xx , chi_xy , chi_xz  , chi_yx  ,  chi_yy  ,  chi_yz  , chi_zx , chi_zy , chi_zz , eps_nn, R_n' 
+ write(346,*)'# omega(1/cm) , chi_xx , chi_xy , chi_xz  , chi_yx  ,  chi_yy  ,  chi_yz  , chi_zx , chi_zy , chi_zz, n(w), k(w)' 
  do i=1,mesh
     chi=0
     do al=1,3
@@ -3180,10 +3074,10 @@ end subroutine band_sort_bs
     enddo
     chi=chi* cnst*cnst * coef
     if(i.eq.1) epsilon0=epsil+real(chi)
-    chinormal=dot_product(normal,matmul((chi+epsil),normal))
-    reflectivity= abs((sqrt(chinormal)-1)/(sqrt(chinormal)+1))**2
-    write(345,2)om(i),real(chi),reflectivity 
-    write(346,2)om(i),aimag(chi) 
+    epsnormal=dot_product(normal,matmul((chi+epsil),normal))
+    reflectivity= abs((sqrt(epsnormal)-1)/(sqrt(epsnormal)+1))**2
+    write(345,2)om(i),real(chi),epsnormal,reflectivity 
+    write(346,2)om(i),aimag(chi),real(sqrt(epsnormal)) ,aimag(sqrt(epsnormal)) 
  enddo
 
 
@@ -3368,7 +3262,7 @@ end subroutine band_sort_bs
 
      deteps3=det(epsil)**0.3333
      eta=sqrt(pi*deteps3)/(volume_r0**0.3333) ! optimal choice for equal range in R&G spaces
-     eta= 1.5*eta 
+     eta= 1.5*eta  ! for 0.3*eta only G-sum should be needed 
      rcutoff_ewa=8*sqrt(deteps3)/eta
      gcutoff_ewa=8*eta*2/sqrt(deteps3)
      write(ulog,*)'eta,rcut_ewa,gcut_ewa=',eta,rcutoff_ewa,gcutoff_ewa
@@ -3388,7 +3282,7 @@ end subroutine band_sort_bs
     call ewald_2nd_deriv_hat (q0,tau,taup,nr_ewald,ng_ewald,r_ewald,g_ewald,eta,d2ew0,d3ew0)
     dyn_naq0(tau,:,:)=dyn_naq0(tau,:,:)+real(d2ew0)
  enddo
-    call write_out(ulog,'d_na(tau,tau,q=0) on G_sc grid ',dyn_naq0(tau,:,:))
+    call write_out(ulog,'d_na(tau,tau,q=0)  ',dyn_naq0(tau,:,:))
  enddo
 
  do k=1,nk ! this is really done on ggrid
@@ -3401,17 +3295,19 @@ end subroutine band_sort_bs
  enddo
  enddo
 
-! do k=1,nk
-! do tau =1,natom_prim_cell
-!    dyn(tau,tau,:,:,k)=dyn(tau,tau,:,:,k)-dyn_naq0(tau,:,:)
-! enddo
-! enddo
+! enforce ASR on the NA contribution
+ do k=1,nk
+ do tau =1,natom_prim_cell
+    dyn(tau,tau,:,:,k)=dyn(tau,tau,:,:,k)-dyn_naq0(tau,:,:)
+ enddo
+ enddo
  
  if(verbose) then
  do k=1,nk
  do tau =1,natom_prim_cell
  do taup=1,natom_prim_cell
-    call write_out(ulog,'dyn_na on G_sc grid ',dyn(tau,taup,:,:,k))
+    call write_out(ulog,'dyn_na at q= ',kp(:,k))
+    call write_out(ulog,'dyn_na  ',dyn(tau,taup,:,:,k))
  enddo
  enddo
 
@@ -3421,6 +3317,150 @@ end subroutine band_sort_bs
  enddo
  endif
  
-! dyn=dyn*volume_r0/volume_r
-
  end subroutine calculate_dyn_na
+!--------------------------------------------------
+ subroutine cubic_elastic 
+!! calculates b0p=dB/dP=-d ln B/d ln V=(-1/3B) dB/deta =-(1/27BV0) \sum psi R1 R2 R3 
+ use ios , only: ulog, write_out
+ use lattice, only : volume_r0 
+ use constants, only : ee
+ use geometry
+ use atoms_force_constants
+ use svd_stuff
+ use params, only : verbose
+ use mech
+ use eigen, only : ndyn
+ use linalgb
+ use params, only : include_fc
+ implicit none
+ integer tau,taup,taus,al,be,ga,t,g,ti,ired,j,k
+ real(r15)  rij(3),rik(3),junk,b0s,rr(3)
+
+ if(include_fc(3).ne.1) then
+    write(ulog,*)'CUBIC_ELASTIC: include_fc(3)=1 not selected: ',include_fc(3) 
+    write(ulog,*)'CUBIC_ELASTIC:  returning to main...'
+    return
+ endif
+   
+ write(  * ,*)' ********** ENTERING cubic elastic *************'
+ write(ulog,*)' ********** ENTERING cubic elastic hbulkmod=',hbulkmod
+
+ b0p=0;b0s=0
+ do al=1,3
+ do be=1,3
+ do ga=1,3
+ do tau=1,natom_prim_cell
+ gloop: do g=1,map(3)%ngr
+    tloop: do t=1,map(3)%nt(g)
+       if ( tau .ne. map(3)%gr(g)%iat(1,t) ) cycle tloop
+       if ( al .ne. map(3)%gr(g)%ixyz(1,t) ) cycle tloop
+       if ( be .ne. map(3)%gr(g)%ixyz(2,t) ) cycle tloop
+       if ( ga .ne. map(3)%gr(g)%ixyz(3,t) ) cycle tloop
+       j  = map(3)%gr(g)%iat(2,t)
+       k  = map(3)%gr(g)%iat(3,t)
+       taup = iatomcell0(j)    ! atom_sc(j)%cell%tau  is incorrect
+       rr  = atompos(:,tau)- atompos(:,1)
+       rij = atompos(:,j)  - atompos(:,1)
+       rik = atompos(:,k)  - atompos(:,1)
+    do ti=1,map(3)%ntind(g)  ! index of independent terms in that group g
+       ired = map(1)%nkeptind + map(2)%nkeptind + ti
+       junk = fcs(ired)* map(3)%gr(g)%mat(t,ti)
+       b0s = b0s+junk*atompos(al,tau)*atompos(be,j)*atompos(ga,k)
+       b0p = b0p+junk*rr(al)*rij(be)*rik(ga)
+    enddo
+    enddo tloop
+ enddo gloop
+ enddo
+ enddo
+ enddo
+ enddo 
+
+ write(ulog,*) 'CUBIC_ELASTIC: before rescaling b0p,b0s=',b0p,b0s
+
+ b0p=b0p /volume_r0*ee*1d30*1d-9 / (-27* bulkmod)
+ b0s=b0s /volume_r0*ee*1d30*1d-9 / (-27* bulkmod)
+ 
+ write(ulog,*) 'CUBIC_ELASTIC: b0p,b0s=',b0p,b0s
+
+ end subroutine cubic_elastic
+!--------------------------------------------------
+ subroutine energy_strain(strain,ene,deriv) 
+!! computes the zero-temperature expansion of the potential energy in powers of strain (only if u^0=0)
+!! units are the same as E i.e. in eV for both ene and deriv, which is the coefficient of the powers of strain in the Taylor expansion
+!! attention: a residual displacement u0 will affect the expansion and is not included 
+ use ios , only: ulog, write_out
+ use lattice, only : volume_r0 
+ use geometry
+ use atoms_force_constants
+ use svd_stuff
+ use constants
+ use params, only : verbose
+ use mech
+ use eigen, only : ndyn
+ use linalgb
+ use params, only : include_fc
+ implicit none
+ real(r15), intent(in) :: strain 
+ real(r15), intent(out) :: ene,deriv(maxrank)
+ integer be,ga,t,g,ti,ired,j,ka,cnt2
+ integer al(maxrank),tau(maxrank),j_sc(maxrank),res,rnk,rk
+ real(r15)  rij(3),rik(3),junk,grad ,ux
+
+  ene =0 ; deriv=0
+
+  deriv(1)=trace(sigma0) *volume_r0/1d30/ee/1d-9  ! to convert back to eV
+
+  res=map(1)%nkeptind ! accumulated # of terms from pervious ranks
+  do rnk=2,maxrank   !************* each rank contributes a power of strain
+  if(include_fc(rnk).ne.0) then
+
+     grad=0
+     do ga=1,natom_prim_cell
+     do be=1,3
+        tau(1)=ga
+        al(1)=be
+
+        cnt2= 0       ! accumulated # of terms from previous groups within the same rank: rnk
+        do g=1,map(rnk)%ngr  
+           if(g.gt.1) cnt2 = cnt2 + map(rnk)%ntind(g-1)
+           do t=1,map(rnk)%nt(g) ! sum over all terms in that group
+              if ( tau(1).ne. map(rnk)%gr(g)%iat (1,t)   .or.  &
+          &        al (1).ne. map(rnk)%gr(g)%ixyz(1,t) ) cycle
+              do ti=1,map(rnk)%ntind(g)
+! ired is the full index of the indep FC coming in the A*FC=b matrix product
+             !   if(rnk.eq.2) then
+                    ired = res + current(rnk,g,ti)
+             !   else
+             !      ired = res + cnt2 + ti  ! same as res+sum(map(rnk)%ntind(1:g-1))+ti 
+             !   endif 
+!                ux=(atompos(al(1),tau(1))-atompos(al(1),1))*strain
+                 ux=(atompos(al(1),tau(1)))*strain
+                 do rk=2,rnk
+                    j       =  map(rnk)%gr(g)%iat (rk,t)
+                    al (rk) =  map(rnk)%gr(g)%ixyz(rk,t)
+!                   ux=ux*(atompos(al(rk),j)-atompos(al(rk),1))*strain/dble(rk)
+                    ux=ux*(atompos(al(rk),j))*strain/dble(rk)
+                 enddo
+                 junk=fcs(ired)*map(rnk)%gr(g)%mat(t,ti)
+                 ene =ene + junk*ux
+                 if (strain.ne.0) grad=grad+junk*ux/strain*rnk
+              enddo
+           enddo
+        enddo
+
+     enddo
+     enddo
+     if(rnk.ge.2) deriv(rnk-1)=grad
+
+!    if(rnk.eq.2) then
+        res = res + map(rnk)%nkeptind
+!    else
+!       res = res + map(rnk)%ntotind 
+!    endif   
+!     if(g.gt.1) res=res+cnt2+ map(rnk)%ntind(g-1)
+!     write(726,3)'ENERGY_STRAIN: rank, res,energy,grad=',rnk,tau,al,res,ene,grad
+  endif
+  enddo
+
+3 format(a,4i4,9(1x,g12.5))
+ end subroutine energy_strain

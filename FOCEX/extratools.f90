@@ -428,10 +428,10 @@
  if(m.eq.0) then ! quantum calculation
    if (z.gt.60) then
      y = 0
-   elseif(z.lt.0.0010) then
-     y = 1/(z*(1+z/2*(1+z/3)))
-   else
+   elseif(z.gt.0.0010) then
      y = 1/(exp(z) - 1)
+   else
+     y = 1/(z*(1+z/2*(1+z/3)))
    endif
  elseif(m.eq.1) then ! classical calculation
    y=1/z
@@ -1516,7 +1516,7 @@
     if (.not. insid) cycle 
 
     vfold= fold_ws(v,sx,space)
-    write(234,2)v,vfold
+    if(maxval(abs(v-vfold)).gt.1d-5) write(234,2)v,vfold,v-vfold
 
 ! take only those points inside or on the boundary of WS (corresponding to in=1)
     cnt=cnt+1
@@ -1562,16 +1562,16 @@
 
  call find_ws_weights(ngrd,grd,save_boundary,sx,weig)
 
- if(abs(sum(weig)-1).gt.tolerance) then
-    write(*,*)'WARNING: weights not normalized to 1 ',sum(weig(1:ngrd))
-    write(ulog,*)'WARNING: weights not normalized to 1 ',sum(weig(1:ngrd)) 
- endif
+! if(abs(sum(weig)-1).gt.tolerance) then
+!    write(*,*)'WARNING: weights not normalized to 1 ',sum(weig(1:ngrd))
+!    write(ulog,*)'WARNING: weights not normalized to 1 ',sum(weig(1:ngrd)) 
+! endif
 
  deallocate(save_boundary)
 
  write(ulog,*) ' EXITING make_grid_weights_WS'
 
-2 format(9(1x,f10.4))
+2 format(99(1x,f10.4))
 3 format(i5,1x,f8.5,3x,3(1x,g10.3),3x,3(1x,f8.4))
 4 format(a,i5,2x,3i2,2x,9(1x,f13.5))
 5 format(3(1x,f10.4),i3,1x,g11.4)
@@ -1774,7 +1774,7 @@
 
  deallocate(grd,save_boundary,weig)
 
- write(ulog,*) ' EXITING make_grid_weights_WS'
+ write(ulog,*) ' EXITING make_grid_weights_WS_old'
 
 2 format(9(1x,f10.4))
 3 format(i5,1x,f8.5,3x,3(1x,g10.3),3x,3(1x,f8.4))
@@ -1797,6 +1797,7 @@
 !============================================================
  subroutine make_subrgrid_symmetric(n,grd,sx,nsub)
 !! makes a subgrid of the R-translations grd that has the full symmetry of the crystal
+!! but within the WS cell defined by sx
  use fourier
  use geometry
  use params, only : tolerance
@@ -1814,7 +1815,37 @@
  logical belongs,is_sub
 
  allocate(subg(3,n))
- nsub=0
+ nsub=0; subg=0
+! new version to be tested
+ gridloop2: do g=1,0 !n
+   !  write(ulog,6)'rgrid vectors ',n,g, grd(:,g)
+! make sure all arms of grd are in the grd set
+      is_sub=.false.
+      grouploop2: do i=1,lattpgcount
+! apply symmetry operation to grd
+!call write_out(ulog,'op_matrix ',op_matrix(:,:,i))
+         v=matmul(op_matrix(:,:,i),grd(:,g))
+         belongs=.false.
+         subgloop2: do k=1,nsub
+            if(length(v-subg(:,k)).lt.tolerance) then  ! arm belongs to the set, OK!
+               belongs=.true.
+ !    write(ulog,6)'g,k,v=',g,k,v
+            else ! add it to the subg group
+               belongs=.false.
+               exit subgloop2 ! exit to extend the subg array
+            endif
+         enddo subgloop2
+         if (belongs) then ! v=S(grd(g)) belongs to the grid; try other point group operations 
+            cycle grouploop2
+         else
+            nsub=nsub+1
+            subg(:,nsub)= v
+            cycle grouploop2
+         endif
+      enddo grouploop2
+ enddo gridloop2
+
+
  gridloop: do g=1,n
    !  write(ulog,6)'rgrid vectors ',n,g, grd(:,g)
 ! make sure all arms of grd are in the grd set
@@ -1824,13 +1855,13 @@
 !call write_out(ulog,'op_matrix ',op_matrix(:,:,i))
          v=matmul(op_matrix(:,:,i),grd(:,g))
          belongs=.false.
-         kloop: do k=1,n
+         subgloop: do k=1,n
             if(length(v-grd(:,k)).lt.tolerance) then  ! arm belongs to the set, OK!
                belongs=.true.
  !    write(ulog,6)'g,k,v=',g,k,v
-               exit kloop
+               exit subgloop
             endif
-         enddo kloop
+         enddo subgloop
          if (belongs) then ! v=S(grd(g)) belongs to the grid; try other point group operations 
             cycle grouploop
          else
@@ -1988,7 +2019,7 @@
 ! close(745)
 
 7 format(a,3(1x,f12.5),i5,i3,'(',3i2,')',i5,3(1x,f6.3))
-     call check_input_poscar_consistency_new
+!     call check_input_poscar_consistency_new
 
  end subroutine find_WS_largest_SC
 !========================================
@@ -3375,17 +3406,19 @@
  integer i,j,l,nbound(n),cnt(n,20),m,nboundr
  real(r15) vgoverg2,v(3),arscale,tol
 
+ write(ulog,*)' CHECK_PERIODIC: array size is ',n
+ write(175,*)' CHECK_PERIODIC: array size is ',n
  arscale=sum(abs(array))/dble(n)
  tol=tolerance*arscale
  aravg=array
  isperiodic=.true.
  do i=1,n
-    call is_on_boundary(grid(:,i),r26,nboundr,tol)
+    call is_on_boundary(grid(:,i),r26,nboundr,tolerance)
 ! check whether grid(i) is on the boundary
     nbound(i)=0 ; cnt(i,:)=0 ; 
     do j=1,26  ! all 26 are needed ; direction is important!
        vgoverg2 = 2 * dot_product(r26(:,j),grid(:,i))/dot_product(r26(:,j),r26(:,j))
-       if ( abs(vgoverg2 - 1) .lt. tol ) then ! it's on the booundary
+       if ( abs(vgoverg2 - 1) .lt. tolerance ) then ! it's on the boundary
           nbound(i)=nbound(i)+1   ! count on how many boundaries
           cnt(i,nbound(i))=j    
        endif
@@ -3398,7 +3431,6 @@
 ! it is on the intersection of nbound surfaces 
 ! find array indices(&values) on those boundaries to symmetrize
 !   cnt(i,11)=i
-!   write(ulog,*)' CNT(i,:)=',i,cnt(i,:)
  do i=1,n
     if(nbound(i).eq.0) then ! it's inside but not on boundary
         cycle
@@ -3424,17 +3456,18 @@
         write(*,*)'grid i=',i,' nbound+1=',nbound(i)+1,'cnt(i,10)=',cnt(i,10),' diff=',nbound(i)+1-cnt(i,10)
     endif
     aravg(i)=suma/cnt(i,10)  ! this is the average of array(i)
-    write(175,3)'grid(i), image, array, final avg,dif=',i,l,array(i),aravg(i),array(i)-aravg(i)
  !  write(ulog,*)'i, images=',i,cnt(i,10), cnt(i,11:10+cnt(i,10)) ,nbound(i)+1, cnt(i,1:1+nbound(i)) ! cnt(i,ind) is the rws index
 !   write(ulog,2)' array(l)=',array(cnt(i,11:10+cnt(i,10))) , aravg(i)
-    if (abs(array(i)-aravg(i)).gt.1d-6) then
+    if (abs(array(i)-aravg(i)).gt.tol) then
        isperiodic=.false.
+       write(175,3)'grid(i), image, array, final avg,dif=',i,l,array(i),aravg(i),array(i)-aravg(i)
     endif
  enddo
 ! if(.not.isperiodic) then
 !     call write_out(ulog,'CHECK_PERIODIC: array is not periodic ',array)
 !     call write_out(ulog,'CHECK_PERIODIC:         average array ',aravg)
 ! endif
+ write(175,*)' EXITING CHECK_PERIODIC '
 
 2 format(a,9(1x,g11.4))
 3 format(a,2i4,9(1x,f10.4))
@@ -4293,10 +4326,12 @@ end subroutine sort3
  c=0
  do al=1,3
  do be=al,3
+    i=voigt(al,be); 
  do ga=1,3
  do de=ga,3
-    i=voigt(al,be); j=voigt(ga,de)
+    j=voigt(ga,de)
     c(i,j)=a(al,be,ga,de)
+!   c(i,j)=(a(al,be,ga,de)+a(be,al,ga,de)+a(al,be,de,ga)+a(be,al,de,ga))/4
  enddo
  enddo
  enddo
@@ -4774,3 +4809,15 @@ end function is_in_wedge
  enddo 
 
  end subroutine findgrid
+!===========================================================
+ function factorial(n) result(fact)
+ integer, intent(in) :: n
+ integer fact,i
+
+ fact=1
+ do i=1,n
+    fact=fact*i
+ enddo
+
+ end function factorial
+!===========================================================

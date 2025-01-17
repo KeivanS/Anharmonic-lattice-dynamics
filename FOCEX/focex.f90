@@ -3,19 +3,14 @@
 program FOCEX
 !
 ! todo:
-!
-!!! VERIFY sum_tau Qtau,al;be ga =0
-!
-! in case there is residual force, get residual stress, recommend updated lattice and fcs
 ! add option of reading existing fc files and fitting the remaining ones.
 ! also writeout the fitted FCs in the format of other codes: ALAMODE, PHONOpy SHENG
 !
-! test ewald dynmat versus ewald force by finite difference? also need a FFT
-! sound speeds depend on direction. First get isotropic elastic constants, then vg
+! test ewald dynmat versus ewald force by finite difference? 
 !
 ! add CS for fc3 fc4 so that the 2-body terms remain; or select the same 2-body terms as
 ! fc2's, for example as analytical derivatives of the morse potential fitted to the VASP data when
-! only one atoms is moved at least 4 times +/- 0.1, +/- 0.05 (if not 6: +/- 0.15) plus a short-range term
+! only one atom is moved at least 4 times +/- 0.1, +/- 0.05 (if not 6: +/- 0.15) plus a short-range term
 ! eventually may need to replace include_fc=2 by reading the fitted FC234's from an existing file
 ! and completing by the missing ones.
 ! Add the Coulomb contribution to FC3 and FC4
@@ -24,17 +19,17 @@ program FOCEX
 !------------------------------------------------
 !! Program to extract force constants from ab initio force-displacement data
 !! eventually with imposed (linear) constraints of symmetry
-!! INPUT FILES : structure.params, dielectric.params, POSCARi, OUTCARi (i=1,2,...)
+!! INPUT FILES : structure.params, dielectric.params, default.params, POSCARi, OUTCARi (i=1,2,...)
+!!               and for lattice dynamical calcs: kpbs.params and latdyn.params
 !! in structure.params file user specifies the primitive cell and its atoms
-!! the range of the force constants of rank 3 and 4 to be kept, whether or not translational,
-!! rotational and Huang invariance constraints are imposed, specifications(type mass name) of
-!! the atoms in the primitive cell and their reduced coordinates in units of translations of
-!! the CONVENTIONAL cell.
-!! In POSCARi file the super cell structure and the equilibrium position of its atoms are specified
-!! similar to VASP POSCAR format
+!! the range of the force constants of desired ranks, 
+!! whether or not translational, rotational and Huang invariance constraints are imposed, 
+!! specifications(type,mass,name) of atoms in the primitive cell and their reduced coordinates 
+!! in units of translations of the CONVENTIONAL cell.
+!! In POSCARi file contains the super cell structure and atomic positions in VASP POSCAR format
 !! Finally, FORCEDISPi contains the atomic displacement and corresponding forces on each atom in the
-!! supercell. It is obtained using a postprocessing utility (readoutcar) of VASP or QE output files.
-!! OUTPUT FILES: log.dat contains log of the run and intermediate outputs
+!! supercelli. It is obtained using a postprocessing utility (readoutcar) of VASP or QE output files.
+!! OUTPUT FILES: log...dat contains log of the run and intermediate outputs
 !! fcr_irr.dat fcr.dat : contain the obtained irreducible and full set of force constants of rank r
 !! lat_fc.dat : coordinates of atoms surrounding the primitive cell within some range (15 Ang by default)
 !! and the number of force constants of each rank that resulted from the SVD
@@ -75,12 +70,10 @@ real(r15), allocatable :: mat(:,:),qmat(:)
 integer, allocatable :: frc_constr(:),mp(:) !,save_boundary(:)
 real(r15) error,ermax,sd(4),sig, volmax,sf,dsf(3) ,q2(3),qr(3),largestcutoff,matr(3,3)
  type(vector):: y1,y2,y3,k1,k2,k3
-! real(r15) dyn_coul(3,3) ,ddn(3,3,3),q(3),deteps3 
 real tim
-real(r15) r1(3),r2(3),r3(3),z1(3),z2(3),z3(3),rsh(3,26),r26(3,26),r026(3,26),gmax
-type(vector) x01,x02,x03,x1,x2,x3
-integer ngrd,cnt
-real(r15), allocatable :: grd(:,:),weig(:)
+real(r15) gmax,ene,grad
+! real(r15) dyn_coul(3,3) ,ddn(3,3,3),q(3),deteps3 
+!real(r15) r1(3),r2(3),r3(3),z1(3),z2(3),z3(3),rsh(3,26),r26(3,26),r026(3,26)
 
  call date_and_time(date=today,time=now,zone=zone)
  call cpu_time(tim)
@@ -177,6 +170,15 @@ real(r15), allocatable :: grd(:,:),weig(:)
 ! sets nsmax, according to the default range for fc2s, rcut(2)
    call make_unitcell
 
+ coef=ee*1d10/eps0/volume_r0 ! used for non-analytical part of the dynamical matrix
+
+   call find_WS_largest_SC(imax,volmax)
+
+   call make_grids
+
+! check if any include_fc=2, then read atompos and call setup_maps and read fcs
+   if(readfc)  call read_fcs  
+
    call write_atompos  !  atompos in .xyz format for visualization
 
 !  call find_WS_largest_SC(imax,volmax)
@@ -198,32 +200,23 @@ real(r15), allocatable :: grd(:,:),weig(:)
 !  enddo
 !  enddo
 !
-! stop nggrid=10000
-
 
 !  call read_latdyn
 !  allocate(kpc(3,nkc),wk(nkc),mapinv(nkc),mapibz(nkc))
 !  call allocate_tetra(nc(1),nc(2),nc(3),100)
 !  call make_kp_reg_tet
 !  call get_weights(nkc,kpc,mapinv,mapibz) 
-!! allocate(mat(3,nkc))
-!! call get_kpfbz(nkc,kpc,g0ws26,mat,'KPFBZ.dat')
-!! call get_kpfbz(nibz,kibz,g0ws26,mat,'KPIBZ.dat')
-!! deallocate(mat)
-!!stop
 
 ! of available supercells, takes the one with largest volume to eventually set
 ! the range of FC2= largest center to WS boundary distance; record rs1,rs2,rs3
 ! output is rs1,rs2,rs3 of this largest supercell
-
-  call find_WS_largest_SC(imax,volmax)
 
  call cpu_time(tim)
  write(utimes,'(a,f10.4)')' make_unitcell, TIME                          IS ',tim
 
 ! outputs: atom0%equilb_pos,shells%no_of_neighbors , rij, neighbors(:)%tau and n and maxshell
 ! maxshell is the actual # of shells within rcut(2). It is not nsmax; maxshell < maxneighbors
-  call set_neighbor_list
+ if(.not.readfc)  call set_neighbor_list
 
  write(ulog,*)' After set_neighbors: maxshells=',maxshells,' while maxneighbors=',maxneighbors
  write(ulog,*)' ************************* Writing the neighborlist ************************** '
@@ -236,8 +229,6 @@ real(r15), allocatable :: grd(:,:),weig(:)
 ! in addition depending on 'r' or 'g' the grid of primitive translations inside the WS of supercell
 ! is calculated and stored in rgrid(3,nrgrid) or ggrid(3,nggrid) along with their weights rws_weights
 ! create a grid of translations from r0i inside the WS cell of rsi +boundaries, rgrid(3,nrgrid),
-
-
 
 ! find the shortest basis bi among xi and the corresponding 26 shortest vectors
 ! call get_26shortest_shell(x01,x02,x03,s0x,b01,b02,b03)! s0x for WS of primcell
@@ -252,76 +243,6 @@ real(r15), allocatable :: grd(:,:),weig(:)
 !
 ! call make_grid_weights_WS(x01,x02,x03,x1,x2,x3,matr,ngrd,grd,weig,s0x,sx) 
 
-! multiply reciprocal lattice weights by om/om0
-
-
-  nrgrid=10000
- allocate(rgrid(3,nrgrid),rws_weights(nrgrid))
- matr=cart_to_prim
- call get_26shortest_shell(r01,r02,r03,r0ws26,x01,x02,x03)
- call get_26shortest_shell(rs1,rs2,rs3,rws26,x1,x2,x3)
- call make_grid_weights_WS(r01,r02,r03,rs1,rs2,rs3,matr,nrgrid,rgrid,rws_weights,'r',r0ws26,rws26) 
- rgrid=rgrid(:,1:nrgrid) ; rws_weights=rws_weights(1:nrgrid)
- write(ulog,77)rws_weights
- write(ulog,*)' SUM of the RWS_WEIGHTS = ',sum(rws_weights)
- call write_lattice(nrgrid,rgrid,'r_supercell.xyz') ! grid of primitive translations in the WS supercell
-
-     open(98,file='rgrid_raw.xyz')
-     open(99,file='rgridWS.xyz')
-     call show_ws_boundary(v2a(r01),v2a(r02),v2a(r03),r0ws26,15,'WSR0_boundary.xyz',lgridmax) 
-     call show_ws_boundary(v2a(rs1),v2a(rs2),v2a(rs3),rws26,15,'WSR_boundary.xyz',lgridmax) 
- 
-     write(98,28)"# name ,grid(cnt),weig(cnt),grid_red(cnt),cnt" 
-     write(99,*)nggrid
-     write(99,*)"# name, cartesian grid, reduced grid "
-     do cnt=1,nrgrid
-        write(98,28)"Si ",rgrid(:,cnt),rws_weights(cnt),matmul(matr,rgrid(:,cnt)),length(rgrid(:,cnt)),cnt !,save_boundary(cnt)
-        write(99,27)"Si ",rgrid(:,cnt),matmul(matr,rgrid(:,cnt)),length(rgrid(:,cnt))
-     enddo
-     close(98)
-     close(99)
-     write(ulog,*)'lgridmax=',lgridmax
-
-27 format(a,99(1x,f10.4))
-28 format(a,8(1x,f10.4),3i5)
-
-  nggrid=10000
- allocate(ggrid(3,nggrid),gws_weights(nggrid))
- matr=transpose(prim_to_cart)/(2*pi)
- call get_26shortest_shell(g01,g02,g03,g0ws26,x01,x02,x03)
- call get_26shortest_shell(gs1,gs2,gs3,gws26,x1,x2,x3)
- call make_grid_weights_WS(gs1,gs2,gs3,g01,g02,g03,matr,nggrid,ggrid,gws_weights,'g',gws26,g0ws26) 
- ggrid=ggrid(:,1:nggrid) ; gws_weights=gws_weights(1:nggrid)
- gws_weights = gws_weights * (volume_r0/volume_r) ! introduce 1/N since used for Fourier transforms
- write(ulog,77)gws_weights
- write(ulog,*)' SUM of the GWS_WEIGHTS = ',sum(gws_weights)
- call write_lattice(nggrid,ggrid,'g_supercell.xyz') ! grid of primitive translations in the WS supercell
-
-     open(98,file='ggrid_raw.xyz')
-     open(99,file='ggridWS.xyz')
-     call show_ws_boundary(v2a(gs1),v2a(gs2),v2a(gs3),gws26,15,'WSG_boundary.xyz',gmax) 
-     call show_ws_boundary(v2a(g01),v2a(g02),v2a(g03),g0ws26,15,'WSG0_boundary.xyz',gmax) 
- 
-     write(98,28)"# name ,grid(cnt),weig(cnt),grid_red(cnt),cnt" 
-     write(99,*)nggrid+26+8
-     write(99,*)"# name, cartesian grid, reduced grid "
-     do cnt=1,nggrid
-        write(98,28)"Si ",ggrid(:,cnt),gws_weights(cnt),matmul(matr,ggrid(:,cnt)),length(ggrid(:,cnt)),cnt !,save_boundary(cnt)
-        write(99,27)"Si ",ggrid(:,cnt),matmul(matr,ggrid(:,cnt)),length(ggrid(:,cnt))
-     enddo
-     do cnt=1,26
-        write(99,27)"Bi ",g0ws26(:,cnt), matmul(matr,g0ws26(:,cnt))
-     enddo
-     write(99,*)'Ge   0 0 0 '
-     write(99,27)'Ge ',g01
-     write(99,27)'Ge ',g02
-     write(99,27)'Ge ',g03
-     write(99,27)'Ge ',g01+g02
-     write(99,27)'Ge ',g03+g01
-     write(99,27)'Ge ',g03+g02
-     write(99,27)'Ge ',g03+g01+g02
-     close(98)
-     close(99)
 
 !! generate primitive grid in SC
 ! n3reg(1)=4; n3reg(2)=4; n3reg(3)=2 ;
@@ -361,12 +282,12 @@ real(r15), allocatable :: grd(:,:),weig(:)
 
 
 !! TEST OF FOURIER!!  first make sure the grid is periodic
-!     allocate(ax1(nggrid),rand(2*nrgrid),rand2(2*nrgrid),auxr(nrgrid),axavg(nrgrid),ax2(nrgrid))
+!     allocate(ax1(nrgrid),rand(2*nggrid),rand2(2*nggrid),auxr(nggrid),axavg(nggrid),ax2(nggrid))
 !     call random_number(rand)
-!     auxr=cmplx(rand(1:nrgrid),rand(nrgrid+1:2*nrgrid))
-!     call check_periodic(nrgrid,rgrid,rws26,auxr,axavg,ex) ! rand 2 is periodic version of rand
-!     call fourier_r2k(axavg,ax1) 
-!     call fourier_k2r(ax1,ax2)  
+!     auxr=cmplx(rand(1:nggrid),rand(nggrid+1:2*nggrid))
+!     call check_periodic(nggrid,ggrid,g0ws26,auxr,axavg,ex) ! rand 2 is periodic version of rand
+!     call fourier_k2r(axavg,ax1) 
+!     call fourier_r2k(ax1,ax2)  
 !     write(*,*)' axavg before is '
 !     write(*,77) axavg
 !     write(*,*)' axavg after is '
@@ -395,8 +316,17 @@ real(r15), allocatable :: grd(:,:),weig(:)
 !     deallocate(ax1,rand,rand2,axavg,auxr,ax2)
 !
 !!   stop
+! 75 format(a,i4,3(f10.6),i9.2)
 
-75 format(a,i4,3(f10.6),i9.2)
+! TEST of EWALD dynamical matrix
+!  call allocate_fc_dyn(natom_prim_cell,nrgrid,nggrid)
+!  call calculate_dyn_na(nggrid,ggrid,dyn_na)   ! hard phase with ASR enforced
+!  stop
+
+
+
+
+ if(.not.readfc) then
 
 ! if input range is larger than lgridmax=cutoff(SC) or if fc2range=0, set the largest shell corresponding to that cutoff 
      largestcutoff=0
@@ -464,7 +394,7 @@ real(r15), allocatable :: grd(:,:),weig(:)
         open(iunit,file=fni,status='old')
 ! this rank is to be read and is not included in svd extraction
         ngrnk(rank)=map(rank)%ntotind; allocate(fcrnk(rank,ngrnk(rank)))
-        call read_fcs(iunit,fn,rank,fcrnk(rank,:),ngrnk(rank))
+!!!        call read_fcs(iunit,fn,rank,fcrnk(rank,:),ngrnk(rank))
      endif
   endif
   enddo
@@ -473,9 +403,12 @@ real(r15), allocatable :: grd(:,:),weig(:)
 !--------------------------------------------------------------------
 
 ! before imposing the constraints, first define the number of columns in matrix A
- allocate(keep_fc2i(map(2)%ntotind))  ! which indep fc2s to keep based on the vectors rws26
-! keep_fc2i(i)=1 is the list of FC2s within WS of supercell defined by 2ws26
-! find the FC2s within the SC and their number, which is size_kept_fc2, 
+ if (.not.readfc) then
+    do rank=2,2 !1,maxrank
+       allocate(map(rank)%keep(map(rank)%ntotind))  ! which indep fc2s to keep based on rws26
+    enddo
+ endif
+! find the FC2s within the SC and their number, which is map(2)%nkeptind, 
 !! by K1 on July 21 2024
 ! complete by symmetry, but remove anything that goes beyond WS cell of the superell
 !! by K1 on July 21 2024
@@ -483,30 +416,32 @@ real(r15), allocatable :: grd(:,:),weig(:)
    do i=1,26
       call write_out(ulog,' rws26 ',rws26(:,i))
    enddo
+
+! nkeptind is defined here
    if(fc2range.eq.0) then ! determine the range from the supercell WS 
-      call setup_FC2_in_supercell !(keep_fc2i,size_kept_fc2)
+      call setup_FC2_in_supercell(rws26) 
    else ! use default values found by setup_maps and the required shell numbers; exclude if range is beyond supercell
-      keep_fc2i=1  ! keep everything
-      call exclude_beyond_sc(map(2)%ntotind,keep_fc2i)
-      size_kept_fc2= sum(keep_fc2i) ! not sum of the groups but sum of all rnk2 indep terms
+      map(2)%keep(:)=1  ! keep everything
+      call exclude_beyond_sc(map(2)%ntotind,map(2)%keep(:))
+      map(2)%nkeptind= sum(map(2)%keep(:)) ! not sum of the groups but sum of all rnk2 indep terms
    endif
+! initialize nkeptind for all other ranks
+   do rank=1,maxrank
+      if(rank.ne.2) map(rank)%nkeptind = map(rank)%ntotind
+   enddo
 
 ! write the connected pairs of atoms by FC2s ; used for display
  call write_springs
 
- write(ulog,*)' Old, and new number of fc2:size_kept_fc2=',map(2)%ntotind,size_kept_fc2
+ write(ulog,*)' Old, and new number of fc2:map(2)%nkeptind=',map(2)%ntotind,map(2)%nkeptind
 
 ! get the number of independent force constants from setup_maps
  nindepfc=0
  do rank=1,maxrank
   if ( include_fc(rank) .eq. 1 ) then ! exclude them if they already exist and will be read
 ! for now, we put in amat all fc2 of number ntotind
-        if(rank.eq.2) then
-           nindepfc = nindepfc + size_kept_fc2 ! this is the #of groups used for FC2s(not ti terms!); size in setup maps is ignored
-        else
-           nindepfc = nindepfc + map(rank)%ntotind
-        endif
-       write(ulog,*)'rank,nindep_rnk,cumulative nindep_kept=',rank,map(rank)%ntotind,nindepfc
+       nindepfc = nindepfc + map(rank)%nkeptind 
+       write(ulog,*)'rank,nindep_rnk,cumulative nindep_kept=',rank,map(rank)%nkeptind,nindepfc
    endif
  enddo
  write(ulog,*)' MAIN: total # of independent FCs of all rank, nindepfc=',nindepfc
@@ -514,8 +449,9 @@ real(r15), allocatable :: grd(:,:),weig(:)
 !  map(2)%mat set to zero if (g,ti) not kept 
  do g=1,map(2)%ngr
  do ti=1,map(2)%ntind(g)
-     write(ulog,*)'g,ti,counter,keep,current=',g,ti,counter2(g,ti),keep_fc2i(counter2(g,ti)),current2(g,ti)
-     map(2)%gr(g)%mat(:,ti) = map(2)%gr(g)%mat(:,ti)*keep_fc2i(counter2(g,ti))
+     write(ulog,'(a,9i4)')'g,ti,counter,keep,current=',g,ti,counteri(2,g,ti),map(2)%keep(counteri(2,g,ti)),current(2,g,ti)
+     write(*   ,'(a,9i4)')'g,ti,counter,keep,current=',g,ti,counteri(2,g,ti),map(2)%keep(counteri(2,g,ti)),current(2,g,ti)
+     map(2)%gr(g)%mat(:,ti) = map(2)%gr(g)%mat(:,ti)*map(2)%keep(counteri(2,g,ti))
  enddo
  enddo
 !
@@ -703,7 +639,10 @@ real(r15), allocatable :: grd(:,:),weig(:)
 
   call write_output_fcs
 
-  call write_fc2matrix_new
+  endif 
+
+  call write_fc2matrix
+! call write_fc2matrix_new
 
 ! Fourier transform fc2 at G_sc vectors and subtract the DYN_NA(G) and Fourier back  
 ! to get the short-range part
@@ -723,6 +662,8 @@ real(r15), allocatable :: grd(:,:),weig(:)
 
   deallocate(sigma) 
 
+!  call energy_strain(0.01,ene,grad) 
+!  write(ulog,*)'for strain =0.01, ene,grad=',ene,grad
 !
 !@@@@@@@@@@@@@@@@@@@@@@  Calculate phonons and thermodynamic properties  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 !
@@ -853,13 +794,13 @@ real(r15), allocatable :: grd(:,:),weig(:)
  !     write(*,*) 'last Forces BEFORE subtraction'
  !     call write_out(ulog,'Last Force',transpose(force(:,:,ncfg)))
  !     if(verbose) call write_forces_display(natom_super_cell,ncfg,displ,force,'beforesub')
-
+ !
  !     call subtract_coulomb_force(born_flag,ncfg,displ,force)
 ! now frc contains the short-range (Non-Coulomb) part of the forces which we can fit
-
-       write(ulog,*) 'last Forces AFTER subtraction'
-       write(*,*) 'last Forces AFTER subtraction'
-       call write_out(ulog,'Last Force',transpose(force(:,:,ncfg)))
+ !
+ !      write(ulog,*) 'last Forces AFTER subtraction'
+ !      write(*,*) 'last Forces AFTER subtraction'
+ !      call write_out(ulog,'Last Force',transpose(force(:,:,ncfg)))
        if(verbose) call write_forces_display(natom_super_cell,ncfg,displ,force,'aftersub')
 
   call cpu_time(tim)
@@ -958,7 +899,7 @@ energies=reshape(energies,shape=(/size(energies)+size(energy)/),pad=energy)
 !-------------------------------------------------------
 
  subroutine write_fc2matrix
-!! takes the fitted FCs, writes into 5D matrix form
+!! takes the fitted FCs, writes into periodic 5D matrix form by fourier transforming back the dynamical matrix
  use svd_stuff
  use ios
  use atoms_force_constants
@@ -969,219 +910,151 @@ energies=reshape(energies,shape=(/size(energies)+size(energy)/),pad=energy)
  use born
  use geometry, only : length
  implicit none
- integer tau,taup,al,be,g,t,ti,ired,j,k,l,igrid,nr(3),nboundary,ndn
-! complex(r15) fcr(natom_prim_cell,natom_prim_cell,3,3,nrgrid)
-! complex(r15) dyn(natom_prim_cell,natom_prim_cell,3,3,nggrid)
+ integer tau,taup,al,be,g,t,ti,ired,j,igrid,nr(3),nboundary,ndn,ixy(2),cnt,uio,l
  complex(r15) auxr(nrgrid),auxg(nggrid),aravg(nrgrid),agavg(nggrid),phase(nggrid)
- real(r15) rr(3),rfold(3),dta(3),fc2,asr
+ real(r15) rr(3),rfold(3),dta(3),fc2,asr,rij(3),error
  logical isperiodic,insid
 
- coef=ee*1d10/eps0/volume_r0 ! to convert 1/ang^2 to eV/ang , includes cancellation of 4pi
  ndn = 3*natom_prim_cell
  call allocate_fc_dyn(natom_prim_cell,nrgrid,nggrid)
+ uio=345
+ open(uio,file='trace_fc2_lr.dat')
+ write(uio,*)'# tau,taup,j,|r+taup-tau|,trace(fc2),igrid,r+taup-tau,red_fold(r+taup-tau),fc2(al,be)'
 
- if( born_flag.ne.0 ) call calculate_dyn_na(nggrid,ggrid,dyn_na)
+! if( born_flag.ne.0 ) call calculate_dyn_na(nggrid,ggrid,dyn_na)
 ! outputs are dyn_na(n0,n0,3,3,ng) and dyn_naq0(n0,3,3)
 
 ! use the bare fc2's from fitting to calculate the dynamical matrix (without masses)
  do g=1,nggrid
-    call set_dynamical_matrix0(ggrid(:,g),dyn_g(:,:,:,:,g),ndn)
+    call set_dynamical_matrix4d(ggrid(:,g),dyn_g(:,:,:,:,g),ndn)
  enddo
 
- write(ulog,*)'WRITE_FC2MATRIX: Checking periodicity of dyn_g before FT back'
+ phib=0
+ write(ulog,*)'WRITE_FC2MATRIX: setting up bare fc2 in 5D form '
  do tau =1,natom_prim_cell
  do taup=1,natom_prim_cell
- do al=1,3
- do be=1,3
-    call check_periodic(nggrid,ggrid,g0ws26,dyn_g(tau,taup,al,be,:),agavg,isperiodic)
-    if(.not.isperiodic) call warn4(ulog,'DYN_G was not periodic ',dble(dyn_g(tau,taup,al,be,:)))
-    call fourier_k2r(dyn_g(tau,taup,al,be,:),fc_sr(tau,taup,al,be,:)) 
-! the above is SC-periodic and include all images, while the below is the same as the bare fc2
-    fc_sr(tau,taup,al,be,:)= fc_sr(tau,taup,al,be,:) *rws_weights(:)  ! this is the correct fc2 set
- enddo
- enddo
- enddo
- enddo
+    dta = atompos(:,taup) - atompos(:,tau) 
+ !  jloop: do j=1,natoms
+ !     if(iatomcell0(j).ne.taup) cycle
+ !     rij = atompos(:,j)-atompos(:,tau)
+ !     call check_inside_ws(rij,rws26,insid,nboundary) 
+ !     if (.not. insid) then
+ !        cycle
+ !     else
+         cnt=0
+         gridloop: do igrid=1,nrgrid
+            rr=rgrid(:,igrid)+dta 
+! added on Jan 14th
+                 call check_inside_ws(rr ,rws26,insid,nboundary) 
+                 if (.not. insid) then
+                    rfold = fold_ws(rr,rws26,'r')  
+                 else
+                    rfold=rr
+                 endif
+ !          if ( rr .myeq. rij) then ! this rij is now inside
+ !             rfold=rr
+ !          else
+ !             rfold = fold_ws(rr,rws26,'r')  
+ !             if (.not. ( rfold .myeq. rij)) cycle gridloop
+ !             write(ulog,9)'R+taup-tau not inside WS for tau,taup,igrid,j,rij,rfold= ',tau,taup,igrid,j,rij,rfold
+ !          endif
+            cnt=cnt+1  ! to make sure only one grid corresponds to a j 
+            do g=1,map(2)%ngr
+            do ti=1,map(2)%ntind(g)  ! index of independent terms in that group g
+               ired = map(1)%nkeptind + current(2,g,ti)
+               do t=1,map(2)%nt(g)
+ !                if ( tau .ne. map(2)%gr(g)%iat(1,t) .or. j .ne. map(2)%gr(g)%iat(2,t) ) cycle 
+                      if ( tau .ne. map(2)%gr(g)%iat(1,t) ) cycle 
+                      j= map(2)%gr(g)%iat(2,t) 
+                      if(iatomcell0(j).ne.taup) cycle
+                      rij = atompos(:,j)-atompos(:,tau)
+                      if(.not. (rij.myeq.rfold)) cycle
 
+                  ixy(:) = map(2)%gr(g)%ixyz(:,t)
+                  phib(tau,taup,ixy(1),ixy(2),igrid) = phib(tau,taup,ixy(1),ixy(2),igrid) + &
+ &                          fcs(ired) * map(2)%gr(g)%mat(t,ti) 
+               enddo
+            enddo
+            enddo
 
-! put real space FCs in the matrix form
-! fc_sr=0  ! skip this loop
- do tau=1,-natom_prim_cell
- do al=1,3
-    gloop: do g=1,map(2)%ngr
-       tiloop: do ti=1,map(2)%ntind(g)  ! index of independent terms in that group g
-          ired = map(1)%ntotind + current2(g,ti)
-          tloop: do t=1,map(2)%nt(g)
-             if ( tau .ne. map(2)%gr(g)%iat(1,t) .or. al .ne. map(2)%gr(g)%ixyz(1,t) ) cycle tloop
-             be = map(2)%gr(g)%ixyz(2,t)
-             j  = map(2)%gr(g)%iat(2,t)
-             taup = iatomcell0(j)    ! atom_sc(j)%cell%tau  is incorrect
-             rr = atompos(:,j) - atompos(:,tau) ! this is just Rgrid+taup-tau 
-             dta = atompos(:,taup) - atompos(:,tau) 
-          !  rr=rfold-atompos(:,taup)+atompos(:,tau)
-             call check_inside_ws(rr,rws26,insid,nboundary) 
-             if(.not.insid) write(ulog,2)'rr was outside ',rr,cart2red(rr,'r')
-             igrid=0
-          !  if(insid) then
-               grdloop: do l=1,nrgrid
-          !     if(length(rgrid(:,l)-rfold) .lt. tolerance ) then
-                  if(length(rgrid(:,l)-rr+dta) .lt. tolerance ) then
-                    igrid=l
-                    exit grdloop
-                  endif
-               enddo grdloop
-               if(igrid.eq.0) then ! try the -R vector 
-                grd2: do l=1,nrgrid
-                  if(length(rgrid(:,l)+rr-dta) .lt. tolerance ) then
-                    igrid=l
-                    exit grd2
-                  endif
-                enddo grd2
-            !     write(*,2)'was not matched: R+tau-tau=',rr,cart2red(rr,'r')
-            !     write(*,2)'pos(j),pos(j0)            =',atompos(:,j),atompos(:,taup)
-            !     stop ! irr is inside WS but not an rgrid!!
-               endif
-               if(igrid.eq.0) then  ! that should not happen!! 
-          !  else
-               write(ulog,*)'rr was outside SC_WS, j,taup,rr',j,taup,rr,cart2red(rr,'r')
-          !    if(fcs(ired).gt.1d-3) then
-                 call warn3(ulog,'CORRECT_FC: ignored fc=',fcs(ired))
-             rfold=fold_ws(rr-dta,rws26,'r') 
-                grd3: do l=1,nrgrid
-                  if(length(rgrid(:,l)-rfold) .lt. tolerance ) then
-                    igrid=l
-                    exit grd3
-                  endif
-                enddo grd3
-          !    endif
-      !        cycle tloop  ! just ignore it
-! 
-               endif
-  !     if(igrid.eq.0) then
-  !       write(*,*)'ERROR lgrid(rr)! ',rr,cart2red(rr,'r')
-  !       stop
-  !    !   nr=nint(cart2red(rr)) ! find integer indices of rr
-  !    !   rr = fold_ws(rr,rws26,'r')
-  !     endif
-             fc_sr(tau,taup,al,be,igrid) = fc_sr(tau,taup,al,be,igrid) + &
-&                               fcs(ired) * map(2)%gr(g)%mat(t,ti) 
-          enddo tloop
-       enddo tiloop
-    enddo gloop
- enddo
- enddo
+            fc2 = trace(real(phib(tau,taup,:,:,igrid))) ! this should satisfy ASR!
+!         write(uio,3)tau,taup,j,length(rij),fc2,real(igrid),rij,cart2red(rij,'r'),real(phib(tau,taup,:,:,igrid)) 
+         enddo gridloop
+         if(cnt.ge.2 .or. cnt.eq.0) write(*   ,1)'ERROR: cnt FOR t,tp,j,igrid =',cnt,tau,taup,j,igrid
+         if(cnt.ge.2 .or. cnt.eq.0) write(ulog,1)'ERROR: cnt FOR t,tp,j,igrid =',cnt,tau,taup,j,igrid
+ !     endif
+ !  enddo jloop
 
-! write this set of fcs into a file to compare with original fcs
- open(932,file='trace_fc2.dat')
- write(932,*)'# tau,taup, i,fold(dtau+rgrid), trace[phi_sr(tau,rgrid+taup)],dtau+rgrid'
- do tau =1,natom_prim_cell
- do taup=1,natom_prim_cell
-    dta = atompos(:,taup)-atompos(:,tau)
-    rr = atom0(taup)%equilibrium_pos - atom0(tau)%equilibrium_pos
-    if(length(dta-rr).gt.tolerance) then
-       write(*,*)'tau,taup,rr,dta=',tau,taup,rr,dta
-       stop
-    endif
-    do i=1,nrgrid
-!       write(ulog,*)'tau,taup, grid#',tau,taup,i
-!      write(235,*)'tau,taup,Rgrid=',tau,taup,i,rgrid(:,i)
-!      call write_out(235,' corrected short-range fc2 ',fc_sr(tau,taup,:,:,i))
-       fc2= trace(fc_sr(tau,taup,:,:,i))
-       if(abs(fc2).gt.0.0001) then
-          write(932,3)tau,taup,i,length(fold_ws(rr+rgrid(:,i),rws26,'r')),fc2,length(rgrid(:,i)+rr)
-       endif
+! now use Fourier transformation to get the periodic one from dyn_g
+    do al=1,3
+    do be=1,3
+    ! the bare phib is not periodic; no need to check!
+    !  call check_periodic(nrgrid,rgrid,rws26,phib(tau,taup,al,be,:),aravg,isperiodic)
+!      call check_periodic(nggrid,ggrid,g0ws26,dyn_g(tau,taup,al,be,:),agavg,isperiodic)
+!      if(.not.isperiodic) call warn4(ulog,'dyn_g was not periodic ',real(dyn_g(tau,taup,al,be,:)))
+    !  write(*,*)'calling fourier_r2k ',tau,taup,al,be
+    !  call fourier_r2k(aravg,agavg) ! use the periodic one anyways; it is the same as dynmat4d? 
+
+! is it the same as dyn_g from dynamt4D? 
+    !  error=maxval(abs(dyn_g(tau,taup,al,be,:)-agavg(:)))  
+    !  if(error.gt.1d-5) then
+    !     write(ulog,9)'tau,taup,al,be,error in dynmat0:dyn_g-agavg=',tau,taup,al,be,error
+    !  endif
+
+       write(*,*)'calling fourier_k2r to get periodic phi not the bare phi'
+       call fourier_k2r(dyn_g(tau,taup,al,be,:),phip(tau,taup,al,be,:))
+       phip(tau,taup,al,be,:)= phip(tau,taup,al,be,:) *rws_weights(:)  ! this weights is the correct fc2 set
+
+    !  error = maxval(abs(phip(tau,taup,al,be,:)-aravg(:)))
+    !  if(error.gt.1d-5) then
+    !     write(ulog,9)'t,tp,a,b:FC error |phip-aravg| :',tau,taup,al,be,error
+    !     write(ulog,77)real(phip(tau,taup,al,be,:)-aravg(:))
+    !  endif
 
     enddo
- enddo
- enddo
- close(932)
+    enddo
 
- write(ulog,*)'ASR CHECK: tau,al,be,asr'
+ !  do j=1,natoms
+ !     if(iatomcell0(j).ne.taup) cycle
+ !     rij = atompos(:,j)-atompos(:,tau)
+       do igrid=1,nrgrid
+          rr=rgrid(:,igrid)+dta 
+ !        if (.not. (rr .myeq. rij)) cycle  ! this effectively folds pairs outside WS to inside
+          fc2 = trace(real(phip(tau,taup,:,:,igrid))) ! this should satisfy ASR!
+          rfold = fold_ws(rr,rws26,'r')  ! this should not happen!!
+          write(uio,3)tau,taup,igrid,length(rr),fc2,length(rfold),cart2red(rr,'r'),real(phip(tau,taup,:,:,igrid)) 
+       enddo
+ enddo
+ enddo
+ close(uio)
+
+ write(*,*)'ASR CHECK for long-range fc2_p matrix: tau,al,be,asr'
+ write(ulog,*)'ASR CHECK for long-range fc2_p matrix: tau,al,be,asr'
+
  do tau =1,natom_prim_cell
  do al=1,3
  do be=1,3
-    write(ulog,3)tau,al,be,sum(fc_sr(tau,:,al,be,:))
+    write(ulog,3)tau,al,be,sum(phip(tau,:,al,be,:))
  enddo
  enddo
  enddo
 
-
-!! fourier transform to get Dyn(G_sc) to subtract the NA part for later fourier interpolation
-! do tau =1,natom_prim_cell
-! do taup=1,natom_prim_cell
-!    dta = atompos(:,taup)-atompos(:,tau)
-!    do i=1,nggrid
-!       phase(i)= exp(-ci*dot_product(ggrid(:,i),dta))
-!    enddo 
-!    do al=1,3
-!    do be=1,3
-!       auxr=fc_sr(tau,taup,al,be,:) 
-!  !    call check_periodic(nrgrid,rgrid,rws26,auxr,aravg,isperiodic)
-!  !    if(isperiodic) then
-!          call fourier_r2k(auxr,auxg) 
-!  !    else
-!! it should be periodic for tau=taup
-!  !       write(ulog,*)'correct_fcs=',tau,taup,al,be,' phi=fc_sr was not periodic!!!'
-!  !       call fourier_r2k(aravg,auxg)  ! auxg is the dyn(G) without the phase factor
-!  !    endif 
-!    
-!! As a test, without subtraction, we should recover the same fc or at least aravg
-!  !    call check_periodic(nggrid,ggrid,g0ws26,dyn_na(tau,taup,al,be,:),agavg,isperiodic)
-!  !    if(isperiodic) then
-!          call fourier_k2r(dyn_na(tau,taup,al,be,:),auxr)
-!  !    else
-!  !       call fourier_k2r(agavg,auxr) 
-!  !    endif 
-!       write(ulog,*)'fc_na(t,tp,al,be,:)=',tau,taup,al,be
-!       call write_out(ulog,'fc_na in real space ',auxr) !-fc_sr(tau,taup,al,be,:))
-!
-! !     call check_periodic(nggrid,ggrid,g0ws26,auxg,agavg,isperiodic)
-! !     if(isperiodic) then
-! !        call fourier_k2r(auxg,auxr) 
-! !     else
-! !        write(ulog,*)'correct_fcs=',tau,taup,al,be,' dyn_sr was not periodic!!!'
-! !        call fourier_k2r(agavg,auxr) 
-! !     endif 
-! !
-! !     write(*,*)'FC    fourier error :',maxval(abs(fc_sr(tau,taup,al,be,:)-auxr))
-! !     write(*,*)'aravg fourier error :',maxval(abs(aravg-auxr))
-!
-!
-!! Now subtract the NA part and fourier back to get the short-range FC2
-!!   dyn with e^iqR = auxg is G-periodic;   
-!       if (born_flag.ne.0) then
-!          auxg = auxg - dyn_na(tau,taup,al,be,:) !* phase(:) !since dyn_na has the exp[ig(R+taup-tau)] 
-!!         dyn(tau,taup,al,be,:)=auxg
-!       endif
-!
-!!      auxg=auxg - dyn_na(tau,taup,al,be,:)*phase(:)
-!  !    call check_periodic(nggrid,ggrid,g0ws26,auxg,agavg,isperiodic)
-!  !    if(isperiodic) then
-!          call fourier_k2r(auxg,auxr) 
-!  !    else
-!  !       write(ulog,*)'correct_fcs=',tau,taup,al,be,' dyn_sr was not periodic!!!'
-!  !       call fourier_k2r(agavg,auxr) 
-!  !    endif 
-!
-!       write(ulog,*)'The change in FC after subtraction for t,tp,a,b=',tau,taup,al,be,maxval(abs(auxr(:)-fc_sr(tau,taup,al,be,:))) 
-!! this is the real short-range part of fcs, which can be used for Fourier interpolation
-!       fc_sr(tau,taup,al,be,:) = auxr 
-!    enddo
-!    enddo
-! enddo
-! enddo
-
-
+1 format(a,99(1x,i4))
 2 format(a,99(f9.4))
 3 format(3i5,99(f9.4))
 5 format(a,5i5,9(f8.3))
+9 format(a,4i4,9(f9.4))
+77 format(299(1x,f9.4))
+
+ write(*,*)'EXITING write_fc2matrix'
+ write(ulog,*)'EXITING write_fc2matrix'
 
  end subroutine write_fc2matrix
 
 !-------------------------------------------------------
 
  subroutine write_fc2matrix_new
-!! takes the fitted FCs, writes output fc_sr into 5D matrix form
+!! takes the fitted FCs, writes output phib into 5D matrix form
  use svd_stuff
  use ios
  use atoms_force_constants
@@ -1190,36 +1063,28 @@ energies=reshape(energies,shape=(/size(energies)+size(energy)/),pad=energy)
  use constants
  use fourier
  use born
- use geometry, only : length
+ use geometry, only : length !,myeq
  implicit none
- integer tau,taup,al,be,g,t,ti,ired,j,k,l,igrid,nr(3),nboundary,cnt(natom_prim_cell)
+ integer tau,taup,al,be,g,t,ti,ired,j,k,l,igrid,nboundary,uio,cnt !,cnt(natom_prim_cell)
  complex(r15) auxr(nrgrid),auxg(nggrid),aravg(nrgrid),agavg(nggrid),phase(nggrid)
- real(r15) rfold(3),dta(3),rg(3),fc2,asr
+ real(r15) rfold(3),dta(3),rg(3),fc2,asr,zero,rij(3)
  real(r15),allocatable :: phi2(:,:,:,:),rr(:,:)
  integer,allocatable :: t2(:),igrd(:)
  logical isperiodic,insid
- complex(r15) dyn2(natom_prim_cell,natom_prim_cell,3,3,nggrid)
-! complex(r15) fcr(natom_prim_cell,natom_prim_cell,3,3,nrgrid)
+! complex(r15) dyn2(natom_prim_cell,natom_prim_cell,3,3,nggrid)
+! complex(r15) ddyn2(natom_prim_cell,natom_prim_cell,3,3,nrgrid,3)
 
- coef=ee*1d10/eps0/volume_r0 ! to convert 1/ang^2 to eV/ang
-
+ zero=0
  call allocate_fc_dyn(natom_prim_cell,nrgrid,nggrid)
 
+ write(ulog,*)'WRITE_FC2MATRIX_NEW: just allocated arrays of sizes natom0,nr,ng',natom_prim_cell,nrgrid,nggrid
  
- dta=(/0.2,0.3,0.4/)
- call set_dynamical_matrix4D(dta,dyn_g(:,:,:,:,1),3*natom_prim_cell)
- do tau =1,natom_prim_cell
- do taup=1,natom_prim_cell
-    call write_out(724,'Dyn4(.2,.3,.4) ',dyn_g(tau,taup,:,:,1))
- enddo
- enddo
-
 ! use bare fc2s from fitting to calculate the dynamical matrix WITHOUT MASSES on 
-! the ggrid; it should be G-periodic with the old phase (step) convention; 
-! we then fourier interpolate with the fourier transform of this matrix, called fc_sr
-! fc_sr is not directly equal to the fitted fc2! and must include the weights
+! the supercell ggrid; it should be G-periodic with the old phase (step) convention; 
+! we then fourier interpolate with the fourier transform of this matrix, called phib
+! phib is not directly equal to the fitted fc2! and must include the weights
  do g=1,nggrid
-    call set_dynamical_matrix4D(ggrid(:,g),dyn_g(:,:,:,:,g),3*natom_prim_cell)
+    call set_dynamical_matrix4D(ggrid(:,g),dyn_g(:,:,:,:,g),3*natom_prim_cell) ! ,ddyn2(:,:,:,:,g,:))
  enddo
 
 ! as a check, Fourier back to get fc2 in 5D-matrix form; print the trace vs distance
@@ -1230,22 +1095,30 @@ energies=reshape(energies,shape=(/size(energies)+size(energy)/),pad=energy)
  do al=1,3
  do be=1,3
     call check_periodic(nggrid,ggrid,g0ws26,dyn_g(tau,taup,al,be,:),agavg,isperiodic)
-    if(.not.isperiodic) call warn4(ulog,'DYN_G was not periodic ',dble(dyn_g(tau,taup,al,be,:)))
-    call fourier_k2r(dyn_g(tau,taup,al,be,:),fc_sr(tau,taup,al,be,:)) 
-    call fourier_r2k(fc_sr(tau,taup,al,be,:),dyn2(tau,taup,al,be,:)) 
+    if(.not.isperiodic) then  ! dyn_g should be periodic!!
+       call warn4(ulog,'DYN_G not periodic, Re(D)=',real(dyn_g(tau,taup,al,be,:)))
+       call write_out(ulog,'IM(DYN_G)            ',aimag(dyn_g(tau,taup,al,be,:)))
+       stop
+    endif
+!   call fourier_k2r(dyn_g(tau,taup,al,be,:),phib(tau,taup,al,be,:)) 
+    call fourier_k2r(agavg                  ,phip(tau,taup,al,be,:))  ! use the periodic one anyways
+    call fourier_r2k(phip(tau,taup,al,be,:),dyn_g(tau,taup,al,be,:)) 
 ! the above is SC-periodic and includes all images, while the below is the same as the bare fc2
-    fc_sr(tau,taup,al,be,:)= fc_sr(tau,taup,al,be,:) *rws_weights(:)  ! with this weights is the correct fc2 set
+    if(maxval(abs(dyn_g(tau,taup,al,be,:)-agavg)) .gt. 1d-5) then
+        call warn4(ulog,'DYN_G ne agavg =',real(dyn_g(tau,taup,al,be,:)-agavg(:)))
+    endif
+    phip(tau,taup,al,be,:)= phip(tau,taup,al,be,:) *rws_weights(:)  ! with this weights is the correct fc2 set
  enddo
  enddo
  enddo
  enddo
 
 ! should recover old dyn_g
- fc2=maxval(abs(dyn_g-dyn2))
- if(fc2.gt.1d-4) call warn3(ulog,'1:Dyn_g and dyn2 not the same!!!',fc2)
+! fc2=maxval(abs(dyn_g-dyn2))
+! if(fc2.gt.1d-4) call warn3(ulog,'1:Dyn_g and dyn2 not the same(not periodic)!!!',fc2)
 
 ! phi2=0;
-! dyn_g=0;fc_sr=0
+! dyn_g=0;phip=0
 ! do tau =1,natom_prim_cell
 ! do taup=1,natom_prim_cell
 ! do igrid=1,nrgrid 
@@ -1273,9 +1146,9 @@ energies=reshape(energies,shape=(/size(energies)+size(energy)/),pad=energy)
 !          al = map(2)%gr(g)%ixyz(1,t)
 !          be = map(2)%gr(g)%ixyz(2,t)
 !          do ti=1,map(2)%ntind(g)  ! index of independent terms in that group g
-!             ired = map(1)%ntotind + current2(g,ti)
+!             ired = map(1)%ntotind + current(2,g,ti)
 !!            phi2(tau,cnt(tau),al,be) = phi2(tau,cnt(tau),al,be) + fcs(ired) * map(2)%gr(g)%mat(t,ti) 
-!             fc_sr(tau,taup,al,be,igrid) = fc_sr(tau,taup,al,be,igrid) + fcs(ired) * map(2)%gr(g)%mat(t,ti) 
+!             phip(tau,taup,al,be,igrid) = phip(tau,taup,al,be,igrid) + fcs(ired) * map(2)%gr(g)%mat(t,ti) 
 !          enddo
 !       enddo tloop
 !    enddo
@@ -1284,22 +1157,35 @@ energies=reshape(energies,shape=(/size(energies)+size(energy)/),pad=energy)
 ! enddo
 
  uio=345
-  open(uio,file='trace_fc2_lr.dat')
- write(uio,*)'# tau,taup,igrid,|r+taup-tau|,trace(fc2),fold(r+taup-tau),red(R+taup-tau),fc2'
- do tau=1,natom_prim_cell
+ open(uio,file='trace_fc2_lr.dat')
+ write(uio,*)'# tau,taup,j,|r+taup-tau|,trace(fc2),igrid,red_fold(r+taup-tau),fc2(al,be)'
+ do tau =1,natom_prim_cell
  do taup=1,natom_prim_cell
- do igrid=1,nrgrid 
-    dta = atompos(:,taup) - atompos(:,tau) 
-    rg = rgrid(:,igrid) + dta
-    fc2 = trace(real(fc_sr(tau,taup,:,:,igrid)))
-!   fc2 = trace(real(fc_sr(tau,taup,:,:,igrid))) * rws_weights(igrid) ! this should satisfy ASR!
-    if(abs(fc2).lt.0.0001) cycle
-     write(uio,3)tau,taup,igrid,length(rg),fc2,length(fold_ws(rg,rws26,'r')),cart2red(rg,'r'),real(fc_sr(tau,taup,:,:,igrid)) 
+     dta = atompos(:,taup) - atompos(:,tau) 
+     do j=1,natoms
+     if(iatomcell0(j).ne.taup) cycle
+     rij = atompos(:,j)-atompos(:,tau)
+     do igrid=1,nrgrid
+        rg=rgrid(:,igrid)+dta 
+        if (.not. (rg .myeq. rij)) cycle 
+        call check_inside_ws(rg,rws26,insid,nboundary) 
+        if(.not. insid) then
+           rfold = fold_ws(rg,rws26,'r') 
+        else
+           rfold=rg
+        endif
+        fc2 = trace(real(phip(tau,taup,:,:,igrid))) ! this should satisfy ASR!
+        if(abs(fc2).lt.0.0001) cycle
+!   if(length(rg-rfold) .myeq. zero ) then
+        write(uio,3)tau,taup,j,length(rfold),fc2,real(igrid)  ,cart2red(rfold,'r'),real(phip(tau,taup,:,:,igrid)) 
+!   else
+!      write(uio,3)tau,taup,igrid,length(rg),fc2,length(rfold),cart2red(rg,'r'),real(phip(tau,taup,:,:,igrid)) 
+!   endif
+ enddo
  enddo
  enddo
  enddo
  close(uio)
-! close(uio+1)
 
  write(ulog,*)'ASR CHECK for long-range fc2 matrix: tau,al,be,asr'
  do tau =1,natom_prim_cell
@@ -1307,7 +1193,7 @@ energies=reshape(energies,shape=(/size(energies)+size(energy)/),pad=energy)
  do be=1,3
  asr=0
  do igrid=1,nrgrid
-    asr=asr+sum(fc_sr(tau,:,al,be,igrid)) !* rws_weights(igrid) ! this should satisfy ASR!
+    asr=asr+sum(phip(tau,:,al,be,igrid))  ! this should satisfy ASR!
  enddo
     write(ulog,3)tau,al,be,asr
  enddo
@@ -1325,9 +1211,9 @@ energies=reshape(energies,shape=(/size(energies)+size(energy)/),pad=energy)
 !-------------------------------------------------------
 
  subroutine correct_fcs
-!! takes the fitted FCs in matrix form (fc_sr), fourier transforms to get dyn(G)
-!! subtracts dyn^NA, fourier back to update fc_sr
-!! works only if fc2range=0 full SC is sampled; otherwise DYN_NA should be calculated 
+!! takes the dyn(G) calculated at supercell reciprocal vectors
+!! subtracts dyn^NA, fourier back to update phib used later for fourier interpolation of the dynamical matrix
+!! works correctly if fc2range=0 full SC is sampled; otherwise DYN_NA should be calculated 
 !! on a subrid conistent with nshell that has full symmetry of the crystal
  use ios
  use atoms_force_constants
@@ -1340,184 +1226,87 @@ energies=reshape(energies,shape=(/size(energies)+size(energy)/),pad=energy)
  implicit none
  integer tau,taup,al,be,g,t,ti,ired,j,k,l,igrid,nr(3),nboundary,ia,ib,ndyn
  complex(r15) auxr(nrgrid),auxg(nggrid),aravg(nrgrid),agavg(nggrid),phase(nggrid)
- real(r15) rr(3),rfold(3),dta(3),mi,mj,fc2,asr
+ real(r15) rr(3),rfold(3),dta(3),mi,mj,fc2,asr,rij(3)
  logical isperiodic,insid
  complex(r15) dynmat(3*natom_prim_cell,3*natom_prim_cell) ,ddyn(3*natom_prim_cell,3*natom_prim_cell,3)
  complex(r15) dyn2(natom_prim_cell,natom_prim_cell,3,3,nggrid)
- complex(r15) phi(natom_prim_cell,natom_prim_cell,3,3,nrgrid)
+! complex(r15) phi(natom_prim_cell,natom_prim_cell,3,3,nrgrid)
 
- coef=ee*1d10/eps0/volume_r0 !  includes cancellation of 4pi
  ndyn=3*natom_prim_cell
 
  if( born_flag.eq.0 ) return 
 
-
- call calculate_dyn_na(nggrid,ggrid,dyn_na) 
+ call calculate_dyn_na(nggrid,ggrid,dyn_na)   ! hard phase with ASR enforced ; no mass factor
 ! outputs are dyn_na(n0,n0,3,3,ng) on ggrid and dyn_naq0(n0,3,3)
-! can only subtract the g_ewald terms since R_ewlad terms are short-ranged and do not really affect the NA part 
+! can only subtract the g_ewald terms since R_ewald terms are short-ranged and do not really affect the NA part 
 
  write(ulog,*)'LARGEST DYN_NA=',maxval(abs(dyn_na))
-
-! calculate dynamical matrix on the ggrid lattice from fitted force constants
-! dyn2=0
-! do g=1,nggrid
-!    do j=1,nrgrid
-!       dyn2(:,:,:,:,g)=dyn2(:,:,:,:,g)+fc_sr(:,:,:,:,j) *  rws_weights(j) * &
-!&                          exp(ci*dot_product(rgrid(:,j),ggrid(:,g)))
-!    enddo
-! enddo
-
-! this is not correct when weights are included in fc_sr
-  do tau =1,natom_prim_cell
-  do taup=1,natom_prim_cell
-  do al=1,3
-  do be=1,3
-!    call fourier_r2k(fc_sr(tau,taup,al,be,:),dyn2(tau,taup,al,be,:)) 
-    call fourier_k2r(dyn_g(tau,taup,al,be,:),phi(tau,taup,al,be,:)) 
-    phi(tau,taup,al,be,:)= phi(tau,taup,al,be,:) *rws_weights(:)  ! with this weights is the correct fc2 set
-  enddo
-  enddo
-  enddo
-  enddo
-! should recover old fc_sr
-  fc2=maxval(abs(phi-fc_sr))
-  if(fc2.gt.1d-4) call warn3(ulog,'2:PHI and fc_sr not the same!!!',fc2)
 
 ! subtract the NA term
   dyn_g = dyn_g - dyn_na
 
-! fix ASR by subtracting dyn_naq0 from diagonal
-  do g=1,nggrid
-  do tau=1,natom_prim_cell
-     dyn_g(tau,tau,:,:,g)=dyn_g(tau,tau,:,:,g)+dyn_naq0(tau,:,:)
-  enddo
-  enddo
+! fix ASR by subtracting dyn_naq0 from diagonal <= already done in calculate_dyn_na
+! do g=1,nggrid
+! do tau=1,natom_prim_cell
+!    dyn_g(tau,tau,:,:,g)=dyn_g(tau,tau,:,:,g)+dyn_naq0(tau,:,:)
+! enddo
+! enddo
 
 ! fourier transform back to make it short-range
  do tau =1,natom_prim_cell
  do taup=1,natom_prim_cell
  do al=1,3
  do be=1,3
-    call fourier_k2r(dyn_g(tau,taup,al,be,:),fc_sr(tau,taup,al,be,:)) 
-    fc_sr(tau,taup,al,be,:)= fc_sr(tau,taup,al,be,:) *rws_weights(:)  
-! with this weights it's the correct fc2 set
+    call fourier_k2r(dyn_g(tau,taup,al,be,:),phip(tau,taup,al,be,:)) 
+    phip(tau,taup,al,be,:)= phip(tau,taup,al,be,:) *rws_weights(:)  
+! with this weights it's the correct fc2 set (periodic not bare)
  enddo
  enddo
  enddo
  enddo
-! fc_sr=0
-!!if(fc2range.eq.0) then
-! do j=1,nrgrid
-!    do g=1,nggrid
-!       fc_sr(:,:,:,:,j)=fc_sr(:,:,:,:,j)+dyn_g(:,:,:,:,g)*gws_weights(g)*  &
-!&                          exp(-ci*dot_product(rgrid(:,j),ggrid(:,g)))
-!    enddo
-!    fc_sr(:,:,:,:,j)=fc_sr(:,:,:,:,j)*rws_weights(j)
-! enddo
-!else
-! do j=1,nsubgrid
-!    do g=1,nggrid
-!       fc_sr(:,:,:,:,j)=fc_sr(:,:,:,:,j)+dyn_g(:,:,:,:,g)*gws_weights(g)*  &
-!&                          exp(-ci*dot_product(subgrid(:,j),ggrid(:,g)))
-!    enddo
-!    fc_sr(:,:,:,:,j)=fc_sr(:,:,:,:,j)*subgrid_weights(j)
-! enddo
-!endif
-! this fc_sr will be used for fourier interpolation in set_dynamical_matrix_new
 
-
-!  dynmat(ia,ib) / phase(i)*sqrt(mi*mj) ! without phase it's periodic
-! 
-!    call set_dynamical_matrix(ggrid(:,i),dynmat,ndyn,ddyn)
-!    call set_dynamical_matrix_new(ggrid(:,i),dynmat,ndyn,ddyn)
-!    do tau =1,natom_prim_cell
-!       mi=atom0(tau)%mass
-!    do al=1,3
-!       ia=3*(tau-1)+al
-!    do be=1,3
-!    asr=0;asrna=0
-!    do taup=1,natom_prim_cell
-!       mj=atom0(taup)%mass
-!       dta = atompos(:,taup)-atompos(:,tau)
-!       phase(i)= exp(ci*dot_product(ggrid(:,i),dta))  ! option used for correct vgroup
-!       ib=3*(taup-1)+be
-!       dyn_g(tau,taup,al,be,i)=dynmat(ia,ib) / phase(i)*sqrt(mi*mj) ! without phase it's periodic
-!       if(i.eq.1) asr  =asr  +dyn_g (tau,taup,al,be,i)
-!       if(i.eq.1) asrna=asrna+dyn_na(tau,taup,al,be,i)
-!    enddo
-!       if(i.eq.1) write(ulog,5)'correct_fcs2: tau,al,be,asr  ',tau,al,be,asr
-!       if(i.eq.1) write(ulog,5)'correct_fcs2: tau,al,be,asrna',tau,al,be,asrna
-!    enddo
-!    enddo
-!    enddo
-!
-! enddo
-
-!! subtract NA terma to get the short-range part
-! if(born_flag .ne. 0)  dyn_g = dyn_g - dyn_na
-!
-!! fourier transform back to get the short-range part of FCs 
-! do tau =1,natom_prim_cell
-! do taup=1,natom_prim_cell
-!    dta = atompos(:,taup)-atompos(:,tau)
-!    do al=1,3
-!    do be=1,3
-!
-!    !  call check_periodic(nggrid,ggrid,g0ws26,dyn_na(tau,taup,al,be,:),agavg,isperiodic)
-!       call check_periodic(nggrid,ggrid,g0ws26,dyn_g(tau,taup,al,be,:),agavg,isperiodic)
-!  !    if(isperiodic) then
-!       call fourier_k2r(dyn_g(tau,taup,al,be,:),auxr)
-!!      call write_out(ulog,' FT of     dyn_g  ',auxr)
-!       fc_sr(tau,taup,al,be,:)=auxr  ! should not be periodic for tau.ne.taup
-!  !    else
-!  !       write(ulog,*)'correct_fcs2: dyn_g not periodic t,tp,al,be= ',tau,taup,al,be
-!  !       call write_out(ulog,'correct_fcs2: dyn_g not periodic ',dyn_g(tau,taup,al,be,:))
-!       call fourier_k2r(agavg,aravg) 
-!!      call write_out(ulog,' FT of avg dyn_g  ',aravg)
-!  !    endif 
-!       write(ulog,*)'tau,taup,al,be,R+tp-t,deltafc,trace(fc2),fold(R+tp-t)'
-!
-!       do i=1,nrgrid
-!          write(ulog,4)tau,taup,al,be,length(dta+rgrid(:,i)),auxr(i)-aravg(i), &
-!& trace(fc_sr(tau,taup,:,:,i)) ,length(fold_ws(dta+rgrid(:,i),rws26,'r'))
-!       enddo
-!
-!    enddo
-!    enddo
-! enddo
-! enddo
-!
   write(ulog,*)'ASR CHECK for short-ranged FC2: tau,al,be,asr'
   do tau =1,natom_prim_cell
   do al=1,3
   do be=1,3
     asr=0
     do igrid=1,nrgrid
-       asr=asr+sum(fc_sr(tau,:,al,be,igrid)) !* rws_weights(igrid) ! this should satisfy ASR!
+       asr=asr+sum(phip(tau,:,al,be,igrid)) 
     enddo
     write(ulog,3)tau,al,be,asr
   enddo
   enddo
   enddo
-!
-!! write this set of fcs into a file to compare with original fcs
+ 
+!  write this set of fcs into a file to compare with original fcs
   open(932,file='trace_fc2_sr.dat')
-  open(933,file='trace_phi.dat')
- write(932,*)'# tau,taup,igrid,|r+taup-tau|,trace(fc2),fold(r+taup-tau),red(R+taup-tau),fc2'
+  write(932,*)'# tau,taup,j,|r+taup-tau|,trace(fc2), rij,red_fold(r+taup-tau),fc2_sr(al,be)'
+!  open(933,file='trace_phi.dat')
+!  write(933,*)'# tau,taup,j,|r+taup-tau|,trace(phi),igrid,red_fold(r+taup-tau),phi(al,be)'
   do tau =1,natom_prim_cell
   do taup=1,natom_prim_cell
      dta = atompos(:,taup)-atompos(:,tau)
+     do j=1,natoms
+     if(iatomcell0(j).ne.taup) cycle
+     rij = atompos(:,j)-atompos(:,tau)
      do igrid=1,nrgrid
         rr=rgrid(:,igrid)+dta 
-        fc2= trace(real(fc_sr(tau,taup,:,:,igrid)))
-!       fc2 = trace(real(fc_sr(tau,taup,:,:,igrid))) * rws_weights(igrid) ! this should satisfy ASR!
-        if(abs(fc2).gt.0.0001) then
-           write(932,3)tau,taup,igrid,length(rr),fc2,length(fold_ws(rr,rws26,'r')),cart2red(rr,'r'),real(fc_sr(tau,taup,:,:,igrid)) 
+        if (.not. (rr .myeq. rij)) cycle 
+        call check_inside_ws(rr,rws26,insid,nboundary) 
+        if(.not. insid) then
+           rfold = fold_ws(rr,rws26,'r') 
+        else
+           rfold=rr
         endif
-        fc2= trace(real(phi(tau,taup,:,:,igrid)))
+        fc2= trace(real(phip(tau,taup,:,:,igrid)))
         if(abs(fc2).gt.0.0001) then
-           write(933,3)tau,taup,igrid,length(rr),fc2,length(fold_ws(rr,rws26,'r')),cart2red(rr,'r'),real(phi(tau,taup,:,:,igrid)) 
+           write(932,3)tau,taup,j,length(rfold),fc2,real(igrid),rij,cart2red(rfold,'r'),real(phip(tau,taup,:,:,igrid)) 
         endif
+ !       fc2= trace(real(phi(tau,taup,:,:,igrid)))
+ !       if(abs(fc2).gt.0.0001) then
+ !          write(933,3)tau,taup,j,length(rfold),fc2,real(igrid),cart2red(rfold,'r'),real(phi(tau,taup,:,:,igrid)) 
+ !       endif
+     enddo
      enddo
   enddo
   enddo
@@ -1532,6 +1321,96 @@ energies=reshape(energies,shape=(/size(energies)+size(energy)/),pad=energy)
  end subroutine correct_fcs
 
 !-------------------------------------------------------
+
+ subroutine make_grids
+ use lattice
+ use fourier
+ use constants
+ implicit none
+ integer ngrd,cnt
+ real(r15), allocatable :: grd(:,:),wei(:)
+ integer ngrid
+ type(vector) x01,x02,x03,x1,x2,x3
+
+ write(ulog,*)' ENTERING MAKE_GRIDS'
+ nrgrid=10000
+ allocate(grd(3,nrgrid),wei(nrgrid))
+ matr=cart_to_prim
+ call get_26shortest_shell(r01,r02,r03,r0ws26,x01,x02,x03)
+ call get_26shortest_shell(rs1,rs2,rs3,rws26,x1,x2,x3)
+! call make_grid_weights_WS(r01,r02,r03,rs1,rs2,rs3,matr,nrgrid,grd,wei,'r',r0ws26,rws26) 
+ call make_grid_weights_WS(x01,x02,x03,x1,x2,x3,matr,nrgrid,grd,wei,'r',r0ws26,rws26) 
+ allocate(rgrid(3,nrgrid),rws_weights(nrgrid))
+ rgrid=grd(:,1:nrgrid) ; rws_weights=wei(1:nrgrid)  ! reassigns in the newer versions of fortran
+ deallocate(grd,wei)
+ write(ulog,77)rws_weights
+ write(ulog,*)' SUM of the RWS_WEIGHTS = ',sum(rws_weights)
+ call write_lattice(nrgrid,rgrid,'r_supercell.xyz') ! grid of primitive translations in the WS supercell
+
+     open(98,file='rgrid_raw.xyz')
+     open(99,file='rgridWS.xyz')
+     call show_ws_boundary(v2a(r01),v2a(r02),v2a(r03),r0ws26,19,'WSR0_boundary.xyz',lgridmax) 
+     call show_ws_boundary(v2a(rs1),v2a(rs2),v2a(rs3),rws26 ,19,'WSR_boundary.xyz' ,lgridmax) 
+ 
+     write(98,28)"# name ,grid(cnt),weig(cnt),grid_red(cnt),cnt" 
+     write(99,*)nrgrid
+     write(99,*)"# name, cartesian grid, reduced grid "
+     do cnt=1,nrgrid
+        write(98,28)"Si ",rgrid(:,cnt),rws_weights(cnt),matmul(matr,rgrid(:,cnt)),length(rgrid(:,cnt)),cnt !,save_boundary(cnt)
+        write(99,27)"Si ",rgrid(:,cnt),matmul(matr,rgrid(:,cnt)),length(rgrid(:,cnt))
+     enddo
+     close(98)
+     close(99)
+     write(ulog,*)'lgridmax=',lgridmax
+
+27 format(a,99(1x,f10.4))
+28 format(a,8(1x,f10.4),3i5)
+
+ nggrid=10000
+ allocate(grd(3,nggrid),wei(nggrid))
+ matr=transpose(prim_to_cart)/(2*pi)
+ call get_26shortest_shell(g01,g02,g03,g0ws26,x01,x02,x03)
+ call get_26shortest_shell(gs1,gs2,gs3,gws26 ,x1,x2,x3)
+! call make_grid_weights_WS(gs1,gs2,gs3,g01,g02,g03,matr,nggrid,grd,wei,'g',gws26,g0ws26) 
+ call make_grid_weights_WS(x1,x2,x3,x01,x02,x03,matr,nggrid,grd,wei,'g',gws26,g0ws26) 
+ allocate(ggrid(3,nggrid),gws_weights(nggrid))
+ ggrid=grd(:,1:nggrid) ; gws_weights=wei(1:nggrid)  ! reassigns in the newer versions of fortran
+ deallocate(grd,wei)
+ gws_weights = gws_weights * (volume_r0/volume_r) ! introduce 1/N since used for Fourier transforms
+ write(ulog,77)gws_weights
+ write(ulog,*)' SUM of the GWS_WEIGHTS = ',sum(gws_weights)
+ call write_lattice(nggrid,ggrid,'g_supercell.xyz') ! grid of primitive translations in the WS supercell
+
+     open(98,file='ggrid_raw.xyz')
+     open(99,file='ggridWS.xyz')
+     call show_ws_boundary(v2a(gs1),v2a(gs2),v2a(gs3), gws26,18, 'WSG_boundary.xyz',gmax) 
+     call show_ws_boundary(v2a(g01),v2a(g02),v2a(g03),g0ws26,30,'WSG0_boundary.xyz',gmax) 
+ 
+     write(98,28)"# name ,grid(cnt),weig(cnt),grid_red(cnt),cnt" 
+     write(99,*)nggrid+26+8
+     write(99,*)"# name, cartesian grid, reduced grid "
+     do cnt=1,nggrid
+        write(98,28)"Si ",ggrid(:,cnt),gws_weights(cnt),matmul(matr,ggrid(:,cnt)),length(ggrid(:,cnt)),cnt !,save_boundary(cnt)
+        write(99,27)"Si ",ggrid(:,cnt),matmul(matr,ggrid(:,cnt)),length(ggrid(:,cnt))
+     enddo
+     do cnt=1,26
+        write(99,27)"Bi ",g0ws26(:,cnt), matmul(matr,g0ws26(:,cnt))
+     enddo
+     write(99,*)'Ge   0 0 0 '
+     write(99,27)'Ge ',g01
+     write(99,27)'Ge ',g02
+     write(99,27)'Ge ',g03
+     write(99,27)'Ge ',g01+g02
+     write(99,27)'Ge ',g03+g01
+     write(99,27)'Ge ',g03+g02
+     write(99,27)'Ge ',g03+g01+g02
+     close(98)
+     close(99)
+
+77 format(299(1x,f9.4))
+88 format(299(f10.6))
+
+ end subroutine make_grids
 
 end program FOCEX
 

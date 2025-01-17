@@ -90,7 +90,7 @@
 !     if(.not.allocated(iatmtermzero)) allocate(iatmtermzero(rnk,mzero(rnk)))
 !     if(.not.allocated(ixyztermzero )) allocate( ixyztermzero(rnk,mzero(rnk)))
 ! k2 2/12/23
-     write(ulog,4)' calling collect_force_constants ier:ztig=',ierz,iert,ieri,ierg
+!     write(ulog,4)' calling collect_force_constants ier:ztig=',ierz,iert,ieri,ierg
 
      call collect_force_constants(rnk,nshells(rnk,:),  &
      &       rnk,mx,mxi,mxzero,mxgrps,   &
@@ -100,8 +100,9 @@
      &       ntermszero,iatmtermzero,ixyztermzero,   &
      &       ierz,iert,ieri,ierg)
 
-     write(ulog,4)' collect_force_constants called with ier:ztig=',ierz,iert,ieri,ierg
-     write(ulog,*)' ntermszero,ngroups,ntindep,nt=',ntermszero,ngroups,sum(ntermsindep(1:ngroups(rnk))),sum(nterm(1:ngroups(rnk)))
+!     write(ulog,4)' collect_force_constants called with ier:ztig=',ierz,iert,ieri,ierg
+!     write(ulog,*)' ntermszero,ngroups,ntindep,nt=',ntermszero,ngroups,sum(ntermsindep(1:ngroups(rnk))) &
+!     &   ,sum(nterm(1:ngroups(rnk)))
 
  4 format(a,9(i5))
 
@@ -123,7 +124,7 @@
 !       else
 !          mx=mx+sum(nterm(1:ngroups(rnk)))
 !       endif
-         write(ulog,*)' ntermall=',sum(nterm)
+!         write(ulog,*)' ntermall=',sum(nterm)
          if (allocated(mapmat)) deallocate(mapmat)
          if (allocated(iatmtrm)) deallocate(iatmtrm)
          if (allocated(ixyztrm)) deallocate(ixyztrm)
@@ -199,6 +200,7 @@
        &         map(rnk)%gr(i)%iatind (rnk,ntermsindep(i))  ,      &
        &         map(rnk)%gr(i)%ixyzind(rnk,ntermsindep(i))  )
         enddo
+
 
         write(umap,*)'rank=',rnk,' groups ',map(rnk)%ngr,' indepterms=',map(rnk)%ntotind,' all terms=',map(rnk)%ntot
         write(umap,'(a,i2,a,99(i5))')'rank=',rnk,' indepterms=',map(rnk)%ntind(:)
@@ -747,7 +749,7 @@
  new=.true.
  j0=0
     do j=1,n  ! = no of columns in ared; it's really ngr
-       if ( a1d(j) .myeqz. zero ) cycle
+       if ( a1d(j) .myeq. zero ) cycle
        j0 = j   ! it is the first nonzero index (column)
        exit
     enddo
@@ -766,7 +768,7 @@
   !       endif
           junk = a(t,j0)/a1d(j0)
           b = a1d*junk   ! this is to avoid repeating amat and -amat
-          if ( a(t,:) .myeqz. b(:) ) then
+          if ( a(t,:) .myeq. b(:) ) then
              new=.false.
              return !exit checkloop
           endif
@@ -911,12 +913,12 @@
 
  end subroutine truncate
 !===========================================================
- subroutine setup_FC2_in_supercell 
+ subroutine setup_FC2_in_supercell(rws26)
 !! selects only the independent FC2s which are in the WS cell of the supercell, including its boundary, 
-!! defined by rws26(3,nrgrid). If keep_fc2i(i)=1, then it is in the WS and is kept
-!! for fc2flag=0 everything in WS and all its images by symmetry are kept
-!! for fc2flag\=0 all the requested shells are kept provided one of them is within the WS of the supercell
- use lattice
+!! defined by rws26(3,nrgrid). If map(rnk)%keep(i)=1, then it is in the WS and is kept
+!! for fc2range=0 everything in WS and all its images by symmetry are kept
+!! for fc2range\=0 all the requested shells are kept provided one of them is within the WS of the supercell
+! use lattice
  use ios
  use atoms_force_constants
  use geometry
@@ -925,15 +927,16 @@
  use constants, only : r15
  implicit none
  integer g,ti,t,i0,j,cnt,nboundary
+ real(r15), intent(in) :: rws26(3,26)
  real(r15) rij(3),dij(999),transl(3),rij0(3)
  logical inside
 
- write(ulog,*)'SETUP_FC2: dimension of keep_fc2i=',size(keep_fc2i)
- keep_fc2i=0
- size_kept_fc2=0  ! this is the size in amatrix of the FC2s not eliminated<map(2)%ntind.
+ write(ulog,*)'SETUP_FC2: dimension of map(2)%keep(:)=',size(map(2)%keep(:))
+ map(2)%keep(:)=0
+ map(2)%nkeptind=0  ! this is the size in amatrix of the FC2s not eliminated<map(2)%ntind.
  do g=1,map(2)%ngr
     do ti=1,map(2)%ntind(g)
-    cnt= counter2(g,ti)
+    cnt= counteri(2,g,ti)
     tloop: do t =1,map(2)%nt(g) ! loop over t until one of them is in WS; id the (g,ti) pair
        i0=map(2)%gr(g)%iat(1,t)
        j =map(2)%gr(g)%iat(2,t)  ! this j is for atompos
@@ -942,20 +945,20 @@
        call check_inside_ws(rij,rws26,inside,nboundary)
 ! Do we have elements of the same group, i.e. same distance, one being inside and one outside?
        if (inside .and. map(2)%gr(g)%mat(t,ti) .ne.0) then
-         keep_fc2i(cnt)=1 
+         map(2)%keep(cnt)=1 
          write(ulog,5)'Group,ti ',g,ti,' term of distance rij=',length(rij),' is kept'     
          exit tloop
        endif
     enddo tloop
-    if(keep_fc2i(cnt).eq.0) write(ulog,5)'Group,ti ',g,ti,' term of distance rij=',length(rij),' NOT kept'     
+    if(map(2)%keep(cnt).eq.0) write(ulog,5)'Group,ti ',g,ti,' term of distance rij=',length(rij),' NOT kept'     
     enddo
  enddo
- size_kept_fc2=sum(keep_fc2i)  ! number of independent FC2 terms kept
+ map(2)%nkeptind=sum(map(2)%keep(:))  ! number of independent FC2 terms kept
 
- write(ulog,*)'size of groups of FC2s:ngr, size(kept indep terms)=',map(2)%ngr,size(keep_fc2i,1)
- write(ulog,*)'size of kept FC2 indep terms=',size_kept_fc2, 'out of ',map(2)%ntotind
- write(ulog,*)'Total # of independent terms kept =',sum(keep_fc2i)
- write(ulog,*)'# i, keep_fc2i(i)'
+ write(ulog,*)'size of groups of FC2s:ngr, size(kept indep terms)=',map(2)%ngr,size(map(2)%keep)
+ write(ulog,*)'number of kept FC2 independent terms=',map(2)%nkeptind, 'out of ',map(2)%ntotind
+ write(ulog,*)'Total # of independent terms kept   =',sum(map(2)%keep)
+ write(ulog,*)'# i, map(2)%keep(i)'
 
 5 format(a,2i4,a,f9.4,a,3i5)
 
@@ -963,7 +966,7 @@
 !==============================================
  subroutine exclude_beyond_sc(n,keep)
 !! selects only the independent FC2s which are in the WS cell of the supercell, including its boundary, 
-!! defined by rws26(3,nrgrid). If keep_fc2i(i)=1, then it is in the WS and is kept
+!! defined by rws26(3,nrgrid).
  use lattice
  use ios
  use atoms_force_constants
@@ -985,7 +988,7 @@
        i0=map(2)%gr(g)%iat(1,t)
        j =map(2)%gr(g)%iat(2,t)  ! this j is for atompos
        rij=atompos(:,j)-atompos(:,i0) ! is this within the WS cell?
-       cnt= counter2(g,ti)
+       cnt= counteri(2,g,ti)
 !      write(ulog,4)'g,t,cnt,rij=',g,ti,cnt,rij
        call check_inside_ws(rij,rws26,inside,nboundary)
 !      write(ulog,*)'inside is ',inside
@@ -996,7 +999,6 @@
           exit tloop
        endif
     enddo tloop
-    write(ulog,*)'EXCLUDE_BEYOND_SC: Group,ti,cnt ',g,ti,cnt,' of rij=',length(rij),' kept?',keep(cnt)     
     enddo
  enddo
 
