@@ -1,5 +1,5 @@
 set term pdfcairo
-set output 'qha-LaP.pdf'
+set output 'qha.pdf'
 
 set multiplot layout 1,3 margins 0.05 ,0.98 ,0.15,0.90 spacing 0.05,0.02  
 
@@ -9,15 +9,15 @@ set xtics 200
 #set size ratio 2
 #set ylabel 'CTE*10^6'
 #set yrange [:3]
-plot 'thermo_QHA.dat' u 1:(1000000*$9) lw 2 title "10^6 CTE" ,\
+plot 'thermo_QHA.dat' u 1:(100000*$9) lw 2 title "10^5 CTE" ,\
      'thermo_QHA.dat' u 1:10 lw 2 title "Gruneisen " ,\
-     'thermo_QHA.dat' u 1:($10/69.97) lw 2 title "B(T)/B(0K)"
+     'thermo_QHA.dat' u 1:($11) lw 2 title "B(T)/B(0K)"
 #pause -1
 
 #set size ratio 2
 unset yrange
 #set ylabel 'Strain'
-plot 'thermo_QHA.dat' u 1:(100*($4-54.678)/54.678) lw 2 title "dV/V(%)" ,\
+plot 'thermo_QHA.dat' u 1:(100*($4)) lw 2 title "dV/V(%)" ,\
      'thermo_QHA.dat' u 1:(300*$5)  w p pd 0.5 title "3*Strain(%)"
 #pause -1
 
