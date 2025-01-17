@@ -5,7 +5,7 @@ set yzeroaxis
 set grid xtics
 set grid ytics
 
-set palette maxcolors 10
+#set palette maxcolors 10
 set palette defined   
 set cblabel "Primitive atom"
 set cbtics
@@ -15,8 +15,9 @@ set cbrange [1:5 ] # same range as palette definition
 
 ### plot [1:] 'trace_fc.dat' u 1:2 w p pt 1 ps 2.8 title 'Original fc2' ,\
 
- plot [1:] 'trace_fc.dat' u 4:5:($1+$2) w p pt 1 ps 1.8 palette z title 'Original' ,\
-       'trace_fc2_lr.dat' u 4:5:($1+$2) w p pt 4 ps 1.8 palette z title 'fc2 LR' ,\
+ plot [1:] 'trace_fc.dat' u 4:5:($1+$2) w p pt 7 ps 1.8 palette z title 'Original' ,\
+       'trace_fc2_lr.dat' u 4:5:($1+$2) w p pt 1 ps 1. palette z title 'fc2 LR' ,\
+       'trace_fc2_sr.dat' u 4:5:($1+$2) w p pt 4 ps 1. palette z title 'fc2 SR' ,\
  0 w l lt 5  lw 2 notitle
  pause -1
      # 'trace_fc2_sr.dat' u 4:5 w p pt 9 ps 0.9 title 'fc2 SR'
