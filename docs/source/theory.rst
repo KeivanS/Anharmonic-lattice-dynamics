@@ -163,16 +163,16 @@ The trial harmonic potential contains the variational parameters :math:`K_{ij}` 
 For the trial harmonic Hamiltonian, the free energy can be calculated analytically:
 
 .. math::
-    F_0= kT \sum_{\lambda} {\rm ln} \left[ 2 {\rm sinh} \frac{\beta \hbar \omega_{\lambda} }{2}\right]
+    F_0= kT \sum_{k,\lambda} {\rm ln} \left[ 2 {\rm sinh} \frac{\beta \hbar \omega_{k\lambda} }{2}\right]
 
-where :math:`\beta=1/k_BT` and :math:` \omega_{\la} ` is the harmonic frequency of mode :math:`\lambda` obtained from diagonalizing the dynamical matrix associated with the trial force constants:  :math:`D(k) = \sum_R \frac{K_{ij}}{\sqrt {m_i m_j}}\, \epsilon^{i k \cdot (R_i-R_j)}`. :math:`k` refers to the k vector on a selected k mesh in reciprocal space. The matrix :math:`D` being Hermitian, it has real eigenvalues denoted by :math:`\omega_{\lambda}^2` and eigenvectors :math:`epsilon_{i\alpha,\lambda}` where :math:`\alpha` is the cartesian coordinate and :math:`\lambda` refers to the vibrational mode (:math:`i\alpha` can be understood as line index and :math:`\lambda` a the column index of the unitary eigenvector matrix :math:`e`). We also need the thermal averages of the trial and anharmonic potentials :math:`V_0` and :math:`V`. In terms of the eigenvalues  and eigenvectors of the above dynamical matrix, we have:
+where :math:`\beta=1/k_BT` and :math:` \omega_{\lambda} ` is the harmonic frequency of mode :math:`\lambda` obtained from diagonalizing the dynamical matrix associated with the trial force constants:  :math:`D(k) = \sum_R \frac{K_{ij}}{\sqrt {m_i m_j}}\, \epsilon^{i k \cdot (R_i-R_j)}`. :math:`k` refers to the k vector on a selected k mesh in reciprocal space. The matrix :math:`D` being Hermitian, it has real eigenvalues denoted by :math:`\omega_{\lambda}^2` and eigenvectors :math:`epsilon_{i\alpha,\lambda}` where :math:`\alpha` is the cartesian coordinate and :math:`\lambda` refers to the vibrational mode (:math:`i\alpha` can be understood as line index and :math:`\lambda` a the column index of the unitary eigenvector matrix :math:`e`). We also need the thermal averages of the trial and anharmonic potentials :math:`V_0` and :math:`V`. In terms of the eigenvalues  and eigenvectors of the above dynamical matrix, we have:
 
 .. math::
     :label: yy
 
-     \langle y_i^\alpha y_j^\beta \rangle= \frac{\hbar}{2} \sum_{k,\la}  \frac{ (2 n_{\lambda}+1) }{\omega_{k\lambda}} \,\frac{\epsilon_{i\alpha,\lambda} \, \epsilon_{j\beta,\lambda}^\dagger}{\sqrt{m_i m_j}}e^{i\vec{k}\cdot(\vec{R}_j-\vec{R}_i)}
+     \langle y_i^\alpha y_j^\beta \rangle= \frac{\hbar}{2} \sum_{k,\lambda}  \frac{ (2 n_{k\lambda}+1) }{\omega_{k\lambda}} \,\frac{\epsilon_{i\alpha,k\lambda} \, \epsilon_{j\beta,k\lambda}^\dagger}{\sqrt{m_i m_j}}e^{i\vec{k}\cdot(\vec{R}_j-\vec{R}_i)}
 
-Thus the thermal averaged harmonic or trial potential :math:`\langle V_0\rangle` can be simply written into :math:`\langle V_0 \rangle = \sum_{ij} \,\frac{1}{2!} K_{ij}\, \langle y_i y_j \rangle `. Similarly, the thermal averaged actual potential :math:`\langle V\rangle` can be presented in Eq.[\ref{Vaverage}] as:
+Thus the thermal averaged harmonic or trial potential :math:`\langle V_0\rangle` can be simply written into :math:`\langle V_0 \rangle = \sum_{ij} \,\frac{1}{2!} K_{ij}\, \langle y_i y_j \rangle` . Similarly, the thermal averaged actual potential :math:`\langle V \rangle` can be presented in Eq.[\ref{Vaverage}] as:
 
 .. math:: 
     :label: Vaverage
@@ -454,6 +454,132 @@ cubic-root the BZ volume. The latest modification based on
 Eq. :eq:`gammaFix` has been employed in the source
 code file ’VA_math.f95’ and the convergence has been verified by
 different k-mesh size choices.
+
+Elastic constants
+-----------------
+
+
+It is possible to extract the elastic constants from the knowledge of the force constants :cite:`Wallace1998`. Below, we outline a simpler method and provide the final formulas.
+
+Under a uniform applied strain, denoted by :math:`\eta_{\alpha\beta} = \partial u_{\alpha} / \partial r_{\beta}`, a point :math:`x` of the medium is moved to :math:`x'_{\alpha} = x_{\alpha} + \eta_{\alpha\beta} x_{\beta}`, and the total energy of the harmonic crystal is increased, by definition of the elastic constants, by:
+
+.. math::
+   \frac{\Delta E}{V_0} = \frac{C_{\alpha\beta,\gamma\delta} \epsilon_{\alpha\beta} \epsilon_{\gamma\delta}}{2},
+
+where :math:`V_0` is the unit cell volume and the Cauchy strain tensor :math:`\epsilon` is defined as :math:`\epsilon_{\alpha\beta} = (\eta_{\alpha\beta} + \eta_{\beta\alpha}) / 2`. The latter is used because the antisymmetric part of the strain tensor :math:`\eta` represents a pure rotation and does not contribute to the total energy change. So, using the Cauchy strain, the 9 strains are reduced to 6 independent ones.
+
+Under such strain, we can use Equation :eq:`actualPotential` to calculate the potential energy increase by replacing :math:`u_i` by:
+
+.. math::
+   u_{R\tau\alpha}(t) = \eta_{\alpha\beta} (R+\tau)^{\beta} + u_{\tau\alpha}^0 + y_{R\tau\alpha}(t) = S_{R\tau\alpha} + y_{R\tau\alpha}(t),
+
+where :math:`S` is the static displacement, containing an extra term :math:`u^0` which represents the relaxation of atom :math:`\tau` within the primitive cell, in addition to that due to the uniform deformation dictated by :math:`\eta`. This can occur in low-symmetry crystals, where atoms may not completely follow the uniform deformation and require an extra displacement :math:`u_{\tau\alpha}^0` to minimize the potential energy. The last term :math:`y_{R\tau\alpha}(t)` represents the dynamical motion of the atom :math:`R\tau`, or phonon degree of freedom, which has a time average of zero by construction. Plugging into Equation :eq:`actualPotential`, we can derive the effective harmonic potential at finite temperatures as the coefficient of the :math:`y^2` term, and the elastic tensor as the second derivative of the average potential energy with respect to the applied (Cauchy) strain:
+
+.. math::
+   C_{\alpha\beta,\gamma\delta} = \frac{1}{V_0} \frac{\partial^2 E}{\partial \epsilon_{\alpha\beta} \partial \epsilon_{\gamma\delta}}.
+
+Note that as a second derivative, :math:`C` must be symmetric under swapping of the order of differentiation :math:`\alpha\beta \leftrightarrow \gamma\delta`. Due to the symmetry of the Cauchy strain tensor :math:`\epsilon` itself, the elastic tensor :math:`C` will also be invariant with respect to swaps of :math:`\alpha \leftrightarrow \beta` and :math:`\gamma \leftrightarrow \delta` separately.
+
+...
+
+Finally, the isotropic and uniaxial elastic constants are denoted respectively by the bulk and Young moduli :math:`B` and :math:`Y`.
+
+**Bulk Modulus**
+
+The isothermal bulk modulus is defined as:
+
+.. math::
+   B_T = -V \left(\frac{dP}{dV} \right)_{P=0,T}.
+
+The isotropic compression condition translates into :math:`\sigma_{xx} = \sigma_{yy} = \sigma_{zz} = -P`, :math:`\sigma_{\alpha\beta} = 0` for :math:`\alpha \ne \beta`. Since the volume change is given by :math:`\Delta V / V = \epsilon_{xx} + \epsilon_{yy} + \epsilon_{zz} = \mathrm{Tr}(\epsilon)`, one can express :math:`B` in terms of the elastic or compliance tensor elements as:
+
+.. math::
+   B = \frac{\mathrm{Tr}(\sigma)/3}{\mathrm{Tr}(\epsilon)} = \frac{1}{9} \sum_{i,j=1,2,3} C_{ij} = \frac{1}{\sum_{i,j=1,2,3} S_{ij}},
+
+where :math:`S` is the inverse of :math:`C` when written as a :math:`6 \times 6` matrix in the Voigt notation, and is called the *compliance tensor*. For crystals of cubic symmetry, it simplifies to:
+
+.. math::
+   \frac{C_{11} + 2C_{12}}{3}.
+
+...
+
+**Poisson Ratio**
+
+For a uniaxial deformation along the x-axis, the Poisson ratio is defined as:
+
+.. math::
+   \nu = -\left(\frac{\partial \epsilon_{2}}{\partial \epsilon_{1}} \right)_{\sigma_{i \ne 1} = 0} = -\frac{S_{21}}{S_{11}}.
+
+For isotropic materials, the value is typically reported as:
+
+.. math::
+   \nu_{\mathrm{iso}} = \frac{1.5B - \mu_{\mathrm{iso}}}{3B + \mu_{\mathrm{iso}}}.
+
+
+
+
+Gruneisen parameter
+-------------------
+
+The mode Gruneisen parameters are obtained from the phonons and the cubic force constants. They represent the change in the phonon frequencies under applied strain. Even though the strain is usually considered to be isotropic compression or dilation, one can also define the response to an arbitrary strain. By definition, we have:
+
+.. math::
+   \gamma_{\lambda,\mu\nu} = - \frac{d \ln \,\omega_{\lambda} }{3 \, d \epsilon_{\mu\nu}}.
+
+Usually, the volume derivative, which corresponds to an isotropic strain, is considered:
+
+.. math::
+   \gamma_{\lambda} = - \frac{d \ln \,\omega_{\lambda} }{d \ln \, V},
+
+where :math:`V` is the unit cell volume. Applying a uniform hydrostatic strain:
+
+.. math::
+   \epsilon_{\alpha \beta} = \delta_{\alpha \beta} \, \frac{dV}{3V} = \delta_{\alpha \beta} \, \frac{d \ln V}{3}.
+
+Similar to the group velocity, we start with the square of the frequency written as the product of the dynamical matrix by eigenvectors:
+
+.. math::
+   \omega^2 = e \cdot D \cdot e.
+
+We then consider the change in :math:`D` under strain:
+
+.. math::
+   \frac{dD}{d\eta} = \sum_R \frac{d\Phi}{d\eta} \, e^{i k \cdot R},
+
+and use:
+
+.. math::
+   \frac{d\Phi}{d\eta} = \Psi \left(R + \tau + \frac{d u^0}{d \eta}\right).
+
+Note that the latter term, which is non-zero for low-symmetry structures having their own internal relaxation under strain :math:`u^0(\eta)`, is often neglected in the literature.
+
+In the previous section, we derived this equation for :math:`u^0` in the harmonic approximation:
+
+.. math::
+   u^0(\eta) = -\Gamma (\Pi + Q \eta).
+
+Therefore:
+
+.. math::
+   \frac{d u^0}{d \eta} = -\Gamma Q.
+
+Using the Hellmann-Feynman theorem applied to the derivative of the dynamical matrix, and substituting the above relation for the strain derivative of the harmonic force constants, we finally find:
+
+.. math::
+   \gamma_{\lambda}(k) = -\frac{1}{6 \, \omega_{\lambda}^2(k)} \sum_{\tau, R_1 \tau_1, R_2 \tau_2}
+   \frac{\Psi_{\tau, R_1 \tau_1, R_2 \tau_2}^{\alpha \alpha_1 \alpha_2}}{\sqrt{m_{\tau} m_{\tau_1}}} \,
+   e_{\tau \alpha, \lambda}(k)^* \, e_{\tau_1 \alpha_1, \lambda}(k) \, e^{i k \cdot (R_1 + \tau_1 - \tau)} \,
+   \left[(R_2 + \tau_2)^{\alpha_2} - \sum_{\mu=1,2,3} \Gamma_{\tau_2 \alpha_2, .} Q_{., \mu \mu} \right].
+
+The temperature-dependent Gruneisen parameter is defined as the thermal average of the above modes weighted by their heat capacity:
+
+.. math::
+   \gamma(T) = \frac{\sum_{k \lambda} c_{k \lambda}(T) \gamma_{\lambda}(k)}{\sum_{k \lambda} c_{k \lambda}(T)},
+
+where the heat capacity per mode is:
+
+.. math::
+   c_{k \lambda}(T) = k_B \frac{x_{k \lambda}^2}{\sinh^2 x_{k \lambda}}, \quad x_{k \lambda} = \frac{\hbar \omega_{\lambda}(k)}{2 k_B T}.
 
 
 Phonon Boltzmann Transport Equation
