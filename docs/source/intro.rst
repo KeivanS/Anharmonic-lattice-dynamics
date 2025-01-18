@@ -4,10 +4,10 @@ Introduction
 What is ALADYN?
 ---------------
 
-Anharmonic-LAttice-DYNamics (ALADYN) contains 5 sets of stand-alone codes:
+Anharmonic-LAttice-DYNamics (ALADYN) contains 5 sets of stand-alone codes with the following functions:
 
 * **FOrce Constant EXtraction (FOCEX)** to extract force constants from force-displacements data, the output of which can be used as input to the following codes;
-* **Self-CoOnsistent Phonon (SCOP)** to calculate the state of equilibrium of a crystal at a given temperature and pressure solely from the set of force constants parameters of the high-symmetry phase;
+* **Self-CoOnsistent Phonon (SCOP)** to calculate the state of equilibrium of a crystal at a given temperature and pressure solely from the set of force constants parameters of the high-symmetry phase. It is based on a variational free energy minimization.
 * **THERMAl CONDuctivity (THERMACOND)** to calculate the phonon spectrum, group velocities and lifetimes, and lattice thermal conductivity based on Boltzmann equation theory;
 * **ANharmonic FOrce-field MOlecular Dynamics (ANFOMOD)** to perform molecular dymics from the above-developed force field;
 * **INterface FOrce-field CONverter (INFOCON)** to convert extracted force constants by one of the codes FOCEX, ShengBTE, ALAMODE, and PHONOPY the format needed as input for the phonon calculation by another of these codes so that these codes become intercompatible.
@@ -19,6 +19,9 @@ Please cite the following articles:
 
 * K. Esfarjani and H.T. Stokes, *Phys Rev B* **77**, 144112 (2008).
   [`Link <https://doi.org/10.1103/PhysRevB.77.144112>`__]
+
+* K. Esfarjani, H. T. Stokes anf G. Cgen, *Phys Rev B* 84, 085204 (2011). DOI: 10.1103/PhysRevB.84.085204
+  [`Link <https://doi.org/10.1103/PhysRevB.84.085204>`__]
 
 Acknowledgment
 --------------
