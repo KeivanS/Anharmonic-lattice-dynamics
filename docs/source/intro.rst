@@ -23,9 +23,9 @@ Please cite the following articles:
 * K. Esfarjani, H. T. Stokes anf G. Cgen, *Phys Rev B* 84, 085204 (2011). DOI: 10.1103/PhysRevB.84.085204
   [`Link <https://doi.org/10.1103/PhysRevB.84.085204>`__]
 
-* K. Esfarjani, H.T. Stokes, S. Nayeb Sadeghi, Y. Liang, B. Timalsina, H. Meng, J. Shiomi, B. Liao, R. Sun
+* K. Esfarjani, H.T. Stokes, S. Nayeb Sadeghi, Y. Liang, B. Timalsina, H. Meng, J. Shiomi, B. Liao, R. Sun; 
 ALADYN: a set of Anharmonic LAttice DYNamics codes to compute thermodynamic and thermal transport properties of crystalline solids
-[`Link <https://arxiv.org/abs/2501.02113>`__]
+  [`Link <https://arxiv.org/abs/2501.02113>`__]
 
 Acknowledgment
 --------------
