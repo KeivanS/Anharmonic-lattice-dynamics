@@ -74,7 +74,7 @@ oldscp: $(SUBS)  $(MAIN)
 scp: $(SUBS)
 	ar rcs libAll.a *.o
 	$(FF) libAll.a $(MAIN) -o $@
-	mv scp ~/BIN
+	mv scp ~/ALADYN/bin/
 	make clean
 
 write:
