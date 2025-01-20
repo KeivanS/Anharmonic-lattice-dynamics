@@ -205,3 +205,15 @@
 ---
 
 7. Git can also be integrated into VScode for repository fetch and change commitments with 1-click.
+
+---
+
+#### To build the docs webpage locally:
+
+```bash
+pip install sphinx sphinx-rtd-theme
+cd docs
+make html
+```
+Notice you may also want to install 'sphinx-toolbox', 'sphinx-reload' for that matter, and use mingw32-make on Windows.
+Open `build/html/index.html` in your browser.
