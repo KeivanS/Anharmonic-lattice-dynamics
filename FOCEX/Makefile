@@ -1,6 +1,6 @@
 include ../make.inc
 
-SUBF90=fc_modules.f90 dyn_modules.f90 kpoints.f90 modules_tetra.f90 ios.f90 fourier_stuff.f90 ewald_born.f90 svd_ridge.f90 extratools.f90 others.f90 setup_amatrix.f90 force_constant_symmetries.f90 dynamical.f90 zhegv.f 
+SUBF90=fc_modules.f90 dyn_modules.f90 kpoints.f90 modules_tetra.f90 fourier_stuff.f90 ios.f90 ewald_born.f90 svd_ridge.f90 extratools.f90 others.f90 setup_amatrix.f90 force_constant_symmetries.f90 dynamical.f90 zhegv.f 
 MAIN=focex.f90 
 PH=ph.f90
 
