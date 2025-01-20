@@ -17,16 +17,16 @@ SUBKAPS=$(addsuffix .o, $(basename $(SUBKAP)))
 version=8
 A=`date "+%F-%k_%M"`
 C=kap$(version).`date "+%F|%T"`
-#MYBIN=/Users/ke4c/BIN/
+DESTDIR=~/ALADYN/bin/
 
 
 kap$(version): $(MODS) $(SUBKAPS) $(KAPA) 
 	$(FF) $(FLAGS) $(MODS) $(SUBKAPS) $(KAPA) -o $@ 
-#	mv kap$(version) $(MYBIN)
+	mv kap$(version) $(DESTDIR)
 
 mfpband: mfpthermal.f90
 	$(FF) mfpthermal.f90 -o $@
-#	mv mfpband $(MYBIN)
+#	mv mfpband $(DESTDIR)
 
 # rules to make the "simple" object files from sources
 .SUFFIXES: .f90
@@ -41,7 +41,7 @@ mfpband: mfpthermal.f90
 
 # tests , cleanup and archiving
 ec:
-#	echo $(MYBIN)
+#	echo $(DESTDIR)
 write:
 	echo $(ALL)
 clean:
