@@ -247,7 +247,7 @@ Description of input and output files
 		Temperature   40.000000000000000     
 		Current Volume is:   39.464183071187328     
 		my calculated gruneisen: -0.94758846679605901     
-		my calculated specific heat:   1.4541875815899401     
+		my calculated specific heat:   1.4541875815899401      
 		my calculated bulk modulus:  0.66968252261197314     
 		calculated beta =   -1.0806246818743969E-006
 		elastic
