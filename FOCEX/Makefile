@@ -1,6 +1,6 @@
 include ../make.inc
 
-SUBF90=fc_modules.f90 dyn_modules.f90 kpoints.f90 modules_tetra.f90 ios.f90 fourier_stuff.f90 ewald_born.f90 svd_ridge.f90 extratools.f90 others.f90 setup_amatrix.f90 force_constant_symmetries.f90 dynamical.f90 zhegv.f 
+SUBF90=fc_modules.f90 dyn_modules.f90 kpoints.f90 modules_tetra.f90 fourier_stuff.f90 ios.f90 ewald_born.f90 svd_ridge.f90 extratools.f90 others.f90 setup_amatrix.f90 force_constant_symmetries.f90 dynamical.f90 zhegv.f 
 MAIN=focex.f90 
 PH=ph.f90
 
@@ -19,7 +19,7 @@ M=`date "+%F-%k_%M"`
 # below contains seconds as well as minutes and everything else
 A=`date "+%F_%T"`
 B=`date "+%F"`
-ver=8.9
+ver=8.11
 backup=FCX_$(ver)_$(M)
 arch=focex_$(ver)_$(M)
 exe=fcx_$(ver).x

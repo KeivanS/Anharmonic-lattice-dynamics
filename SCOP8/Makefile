@@ -1,4 +1,4 @@
-PROG = test
+PROG = scop8
 
 SRCS =	check.f90 ConjugateGradient.f90 constants.f90 extratools.f90 \
 	force_constants.f90 force_update.f90 kp_1d.f90 MatrixDiagonalize.f90 \
@@ -25,6 +25,7 @@ all: $(PROG)
 
 $(PROG): $(OBJS)
 	$(F90) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+	mv $(PROG) ~/ALADYN/bin/
 
 .PHONY: clean
 clean:
@@ -74,7 +75,7 @@ oldscp: $(SUBS)  $(MAIN)
 scp: $(SUBS)
 	ar rcs libAll.a *.o
 	$(FF) libAll.a $(MAIN) -o $@
-	mv scp ~/BIN
+	mv scp ~/ALADYN/bin/
 	make clean
 
 write:
