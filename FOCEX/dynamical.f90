@@ -680,7 +680,7 @@
         !       rfold = fold_ws(rs,rws26,'r') - dta ! the dta subtraction is to make it G-periodic
         !    else
           !     rfold = rs - dta  ! for hard phase
-                rfold = rs        ! for soft phase
+                rfold = rr        ! for soft phase
         !    endif
              junk = fcs(ired) * map(2)%gr(g)%mat(t,ti) * exp(ci*(kpt .dot. rfold)) 
              dynmat(tau,taup,al,be) = dynmat(tau,taup,al,be) + junk
