@@ -1,15 +1,14 @@
-
 # .readthedocs.yaml
 version: 2
 
-sphinx:
-  configuration: source/conf.py  # Path to your Sphinx configuration file
-
 build:
-  os: ubuntu-22.04  # Default build environment
+  os: ubuntu-22.04
   tools:
-    python: "3.9"  # Specify the Python version; adjust if needed
-  commands:
-    - cd docs
-    - pip install -r requirements.txt  # Install dependencies
-    - sphinx-build -b html source _build/html  # Command to build your documentation
+    python: "3.9"
+
+sphinx:
+  configuration: docs/source/conf.py  # Adjusted to match your folder structure
+
+python:
+  install:
+    - requirements: docs/requirements.txt  # Path to your requirements.txt file
