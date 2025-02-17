@@ -371,8 +371,8 @@
   write(*,*) 'READ_PARAMS: width= ',width
   read(uparams,*) line
   write(*,*) 'READ_PARAMS: just read verbose ',verbose
-  read(uparams,*)tmin,tmax,ntemp      ! temps in Kelvin to calculate thermal expansion and other thermal ppties
-  write(*,*) 'READ_PARAMS: tmin,tmax,ntemp=',tmin,tmax,ntemp
+  read(uparams,*)tmin,tmax !,ntemp      ! temps in Kelvin to calculate thermal expansion and other thermal ppties
+  write(*,*) 'READ_PARAMS: tmin,tmax=',tmin,tmax !,ntemp
   read(uparams,*)classical     ! if =1 then use classical distribution (kT/hw)
 ! read(uparams,*)junk  !iter      ! if=1 then read from a file, else generate  ! sy added iter,split,calk
 !  write(*,*)'iter,split,readv3,writev3,calk=',iter,split,readv3,writev3,calc_kappa
@@ -1012,7 +1012,7 @@
 
    write(ulog,*)' indepterm, fcs, sigma, normalized sigma for all SVD'
    do k=1,n
-      write(ulog,4) k,fcs(k),sig(k),sig(k)/sqrt(1.*dim_al)
+      write(ulog,4) k,fcs(k),sig(k)
    enddo
    write(ulog,*) "rank, average error"
 
@@ -1313,7 +1313,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
 
         enddo
 ! write(ulog,4)'i0,j,g,t,fcd,tr=',i,j,g,t,fcd,trace_fc
-        if(abs(trace_fc).gt.1d-5) then  ! .and. ixyz(1).eq.1 .and. ixyz(2).eq.1) then
+        if(abs(trace_fc).gt.margin) then  ! .and. ixyz(1).eq.1 .and. ixyz(2).eq.1) then
            write(ulog,8) i,j,rij,trace_fc
 !          write(456,3) i,iatomcell0(j),j,rij,trace_fc,atompos(:,i),atompos(:,j), &
            write(456,3) i,taup,j,rij,trace_fc,atompos(:,i),atompos(:,j), &
@@ -1446,7 +1446,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
  use lattice
  use constants, only : r15
  use fourier, only : rgrid,nrgrid
- use born, only : phip
+ use born, only : phi_periodic
  implicit none
 ! integer, intent(in) :: iunit,rank
 ! integer, intent(out) :: nfc
@@ -1639,8 +1639,8 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
  if (.not.ex ) then 
     write(*,*)'file fc2.dat does not exist!!'
  else
-    allocate(phip(natom_prim_cell,natom_prim_cell,3,3,nrgrid))
-    phip=0
+    allocate(phi_periodic(natom_prim_cell,natom_prim_cell,3,3,nrgrid))
+    phi_periodic=0
     open(iuni2,file='fc2.dat',status='old')
     read(iuni2,*)line
 
@@ -1672,7 +1672,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
           rr=atompos(:,iat(2))-atompos(:,ia2)
           call findgrid(rr,rgrid,nrgrid,igrd)
           if(igrd.gt.0 .and. igrd.le.nrgrid) then
-             phip(iatomcell0(iat(1)),iatomcell0(iat(2)),ixyz(1),ixyz(2),igrd)=fcd
+             phi_periodic(iatomcell0(iat(1)),iatomcell0(iat(2)),ixyz(1),ixyz(2),igrd)=fcd
           else
 !             write(ulog,8)'READ_fcs: error could not find rgrid point',igrd,length(rr),rr,cart2red(rr,'r')
              rr2= fold_ws(rr,rws26,'r') 
@@ -1681,7 +1681,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
                write(*,8)'second attempt ',igrd,rr2,cart2red(rr2,'r')
                stop
              else
-               phip(iatomcell0(iat(1)),iatomcell0(iat(2)),ixyz(1),ixyz(2),igrd)=fcd
+               phi_periodic(iatomcell0(iat(1)),iatomcell0(iat(2)),ixyz(1),ixyz(2),igrd)=fcd
              endif 
           endif 
        enddo
@@ -1706,7 +1706,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
     fcd=0
     do j=1,natom_prim_cell
     do igrd=1,nrgrid
-       fcd=fcd+phip(i,j,a,b,igrd)
+       fcd=fcd+phi_periodic(i,j,a,b,igrd)
     enddo
     enddo
     write(ulog,3)'ASR CHECK in FC5 after reading:',i,a,b,fcd
@@ -1722,9 +1722,9 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
      rr2 = atompos(:,j)-atompos(:,tau)
      do igrd=1,nrgrid
         rr=rgrid(:,igrd)+rr2 
-        fcd= trace(phip(tau,j,:,:,igrd))
+        fcd= trace(phi_periodic(tau,j,:,:,igrd))
         if(abs(fcd).gt.0.0001) then
-           write(932,3)' ',tau,j,igrd,length(rr),fcd,length(fold_ws(rr,rws26,'r')),cart2red(rr,'r'),phip(tau,j,:,:,igrd) 
+           write(932,3)' ',tau,j,igrd,length(rr),fcd,length(fold_ws(rr,rws26,'r')),cart2red(rr,'r'),phi_periodic(tau,j,:,:,igrd) 
         endif
      enddo
   enddo
@@ -2499,23 +2499,24 @@ stop
       write(ulog,*)i,dot_product(ahuang(i,:),fcs(:))
    enddo
 
-   write(umatrx,*)'******* Violation of force-displacement relations: '
-   errmax=-1
-   err=0;num=0;denom=0
-   do i=inv_constraints+1,dim_al
-      prod = dot_product(amat(i,:),fcs(:))
-      junk = abs(prod-bmat(i))
-      write(umatrx,3)' ',i,prod,bmat(i),junk
-      if (errmax .lt. junk) errmax=junk
-      err=err+junk
-      num=num+junk*junk
-      denom=denom+prod*prod
-   enddo
-   err=err/(dim_al-inv_constraints)
-   write(umatrx,2)'Max and average errors in force-displacements,percent deviation=', &
-   &    errmax,err,sqrt(num/denom)*100
-   write(ulog,2)'Max and average errors in force-displacements,percent deviation=', &
-   &    errmax,err,sqrt(num/denom)*100
+! not used since amat is overwritten after the SVD
+!  write(umatrx,*)'******* Violation of force-displacement relations: '
+!  errmax=-1
+!  err=0;num=0;denom=0
+!  do i=inv_constraints+1,dim_al
+!     prod = dot_product(amat(i,:),fcs(:))
+!     junk = abs(prod-bmat(i))
+!     write(umatrx,3)' ',i,prod,bmat(i),junk
+!     if (errmax .lt. junk) errmax=junk
+!     err=err+junk
+!     num=num+junk*junk
+!     denom=denom+prod*prod
+!  enddo
+!  err=err/(dim_al-inv_constraints)
+!  write(umatrx,2)'Max and average errors in force-displacements,percent deviation=', &
+!  &    errmax,err,sqrt(num/denom)*100
+!  write(ulog,2)'Max and average errors in force-displacements,percent deviation=', &
+!  &    errmax,err,sqrt(num/denom)*100
 
 2 format(a,8(2x,g12.5))
 3 format(a,i5,3(2x,g12.5))

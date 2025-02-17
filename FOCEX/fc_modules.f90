@@ -30,7 +30,7 @@ integer, parameter,public :: c15 = 8
 module params
  use constants, only : r15
  real(r15) tolerance,margin,scalelengths,alfaborn,tempk,rcutoff,coef
- integer nconfigs,classical,ntemp,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,itemp
+ integer nconfigs,classical,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,itemp
  integer , allocatable :: nshells(:,:)  !nshells(8,natom_prim_cell) up to which shell to include for each rank of FC (read from input file)
  integer include_fc(8), icutoff !,nsmax  ! whether to include FCs of that rank ,max# of shells looping
  real(r15) tmin,tmax,qcros(3),svdc,lmax ! lmax is the cutoff length of FC2 limited by the supercell WS
@@ -1866,7 +1866,7 @@ contains
 
        else  ! same shell
           nb(shel_count)=nb(shel_count)+1  ! counts how many atoms within shell=shel_count
-          if(j.lt.50) write(*,9)'shell#, nb#, j, dij= ',shel_count,nb(shel_count),j,d_new
+          if(j.lt.90) write(*,9)'shell#, nb#, j, dij= ',shel_count,nb(shel_count),j,d_new
           iatomneighbor(i0,msort(j))=shel_count
        endif
     enddo jloop
@@ -1916,6 +1916,7 @@ contains
         write(ulog,*)'i0,shel_count,mxshell=',i0,shel_count,mxshell
     endif
 
+  if (verbose) then
     do s = 0 , shel_count
        nbs= atom0(i0)%shells(s)%no_of_neighbors
        write(ulog,7)'shell#, neigh#, rij/rij(1),rij=',s,atom0(i0)%shells(s)%no_of_neighbors   &
@@ -1927,6 +1928,7 @@ contains
 &                ,(atom0(i0)%shells(s)%neighbors(l)%n(j),j=1,3)
        enddo
     enddo
+  endif
 
 ! also initialize atom0%equilibrium_pos
     atom0(i0)%equilibrium_pos%x = atompos(1,i0)

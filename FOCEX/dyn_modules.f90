@@ -165,14 +165,14 @@
   complex(r15), allocatable:: dyn_na(:,:,:,:,:)  
   integer born_flag
   complex(r15), allocatable :: dyn_g(:,:,:,:,:)
-  complex(r15), allocatable :: phib(:,:,:,:,:)  ! bare one from fitting 
-  complex(r15), allocatable :: phip(:,:,:,:,:)  ! periodic one from FT of dyn_G phip(t,R+tp)==sum_L phib(t,R+tp+L)
+  complex(r15), allocatable :: phi_bare(:,:,:,:,:)  ! bare one from fitting 
+  complex(r15), allocatable :: phi_periodic(:,:,:,:,:)  ! from FT of dyn_G phi_periodic(t,R+tp)==sum_L phi_bare(t,R+tp+L)
 
  contains
 
   subroutine allocate_fc_dyn(n,nr,ng)
     integer n,nr,ng
-    allocate(phip(n,n,3,3,nr),phib(n,n,3,3,nr),dyn_naq0(n,3,3),  &
+    allocate(phi_periodic(n,n,3,3,nr),phi_bare(n,n,3,3,nr),dyn_naq0(n,3,3),  &
 &           dyn_na(n,n,3,3,ng),dyn_g(n,n,3,3,ng))
   end subroutine allocate_fc_dyn
 

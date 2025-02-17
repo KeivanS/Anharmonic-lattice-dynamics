@@ -8,11 +8,11 @@
  real(r15), intent(inout) :: a(m3,n)
  real(r15), intent(in) :: b(m3),svdcut
 ! real(r15), allocatable :: u(:,:),v(:,:),w(:)
- real(r15) v(n,n),w(n),w2(n,n) , ax(m3)
+ real(r15) v(n,n),w(n), ax(m3)
  real(r15), intent(out) :: error,ermax,x(n),sigma(n),sig
  character(LEN=*), intent(in) :: fnsvd
  integer i,j,k,uio,umat
- real(r15) wmax,wmin,wcut,num,denom !,y(n) !,prod,junk
+ real(r15) wmax,wmin,wcut,num,denom ,y(n) !,prod,junk
 
  uio = 345
  umat= 346
@@ -41,11 +41,9 @@
  wmax=maxval(abs(w))
  wcut = wmax*svdcut
  write(uio,*)' Its condition number w_max/w_min = ',wmax/wmin
-! write(uio,*)' w larger than ',wcut,' will be used in the inversion'
- write(uio,*)' w larger than ',svdcut,' will be used in the inversion'
+ write(uio,*)' w larger than ',wcut,' will be used in the inversion'
  write(umat,*)' Its condition number w_max/w_min = ',wmax/wmin
-! write(uio,*)' w larger than ',wcut,' will be used in the inversion'
- write(uio,*)' w larger than ',svdcut,' will be used in the inversion'
+ write(uio,*)' w larger than ',wcut,' will be used in the inversion'
 
 ! write(umat,*)' Matrix u is  '
 ! do i=1,m3
@@ -91,35 +89,20 @@
 ! enddo
 
 ! Solve the system using x=V(1/W)(U^T) b; after eliminating w=0 terms
-   call svbksb(a,w,v,m3,n,b,x,wcut)
-!  call svbksb(a,w,v,m3,n,b,x,svdcut)
-
-  write(uio,*)' results of SVD solution, variance, error are: x,sigma,Dx'
-  w2=0
+   call svbksb(a,w,v,m3,n,b,x,wcut,sigma)
+   sigma=sigma * sqrt(svdcut)
+  write(uio,*)'# Results of SVD solution : i, x(i),sigma(i),Dx(i)=force_error*sigma(i)'
   do j=1,n
-     sigma(j) = 0  ! error is V W^-2 V+
-     w2(j,j)=w(j)
-     do k=1,n
-!        if (w(k).ge.svdcut) then
-!           sigma(j) = sigma(j) + v(j,k)*v(j,k) / w(k)/w(k)
-!           sigma(j) = sigma(j) + v(j,k)*v(j,k) *w(k)*w(k)/ (w(k)*w(k)+svdcut*svdcut)**2
-            sigma(j) = sigma(j) + v(j,k)*v(j,k) *w(k)**4/( w(k)**6+wcut**6 )
-!        endif
-     enddo
-     sigma(j) = sqrt(sigma(j))
-     write(uio,7) j,x(j),sigma(j),sigma(j)/sqrt(m3*1d0)
-
+     write(uio,7) j,x(j),sigma(j)
   enddo
 
 ! deallocate(v,w,u) !,aux,eye)
 
-! reconstruct a from u,v,w2: a=u*w2*v^T
-! y = matmul(transpose(v),x)
-! w2=matmul(w2,transpose(v))
-! a=matmul(a,w2)
  write(uio,*)' residual of SVD solution is: Ax,b,|Ax-b|,|Ax-b|/Ax'
-!  error = 0; ermax = 0; num=0; denom=0
-  ax=matmul(a,(matmul(w2,(matmul(transpose(v),x)))))
+! reconstruct a from u,v,w2: a=u*w2*v^T
+  y = matmul(transpose(v),x)
+  y = w*y
+  ax=matmul(a,y) ! (matmul(w2,(matmul(transpose(v),x)))))
   num=dot_product((ax-b),(ax-b))
   denom=dot_product(ax,ax)
   error=sum(abs(ax-b))/m3
@@ -128,7 +111,7 @@
      write(uio,*)' Ax-b ',i,ax(i)-b(i)
   enddo
   sig=sqrt(num/denom)*100
-  write(uio,3)' Average, largest errors in force(eV/Ang),percent deviation=',error,ermax,sig
+  write(uio,3)' MAE, largest errors in force(eV/Ang),percent deviation=',error,ermax,sig
 
 6 format(i6,3(1x,g13.6),3x,g11.4)
 3 format(a,3(1x,g13.6))
@@ -216,7 +199,7 @@
  enddo
  error = error /(1.*m3)
  sig=sqrt(num/denom)
- write(uio,3)' ELIMINATION: Average, largest errors in force,percent deviation=',error,ermax,sig*100,' %'
+ write(uio,3)' ELIMINATION: MAE, largest errors in force,percent deviation=',error,ermax,sig*100,' %'
  write(uio,*)' After elimination, || F_dft-F_fit || / || F_dft || =',sig
 
  close(uio)
@@ -489,14 +472,14 @@
 
       END SUBROUTINE isvbksb
 !=================
-      SUBROUTINE svbksb(u,w,v,m,n,b,x,wcut)
+      SUBROUTINE svbksb(u,w,v,m,n,b,x,wcut,sigma)
 !! back substitutes u,w,v to solve for x, using ridge regression with wcut 
  use constants, only : r15
       implicit none
       INTEGER, intent(in) :: m,n
       real(r15), intent(in) :: b(m),u(m,n),v(n,n),w(n),wcut
-      real(r15), intent(out) :: x(n)
-      INTEGER j
+      real(r15), intent(out) :: x(n),sigma(n)
+      INTEGER j,k
       real(r15) tmp(n)
 
       tmp=matmul(transpose(u),b)
@@ -509,6 +492,20 @@
          endif
       enddo
       x= matmul(v,tmp)
+
+! calculate the error sigma: what is the change in x if b has a small error db : A dx = db => dx = A^-1 db=V(1/w)U^T db  
+! iassuming all db having the same error s; then <dx^2>= < db^T V (1/w) U^T U (1/w) V^T db >= V (1/w^2) V^T <db^2> => dx=sigma*db
+      do j=1,n
+         sigma(j) = 0  ! error is V W^-2 V+
+         do k=1,n
+!            if (w(k).ge.wcut) then
+!               sigma(j) = sigma(j) + v(j,k)*v(j,k) / w(k)/w(k)
+!               sigma(j) = sigma(j) + v(j,k)*v(j,k) *w(k)*w(k)/ (w(k)*w(k)+svdcut*svdcut)**2
+                sigma(j) = sigma(j) + v(j,k)*v(j,k) *w(k)**4/( w(k)**6+wcut**6 ) ! my regularization
+!            endif
+         enddo
+         sigma(j) = sqrt(sigma(j))
+      enddo
 
       END SUBROUTINE svbksb
 !===================================================
@@ -563,8 +560,7 @@
  wmin=minval(abs(w))
  wcut=wmax*svdcut
  write(uio,4)'SOLVE_SVD: largest w, condition number is ',wmax,wmax/wmin
-! write(uio,4)'SOLVE_SVD: will only keep svs larger than ',wcut
- write(uio,4)'SOLVE_SVD: will only keep svs larger than ',svdcut
+ write(uio,4)'SOLVE_SVD: will only keep svs larger than ',wcut
  call write_out(uio,'=========================== SOLVE_SVD: W ',w)
 
 ! this is to eliminate the v vectors with small w
@@ -572,21 +568,11 @@
 !    if(abs(w(i)).lt.wcut) w(i)=0d0
 ! enddo
 
-! call svbksb(u,w,v,ndim,n,b,xout,wcut)
- call svbksb(u,w,v,ndim,n,b,xout,svdcut)
-
- write(uio,*)' SOLVE_SVD: solution, variance, error are: x,sigma,Dx'
+ call svbksb(u,w,v,ndim,n,b,xout,wcut,sig)
+ 
+ write(uio,*)'# Results of SOLVE_SVD : i, x(i),sigma(i),Dx(i)=force_error*sigma(i)'
  do i=1,n
-    sig(i) = 0
-    do k=1,n
-       if (w(k).ge.wcut) then  ! error is V W^-2 V+
-!          sig(i) = sig(i) + v(i,k)*v(i,k) / w(k)/w(k)
-!         sig(i) = sig(i) + v(i,k)*v(i,k) *w(k)*w(k)/( w(k)*w(k)+wcut*wcut )**2
-          sig(i) = sig(i) + v(i,k)*v(i,k) *w(k)**4/( w(k)**6+wcut**6 )
-       endif
-    enddo
-    sig(i) = sqrt(sig(i))
-    write(uio,7) i,xout(i),sig(i),sig(i)/sqrt(ndim*1.)
+    write(uio,7) i,xout(i),sig(i),sig(i)*sqrt(svdcut)  ! sqrt(svdcut) is the force error
  enddo
 
  deallocate(u,v,w)

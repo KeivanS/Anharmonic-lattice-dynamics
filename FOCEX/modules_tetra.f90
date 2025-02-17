@@ -51,8 +51,8 @@ contains
 
     open(126,file='KPOINT_tet.mp',status='unknown')
     write(126,*)'# i ,kp(:,i), wk(i) , kp_reduced'
-    open(127,file='tet.mp',status='unknown')
-    write(127,*)'# i ,tet(i)%p(1...4)%i'
+!   open(127,file='tet.mp',status='unknown')
+!   write(127,*)'# i ,tet(i)%p(1...4)%i'
     ep = 0d0  ! shift by a small amount so that only one boundary K remains in the FBZ after folding
     sh = shift(1)/nc(1)*v2a(g01) + shift(2)/nc(2)*v2a(g02) + shift(3)/nc(3)*v2a(g03)
     mc=nc !mc(1)=nc(1); mc(2)=nc(2); mc(3)=nc(3)
@@ -189,16 +189,16 @@ contains
 !   do i=1,nk
 !      write(126,2)i,kpc(:,i),wk(i)
 !   enddo
-    do i=1,nt
-       write(127,1)i,(tet(i)%p(l)%i,l=1,4)
-    enddo
+!   do i=1,nt
+!      write(127,1)i,(tet(i)%p(l)%i,l=1,4)
+!   enddo
 
  1  format(9(1x,i6))
  2  format(i7,2x,3(1x,f10.5),5x,f9.5,3x,9(f11.5,1x))
  3  format(3(i3),2x,i6,2x,3(1x,f12.5),5x,f9.5)
  4  format(a,3(1x,i6),2x,9(1x,f12.5),5x,f9.5)
     close(126)
-    close(127)
+!   close(127)
 
   end subroutine make_kp_reg_tet
 !-------------------------------------

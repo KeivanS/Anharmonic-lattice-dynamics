@@ -607,6 +607,8 @@
 !-------------------------------------------------------------------------------
 
   subroutine set_atompos3(rcut)
+!! Generates a lattice of points within the sphere of radius rcut in addition to the 
+!! lattices generated from other atoms in the basis
       use lattice
       use atoms_force_constants !force_constants_module
       use ios !, only : ulog

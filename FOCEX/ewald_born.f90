@@ -20,9 +20,6 @@
  implicit none
  real(r15), intent(in ):: rcut,gcut,epsilo(3,3)
  type(vector), intent(in ):: x1,x2,x3
-! integer, intent(inout):: ngrid
-! real(r15), intent(inout):: grid(:,:)
-! real(r15), allocatable, intent(inout):: grid(:,:)
  integer i1,i2,i3,mxshl,cnt,maxx,m
  real(r15) v(3),rr,aux2(3,3),epsinv(3,3)
  real(r15), allocatable :: aux(:,:),lengths(:)
@@ -42,32 +39,9 @@
  lengths =1d20; aux=1d20
  write(ulog,4)'MAKE_GRID_SHELL, maxx(Rgrid), m,for rcut=',maxx,float(mxshl),rcut
  write(*   ,4)'MAKE_GRID_SHELL, maxx(Rgrid), m for rcut=',maxx,float(mxshl),rcut
- cnt=1
- shelloop: do m=0,mxshl
- do i1=-m,m
- do i2=-m,m
- do i3=-m,m
-    if(iabs(i1).ne.m.and.iabs(i2).ne.m.and.iabs(i3).ne.m)cycle
 
-! generate vectors in a grid
-    v= v2a(i1*x1 + i2*x2 + i3*x3)
-    rr=sqrt(dot_product(v,matmul(epsinv,v)))
-    if(rr.gt.rcut) cycle
+ call run_grid(mxshl,maxx,x1,x2,x3,epsinv,aux,lengths,rcut,nr_ewald) 
 
-    aux(:,cnt)=v
-    lengths(cnt)=rr
-    cnt=cnt+1
-    if (cnt.gt.maxx) then
-       write(ulog,*)'RLOOP: maxx size exceeded, need to increase variable maxx from ',maxx
-       exit shelloop
-    endif
-
- enddo
- enddo
- enddo
- enddo shelloop
-
- nr_ewald=cnt-1
  write(ulog,5) 'MAKE_GRID_SHELL: within rcut=',rcut,' r_ewald generated ',nr_ewald,' vectors'
 
  if (allocated(r_ewald)) deallocate(r_ewald)  ! overwrite if previously called
@@ -85,9 +59,6 @@
  deallocate (aux, lengths, msort)
 
 ! now the G-vectors
-! call calculate_volume(y1,y2,y3,om0)
-! max=2*nint(12.6/3d0*gcut**3/om0)+10
-! m=nint(max**0.333)*2
  call make_reciprocal_lattice_2pi(x1,x2,x3,y1,y2,y3)
  call get_upper_bounds(y1,y2,y3,gcut,maxx,mxshl)
  write(ulog,4)'MAKE_GRID_SHELL, maxx(g_ewald), for gcut=',maxx,gcut
@@ -95,33 +66,8 @@
  allocate(aux(3,maxx),lengths(maxx),msort(maxx))
  lengths =1d20; aux=1d20
 
- cnt=1
- gshelloop: do m=0,mxshl
- do i1=-m,m
- do i2=-m,m
- do i3=-m,m
-    if(iabs(i1).ne.m.and.iabs(i2).ne.m.and.iabs(i3).ne.m)cycle
+ call run_grid(mxshl,maxx,y1,y2,y3,epsilo,aux,lengths,gcut,ng_ewald) 
 
-! generate vectors in a grid
-    v= v2a(i1*y1 + i2*y2 + i3*y3)
-    rr=sqrt(dot_product(v,matmul(epsilo,v)))
-    if(rr.gt.gcut) cycle
-
-    aux(:,cnt)=v
-    lengths(cnt)=rr
-    cnt=cnt+1
-    if (cnt.gt.maxx .and. maxx.ne.1) then
-       write(ulog,*)'GLOOP: maxx size exceeded, need to increase variable maxx from ',maxx
-       exit gshelloop
-!      stop
-    endif
-
- enddo
- enddo
- enddo
- enddo gshelloop
-
- ng_ewald=cnt-1
  write(ulog,5) 'MAKE_GRID_SHELL: within gcut=',gcut,' g_ewald generated ',ng_ewald,' vectors'
 
  if (allocated(g_ewald)) deallocate(g_ewald)
@@ -143,6 +89,49 @@
 5 format(a,g11.4,a,i8,9(1x,g14.7))
 
  end subroutine make_grid_shell_ewald
+!============================================================
+ subroutine run_grid(mxshl,maxx,y1,y2,y3,epsilo,aux,lengths,gcut,ng_ewald) 
+!! given 3 translation vectors y1,y2,y3 and metric defined by epsilo, generates a 
+!! grid, aux(3,maxx), of size ng_ewald whtin the sphere of radius gcut; 
+!! lengths(maxx) is later used for sorting aux according to their lengths
+!! maxx and mxshl are initial guesses (upper bounds) for the size of the arrays and # of shells
+ use geometry
+ implicit none
+ integer, intent(in):: mxshl,maxx
+ integer, intent(out):: ng_ewald
+ real(r15), intent(in ):: gcut,epsilo(3,3)
+ real(r15), intent(out):: aux(3,maxx),lengths(maxx)
+ type(vector), intent(in ):: y1,y2,y3
+ integer i1,i2,i3,cnt,m
+ real(r15) v(3),rr
+
+ cnt=1
+ gshelloop: do m=0,mxshl
+ do i1=-m,m
+ do i2=-m,m
+ do i3=-m,m
+    if(iabs(i1).ne.m.and.iabs(i2).ne.m.and.iabs(i3).ne.m)cycle
+
+! generate vectors in a grid
+    v= v2a(i1*y1 + i2*y2 + i3*y3)
+    rr=sqrt(dot_product(v,matmul(epsilo,v)))
+    if(rr.gt.gcut) cycle
+    aux(:,cnt)=v
+    lengths(cnt)=rr
+    cnt=cnt+1
+    if (cnt.gt.maxx .and. maxx.ne.1) then
+       write(*,*)'GLOOP: maxx size exceeded, need to increase variable maxx from ',maxx
+       exit gshelloop
+    endif
+
+ enddo
+ enddo
+ enddo
+ enddo gshelloop
+
+ ng_ewald=cnt-1
+
+ end subroutine run_grid
 !============================================================
  subroutine dewapot_g(x,dpot)
 !! calculates the -d/dx(sum_R 1/|R+x| -background) = force  with the corrected metric
@@ -777,7 +766,7 @@
 !--------------------------------------------------
  subroutine ewald_2nd_deriv_hat(q,tau,taup,nr,ng,rgrid,ggrid,etaew,d2ew,d3ew)
 !! calculates the second derivative of the Ewald potential to be used in the Non-analytical correction; step(non-smooth) phase
-!! input is the two atoms tau and taup, output is the 3x3 block D^EW_tau,taup(q) which goes to D^NA for q \to 0
+!! input is the two atoms tau and taup, output is the 3x3 block D^EW_tau,taup(q) which goes to D^NA for q \to 0 ; no mass denominator
  use params, only : tolerance
  use lattice
  use geometry, only : length
@@ -805,21 +794,16 @@
        if (dd.gt.6) cycle
        hout= hfunc(del,dd) * exp(ci*dot_product(q,rgrid(:,igrid))) 
 !      write(6,4)'rgrid,dd,hout=',igrid,dd,hout(1,1)
-!      dhat=dhat - hout * cos(dot_product(q,rgrid(:,igrid))) 
        dhat=dhat - hout
        do ga=1,3
-!         d3ew(:,:,ga)=d3ew(:,:,ga) - matmul(matmul(atom0(tau )%charge,hout),transpose(atom0(taup)%charge))  &
-!  &                                * sin(dot_product(q,rgrid(:,igrid))) *rgrid(ga,igrid) 
-!         d3ew(:,:,ga)=d3ew(:,:,ga) - hout * sin(dot_product(q,rgrid(:,igrid))) *rgrid(ga,igrid) 
           d3ew(:,:,ga)=d3ew(:,:,ga) - ci*rgrid(ga,igrid) *hout  
        enddo
 !      write(*,4)'R_sum: igrid,d,dhat_11=',igrid,dd, dhat(1,1)
     enddo
      if(tau.eq.taup) dhat=dhat - 4/3d0/sqrt(pi)*epsinv 
-!    if(tau.eq.taup) d3ew=d3ew - 4/3d0/sqrt(pi)*epsinv   !!! TO BE CHECKED !!! not needed since does not depend on q
+!    if(tau.eq.taup) d3ew=d3ew - 4/3d0/sqrt(pi)*epsinv   !!! TO BE CHECKED !!!
     dhat=dhat* etaew*etaew*etaew/sqrt(det(epsil)) 
     d3ew=d3ew* etaew*etaew*etaew/sqrt(det(epsil)) 
-!   write(6,*)'Last R-term(1,1)=',hout(1,1)*etaew*etaew*etaew/sqrt(det(epsil)) 
 !   call write_out(6,'total of Rsum terms ',dhat)
 
 ! reciprocal space term  
@@ -834,8 +818,6 @@
 !      qbe(:)=matmul(atom0(taup)%charge,qpg)
        do al=1,3
        do be=1,3
-!         hout(al,be)= termg * qal(al)*qbe(be)*cos(dot_product(qpg,dta)) 
-!         hout(al,be)= termg * qpg(al)*qpg(be)*cos(dot_product(qpg,dta)) 
           hout(al,be)= termg * qpg(al)*qpg(be)*exp(-ci*dot_product(qpg,dta)) 
 !! NEED TO ADD THIRD DERIVATIVE !!
        enddo
@@ -844,7 +826,6 @@
 !      if(igrid.eq.1) call write_out(6,'G=0 term of ewald ',hout*180.9557368)
     enddo
 !   write(*,3)'final EW2DERIV:dhat=',dhat
-!   write(6,*)'Last G-term(1,1)=',hout(1,1)*4*pi/volume_r0 
 
     dhat=dhat /(4*pi*eps0)* ee*1d10
 !   call write_out(6,'final EW2DERIV:dhat scaled by 1d10*ee/eps0 ',dhat)
@@ -852,26 +833,6 @@
     d2ew= matmul(matmul(atom0(tau)%charge,dhat),transpose(atom0(taup)%charge))
  !  d2ew= d2ew*exp(-ci*(q.dot.dta))   ! smooth phase convention
      
-! Fix d3ew here ; this is copied from old NA PArlinski term
- !      rtp  = v2a(atom0(taup)%equilibrium_pos-atom0(tau)%equilibrium_pos)
- !      phase= exp(ci*(q.dot.rtp))
- !      mysf = sf * phase
- !      mydsf=(dsf + ci*rtp*sf) * phase
- !         do ga=1,3
-
- !            ddyn(al,be,ga) = dyn(al,be) * ( &
- !    &         atom0(tau )%charge(al,ga)/dot_product(atom0(tau )%charge(al,:),q) + &
- !    &         atom0(taup)%charge(be,ga)/dot_product(atom0(taup)%charge(be,:),q) - &
- !    &         dqeq(ga)/qeq  + ci*rtp(ga) + mydsf(ga)/mysf ) 
-
- !         enddo
-
-
-
-
-
-
-
 
 3 format(a,99(1x,g14.7))
 4 format(a,i4,99(1x,g11.4))
