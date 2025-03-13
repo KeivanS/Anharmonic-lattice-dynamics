@@ -1,10 +1,10 @@
 Introduction
 ============
 
-What is ALADYN?
+What is ALATDYN?
 ---------------
 
-Anharmonic-LAttice-DYNamics (ALADYN) contains 5 sets of stand-alone codes with the following functions:
+Anharmonic-LATtice-DYNamics (ALATDYN) contains 5 sets of stand-alone codes with the following functions:
 
 * **FOrce Constant EXtraction (FOCEX)** to extract force constants from force-displacements data, the output of which can be used as input to the following codes;
 * **Self-CoOnsistent Phonon (SCOP)** to calculate the state of equilibrium of a crystal at a given temperature and pressure solely from the set of force constants parameters of the high-symmetry phase. It is based on a variational free energy minimization.
@@ -23,7 +23,7 @@ Please cite the following articles:
 * K. Esfarjani, H. T. Stokes anf G. Cgen, *Phys Rev B* 84, 085204 (2011). DOI: 10.1103/PhysRevB.84.085204
   [`Link <https://doi.org/10.1103/PhysRevB.84.085204>`__]
 
-* K. Esfarjani, H.T. Stokes, S. Nayeb Sadeghi, Y. Liang, B. Timalsina, H. Meng, J. Shiomi, B. Liao, R. Sun; ALADYN: a set of Anharmonic LAttice DYNamics codes to compute thermodynamic and thermal transport properties of crystalline solids
+* K. Esfarjani, H.T. Stokes, S. Nayeb Sadeghi, Y. Liang, B. Timalsina, H. Meng, J. Shiomi, B. Liao, R. Sun; ALATDYN: a set of Anharmonic LATtice DYNamics codes to compute thermodynamic and thermal transport properties of crystalline solids
   [`Link <https://arxiv.org/abs/2501.02113>`__]
 
 Acknowledgment

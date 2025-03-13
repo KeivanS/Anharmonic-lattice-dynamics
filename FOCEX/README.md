@@ -1,7 +1,7 @@
-#### This code, FOCEX (FOrce Constant EXtraction) included in ALADYN (Anharmonic LAttice DYNamics) extracts the force constants (FCs) of ranks 2,3,4 .. up to 8th order for a force-displacement data of atoms in one or many supercells calculated using DFT (or any other method). From the FCs, one can calculate the phonon spectrum as well as other thermodynamic properties including elastic constants, total and free energy, vibrational entropy and heat capacity, Gruneisen parameter and thermal expansion coefficient...
+#### This code, FOCEX (FOrce Constant EXtraction) included in ALATDYN (Anharmonic LATtice DYNamics) extracts the force constants (FCs) of ranks 2,3,4 .. up to 8th order for a force-displacement data of atoms in one or many supercells calculated using DFT (or any other method). From the FCs, one can calculate the phonon spectrum as well as other thermodynamic properties including elastic constants, total and free energy, vibrational entropy and heat capacity, Gruneisen parameter and thermal expansion coefficient...
 Other codes in the suite, such as THERMACOND can in addition calculate phonon lifetimes, scattering rates and thermal conductivity. The installation of FOCEX is simple and just requires a fortran compiler (gfortran or intel).
 
-- To install the FOCEX code, clone the repo "github_link_here" or download the ALADYN code and follow the instructions below:
+- To install the FOCEX code, clone the repo "github_link_here" or download the ALATDYN code and follow the instructions below:
 
 cd Anharmonic-lattice-dynamics/FOCEX
 

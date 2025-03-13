@@ -17,7 +17,7 @@ Quick installation: In the root directory edit `make.inc` and type `make`.
 FOCEX
 ^^^^^^
 
-* To install the FOCEX code, clone the repository `https://github.com/KeivanS/Anharmonic-lattice-dynamics.git` or download the ALADYN code and follow the instructions
+* To install the FOCEX code, clone the repository `https://github.com/KeivanS/Anharmonic-lattice-dynamics.git` or download the ALATDYN code and follow the instructions
 * Edit the Makefile, generally you do not need to change the Makefile. In case if you need to change the compiler flags adjust the FLAGS option inside **Anharmonic-lattice-dynamics/FOCEX/Makefile** by uncommenting or adding the available option
 
 ``FLAGS= -fcheck=all -fdec-math #-Wall #-fbounds-check #-fbacktrace #-ffpe-trap=invalid,zero,overflow,underflow,inexact #-inline-debug-info #-p #-pedantic #-std=f95``
@@ -34,7 +34,7 @@ SCOP8
 
 * On Linux
 
-  * To install the SCOP8 code, clone the repository `https://github.com/KeivanS/Anharmonic-lattice-dynamics.git` or download the ALADYN code and follow the instructions
+  * To install the SCOP8 code, clone the repository `https://github.com/KeivanS/Anharmonic-lattice-dynamics.git` or download the ALATDYN code and follow the instructions
   * Edit the Makefile, generally you do not need to change the Makefile. In case if you need to change the compiler flags adjust the FLAGS option inside **Anharmonic-lattice-dynamics/SCOP8/Makefile** by uncommenting or adding the available option
 
   ``FLAGS= #-O3 #-C # to check everything O3 #g -p #for profiling with gprof``
@@ -54,7 +54,7 @@ SCOP8
 
 THERMACOND
 ^^^^^^^^^^^
-* To compile the THERMACOND code, clone the repository https://github.com/KeivanS/Anharmonic-lattice-dynamics.git or download the ALADYN code and follow the instructions
+* To compile the THERMACOND code, clone the repository https://github.com/KeivanS/Anharmonic-lattice-dynamics.git or download the ALATDYN code and follow the instructions
 * It is enough to run ``make`` in the main directory, but a suitable Makefile must be present in the directory. THERMACOND needs a gfortran compiler. After compilation succeeds, a binary file ``kap8`` (if version is 8) will be created in the main directory. There is no need for input from the terminal. It can be invoked simply as ``./ kap8``.
 * In order to compute collision matrices in parallell, there is a bash script file ``splitjob.sh`` that user can use to distribute k-mesh to many cores.
 

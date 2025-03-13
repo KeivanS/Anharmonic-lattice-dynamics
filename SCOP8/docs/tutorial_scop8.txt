@@ -3,10 +3,10 @@ pressure solely from the set of force constants parameters of the high-symmetry 
 the optimized lattice structure, phonon dispersions and several thermodynamics quantities at given
 temperature.
 
-The scop8 code can be download as a zip file on our github page ALADIN, folder 'SCOP8'.
+The scop8 code can be download as a zip file on our github page ALATDYN, folder 'SCOP8'.
 
 To install and use the code in Windows, simply follow the steps written in SCOP8 > docs > README.md
-If done correctly, the setups can also let you run FOCEX and other part of ALADYN packages in Windows.
+If done correctly, the setups can also let you run FOCEX and other part of ALATDYN packages in Windows.
 For Linux environment, you just need to do step 5 and ignore the rest. The Makefile is provided so
 the code can be simply compiled by typing 'make' if step 5 is done correctly.
 

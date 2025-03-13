@@ -1,4 +1,4 @@
-Anharmonic-LAttice-DYNamics (ALADYN)
+Anharmonic-LATtice-DYNamics (ALATDYN)
 ====================================
 
 .. image:: _static/img/aladyn-logo.png

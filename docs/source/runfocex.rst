@@ -153,7 +153,7 @@ Ge
 ^^^^
 
 FOrce Constant Extraction (FOCEX) is a code to extract force constants from force-displacements data, the output of which can be used as input to the following codes.
-The installation of FOCEX has to be done before using it and is given in section :ref:`focex-install`. This code, FOCEX (FOrce Constant EXtraction) included in ALADYN (Anharmonic LAttice DYNamics) employs the
+The installation of FOCEX has to be done before using it and is given in section :ref:`focex-install`. This code, FOCEX (FOrce Constant EXtraction) included in ALATDYN (Anharmonic LATtice DYNamics) employs the
 force constant calculation, 2nd, 3rd and 4th order to be latter used for other thermodynamical properties. The installation of FOCEX is simple and just require the
 fortran compiler.
 

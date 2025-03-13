@@ -1,7 +1,7 @@
-![ALADYN Logo](https://github.com/KeivanS/Anharmonic-lattice-dynamics/blob/main/docs/source/_static/img/aladyn-logo.png)
+![ALATDYN Logo](https://github.com/KeivanS/Anharmonic-lattice-dynamics/blob/main/docs/source/_static/img/aladyn-logo.png)
 
 ## For Users
-Anharmonic-LAttice-DYNamics (ALADYN) is a lattice dynamics code. It calculates thermodynamic and thermal transport properties of solid crystalline materials from data on their force and potential energy as a function of positions, using density functional theory or classical molecular dynamics as input data.
+Anharmonic-LATtice-DYNamics (ALATDYN) is a lattice dynamics code. It calculates thermodynamic and thermal transport properties of solid crystalline materials from data on their force and potential energy as a function of positions, using density functional theory or classical molecular dynamics as input data.
 
 For installation and usage instructions, please read our [documentation](https://aladyn.readthedocs.io/en/latest/index.html).
 
