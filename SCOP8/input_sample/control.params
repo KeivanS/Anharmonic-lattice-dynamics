@@ -2,7 +2,7 @@
 .True. # whether inherit file <targetInitialize.dat> results for initial guess
 .False. # whether include pressure factor
 .False. # whether force ASR in K after each Broyden iteration
-.False. # whether use high temperature limit in <YY> calculation
+.False. # whether use high temperature limit in <YY> calculation(deprecated)
 54321 # if you want random start, this is the seed
 0.02 # range for random start
 0.0 0.0 0.0 # center for random start
