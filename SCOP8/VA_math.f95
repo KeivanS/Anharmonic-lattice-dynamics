@@ -1028,7 +1028,7 @@ if (mpi_rank==0) then
 WRITE(*,*)'minimum eigenvalue after shift:',MINVAL(MINVAL(eivals,DIM=2))
 endif
 
-!NOTE: temporary check
+
 ! OPEN(93,file='large_yy.txt',status='unknown',action='write',position='append')
 ! WRITE(93,*) '=======atom1, atom2, xyz1, xyz2, <yy>==========','iter=',iter
     !**** calculate <YY> and store them in yy_value ****
@@ -1038,6 +1038,9 @@ endif
         atom2 = myfc2_index(i)%jatom_number
         xyz1 = myfc2_index(i)%iatom_xyz
         xyz2 = myfc2_index(i)%jatom_xyz
+
+        !UPDATE: ignore user choise of highT_limit or not, force the highT_limit
+        highT_limit = 1 !04/01/2025
 
         if(.not.highT_limit) then
 
