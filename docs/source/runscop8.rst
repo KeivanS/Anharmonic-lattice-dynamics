@@ -449,7 +449,35 @@ Type ``make`` in terminal for the code to compile. After compilation, type ``mpi
 
 			.. code-block:: powershell
 
-				"terminal.external.windowsExec": "C:\\MinGW\\msys\\1.0\\bin\\sh.exe"
+				"terminal.integrated.automationProfile.linux": null,
+				"terminal.integrated.automationProfile.windows": null,
+				"terminal.explorerKind": "both",
+				"terminal.external.windowsExec": "C:\\MinGW\\msys\\1.0\\bin\\sh.exe",
+				"terminal.integrated.profiles.windows": {
+
+					"PowerShell": {
+						"source": "PowerShell",
+						"icon": "terminal-powershell"
+					},
+					"Command Prompt": {
+						"path": [
+							"${env:windir}\\Sysnative\\cmd.exe",
+							"${env:windir}\\System32\\cmd.exe"
+						],
+						"args": [],
+						"icon": "terminal-cmd"
+					},
+					"Git Bash": {
+						"source": "Git Bash"
+					},
+
+					"msys": {
+						"path": [
+							"C:\\MinGW\\msys\\1.0\\Run_MSYS.bat"
+						],
+					}
+				},
+				"explorer.sortOrder": "type",
 
 	5.Setup for MPI in Windows follow the steps  `here <https://abhila.sh/writing/3/mpi_instructions.html>`_.   
 
