@@ -7363,6 +7363,7 @@ subroutine get_k_info3(q,nkt,ex) !,i1,j1,k1,gg1,gg2,gg3,inside)
  end subroutine subst_eivecs
 !-------------------------------------------------------------------------------------------------------
     SUBROUTINE gruneisen(nkp,kp,dk,ndn,eivl,eivc,ugr,grn)
+        !UPDATE: add new term to gruneisen
 !! legacy code, calculate mode gruneisen
 !! takes the eigenvalues (w) and eigenvectors calculated along some
 !! crystalline directions and calculates the corresponding mode
@@ -7409,8 +7410,10 @@ subroutine get_k_info3(q,nkt,ex) !,i1,j1,k1,gg1,gg2,gg3,inside)
 
              qdotr =  ( qq .dot. rx2)
              zz = cdexp( ci * qdotr )
-        !! term = - ampterm_3(t)*fcs_3(igroup_3(t))*zz*eivc(ta1,la,i)*conjg(eivc(ta2,la,i))*rr3(ga)/sqrt(mi*mj)
-             term = - fcs_3(t) * zz * eivc(ta2,la,ik)*conjg(eivc(ta1,la,ik))*rx3(ga)/sqrt(mi*mj)
+            !  term = - fcs_3(t) * zz * eivc(ta2,la,ik)*conjg(eivc(ta1,la,ik))*rx3(ga)/sqrt(mi*mj)
+             !UPDATE: term expression
+             term = - fcs_3(t) * zz * eivc(ta2,la,ik)*conjg(eivc(ta1,la,ik))/sqrt(mi*mj)*&
+             &      (rx3(ga)-dotproduct(gam(3*(k0-1)+ga,:),(qiu(:,1,1)+qiu(:,2,2)+qiu(:,3,3))))
              grn(la,ik) = grn(la,ik) + term !unit is ev/A^2/uma, same unit of omega^2
         !        write(ulog,7)i,la,t,fcs_3(t),rr2,qdotr,zz,rr3,grn(la,ik)
            ENDDO tloop
@@ -7870,6 +7873,7 @@ subroutine convert_to_voigt(a,c)
 end subroutine convert_to_voigt
 !-------------------------------------------------------------------------------------------------------
  subroutine get_phi_zeta_Xi(uio) !ndn,atld0,gama,phi,zeta,teta,xi,qiu,uio)
+    !UPDATE: to add new term to Gruneisen
     !! calculates some matrices useful for later operations, in addition to the  "standard" elastic constants
      use ios , only: ulog, write_out
      use lattice, only : volume_r0 
@@ -7882,10 +7886,9 @@ end subroutine convert_to_voigt
     ! real(r15), intent(out) :: gama(max(1,ndn-3),max(1,ndn-3)),phi(ndn,ndn),zeta(ndn,ndn,3), &
     !&            xi(ndn,3,3),teta(ndn,ndn,3),atld0(3,3,3,3),qiu(ndn,3,3)
      integer tau,taup,al,be,ga,de,j,t,g,ti,s,cnt2,ired,la,nl,nc,nq
-     real(r15)  rij(3),junk,gam(ndyn,ndyn),tm(max(1,ndyn-3),max(1,ndyn-3)),constr(3,3,3),am(3,3,3,3)
+     real(r15)  rij(3),junk, tm(max(1,ndyn-3),max(1,ndyn-3)),constr(3,3,3),am(3,3,3,3)
      real(r15)  matr(3,3),c1(6,6),c0(6,6),aux(ndyn,ndyn)
      
-     !UPDATE:
      INTEGER :: fc2_idx,atom1, atom2, tau1, tau2
      INTEGER :: ndn
 
@@ -7893,9 +7896,10 @@ end subroutine convert_to_voigt
      write(ulog,*)' ********** ENTERING get_phi_zeta_x *************'
      write(35,*)' ********** ENTERING get_phi_zeta_x *************'
      
-     !MODIFY: these needs to be allocated first! 
-     !They're allocated somewhere else in FOCEX but not in SCOP8
+     !UPDATE: these needs to be allocated first
+     !They're allocated by call allocate_mech(n) in FOCEX but not in SCOP8
      ndn = ndyn !it's atom_number*3
+     IF(.not.ALLOCATED(gam)) ALLOCATE(gam(ndn, ndn))
      IF(.not.ALLOCATED(zeta)) ALLOCATE(zeta(ndn, ndn, 3))
      IF(.not.ALLOCATED(phi)) ALLOCATE(phi(ndn, ndn))
      IF(.not.ALLOCATED(xi)) ALLOCATE(xi(ndn, 3, 3))

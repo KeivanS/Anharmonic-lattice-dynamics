@@ -1670,7 +1670,7 @@ end subroutine sort3
 
  end module kpoints
 !**********************************************************
-!UPDATE: FOCEX_ec
+!UPDATE: add gam(:,:)
 module mech
    use atoms_force_constants, only :  natom_prim_cell
    use constants, only : r15
@@ -1678,7 +1678,7 @@ module mech
    implicit none
   
    real(r15) sigma0(3,3),atld0(3,3,3,3)
-   real(r15), allocatable :: phi(:,:),xi(:,:,:),qiu(:,:,:),zeta(:,:,:),teta(:,:,:) ,gama(:,:),y0(:),pi0(:)
+   real(r15), allocatable :: phi(:,:),xi(:,:,:),qiu(:,:,:),zeta(:,:,:),teta(:,:,:) ,gama(:,:),y0(:),pi0(:),gam(:,:)
    
   ! contains
   

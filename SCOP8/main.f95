@@ -563,7 +563,7 @@ WRITE(*,*) '!~~~~~~~~~~~~INITIALIZE THE VARIATIONAL PARAMETERS~~~~~~~~~~~~~~~'
         ALLOCATE(gama(ndyn-3,ndyn-3))
         !MODIFY: need to calculate volume_r0 first
         CALL calculate_volume(r1, r2, r3, volume_r0)
-        CALL get_phi_zeta_Xi(uio) !ndyn,atld0,gama,phi,zeta,teta,xi,qiu,uio)
+        CALL get_phi_zeta_Xi(uio) !ndyn,atld0,gama,phi,zeta,teta,xi,qiu,uio), prerequisite for Gruneisen
 
         CALL residuals (uio) !ndyn,xi,zeta,phi,gama,sigma0,y0,pi0,uio)
         CALL mechanical2(elastic,uio) !ndyn,atld0,sigma0,phi,zeta,xi,qiu,gama,elastic,uio)
