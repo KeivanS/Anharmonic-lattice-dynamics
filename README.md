@@ -41,3 +41,7 @@ make html
 ```
 
 Open build/html/index.html in your browser.
+
+## Citation
+
+K. Esfarjani, H. Stokes, S.N. Sadeghi, Y. Liang, B. Timalsina, H. Meng, J. Shiomi, B. Liao, R. Sun, "ALATDYN: A set of Anharmonic LATtice DYNamics codes to compute thermodynamic and thermal transport properties of crystalline solids," _Computer Physics Communications_ **312**, 109575 (2025). [doi:10.1016/j.cpc.2025.109575](https://doi.org/10.1016/j.cpc.2025.109575)
