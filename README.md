@@ -42,6 +42,8 @@ make html
 
 Open build/html/index.html in your browser.
 
-## Citation
+## Citations
 
-K. Esfarjani, H. Stokes, S.N. Sadeghi, Y. Liang, B. Timalsina, H. Meng, J. Shiomi, B. Liao, R. Sun, "ALATDYN: A set of Anharmonic LATtice DYNamics codes to compute thermodynamic and thermal transport properties of crystalline solids," _Computer Physics Communications_ **312**, 109575 (2025). [doi:10.1016/j.cpc.2025.109575](https://doi.org/10.1016/j.cpc.2025.109575)
+- K. Esfarjani and H.T. Stokes, _Phys Rev B_ **77**, 144112 (2008). [doi:10.1103/PhysRevB.77.144112](https://doi.org/10.1103/PhysRevB.77.144112)
+- K. Esfarjani, H. T. Stokes, and G. Chen, _Phys Rev B_ **84**, 085204 (2011). [doi:10.1103/PhysRevB.84.085204](https://doi.org/10.1103/PhysRevB.84.085204)
+- K. Esfarjani, H. Stokes, S.N. Sadeghi, Y. Liang, B. Timalsina, H. Meng, J. Shiomi, B. Liao, and R. Sun, _Computer Physics Communications_ **312**, 109575 (2025). [doi:10.1016/j.cpc.2025.109575](https://doi.org/10.1016/j.cpc.2025.109575)
