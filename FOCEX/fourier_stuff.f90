@@ -2,11 +2,14 @@
 
  module fourier
  use constants, only : r15
-  integer nrgrid,nggrid,nsubgrid,nreg,n3reg(3)
+  integer nrgrid,nggrid,nsubgrid,nreg,n3reg(3),g0,nrgrid_xtnd ,nggrid_xtnd ! index of grid=0
+  real(r15), allocatable :: rgrid_xtnd(:,:),rws_weights_xtnd(:)
+  real(r15), allocatable :: ggrid_xtnd(:,:),gws_weights_xtnd(:)
   real(r15), allocatable :: rgrid(:,:),rws_weights(:),rgridreg(:,:),regweights(:)
   real(r15), allocatable :: ggrid(:,:),gws_weights(:),ggridreg(:,:)
   real(r15), allocatable :: subgrid(:,:),subgrid_weights(:)
   integer, allocatable :: i1r(:),i2r(:),i3r(:),i1g(:),i2g(:),i3g(:)
+  complex(r15), allocatable :: fhat(:,:,:)
 
   interface fourier_r2k
      module procedure fourier_r2k_r,fourier_r2k_c,fr2k_5
@@ -114,10 +117,10 @@
  complex(r15), intent(out) :: fk(:) !nggrid)
  integer ik,ir
 
- fk=0
+ fk=cmplx(0.0_r15,0.0_r15)
  do ik=1,size(fk) !nggrid
     do ir=1,size(fr) !nrgrid
-       fk(ik)=fk(ik)+cdexp(ci*(ggrid(:,ik).dot.rgrid(:,ir))) * fr(ir) * rws_weights(ir)
+       fk(ik)=fk(ik)+cdexp( ci*(ggrid(:,ik).dot.rgrid(:,ir))) * fr(ir) * rws_weights(ir)
     enddo
  enddo
 
@@ -134,7 +137,7 @@
  complex(r15), intent(out) :: fr(:) !nrgrid)
  integer ik,ir
 
- fr=0
+ fr=cmplx(0.0_r15,0.0_r15)
  do ir=1,size(fr) !nrgrid
     do ik=1,size(fk) !nggrid
        fr(ir)=fr(ir)+cdexp(-ci*(ggrid(:,ik).dot.rgrid(:,ir))) * fk(ik) * gws_weights(ik)
@@ -142,6 +145,61 @@
  enddo
 
  end subroutine fourier_k2r_c
+!-------------------------------------------
+ subroutine fourier_k2rxtnd(fk,fr,ng,ggrd,gwei,nr,rgrd)
+!! for an array of size nk defined on a mesh kmesh(3,nk), this subroutine
+!! calculates its cosine Fourier transform on the rmesh, conjugate to kmesh
+! there is k,-k symmetry from time reversal, so a cosine transform is enough
+ use geometry
+ use constants, only : ci
+ implicit none
+ integer, intent(in) :: nr,ng 
+ real(r15), intent(in) :: rgrd(3,nr) ,ggrd(3,ng) ,gwei(ng) 
+ complex(r15), intent(in) ::  fk(:) !nggrid)
+ complex(r15), intent(out) :: fr(:) !nrgrid)
+ integer ik,ir
+! real(r15) :: norm
+   
+ ! Simple 1/N normalization for non-conjugate grid transform
+!   norm = 1.0_r15 / real(size(fk), r15)
+   
+   fr=cmplx(0.0_r15,0.0_r15)
+   do ir = 1, nr
+      do ik = 1, size(fk) ! = ng
+         fr(ir) = fr(ir) + fk(ik) * exp(-ci * (ggrd(:,ik) .dot. rgrd(:,ir))) * gwei(ik) 
+      enddo
+   enddo
+
+! do ir=1,nr 
+!    do ik=1,size(fk) !nggrid
+!       fr(ir)=fr(ir)+cdexp(-ci*(ggrid(:,ik).dot.rgrd(:,ir))) * fk(ik) * gws_weights(ik)
+!    enddo
+! enddo
+
+ end subroutine fourier_k2rxtnd
+!-------------------------------------------
+ subroutine fourier_r2k_c_single(q,fr,nr,rgrd,wei,fk)
+!! for an array of size nk defined on a mesh rmesh(3,nr), this subroutine
+!! calculates its complex Fourier transform on the kgrid, conjugate to rgrid
+! a cosine transform is enough for even functions, otherwise R,-R must be symmetrized
+! from r to k all weights are =1
+
+ use geometry
+ use constants, only : ci
+ implicit none
+ integer, intent(in) :: nr
+ real(r15), intent(in) :: q(3),rgrd(3,nr)
+ complex(r15), intent(in) :: fr(nr)
+ real(r15), intent(in) :: wei(nr) 
+ complex(r15), intent(out) :: fk 
+ integer ik,ir
+
+ fk=cmplx(0.0_r15,0.0_r15)
+ do ir=1,nr !size(fr) !nrgrid
+    fk=fk+cdexp( ci*(q(:).dot.rgrd(:,ir))) * fr(ir) * wei(ir)
+ enddo
+
+ end subroutine fourier_r2k_c_single
 !-------------------------------------------
  subroutine extract_fourier(ncfg,nat,dsp,frc,nrmesh,rmesh,nkmesh,kmesh,maprtausc)
 !! this subroutine takes force-displacements data X(r,tau,s), Fourier transforms to get f(k,tau,s)
@@ -465,5 +523,120 @@
 
  end subroutine find_in_mesh
 
+!====================================
+ subroutine fourier_coefs_3d(n,f,fhat)
+ use constants, only :pi,ci,r15
+ implicit none
+ integer, intent(in) :: n(3)
+! real(r15), intent(in) :: f(n(1),n(2),n(3)) 
+ complex(r15), intent(in) :: f(n(1),n(2),n(3)) 
+ complex(r15), intent(out) :: fhat(n(1),n(2),n(3)) 
+ integer p1,p2,p3,i1,i2,i3
+ 
+! Compute 1D DFT coefficients 
+  fhat = (0.0d0, 0.0d0)
+  do p1 = 0, n(1)-1
+  do p2 = 0, n(2)-1
+  do p3 = 0, n(3)-1
+     do i1 = 0, n(1)-1
+     do i2 = 0, n(2)-1
+     do i3 = 0, n(3)-1
+        fhat(p1+1,p2+1,p3+1) = fhat(p1+1,p2+1,p3+1) + f(i1+1,i2+1,i3+1) * exp(-ci*2.0d0*pi * &
+&       ( (p1*i1)/float(n(1))+(p2*i2)/float(n(2))+(p3*i3)/float(n(3)) ) )
+     end do
+     end do
+     end do
+  end do
+  end do
+  end do
+  fhat=fhat/float(n(1)*n(2)*n(3))
+
+ end subroutine fourier_coefs_3d
+!==================================
+ subroutine fourier_interp_3d(n,f,Lx,x,y)
+ use constants, only :pi,ci,r15
+ implicit none
+ integer, intent(in) :: n(3)
+ real(r15), intent(in) :: x(3),Lx(3), f(n(1),n(2),n(3)) 
+ complex(r15), intent(out) :: y
+ integer p1,p2,p3,i1,i2,i3,q1,q2,q3
+ complex(r15) c1,c2,c3
+ real(r15) a1,a2,a3
+ 
+  y=0
+  do p1= 0, n(1)-1
+     q1=p1 ; if (p1 > n(1)/2) q1 = p1 - n(1)   ! fold in the WS
+  do p2= 0, n(2)-1
+     q2=p2 ; if (p2 > n(2)/2) q2 = p2 - n(2)
+  do p3= 0, n(3)-1
+     q3=p3 ; if (p3 > n(3)/2) q3 = p3 - n(3)
+  
+     a1=q1*x(1)/Lx(1)*2*pi 
+     a2=q2*x(2)/Lx(2)*2*pi 
+     a3=q3*x(3)/Lx(3)*2*pi 
+ 
+     if (q1 == n(1)/2) then   ! use cosine instead if on the boundary
+       c1= cos( a1 )
+     else
+       c1= exp(ci*a1)
+     endif
+
+     if (q2 == n(2)/2) then   ! use cosine instead of full complex exponential
+       c2= cos( a2 )
+     else
+       c2= exp(ci*a2)
+     endif
+
+     if (q3 == n(3)/2) then   ! use cosine instead of full complex exponential
+       c3= cos( a3 )
+     else
+       c3= exp(ci*a3)
+     endif
+
+     y = y + fhat(p1+1,p2+1,p3+1) * c1*c2*c3
+  end do
+  end do
+  end do
+
+ end subroutine fourier_interp_3d
+!====================================
+!subroutine set_phi_bare !(dyn,meshr3d,meshg3d,phi_bare) 
+!use born
+!use lattice
+!use constants
+!use atoms_force_constants
+!use ios, only: ulog
+!implicit none
+!integer tau,taup,al,be,i1,i2,i3,g,n(3)
+!complex(r15), allocatable:: f(:,:,:)
+!
+!n(1) = maxval(meshg3d(1,:))
+!n(2) = maxval(meshg3d(2,:))
+!n(3) = maxval(meshg3d(3,:))
+!write(ulog,*)"set_phi_bare: n=",n
+
+!if(allocated(f)) deallocate(f)
+!if(allocated(fhat)) deallocate(fhat)
+!allocate(f(n(1),n(2),n(3)),fhat(n(1),n(2),n(3)))
+
+!do tau =1,natom_prim_cell
+!do taup=1,natom_prim_cell
+!do al=1,3
+!do be=1,3
+
+!   do g=1,nggrid      
+!      f(meshg3d(1,g),meshg3d(2,g),meshg3d(3,g))= dyn_g(tau,taup,al,be,g)
+!   enddo
+!   call fourier_coefs_3d(n,f,fhat)
+!   do g=1,nrgrid      
+!      phi_bare(tau,taup,al,be,g)=fhat(meshr3d(1,g),meshr3d(2,g),meshr3d(3,g)) 
+!   enddo
+
+!end do
+!end do
+!end do
+!end do
+
+!end subroutine set_phi_bare
  end module fourier
 

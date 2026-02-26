@@ -19,9 +19,9 @@
  real(r15), allocatable :: kbzf(:,:) ,kibz(:,:),wibz(:),kbz(:,:),kpfbz(:,:),kmesh(:,:),rmesh(:,:)
  integer, allocatable :: fbz2ibz(:),kop_ibz2fbz(:),fbzKstar(:)
  integer, allocatable :: ibzarms(:),ibz2fbz(:)
- character(LEN=3), allocatable :: kname_bs(:)
+ character(LEN=5), allocatable :: kname_bs(:)
  integer nibz
- logical dos_bs_only
+ logical dos_bs_only,debug_kpoints
 
  contains
 
@@ -72,10 +72,10 @@
     allocate(kp_bs(3,nkp_bs),ki(3,ndir),kf(3,ndir),dk_bs(nkp_bs),kname_bs(ndir+1),kext_bs(3,ndir+1),dk(ndir+1))
 
     do i=1,ndir+1
-       read(uio,*) kname_bs(i)(2:2),kext_bs(:,i)   ! in direct coordinates of conventional
+       read(uio,*) kname_bs(i)(2:4),kext_bs(:,i)   ! in direct coordinates of conventional
        kname_bs(i)(1:1)='"'
-       kname_bs(i)(3:3)='"'
-       write(*,'(i5,1x,a3,9(1x,f9.4))')i,kname_bs(i),kext_bs(:,i)
+       kname_bs(i)(5:5)='"'
+       write(*,'(i5,1x,a5,9(1x,f9.4))')i,kname_bs(i),kext_bs(:,i)
     enddo
 
     do i=1,ndir
@@ -177,7 +177,7 @@
 
   end subroutine make_kp_bs
 !-------------------------------------------
-  subroutine make_grid(ncs,gg1,gg2,gg3,shft,kpt,wkt)
+  subroutine make_grid_mp(ncs,gg1,gg2,gg3,shft,kpt,wkt)
 !! generate a regular mesh integer multiples of g_i, with eventual shift
     use geometry
     use params
@@ -210,7 +210,7 @@
  2  format(i7,2x,3(1x,f12.5),5x,f9.5,2x,3(1x,f10.5))
     close(126)
 
-  end subroutine make_grid
+  end subroutine make_grid_MP
 !-------------------------------------------
   subroutine make_kp_reg(ncs,gg1,gg2,gg3,shft,kpt,wkt)
 !! generate a regular mesh from 0 to g_i, with eventual shift

@@ -1,5 +1,5 @@
 !===========================================================
- subroutine read_structure
+ subroutine read_structure(fn1)
 ! reads the param.inp file containing info on the atom types masses
 ! and coordinates within the primitive cell
  use ios
@@ -7,16 +7,18 @@
  use lattice
  use atoms_force_constants
  use svd_stuff
+ use born, only : born_flag
  use constants, only : r15
  implicit none
- integer i,counter,tau , bornflag,rnk
+ integer i,counter,tau ,rnk
  real(r15) scal,force_error
- character fdf*1,r4*7,invr*4,incl*8,it*2,zone*5,now*10,today*8,born*2
+ character fdf*1,r4*7,invr*4,incl*8,it*2,zone*5,now*10,today*8,bornflg*3
+ character, intent(in):: fn1*(*)
  real tim
 
  open(uparams,file='default.params',status='old')
    read(uparams,*) tolerance    ! cutoff for smallest "eigenvalue" w to be included
-   if(tolerance.eq.0) tolerance = 2d-3
+   if(tolerance.eq.0) tolerance = 1d-5
 !   read(uparams,*) svdcut    ! cutoff for smallest "eigenvalue" w to be included
 !   if(svdcut.eq.0) svdcut = 1d-10   ! default values
    read(uparams,*) force_error
@@ -139,7 +141,7 @@
 
 ! just for naming of log file
  open(321,file='dielectric.params',status='old')
- read(321,*)bornflag
+ read(321,*)born_flag
  close(321)
 ! if(bornflag.le.0) then ! no Born correction
 !    born='B0'
@@ -150,8 +152,8 @@
 ! else
 !    born='BS'  ! B for Born (3 or 4)a ; S for subtract
 ! endif
- born(1:1)='B'
- write(born(2:2),'(i1.1)')bornflag
+ bornflg(1:1)='B'
+ write(bornflg(2:3),'(i2.2)')born_flag
 
  if (itemp.eq.0) then
     if(fc2range.eq.0) then
@@ -188,7 +190,7 @@
  if (irot.ne.0) invr(2:2)='r'
  if (ihuang.ne.0) invr(3:3)='h'
  if (enforce_inv.ne.0) invr(4:4)='E'
- open(ulog  ,file='log'//fdf//it//born//'_'//r4//'_'//invr//'.dat'   ,status='unknown')
+ open(ulog  ,file=fn1//fdf//it//bornflg//'_'//r4//'_'//invr//'.dat'   ,status='unknown')
 
  call date_and_time(date=today,time=now,zone=zone)
  call cpu_time(tim)
@@ -200,7 +202,7 @@
  write(ulog,*) 'READ_STRUCTURE: readfc is ',readfc
  write(ulog,*) 'DEFAULT VALUES:'
  write(ulog,*) svdcut   ,'   cutoff for smallest eigenvalue w to be included for inversion'
- write(ulog,*) tolerance,'   tolerance(Ang) for equating two coordinates '
+ write(ulog,*) tolerance,'   tolerance(Ang) for equating two variables '
  write(ulog,*) rcutoff  ,'   cutoff multiple of dist/atom for neighbors of primitive cell '
  write(ulog,*) 'maxterms     =',maxterms
  write(ulog,*) 'maxtermzero  =',maxtermzero
@@ -547,10 +549,10 @@
  write(ulog,*)' POSCAR read successfully and closed'
 
 
-  if (.not. (natom_super_cell*volume_r0/(natom_prim_cell*volume_r) .myeq. 1d0 ) ) then
+  if (abs(volume_r/natom_super_cell-volume_r0/natom_prim_cell) .gt. 1d-5*volume_r0) then
      write(ulog,*)' supercell inconsistency; check input coordinates again'
-     write(ulog,*)' natom_prim_cell, volume_r0=',natom_prim_cell,volume_r0
-     write(ulog,*)' natom_sc, volume_r=',natom_super_cell,volume_r
+     write(ulog,5)' natom_prim_cell, volume_r0,density0=',natom_prim_cell,volume_r0,natom_prim_cell/volume_r0
+     write(ulog,5)' natom_sc, volume_r,density=',natom_super_cell,volume_r,natom_super_cell/volume_r
      stop
   endif
 
@@ -562,6 +564,7 @@
  call write_out(ulog,'gsc3 ',gs3)
 
 4 format(9(2x,f19.9))
+5 format(a,i6,9(2x,f19.9))
 6 format(2x,i5,1x,a2,2x,i5,9(2x,f19.10))
 
  end subroutine read_supercell
@@ -652,22 +655,13 @@
  endif
  call write_out(ulog,' NINTeger part of inverse of n_sc matrix ',invn_sc)
 
-4 format(a,3(2x,f8.3),2x,i1)
-7 format(a,2(1x,i4),9(2x,f9.4))
-8 format(a,3(1x,i4),9(2x,f9.4))
-
  write(ulog,*)'FINDING possible translation vectors, trying them on other atoms'
-! write(ulog,*)'g01,g02,g03='
-! write(ulog,*)g01
-! write(ulog,*)g02
-! write(ulog,*)g03
-! write(ulog,*)' natom_prim_cell=', natom_prim_cell
 
 ! write(*,*)'# ier,i0,j0,k_sc; vec,vred='
  checkloop: do i=1,natom_prim_cell !,1,-1
     shift0 = atom0(i)%equilibrium_pos - atom_sc(1)%equilibrium_pos
     write(ulog,7)'atom in PRIMCELL & SC:',i,atom0(i)%at_type,atom0(i)%equilibrium_pos,atom_sc(1)%equilibrium_pos
-    write(ulog,3)'trying shift vector to match atom_sc(1)=',shift0
+    write(ulog,11)'trying shift vector to match atom_sc(1)=',i,v2a(shift0),cart2red(v2a(shift0),'r')
 
 ! does it fall on any of the primitive cell atoms?
 ! try this shift see if all atoms in SC can be mapped to the PC by it.
@@ -677,27 +671,20 @@
        PRIM: do j = 1,natom_prim_cell  ! one of the prim-cell atoms has to match
           vec =  shift0 + atom_sc(k)%equilibrium_pos - atom0(j)%equilibrium_pos
 
-! find its direct coordinates on r01,r02,r03
-
-!          call check_int(vec,a,ier,g01,g02,g03)
-
-          a(1)=vec.dot.g01/(2*pi); if(abs(a(1)-nint(a(1))).gt.1d-2)  cycle PRIM
-          a(2)=vec.dot.g02/(2*pi); if(abs(a(2)-nint(a(2))).gt.1d-2)  cycle PRIM
-          a(3)=vec.dot.g03/(2*pi); if(abs(a(3)-nint(a(3))).gt.1d-2)  cycle PRIM
-!     write(*,'(4i4,a,3(1x,f9.4),4x,a,3(1x,f9.4))')ier,i,j,k,' er,i0,j0,k_sc; vec=',vec,'vred=',a
-          matched=.True.
+! In first loop (line 67-72), replace with:
+          call check_int(vec, a, ier, g01, g02, g03)
+          if(ier .ne. 0) cycle PRIM
+          matched = .True.
           exit PRIM
 
-!         if (ier .eq. 0) then
-!            matched = .true.
-!            write(ulog,'(a,i2,a,i4,a,9(1x,f6.3))')' atom ',j,' in primcell matched atom ',k,' in supercell a=',a,vec
-!            write(   *,'(a,i2,a,i4,a,9(1x,f6.3))')' atom ',j,' in primcell matched atom ',k,' in supercell a=',a,vec
-         !   cycle SC
-! try on other supercell atoms
-!            exit PRIM
-!         else
-!            cycle PRIM
-!         endif
+! find its direct coordinates on r01,r02,r03
+   !      a(1)=vec.dot.g01/(2*pi); if(abs(a(1)-nint(a(1))).gt.1d-2)  cycle PRIM
+   !      a(2)=vec.dot.g02/(2*pi); if(abs(a(2)-nint(a(2))).gt.1d-2)  cycle PRIM
+   !      a(3)=vec.dot.g03/(2*pi); if(abs(a(3)-nint(a(3))).gt.1d-2)  cycle PRIM
+!     write(*,'(4i4,a,3(1x,f9.4),4x,a,3(1x,f9.4))')ier,i,j,k,' er,i0,j0,k_sc; vec=',vec,'vred=',a
+   !      matched=.True.
+   !      exit PRIM
+
        enddo PRIM
 
        if (.not. matched) then  ! wrong shift , try another shift
@@ -793,9 +780,14 @@
  call write_correspondance (isave,shift0)
 
 2 format(i5,a,2(1x,i2),'(',3(i2),')',2(2x,3(1x,f8.3)))
-3 format(9(1x,g13.6))
+3 format(9(1x,g12.5))
+4 format(a,3(2x,f8.3),2x,i1)
 5 format(a,1x,3(4x,i9),9(1x,f9.4))
 6 format(a,i2,1x,2i5,9(1x,f9.4))
+7 format(a,2(1x,i4),9(2x,f9.4))
+8 format(a,3(1x,i4),9(2x,f9.4))
+9 format(a,3(1x,f12.5),3x,i3,'(',3i2,')',i5)
+11 format(a,i6,99(1x,f9.4))
 
  open(173,file='poscar.xyz')
  write(173,*) natom_super_cell
@@ -820,7 +812,6 @@
  enddo
 
  close(173)
-9 format(a,3(1x,f12.5),3x,i3,'(',3i2,')',i5)
 
  end subroutine check_input_poscar_consistency_new
 !===========================================================
@@ -1075,7 +1066,7 @@
  implicit none
  integer, parameter :: mesh=600,mx=60
  integer i0,j0,shel_count,j,nm(3),n5(3),ta,nbmx,jj,ier
- real(r15) dij(natom_prim_cell,mx),rr(3),eps(3)
+ real(r15) dij(natom_prim_cell,mx),rr(3),eps(3),aux(mx),aux2(mesh)
  real(r15) ds(natom_prim_cell,mesh),dmesh(mesh),w0(mx),dmax
 
  write(*,*)'mx=',mx
@@ -1128,7 +1119,9 @@
           endif
        enddo
     enddo
-    call calculate_dos(mx,dij(i0,:),w0,mesh,dmesh,ds(i0,:))
+    aux=dij(i0,:) 
+    call calculate_dos(mx,aux,w0,mesh,dmesh,aux2)
+    ds(i0,:)= aux2 
  enddo
 
  do j=1,mesh
@@ -1158,7 +1151,7 @@
  integer iat(maxrank),ixyz(maxrank),g,ng,term,term2,cnt2,frm,cnt3,ntind(maxrank),ngroup(maxrank)
  real(r15) rij,bunit,one,fcd,trace_fc,dij(3) 
 ! character frmt*2,goh*48,ln*1,geh*47
- character frmt*2,goh*60,ln*1,geh*60,lm*1
+ character frmt*2,lm*1,goh*60,ln*1,geh*60,goh2*71,geh2*71
 
  bunit = ryd/ab/ab
  one =1d0
@@ -1183,6 +1176,8 @@
     write(lm,'(i1)')rnk-1
     goh='(a1,i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,g14.7,1x,f7.4,1x,15i3)'
     geh='(   i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,g14.7,1x,f7.4,1x,15i3)'
+    goh2='(a1,i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,g14.7,1x,f7.4,1x,4i3,6(1x,f7.4))'
+    geh2='(   i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,g14.7,1x,f7.4,1x,4i3,6(1x,f7.4))'
 !   write(*,*)'for rank ',rnk,' formats geh and goh are:'
 !   write(*,*)geh
 !   write(*,*)goh
@@ -1221,10 +1216,12 @@
 !      &     fcs(res+cnt2+ti),one,rij
           if(rnk.eq.2) then 
              if(map(2)%keep(counteri(2,g,ti)).eq.0) cycle
-             write(ulog,goh) map(rnk)%err(current(2,g,ti)),g,ti,(iat(j),ixyz(j),j=1,rnk),  &
-       &     fcs(res+current(2,g,ti)),rij,(iatomcell0(iat(k)),iatomcell(:,iat(k)),k=2,rnk)
-             write(ufit1-1+rnk,geh) ti,g,(iat(j),ixyz(j),j=1,rnk),  &
-       &     fcs(res+current(2,g,ti)),rij,(iatomcell0(iat(k)),iatomcell(:,iat(k)),k=2,rnk)
+             write(ulog,goh2) map(rnk)%err(current(2,g,ti)),g,ti,(iat(j),ixyz(j),j=1,rnk),  &
+       &     fcs(res+current(2,g,ti)),rij,(iatomcell0(iat(k)),iatomcell(:,iat(k)),k=2,rnk), &
+       &     matmul(cart_to_conv,atompos(:,iat(1))-atompos(:,iat(2)))
+             write(ufit1-1+rnk,geh2) ti,g,(iat(j),ixyz(j),j=1,rnk),  &
+       &     fcs(res+current(2,g,ti)),rij,(iatomcell0(iat(k)),iatomcell(:,iat(k)),k=2,rnk), &
+       &     matmul(cart_to_conv,atompos(:,iat(1))-atompos(:,iat(2)))
           else
              write(ulog,goh) map(rnk)%err(cnt2+ti),g,ti,(iat(j),ixyz(j),j=1,rnk),  &
        &     fcs(res+current(rnk,g,ti)),rij,(iatomcell0(iat(k)),iatomcell(:,iat(k)),k=2,rnk)
@@ -1254,8 +1251,9 @@
           enddo
           if(abs(fcd).lt.margin) cycle
           if(rnk.eq.2 ) then
-             write(ufc1-1+rnk,geh)t,g, (iat(j),ixyz(j),j=1,rnk),fcd,  &  !one
-&              rij,(iatomcell0(iat(k)),iatomcell(:,iat(k)),k=2,rnk)
+             write(ufc1-1+rnk,geh2)t,g, (iat(j),ixyz(j),j=1,rnk),fcd,  &  !one
+&              rij,(iatomcell0(iat(k)),iatomcell(:,iat(k)),k=2,rnk),  &
+       &     matmul(cart_to_conv,atompos(:,iat(1))-atompos(:,iat(2)))
           else
              write(ufc1-1+rnk,geh)t,g, (iat(j),ixyz(j),j=1,rnk),fcd,  &  !one
 &              rij,(iatomcell0(iat(k)),iatomcell(:,iat(k)),k=2,rnk)
@@ -1482,8 +1480,8 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
  enddo
 
  read(iunit,*) line
- read(iunit,*) line! include_fc
-! write(*,*)'reading include_fc=',include_fc 
+ read(iunit,*) line
+ write(*,*)'reading include_fc=',line
  
  read(iunit,*) line
 ! write(ufco,*)' Number of shells for each atom in each rank '
@@ -1501,10 +1499,11 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
 
  read(iunit,*) line
 ! write(ufco,*)' Number of independent FCs for each rank '
- read(iunit,*)map(1:8)%nkeptind !;  ntindep(:)=map(:)%ntotind 
+ read(iunit,*)map(1:8)%ntotind, map(1:8)%nkeptind !;  ntindep(:)=map(:)%ntotind 
 
  write(*,*)'reading map%ngr     ',map(:)%ngr
- write(*,*)'reading map%nkeptind ',map(:)%nkeptind
+ write(*,*)'reading map%nkeptind',map(:)%nkeptind
+ write(*,*)'reading map%ntotind ',map(:)%ntotind
  write(*,*)'reading map%ntot    ',map(:)%ntot
 
 
@@ -1525,7 +1524,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
 
  call set_neighbor_list
 
- call setup_maps
+! call setup_maps
 
  allocate(map(2)%keep(map(2)%ntotind))  ! which indep fc2s to keep based on the vectors rws26
  if(fc2range.eq.0) then ! determine the range from the supercell WS 
@@ -1675,7 +1674,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
              phi_periodic(iatomcell0(iat(1)),iatomcell0(iat(2)),ixyz(1),ixyz(2),igrd)=fcd
           else
 !             write(ulog,8)'READ_fcs: error could not find rgrid point',igrd,length(rr),rr,cart2red(rr,'r')
-             rr2= fold_ws(rr,rws26,'r') 
+             rr2= fold_ws(rr,rws26) 
              call findgrid(rr2,rgrid,nrgrid,igrd)
              if(igrd.eq.0) then
                write(*,8)'second attempt ',igrd,rr2,cart2red(rr2,'r')
@@ -1724,7 +1723,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
         rr=rgrid(:,igrd)+rr2 
         fcd= trace(phi_periodic(tau,j,:,:,igrd))
         if(abs(fcd).gt.0.0001) then
-           write(932,3)' ',tau,j,igrd,length(rr),fcd,length(fold_ws(rr,rws26,'r')),cart2red(rr,'r'),phi_periodic(tau,j,:,:,igrd) 
+           write(932,3)' ',tau,j,igrd,length(rr),fcd,length(fold_ws(rr,rws26)),cart2red(rr,'r'),phi_periodic(tau,j,:,:,igrd) 
         endif
      enddo
   enddo
@@ -1999,6 +1998,7 @@ stop
 
     dc = atom_sc(i)%equilibrium_pos - displ(:,i,1)
     call cart_to_direct(dc,dr,gs1,gs2,gs3)
+! bring between -0.5 and 0.5
     dr(1) = dr(1) - anint(dr(1))
     dr(2) = dr(2) - anint(dr(2))
     dr(3) = dr(3) - anint(dr(3))
@@ -2292,7 +2292,8 @@ stop
  write(ufco,*)  ntrms(:)  ! same as  write(ufco,*)map(1:8)%ntot
 
  write(ufco,*)' Number of independent FCs for each rank '
- write(ufco,*)  ntindep(:)  ! same as  write(ufco,*)map(1:8)%ntotind
+ write(ufco,3)  map(1:8)%ntotind,map(1:8)%nkeptind  ! same as  write(ufco,*) ntindep(:) 
+3 format(8i6,9x,8i6)
 
  write(ufco,*)' maxshells,Neighborshell atoms: i,x,y,z,type_tau,n1,n2,n3 '
  write(ufco,*)  maxshells,largest,natoms
@@ -2360,7 +2361,7 @@ stop
  character(LEN=11) wrd3
 
 
- uio=987
+ uio=931
  open(uio,file='lat_fc.dat',status='old')
 
  write(uio,*)line
@@ -2604,4 +2605,78 @@ stop
 4 format(a,9(1x,f11.5))
 
  end subroutine write_lattice
+!===================================================
 
+ subroutine write_fc2matrix_5d(nat,nr,rgrd,phi,fn)
+!! takes the fitted FCs, writes output phi_bare into 5D matrix form
+ use constants
+ use atoms_force_constants
+ use lattice, only : rws26 , fold_ws ,cart2red
+ use geometry, only : length,trace
+ use ios, only : ulog
+ implicit none
+ integer, intent(in) :: nat,nr
+ real(r15), intent(in) :: rgrd(3,nr), phi(nat,nat,3,3,nr)
+ character(*), intent(in) :: fn
+ integer tau,taup,al,be,g,uio,igrid
+ real(r15) dta(3),rg(3),fc2,asr,rfold(3) !,fold_ws
+
+
+ uio=345
+ open(uio,file=fn)
+ write(uio,*)'# tau,taup,j,|r+taup-tau|,trace(fc2),igrid,red_fold(r+taup-tau),fc2(al,be)'
+ do tau =1,nat
+ do taup=1,nat
+    dta = atompos(:,taup) - atompos(:,tau) 
+    do g=1,nr
+       rg=rgrd(:,g)+dta 
+       rfold = fold_ws(rg,rws26) 
+       if(length(rg-rfold).gt.1d-3) then
+          write(ulog,3)'write_fc2: t,tp,ir,r+tp-t, folded =',tau,taup,g,rg,rfold
+       endif
+       fc2 = trace(phi(tau,taup,:,:,g)) 
+       if(abs(fc2).lt.0.00001) cycle
+!      write(uio,3)tau,taup,g,length(rg   ),fc2,cart2red(rfold,'r'),real(phi(tau,taup,:,:,g)) 
+       write(uio,3)' ',tau,taup,g,length(rfold),fc2,rfold,real(phi(tau,taup,:,:,g)) 
+    enddo
+ enddo
+ enddo
+ close(uio)
+
+ write(ulog,*)'ASR CHECK for fc2 matrix: tau,al,be,asr going to '//fn
+ do tau =1,nat
+ do al=1,3
+ do be=1,3
+    asr=sum(phi(tau,:,al,be,:)) ! this should satisfy ASR!
+    write(ulog,3)' ',tau,al,be,asr
+ enddo
+ enddo
+ enddo
+
+! check whether phi(tau,taup,al,be,r)=phi(taup,tau,be,al,-r) , assuming same weight
+ call check_herm_sym_R(nat,nr,rgrd,phi)
+
+3 format(a,3i5,99(f9.4))
+
+ end subroutine write_fc2matrix_5D
+!==========================================================
+ subroutine write_all_eigenvalues(nk,kp,dk,n,eival,vg,uio)
+ use constants
+ use eigen, only : mysqrt
+ use geometry
+ implicit none
+ integer, intent(in) :: n,uio,nk
+ real(r15), intent(in) :: dk(nk),kp(3,nk),eival(n,nk),vg(3,n,nk)
+ integer j,k
+
+ write(uio,*)'# nk,nb,dk(i),kp(:,i), freq(nb,nk) ; velocity(nb,nk,:) ; |velocity| '
+ do k=1,nk
+ do j=1,n
+    write(uio,3)k,j,dk(k),kp(:,k),cnst*mysqrt(eival(j,k)),vg(:,j,k)/1000,length(vg(:,j,k))/1000
+ enddo
+ enddo
+
+2 format(i5,1x,4(1x,f8.3),999(1x,g11.4))
+3 format(2i5,1x,4(1x,f8.3),999(1x,g11.4))
+
+ end subroutine write_all_eigenvalues

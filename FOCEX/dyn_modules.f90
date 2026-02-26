@@ -55,15 +55,19 @@
 
     subroutine allocate_eig(nb,nk) ! nb for band, nk for k mesh in FBZ
     integer nb,nk
-      allocate( eigenval(nb,nk),eigenvec(nb,nb,nk),veloc   (3,nb,nk), grun(nb,nk) )
+      if (allocated(eigenval)) call deallocate_eig
+      allocate( eigenval(nb,nk),eigenvec(nb,nb,nk),veloc(3,nb,nk), grun(nb,nk) )
     end subroutine allocate_eig
+!---------------------------------
     subroutine allocate_eig_ibz(nb,ni) ! nb for band, ni for k mesh in IBZ
     integer nb,ni
+      if (allocated(eivalibz)) call deallocate_eig_ibz
       allocate( eivalibz(nb,ni),eivecibz(nb,nb,ni),velocibz(3,nb,ni),grunibz(nb,ni) )
     end subroutine allocate_eig_ibz
 !---------------------------------
     subroutine allocate_eig_bs(nb,nk,nv) ! nb for band, nk for band structure mesh
     integer nb,nk,nv
+     if (allocated(eigenval_bs)) call deallocate_eig_bs
      if (nv.ne.0) then
       allocate( eigenval_bs(nb,nk),eigenvec_bs(nb,nv,nk), grun_bs(nb,nk) ,veloc_bs(3,nb,nk) )
      else
@@ -142,7 +146,7 @@
  implicit none
 
  real(r15) sigma0(3,3),atld0(3,3,3,3),sigmav(6),poisson,youngmod,elastic(6,6),compliance(6,6) &
-&          ,b0p,bulkmod
+&          ,b0p,bulkmod,anisotropy_ratio,xagne,vl_iso,vt_iso,v_mean,t_debye,rho_SI
  real(r15) vbulkmod,vyoungmod,vshearmod
  real(r15) rbulkmod,ryoungmod,rshearmod
  real(r15) hbulkmod,hyoungmod,hshearmod
@@ -157,23 +161,3 @@
  end subroutine allocate_mech
 
  end module mech
-!===========================================================
-  module born
-  use constants, only : r15
-  real(r15) epsil(3,3),epsinv(3,3)
-  real(r15), allocatable:: dyn_naq0(:,:,:)
-  complex(r15), allocatable:: dyn_na(:,:,:,:,:)  
-  integer born_flag
-  complex(r15), allocatable :: dyn_g(:,:,:,:,:)
-  complex(r15), allocatable :: phi_bare(:,:,:,:,:)  ! bare one from fitting 
-  complex(r15), allocatable :: phi_periodic(:,:,:,:,:)  ! from FT of dyn_G phi_periodic(t,R+tp)==sum_L phi_bare(t,R+tp+L)
-
- contains
-
-  subroutine allocate_fc_dyn(n,nr,ng)
-    integer n,nr,ng
-    allocate(phi_periodic(n,n,3,3,nr),phi_bare(n,n,3,3,nr),dyn_naq0(n,3,3),  &
-&           dyn_na(n,n,3,3,ng),dyn_g(n,n,3,3,ng))
-  end subroutine allocate_fc_dyn
-
-  end module born

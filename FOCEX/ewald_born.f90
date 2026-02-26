@@ -1,17 +1,79 @@
+!===========================================================
+  module born
+  use constants , only : pi,r15,ci
+  implicit none
+!  private
+!  public :: non_anal
+!  public :: non_analq0
+!  public :: set_dynamical_NA_3N3N
+!  public :: dyn_na5D_on_grid
+!  public :: dyn_na5D_on_fine_grid
+!  public :: dyn_coulomb_pure_step
+!  public :: compute_phi_na_realspace
+
+  real(r15) epsil(3,3),epsinv(3,3),bref(3,3)
+  real(r15), allocatable:: dyn_naq0(:,:,:)
+  integer born_flag,np
+  complex(r15), allocatable :: dyn_na(:,:,:,:,:)  
+  complex(r15), allocatable :: dyn_g(:,:,:,:,:)
+  complex(r15), allocatable :: phi_bare(:,:,:,:,:)  ! bare one from fitting 
+  complex(r15), allocatable :: phi_sr(:,:,:,:,:) 
+  complex(r15), allocatable :: phi_periodic(:,:,:,:,:)  ! from FT of dyn_G phi_periodic(t,R+tp)==sum_L phi_bare(t,R+tp+L)
+
+ contains
+
+  subroutine allocate_fc_dyn(n,nr,ng)
+    integer n,nr,ng
+    if(allocated(phi_sr)) deallocate (phi_sr)
+    if(allocated(phi_bare)) deallocate (phi_bare)
+    if(allocated(dyn_g)) deallocate (dyn_g)
+    if(allocated(dyn_na)) deallocate (dyn_na)
+    allocate(phi_sr(n,n,3,3,nr),phi_bare(n,n,3,3,nr),dyn_g(n,n,3,3,ng),dyn_na(n,n,3,3,ng))
+  end subroutine allocate_fc_dyn
+
+end module born
+
 !=====================================
 
  module ewald
  use constants, only : r15,pi,ci
+ use ios, only : ulog
  integer nr_ewald,ng_ewald
  real(r15), allocatable :: r_ewald(:,:),g_ewald(:,:)
  real(r15) rcutoff_ewa,gcutoff_ewa, eta
 
  contains
 
+ subroutine cuts(eps,a0,bflg,et,rcut,gcut)
+   real(r15), intent(in):: eps,a0
+   integer, intent(in):: bflg
+   real(r15), intent(out):: et,rcut,gcut
+   et  =1
+   rcut=0
+   gcut=0
+   if(bflg.lt.1) then
+     return
+   elseif( mod(bflg,10).eq.1 ) then ! equal terms in real and reciprocal for 1,2,3
+     et=sqrt(pi*eps)/a0
+     rcut=4*a0
+     gcut=8/a0
+   elseif(mod(bflg,10).le.3 .or. mod(bflg,10).eq.6) then ! equal terms in real and reciprocal for 2,3,6
+     et=sqrt(2*pi*eps)/a0  ! this is to make the R&G sums equally convergent
+     rcut=8*sqrt(eps)/et    *2.0  ! *2.0 is to generate more than needed!
+     gcut=8/sqrt(eps)*et*2  *2.3
+   else ! only sum in the reciprocal for 4 and above for _Gnew
+     et=sqrt(pi*eps)/a0 *3.1 ! this is to use a larger cutoff for G vectors in Gnew and still converge
+     rcut=8*sqrt(eps)/et    ! this mesh is not used for bflag>3 
+     gcut=8/sqrt(eps)*et*2  ! need more G vectors to converge ewald sums
+   endif
+   write(ulog,7)'CUTS:bf,det,a0,et,rc,gc=',bflg,eps,a0,et,rcut,gcut
+
+7 format(a,i5,99(g11.4))
+ end subroutine cuts
 !============================================================
  subroutine make_grid_shell_ewald(x1,x2,x3,rcut,gcut,epsilo)
 !! generates a grid of vectors "grid" linear combinations of xi within a
-!! cutoff length. Sorted result is stored in r_ewald(3,nr_ewald)
+!! cutoff length rcut. Sorted result is stored in r_ewald(3,nr_ewald)
 !! also generates the same grid for the reciprocal space g_ewald(3,ng_ewald)
 !! metric is epsilon in reciprocal space and epsinverse in real space
  use geometry
@@ -37,8 +99,8 @@
 
  allocate(aux(3,maxx),lengths(maxx),msort(maxx))
  lengths =1d20; aux=1d20
- write(ulog,4)'MAKE_GRID_SHELL, maxx(Rgrid), m,for rcut=',maxx,float(mxshl),rcut
- write(*   ,4)'MAKE_GRID_SHELL, maxx(Rgrid), m for rcut=',maxx,float(mxshl),rcut
+! write(ulog,4)'MAKE_GRID_SHELL, maxx(Rgrid), m,for rcut=',maxx,float(mxshl),rcut
+ write(ulog,4)'MAKE_GRID_SHELL, maxx(Rgrid), m for rcut=',maxx,float(mxshl),rcut
 
  call run_grid(mxshl,maxx,x1,x2,x3,epsinv,aux,lengths,rcut,nr_ewald) 
 
@@ -49,19 +111,19 @@
 
  call sort(nr_ewald,lengths,msort,maxx)
 
- open(ujunk,file='ewald_vecs.dat')
- write(ujunk,*)'MAKE RGRID:----first 200 vectors--------------',nr_ewald
- do i1=1,nr_ewald
-    r_ewald(:,i1)=aux(:,msort(i1))
-    if (i1.lt.200) write(ujunk,3)r_ewald(:,i1)
- enddo
+  open(ujunk,file='ewald_vecs.dat')
+  write(ujunk,*)'MAKE RGRID:----first 200 vectors--------------',nr_ewald
+  do i1=1,nr_ewald
+     r_ewald(:,i1)=aux(:,msort(i1))
+     if (i1.lt.200) write(ujunk,3)r_ewald(:,i1),length(r_ewald(:,i1))
+  enddo
 
  deallocate (aux, lengths, msort)
 
 ! now the G-vectors
  call make_reciprocal_lattice_2pi(x1,x2,x3,y1,y2,y3)
  call get_upper_bounds(y1,y2,y3,gcut,maxx,mxshl)
- write(ulog,4)'MAKE_GRID_SHELL, maxx(g_ewald), for gcut=',maxx,gcut
+! write(ulog,4)'MAKE_GRID_SHELL, maxx(g_ewald), for gcut=',maxx,gcut
  write(*,4)'MAKE_GRID_SHELL, maxx(g_ewald), mxshl for gcut=',maxx,float(mxshl),gcut
  allocate(aux(3,maxx),lengths(maxx),msort(maxx))
  lengths =1d20; aux=1d20
@@ -75,14 +137,14 @@
 
  call sort(ng_ewald,lengths,msort,maxx)
 
- write(ujunk,*)'MAKE GGRID:------------------------',ng_ewald
- do i1=1,ng_ewald
-    g_ewald(:,i1)=aux(:,msort(i1))
-    if (i1.lt.200) write(ujunk,3)g_ewald(:,i1)
- enddo
-
- deallocate (aux, lengths, msort)
- close(ujunk)
+  write(ujunk,*)'MAKE GGRID:------------------------',ng_ewald
+  do i1=1,ng_ewald
+     g_ewald(:,i1)=aux(:,msort(i1))
+     if (i1.lt.200) write(ujunk,3)g_ewald(:,i1),length(g_ewald(:,i1))
+  enddo
+!
+  deallocate (aux, lengths, msort)
+  close(ujunk)
 
 3 format(9(1x,f10.5))
 4 format(a,i8,9(1x,g14.7))
@@ -91,11 +153,12 @@
  end subroutine make_grid_shell_ewald
 !============================================================
  subroutine run_grid(mxshl,maxx,y1,y2,y3,epsilo,aux,lengths,gcut,ng_ewald) 
-!! given 3 translation vectors y1,y2,y3 and metric defined by epsilo, generates a 
-!! grid, aux(3,maxx), of size ng_ewald whtin the sphere of radius gcut; 
-!! lengths(maxx) is later used for sorting aux according to their lengths
 !! maxx and mxshl are initial guesses (upper bounds) for the size of the arrays and # of shells
- use geometry
+!! given 3 translation vectors y1,y2,y3 and metric defined by epsilo, generates a 
+!! grid, aux(3,maxx), of size ng_ewald within the sphere of radius gcut; 
+!! lengths(maxx) is later used for sorting aux according to their lengths
+ use geometry, only : v2a,vector
+ use ios, only : ulog
  implicit none
  integer, intent(in):: mxshl,maxx
  integer, intent(out):: ng_ewald
@@ -105,7 +168,7 @@
  integer i1,i2,i3,cnt,m
  real(r15) v(3),rr
 
- cnt=1
+ cnt=0; lengths=1d9; aux=1d8
  gshelloop: do m=0,mxshl
  do i1=-m,m
  do i2=-m,m
@@ -113,15 +176,17 @@
     if(iabs(i1).ne.m.and.iabs(i2).ne.m.and.iabs(i3).ne.m)cycle
 
 ! generate vectors in a grid
-    v= v2a(i1*y1 + i2*y2 + i3*y3)
+    v= i1*v2a(y1) + i2*v2a(y2) + i3*v2a(y3)
     rr=sqrt(dot_product(v,matmul(epsilo,v)))
     if(rr.gt.gcut) cycle
-    aux(:,cnt)=v
-    lengths(cnt)=rr
     cnt=cnt+1
     if (cnt.gt.maxx .and. maxx.ne.1) then
-       write(*,*)'GLOOP: maxx size exceeded, need to increase variable maxx from ',maxx
+       write(ulog,*)'GLOOP: maxx size exceeded, need to increase variable maxx from ',maxx
+       cnt=cnt-1
        exit gshelloop
+    else
+       aux(:,cnt)=v
+       lengths(cnt)=rr
     endif
 
  enddo
@@ -129,62 +194,26 @@
  enddo
  enddo gshelloop
 
- ng_ewald=cnt-1
+ ng_ewald=cnt
 
  end subroutine run_grid
-!============================================================
- subroutine dewapot_g(x,dpot)
-!! calculates the -d/dx(sum_R 1/|R+x| -background) = force  with the corrected metric
-!! Assumes translation vectors are r_ewald(:,igrid),g_ewald(:,igrid)
-! use constants
- use lattice
- use params
- use ios, only: ulog,write_out
- use born , only : epsil,epsinv
- implicit none
- real(r15), intent(out) :: dpot(3)
- real(r15), intent(in) :: x(3)
- integer igrid
- real(r15) termg,qpg(3),dd,my_erfc,geg,ep,vd(3)
-
-    dpot=0
-    do igrid=2,ng_ewald
-       qpg=g_ewald(:,igrid)
-       geg=dot_product(qpg,matmul(epsil,qpg))
-       if (geg.gt.100*eta*eta) exit
-       termg=exp(-geg/4/eta/eta)/geg
-       dpot=dpot + termg * qpg*sin(qpg .dot. x) *4*pi/volume_r  ! this is supercell volume
-    enddo
-    if( geg.lt. 36*eta*eta ) then
-       call warn3(ulog,'DEWAPOT_G sum not converged ',termg)
-    endif
-
-! now add the G=0 term
-    dpot=dpot + 4*pi/volume_r*matmul(epsinv,x)/3d0
-
-! write(*,3)'dpot=',dpot
-3 format(9(1x,g11.4))
-
- end subroutine dewapot_g
 !============================================================
  subroutine dewapot(x,dpot)
 !! calculates the -d/dx(sum_R 1/|R+x| -background) = force  with the corrected metric
 !! Assumes translation vectors are r_ewald(:,igrid),g_ewald(:,igrid)
 ! use constants
  use lattice
+ use geometry, only : det
  use params
  use born , only : epsil,epsinv
  implicit none
  real(r15), intent(out) :: dpot(3)
  real(r15), intent(in) :: x(3)
  integer igrid
- real(r15) termg,qpg(3),dd,my_erfc,geg,ep,vd(3)
+ real(r15) termg,qpg(3),dd,my_erfc,geg,vd(3)
 
  if (length(x).lt.1d-12) then
     write(*,*)'DEWAPOT: X is too small! ',x
-    ep=1d-12
- else
-    ep=0
  endif
 
     dpot=0
@@ -197,22 +226,22 @@
 &           (my_erfc(dd)/dd+2/sqrt(pi)*exp(-dd*dd))/sqrt(det(epsil))
     enddo
 
-! write(*,3)'dpotr=',dpot
+! write(*,3)'dpotr=',eta,dd,dpot
 
     do igrid=2,ng_ewald
        qpg=g_ewald(:,igrid)
        geg=dot_product(qpg,matmul(epsil,qpg))
-       if (geg.gt.100*eta*eta) exit
+       if (geg.gt.100*eta*eta) exit  ! exiting the loop because g_ewald is sorted
        termg=exp(-geg/4/eta/eta)/geg
        dpot=dpot + termg * qpg*sin(qpg .dot. x) *4*pi/volume_r  ! this is supercell volume
     enddo
 
-! write(*,3)'dpotg=',dpot
+! write(*,3)'termg,dpotg=',termg,dpot
 
-    dpot=dpot + 4*pi/volume_r*matmul(epsinv,x)/3d0
+!   dpot=dpot + 4*pi/volume_r*matmul(epsinv,x)/3d0
 
 ! write(*,3)'dpot=',dpot
-3 format(9(1x,g11.4))
+3 format(a,9(1x,g11.4))
 
  end subroutine dewapot
 !===========================================================
@@ -230,12 +259,13 @@
  real(r15), intent(in) :: pos(3,n) ! displaced positions including equilibrium positions
  real(r15), intent(out):: fewald(3,n)
  integer tau1,tau2
- real(r15) dpot(3),r12(3),z1(3,3),z2(3,3) 
+ real(r15) dpot(3),r12(3),z1(3,3),z2(3,3),efield(3) 
 
 
  fewald=0
  do tau1=1,n  ! caculate the total force on tau1
     z1=atom_sc(tau1)%charge
+    efield=0
  do tau2=1,n
     z2=atom_sc(tau2)%charge
 
@@ -243,9 +273,9 @@
     r12=pos(:,tau1)-pos(:,tau2) ! pos includes equilibrium positions
 ! force on tau1 from tau2 and all its images inluding epsilon; beware of the sign!
     call dewapot(r12,dpot)  ! has epsil-modified metric included
-    fewald(:,tau1)=fewald(:,tau1) + matmul(z1,matmul(z2,dpot)) * ee/(4*pi*eps0)*1d10  ! to convert to eV/Ang
-
+    efield = efield + matmul(z2,dpot)
  enddo
+    fewald(:,tau1)= matmul(z1,efield) * ee*1d10/(4*pi*eps0)  ! to convert to eV/Ang
  enddo
 
 ! now compare to the energy finite difference
@@ -268,66 +298,77 @@
 
  end subroutine ewaldforce
 !===========================================================
- subroutine ewaldforce_G(n,pos,fewald)
+ subroutine coulombforce  (n,pos,frc,dsp) 
 !! calculates the Coulomb force on atoms in supercell (in 1/Ang)
-!! Assumes translation vectors are r_ewald(:,igrid),g_ewald(:,igrid)
- use constants, only : ee, eps0,pi
+!! Assumes translation vectors are rgrid(:,nrgrid),ggrid(:,nggrid)
+ use constants, only : eps0scale,pi
  use lattice
  use params
  use atoms_force_constants
  use born
  use ios
+ use fourier, only : nggrid,ggrid,nrgrid,rgrid,rws_weights,gws_weights,fourier_k2r,fourier_r2k
  implicit none
  integer, intent(in) :: n  ! number of atoms in the supercell will be used
- real(r15), intent(in) :: pos(3,n) ! displaced positions including equilibrium positions
- real(r15), intent(out):: fewald(3,n)
- integer tau1,tau2
- real(r15) dpot(3),r12(3),z1(3,3),z2(3,3) 
+ real(r15), intent(in) :: pos(3,n),dsp(3,n) ! displaced positions including equilibrium positions
+ real(r15), intent(out):: frc(3,n)
+ integer tau1,tau2,igrid
+ real(r15) dpot(3),r12(3),z1(3),z2(3),efield(3) ,geg
 
 
- fewald=0
+ frc=0
  do tau1=1,n  ! caculate the total force on tau1
-    z1=atom_sc(tau1)%charge
- do tau2=1,n
-    z2=atom_sc(tau2)%charge
+    efield=0
+    do tau2=1,n
+       if (tau1.eq.tau2) cycle ! images of tau1 have zero force on tau1 because of inversion symmetry
+       r12=v2a(atom_sc(tau1)%equilibrium_pos)-v2a(atom_sc(tau2)%equilibrium_pos)
+       g0loop: do igrid=2,nggrid ! exclude G=0
+          z2=matmul(atom_sc(tau2)%charge,ggrid(:,igrid))
+          geg=dot_product(ggrid(:,igrid),matmul(epsil,ggrid(:,igrid)))
+          dpot=dpot + z2/geg *sin(ggrid(:,igrid) .dot. r12) * gws_weights(igrid) 
+          efield = efield + dpot
+       enddo g0loop
+    enddo
+    frc(:,tau1)= matmul(atom_sc(tau1)%charge,efield) *coef  ! this is force for u=0
 
-    if (tau1.eq.tau2) cycle ! images of tau1 have zero force on tau1 because of inversion symmetry
-    r12=pos(:,tau1)-pos(:,tau2) ! pos includes equilibrium positions
-! force on tau1 from tau2 and all its images inluding epsilon; beware of the sign!
-    call dewapot_g(r12,dpot)  ! has epsil-modified metric included
-    fewald(:,tau1)=fewald(:,tau1) + matmul(z1,matmul(z2,dpot)) * ee/(4*pi*eps0)*1d10  ! to convert to eV/Ang
+    do tau2=1,n
+       r12=pos(:,tau2)-v2a(atom_sc(tau2)%equilibrium_pos)-(pos(:,tau1)-v2a(atom_sc(tau1)%equilibrium_pos))
+       g1loop: do igrid=2,nggrid ! exclude G=0
+          geg=dot_product(ggrid(:,igrid),matmul(epsil,ggrid(:,igrid)))
+          z1=matmul(atom_sc(tau1)%charge,ggrid(:,igrid))
+          z2=matmul(atom_sc(tau2)%charge,ggrid(:,igrid))
+          dpot=dpot + z2/geg *sin(ggrid(:,igrid) .dot. r12) * gws_weights(igrid) 
+          efield = efield + dpot
+       enddo g1loop
+    enddo
 
  enddo
- enddo
 
-3 format(a,2i5,9(1x,g11.4))
+3 format(a,99(1x,g14.7))
 
- end subroutine ewaldforce_G
+ end subroutine coulombforce
 !===========================================================
  subroutine ewapot(x,pot)
 ! calculates the sum_R 1/|R+x| -background = pot (in 1/Ang no epsil)
 ! use constants , only: pi
  use lattice , only: volume_r
-! use params, only : eta
- use geometry
+ use geometry, only : det,length
  use born
  implicit none
  real(r15), intent(out) :: pot
  real(r15), intent(in) :: x(3)
  integer igrid
- real(r15) termg,qpg(3),dd,my_erfc,geg,ep,vd(3)
+ real(r15) termg,qpg(3),dd,my_erfc,geg,vd(3)
 
  if (length(x).lt.1d-12) then
     write(*,*)'EWAPOT: X is too small! ',x
-    ep=1d-12
- else
-    ep=0
  endif
 
     pot=0
     do igrid=1,nr_ewald
        vd=eta*(x+r_ewald(:,igrid))
-       dd=sqrt(dot_product(vd,matmul(epsinv,vd)))+ep
+       dd=sqrt(dot_product(vd,matmul(epsinv,vd)))
+       if(dd.lt.1d-12) dd=1d-12
        if (dd.gt.5) cycle  ! r_ewald is sorted but not x+r_ewald
        pot=pot + eta*my_erfc(dd)/dd/sqrt(det(epsil))
     enddo
@@ -337,7 +378,7 @@
        geg=dot_product(qpg,matmul(epsil,qpg))
        if (geg.gt.100*eta*eta) exit
        termg=exp(-geg/(4*eta*eta))/geg
-       pot=pot+ termg * cos(qpg .dot. x) *4*pi/volume_r
+       pot=pot+ termg * cos(dot_product(qpg,x)) *4*pi/volume_r
     enddo
 
     pot=pot - pi/volume_r/eta/eta   &
@@ -392,10 +433,10 @@
  subroutine madelung2(emadelung)
 ! Madelung energy from ewapot (in 1/Ang no epsil)
  use born
- use geometry
+ use geometry, only : det
  implicit none
  real(r15), intent(out) :: emadelung
- real(r15) x(3),ene !det
+ real(r15) x(3),ene 
 
  x=0; x(1)=1d-6
  call ewapot(x,ene)
@@ -411,7 +452,7 @@
 
  write(ulog,*)'**************** TEST OF COULOMB FORCE *********************'
 
- r12=(/0.1,0.2,0.5/)  !0.3*v2a(r01)
+ r12=(/0.1,0.2,0.5/)  
  write(ulog,3)' r12=',al,r12
  call dewapot(r12,dpot)
 
@@ -426,7 +467,7 @@
     force1=-(potp-potm)/2d-4
     write(ulog,3)'al,pot0,force,-de/dx=',al,pot0,dpot(al),force1
  enddo
-
+ stop
 3 format(a,i5,9(1x,g14.7))
 
  end subroutine test_ewald
@@ -438,281 +479,294 @@
 ! dsp is the cartesian position not including the equilibrium positions
  use atoms_force_constants
 ! use constants, only : pi
- use fourier
- use lattice, only : rs1,rs2,rs3,g01,g02,g03,rws26,gws26, volume_r,volume_r0 !,cart2red_r
+ use fourier, only : nggrid,ggrid,nrgrid,rgrid,rws_weights,fourier_k2r,fourier_r2k,gws_weights
+ use geometry, only : length,v2a
+ use lattice, only : rs1,rs2,rs3,r01,r02,r03,rws26,gws26,volume_r,volume_r0,a0_scale,asc_scale,g0ws26,fold_ws,cart2red
  use ios, only : ulog ,write_out
- use params, only : verbose, tolerance
- use born , only : epsil,dyn_naq0,dyn_na
+ use params, only : verbose, tolerance,coef
+ use born , only : epsil,epsinv,dyn_na
  implicit none
  integer, intent(in):: born_flag,ncfg
  real(r15), intent(inout) :: dsp(3,natom_super_cell,ncfg),frc(3,natom_super_cell,ncfg)
 ! automatic arrays here (lost after the call, memory released)
  integer nsc(natom_prim_cell,nrgrid)
- complex(r15) frcr(3,natom_prim_cell,nrgrid),frcg(3,natom_prim_cell,nggrid)
+!  complex(r15) frcr(3,natom_prim_cell,nrgrid),frcg(3,natom_prim_cell,nggrid)
  complex(r15) disr(3,natom_prim_cell,nrgrid),disg(3,natom_prim_cell,nggrid)
  complex(r15) fcoulg(3,natom_prim_cell,nggrid),fcoulr(3,natom_prim_cell,nrgrid)
  complex(r15) auxr(nrgrid),auxg(nggrid),aravg(nrgrid) ,agavg(nggrid) 
- real(r15) ewald_force(3,natom_super_cell),ewald_force0(3,natom_super_cell)
+ real(r15) coulmb_force(3,natom_super_cell),coulmb_force0(3,natom_super_cell)
 ! real(r15), allocatable :: frcr(:,:,:),frcg(:,:,:),disr(:,:,:),disg(:,:,:)
  complex(r15) ddn(3,3,3,nggrid)
- real(r15) rr(3),deteps3,asr(3,3),pos(3,natom_super_cell) 
- integer n3(3),tau,taup,al,be,icfg,i,j,l,jj,nsc1
+ real(r15) rr(3),deteps3,asr(3,3),pos(3,natom_super_cell) ,etaew,ftot,dfewa,dta(3),geg,rfold(3)
+ real(r15) phi_na(natom_prim_cell,natom_prim_cell,3,3,nrgrid)
+ integer n3(3),tau,taup,al,be,icfg,i,g,l,j,nsc1,ir,jr
  logical isperiodic
 
- if(born_flag.lt.1) return      ! skip if born_flag=<1 , otherwise, the NA term is always added
+ if(born_flag.le.1 ) return  ! no subtraction for born_flag=1
 
-! allocate( dyn_na(natom_prim_cell,natom_prim_cell,3,3,nggrid) )
+ write(ulog,*)'born_flag=',born_flag
+ if(born_flag.eq.1) write(ulog,*)'no subtraction but D^NA(Parlinski) is added to dyn_SR'
+ if(born_flag.eq.2) write(ulog,*)'subtraction of deltaF(ewald) done from force, D^NA(_hat) added to dyn_SR'
+ if(born_flag.eq.3) write(ulog,*)'subtraction of - D^NA_K(_hat) u_K from force, D^NA(_hat) added to dyn_SR'
+ if(born_flag.eq.4) write(ulog,*)'subtraction of - D^NA_K(Gnew) u_K from force, D^NA(Gnew) added to dyn_SR'
+ if(born_flag.eq.6) write(ulog,*)'no subtraction here but D^NA_struct_factor added '
+ if(born_flag.eq.7) write(ulog,*)'subtraction of fourier summation of coulomb force, D^NA(_hat) added to dyn_SR'
+ if(born_flag.eq.8) write(ulog,*)'subtraction of -phi_NA_t,Rtp *u_Rtp , D^NA(_hat) added to dyn_SR'
+ if(born_flag.eq.9) write(ulog,*)'subtraction of force from Fourier of Coulomb (no Ewald) D^NA(_hat) added to dyn_SR'
 
- write(*,*)'SUBTRACT_COULOMB_FORCE: size of force is 3,',size(frc(1,:,1)),size(frc(1,1,:))
+
+    write(*,*)'SUBTRACT_COULOMB_FORCE: sizes of force are:3,',  &
+&            size(frc(1,:,1)),size(frc(1,1,:))
 
 ! ------------------------------  SOME PRELIMINARY CALCULATIONS  ----------------------------------
 ! erfc(4)=1.5d-8  so if eps=4/vol**.333 the real space terms become negligible
 ! exp(-18)=1.5d-8  so G larger than 5-6 shells will not contribute even if eps=4/vol^.3
 ! set cutoffs for Ewald sums ! this should come after the supercell is read!!!!
-     deteps3=det(epsil)**0.3333
-     eta=sqrt(pi*deteps3)/(volume_r**0.3333) ! so both R-sums and G-sums converge at the same rate
-     rcutoff_ewa=8*sqrt(deteps3)/eta
-     gcutoff_ewa=8/sqrt(deteps3)*eta*2
-     write(ulog,5)'SUBTRACT: deteps^1/3, eta=',n3,deteps3,eta
-     write(ulog,5)'SUBTRACT: rcutoff,gcutoff=',n3,rcutoff_ewa,gcutoff_ewa
-
-! generate real space and reciprocal space translation vectors of the supercell for Ewald sums
-! output is r_ewald(3,nr_ewald) and g_ewald(3,ng_ewald)
+! to subtract coulomb forces from ewald sums, the superccell translation vectors are needed
+! output is r_ewald(3,nr_ewald) and g_ewald(3,ng_ewald)  for ewald summations
+  deteps3=det(epsil)**(1/3d0)
+  asc_scale = (volume_r **(1/3d0))
+  a0_scale  = (volume_r0**(1/3d0))
+  if ( born_flag.eq.2) then
+     call cuts(deteps3,asc_scale,born_flag,eta,rcutoff_ewa,gcutoff_ewa)
      call make_grid_shell_ewald(rs1,rs2,rs3,rcutoff_ewa,gcutoff_ewa,epsil)
+  else
+     call cuts(deteps3, a0_scale,born_flag,eta,rcutoff_ewa,gcutoff_ewa)
+     call make_grid_shell_ewald(r01,r02,r03,rcutoff_ewa,gcutoff_ewa,epsil)
+  endif
 
-     call nsc_from_rgrid(nrgrid,rgrid,nsc) ! mapping from (rgrid,tau) to supercell: nsc(tau,jgrid)
+  write(ulog,6)'eta,rcut_ewa,gcut_ewa=',eta,rcutoff_ewa,gcutoff_ewa
+  write(6   ,6)'eta,rcut_ewa,gcut_ewa=',eta,rcutoff_ewa,gcutoff_ewa
+  write(ulog,*)'nr_ewa,ng_ewa=',nr_ewald,ng_ewald
+  write(6   ,*)'nr_ewa,ng_ewa=',nr_ewald,ng_ewald
 
-! calculation of DYN_NA(tau,taup,G) (no mass denominator) for multiplication by disp(taup,G) to compare with -force_ewald(tau,G)
-     if (born_flag.eq.4) then ! calculate non-analytical part phi_NA in real space and subtract from forces
+ if(born_flag.gt.9) return  ! only subtract from forces for bflag=2,3,4; 
 
-       write(ulog,*)'NA term in real space on the Rgrid: tau,al;taup,be,phi_NA(Rgrid)='
-       if(allocated(dyn_naq0)) then
-           deallocate(dyn_naq0)
-       endif
-       allocate( dyn_naq0(natom_prim_cell,3,3) )
-!      allocate( dyn_na0(natom_prim_cell,natom_prim_cell,3,3,nggrid) )
-!      call phi_na_0
-!      dyn_na=0
-!      do tau =1,natom_prim_cell
-!      do taup=1,natom_prim_cell
-!      do j=1,nggrid
-!         dyn_na(tau,taup,:,:,j)=dyn_na(tau,taup,:,:,j)+dyn_naq0(tau,:,:)* &
-! & gws_weights(j)*exp(ci*dot_product(ggrid(:,j),(atompos(:,taup)-atompos(:,tau))))
-!      enddo
-!      enddo
-!      enddo
-       
-     else  ! calculate non-analytical part DYN_NA(q); no mass factor
+! mapping from (rgrid,tau) to supercell: nsc(tau,jgrid)
+  call nsc_from_rgrid(nrgrid,rgrid,nsc) 
 
-       do tau=1,natom_prim_cell
-       do taup=1,natom_prim_cell
-       do j=1,nggrid
-          call dyn_coulomb(tau,taup,ggrid(:,j),dyn_na(tau,taup,:,:,j),ddn(:,:,:,j))
-       enddo
-       enddo
-       enddo
+! calculate non-analytical part DYN_NA(q) and subtract from dny_na(G*) ; no mass factor
+!
+! ----------------   NOW DO SUBTRACTION FOR EVERY CONFIGURATION    ----------------
+  config_sum: do icfg=1,ncfg
 
-     endif
-       
-     do j=1,nggrid
-     do tau =1,natom_prim_cell
-     do taup=1,natom_prim_cell
-        write(ulog,*)'BFLAG,j, tau,taup= ',born_flag,j,tau,taup
-        call write_out(ulog,'SUBTRACT:  dyn_NA(tau,taup) ',(dyn_na(tau,taup,:,:,j)))
-     enddo
-     enddo
-     enddo
+      if( born_flag.eq.2 .or. born_flag.eq.9) then ! subtract ewald force from forces
 
-! ----------------   NOW DO SUBTRACTION FOR EVERY CONFIGURATION    --------------------
-     config_sum: do icfg=1,ncfg
+         write(ulog,*)'MAIN: going to call Ewaldforce '
 
-! for each config convert disp to a 3 x N0 x Nrgrid format needed for FT
-        do j=1,nrgrid
-        do tau=1,natom_prim_cell
-           nsc1=nsc(tau,j)
-           disr(:,tau,j)=dsp(:,nsc1,icfg)  ! this should be periodic if j on boundary
-        enddo
-        enddo
-! Fourier transform displacement to convert to 3 x N0 x Nggrid format 
-        do tau=1,natom_prim_cell
-        do al=1,3
-           auxr=disr(al,tau,:)           !           auxr=frcr(al,tau,:)
-! is auxr, defined on rgrid, periodic of period rws26?
-           call check_periodic(nrgrid,rgrid,rws26,auxr,aravg,isperiodic)
-           if(isperiodic) then
-              call fourier_r2k(auxr,auxg)   !           call fourier_r2k(auxr,auxg)
-           else
+         do i=1,natom_super_cell
+            pos(:,i)=v2a(atom_sc(i)%equilibrium_pos)
+         enddo 
+!        if( born_flag.eq.2 ) then ! subtract ewald force from forces
+            call ewaldforce  (natom_super_cell,pos,coulmb_force0) ! is it necessary to subtract?
+!        elseif( born_flag.eq.9 ) then ! subtract coulomb force from forces
+!           call coulombforce  (natom_super_cell,pos,coulmb_force0) ! is it necessary to subtract?
+!        endif
+! yes because the residual force pi0 is also subtrated from forces when fitting. so this should be linear in u
+
+         do i=1,natom_super_cell
+            pos(:,i)=v2a(atom_sc(i)%equilibrium_pos) + dsp(:,i,icfg)
+         enddo 
+!        if( born_flag.eq.2 ) then ! subtract ewald force from forces
+            call ewaldforce  (natom_super_cell,pos,coulmb_force) ! is it necessary to subtract?
+!        elseif( born_flag.eq.9 ) then ! subtract coulomb force from forces
+!           call coulombforce  (natom_super_cell,pos,coulmb_force) ! is it necessary to subtract?
+!        endif
+
+!        if ( verbose ) then
+            write(ulog,*)' Ewald force F,F0,F-F0,dF_ewa/Ftot for configuration #',icfg
+            dfewa=0; ftot=0
+            do i=1,natom_super_cell
+               write(ulog,3)i, coulmb_force(:,i),coulmb_force0(:,i), &
+ &                             coulmb_force(:,i)-coulmb_force0(:,i), &
+ &            length(coulmb_force(:,i)-coulmb_force0(:,i))/(1d-12+length(frc(:,i,icfg)))
+               dfewa=dfewa+length(coulmb_force(:,i)-coulmb_force0(:,i))
+               ftot=ftot+length(frc(:,i,icfg))
+            enddo
+!        endif
+         write(ulog,5)'######## sum(Ftot),sum(dfewa),Sdfewa/SFtot=',ftot,dfewa,dfewa/ftot
+         coulmb_force = coulmb_force- coulmb_force0 
+         write(982,*)' nsc,rgrid,tau, coulmb_force on Rgrid (redundant) ====== BF, nrgrid=',born_flag,nrgrid
+         do j=1,nrgrid
+         do tau=1,natom_prim_cell
+            nsc1=nsc(tau,j)
+            write(982,4) nsc1,j,tau, coulmb_force(:,nsc1)
+         enddo
+         enddo
+
+         frc(:,:,icfg)=frc(:,:,icfg) -  coulmb_force(:,:) 
+
+      elseif(born_flag.eq.3 .or. born_flag.eq.4 ) then   ! subtract FT of -D_NA(t,t'G) * u(t',G)
+
+         write(ulog,*)'SUBTRACT_COULOMB: calculating dyn_na on ggrid for bflag=',born_flag
+         call dyn_na5D_on_grid(nggrid,ggrid)  ! this gives the 5D dyn_na(G*), which satisfies ASR 
+
+! for each config convert disp and force to a 3 x N0 x Nrgrid format needed for FT
+         do j=1,nrgrid
+         do tau=1,natom_prim_cell
+            nsc1=nsc(tau,j)
+            disr  (:,tau,j)=dsp(:,nsc1,icfg)  ! should be periodic if j on boundary
+ !          fcoulr(:,tau,j)=frc(:,nsc1,icfg) 
+         enddo
+         enddo
+
+! Fourier transform displacement and force to convert to 3 x N0 x Nggrid format 
+         do tau=1,natom_prim_cell
+         do al=1,3
+            auxr=disr(al,tau,:)           
+            call check_periodic(nrgrid,rgrid,rws26,auxr,aravg,isperiodic)
+            if(isperiodic) then
+              call fourier_r2k(auxr,auxg)   
+            else
               write(ulog,*)'icfg=',icfg,' disr was not periodic!!!'
-              call fourier_r2k(aravg,auxg)   !           call fourier_r2k(auxr,auxg)
-           endif 
-           disg(al,tau,:)=auxg           !           frcg(al,tau,:)=auxg
-        enddo
-        call write_out(ulog,' disg(tau) ',transpose(disg(:,tau,:)))
-        enddo
+              stop
+            ! call fourier_r2k(aravg,auxg)  
+            endif 
+            disg(al,tau,:)=auxg           
 
+         enddo
+         enddo
 
+! subtract  -D_NA(t,t',G)*u(t',G) from fcoulg(t,G)
+         fcoulg = 0
+         do tau=1,natom_prim_cell
+         do al=1,3
+            do taup=1,natom_prim_cell
+            do be=1,3
+               fcoulg(al,tau,:)=fcoulg(al,tau,:) - dyn_na(tau,taup,al,be,:)*disg(be,taup,:) 
+            enddo
+            enddo
+         enddo
+         enddo
 
-        if    (born_flag.eq.1 .or. born_flag.eq.5) then    ! - - - - - - - - - - - - - - - 
+! fourier transform back to real space and get fcoulr
+         do tau=1,natom_prim_cell
+         do al=1,3
+            auxg=fcoulg(al,tau,:)    
+            call check_periodic(nggrid,ggrid,g0ws26,auxg,agavg,isperiodic)
+            if(isperiodic) then
+               call fourier_k2r(auxg,auxr)  
+            else
+               write(ulog,*)'icfg=',icfg,' fcoulg was not periodic!!!',tau,al
+               call write_out(ulog,'fcoulg was not periodic!!!',auxg)
+               call write_out(ulog,'fcoulg was not periodic!!!',agavg)
+               call write_out(ulog,'fcoulg-agavg ',agavg-auxg)
+               stop
+     !         call fourier_k2r(agavg,auxr)   
+            endif 
+            fcoulr(al,tau,:)=auxr / rws_weights  ! if on boundary, still should count with full weight   
+         enddo
+         enddo
 
-            cycle    ! no subtraction
- 
-        elseif(born_flag.eq.2) then    ! - - - - - - - - - - - - - - -  
-! Ewald force_g is the long-range part which is subtracted in real space 
+! go back from grid indices to supercell indices
+         write(983,*)' nsc,rgrid,tau, NA_force(:,nsc)========= BF, nrgrid=',born_flag,nrgrid
+         do j=1,nrgrid
+         do tau=1,natom_prim_cell
+            nsc1=nsc(tau,j)
+            write(983,4) nsc1,j,tau,real(fcoulr(:,tau,j)), aimag(fcoulr(:,tau,j))
+            frc(:,nsc1,icfg)=frc(:,nsc1,icfg)-real(fcoulr(:,tau,j))
+            if(maxval(abs(aimag(fcoulr(:,tau,j)))).gt.1d-6) then
+               write(*   ,5)'ERROR:tau,rgrid,nsc,fcoulr has IMAGINARY part!='  &
+ &                                ,tau,j,nsc1,aimag(fcoulr(:,tau,j))
+               write(ulog,5)'ERROR:tau,rgrid,nsc,fcoulr has IMAGINARY part!='  &
+ &                                ,tau,j,nsc1,aimag(fcoulr(:,tau,j))
+               stop
+            endif
+         enddo
+         enddo
 
-            write(ulog,*)'MAIN: going to call Ewaldforce_G '
+      elseif (born_flag.eq.7) then
 
-            do i=1,natom_super_cell
-               pos(:,i)=v2a(atom_sc(i)%equilibrium_pos)
-            enddo 
-            call ewaldforce_g(natom_super_cell,pos,ewald_force0)
+! calculate the Force using fourier summation and subtract from the force
+         fcoulr =0
+         do tau=1,natom_prim_cell
+         do ir=1,nrgrid
+            do taup=1,natom_prim_cell
+               dta=rgrid(:,ir)+v2a(atom0(taup)%equilibrium_pos) - v2a(atom0(tau)%equilibrium_pos) 
+            do jr=2,nggrid
+               geg=dot_product(ggrid(:,jr),matmul(epsil,ggrid(:,jr)))
+               rr=matmul(atom0(taup)%charge,ggrid(:,jr)) / geg *   &
+   &                 sin(ggrid(:,jr).dot.dta) * gws_weights(jr) * coef
+               fcoulr(:,tau,ir)=fcoulr(:,tau,ir)+matmul( atom0(tau)%charge,rr)
+            enddo
+            enddo
+         enddo
+         enddo
 
-! ewaldforce_g requires the absolute cartesian coordinates of atoms, so pos=eq+displacement
-            do i=1,natom_super_cell
-               pos(:,i)=v2a(atom_sc(i)%equilibrium_pos) + dsp(:,i,icfg)
-            enddo 
-            call ewaldforce_g(natom_super_cell,pos,ewald_force)
+         write(987,*)' nsc,rgrid,tau, Coulmb_force (BF=8) on Rgrid (redundant) ==== nrgrid=',nrgrid
+         do ir=1,nrgrid
+         do tau=1,natom_prim_cell
+            nsc1=nsc(tau,ir)
+            write(987,4) nsc1,ir,tau,real(fcoulr(:,tau,ir)), aimag(fcoulr(:,tau,ir))
+            frc(:,nsc1,icfg)=frc(:,nsc1,icfg)-real(fcoulr(:,tau,ir))
+            if(maxval(abs(aimag(fcoulr(:,tau,ir)))).gt.1d-6) then
+               write(*   ,5)'ERROR:tau,rgrid,nsc,fcoulr has IMAGINARY part!='  &
+ &                                ,tau,ir,nsc1,aimag(fcoulr(:,tau,ir))
+               write(ulog,5)'ERROR:tau,rgrid,nsc,fcoulr has IMAGINARY part!='  &
+ &                                ,tau,ir,nsc1,aimag(fcoulr(:,tau,ir))
+               stop
+            endif
+         enddo
+         enddo
 
-!            if ( verbose ) then
-               write(ulog,*)' Ewald force F,F0,F-F0 for configuration #',icfg
-               do j=1,natom_super_cell
-                  write(ulog,4)j, ewald_force(:,j),ewald_force0(:,j),ewald_force(:,j)-ewald_force0(:,j)
-               enddo
-!            endif
+      elseif (born_flag.eq.8) then
 
-            frc(:,:,icfg)=frc(:,:,icfg) - ( ewald_force(:,:)- ewald_force0(:,:) )
-
-! compare to -D_NA(t,t',G)*u(t',g)
-            fcoulg=0
-            do tau=1,natom_prim_cell
-            do j=1,nggrid
+! calculate the phi_na using fourier summation and subtract from the force
+         call phi_na_g2r(phi_na,nrgrid,rgrid,nggrid,ggrid,gws_weights)
+         fcoulr =0
+         do tau=1,natom_prim_cell
+         do al=1,3
+            do ir=1,nrgrid
+            do jr=1,nrgrid
+               rr=rgrid(:,ir)-rgrid(:,jr)
+! fold rr back in the rgrid
+               rfold = fold_ws(rr,rws26) 
+! find the index of rfold
+               i=0
+               lloop: do l=1,nrgrid
+                  if(length(rgrid(:,l)-rfold).lt.tolerance) then
+                     i=l
+                     exit lloop
+                  endif
+               enddo lloop
+               if(i.eq.0) then
+                  write(*,*)'SUBTRACT: BF=8, i=0, rfold not found ',cart2red(rfold,'r')
+                  stop
+               endif
                do taup=1,natom_prim_cell
-                 fcoulg(:,tau,j)=fcoulg(:,tau,j)-real(matmul(dyn_na(tau,taup,:,:,j),disg(:,taup,j))) 
+               do be=1,3
+          fcoulr(al,tau,ir)=fcoulr(al,tau,ir)-phi_na(tau,taup,al,be,i)*disr(be,taup,jr) 
+               enddo
                enddo
             enddo
-            call write_out(6,' fcoulg(1) ',transpose(fcoulg(:,tau,:)))
             enddo
-! fourier transform back to real space and get fcoulr
-            do tau=1,natom_prim_cell
-            do al=1,3
-               auxg=fcoulg(al,tau,:)          !       auxg=disg(al,tau,:)
-               call check_periodic(nggrid,ggrid,gws26,auxg,agavg,isperiodic)
-               if(isperiodic) then
-                  call fourier_k2r(auxg,auxr)   !           call fourier_r2k(auxr,auxg)
-               else
-                  write(ulog,*)'icfg=',icfg,' fcoulg was not periodic!!!'
-                  call fourier_k2r(agavg,auxr)   !           call fourier_r2k(auxr,auxg)
-               endif 
-               fcoulr(al,tau,:)=auxr      
-            enddo
-            enddo
+         enddo
+         enddo
 
-! subtract fcoulr from forces; first from grid indices go back to supercell indices
-            do j=1,nrgrid
-            do tau=1,natom_prim_cell
-               nsc1=nsc(tau,j)
-!              frc(:,nsc1,icfg)=frc(:,nsc1,icfg)-fcoulr(:,tau,j)
-               write(ulog,5)'tau,j,nsc1,fcoulr,df_ewald=',tau,j,nsc1, fcoulr(:,tau,j),ewald_force(:,nsc1)-ewald_force0(:,nsc1)
-            enddo
-            enddo
+         write(988,*)' nsc,rgrid,tau, Coulmb_force (BF=8) on Rgrid (redundant) ==== nrgrid=',nrgrid
+         do ir=1,nrgrid
+         do tau=1,natom_prim_cell
+            nsc1=nsc(tau,ir)
+            write(988,4) nsc1,ir,tau,real(fcoulr(:,tau,ir)), aimag(fcoulr(:,tau,ir))
+            frc(:,nsc1,icfg)=frc(:,nsc1,icfg)-real(fcoulr(:,tau,ir))
+            if(maxval(abs(aimag(fcoulr(:,tau,ir)))).gt.1d-6) then
+               write(*   ,5)'ERROR:tau,rgrid,nsc,fcoulr has IMAGINARY part!='  &
+ &                                ,tau,ir,nsc1,aimag(fcoulr(:,tau,ir))
+               write(ulog,5)'ERROR:tau,rgrid,nsc,fcoulr has IMAGINARY part!='  &
+ &                                ,tau,ir,nsc1,aimag(fcoulr(:,tau,ir))
+               stop
+            endif
+         enddo
+         enddo
 
+      endif
+
+  enddo config_sum
 
 
-        elseif(born_flag.eq.3) then    ! - - - - - - - - - - - - - - -  
-! NA subtraction in reciprocal space F=F - (-FFT(Dyn(K)*disp(k)) )
-
-! bflag=3 takes only Zq.Zq/qEq while bflag=4 takes the sum_G (K=q+G) Zk.ZK exp(-KEK/4e^2) /KEK
-! i.e. dyn_NA_ewald either with only G sum (bflag=4) or full R and G sums (bflag=5)
-
-! now calculate non-analytical force, fcoulg, in the form -D(k)*disg(k)
-           fcoulg=0
-           do tau=1,natom_prim_cell
-              asr=0
-              do j=1,nggrid
-              do taup=1,natom_prim_cell
-! Long-range Coulomb dynamical matrix for G-vector labeled by j
-                 if (length(ggrid(:,j)).lt.tolerance) then  ! ASR is only for G=0
-                    asr=asr+dyn_na(tau,taup,:,:,j)
-                 endif
-                 fcoulg(:,tau,j)=fcoulg(:,tau,j)-real(matmul(dyn_na(tau,taup,:,:,j),disg(:,taup,j))) 
-              enddo
-              enddo
-              if(maxval(abs(asr)).gt. tolerance) then
-                 call warn(6)
-                 call write_out(6,'bflag=3: dyn_na asr should be zero ',asr)
-              endif
-           enddo
-
-! fourier transform back to real space and get fcoulr
-           do tau=1,natom_prim_cell
-           do al=1,3
-              auxg=fcoulg(al,tau,:)          !       auxg=disg(al,tau,:)
-              call check_periodic(nggrid,ggrid,gws26,auxg,agavg,isperiodic)
-              if(isperiodic) then
-                 call fourier_k2r(auxg,auxr)   !           call fourier_r2k(auxr,auxg)
-              else
-                 call fourier_k2r(agavg,auxr)   !           call fourier_r2k(auxr,auxg)
-              endif 
-              fcoulr(al,tau,:)=auxr          !       disr(al,tau,:)=auxr
-           enddo
-           enddo
-
-! subtract fcoulr from forces; first from grid indices go back to supercell indices
-           do j=1,nrgrid
-           do tau=1,natom_prim_cell
-              nsc1=nsc(tau,j)
-              frc(:,nsc1,icfg)=frc(:,nsc1,icfg)-fcoulr(:,tau,j)
-           enddo
-           enddo
-
-
-        elseif(born_flag.eq.4) then    ! - - - - - - - - - - - - - - - ! NA subtraction in real space F(tau)=F(tau) - (-phi_NA(tau,R+taup)*disp(taup)) )
-
-! convert dsp in supercell to disr on the WS inner grid
-           do j=1,nrgrid
-           do tau=1,natom_prim_cell
-              nsc1=nsc(tau,j)
-              disr(:,tau,j)=dsp(:,nsc1,icfg) 
-           enddo
-           enddo
-
-! Non-analytical Coulomb force in real space on Rgrid
-           fcoulr=0
-           do j=1,nrgrid
-           do tau=1,natom_prim_cell
-              do l=1,nrgrid
-       !         rr=rgrid(:,l)-rgrid(:,j)
-! find the corresponding rgrid number
-       !         call bring_to_ws_r(rr,rws26,foldedr)
-! jj corresponds to rgrid(j)-rgrid(l) folded back into the supercell WS cell
-       !         call find_in_array(3,foldedr,nrgrid,rgrid,jj,tolerance)  not needed since phi_na is constant over cells
-       !         if (jj.eq.0 .or. jj .gt. nrgrid) then
-       !            write(ulog,6)'SUBRTRACT: could not find array ',foldedr,reduce_r(foldedr)
-       !            write(   *,6)'SUBRTRACT: could not find array ',foldedr,reduce_r(foldedr)
-       !            stop
-       !         endif
-                 do taup=1,natom_prim_cell
-   !                fcoulr(:,tau,j)=fcoulr(:,tau,j)- matmul(real(phi_na(tau,taup,:,:,jj)),disr(:,taup,l))
-!                   fcoulr(:,tau,j)=fcoulr(:,tau,j)- matmul(phi_naq0(tau,taup,:,:),disr(:,taup,l)) *volume_r0/volume_r 
-                 enddo
-              enddo
-           enddo
-           enddo
-
-! find correspondance between rgrid point and (tau,R)
-           do j=1,nrgrid
-           do tau=1,natom_prim_cell
-              nsc1=nsc(tau,j)
-              frc(:,nsc1,icfg)=frc(:,nsc1,icfg)-fcoulr(:,tau,j)
-           enddo
-           enddo
-
-        endif
-
-     enddo config_sum
-
-
-4 format(i4,99(1x,f9.4))
-5 format(a,3(i4),33(1x,f10.5))
+3 format(i4,99(1x,f9.4))
+4 format(3i4,99(2x,3(1x,g10.3)))
+5 format(a,33(1x,g11.4))
 6 format(a,9(1x,f10.5))
 8 format(a,2(i3,i2),999(1x,f9.4))
 
@@ -736,294 +790,157 @@
 
  end function hfunc
 !--------------------------------------------------
- function coulg(tau,taup,g) result(h)
- use born , only : epsinv,epsil
- use constants, only : r15
- use lattice, only : volume_r0
- use atoms_force_constants, only : natom_prim_cell,atom0
- use geometry, only : length
- use params, only : coef
- implicit none
- integer, intent(in) :: tau,taup 
- real(r15), intent(in) :: g(3)
- integer al,be
- real(r15) h(3,3),geg,zg1(3),zg2(3)
- 
- if(length(g).lt.1d-6) then
-    h = matmul(matmul(atom0(tau )%charge,epsinv),transpose(atom0(taup)%charge))*coef/3 
- else
-    zg1 = matmul(atom0(tau )%charge,g)
-    zg2 = matmul(atom0(taup)%charge,g)
-    geg = dot_product(g,matmul(epsil,g))
-    do al=1,3
-    do be=1,3
-       h(al,be)= zg1(al)*zg2(be)/geg *coef
-    enddo
-    enddo
- endif
-
- end function coulg
-!--------------------------------------------------
  subroutine ewald_2nd_deriv_hat(q,tau,taup,nr,ng,rgrid,ggrid,etaew,d2ew,d3ew)
-!! calculates the second derivative of the Ewald potential to be used in the Non-analytical correction; step(non-smooth) phase
-!! input is the two atoms tau and taup, output is the 3x3 block D^EW_tau,taup(q) which goes to D^NA for q \to 0 ; no mass denominator
- use params, only : tolerance
- use lattice
- use geometry, only : length
- use born , only : epsil,epsinv
- use atoms_force_constants, only : atom0,atompos
+!! calculates the second derivative of the Ewald potential to be used in the Non-analytical correction; 
+!! step(non-smooth) phase; no Born charge and no mass denominator
+!! input: two atoms tau and taup, output is the 3x3 block D^EW_{tau,taup}(q) which goes to D^NA for q \to 0
+ use params, only : tolerance,coef
+ use constants, only : eps0scale,pi
+ use geometry, only : length,v2a,det,trace
+ use born , only : epsil,epsinv,bref
+ use atoms_force_constants, only : atom0
  use ios , only : ulog,write_out
+ use lattice, only : volume_r0,cart2red
  implicit none
  integer, intent(in) :: tau,taup,nr,ng
  real(r15), intent(in) :: q(3),rgrid(3,nr),ggrid(3,ng),etaew
  complex(r15), intent(out) :: d2ew(3,3),d3ew(3,3,3)
  integer igrid,al,be,ga
- real(r15) termg,sd(3),del(3),dd,my_erfc,geg,ep,vd(3),dta(3),qpg(3),gscale,qal(3),qbe(3)
- complex(r15) dhat(3,3), hout(3,3)
+ real(r15) sd(3),del(3),dd,my_erfc,geg,ep,vd(3),dta(3),qpg(3), &
+&          qal(3),qbe(3),dum(3),ep3,tol,sumcut,dd2
+ complex(r15) hout(3,3),gout(3,3,3),zz,gsum,rpgsum,consta
+ integer, external :: delta_k
 
- dta=atompos(:,taup)-atompos(:,tau)  ! choice for the smooth phase
- gscale=6.28/volume_r0**0.3333
+ dta = v2a(atom0(taup)%equilibrium_pos)-v2a(atom0(tau)%equilibrium_pos)
+ tol=1d-14; sumcut=sqrt(log(1d0/tol))
+! write(ulog,*)'_hat : nr,Rcut=',nr,sumcut/etaew*sqrt(trace(epsil)/3)
+! write(ulog,*)'_hat : ng,Gcut=',ng,2*sumcut*etaew/sqrt(trace(epsil)/3)
+    d2ew=cmplx(0d0,0d0) !;  epsinv*coef/3 !; d2ew=
+    d3ew=cmplx(0d0,0d0) 
+
+! reciprocal space term  
+    do igrid=1,ng  ! G=0 is needed to assure periodicity
+       qpg=ggrid(:,igrid)+q
+       geg=dot_product(qpg,matmul(epsil,qpg))
+!      if (geg.gt.100*etaew*etaew) cycle 
+       if (geg.gt.4*sumcut*sumcut*etaew*etaew) cycle 
+       call naq(qpg,tau,taup,etaew,hout,gout)
+       d2ew = d2ew + hout
+       do ga=1,3
+          d3ew(:,:,ga)=d3ew(:,:,ga) + gout(:,:,ga)  
+       enddo
+    enddo
+    gsum=trace(d2ew)
+
+    ep3 = etaew*etaew*etaew/sqrt(det(epsil))/eps0scale
 
 ! real space term  
-    dhat=0 ; d3ew=0
+    hout=0
     do igrid=1,nr
-       sd=etaew*(dta+rgrid(:,igrid))
+       sd=(dta+rgrid(:,igrid))
        del=matmul(epsinv,sd)
        dd=sqrt(dot_product(sd,del))
-       if(dd.lt.1d-6) cycle ! exclude self-interactions
-       if (dd.gt.6) cycle
-       hout= hfunc(del,dd) * exp(ci*dot_product(q,rgrid(:,igrid))) 
-!      write(6,4)'rgrid,dd,hout=',igrid,dd,hout(1,1)
-       dhat=dhat - hout
+       dd2=sqrt(dot_product(rgrid(:,igrid),matmul(epsinv,rgrid(:,igrid))))
+       if(dd.lt.1d-8) cycle ! exclude self-interactions
+ !     if (etaew*dd.gt.6) cycle
+       if (etaew*dd2.gt.sumcut) cycle ! to keep sums even in Rgrid
+       zz = exp( ci*dot_product(q,rgrid(:,igrid)))  !-dta)) 
+       hout= hfunc(etaew*del,etaew*dd) * zz *ep3
+       d2ew=d2ew - hout
        do ga=1,3
           d3ew(:,:,ga)=d3ew(:,:,ga) - ci*rgrid(ga,igrid) *hout  
        enddo
-!      write(*,4)'R_sum: igrid,d,dhat_11=',igrid,dd, dhat(1,1)
     enddo
-     if(tau.eq.taup) dhat=dhat - 4/3d0/sqrt(pi)*epsinv 
-!    if(tau.eq.taup) d3ew=d3ew - 4/3d0/sqrt(pi)*epsinv   !!! TO BE CHECKED !!!
-    dhat=dhat* etaew*etaew*etaew/sqrt(det(epsil)) 
-    d3ew=d3ew* etaew*etaew*etaew/sqrt(det(epsil)) 
-!   call write_out(6,'total of Rsum terms ',dhat)
+    rpgsum=trace(d2ew)
+!   write(ulog,5)'G_hat:tau,taup,q, gsum,rpgsum,const=',tau,taup,q, gsum,rpgsum,consta 
 
-! reciprocal space term  
-    do igrid=1,ng
-       qpg=ggrid(:,igrid)+q
-       if(length(qpg).lt.1d-5*gscale) cycle  ! exclude G+q=0
-       geg=dot_product(qpg,matmul(epsil,qpg))
-       if (geg.gt.100*etaew*etaew) exit  ! assumes ggrid is sorted 
-       termg=exp(-geg/4/etaew/etaew)/geg
-!      write(6,4)'ggrid,gg,term=',igrid,sqrt(geg),termg
-!      qal(:)=matmul(atom0(tau )%charge,qpg)
-!      qbe(:)=matmul(atom0(taup)%charge,qpg)
-       do al=1,3
-       do be=1,3
-          hout(al,be)= termg * qpg(al)*qpg(be)*exp(-ci*dot_product(qpg,dta)) 
-!! NEED TO ADD THIRD DERIVATIVE !!
-       enddo
-       enddo
-       dhat=dhat + hout*4*pi/volume_r0 
-!      if(igrid.eq.1) call write_out(6,'G=0 term of ewald ',hout*180.9557368)
-    enddo
-!   write(*,3)'final EW2DERIV:dhat=',dhat
+    if(tau.eq.taup) d2ew=d2ew - 4/3d0/sqrt(pi)*epsinv *ep3  
+    consta=trace(d2ew)
 
-    dhat=dhat /(4*pi*eps0)* ee*1d10
-!   call write_out(6,'final EW2DERIV:dhat scaled by 1d10*ee/eps0 ',dhat)
+!  write(*,3)'q_red,G_sum, G+R_sum, G+R+Const trace=',cart2red(q,'g'), gsum,rpgsum,consta
 
-    d2ew= matmul(matmul(atom0(tau)%charge,dhat),transpose(atom0(taup)%charge))
- !  d2ew= d2ew*exp(-ci*(q.dot.dta))   ! smooth phase convention
-     
-
-3 format(a,99(1x,g14.7))
+3 format(a,99(1x,g11.4))
 4 format(a,i4,99(1x,g11.4))
+5 format(a,2i4,99(1x,g11.4))
 
  end subroutine ewald_2nd_deriv_hat
 !--------------------------------------------------
  subroutine ewald_2nd_deriv_Gnew(q,tau,taup,ng,ggrid,etaew,d2ew,d3ew)
 !! calculates the dynamical matrix associated with the NA term (only G sum) 
-!! input is the two atoms tau and taup, output is the 3x3 block D^EW_tau,taup(q) 
+!! input is q, two atoms tau and taup, output is the 3x3 block D^EW_{tau,taup}(q) 
 !! which goes to D^NA for q \to 0 ; G are reciprocal lattice vectors (not supercell)
-!! uses the new phase convention
+!! uses the step phase convention
+!! D_{t,t'}(q)=sum_G exp[i(q-G).dta] f(q-G) with f(q)=q^al q^be/qeq exp[-qeq/4/eta^2]
+! T(q,x)=sum_R e^iq.R /|X+R| =4pi/vol sum_G exp[i(G-q).X]/eps|q-G|^2 exp[-q-G.eps.q-G/4/eta^2] 
+! D(q)=\nabla_X^2 T(q,t'-t) with X=t'-t
+ use constants, only : ee,eps0,pi
  use params, only : tolerance,coef
- use lattice
- use fourier, only : nrgrid,rgrid,rws_weights
- use geometry, only : length
+ use geometry, only : length,v2a,trace,det
  use born , only : epsil,epsinv
- use atoms_force_constants, only : atom0,atompos
+ use atoms_force_constants, only : atom0,natom_prim_cell
  use ios , only : ulog,write_out
  implicit none
  integer, intent(in) :: tau,taup,ng
  real(r15), intent(in) :: q(3),ggrid(3,ng),etaew
  complex(r15), intent(out) :: d2ew(3,3),d3ew(3,3,3)
- complex(r15) phase
- integer igrid,al,be,ga
- real(r15) termg,geg,ep,dta(3),qpg(3),gscale,hout(3,3),qal(3),qbe(3)
+ integer, external :: delta_k
+ complex(r15)  hout(3,3),gout(3,3,3),gsum
+ integer igrid,al,be,ga,tau2
+ real(r15) geg,qpg(3),tol,sumcut
 
- dta=atompos(:,taup)-atompos(:,tau)
- gscale=6.28/volume_r0**0.3333
-
-    d2ew=0 ; d3ew=0
-! reciprocal space term  
+ tol=1d-12; sumcut=sqrt(log(1d0/tol))
+ write(ulog,*)'_Gnew: ng,Gcut=',ng,2*sumcut*etaew/sqrt(trace(epsil)/3)
+    d2ew= cmplx(0d0,0d0) ! ; epsinv*coef/3 ; 
+    d3ew=0
     gloop: do igrid=1,ng
        qpg=ggrid(:,igrid)+q
-       phase = 1 ! exp(-ci*dot_product(ggrid(:,igrid),dta))
-       if(length(qpg).lt.1d-6*gscale) then 
-          cycle
-!          d2ew = d2ew+ 1/3d0*matmul(matmul(atom0(tau )%charge,epsinv),  &
-! &               transpose(atom0(taup)%charge)) * phase 
-       else
-          geg=dot_product(qpg,matmul(epsil,qpg))
-          if (geg.gt.90 *etaew*etaew) exit gloop  ! assumes ggrid is sorted 
-          termg=exp(-geg/4/etaew/etaew)/geg                
-          qal(:)=matmul(atom0(tau )%charge,qpg)
-          qbe(:)=matmul(atom0(taup)%charge,qpg)
- !        write(6,4)'ggrid,gg,term=',igrid,sqrt(geg),termg
-          do al=1,3
-          do be=1,3
-             hout(al,be)= termg * qal(al)*qbe(be)*exp(-ci*dot_product(qpg,dta)) 
-!! NEED TO ADD THE q-DERIVATIVE for group velocities !!
-          enddo
-          enddo
-          d2ew=d2ew + hout * phase
-       endif
-!      write(ulog,4)'G,d_Ew(g)=',igrid,real(d2ew)
-    enddo gloop
+       geg=dot_product(qpg,matmul(epsil,qpg))
+       if (geg.lt.1d-20) cycle gloop
+!      if (geg.gt.100 *etaew*etaew) cycle gloop  
+       if (geg.gt.4*sumcut*sumcut*etaew*etaew) cycle gloop
 
-    d2ew=d2ew * coef 
-    d3ew=d3ew * coef 
+       call naq(qpg,tau,taup,etaew,hout,gout)
+
+       d2ew=d2ew + hout 
+       do ga=1,3
+          d3ew(:,:,ga)=d3ew(:,:,ga) + gout(:,:,ga)
+       enddo
+!      write(6,4)'rgrid,geg,hout=',igrid,geg,hout !(1,1)
+    enddo gloop
+    gsum=trace(d2ew)
+    write(ulog,4)'last term in G-sum in ewa_2nd_der_Gnew=',igrid,d2ew(1,:),hout(1,:)
+    write(ulog,5)'G_new:tau,taup,q, trace=',tau,taup,q, gsum
+
+!  return
+
+! subtract the self-interaction before the final charge multiplication 
+    if(tau.eq.taup) then
+       do tau2=1,natom_prim_cell
+       g0loop: do igrid=2,ng ! exclude G=0
+          qpg=ggrid(:,igrid)
+          geg=dot_product(qpg,matmul(epsil,qpg))
+!         if (geg.gt.100 *etaew*etaew) cycle g0loop  
+          if (geg.gt.4*sumcut*sumcut*etaew*etaew) cycle g0loop
+
+          call naq(qpg,tau,tau2,etaew,hout,gout)
+
+          d2ew=d2ew - hout 
+          do ga=1,3
+             d3ew(:,:,ga)=d3ew(:,:,ga) - gout(:,:,ga)
+          enddo
+       enddo g0loop
+!      write(ulog,4)'last term in G-sum in ewa_2nd_der_q=0 =',igrid,d2ew(1,:),hout(1,:)
+       enddo
+    endif
+
+    write(ulog,5)'G_new:tau,taup,q, trace=',tau,taup,q, trace(d2ew)
+
 3 format(a,99(1x,g14.7))
 4 format(a,i4,99(1x,g11.4))
+5 format(a,2i4,99(1x,g11.4))
 
  end subroutine ewald_2nd_deriv_Gnew
-!--------------------------------------------------
- subroutine ewald_2nd_deriv_G(q,tau,taup,ng,ggrid,etaew,d2ew,d3ew)
-!! calculates the dynamical matrix associated with the NA term (only G sum) 
-!! input is the two atoms tau and taup, output is the 3x3 block D^EW_tau,taup(q) which goes to D^NA for q \to 0
-! use constants, only : ci
- use params, only : tolerance,coef
- use lattice
- use fourier, only : nrgrid,rgrid,rws_weights
- use geometry, only : length
- use born , only : epsil,epsinv
- use atoms_force_constants, only : atom0,atompos
- use ios , only : ulog,write_out
- implicit none
- integer, intent(in) :: tau,taup,ng
- real(r15), intent(in) :: q(3),ggrid(3,ng),etaew
- complex(r15), intent(out) :: d2ew(3,3),d3ew(3,3,3)
- complex(r15)mysf,mydsf(3)
- integer igrid,al,be,ga
- real(r15) termg,geg,ep,dta(3),qpg(3),gscale,hout(3,3),qal(3),qbe(3)
-
- dta=atompos(:,taup)-atompos(:,tau)
- gscale=6.28/volume_r0**0.3333
-
-    d2ew=0 ; d3ew=0
-! reciprocal space term  
-    gloop: do igrid=1,ng
-!      qpg=ggrid(:,igrid)+q
-       qpg=ggrid(:,igrid)
-       if(length(qpg).lt.1d-10*gscale) then ! cycle  ! exclude G+q=0
-         d2ew = d2ew+ 1/3d0*matmul(matmul(atom0(tau )%charge,epsinv),  &
-&               transpose(atom0(taup)%charge)) 
-       else
-         qal(:)=matmul(atom0(tau )%charge,qpg)
-         qbe(:)=matmul(atom0(taup)%charge,qpg)
-         geg=dot_product(qpg,matmul(epsil,qpg))
-         if (geg.gt.100*etaew*etaew) exit gloop  ! assumes ggrid is sorted 
-         termg=exp(-geg/4/etaew/etaew)/geg
-!        write(6,4)'ggrid,gg,term=',igrid,sqrt(geg),termg
-
-         call structure_factor_complx(q+ggrid(:,igrid),nrgrid,rgrid,rws_weights,mysf,mydsf)
-
-         do al=1,3
-         do be=1,3
-!           hout(al,be)= termg * qal(al)*qbe(be)*cos(dot_product(ggrid(:,igrid),dta)) 
-            hout(al,be)= termg * qal(al)*qbe(be)
-!! NEED TO ADD THIRD DERIVATIVE !!
-         enddo
-         enddo
-!        dhat=dhat + hout
-         d2ew=d2ew + hout*mysf * exp(ci*(ggrid(:,igrid).dot.dta))
-       endif
-    enddo gloop
-
-!   d2ew=dhat * coef * exp(-ci*(q.dot.dta))
-    d2ew=d2ew * coef * exp(ci*(q.dot.dta))
-
-3 format(a,99(1x,g14.7))
-4 format(a,i4,99(1x,g11.4))
-
- end subroutine ewald_2nd_deriv_G
-
-!--------------------------------------------------
- subroutine phi_na_g(phi_na,nrg,rgrid,ngg,ggrid,weighg)
-!! calculates the non-analytical Coulomb FCs in real space grid within the supercell from its Fourier transform
- use lattice, only : volume_r0
- use geometry, only : length
- use born , only : epsil
- use atoms_force_constants, only : atom0,atompos,natom_prim_cell,natom_super_cell
-! use ios , only : ulog,write_out
- use params, only : coef 
- implicit none
- integer, intent(in) :: ngg,nrg
- integer  igrid,tau,taup,al,be,i
- real(r15), intent(in) :: ggrid(3,ngg),rgrid(3,nrg),weighg(ngg)
- real(r15), intent(out) :: phi_na(natom_prim_cell,natom_prim_cell,3,3,nrg)
- real(r15) geg,dta(3),gscale, gtau(3),gtaup(3)
-
- gscale=6.28/volume_r0**0.3333
-
- phi_na=0
-! reciprocal space term  
- do igrid=1,ngg
-    if(length(ggrid(:,igrid)).lt.1d-10*gscale) cycle  ! exclude G=0
-    geg=dot_product(ggrid(:,igrid),matmul(epsil,ggrid(:,igrid)))
-!   write(6,4)'ggrid,gg,term=',igrid,sqrt(geg),termg
-    do tau =1,natom_prim_cell
-    do taup=1,natom_prim_cell
-       gtau (:)=matmul(atom0(tau )%charge,ggrid(:,igrid))
-       gtaup(:)=matmul(atom0(taup)%charge,ggrid(:,igrid))
-    do i=1,nrg
-       dta=rgrid(:,i)+atompos(:,taup)-atompos(:,tau)
-    do al=1,3
-    do be=1,3
-       phi_na(tau,taup,al,be,i)= phi_na(tau,taup,al,be,i)+ gtau(al)*gtaup(be)/geg *  &
-    &                 weighg(igrid) ! * cos(dot_product(ggrid(:,igrid),dta))
-    enddo
-    enddo
-    enddo
-    enddo
-    enddo
- enddo
-
- phi_na = phi_na * coef / dble(natom_super_cell)
-
-3 format(a,99(1x,g14.7))
-4 format(a,i4,99(1x,g11.4))
-
- end subroutine phi_na_g
-!--------------------------------------------------
- subroutine phi_na_0(phi_naq0)
-!! calculates the non-analytical Coulomb FCs in real space grid within the supercell from its Fourier transform
- use lattice, only : volume_r0
- use born , only : epsinv
- use atoms_force_constants, only : atom0,natom_prim_cell
- use params, only : coef
- implicit none
- real(r15), intent(out) :: phi_naq0(natom_prim_cell,natom_prim_cell,3,3)
- integer tau,taup
-
- do tau =1,natom_prim_cell
- do taup=1,natom_prim_cell
-    phi_naq0(tau,taup,:,:) = matmul(matmul(atom0(tau )%charge,epsinv),transpose(atom0(taup)%charge))/3d0 
- enddo
- enddo
-
- phi_naq0 = phi_naq0 * coef   ! be careful should be supercell volume there!
-
- end subroutine phi_na_0
-!--------------------------------------------------
 
  end module ewald
 
+!===========================================================

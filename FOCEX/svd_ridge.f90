@@ -43,16 +43,16 @@
  write(uio,*)' Its condition number w_max/w_min = ',wmax/wmin
  write(uio,*)' w larger than ',wcut,' will be used in the inversion'
  write(umat,*)' Its condition number w_max/w_min = ',wmax/wmin
- write(uio,*)' w larger than ',wcut,' will be used in the inversion'
+ write(umat,*)' w larger than ',wcut,' will be used in the inversion'
 
-! write(umat,*)' Matrix u is  '
-! do i=1,m3
-!   write(umat,9)i,(u(i,j),j=1,n)
-! enddo
-! write(umat,*)' Matrix v is  '
-! do i=1,n
-!   write(umat,9)i,(v(i,j),j=1,n)
-! enddo
+  write(umat,*)' Matrix u is  '
+  do i=1,m3
+    write(umat,9)i,(a(i,j),j=1,n)
+  enddo
+  write(umat,*)' Matrix v is  '
+  do i=1,n
+    write(umat,9)i,(v(i,j),j=1,n)
+  enddo
 
 ! test for orthogonality of u
 ! aux=matmul(transpose(u),u)
@@ -108,7 +108,7 @@
   error=sum(abs(ax-b))/m3
   ermax=maxval(abs(ax-b))
   do i=1,m3
-     write(uio,*)' Ax-b ',i,ax(i)-b(i)
+     write(uio,8)' Ax-b ',i,ax(i)-b(i)
   enddo
   sig=sqrt(num/denom)*100
   write(uio,3)' MAE, largest errors in force(eV/Ang),percent deviation=',error,ermax,sig
@@ -116,7 +116,7 @@
 6 format(i6,3(1x,g13.6),3x,g11.4)
 3 format(a,3(1x,g13.6))
 9 format(i8,1x,999(1x,f7.3))
-8 format(a,i8,1x,i8,3(1x,f17.10))
+8 format(a,i8,99(1x,f17.8))
 7 format(i8,1x,99(1x,g11.4))
 
   close(uio)
@@ -486,9 +486,9 @@
       do j=1,n
         if(w(j).ne.0d0)then
 !          tmp(j)=tmp(j)/w(j)
-!          tmp(j)=tmp(j)*w(j)/(w(j)*w(j)+wcut*wcut)
+!          tmp(j)=tmp(j)*w(j)/(w(j)*w(j)+wcut*wcut)    ! standard ridge regression
 !          tmp(j)=tmp(j)*w(j)*w(j)/(w(j)*w(j)*w(j)+wcut*wcut*wcut)
-           tmp(j)=tmp(j)*w(j)*w(j)/sqrt(w(j)**6+wcut**6)
+           tmp(j)=tmp(j)*w(j)*w(j)/sqrt(w(j)**6+wcut**6)   ! my regularization
          endif
       enddo
       x= matmul(v,tmp)
@@ -498,11 +498,11 @@
       do j=1,n
          sigma(j) = 0  ! error is V W^-2 V+
          do k=1,n
-!            if (w(k).ge.wcut) then
-!               sigma(j) = sigma(j) + v(j,k)*v(j,k) / w(k)/w(k)
-!               sigma(j) = sigma(j) + v(j,k)*v(j,k) *w(k)*w(k)/ (w(k)*w(k)+svdcut*svdcut)**2
+     !       if (w(k).ge.wcut) then
+     !          sigma(j) = sigma(j) + v(j,k)*v(j,k) / w(k)/w(k)
+!    !          sigma(j) = sigma(j) + v(j,k)*v(j,k) *w(k)*w(k)/ (w(k)*w(k)+svdcut*svdcut)**2
+     !       endif
                 sigma(j) = sigma(j) + v(j,k)*v(j,k) *w(k)**4/( w(k)**6+wcut**6 ) ! my regularization
-!            endif
          enddo
          sigma(j) = sqrt(sigma(j))
       enddo
@@ -562,6 +562,7 @@
  write(uio,4)'SOLVE_SVD: largest w, condition number is ',wmax,wmax/wmin
  write(uio,4)'SOLVE_SVD: will only keep svs larger than ',wcut
  call write_out(uio,'=========================== SOLVE_SVD: W ',w)
+ call write_out(uio,' SOLVE_SVD: V ',v)
 
 ! this is to eliminate the v vectors with small w
 ! do i=1,n

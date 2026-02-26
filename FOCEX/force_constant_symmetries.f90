@@ -26,10 +26,10 @@
       integer j,g,k,ier,iatom,tau,ncmp,   &
      &     iatom2,itype2,iatom3,ipntop,   &
      &     itype,isg,aux(3,3)
-      real(r15) tempi(3,3),fract(3),v(3),v2(3),temp(3,3),at1star(3) !r(3),
+      real(r15) tempi(3,3),fract(3),v(3),v2(3),temp(3,3),at1star(3),tol !r(3),
 
 ! maxneighbors= largest # of neighbor shells <  50 usually unless very low symmetry
-
+      tol=1d-3 ! used to ID atoms related by symmetries
 !-------------------------------------------------------------------------------
 ! some preliminary stuff
 ! copy input arguments into global variables
@@ -100,7 +100,7 @@
       open(usym,file='symmetry.dat')
 ! first find point group of the BRAVAIS lattice
 !k1   call dlatmat2(prim_to_cart,1d-6,lattpgcount,iop_matrix)
-      call dlatmat2(prim_to_cart,1d-5,lattpgcount,iop_matrix)
+      call dlatmat2(prim_to_cart,tol,lattpgcount,iop_matrix) ! tol=1d-3 tolerance to id symmetries
 ! this integer matrix finds the image of a vector under symmetry op IN REDUCED UNITS
 ! it is a unimodular matrix with interger entries and det=1 or -1; its inverse is also integer
 
@@ -177,7 +177,7 @@
 ! try to find another atom of the same type with these coordinates
               iatom3loop2: do iatom3=1,natom_prim_cell
                 if(iatomtype(iatom3).eq.itype2)then
-                  if(length(v2-atompos(:,iatom3)).gt.tolerance)  cycle iatom3loop2
+                  if(length(v2-atompos(:,iatom3)).gt.tol)  cycle iatom3loop2
              !    do j=1,3
 ! this one isn't it, try another one
              !      if(ncmp(v2(j)-atompos(j,iatom3)).ne.0)  cycle iatom3loop2
@@ -215,7 +215,7 @@
          write(usym,8)' isg, isgop, sgfract=',isg,isgop(isg),sgfract(:,isg)
 ! check for inversion symetry
          if(iop_matrix(1,1,isg).eq.-1 .and.iop_matrix(2,2,isg).eq.-1 &
-&  .and.iop_matrix(3,3,isg).eq.-1 .and. length(sgfract(:,isg)).lt.tolerance) then
+&  .and.iop_matrix(3,3,isg).eq.-1 .and. length(sgfract(:,isg)).lt.tol) then
             write(ulog,*)'INVERSION SYMMETRY: for op#',isg
             has_inversion=.True.
          endif
@@ -239,7 +239,7 @@
 ! look for atom
           iatom2loop3: do iatom2=1,natom_prim_cell
             if(iatomtype(iatom2).eq.itype)then
-              if(length(v2-atompos(:,iatom2)).gt.tolerance)  cycle iatom2loop3
+              if(length(v2-atompos(:,iatom2)).gt.tol)  cycle iatom2loop3
        !      do j=1,3
        !        if(ncmp(v2(j)-atompos(j,iatom2)).ne.0)  cycle iatom2loop3
        !      enddo
@@ -392,7 +392,6 @@
       use atoms_force_constants !force_constants_module
       use ios !, only : ulog
  use constants, only : r15
-!      use params , only : tolerance
       implicit none
       integer i1,i2,i3,j,k,m,n,tau,nd2save,ncmp,iatom0,icell(3),g,iatom,nshl !(natom_prim_cell)
       real(r15) d2save(maxneighbors),r(3),d2,a0 
@@ -1236,7 +1235,7 @@
 5 format(a,i4,3(1x,f12.6))
       end subroutine findatom_cart
 !--------------------------------------------------------------------------------
-      function ncmp(x)
+      integer function ncmp(x)
       use params, only : tolerance
       use constants, only : r15
       implicit none
@@ -1246,7 +1245,7 @@
 !!	NCMP=1 OTHERWISE
 !!	X IS REAL
 !
-      integer ncmp
+!     integer ncmp
       real(r15) x !,delta
 !     data delta/1.e-3/
       ncmp=0

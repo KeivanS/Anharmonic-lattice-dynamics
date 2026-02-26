@@ -19,7 +19,7 @@
 !! for rgrid in the WS of supercell and tau in primcell, finds the corresponding 
 !! supercell atom index nsc: maps (jgrid,tau) to nsc , may repeat as ngrid*tau > nsc
  use geometry
- use lattice, only : g01,g02,g03,cart2red_r
+ use lattice, only : g01,g02,g03,cart2red
  use constants, only : r15, pi
  use atoms_force_constants, only : natom_prim_cell
  implicit none
@@ -30,7 +30,7 @@
  real(r15) rr(3)
 
    do j=1,ngrid
-      rr=cart2red_r(rgrid(:,j)) 
+      rr=cart2red(rgrid(:,j),'r') 
   !   rr(1)=(rgrid(:,j) .dot. g01)/2/pi  ! find first the reduced coordinates
   !   rr(2)=(rgrid(:,j) .dot. g02)/2/pi
   !   rr(3)=(rgrid(:,j) .dot. g03)/2/pi
@@ -41,7 +41,7 @@
       endif
       do tau=1,natom_prim_cell
          call findatom_sc(n3,tau,n1)
-         nsc(tau,j)=n1
+         nsc(tau,j)=n1  ! if grid is symmetrized WS, then two image grids are mapped to the same nsc 
       enddo
    enddo
 
@@ -256,19 +256,6 @@
 
   end function fcut
 !=====================================================================
- subroutine calculate_distance(i,j,atompos,maxatoms,rij)
- use constants, only : r15
- implicit none
- integer, intent(in):: i,j,maxatoms
- real(r15), intent(in) :: atompos(3,maxatoms)
- real(r15), intent(out) :: rij
-
-  rij = sqrt( (atompos(1,i)-atompos(1,j))*(atompos(1,i)-atompos(1,j)) +  &
-&             (atompos(2,i)-atompos(2,j))*(atompos(2,i)-atompos(2,j)) +  &
-&             (atompos(3,i)-atompos(3,j))*(atompos(3,i)-atompos(3,j)) )
-
- end subroutine calculate_distance
-!============================================================
  subroutine sort(n,r,mcor,maxat)
 ! sorts the first n elements of array r in ascending order r(mcor(i)) is the ordered array
 ! make sure to initialize the array r to a huge number if n\=maxat
@@ -1311,57 +1298,9 @@
 
       END subroutine choldc
 !  (C) Copr. 1986-92 Numerical Recipes Software !+!).
-!========================================
- subroutine make_grid2(x01,x02,x03,x1,x2,x3,n,grid)
-!! generates a grid of vectors "grid" linear combinations of x0i but
-!! contained in the Wigner-Seitz cell of x1,x2,x3, including the boundaries
- use geometry
- use constants, only : r15
- implicit none
- integer, intent(in) :: n
-! real(r15), intent(in ):: x01(3),x02(3),x03(3),x1(3),x2(3),x3(3)
- type(vector), intent(in ):: x01,x02,x03,x1,x2,x3
- real(r15), intent(out):: grid(3,n)
- real(r15) v(3),a1,a2,a3
- type(vector) y1,y2,y3
- integer i1,i2,i3,m,cnt
-
-
- call make_reciprocal_lattice_v(x1,x2,x3,y1,y2,y3)
- m=50; cnt=1
- do i1=-m,m
- do i2=-m,m
- do i3=-m,m
-
-! generate vectors in a grid
-    v= v2a(i1*x01 + i2*x02 + i3*x03)
-
-! find reduced coordinates of a vector on the grid v=sum_i ai*xi
-    a1 = v .dot. y1
-    a2 = v .dot. y2
-    a3 = v .dot. y3
-
-! see if -0.5<ai=<0.5 to see if it's within the Wigner-Seitz cell of the supercell
-    if (a1.gt.0.50001d0 .or. a1.le.-0.49999d0) cycle
-    if (a2.gt.0.50001d0 .or. a2.le.-0.49999d0) cycle
-    if (a3.gt.0.50001d0 .or. a3.le.-0.49999d0) cycle
-    grid(:,cnt)=v
-    cnt=cnt+1
-    write(98,3)v, a1,a2,a3
-    if(cnt.gt.n+1) then
-       write(*,*)'too many vectors generated',cnt,' compared to ',n
-       stop
-    endif
-
- enddo
- enddo
- enddo
-
-3 format(9(1x,f10.5))
- end subroutine make_grid2
 !============================================================
  subroutine get_upper_bounds(x1,x2,x3,rcut,maxatm,nsmx)
-!! finds maxp, the number of grid points in the sphere of radius rcut and m, the needed mesh
+!! finds the number of grid points in the sphere of radius rcut and m, the needed mesh
 !! outputs are nsmx and maxatm: upper bounds in 1D and in 3D (used for 3 loops and allocation)
  use geometry
  use atoms_force_constants, only : natom_prim_cell
@@ -1376,7 +1315,7 @@
 
  call calculate_volume(x1,x2,x3,om0)
  if(om0.myeq.0d0) then
-    write(*,*)'CALVOL: Volume is zero! check your basis vectors!'
+    write(*,*)'get_upper_bounds: Volume is zero! check your basis vectors!'
     write(*,'(a,9(1x,g12.5))')'r1,r2,r3=',x1,x2,x3
     stop
  endif
@@ -1387,14 +1326,14 @@
 ! find shortest translation vector length
  ls=om0/lmax/lmax
  ls=min(ls,length(x3),length(x1),length(x2))
- write(ulog,3)'GET_UPPER_BOUNDS: lower bound to translation vectors length=',ls
+! write(ulog,3)'GET_UPPER_BOUNDS: lower bound to translation vectors length=',ls
 
  m1=nint(rcut/ls)+2
  m2=(nint((3/12.56*(maxatm/natom_prim_cell))**0.33333)+1)
  nsmx=max(m1,m2)
 ! maxp=(2*m+1)**3
 
- write(ulog,4)'GET_UPPER_BOUNDS:rcut,(rcut+ls)/2,nsmx,maxatom=',rcut,m1,nsmx,maxatm
+ write(ulog,4)'GET_UPPER_BOUNDS:rcut,(rcut+ls)+2,nsmx,maxatom=',rcut,m1,nsmx,maxatm
 
 3 format(a,9(1x,g14.7))
 4 format(a,f9.4,1x,3i8)
@@ -1437,11 +1376,167 @@
 
  end subroutine apply_metric
 !============================================================
- subroutine make_grid_weights_WS(x01,x02,x03,x1,x2,x3,matr,ngrd,grd,weig,space,s0x,sx) 
+ subroutine make_grid(x01,x02,x03,x1,x2,x3,ngrd,grd,weig,fn) 
+!! generates a standard grid formed of x0i inside the volume generated by xi with all equal weigths=1
+ use geometry
+ use ios, only : ulog
+ use constants, only : pi,r15
+ use lattice
+ use params, only : tolerance
+ implicit none
+ type(vector), intent(in):: x01,x02,x03,x1,x2,x3
+ integer, intent(inout):: ngrd
+ real(r15), intent(inout):: weig(ngrd),grd(3,ngrd)
+ character(*) , intent(in) :: fn
+ integer i1,i2,i3,nmax,n1(3),n2(3),n3(3),ier,bmax,nmat(3,3),uio,t
+ real(r15) v(3),omx,omx0,tol,red2pr(3,3),red2sc(3,3),vredsc(3) !,cart_to_redpr(3,3),cart_to_redsc(3,3)
+
+! It is assumed x0i and xi are the shortest basis vectors
+ red2pr(:,1)=v2a(x01)
+ red2pr(:,2)=v2a(x02)
+ red2pr(:,3)=v2a(x03)
+ call xmatinv(3,red2pr,cart_to_redpr,ier)
+
+ red2sc(:,1)=v2a(x1)
+ red2sc(:,2)=v2a(x2)
+ red2sc(:,3)=v2a(x3)
+ call xmatinv(3,red2sc,cart_to_redsc,ier)
+
+! get reduced coordinates of xi on x0i 
+  n1=nint(matmul(cart_to_redpr,v2a(x1)))
+  n2=nint(matmul(cart_to_redpr,v2a(x2)))
+  n3=nint(matmul(cart_to_redpr,v2a(x3)))
+  nmat(:,1)=n1
+  nmat(:,2)=n2
+  nmat(:,3)=n3
+
+  omx =abs(det(cart_to_redsc))
+  omx0=abs(det(cart_to_redpr))
+  tol=1d-6 * omx0**0.33333
+  if (omx0 .lt. omx) then ! real space 
+     nmax=nint(omx/omx0)
+  else  ! reciprocal space
+     nmax=nint(omx0/omx)
+  endif
+
+  write(ulog,8)'V_prim,V_sc=',omx0,omx 
+  write(ulog,6)'V_sc/V_prim = det ratio =' ,nmax
+  if (ngrd.ne.nmax) then
+     write(*,6) 'Make_grid input ngrd .ne. nmax ',ngrd,nmax
+     stop
+  endif
+ 
+  bmax=maxval( abs(nmat) )
+  bmax=nint(bmax*sqrt(3.))+1
+  ngrd=0
+  do i1=-bmax,bmax ! loop boundaries for making the grid
+  do i2=-bmax,bmax
+  do i3=-bmax,bmax
+     v=i1*v2a(x01)+i2*v2a(x02)+i3*v2a(x03)
+     vredsc=matmul(cart_to_redsc,v)
+! make sure reduced component on xi is in [0,1[
+     if (vredsc(1).ge. -tol .and. vredsc(1).lt. 1-tol .and. &
+     &   vredsc(2).ge. -tol .and. vredsc(2).lt. 1-tol .and. &
+     &   vredsc(3).ge. -tol .and. vredsc(3).lt. 1-tol ) then  ! keep it
+        ngrd=ngrd+1
+!        write(*,8)'v_redsc kept=',vredsc
+        if (ngrd.gt.nmax) then
+           write(*,6) 'Make_grid error; exceeding ',nmax
+           stop
+        endif
+        grd(:,ngrd)=v
+     endif
+  enddo
+  enddo
+  enddo
+  if (ngrd.ne.nmax) then
+     write(ulog,6) 'Make_grid ngrd .ne. expected nmax ',ngrd,nmax
+     write(*   ,6) 'Make_grid ngrd .ne. expected nmax ',ngrd,nmax
+     stop
+  endif
+  weig = 1d0/ngrd   
+
+  uio=345
+  open(uio,file=fn)
+  write(uio,*)ngrd
+  write(uio,*)"# name ,grid(cnt),weig(cnt),grid_red(cnt),|grd|,cnt,red_sc" 
+  do t=1,ngrd
+     v= grd(:,t)
+     write(uio,28)"Si ",v,weig(t),matmul(cart_to_redpr,v),length(v),t,matmul(cart_to_redsc,v)
+  enddo
+  close(uio)
+
+6 format(a,2i5,99(1x,f10.4))
+8 format(a,7(1x,f10.4),3i5)
+28 format(a,4(1x,f10.4),3(1x,f5.2),1x,f9.4,i5,3(f7.4))
+
+ end subroutine make_grid
+!============================================================
+ subroutine map_grid_to_3d(ng,grid,r1,r2,r3,mesh3d,s1,s2,s3)
+!! extract from the grid array its 3 integer components on r1,r2,r3
+!! and shift to bring it in [0:rs1[ * [0:rs2[ * [0:rs3[
+ use constants, only : pi,r15
+ use geometry
+ use lattice, only : cart2red_r
+ use ios, only:ulog
+ implicit none
+ integer, intent(in):: ng
+ real(r15), intent(in):: grid(3,ng)
+ integer, intent(out):: mesh3d(3,ng) 
+ type(vector), intent(in):: r1,r2,r3,s1,s2,s3
+ real(r15) proj,matr(3,3),matinv(3,3),projv(3),mats(3,3),matsinv(3,3)
+ integer g
+
+! first put the r vectors as columns of matr
+ matr(:,1)=v2a(r1)
+ matr(:,2)=v2a(r2)
+ matr(:,3)=v2a(r3)
+! mats(:,1)=v2a(s1)
+! mats(:,2)=v2a(s2)
+! mats(:,3)=v2a(s3)
+ call inverse_real(matr,matinv,3)   ! matinv *ri=delta_ij
+! call inverse_real(mats,matsinv,3)  ! matsinv*si=delta_ij
+
+ do g=1,ng
+    projv=matmul(matinv,grid(:,g))
+    if (maxval(abs(projv-nint(projv))).gt.1d-6) then 
+       write(*,*)'ERROR in map_grid_to_3d: g,projv=',g,projv
+       stop
+    endif
+! bring projv between [0:si[
+!    call fold_01(projv,gs1,gs2,gs3,y)
+    mesh3d(:,g)= nint(projv)  ! TO CORRECT!! mod(nint(projv),n(:))
+    write(ulog,4)'mapgridto3d: g,grid(g), int_comps=',g,grid(:,g),mesh3d(:,g),cart2red_r(grid(:,g))
+
+!   proj=dot_product(grid(:,g),v2a(r1))
+!   if (abs(proj-nint(proj)).gt.1d-6) then 
+!      write(*,*)'ERROR in map_grid_to_3d:X g,proj=',g,proj
+!      stop
+!   endif
+!   mesh3d(1,g)= proj
+!   proj=dot_product(grid(:,g),v2a(r2))
+!   if (abs(proj-nint(proj)).gt.1d-6) then 
+!      write(*,*)'ERROR in map_grid_to_3d:Y g,proj=',g,proj
+!      stop
+!   endif
+!   mesh3d(2,g)= proj
+!   proj=dot_product(grid(:,g),v2a(r3))
+!   if (abs(proj-nint(proj)).gt.1d-6) then 
+!      write(*,*)'ERROR in map_grid_to_3d:Z g,proj=',g,proj
+!      stop
+!   endif
+!   mesh3d(3,g)= proj
+ enddo
+
+4 format(a,i5,3(1x,f9.4),3i5,3(1x,f9.4))
+
+ end subroutine map_grid_to_3d
+!============================================================
+ subroutine make_grid_weights_WS(x01,x02,x03,x1,x2,x3,matr,ngrd,grd,weig,sx) 
 !! generates a grid "grd" from primitive translation vectors x0i
 !! but contained in the Wigner-Seitz cell of x1,x2,x3, with corresponding weights
 !! used for fourier interpolation 
-!! also outputs the 26 shortest translation vectors s0x and sx used for 
+!! also outputs the 26 shortest translation vectors sx used for 
 !! defining the WS cell of x0i and xi 
  use geometry
  use ios, only : ulog
@@ -1450,14 +1545,13 @@
  use params, only : tolerance
  implicit none
  type(vector), intent(in):: x01,x02,x03,x1,x2,x3
- real(r15), intent(in):: sx(3,26),s0x(3,26)
+ real(r15), intent(in):: sx(3,26)
  integer, intent(inout):: ngrd
  real(r15), intent(inout):: weig(ngrd),grd(3,ngrd)
  real(r15), intent(in):: matr(3,3)
- character(len=1), intent(in) :: space
- integer i1,i2,i3,m,cnt,ns,nboundary,nbtot,ns2
+ integer i1,i2,i3,m,m2,cnt,ns,nboundary,nbtot,ns2
  logical insid
- real(r15) v(3),omx,omx0,tol,y1,y2,y3 ,gmax ,vfold(3)
+ real(r15) v(3),omx,omx0,tol,y1,y2,y3 ,gmax !,vfold(3)
  integer, allocatable :: save_boundary(:)
  real(r15), allocatable :: aux(:,:)
 
@@ -1470,23 +1564,23 @@
  call calculate_volume(x1,x2,x3,omx)
  call calculate_volume(x01,x02,x03,omx0)
  if((omx .myeq. 0d0) .or. (omx0 .myeq. 0d0)) then
-    write(*,*)'CALVOL: Volume is zero! check your basis vectors!'
+    write(*,*)'Make_grid_weights_ws: Volume is zero! check your basis vectors!'
     write(*,'(a,9(1x,g12.5))')'r01,r02,r03=',x01,x02,x03
     write(*,'(a,9(1x,g12.5))')'r1,r2,r3=',x1,x2,x3
     stop
  endif
- tol = tolerance*omx0**0.33333
+ tol = tolerance*omx0**0.33333  ! length tolerance
 
  ns=nint(omx/omx0)
  write(ulog,6)' grid size with Xs ,om0,om=',ns,ngrd,omx0,omx
-
 
 ! this is an upperbound to the points inside and on the WS boundaries
  ns=ns+nint(14*ns**0.67+36*ns**0.3333+24 )
 
  m=maxval(abs(n_sc))+1
- write(ulog,*)' upper index to loop over to create grid =',m
- ns2 = (2*m+1)**3
+ m2=nint(ns**0.3333)+1
+ write(ulog,*)' upper index to loop over to create grid =',m  ! m2
+ ns2 = (2*m+1)**3  ! ns2 = (2*m2+1)**3
 
  write(ulog,*)'First and second ns estimates =',ns,ns2
  allocate(aux(3,ns))
@@ -1495,7 +1589,7 @@
 
 ! create the grid within the WS supercell xi
  cnt=0
- shelloop: do m=0,maxval(abs(n_sc))+3
+ shelloop: do m=0,m2
  do i1=-m,m
  do i2=-m,m
  do i3=-m,m
@@ -1515,15 +1609,12 @@
 ! skip if it is outside
     if (.not. insid) cycle 
 
-    vfold= fold_ws(v,sx,space)
-    if(maxval(abs(v-vfold)).gt.1d-5) write(234,2)v,vfold,v-vfold
-
 ! take only those points inside or on the boundary of WS (corresponding to in=1)
     cnt=cnt+1
     write(*,4)'* New vector ',cnt,i1,i2,i3,v,matmul(matr,v)
     aux(:,cnt)=v
     if(cnt.eq.ns) then
-       write(*,*)'Max size of aux reached ',cnt,ns,' stopping the loop!'
+       write(*   ,*)'Max size of aux reached ',cnt,ns,' stopping the loop!'
        write(ulog,*)'Max size of aux reached ',cnt,ns,' stopping the loop!'
        stop 
     endif
@@ -1545,7 +1636,7 @@
  deallocate(aux)
 
 ! find the weights of each point on the grid (and its boundary)
- weig=1
+ weig=1.0_r15
  nbtot=0
  write(ulog,*)' grid vectors, number on boundary, coordinates  =========='
  do cnt=1,ngrd
@@ -1580,220 +1671,6 @@
 8 format(a,7(1x,f10.4),3i5)
 
  end subroutine make_grid_weights_WS
-!============================================================
- subroutine make_grid_weights_WS_old(x01,x02,x03,x1,x2,x3,ngrd,space,s0x,sx) !,weig)
-!! generates a grid "rgrid" or "ggrid" (depending on space) from primitive translation vectors
-!! x0i but contained in the Wigner-Seitz cell of x1,x2,x3, with corresponding weights
-!! works for fourier interpolation in the reciprocal space because get_stars works for q-points
-!! space is r (for real space) or g (for reciprocal space)
-!! the 26 shortest translation vectors sx for defining the WS cell of xi is also output
- use geometry
- use ios, only : ulog
- use constants, only : pi,r15
- use lattice
- use params, only : tolerance
- use fourier   ! grid points and their weights defined in Fourier
- implicit none
- type(vector), intent(inout):: x01,x02,x03,x1,x2,x3
- character(len=1), intent(in) :: space
- real(r15), intent(out):: sx(3,26),s0x(3,26)
- integer, intent(out):: ngrd
- integer i1,i2,i3,m,cnt,ns,nboundary,nbtot
- logical insid
- type(vector) b01,b02,b03,b1,b2,b3
- real(r15) v(3),omx,omx0,tol,matr(3,3),y1,y2,y3 ,gmax !,vfold(3)
- integer, allocatable :: save_boundary(:)
- real(r15), allocatable :: aux(:,:),grd(:,:)
- real(r15), allocatable :: weig(:)
-
-! find the shortest basis bi among xi and the corresponding 26 shortest vectors
- call get_26shortest_shell(x01,x02,x03,s0x,b01,b02,b03)! s0x for WS of primcell
- call get_26shortest_shell(x1 ,x2 ,x3 ,sx ,b1 ,b2 ,b3) ! sx for WS of supercell
- x01=b01; x02=b02; x03=b03; x1=b1;  x2=b2;  x3=b3; 
-
- if(space.eq.'r' .or. space.eq.'R') then
-    matr=cart_to_prim
- elseif(space.eq.'g' .or. space.eq.'G') then
-    matr=transpose(prim_to_cart)/(2*pi)
- endif
-
- tol = tolerance*length(b1)
-
-! y's are used to find the reduced coordinates on the basis xi
-! call make_reciprocal_lattice_v(x1,x2,x3,y1,y2,y3)
-
-! find the number of grid points inside the supercell
- call calculate_volume(b1,b2,b3,omx)
- call calculate_volume(b01,b02,b03,omx0)
- ns=nint(omx/omx0)
- write(ulog,6)' grid size with Bs ,om0,om=',ns,ngrd,omx0,omx
-
- call calculate_volume(x1,x2,x3,omx)
- call calculate_volume(x01,x02,x03,omx0)
- ns=nint(omx/omx0)
- write(ulog,6)' grid size with Xs ,om0,om=',ns,ngrd,omx0,omx
-
-! this is an upperbound to the points inside and on the WS boundaries
- ns=ns+nint(6*ns**0.67+12*ns**0.3333+8 )
-
- m=maxval(abs(n_sc))+1
- write(ulog,*)' upper index to loop over to create grid =',m
- ns = (2*m+1)**3
- allocate(aux(3,ns))
- write(ulog,*)' allocated grid size, including boundary points=',(2*m+1)**3
-! aux contains the grid vectors inside or on the boundary
-
-! create the grid within the WS supercell xi
- cnt=0
- shelloop: do m=0,maxval(abs(n_sc))+3
- do i1=-m,m
- do i2=-m,m
- do i3=-m,m
-    if(iabs(i1).ne.m.and.iabs(i2).ne.m.and.iabs(i3).ne.m)cycle
-! generate a grid of vectors from primitive translations x0i
-    v= v2a(dble(i1)*x01 + dble(i2)*x02 + dble(i3)*x03)
-
-!   vfold= fold_ws(v,sx)
-!   write(234,2)v,vfold
-
-! see if v is in the WS cell; throw away v outside of WS cell
-!   write(*,4)'* trying vector ',cnt,i1,i2,i3,v,matmul(matr,v)
-    call check_inside_ws(v,sx,insid,nboundary)
-!   if(insid) then
-!      write(*,4)' inside vector ',cnt,i1,i2,i3
-!   else
-!      cycle
-!   endif
-! skip if it is outside
-    if (.not. insid) cycle 
-
-! take only those points inside or on the boundary of WS (corresponding to in=1)
-    cnt=cnt+1
-    write(*,4)'* New vector ',cnt,i1,i2,i3,v,matmul(matr,v)
-    aux(:,cnt)=v
-    if(cnt.eq.ns) then
-       write(*,*)'Max size of aux reached ',cnt,ns,' stopping the loop!'
-       write(ulog,*)'Max size of aux reached ',cnt,ns,' stopping the loop!'
-       stop !exit i1loop
-    endif
-
- enddo
- enddo
- enddo
- enddo shelloop
-
- ngrd=cnt
-
- if(allocated(grd)) deallocate(grd)
- if(allocated(weig)) deallocate(weig)
- if(allocated(save_boundary)) deallocate(save_boundary)
- allocate(grd(3,ngrd),save_boundary(ngrd),weig(ngrd))
- save_boundary=0
- grd(:,1:ngrd)=aux(:,1:ngrd)
- deallocate(aux)
-! find the weights of each point on the grid (and its boundary)
- weig=1
- nbtot=0
- write(ulog,*)' grid vectors, number on boundary, coordinates  =========='
- do cnt=1,ngrd
-! identify vectors on the boundary
-    call is_on_boundary(grd(:,cnt), sx,nboundary,tolerance)  ! nboundary=on how many facets;=0 means not on boundary
-    if(nboundary.ne.0) then
-       save_boundary(cnt)=nboundary
-       nbtot=nbtot+1
-    endif
-    write(ulog,6)'i,on how many boundaries, grid(i), grid_reduced ',cnt,nboundary,grd(:,cnt),matmul(matr,grd(:,cnt))
- enddo
- write(ulog,*)'Of ',ngrd,' grid points ',nbtot,' are on the boundary'
-
- call find_ws_weights(ngrd,grd,save_boundary,sx,weig)
-
- if(space.eq.'r' .or. space.eq.'R') then
-    if (allocated(rgrid)) deallocate(rgrid)
-    if (allocated(rws_weights)) deallocate(rws_weights)
-    allocate(rgrid(3,ngrd), rws_weights(ngrd) ) !,i1r(ngrd),i2r(ngrd),i3r(ngrd))
-    nrgrid=ngrd
-    rgrid = grd
-!    i1r=i1p(1:ngrd); i2r=i2p(1:ngrd); i3r=i3p(1:ngrd)
-! normalize weights by volume ratio (should normalize to 1 for real space vectors)
-    weig = weig*omx0/omx
-    rws_weights = weig
-    write(ulog,*)'sum of the weights=',sum(rws_weights) 
-    if(abs(sum(rws_weights)-1).gt.tolerance) then
-       write(*,*)'WARNING: Rweights not normalized to 1 ',sum(rws_weights)
-       write(ulog,*)'WARNING: Rweights not normalized to 1 ',sum(rws_weights) 
-    endif
-    open(98,file='rgrid_raw.xyz')
-    open(99,file='rgridWS.xyz')
-!    call show_ws_boundary(v2a(x1),v2a(x2),v2a(x3),sx,15,'WSR_boundary.xyz',lgridmax) 
-
-    do cnt=1,ngrd
-       write(98,8)"Si ",grd(:,cnt),weig(cnt),matmul(matr,grd(:,cnt)),cnt,save_boundary(cnt)
-       write(99,7)"Si ",grd(:,cnt),matmul(matr,grd(:,cnt))
-    enddo
-    close(98)
-    close(99)
-    write(ulog,*)'lgridmax=',lgridmax
-
- elseif(space.eq.'g' .or. space.eq.'G') then
-    if (allocated(ggrid)) deallocate(ggrid)
-    if (allocated(gws_weights)) deallocate(gws_weights)
-    allocate(ggrid(3,ngrd), gws_weights(ngrd))
-    nggrid=ngrd
-    ggrid = grd
-! normalize weights (should normalize to vol/vol0)
-    gws_weights = weig ! / (volume_r/volume_r0) ! introduce 1/N since used for Fourier transforms
-    write(ulog,*)'sum of the weights=',sum(weig)
-    write(ulog,*)'Gweights normalization is ',sum(weig) 
-    open(98,file='ggrid_raw.xyz')
-    open(99,file='ggridWS.xyz')
-!    call show_ws_boundary(v2a(x1),v2a(x2),v2a(x3),sx,15,'WSG_boundary.xyz',gmax) 
-
-    write(98,8)"# name ,grid(cnt),weig(cnt),grid_red(cnt),cnt,save_boundary(cnt)"
-    write(99,*)ngrd+26+8
-    write(99,*)"# name, cartesian grid, reduced grid "
-    do cnt=1,ngrd
-       write(98,8)"Si ",grd(:,cnt),weig(cnt),matmul(matr,grd(:,cnt)),cnt,save_boundary(cnt)
-       write(99,7)"Si ",grd(:,cnt),matmul(matr,grd(:,cnt))
-    enddo
-    do cnt=1,26
-       write(99,7)"Bi ",sx(:,cnt), matmul(matr,sx(:,cnt))
-    enddo
-    write(99,*)'Ge   0 0 0 '
-    write(99,7)'Ge ',x01
-    write(99,7)'Ge ',x02
-    write(99,7)'Ge ',x03
-    write(99,7)'Ge ',x01+x02
-    write(99,7)'Ge ',x03+x01
-    write(99,7)'Ge ',x03+x02
-    write(99,7)'Ge ',x03+x01+x02
-    close(98)
-    close(99)
-
- endif
-
- deallocate(grd,save_boundary,weig)
-
- write(ulog,*) ' EXITING make_grid_weights_WS_old'
-
-2 format(9(1x,f10.4))
-3 format(i5,1x,f8.5,3x,3(1x,g10.3),3x,3(1x,f8.4))
-4 format(a,i5,2x,3i2,2x,9(1x,f13.5))
-5 format(3(1x,f10.4),i3,1x,g11.4)
-6 format(a,2i5,99(1x,f10.4))
-7 format(a,9(1x,f10.4))
-8 format(a,7(1x,f10.4),3i5)
-
- end subroutine make_grid_weights_WS_old
-!============================================================
-! subroutine make_periodic_WS(array,n,grid)
-!!! an array defined on the grid inside the WS cell, should be periodic. IF not, this subroutine makes it!
-! integer, intent(in) :: n
-! real(r15), intent(inout) :: array(n),grid(3,n)
-!
-!! find boundary points that are equivalent, and take their average
-!
-! end subroutine make_periodic_WS
 !============================================================
  subroutine make_subrgrid_symmetric(n,grd,sx,nsub)
 !! makes a subgrid of the R-translations grd that has the full symmetry of the crystal
@@ -1910,6 +1787,330 @@
 8 format(a,7(1x,f12.5),3i5)
  
  end subroutine make_subrgrid_symmetric
+!============================================================
+subroutine create_extended_rgrid0()
+!! Creates rgrid_extended by adding all R vectors from force constants
+!! that aren't already in the original rgrid
+ use ios
+ use atoms_force_constants
+ use geometry, only: length
+ use fourier
+ use svd_stuff
+ use lattice, only : cart2red
+ implicit none
+ 
+ integer :: g, ti, t, j, taup, ir, cnt
+ integer :: nrgrid_temp_max
+ real(r15) :: rr(3), tol
+ real(r15), allocatable :: rgrid_temp(:,:), rws_weights_temp(:),lg(:)
+ integer, allocatable :: mcor(:)
+ logical :: found
+ 
+ tol = 1d-6
+ 
+ ! Allocate temporary array with extra space
+ nrgrid_temp_max = nrgrid + 5000  ! Generous upper bound
+ allocate(rgrid_temp(3, nrgrid_temp_max))
+ allocate(rws_weights_temp(nrgrid_temp_max))
+ 
+ ! Copy original rgrid
+ rgrid_temp(:, 1:nrgrid) = rgrid(:, 1:nrgrid)
+ rws_weights_temp(1:nrgrid) = rws_weights(1:nrgrid)
+ nrgrid_xtnd = nrgrid
+ 
+ write(ulog,*) 'CREATE_EXTENDED_RGRID: Starting with nrgrid =', nrgrid
+ 
+ ! Loop through all force constant terms and collect R vectors
+ cnt = 0  ! Count of added vectors
+ do g = 1, map(2)%ngr
+    do ti = 1, map(2)%ntind(g)
+       if (map(2)%keep(counteri(2,g,ti)) == 0) cycle
+       
+       do t = 1, map(2)%nt(g)
+          j = map(2)%gr(g)%iat(2,t)
+          taup = iatomcell0(j)
+          rr = atompos(:,j) - atompos(:,taup)
+          
+          ! Check if this R vector is already in the grid
+          found = .false.
+          do ir = 1, nrgrid_xtnd
+             if (length(rr - rgrid_temp(:,ir)) < tol) then
+                found = .true.
+                exit
+             endif
+          enddo
+          
+          ! If not found, add it
+          if (.not. found) then
+             nrgrid_xtnd = nrgrid_xtnd + 1
+             
+             if (nrgrid_xtnd > nrgrid_temp_max) then
+                write(ulog,*) 'ERROR: Extended grid exceeded allocated size!'
+                write(ulog,*) 'Increase nrgrid_temp_max in create_extended_rgrid'
+                stop
+             endif
+             
+             rgrid_temp(:, nrgrid_xtnd) = rr
+             rws_weights_temp(nrgrid_xtnd) = 1.0_r15  ! New points get weight 1.0
+             cnt = cnt + 1
+             
+             write(ulog,6) 'Added R vector:cart,red', cnt, rr, length(rr),cart2red(rr,'r') 
+          endif
+       enddo
+    enddo
+ enddo
+ 
+ write(ulog,*) 'CREATE_EXTENDED_RGRID: Added', cnt, 'new R vectors'
+ write(ulog,*) 'CREATE_EXTENDED_RGRID: Extended nrgrid from', nrgrid, 'to', nrgrid_xtnd
+ 
+! Now deallocate original rgrid and allocate extended version
+!deallocate(rgrid, rws_weights)
+! nrgrid = nrgrid_xtnd
+ 
+ if(allocated(rgrid_xtnd)) deallocate(rgrid_xtnd)
+ if(allocated(rws_weights_xtnd)) deallocate(rws_weights_xtnd)
+ allocate(rgrid_xtnd(3, nrgrid_xtnd))
+ allocate(rws_weights_xtnd(nrgrid_xtnd))
+ allocate(mcor(nrgrid_xtnd),lg(nrgrid_xtnd))
+ call sort(nrgrid_xtnd,lg,mcor,nrgrid_xtnd)
+ 
+ rgrid_xtnd(:,:) = rgrid_temp(:, 1:nrgrid_xtnd)
+! all weights should be =1 for the extended grid
+ rws_weights_xtnd(:) = 1.0_r15 ! rws_weights_temp(1:nrgrid_xtnd)
+ 
+ open(98,file='rgrid_xtnd.xyz')
+ write(98,*)nrgrid_xtnd
+ write(98,*)"# j=sortorder ,rgrid_xtnd(j),length(j),rgrid_reduced(j),weight(j)" 
+ do t=1,nrgrid_xtnd
+    j=mcor(t)
+    write(98,28)"Si ",rgrid_xtnd(:,j),length(rgrid_xtnd(:,j)),cart2red(rgrid_xtnd(:,j),'r'),rws_weights_xtnd(j)
+ enddo
+ close(98)
+
+ deallocate(rgrid_temp, rws_weights_temp)
+ 
+ write(ulog,*) 'CREATE_EXTENDED_RGRID: Final nrgrid_xtnd =', nrgrid_xtnd
+ write(ulog,4) 'CREATE_EXTENDED_RGRID: weights =', rws_weights_xtnd
+ write(ulog,*) 'CREATE_EXTENDED_RGRID: Sum of weights =', sum(rws_weights_xtnd)
+ 
+4 format(a,999f8.4)
+6 format(a, i5, 3f12.6, f10.4, 3f8.4, 4x,f6.4)
+28 format(a,3f10.4,2x,f10.4,3f6.3,4x,f6.4)
+
+end subroutine create_extended_rgrid0
+!============================================================
+subroutine create_extended_rgrid()
+!! Creates periodic rgrid_extended suitable for FFT
+!! by finding minimum grid dimensions needed to include all 
+!! R vectors from force constants, then generating full periodic grid
+!! it also generates its associated reciprocal space grid
+use ios
+use atoms_force_constants
+use geometry, only: length
+use fourier
+use svd_stuff
+use params, only : tolerance
+use lattice, only: cart2red, red2cart,g0ws26
+implicit none
+
+integer :: g, ti, t, j, taup, ir, cnt, l
+integer :: i1, i2, i3, idx
+real(r15) :: rr(3), rfrac(3), gfrac(3), tol
+real(r15), allocatable :: rgrid_temp(:,:), lg(:)
+integer, allocatable :: mcor(:),savebound(:)
+integer :: n1_min, n1_max, n2_min, n2_max, n3_min, n3_max
+integer :: n1_grid, n2_grid, n3_grid, nboundary
+logical :: found,n1_even,n2_even,n3_even
+
+tol = 1d-6
+
+write(ulog,*) 'CREATE_EXTENDED_RGRID: Starting with nrgrid =', nrgrid
+write(ulog,*) 'CREATE_EXTENDED_RGRID: Finding range of R vectors from FCs...'
+
+! Initialize min/max fractional coordinates
+n1_min = 0; n1_max = 0
+n2_min = 0; n2_max = 0
+n3_min = 0; n3_max = 0
+
+! Loop through all force constant terms to find range of R vectors
+do g = 1, map(2)%ngr
+    do ti = 1, map(2)%ntind(g)
+       if (map(2)%keep(counteri(2,g,ti)) == 0) cycle
+
+       do t = 1, map(2)%nt(g)
+          j = map(2)%gr(g)%iat(2,t)
+          taup = iatomcell0(j)
+          rr = atompos(:,j) - atompos(:,taup)
+          
+          ! Convert to fractional coordinates
+          rfrac = cart2red(rr, 'r')
+          
+          ! Round to nearest integer (these should be nearly integer already)
+          i1 = nint(rfrac(1)) ; if(abs(i1-rfrac(1)).gt.1d-6) stop
+          i2 = nint(rfrac(2)) ; if(abs(i2-rfrac(2)).gt.1d-6) stop
+          i3 = nint(rfrac(3)) ; if(abs(i3-rfrac(3)).gt.1d-6) stop
+          
+          ! Update min/max
+          n1_min = min(n1_min, i1)
+          n1_max = max(n1_max, i1)
+          n2_min = min(n2_min, i2)
+          n2_max = max(n2_max, i2)
+          n3_min = min(n3_min, i3)
+          n3_max = max(n3_max, i3)
+       enddo
+    enddo
+enddo
+
+! Determine grid dimensions
+n1_grid = n1_max - n1_min + 1
+n2_grid = n2_max - n2_min + 1
+n3_grid = n3_max - n3_min + 1
+write(ulog,*) 'EXTENDED_RGRID: Fractional coordinate ranges:'
+write(ulog,*) '  i1: ', n1_min, ' to ', n1_max, ' -> n1_grid = ', n1_grid
+write(ulog,*) '  i2: ', n2_min, ' to ', n2_max, ' -> n2_grid = ', n2_grid
+write(ulog,*) '  i3: ', n3_min, ' to ', n3_max, ' -> n3_grid = ', n3_grid
+
+! convert even grids to odd ones to make them symmetric
+! Check which directions are even (need extension)
+n1_even = (mod(n1_grid, 2) == 0)
+n2_even = (mod(n2_grid, 2) == 0)
+n3_even = (mod(n3_grid, 2) == 0)
+
+! Make all grids odd by extending max if needed
+if (n1_even) n1_max = n1_max + 1
+if (n2_even) n2_max = n2_max + 1
+if (n3_even) n3_max = n3_max + 1
+
+n1_grid = n1_max - n1_min + 1
+n2_grid = n2_max - n2_min + 1
+n3_grid = n3_max - n3_min + 1
+
+write(ulog,*) 'SYMMETRIZED_EXTENDED_RGRID: Fractional coordinate ranges:'
+write(ulog,*) '  i1: ', n1_min, ' to ', n1_max, ' -> n1_grid = ', n1_grid
+write(ulog,*) '  i2: ', n2_min, ' to ', n2_max, ' -> n2_grid = ', n2_grid
+write(ulog,*) '  i3: ', n3_min, ' to ', n3_max, ' -> n3_grid = ', n3_grid
+
+! Total number of grid points
+nrgrid_xtnd = n1_grid * n2_grid * n3_grid
+nggrid_xtnd = n1_grid * n2_grid * n3_grid
+
+write(ulog,*) 'CREATE_EXTENDED_RGRID: Creating periodic grid with', nrgrid_xtnd, 'points'
+
+! Allocate extended grid arrays and its associated reciprocal space grid
+if(allocated(rgrid_xtnd)) deallocate(rgrid_xtnd)
+if(allocated(rws_weights_xtnd)) deallocate(rws_weights_xtnd)
+allocate(rgrid_xtnd(3, nrgrid_xtnd))
+allocate(rws_weights_xtnd(nrgrid_xtnd))
+if(allocated(ggrid_xtnd)) deallocate(ggrid_xtnd)
+if(allocated(gws_weights_xtnd)) deallocate(gws_weights_xtnd)
+allocate(ggrid_xtnd(3, nggrid_xtnd))
+allocate(gws_weights_xtnd(nggrid_xtnd))
+
+! Generate full periodic grid
+idx = 0
+do i3 = n3_min, n3_max
+   do i2 = n2_min, n2_max
+      do i1 = n1_min, n1_max
+         idx = idx + 1
+         
+         ! Convert fractional coordinates to Cartesian
+         rfrac(1) = real(i1, r15)
+         rfrac(2) = real(i2, r15)
+         rfrac(3) = real(i3, r15)
+         rgrid_xtnd(:, idx) = red2cart(rfrac, 'r')
+
+         gfrac(1) = real(i1, r15)/n1_grid  ! between 0 and 1
+         gfrac(2) = real(i2, r15)/n2_grid
+         gfrac(3) = real(i3, r15)/n3_grid
+         gfrac = gfrac - nint(gfrac)    ! between -0.5 and 0.5  
+         
+         ggrid_xtnd(:, idx) = red2cart(gfrac, 'g') ! would not contain 0 if nmax-nmin is odd!!
+         
+         ! All points get weight 1.0 for periodic grid
+         rws_weights_xtnd(idx) = 1.0_r15
+         gws_weights_xtnd(idx) = 1.0_r15/nggrid_xtnd
+
+         ! correct weights for boundary points
+         if (n1_even .and. (i1 == n1_min .or. i1 == n1_max)) rws_weights_xtnd(idx) = rws_weights_xtnd(idx) * 0.5_r15
+         if (n2_even .and. (i2 == n2_min .or. i2 == n2_max)) rws_weights_xtnd(idx) = rws_weights_xtnd(idx) * 0.5_r15
+         if (n3_even .and. (i3 == n3_min .or. i3 == n3_max)) rws_weights_xtnd(idx) = rws_weights_xtnd(idx) * 0.5_r15
+
+      enddo
+   enddo
+enddo
+
+write(ulog,*) 'CREATE_EXTENDED_RGRID: Generated', idx, 'grid points'
+write(ulog,*) 'Now generating conjugate extended grid in FBZ: ggridX '
+
+ allocate(savebound(nggrid_xtnd))
+ savebound=0
+ do cnt=1,nggrid_xtnd
+! which grd on the boundary? nboundary=on how many facets;=0 means not on boundary
+    call is_on_boundary(ggrid_xtnd(:,cnt), g0ws26,nboundary,tolerance) 
+    if(nboundary.ne.0) then
+       savebound(cnt)=nboundary
+    endif
+
+! check overlap with ggrid
+    found=.false.
+    do l=1,nggrid
+       if(length(ggrid(:,l)-ggrid_xtnd(:,cnt)).lt.1d-5) then
+          found=.true.
+          exit
+       endif 
+    enddo
+    if(.not. found) write(*,*)'EXTENDED G-vector#',cnt,' is not in GGRID!'
+
+    write(ulog,6)'i, nboundaries, inGGRID, ggridX(i), |ggridX|, ggridX_reduced ',cnt,nboundary,found, &
+&                 ggrid_xtnd(:,cnt),length(ggrid_xtnd(:,cnt)),cart2red(ggrid_xtnd(:,cnt),'g')
+
+ enddo
+ call find_ws_weights(nggrid_xtnd,ggrid_xtnd,savebound,g0ws26,gws_weights_xtnd )
+ gws_weights_xtnd = gws_weights_xtnd/sum( gws_weights_xtnd )  ! normalize to 1
+
+! Write output file
+allocate(mcor(nrgrid_xtnd), lg(nrgrid_xtnd))
+
+do j = 1, nrgrid_xtnd
+   lg(j)=length(rgrid_xtnd(:,j))
+enddo
+call sort(nrgrid_xtnd, lg, mcor, nrgrid_xtnd)
+open(98, file='rgrid_xtnd.xyz')
+write(98,*) nrgrid_xtnd
+write(98,*) "# Extended Grid dimensions: n1=", n1_grid, " n2=", n2_grid, " n3=", n3_grid,"Rcart, |Rcart|, Rfrac, wei(R)"
+do t = 1, nrgrid_xtnd
+    j = mcor(t)
+    write(98,28) "Si ", rgrid_xtnd(:,j), length(rgrid_xtnd(:,j)), &
+                 cart2red(rgrid_xtnd(:,j),'r'), rws_weights_xtnd(j)
+enddo
+close(98)
+
+do j = 1, nggrid_xtnd
+   lg(j)=length(ggrid_xtnd(:,j))
+enddo
+call sort(nggrid_xtnd, lg, mcor, nggrid_xtnd)
+open(98, file='ggrid_xtnd.xyz')
+write(98,*) nggrid_xtnd
+write(98,*) "# Extended Grid dimensions: n1=", n1_grid, " n2=", n2_grid, " n3=", n3_grid,"Gcart, |Gcart|, Gfrac, wei(G)"
+do t = 1, nggrid_xtnd
+    j = mcor(t)
+    write(98,28) "Si ", ggrid_xtnd(:,j), length(ggrid_xtnd(:,j)), &
+                 cart2red(ggrid_xtnd(:,j),'g'), gws_weights_xtnd(j)
+enddo
+close(98)
+
+deallocate(mcor, lg,savebound)
+
+write(ulog,*) 'CREATE_EXTENDED_RGRID: Final nrgrid_xtnd =', nrgrid_xtnd
+write(ulog,*) 'CREATE_EXTENDED_RGRID: Grid dimensions (n1,n2,n3) = ', &
+              n1_grid, n2_grid, n3_grid
+write(ulog,*) 'CREATE_EXTENDED_RGRID: Sum of Rweights =', sum(rws_weights_xtnd)
+write(ulog,*) 'CREATE_EXTENDED_RGRID: Sum of Gweights =', sum(gws_weights_xtnd)
+
+6  format(a,2i5,L1,3f10.4,2x,f10.4,2x,3f6.3,4x,f6.4)
+28 format(a,3f10.4,2x,f10.4,3f6.3,4x,f6.4)
+
+end subroutine create_extended_rgrid
 !============================================================
  subroutine find_cutoff_from_largest_SC (volmax,rmax,r1,r2,r3,rshells)
 !! scans over all available supercell POSCARs and picks the one with
@@ -2096,29 +2297,30 @@
  real(r15), dimension(3,26)  , intent(in) :: transl
  integer, dimension(ngrd)  , intent(in) :: save_boundary
  real(r15), dimension(ngrd) , intent(out) :: weight
- real(r15) x(3)
+ real(r15) x(3),tol
  integer i,j,t !ngrd,ntransl,
 
 ! ngrd=size(grd(1,:))
- weight=1
+ weight=1.0_r15
+ tol=1d-6
 ! if grid point is on the boundary, find to how many boundary points it is mapped by a transl vector
  do i=1,ngrd
     if (save_boundary(i).ne.0) then  ! i is on the boundary
        do t=1,26   ! count on how many facets or boundaries
           x=grd(:,i)+transl(:,t)
           gloop: do j=1,ngrd  ! is x on the boundary? if so add +1 to the weight of i
-             if ( length(x-grd(:,j)) .lt. 1d-3 ) then ! x is also a grid point
+             if ( length(x-grd(:,j)) .lt. tol ) then ! x is also a grid point
                 if ( save_boundary(j).ne.0 ) then  ! x is also on the boundary
-                   weight(i)=weight(i)+1
+                   weight(i)=weight(i)+1.0_r15
                 endif
              endif
           enddo gloop
        enddo
     endif
  enddo
- weight=1d0/weight
+ weight=1.0_r15/weight
  do i=1,ngrd
-    write(*,*)i,' th grid point has weight;1/weight=',weight(i),1d0/weight(i)
+    write(*,*)i,"'th grid point has weight;1/weight=",weight(i),1d0/weight(i)
  enddo
  write(*,*)' sum of the weights=om/om0=',sum(weight)
 
@@ -2550,7 +2752,7 @@
 
  do i=1,nk
 !   call fold_in_bz_old(kp(:,i),gshel,kpfold(:,i))
-   kpfold(:,i)=fold_ws(kp(:,i),gshel,'g')
+   kpfold(:,i)=fold_ws(kp(:,i),gshel)
  enddo
 
 ! open(unit,file='KPFBZ.DAT',status='unknown')
@@ -2670,7 +2872,6 @@
  iloop: do i=1,nk
     kred=cart2red_g(kp(:,i))
 ! first fold
- !  kf  = fold_ws(kp(:,i),g0ws26) 
  !  kred=cart2red_g(kf) 
 ! find stars of kp in reduced units 
     call getstarp(kred,narms,kvecstar,kvecop)
@@ -2742,11 +2943,10 @@
  do i=1,nk !,nibz
     if(i.le.nibz) then
  !     kibz(:,i)=red2cart_g(k2(:,i)) 
- !     kred= fold_ws(kibz(:,i),g0ws26)  kibz is already folded
        write(uibz,3)i,kibz(:,i),cart2red_g(kibz(:,i)),  wibz(i) ! kred id dummy!
     endif
 ! also fold kp and kibz into in FZ and write 
-    kf  = fold_ws(kp(:,i),g0ws26,'g') 
+    kf  = fold_ws(kp(:,i),g0ws26) 
     write(ufbz,3)i,kp(:,i),cart2red_g(kp(:,i)), kf,cart2red_g(kf)
     write(345,*)i,mapinv(i),mapibz(i)
  enddo
@@ -2793,7 +2993,7 @@
  wibz=0d0  
  write(ulog,*)'GET_WEIGHTS2: folding the kpoints in the WS cell '
  do i=1,nk
-    kfold(:,i) = fold_ws(kp(:,i),g0ws26,'g')
+    kfold(:,i) = fold_ws(kp(:,i),g0ws26)
     wk(i)=1d0/nk
     write(ufbz,3)i,kfold(:,i),wk(i),cart2red_g(kfold(:,i))
     mapinv(i)=i
@@ -2810,7 +3010,7 @@
 ! mark all kpoints in the stars as processed
     armloop: do l=1,narms
 !  take the star vector to cartesian coordinates and fold into WS cell
-       qout = fold_ws(red2cart_g(kvecstar(:,l)),g0ws26,'g')
+       qout = fold_ws(red2cart_g(kvecstar(:,l)),g0ws26)
 ! compare the stars to existing IBZ vectors and mark processed if found
        do k=1,nk 
           if(.not.processed(k)) then
@@ -2933,7 +3133,7 @@
         if(verbose) write(ulog,4)'stars in red&cart are:',i,l,kvecstar(:,l),red2cart_g(kvecstar(:,l))
 
 !  take the star vector to cartesian coordinates and fold into WS cell
-        qout = fold_ws(red2cart_g(kvecstar(:,l)),g0ws26,'g')
+        qout = fold_ws(red2cart_g(kvecstar(:,l)),g0ws26)
 
 ! set weight for the first kpoint where nibz=0
         jloop: do j=1,nibz
@@ -2965,7 +3165,7 @@
        mapinv(i)=aux
 
 !      call bring_to_ws_gx(kp(:,i),g0ws26,k2(:,nibz))
-       k2(:,nibz) = fold_ws(kp(:,i),g0ws26,'g') 
+       k2(:,nibz) = fold_ws(kp(:,i),g0ws26) 
 
  !     k2(:,nibz)=kp(:,i)
        q = cart2red_g(k2(:,nibz))    ! to get it in reduced coordinates of g0i
@@ -3167,6 +3367,26 @@
 
  end subroutine structure_factor_reg
 !====================================
+ subroutine structure_factor_c(v,n,grid,st,dst)
+!! takes kpoints within the FBZ as input, and calculates sum_k cos(k.R) for given R
+ use constants, only : r15,ci
+ implicit none
+ integer, intent(in) :: n
+ real(r15), intent(in) :: v(3),grid(3,n)
+ real(r15), intent(out) :: st,dst(3)
+ integer i
+
+ st=0;dst=0
+ do i=1,n
+     st= st+exp(ci*dot_product(v,grid(:,i))) / n
+    dst=dst+exp(ci*dot_product(v,grid(:,i))) * grid(:,i) / n
+ enddo
+
+!  write(*,5)'Structure factor for r=', r,st,dst
+5 format(a,9(1x,f10.4),3x,g12.5)
+
+ end subroutine structure_factor_c
+!====================================
  subroutine structure_factor(r,nk,kp,wei,st,dst)
 !! takes kpoints within the FBZ as input, and calculates sum_k cos(k.R) for given R
  use constants, only : r15
@@ -3189,7 +3409,7 @@
 !====================================
   subroutine structure_factor_recip(q,ngrid,grid,weig,sf,dsf)
  !! takes primitive vectors within the WS of the supercell as input, and calculates
- !! 1/N_R sum_R cos(q.R) for given q
+ !! 1/N_R sum_R cos(q.R) Wei(R) for given q ; assuming sum(wei(R))=N_R
   use lattice, only : cart_to_prim ,prim_to_cart !,volume_r,volume_r0
   use constants, only : pi,r15
   use params, only : tolerance
@@ -3200,15 +3420,6 @@
   integer i
   real(r15) phase
 
-!  if(abs(sum(weig)-1).gt.tolerance) then
-!     write(*,*)'STRUCTURE_FACTOR_RECIP: weights should add up to 1, not ',sum(weig)
-!!! quick fix: for now we rescale weights to add to 1
-!     scal=1/sum(weig)
-!     scalw=weig*scal
-!!! quick fix: for now we rescale weights to add to 1
-!  endif
-
-
   sf=0; dsf=0
 !   write(*,4)'Structure factor_recip q,qred=',q,matmul(transpose(prim_to_cart),q)/(2*pi)
   do i=1,ngrid
@@ -3218,7 +3429,7 @@
 !&               matmul(cart_to_prim,grid(:,i))
     dsf = dsf - sin(phase) * weig(i) * grid(:,i) 
   enddo
-  sf = sf/sum(weig)
+  sf = sf/sum(weig)  ! normalized to sf(0)=1
   dsf=dsf/sum(weig)
 
  4 format(a,3(1x,f7.3),3x,3(1x,f7.3))
@@ -3374,20 +3585,201 @@
  real(r15) vgoverg2
 
  indx=0
- do j=1,13
-    if(length(grid(:,j)).lt.tol) then
+ do j=1,26
+    if(length(grid(:,j)).lt.1d-6) then
         write(*,*)'grid vector j is zero!! ',j,grid(:,j)
         stop
     endif
     vgoverg2 = 2 * dot_product(v,grid(:,j))/dot_product(grid(:,j),grid(:,j))
-    if ( abs(abs(vgoverg2) - 1) .lt. tol ) then
+    if ( abs(vgoverg2 - 1) .lt. tol ) then
        indx=indx+1
     endif
  enddo
 
  end subroutine is_on_boundary
 !===========================================================
- subroutine check_periodic(n,grid,r26,array,aravg,isperiodic)
+subroutine check_periodic_cl(n,grid,r26,array,aravg,isperiodic)
+use constants, only : r15
+use params, only : tolerance
+use geometry, only : length
+use ios, only: ulog,write_out
+implicit none
+integer, intent(in):: n
+real(r15), intent(in) :: grid(3,n),r26(3,26)
+complex(r15), intent(in) :: array(n)
+complex(r15), intent(out) :: aravg(n)
+logical, intent(out):: isperiodic
+complex(r15) suma, avg_val
+integer i,j,l,m,nbound(n),cnt(n,20),nboundr,image_idx
+real(r15) vgoverg2,v(3),arscale,tol
+logical processed(n)
+
+arscale=sum(abs(array))/dble(n)
+tol=tolerance*arscale
+aravg=array
+isperiodic=.true.
+processed=.false.
+
+! Find boundary information for all points
+do i=1,n
+   call is_on_boundary(grid(:,i),r26,nboundr,tolerance)
+   nbound(i)=0
+   cnt(i,:)=0
+   
+   do j=1,26
+      vgoverg2 = 2*dot_product(r26(:,j),grid(:,i))/dot_product(r26(:,j),r26(:,j))
+      if (abs(vgoverg2 - 1).lt.tolerance) then
+         nbound(i)=nbound(i)+1
+         cnt(i,nbound(i))=j   ! records the index of the translation vector on which i sits
+      endif
+   enddo
+! nbound(i) should be =1 
+   write(*,*)'CHP: i,nbound(i),corresponding translation=',i,nbound(i),cnt(i,nbound(i))
+enddo
+
+! Process each group of periodic images
+do i=1,n
+   if(processed(i)) cycle  ! Already processed as someone's image
+   if(nbound(i).eq.0) cycle ! Not on boundary
+   
+   ! Initialize with point i
+   suma = array(i)
+   cnt(i,10) = 1
+   cnt(i,11) = i
+   
+   ! Find all images
+   do m=1,nbound(i)
+      v = grid(:,i) - r26(:,cnt(i,m))
+      
+      do l=1,n
+         if(length(v-grid(:,l)).lt.tolerance) then
+            ! Check periodicity before averaging
+            if (abs(array(i) - array(l)).gt.tol) then
+               isperiodic = .false.
+               write(175,3)'NOT PERIODIC! points, values, diff=', &
+                    i, l, array(i), array(l), array(i)-array(l)
+            endif
+            
+            suma = suma + array(l)
+            cnt(i,10) = cnt(i,10) + 1
+            cnt(i,10+cnt(i,10)) = l
+            exit
+         endif
+      enddo
+   enddo
+   
+   ! Compute average
+   if(cnt(i,10) .ne. nbound(i)+1) then
+      write(*,*)'WARNING: grid i=',i,' nbound+1=',nbound(i)+1,' found=',cnt(i,10)
+   endif
+   
+   avg_val = suma / cnt(i,10)
+   
+   ! Apply averaged value to ALL points in this periodic group
+   do m=1,cnt(i,10)
+      image_idx = cnt(i,10+m)
+      aravg(image_idx) = avg_val
+      processed(image_idx) = .true.  ! Mark as processed
+   enddo
+enddo
+
+3 format(a,2i4,9(1x,f10.4))
+
+end subroutine check_periodic_cl
+!===========================================================
+subroutine check_periodic(n,grid,r26,array,aravg,isperiodic)
+! checks whether two boundary points on separated by one of the r26 vectors
+! if so, it places them into the same class and averages their array values and stores in aravg
+use constants, only : r15
+use params, only : tolerance
+use geometry, only : length
+use ios, only: ulog,write_out
+implicit none
+integer, intent(in):: n
+real(r15), intent(in) :: grid(3,n),r26(3,26)
+complex(r15), intent(in) :: array(n)
+complex(r15), intent(out) :: aravg(n)
+logical, intent(out):: isperiodic
+integer i,j,l,ibound(n),cnt,nboundr,nbound,ii,jj
+integer , allocatable :: nimages(:),images(:,:)
+real(r15) arscale,tol,dd(3)
+complex(r15) avg
+logical found
+
+  arscale=sum(abs(array))/dble(n)
+  tol=tolerance*arscale
+  write(ulog,*)'CHECK_PERIODIC: array tolerance is:',tol
+
+! Find boundary information for all points
+   cnt = 0 ! counts the points on the boundary
+   ibound = 0 ! ibound(cnt) is the index of the cnt^th boundary point
+   do i=1,n
+      call is_on_boundary(grid(:,i),r26,nboundr,tol)
+      if (nboundr .eq. 0) then
+         aravg(i)=array(i)
+      else  ! then it is at least on two boundaries
+         cnt=cnt+1
+         ibound(cnt)=i
+      endif
+   enddo
+   nbound = cnt ! this is the total number of boundary points
+   allocate(nimages(nbound), images(nbound,8)) ! each point cannot have more than 8 images
+
+! now loop only over boundary points, find their images for averaging
+   do i=1,nbound
+      ii=ibound(i)
+      nimages(i)=1; images(i,1)=i
+      do j=1,nbound
+         if(i.eq.j) cycle ! skip self
+         jj=ibound(j)  ! jj=actual grid index
+         dd=grid(:,ii)-grid(:,jj)
+
+         found=.false.
+         do l=1,26
+            if (length(dd-r26(:,l)).lt.tolerance) then  ! ii and jj are periodic image of each other
+               nimages(i)=nimages(i)+1   ! counts the images of i
+               if(nimages(i).gt.8) then
+                  write(*,*)'CHECK_PERIODIC: i,nimages cannot exceed 8', i,nimages(i)
+                  stop
+               endif
+               images(i,nimages(i))=j    ! stores the index of image# nimages(i)
+               found=.true.
+               exit
+            endif
+         enddo
+
+      enddo
+! now average array over images of i and store in aravg
+      avg=0
+      do l=1,nimages(i)
+         j=images(i,l)
+         avg=avg + array(ibound(j)) 
+      enddo
+      avg=avg /nimages(i)
+
+      do l=1,nimages(i)
+         j=images(i,l)
+         aravg(ibound(j)) = avg 
+      enddo
+! this value is copied into all other image points the same way
+
+   enddo
+   
+! is it periodic?
+   isperiodic=.true.
+   do i=1,n
+      if (abs(array(i)-aravg(i)).gt.tol) then
+        isperiodic=.false.
+        write(*,3)'NOT PERIODIC! grid(i), array, final avg,dif=',i,array(i),aravg(i),array(i)-aravg(i)
+      endif
+   enddo
+
+   deallocate(nimages,images)
+3 format(a,i4,9(1x,f10.4))
+
+end subroutine check_periodic
+!===========================================================
+ subroutine check_periodic_old(n,grid,r26,array,aravg,isperiodic)
 !! check whether the array(n) defined on the grid(3,n) is periodic of period one of r26
 !! if not, aravg will contain the symmetrized array, which is periodic 
  use constants, only : r15
@@ -3400,79 +3792,92 @@
  complex(r15), intent(in) :: array(n)
  complex(r15), intent(out) :: aravg(n)
  complex(r15) suma
+ integer images(n),r26_indices(n,20)
  logical, intent(out):: isperiodic
-! nbound(i) the the number of boundaries the grid(i) is on; cnt(i,nb) contains the label of r26 boundary vectors
-! cnt(i,10) is the  counter of boundary indices for grid(i)
- integer i,j,l,nbound(n),cnt(n,20),m,nboundr
+! nbound(i) the the number of boundaries the grid(i) is on; 
+! r26_indices(i,nb) contains the label of the nb^th r26 boundary vector image of grid i
+! images(i) is the  counter of boundary images for grid(i)
+ integer i,j,l,nbound(n),m,nboundr 
  real(r15) vgoverg2,v(3),arscale,tol
 
- write(ulog,*)' CHECK_PERIODIC: array size is ',n
- write(175,*)' CHECK_PERIODIC: array size is ',n
+! write(ulog,*)' CHECK_PERIODIC: array size is ',n
  arscale=sum(abs(array))/dble(n)
  tol=tolerance*arscale
  aravg=array
  isperiodic=.true.
  do i=1,n
-    call is_on_boundary(grid(:,i),r26,nboundr,tolerance)
-! check whether grid(i) is on the boundary
-    nbound(i)=0 ; cnt(i,:)=0 ; 
+    call is_on_boundary(grid(:,i),r26,nboundr,tolerance) ! check whether grid(i) is on the boundary
+    nbound(i)=0 ; r26_indices(i,:)=0 ; 
     do j=1,26  ! all 26 are needed ; direction is important!
        vgoverg2 = 2 * dot_product(r26(:,j),grid(:,i))/dot_product(r26(:,j),r26(:,j))
        if ( abs(vgoverg2 - 1) .lt. tolerance ) then ! it's on the boundary
           nbound(i)=nbound(i)+1   ! count on how many boundaries
-          cnt(i,nbound(i))=j    
+          r26_indices(i,nbound(i))=j    
        endif
     enddo
-!    write(ulog,*)'site ',i,' is on ',nbound(i),nboundr,' boundaries corresponding to vectors ',cnt(i,1:nbound(i))
+!    write(ulog,*)'site ',i,' is on ',nbound(i),nboundr,' boundaries corresponding to vectors ', &
+! &    r26_indices(i,1:nbound(i))
  enddo   
 
-!   if(nbound.eq.0) cycle ! was not on the boundary; try next grid point
-
-! it is on the intersection of nbound surfaces 
 ! find array indices(&values) on those boundaries to symmetrize
-!   cnt(i,11)=i
  do i=1,n
     if(nbound(i).eq.0) then ! it's inside but not on boundary
         cycle
     else
         suma=array(i) ! initialize the averaging    
-        cnt(i,10)= 1  ! counts the weight; should be = nbound(i)+1 at the end  of the loop; used for averaging
-        cnt(i,11)= i  ! cnt(i,10+m) is the index l of mth grid point image of i on another boundary r26(j); j=cnt(i,m)  
+!       cnt(i,10)= 1  ! counts the weight; should be = nbound(i)+1 at the end  of the loop; used for averaging
+        images(i)= 1  ! counts the weight; should be = nbound(i)+1 at the end  of the loop; used for averaging
+        r26_indices(i,images(i))= i  ! it is the index l of mth grid point image of i on another boundary r26(j); j=r26_indices(i,m)  
+!       cnt(i,11)= i  ! cnt(i,10+m) is the index l of mth grid point image of i on another boundary r26(j); j=cnt(i,m)  
     endif
     do m=1,nbound(i)  ! these exclude the grid(i) itself
-       v=grid(:,i)-r26(:,cnt(i,m))   
+       v=grid(:,i)-r26(:,r26_indices(i,m))   
 ! which grid index corresponds to v?
        lloop: do l=1,n
           if(length(v-grid(:,l)).lt. tolerance) then
 ! accumulate for averaging
              suma=suma+array(l)
-             cnt(i,10)=cnt(i,10)+1 ! counter of images of grid(i) on other boundaries
-             cnt(i,10+cnt(i,10))=l ! index of the image grids
+             images(i)=images(i)+1 ! counter of images of grid(i) on other boundaries
+             r26_indices(i,10+images(i))=l ! index of the image grids
              exit lloop
           endif
        enddo lloop
     enddo
-    if(nbound(i)+1.ne.cnt(i,10)) then
-        write(*,*)'grid i=',i,' nbound+1=',nbound(i)+1,'cnt(i,10)=',cnt(i,10),' diff=',nbound(i)+1-cnt(i,10)
+    if(nbound(i)+1.ne.images(i)) then
+        write(*,*)'grid i=',i,' nbound+1=',nbound(i)+1,'images(i)=',images(i),' diff=',nbound(i)+1-images(i)
     endif
-    aravg(i)=suma/cnt(i,10)  ! this is the average of array(i)
- !  write(ulog,*)'i, images=',i,cnt(i,10), cnt(i,11:10+cnt(i,10)) ,nbound(i)+1, cnt(i,1:1+nbound(i)) ! cnt(i,ind) is the rws index
-!   write(ulog,2)' array(l)=',array(cnt(i,11:10+cnt(i,10))) , aravg(i)
+    aravg(i)=suma/images(i)  ! this is the average of array(i)
     if (abs(array(i)-aravg(i)).gt.tol) then
        isperiodic=.false.
-       write(175,3)'grid(i), image, array, final avg,dif=',i,l,array(i),aravg(i),array(i)-aravg(i)
+       write(175,3)'NOT PERIODIC! grid(i), image, array, final avg,dif=',i,l,array(i),aravg(i),array(i)-aravg(i)
     endif
  enddo
+
+! checking the images have all the same value
+do i = 1, n
+   if (nbound(i) == 0) cycle
+   
+   ! Check all images have same value
+   do m = 2, images(i)
+      l = r26_indices(i,10+m)
+      if (abs(aravg(i) - aravg(l)) > tol) then
+         isperiodic = .false.
+         write(175,*) 'NOT PERIODIC: grid points', i, 'and', l, &
+                      'differ:', aravg(i), aravg(l)
+      endif
+   enddo
+enddo
+
 ! if(.not.isperiodic) then
 !     call write_out(ulog,'CHECK_PERIODIC: array is not periodic ',array)
 !     call write_out(ulog,'CHECK_PERIODIC:         average array ',aravg)
 ! endif
- write(175,*)' EXITING CHECK_PERIODIC '
+! write(175,*)' EXITING CHECK_PERIODIC '
 
 2 format(a,9(1x,g11.4))
 3 format(a,2i4,9(1x,f10.4))
 
- end subroutine check_periodic
+ end subroutine check_periodic_old
 !===========================================================
  subroutine check_inside_ws(q,gshel,inside,nboundary)
 !! checks if q is inside the the Wigner-Seitz cell defined by neighborshells
@@ -3486,22 +3891,31 @@
  real(r15) qdotg,gg2,tol
  integer i
 
- tol=0.002  ! a point on the boundary is also counted as inside
+ tol=2.0e-3_r15 !0.002  ! a point on the boundary is also counted as inside
 
  inside = .false.
  nboundary = 0
 ! write(ulog,*)'CHECK_INSIDE: q=',q
 
 ! this has to be modified for 1D or 2D systems 
- do i=1,13
+! do i=1,13
+!   if(abs(qdotg) .gt. gg2 * (1.0_r15+tol)) then  ! it falls outside
+!      nboundary=-i  ! if negative it was outside
+!      return  ! exit if it is outside
+!   elseif(abs(qdotg) .gt. gg2 * (1.0_r15-tol)) then  ! it's on the boundary
+!      nboundary= nboundary+1
+!   endif 
+!enddo
+
+ do i=1,26
     qdotg = dot_product(q,gshel(:,i))
-    gg2   = dot_product(gshel(:,i),gshel(:,i))/2d0
+    gg2   = dot_product(gshel(:,i),gshel(:,i)) * 0.5_r15
 ! write(ulog,4)'i,qdotg,gg/2=',i,qdotg,gg/2,gshel(:,i)
 ! check the Bragg condition |q.G| < G.G/2
-    if(abs(qdotg) .gt. gg2 * (1+tol)) then  ! it falls outside
-       nboundary=i
+    if(qdotg .gt. gg2 * (1.0_r15+tol)) then  ! it falls outside
+       nboundary=-i  ! if negative it was outside
        return  ! exit if it is outside
-    elseif(abs(qdotg) .gt. gg2 * (1-tol)) then  ! it's on the boundary
+    elseif(qdotg .gt. gg2 * (1.0_r15-tol)) then  ! it's on the boundary
        nboundary= nboundary+1
     endif 
  enddo
@@ -3573,7 +3987,7 @@
  gmax=max(gmax,length(gg3))
  call calculate_volume(gg1,gg2,gg3,vol)
  if(vol.myeq.0d0) then
-    write(*,*)'CALVOL: Volume is zero! check your basis vectors!'
+    write(*,*)'get_26shortest_shell: Volume is zero! check your basis vectors!'
     write(*,'(a,9(1x,g12.5))')'r1,r2,r3=',gg1,gg2,gg3
     stop
  endif
@@ -3839,7 +4253,7 @@
  enddo kloop
 
 3 format(a,9(1x,f9.4))
-4 format(a,3(i7),6(1x,f9.4)) !1x,f9.4))
+4 format(a,2(i7),L1,6(1x,f9.4)) !1x,f9.4))
 
  end subroutine find_map_rtau2sc
 !============================================================
@@ -3870,7 +4284,7 @@
 
 !! projects the vector v on of the space spanned by the set of n orthonormal
 !! vectors basis (if not the basis has to be orthonormalized first)
-!! formula is: vpo=sum_{c=1,n} (v.dot.basis) basis
+!! formula is: vp=sum_{c=1,n} (v.dot.basis_c) basis_c
  use constants, only : r15
  implicit none
  integer, intent(in) :: ndim,nbasis
@@ -3880,13 +4294,15 @@
  real(r15) res
 
  ! make sure basis is orthonormal
-  do i=1,nbasis
+ do i=1,nbasis
   do j=i,nbasis
      res=dot_product(basis(:,i),basis(:,j))
      if (i.eq.j .and. abs(res-1d0).gt.1d-5 ) then
         write(*,*)'Basis not normalized,i,vi^2=',i,res
+        stop
      elseif (i.ne.j .and. abs(res).gt.1d-5 ) then
         write(*,*)'Basis not normalized,i,j,vi.vj=',i,j,res
+        stop
      endif
   enddo
  enddo
@@ -4821,3 +5237,164 @@ end function is_in_wedge
 
  end function factorial
 !===========================================================
+ subroutine fold_01(x,r1,r2,r3,y)
+! folds vector x in the parallelipiped [0:1[^3 and stores its reduced coordinates
+! in y; r1,r2,r3 are the dual vectors of the parallelipiped
+ use constants, only : r15
+ use geometry
+ implicit none
+ real(r15), intent(in) :: x(3),r1(3),r2(3),r3(3)
+ real(r15), intent(out) :: y(3)
+ integer i,ncmp
+ 
+ y(1)=dot_product(x,r1)
+ y(2)=dot_product(x,r2)
+ y(3)=dot_product(x,r3)
+
+ do i=1,3
+    do while(y(i).gt.1.0d0.or.ncmp(y(i)-1).eq.0)
+       y(i)=y(i)-1
+    enddo
+    do while(y(i).lt.0.0d0.and.ncmp(y(i)).ne.0)
+       y(i)=y(i)+1
+    enddo
+ enddo
+
+ end subroutine fold_01
+!===========================================================
+ subroutine find_in_mesh(v, n, mesh, idx, tol)
+  use geometry, only : length
+  use constants, only : r15
+  implicit none
+  integer, intent(in) :: n
+  real(r15), intent(in) :: v(3), mesh(3,n)
+  real(r15), intent(in), optional :: tol
+  integer, intent(out) :: idx
+  real(r15) :: t
+  integer :: i
+
+  t = 1.0e-10_r15
+  if (present(tol)) t = tol
+
+  idx = 0
+  do i = 1, n
+     if ( length(v - mesh(:,i)) < t ) then
+        idx = i
+        return
+     endif
+  enddo
+ end subroutine find_in_mesh
+!===========================================================
+ subroutine make_periodic(n,ar,arper,space)
+ use fourier
+ use lattice
+ implicit none
+ integer, intent(in) :: n
+ character(1), intent(in) :: space
+ complex(r15), intent(in):: ar(n)
+ complex(r15), intent(out):: arper(n)
+ logical isperiodic
+
+ if (space.eq.'g') then
+    if (n.eq.nggrid) then
+       call check_periodic(n,ggrid,g0ws26,ar,arper,isperiodic)
+    else 
+       write(*,*)'input size n inconsistent with nggrid ',n,nggrid
+       stop
+    endif
+ elseif (space.eq.'r') then
+    if (n.eq.nrgrid) then
+       call check_periodic(n,rgrid,rws26,ar,arper,isperiodic)
+    else 
+       write(*,*)'input size n inconsistent with nrgrid ',n,nrgrid
+       stop
+    endif
+ endif
+
+ end subroutine make_periodic
+!===========================================================
+ subroutine check_herm_sym_R(nat,nr,grid,phi)
+! checks whether phi_t,t'(R) = phi_t',t(-R)^T
+! use fourier, only : nrgrid,rgrid,rws_weights
+ use geometry, only : length
+ use ios, only : write_out,ulog
+ use constants, only : r15
+ implicit none
+ integer, intent(in) :: nat,nr
+ real(r15), intent(in) :: grid(3,nr),phi(nat,nat,3,3,nr) !,weights(nr)
+ real(r15) p1(3,3),p2(3,3)
+ real(r15) eps
+ integer i,j,tau,taup
+
+! identify -R for each R
+ do i=1,nr
+ do j=1,nr
+    if(i.eq.j) cycle
+    if(length(grid(:,i)+grid(:,j)).lt.1d-8) then
+! since all weights=1 no need to check this
+!       if(abs(weights(i)-weights(j)).gt.1d-6) then
+!          write(*,*)'CHECK_HERM_SYM_R weights not symmetric: R,-R ',i,j,  &
+!  &                   weights(i),weights(j) 
+!       endif
+       do tau=1,nat
+       do taup=1,nat
+          p1=phi(tau,taup,:,:,i)
+          p2=phi(taup,tau,:,:,j)
+          eps=maxval(abs(p1-transpose(p2)))
+          if (eps.gt.1d-8) then
+             write(*,*)'CHECK_HERM_SYM_R violation: R,-R,t,tp ',i,j,tau,taup
+             call write_out(6,'phi(t,tp, R)',p1)
+             call write_out(6,'phi(tp,t,-R)',p2)
+             stop
+          endif
+       enddo
+       enddo
+    endif
+ enddo
+ enddo
+ write(*,*)'check_herm_sym_R PASSED! phi was hermitian!'
+
+ end subroutine check_herm_sym_R
+!===========================================================
+ subroutine check_herm_sym_G(nat,ng,grid,dyn)
+! checks whether Dyn_t,t'(G) = Dyn_t',t(-G)^T
+ use geometry, only : length
+ use ios, only : write_out,ulog
+ use constants, only : r15
+ implicit none
+ integer, intent(in) :: nat,ng
+ real(r15), intent(in) :: grid(3,ng)
+ complex(r15), intent(in) :: dyn(nat,nat,3,3,ng) 
+ real(r15) p1(3,3),p2(3,3)
+ real(r15) eps
+ integer i,j,tau,taup
+
+! identify -R for each R
+ do i=1,ng
+ do j=1,ng
+    if(i.eq.j) cycle
+    if(length(grid(:,i)+grid(:,j)).lt.1d-8) then
+! since all weights=1 no need to check this
+!       if(abs(weights(i)-weights(j)).gt.1d-6) then
+!          write(*,*)'CHECK_HERM_SYM_R weights not symmetric: R,-R ',i,j,  &
+!  &                   weights(i),weights(j) 
+!       endif
+       do tau=1,nat
+       do taup=1,nat
+          p1=dyn(tau,taup,:,:,i)
+          p2=dyn(taup,tau,:,:,j)
+          eps=maxval(abs(p1-transpose(p2)))
+          if (eps.gt.1d-8) then
+             write(*,*)'CHECK_HERM_SYM_G violation: G,-G,t,tp ',i,j,tau,taup
+             call write_out(6,'dyn(t,tp, G)',p1)
+             call write_out(6,'dyn(tp,t,-G)',p2)
+             stop
+          endif
+       enddo
+       enddo
+    endif
+ enddo
+ enddo
+ write(*,*)'check_herm_sym_G PASSED! dyn_na was hermitian!'
+
+ end subroutine check_herm_sym_G

@@ -491,7 +491,7 @@
 !===============================================================================
  subroutine homogeneous_constraints_overlap(n_constr)
 !! now that we have the 3 matrices atransl,arot,ahuang,
-!! we put them together to do the SVD
+!! we put them together in ahom to do the SVD
 !! output s ahom and its dimensions:n_constr,dim_ac, which go to SVD
  use svd_stuff
  use params
@@ -1010,7 +1010,8 @@
  end subroutine exclude_beyond_sc
 !==============================================
  subroutine implement_temperature(m3,n,amat,bmat,nconfg,ene,nlines,tempk,mat,qmat)
-! input is the inhomogeneous part of amat; output is a square matrix mat(n,n) and qmat(n)
+!! defines Boltzmann weights for each snapshot and sets instead of Ax=b the system A^T.W.A x=A^T.W. b
+!! input is the inhomogeneous part of amat; output is a square matrix mat(n,n)=A^T.W.A and qmat(n)=A^T.W.b
  use constants
  implicit none
  integer, intent(in) :: m3,n,nconfg,nlines(nconfg) ! # of lines for each configuration

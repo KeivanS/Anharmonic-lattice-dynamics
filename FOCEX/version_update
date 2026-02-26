@@ -18,18 +18,50 @@
 8.8 read the range, but only keep fc2indeps that are within the WS cell of the supercell, and throw away the ones outside; 
     (this is completed by symmetry)
     write symmetry matrices in a separate file
-    nshells 2nd dimension increased from 20 to 90 upper limit of atoms per primitive cell
+    nshells 2nd dimension increased from 20 natoms per primitive cell
     modified and moved band sorting operations inside the bandsort subroutine
     modified svd to svd_ridge to include proper regularization
     removed from set_dynamical_matrix the condition if inside WS because this breaks symmetry
     added a subroutine to show boundary of the WS cell of the FBZ (output used for display in fcs.plt)
     updated the default values of defaults.params
     added boundary to check_inside in extratools.f90
+    bulk modulus made volume-dependent through the use of gruneisen (for QHA calculations)
+    a bug in the op_kmatrix was fixed, so that in the primitive representation it is now integer(unimodular).
+8.9 added the storage of FC2 and the dynamical matrix in the 5D array form (al,be,tau,taup,grid) 
+    so that the dyn can be calculated at the Gsc grid exactly, dyn_NA subtracted on this grid and 
+    then fourier back to get short-ranged part of FC2 which can be used to get dyn at any q point
+    fixed fold_ws function that folds a vector in the WS cell and also modified get weights
+    introduced Voigt, Reuss and Hill(avge) elastic moduli and vsound in those terms
+8.10 added the option of reading force constants and computing phonons and QHA-EOS without fitting
+     added the correction to the gruneisen for non-zero u0 
+     added rotational invariance check to qiu
+     added strain-dependent energy to QHA, added B_0' and volume-dependent B=B_0(1-3*eta*B0')
+     added checks for symmetries in zeta, Qiu, and inversion symmetry, b0p
+
+8.11 extended the arrays keep_fc2i and counter2i(g,ti) to all ranks: keep_fci(rank,group,ti), counteri(rank,g,ti), current(rank,g,ti)
+     fixed bug in group velocities from HF, so that they now agree with finite-difference 
+     changed variable from svdcut to its square root which is the force error
+     updated nkeptind to all ranks so that after setup_maps, in setup of amatrix only nkeptind is used
+  
+8.12 for fc2range=0 (full supercell FC2s) subtract NA from the dynamical matrix at(G_sc) but
+     otherwise if fc2range.ne.0 subtract Coulomb force from forces before fitting. Addition process of NA to 
+     dynamical matrix a general q is the same
+     Added B'0, and possibly the cubic elastic constants. 
+     Added Cp=Cv+BTa^2 for volumetric heat capacity
+     Added harmonic contribution to the dielectric constant
+
+8.15 Finally fixed NA terms. Use by default born_flag=2 which subtracts ewalfd force from DFT force regardless of fc2flag
+     Fixed group velocities
+
+8.16 Cleaned up some details bout elastic constants, added the Leontiev-Agne formula for gamma, alpha and Cp in the QHA
 
 to do:  
--make bulk modulus also volume-dependent since group velocities are now vol-dependent thanks to gruneisen
+-make group velocities volume-dependent using gruneisen
 -for include_fc=2 reads fcs(rnk) from a file, and properly store it in the 1D array fcs(ngr?) for usage in the setup_amatrix code.
 -Add Ewald sum to the potential energy part of SCOP8 : that goes in the free energy and its gradient wrt u0 and eta and K!!!
 -Compare the size of W and that of nindepfc. If w is smaller then is CS needed to reduce them?
--Add harmonic contribution to the dielectric constant
 -project dos on atoms in the tetrahedron method 
+-Fix the conductance
+-Fix Huang to add QAQ term?
+
+-Give option to read FCs and directly do phonon and elastic properties.=> implemented in ph.x 

@@ -24,6 +24,7 @@ integer, parameter,public :: c15 = 8
  real(r15) :: ryd= 27.2116  !me*ee**3/hbar**2/16/pi/pi/eps0/eps0 (in eV)
  real(r15) :: ab = 0.529177  ! hbar*hbar/me/ee/ee*4*pi*eps0
  real(r15) :: kbe=8.617343e-05  ! = value of 1 Kelvin in eV
+ real(r15) :: eps0scale =6.94461587186d-2 ! (4*pi*eps0)/ (ee*1d10)
 
  end module constants
 !==============================================
@@ -236,8 +237,8 @@ end subroutine calvol_v
 !
       real(r15) rdet,mat(3,3)
       rdet=mat(1,1)*(mat(2,2)*mat(3,3)-mat(2,3)*mat(3,2))  &
-     &  - mat(1,2)*(mat(2,1)*mat(3,3)-mat(2,3)*mat(3,1))  &
-     &  + mat(1,3)*(mat(2,1)*mat(3,2)-mat(2,2)*mat(3,1))
+     &   + mat(1,2)*(mat(2,3)*mat(3,1)-mat(2,1)*mat(3,3))  &
+     &   + mat(1,3)*(mat(2,1)*mat(3,2)-mat(2,2)*mat(3,1))
 
       end function rdet
 !------------------------------------------------------------------------------
@@ -248,7 +249,7 @@ end subroutine calvol_v
 !
       integer idet,mat(3,3)
       idet=mat(1,1)*(mat(2,2)*mat(3,3)-mat(2,3)*mat(3,2))  &
-     &   - mat(1,2)*(mat(2,1)*mat(3,3)-mat(2,3)*mat(3,1))  &
+     &   + mat(1,2)*(mat(2,3)*mat(3,1)-mat(2,1)*mat(3,3))  &
      &   + mat(1,3)*(mat(2,1)*mat(3,2)-mat(2,2)*mat(3,1))
 
       end function idet
@@ -1173,18 +1174,16 @@ contains
  type(vector) gs1,gs2,gs3,rs1,rs2,rs3  ! rri=translation vectors of the supercell
  type(vector) r1conv,r2conv,r3conv,g1conv,g2conv,g3conv
  type(vector) r01,r02,r03,g01,g02,g03  ! tr vect of prim cell and its recip spce
- real(r15) volume_r,volume_g,volume_r0,volume_g0
+ real(r15) volume_r,volume_g,volume_r0,volume_g0,a0_scale,asc_scale
  real(r15) lattice_parameter,latticeparameters(6),primitivelattice(3,3)
  real(r15),dimension(3,3):: conv_to_cart,cart_to_conv,prim_to_conv,conv_to_prim,  &
-  &                       prim_to_cart,cart_to_prim
+  &                       prim_to_cart,cart_to_prim ,cart_to_redpr,cart_to_redsc
  real(r15) box(3),boxg(3),density
  real(r15) r0g(3,3)
-! real(r15), allocatable:: rws_weights(:),gws_weights(:)
-! integer nr1(3),nr2(3),nr3(3)
-! real(r15), allocatable:: rgrid(:,:),ggrid(:,:),xgrid(:,:)
  real(r15) gws26(3,26),rws26(3,26) ! superlattice shells defining the WS of SL
  real(r15) g0ws26(3,26),r0ws26(3,26) , lgridmax
  integer n_sc(3,3),invn_sc(3,3)  
+ integer, allocatable :: meshr3d(:,:),meshg3d(:,:)
 
   interface make_rg
      module procedure make_rga,make_rgv
@@ -1214,7 +1213,7 @@ contains
 
 !-------------------------------------------
  function cart2red(x,space) result(red)
-!! converts reduced coordinates of a real space vector to its cartesian coordinates
+!! converts cartesian coordinates of a vector to its reduced coordinates
  use constants, only : r15,pi
  implicit none
  real(r15) , intent(in) :: x(3)
@@ -1284,7 +1283,90 @@ contains
  redx=matmul(cart_to_prim,x)
  end function cart2red_r
 !-------------------------------------------
- function fold_ws(q,gs,space) result(qout)
+function fold_ws(q, gs) result(qout)
+! folds vector q in the WS cell defined by gs vectors
+   use constants, only : r15
+   use geometry, only : length
+   use params, only : tolerance
+   implicit none
+   real(r15), intent(in) :: q(3), gs(3,26)
+   real(r15) :: qout(3), qtest(3), dist_min, dist
+   integer :: i, j, niter, nboundary
+   logical :: inside, changed
+   
+   qout = q
+   
+   do niter = 1, 100  ! Increase max iterations
+      call check_inside_ws(qout, gs, inside, nboundary)
+      if (inside) return
+      
+      ! Find the G that brings q closest to origin
+      dist_min = length(qout)
+      changed = .false.
+      
+      do i = 1, 26
+         qtest = qout - gs(:,i)
+         dist = length(qtest)
+         
+         if (dist < dist_min - tolerance) then
+            qout = qtest
+            dist_min = dist
+            changed = .true.
+         endif
+      enddo
+      
+      ! If no improvement, we're stuck
+      if (.not. changed) then
+         write(*,*) 'FOLD_WS: Cannot reduce distance further'
+         write(*,*) 'q =', qout, ' dist =', dist_min
+         exit
+      endif
+   enddo
+   
+   if (.not. inside) then
+      write(*,*) 'FOLD_WS: Failed after', niter, 'iterations'
+      write(*,*) 'q =', qout
+      stop
+   endif
+   
+end function fold_ws
+!-------------------------------------------
+ function fold_ws1(q,gs) result(qout)
+!! this function folds the vector q in the Wigner-Seitz cell defined by gs(3,1:26)
+ use constants, only : r15
+ use geometry, only : v2a,length
+ use params, only : tolerance
+ implicit none
+ real(r15), intent(in):: q(3),gs(3,26)
+ real(r15) x,c(3),qin(3),test_vec(3),dist,dmin,qout(3)
+ integer i,j,k,m,nboundary,niter
+ logical inside,folded
+
+! first bring it in -G/2;G2 by using the reduced coordinates
+  qin=q
+  do niter=1,20
+     call check_inside_ws(qin,gs,inside,nboundary)
+     if (inside) then
+        qout=qin    
+        return
+     endif
+
+! try folding by subtracting tnearest face-normal component
+     do i=1,26
+        x=dot_product(qin,gs(:,i))/dot_product(gs(:,i),gs(:,i))
+        if(abs(x) > 0.5_r15) then 
+           qin=qin-gs(:,i)*nint(x)
+        endif
+     enddo
+
+  enddo
+
+  write(*,*)' FOLD_WS : failed to fold vector q=',qin
+  stop
+
+ end function fold_ws1
+!-------------------------------------------
+ function fold_ws_old(q,gs,space) result(qout)
 !! for WS cell defined by gs(3,1:26), this folds q in the ws cell of gsi
  use constants, only : r15
  use geometry, only : v2a,length
@@ -1370,13 +1452,13 @@ contains
     qin=qin-m*gs(:,i)  
  enddo
  
- end function fold_ws
+ end function fold_ws_old
 
 !-------------------------------------------
  subroutine make_r0g
 ! matmul(r0g,n) gives the 3 reduced coordinates of the primcell of index n in units of the supercell ri's
 ! matmul(r0g,v) gives the 3 reduced coordinates of v in units of the supercell translations 
-! coordinates are v(1)*r01+v(2)*r02+v(3)*r03
+! coordinates are v(1)*r01+v(2)*r02+v(3)*r03; r0g is the inver of N matrix  R_sc=N.R_0
  use constants , only : pi
  implicit none
 
@@ -1825,8 +1907,7 @@ contains
 ! calculate pair i0-j distances, and sort them
     cnt=0
     do j=1,natoms
-       call calculate_distance(i0,j,atompos,natoms,dij)  ! dij=|atompos(i0)-atompos(j)|
-       dist(j)=dij
+       dist(j)=length(atompos(:,i0)-atompos(:,j))
     enddo
     call sort(natoms,dist,msort,maxatoms)
 
@@ -2590,7 +2671,7 @@ contains
  real(r15), intent(in) :: a(:,:),b(:) 
  real(r15), intent(out) :: x(:)
 ! integer, parameter :: n = size(A,1)
- real(r15) factor
+ real(r15) factor,sum
  real(r15), allocatable:: aux(:,:),bb(:)
  integer i,j,k,ier,n
 
@@ -2623,7 +2704,7 @@ contains
  ! Back Substitution
  x(n) = bb(n) / aux(n,n)
  do i=n-1,1,-1
-     sum = 0.0
+     sum = 0
      do j=i+1,n
          sum = sum + aux(i,j)*x(j)
      enddo
