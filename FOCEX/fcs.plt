@@ -1,10 +1,10 @@
 set xlabel "Pair distance (Ang)"
 set ylabel "Trace of FC2  (eV/Ang^2)"
-set title "FC2 strangth (different color for different pair interactions)"
+set title "FC2 strength (Contour 2 for 1-1 type, 3 for 1-2 type and 4 for 2-2 type pair interactions)"
 set yzeroaxis
 set grid xtics
 set grid ytics
-
+set key bottom right
 #set palette maxcolors 10
 set palette defined   
 set cblabel "Primitive atom"
@@ -15,12 +15,11 @@ set cbrange [1:5 ] # same range as palette definition
 
 ### plot [1:] 'trace_fc.dat' u 1:2 w p pt 1 ps 2.8 title 'Original fc2' ,\
 
- plot [1:] 'trace_fc.dat' u 4:5:($1+$2) w p pt 7 ps 1.8 palette z title 'Original' ,\
-       'trace_fc2_lr.dat' u 4:5:($1+$2) w p pt 1 ps 1. palette z title 'fc2 LR' ,\
-       'trace_fc2_sr.dat' u 4:5:($1+$2) w p pt 4 ps 1. palette z title 'fc2 SR' ,\
+ plot [1:] 'trace_fc.dat' u 4:5:($1+$2) w p pt 1 ps 1.8 palette z title 'Original' ,\
+       'trace_fc2_lr.dat' u 6:5:($1+$2) w p pt 4 ps 1.8 palette z title 'fc2 LR' ,\
+       'trace_fc2_sr.dat' u 4:5:($1+$2) w p pt 9 ps 0.9 title 'fc2 SR' ,\
  0 w l lt 5  lw 2 notitle
  pause -1
-     # 'trace_fc2_sr.dat' u 4:5 w p pt 9 ps 0.9 title 'fc2 SR'
 #set arrow from x1, y1, z1 to x2, y2, z2 nohead lt 1
 #set xrange [0:xmax]
 #set yrange [0:ymax]
