@@ -135,7 +135,7 @@
   else
      vt_iso=1d-1  
   endif
-  v_mean=((1d0/vl_iso**3+2d0/vt_iso**3)/3d0)**0.333333
+  v_mean=1d0/((1d0/vl_iso**3+2d0/vt_iso**3)/3d0)**0.333333
   t_debye=hbar/k_b*(6*pi*pi*natom_prim_cell/volume_r0)**0.33333 *1d10 * v_mean*1000
   write(ulog,8)'isotropic V_l, V_t, V_mean (km/s) = ',vl_iso, vt_iso,v_mean
   write( uio,8)'isotropic V_l, V_t, V_mean (km/s) = ',vl_iso, vt_iso,v_mean
