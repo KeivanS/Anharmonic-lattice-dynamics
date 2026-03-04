@@ -1,0 +1,1278 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>7. Running SCOP8 &mdash; ALADYN 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="8. FAQ" href="faq.html" />
+    <link rel="prev" title="6. Running THERMACOND" href="runthermacond.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ALADYN
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">2. Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">3. Download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">4. Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runfocex.html">5. Running FOCEX</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runthermacond.html">6. Running THERMACOND</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">7. Running SCOP8</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#workflow-of-scop8">7.1. Workflow of SCOP8</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description-of-input-and-output-files">7.2. Description of input and output files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example">7.3. Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">8. FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ALADYN</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">7. </span>Running SCOP8</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/runscop8.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="running-scop8">
+<h1><span class="section-number">7. </span>Running SCOP8<a class="headerlink" href="#running-scop8" title="Link to this heading"></a></h1>
+<section id="workflow-of-scop8">
+<h2><span class="section-number">7.1. </span>Workflow of SCOP8<a class="headerlink" href="#workflow-of-scop8" title="Link to this heading"></a></h2>
+<p>The workflow of the SCOP8 code is outlined below to provide a general overview of its structure and execution as a black box. While many intermediate steps in this process may not be essential for running the code, those that are critical are highlighted in the workflow diagram and subsequently explained in detail.</p>
+<a class="reference internal image-reference" href="_images/SCOP8_FLowchart.png"><img alt="_images/SCOP8_FLowchart.png" class="align-center" src="_images/SCOP8_FLowchart.png" style="width: 500px;" />
+</a>
+</section>
+<section id="description-of-input-and-output-files">
+<h2><span class="section-number">7.2. </span>Description of input and output files<a class="headerlink" href="#description-of-input-and-output-files" title="Link to this heading"></a></h2>
+<ul>
+<li><p><strong>Preparing input files</strong></p>
+<blockquote>
+<div><p>In order to run SCOP8, you need 9 or 10 files (depends on the choice).</p>
+<p>The first group of input file(s) required to run SCOP8 are <code class="docutils literal notranslate"><span class="pre">default.params</span></code> and <code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code>.
+Those are simply the same input file(s) required to run FOCEX, they should be kept consistent with the FOCEX run. Refer to ‘Running FOCEX’ for further details about these files.</p>
+<p>The second group of input file(s) required to run SCOP8 are <code class="docutils literal notranslate"><span class="pre">structure.params</span></code>, <code class="docutils literal notranslate"><span class="pre">lat_fc.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc2.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc3.dat</span></code> and <code class="docutils literal notranslate"><span class="pre">fc4.dat</span></code>.
+Those are generated from running FOCEX beforehand, they are raw input and should be left as is. Refer to ‘Running FOCEX’ for further details about these files.</p>
+<p>The third group of input file(s) required to run SCOP8 are <code class="docutils literal notranslate"><span class="pre">control.params</span></code>, <code class="docutils literal notranslate"><span class="pre">params.phon</span></code>, <code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code> and <a href="#id1"><span class="problematic" id="id2">``</span></a>targetInitialize.dat``(depends)
+Those are input files that uniquely for SCOP8 and can be customized by users, further details will be explained below</p>
+<p>A sample of input files can be found in the subfolder <code class="docutils literal notranslate"><span class="pre">input_sample</span></code> inside the SCOP8 folder.</p>
+<ul class="simple">
+<li><p><strong>control.params</strong></p></li>
+</ul>
+<p>The control.params is main ‘control file’ with several options.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="o">.</span><span class="kc">False</span><span class="o">.</span> <span class="c1"># whether to start with random value for variational parameter strain tensor and atomic displacements.</span>
+<span class="o">.</span><span class="kc">True</span><span class="o">.</span> <span class="c1"># whether to inherit previous running result. If set to &#39;True&#39;, this means that this run will start with variational parameters values from the file &#39;targetInitialize.dat&#39;. So be sure to have this file in current path while turning this option on.</span>
+<span class="o">.</span><span class="kc">False</span><span class="o">.</span> <span class="c1"># whether include pressure factor, the stress tensor matrix can be customized in line 12 13 &amp; 14</span>
+<span class="o">.</span><span class="kc">False</span><span class="o">.</span> <span class="c1"># whether force ASR in K after each Broyden iteration. This option should generally be left off since acoustic sum rule should be automatically preserved in K given proper input fc2, fc3 and fc4 values.</span>
+<span class="o">.</span><span class="kc">False</span><span class="o">.</span> <span class="c1"># whether use high temperature limit in &lt;YY&gt; calculation when dealing with soft modes. If this is turned on, the default strategy of manually shifting all negative eigenvalues up will be skipped, instead the high temperature limit will be employed for and only for negative eigenvalues.</span>
+<span class="mi">54321</span> <span class="c1"># only matters if set the 1st line to .True., if you want random start, this is the seed</span>
+<span class="mf">0.02</span> <span class="c1"># only matters if set the 1st line to .True., range for random start</span>
+<span class="mf">0.0</span> <span class="mf">0.0</span> <span class="mf">0.0</span> <span class="c1"># only matters if set the 1st line to .True., center for random start</span>
+<span class="mi">300</span> <span class="c1"># max_iteration number</span>
+<span class="o">-</span><span class="mf">0.006</span> <span class="c1"># pmix parameter here, usually -0.006</span>
+<span class="mi">10</span> <span class="c1"># temperature in Kelvin</span>
+<span class="mi">25</span> <span class="mf">0.0</span> <span class="mf">0.0</span>
+<span class="mf">0.0</span> <span class="mi">25</span> <span class="mf">0.0</span>
+<span class="mf">0.0</span> <span class="mf">0.0</span> <span class="mi">25</span> <span class="c1"># set stress tensor, &#39;pressure&#39; flag hard coded</span>
+<span class="mi">3</span> <span class="c1">#this is the number of variational parameters you want to fix, this number can be set to negative, then it means how many of variational parameters you want to free</span>
+<span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="c1">#variational parameters indexes list that you want to be fixed/free, the total number of indexes should match the value above</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>params.phon</strong></p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">params.phon</span></code> is another control file but mostly deprecated. The only really meaningful line is the first line which defines the size of k point mesh.
+This file contains also parameters for DOS calculation.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="mi">18</span> <span class="mi">18</span> <span class="mi">18</span>   <span class="o">.</span><span class="n">false</span><span class="o">.</span>   <span class="n">kmesh</span>  <span class="p">,</span> <span class="k">if</span> <span class="n">true</span> <span class="n">calculate</span> <span class="n">only</span> <span class="n">dos</span><span class="o">-</span><span class="n">bs</span>
+<span class="mi">1</span> <span class="mi">6</span>    <span class="c1"># lamin,lamax</span>
+<span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mf">0.5</span> <span class="mf">0.5</span> <span class="mf">0.5</span> <span class="mi">2300</span> <span class="mf">0.1300</span> <span class="mf">0.4000</span>    <span class="c1"># shift_xyz, (fine mesh in IBZ) 0&lt;sx&lt;sy&lt;sz</span>
+<span class="mi">300</span>  <span class="mi">5</span>    <span class="c1"># wmesh and wmax (in cm^-1)</span>
+<span class="mf">4.0</span>  <span class="mf">10.0</span>     <span class="c1"># width of gaussian broadening for DOS (in cm^_1), imaginary part of omega(lifetimes)</span>
+<span class="mi">1</span><span class="n">d</span><span class="o">-</span><span class="mi">11</span>      <span class="c1"># tau0(s)  added to the inverse of the relaxation time</span>
+<span class="o">.</span><span class="n">false</span><span class="o">.</span>    <span class="c1"># verbosity</span>
+<span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>      <span class="c1"># wshift in 3 directions; it pushes the phonon frequencies up</span>
+<span class="mi">380</span> <span class="mi">380</span> <span class="mi">1</span>    <span class="c1"># tmin, tmax, ntemp</span>
+<span class="mi">1</span>   <span class="mi">0</span>  <span class="mi">0</span>  <span class="mi">0</span> <span class="c1"># iterative_BTE,readv3,usetetra: read/write if it is=1; collect if it&#39;s 2 ; use svd</span>
+<span class="mi">1</span>             <span class="c1"># ncpu;  below is path to v33sq.dat files</span>
+<span class="o">/</span>
+<span class="mi">100</span> <span class="mi">4</span>    <span class="c1"># max_iter, n_dig_accuracy, deprecated</span>
+<span class="mf">0.00000001</span>  <span class="c1">#v3_threshold, used for checking, deprecated</span>
+<span class="mi">0</span>      <span class="c1"># 1 for classical and 0 for quantum, deprecated</span>
+<span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>     <span class="c1"># for cross setion if=1</span>
+<span class="mi">0</span>      <span class="c1"># for the 3-phonon matrix elt if=1</span>
+<span class="mi">1</span>      <span class="c1"># scale length</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>kbps.params</strong></p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code> file define the q-point path for band dispersion plot.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="mi">0</span> <span class="c1"># The first line can be set to 0 or 1 where 0 means conventional lattice and 1 means primitive lattice.</span>
+<span class="mi">40</span> <span class="c1"># The second line is the number of k points along each direction</span>
+<span class="mi">7</span> <span class="c1"># The third line is the number of directions for the band plot.</span>
+<span class="n">G</span> <span class="mi">0</span> <span class="mf">0.0001</span> <span class="mf">0.0001</span> <span class="c1"># The following lines should be input with format of special q point label(G, K, L, X, etc) followed by its 3d coordinates.</span>
+<span class="n">K</span> <span class="mi">0</span> <span class="mf">0.75</span> <span class="mf">0.75</span>
+<span class="n">X</span> <span class="mi">0</span> <span class="mi">1</span> <span class="mi">1</span>
+<span class="n">G</span> <span class="mf">0.9999</span> <span class="mi">1</span> <span class="mi">1</span>
+<span class="n">L</span> <span class="mf">0.5</span> <span class="mf">0.5</span> <span class="mf">0.5</span>
+<span class="n">W</span> <span class="mf">0.</span> <span class="mf">0.5</span> <span class="mi">1</span>
+<span class="n">X</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">1</span>
+<span class="n">G</span> <span class="mi">0</span> <span class="mf">0.</span> <span class="mf">0.0001</span>    <span class="n">gamma</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>targetInitialize.dat</strong></p></li>
+</ul>
+<p>This is the main output file that lists final values for all the variational parameters. It also serves as a customizable input file if user choose to set the 2nd line of control.params to True.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="mf">0.0000000000000000</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">0.0000000000000000</span>     <span class="c1"># the &#39;relaxed&#39; tau_0, usually (0,0,0) since the center atom is fixed and used as a reference point</span>
+<span class="mf">7.3258075924813355E-011</span>   <span class="mf">7.3241067962641583E-011</span>   <span class="mf">7.3225737274375089E-011</span> <span class="c1"># the &#39;relaxed&#39; tau_1, if the lattice has more than two atoms (types), there will be more lines below</span>
+<span class="mf">9.7839998026831273E-004</span>   <span class="mf">3.2204510841042777E-012</span>   <span class="mf">3.2167153648262385E-012</span> <span class="c1"># the 1st row of &#39;relaxed&#39; strain tensor a.k.a eta_xx, eta_xy, eta_xz</span>
+<span class="mf">3.2204510841042777E-012</span>   <span class="mf">9.7839998014266562E-004</span>   <span class="mf">3.2126854822356125E-012</span> <span class="c1"># the 2nd row of &#39;relaxed&#39; strain tensor a.k.a eta_yx, eta_yy, eta_yz</span>
+<span class="mf">3.2167153648262385E-012</span>   <span class="mf">3.2126854822356125E-012</span>   <span class="mf">9.7839997972007462E-004</span> <span class="c1"># the 3rd row of &#39;relaxed&#39; strain tensor a.k.a eta_zx, eta_zy, eta_zz</span>
+<span class="mi">1</span>           <span class="mi">1</span>           <span class="mi">1</span>           <span class="mi">1</span>           <span class="mi">1</span>   <span class="mf">11.484396453112186</span>   <span class="c1"># this line and all the lines below corresponds to trial force constants, the columns are: index, atom_1, xyz_1, atom_2, xyz_2, K</span>
+<span class="mi">2</span>           <span class="mi">1</span>           <span class="mi">1</span>           <span class="mi">2</span>           <span class="mi">2</span>   <span class="mf">11.484396453112325</span>
+<span class="mi">3</span>           <span class="mi">1</span>           <span class="mi">1</span>           <span class="mi">3</span>           <span class="mi">3</span>   <span class="mf">11.484396453113003</span>
+<span class="mi">4</span>           <span class="mi">2</span>           <span class="mi">2</span>           <span class="mi">1</span>           <span class="mi">1</span>   <span class="mf">11.484396453112071</span>
+<span class="mi">5</span>           <span class="mi">2</span>           <span class="mi">2</span>           <span class="mi">2</span>           <span class="mi">2</span>   <span class="mf">11.484396453112852</span>
+<span class="mi">6</span>           <span class="mi">2</span>           <span class="mi">2</span>           <span class="mi">3</span>           <span class="mi">3</span>   <span class="mf">11.484396453113003</span>
+<span class="mi">7</span>           <span class="mi">1</span>           <span class="mi">2</span>           <span class="mi">1</span>           <span class="mi">1</span>  <span class="o">-</span><span class="mf">2.8395049908152701</span>
+<span class="mi">8</span>           <span class="mi">2</span>           <span class="mi">1</span>           <span class="mi">1</span>           <span class="mi">1</span>  <span class="o">-</span><span class="mf">2.8395049908151790</span>
+<span class="mi">9</span>           <span class="mi">1</span>           <span class="mi">2</span>           <span class="mi">2</span>           <span class="mi">2</span>  <span class="o">-</span><span class="mf">2.8395049908153513</span>
+<span class="mi">10</span>           <span class="mi">2</span>           <span class="mi">1</span>           <span class="mi">2</span>           <span class="mi">2</span>  <span class="o">-</span><span class="mf">2.8395049908153425</span>
+<span class="mi">11</span>           <span class="mi">1</span>           <span class="mi">2</span>           <span class="mi">3</span>           <span class="mi">3</span>  <span class="o">-</span><span class="mf">2.8395049908153900</span>
+<span class="o">...</span>
+<span class="mi">23312</span>           <span class="mi">2</span>         <span class="mi">839</span>           <span class="mi">3</span>           <span class="mi">3</span>   <span class="mf">0.0000000000000000</span>
+<span class="mi">23313</span>           <span class="mi">1</span>        <span class="mi">1160</span>           <span class="mi">2</span>           <span class="mi">2</span>   <span class="mf">0.0000000000000000</span>
+<span class="mi">23316</span>           <span class="mi">2</span>         <span class="mi">817</span>           <span class="mi">2</span>           <span class="mi">2</span>   <span class="mf">0.0000000000000000</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p><strong>Explaining output files</strong></p>
+<blockquote>
+<div><p>Most of the output files can be ignored, since they are for checking or logging, or simply legacy output that should be deprecated.
+Import output files will be briefly explained below.
+A sample of output files can be found in the subfolder <code class="docutils literal notranslate"><span class="pre">output_sample</span></code> inside the <code class="docutils literal notranslate"><span class="pre">SCOP8</span></code> folder.</p>
+<ul class="simple">
+<li><p><strong>convergence.dat</strong></p></li>
+</ul>
+<p>This file keeps a record of free energy value and L1 norm of all gradients at each iteration. So you can monitor how well the Broyden loops converge.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">iteration</span><span class="p">,</span>  <span class="n">free</span> <span class="n">energy</span><span class="p">,</span>                <span class="n">L1</span> <span class="n">norm</span>
+        <span class="mi">1</span> <span class="p">,</span>   <span class="mf">7.7695601608371171E-003</span> <span class="p">,</span>  <span class="mf">0.12192370206947493</span>
+        <span class="mi">2</span> <span class="p">,</span>   <span class="mf">5.4742390823587731E-003</span> <span class="p">,</span>  <span class="mf">0.12192370153985427</span>
+        <span class="mi">3</span> <span class="p">,</span>   <span class="mf">1.9890803839332921E-003</span> <span class="p">,</span>  <span class="mf">0.12192370154367714</span>
+        <span class="mi">4</span> <span class="p">,</span>   <span class="mf">2.0003365953782347E-003</span> <span class="p">,</span>  <span class="mf">0.12192370105296366</span>
+        <span class="mi">5</span> <span class="p">,</span>   <span class="mf">1.0012513345730565E-005</span> <span class="p">,</span>  <span class="mf">0.12192370105384057</span>
+        <span class="mi">6</span> <span class="p">,</span>   <span class="mf">9.8580778483004610E-006</span> <span class="p">,</span>  <span class="mf">0.12192370105387422</span>
+        <span class="mi">7</span> <span class="p">,</span>   <span class="mf">9.8873791186356400E-006</span> <span class="p">,</span>  <span class="mf">0.12192370104103692</span>
+        <span class="mi">8</span> <span class="p">,</span>   <span class="mf">2.8162657844481114E-007</span> <span class="p">,</span>  <span class="mf">0.12192370104041715</span>
+        <span class="mi">9</span> <span class="p">,</span>   <span class="mf">1.8986235130117904E-007</span> <span class="p">,</span>  <span class="mf">0.12192370104011624</span>
+        <span class="mi">10</span> <span class="p">,</span>   <span class="mf">1.5464059224802259E-007</span> <span class="p">,</span>  <span class="mf">0.12192370104020522</span>
+        <span class="mi">11</span> <span class="p">,</span>   <span class="mf">1.0357871383178676E-007</span> <span class="p">,</span>  <span class="mf">0.12192370104049430</span>
+        <span class="mi">12</span> <span class="p">,</span>   <span class="mf">1.7166077234971523E-008</span> <span class="p">,</span>  <span class="mf">0.12192370104056582</span>
+        <span class="mi">13</span> <span class="p">,</span>   <span class="mf">5.7005150331804107E-009</span> <span class="p">,</span>  <span class="mf">0.12192370104059483</span>
+        <span class="mi">14</span> <span class="p">,</span>   <span class="mf">5.4702303408328802E-009</span> <span class="p">,</span>  <span class="mf">0.12192370104113985</span>
+        <span class="mi">15</span> <span class="p">,</span>   <span class="mf">6.7558572080945439E-011</span> <span class="p">,</span>  <span class="mf">0.12192370104115086</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>Dispersion.dat</strong></p></li>
+</ul>
+<p>This file is for ploting the phonon dispersion as the file name suggests. Simily we have output files like <code class="docutils literal notranslate"><span class="pre">dos_gauss.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">dos_tet.dat</span></code>, etc for the corresponding plot purposes.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">q</span> <span class="n">point</span> <span class="n">index</span><span class="p">,</span> <span class="n">band1</span><span class="p">,</span> <span class="n">band2</span><span class="p">,</span> <span class="n">band3</span><span class="p">,</span> <span class="o">...</span>
+      <span class="mi">1</span>   <span class="mf">2.9242458690853157E-003</span>   <span class="mf">2.9426593567020258E-003</span>   <span class="mf">2.9426606011758892E-003</span>   <span class="mf">15.200445394847394</span>        <span class="mf">15.200445395546224</span>        <span class="mf">15.200445395547092</span>
+      <span class="mi">2</span>  <span class="mf">0.26453273368343705</span>       <span class="mf">0.29992250241135027</span>       <span class="mf">0.46473813700486238</span>        <span class="mf">15.193704422889539</span>        <span class="mf">15.194830030019409</span>        <span class="mf">15.197208518698289</span>
+      <span class="mi">3</span>  <span class="mf">0.52727363740652622</span>       <span class="mf">0.59778066306805544</span>       <span class="mf">0.92753330396543299</span>        <span class="mf">15.173806732746305</span>        <span class="mf">15.178012413287949</span>        <span class="mf">15.187544762083835</span>
+      <span class="mi">4</span>  <span class="mf">0.78652244152886719</span>       <span class="mf">0.89163644909276552</span>        <span class="mf">1.3865038106147869</span>        <span class="mf">15.141710311252552</span>        <span class="mf">15.150076991747932</span>        <span class="mf">15.171592760596656</span>
+      <span class="mi">5</span>   <span class="mf">1.0406193052774069</span>        <span class="mf">1.1796769554150286</span>        <span class="mf">1.8398093401632922</span>        <span class="mf">15.098953274317608</span>        <span class="mf">15.111161267282284</span>        <span class="mf">15.149577082937030</span>
+              <span class="o">...</span>
+      <span class="mi">298</span>   <span class="mf">3.1829648451308912</span>        <span class="mf">3.2047348694808524</span>        <span class="mf">11.097412640591298</span>        <span class="mf">12.194293467387048</span>        <span class="mf">14.469149408840680</span>        <span class="mf">14.472597987374058</span>
+      <span class="mi">299</span>   <span class="mf">3.1756241291339333</span>        <span class="mf">3.1811019189677405</span>        <span class="mf">11.104582714239395</span>        <span class="mf">12.197751480924026</span>        <span class="mf">14.473360701151645</span>        <span class="mf">14.474226063172505</span>
+      <span class="mi">300</span>   <span class="mf">3.1731715122948594</span>        <span class="mf">3.1731715122953355</span>        <span class="mf">11.106976501294767</span>        <span class="mf">12.198906836802358</span>        <span class="mf">14.474768794358322</span>        <span class="mf">14.474768794359123</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>eigenvalues.dat</strong></p></li>
+</ul>
+<p>This file usually will print nothing unless there are negative eigenvalues a.k.a soft modes.</p>
+<ul class="simple">
+<li><p><strong>GradientF.dat</strong></p></li>
+</ul>
+<p>This file is the history of every variational parameter values and its free energy gradients values at every iteration, the FinalGradientF.dat is just these of the last iteration for convenience, since GradientF.dat is usually a large file with too many iterations.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># the file serves as a logfile, so it&#39;s well printed and self-explainary. It looks like this below:</span>
+<span class="n">current</span> <span class="n">interation</span> <span class="c1">#:           1</span>
+<span class="n">temperature</span><span class="o">=</span>   <span class="mf">40.000000000000000</span>
+<span class="n">F0</span><span class="o">=</span> <span class="p">(</span> <span class="mf">0.12152291457977416</span>     <span class="p">,</span>  <span class="mf">0.0000000000000000</span>     <span class="p">)</span>
+<span class="n">V0</span><span class="o">=</span> <span class="p">(</span>  <span class="mf">6.0941496242618617E-002</span><span class="p">,</span>  <span class="mf">0.0000000000000000</span>     <span class="p">)</span>
+<span class="n">free</span> <span class="n">energy</span><span class="o">=</span>  <span class="mf">0.12192370398307743</span>
+<span class="o">=============</span><span class="n">GradientF</span><span class="p">:</span><span class="n">trial</span> <span class="n">fc2</span><span class="o">====================</span>
+<span class="n">largest</span> <span class="n">gradient</span><span class="o">=</span>    <span class="mf">3.7915793395093544E-004</span>
+<span class="o">||</span><span class="n">Atomic</span> <span class="n">deviation</span> <span class="n">u_tau</span><span class="p">(:)</span><span class="o">||</span>
+                <span class="mi">1</span> <span class="n">x</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">0.0000000000000000</span>       <span class="n">gradient</span><span class="o">=</span>   <span class="mf">2.9773399986220660E-011</span>   <span class="n">FIXED</span>
+                <span class="mi">1</span> <span class="n">y</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">0.0000000000000000</span>       <span class="n">gradient</span><span class="o">=</span>   <span class="mf">2.9774619876295032E-011</span>   <span class="n">FIXED</span>
+                <span class="mi">1</span> <span class="n">z</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">0.0000000000000000</span>       <span class="n">gradient</span><span class="o">=</span>   <span class="mf">2.9774363665769146E-011</span>   <span class="n">FIXED</span>
+                <span class="mi">2</span> <span class="n">x</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">6.4873485806078854E-011</span>  <span class="n">gradient</span><span class="o">=</span>  <span class="o">-</span><span class="mf">2.9773398395431535E-011</span>   <span class="n">FREE</span>
+                <span class="mi">2</span> <span class="n">y</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">6.4873383295777969E-011</span>  <span class="n">gradient</span><span class="o">=</span>  <span class="o">-</span><span class="mf">2.9774613452670168E-011</span>   <span class="n">FREE</span>
+                <span class="mi">2</span> <span class="n">z</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">6.4873468950255914E-011</span>  <span class="n">gradient</span><span class="o">=</span>  <span class="o">-</span><span class="mf">2.9774355445975634E-011</span>   <span class="n">FREE</span>
+<span class="o">||</span><span class="n">Strain</span> <span class="n">Tensor</span><span class="o">||</span>
+<span class="n">xx</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">1.2673966516492396E-003</span>  <span class="n">gradient</span><span class="o">=</span>  <span class="o">-</span><span class="mf">3.7584995895641470E-004</span>   <span class="n">FREE</span>
+<span class="n">xy</span> <span class="n">variable</span><span class="o">=</span>  <span class="o">-</span><span class="mf">4.1761063898985007E-011</span>  <span class="n">gradient</span><span class="o">=</span>  <span class="o">-</span><span class="mf">5.5646293115543233E-011</span>   <span class="n">FREE</span>
+<span class="n">xz</span> <span class="n">variable</span><span class="o">=</span>  <span class="o">-</span><span class="mf">4.1761065621560632E-011</span>  <span class="n">gradient</span><span class="o">=</span>  <span class="o">-</span><span class="mf">5.5646710083691172E-011</span>   <span class="n">FREE</span>
+<span class="n">yx</span> <span class="n">variable</span><span class="o">=</span>  <span class="o">-</span><span class="mf">4.1761063898985007E-011</span>  <span class="n">gradient</span><span class="o">=</span>  <span class="o">-</span><span class="mf">5.5646293115543233E-011</span>   <span class="n">FREE</span>
+<span class="n">yy</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">1.2673966546147906E-003</span>  <span class="n">gradient</span><span class="o">=</span>  <span class="o">-</span><span class="mf">3.7584990147655333E-004</span>   <span class="n">FREE</span>
+<span class="n">yz</span> <span class="n">variable</span><span class="o">=</span>  <span class="o">-</span><span class="mf">4.1761040526752187E-011</span>  <span class="n">gradient</span><span class="o">=</span>  <span class="o">-</span><span class="mf">5.5642905807692281E-011</span>   <span class="n">FREE</span>
+<span class="n">zx</span> <span class="n">variable</span><span class="o">=</span>  <span class="o">-</span><span class="mf">4.1761065621560632E-011</span>  <span class="n">gradient</span><span class="o">=</span>  <span class="o">-</span><span class="mf">5.5646710083691172E-011</span>   <span class="n">FREE</span>
+<span class="n">zy</span> <span class="n">variable</span><span class="o">=</span>  <span class="o">-</span><span class="mf">4.1761040526752187E-011</span>  <span class="n">gradient</span><span class="o">=</span>  <span class="o">-</span><span class="mf">5.5642905807692281E-011</span>   <span class="n">FREE</span>
+<span class="n">zz</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">1.2673966451871321E-003</span>  <span class="n">gradient</span><span class="o">=</span>  <span class="o">-</span><span class="mf">3.7585008745702762E-004</span>   <span class="n">FREE</span>
+<span class="o">||</span><span class="n">Force</span> <span class="n">Constants</span><span class="o">||</span>
+                <span class="mi">1</span> <span class="n">x</span>           <span class="mi">1</span> <span class="n">x</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">13.135477166947316</span>       <span class="n">gradient</span><span class="o">=</span>   <span class="mf">3.7915789332831906E-004</span>   <span class="n">FREE</span>
+                <span class="mi">1</span> <span class="n">y</span>           <span class="mi">1</span> <span class="n">y</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">13.135477166947151</span>       <span class="n">gradient</span><span class="o">=</span>   <span class="mf">3.7915787513753685E-004</span>   <span class="n">FREE</span>
+                <span class="mi">1</span> <span class="n">z</span>           <span class="mi">1</span> <span class="n">z</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">13.135477166951206</span>       <span class="n">gradient</span><span class="o">=</span>   <span class="mf">3.7915793392784281E-004</span>   <span class="n">FREE</span>
+                <span class="mi">2</span> <span class="n">x</span>           <span class="mi">2</span> <span class="n">x</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">13.135477166947448</span>       <span class="n">gradient</span><span class="o">=</span>   <span class="mf">3.7915789326081750E-004</span>   <span class="n">FREE</span>
+                <span class="mi">2</span> <span class="n">y</span>           <span class="mi">2</span> <span class="n">y</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">13.135477166947071</span>       <span class="n">gradient</span><span class="o">=</span>   <span class="mf">3.7915787517572852E-004</span>   <span class="n">FREE</span>
+                <span class="mi">2</span> <span class="n">z</span>           <span class="mi">2</span> <span class="n">z</span> <span class="n">variable</span><span class="o">=</span>   <span class="mf">13.135477166951164</span>       <span class="n">gradient</span><span class="o">=</span>   <span class="mf">3.7915793395093544E-004</span>   <span class="n">FREE</span>
+                <span class="o">...</span>
+<span class="o">...</span>
+<span class="o">...</span>
+<span class="n">current</span> <span class="n">interation</span> <span class="c1">#:           999</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>FinalGradientF.dat</strong></p></li>
+</ul>
+<p>This is basically the last part of the previous file, for a quick look at what the final results are.</p>
+<ul class="simple">
+<li><p><strong>output.txt</strong> and <strong>logfile.txt</strong></p></li>
+</ul>
+<p>These two files contain runtime info that only should be referred when try to debug the code. Otherwise ignore them.</p>
+<ul class="simple">
+<li><p><strong>result.txt</strong></p></li>
+</ul>
+<p>This file contains most post-process results, such as final free energy, gruneisen, specific heat and elastic constants.
+It might look different as more post-process subroutines can be added later on.
+Some thermodynamics properties of interest might also be printed out in result.txt</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">first</span> <span class="n">Unpertubed</span> <span class="n">Free</span> <span class="n">Energy</span> <span class="n">F0</span><span class="o">=</span> <span class="p">(</span> <span class="mf">0.12152291457977416</span>     <span class="p">,</span>  <span class="mf">0.0000000000000000</span>     <span class="p">)</span>
+<span class="n">final</span> <span class="n">translational</span> <span class="n">vector</span> <span class="o">=</span>   <span class="mf">0.0000000000000000</span>        <span class="mf">2.6988099999999999</span>        <span class="mf">2.6988099999999999</span>        <span class="mf">2.6988099999999999</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">2.6988099999999999</span>        <span class="mf">2.6988099999999999</span>        <span class="mf">2.6988099999999999</span>        <span class="mf">0.0000000000000000</span>
+<span class="n">final</span> <span class="n">F0</span> <span class="o">=</span>  <span class="p">(</span> <span class="mf">0.12152325743018681</span>     <span class="p">,</span>  <span class="mf">0.0000000000000000</span>     <span class="p">)</span>
+<span class="n">final</span> <span class="n">Free</span> <span class="n">Energy</span> <span class="n">F</span><span class="o">=</span><span class="n">F0</span><span class="o">+&lt;</span><span class="n">V</span><span class="o">-</span><span class="n">V0</span><span class="o">&gt;</span> <span class="o">=</span>  <span class="p">(</span> <span class="mf">0.12192370104115086</span>     <span class="p">,</span>  <span class="mf">0.0000000000000000</span>     <span class="p">)</span>
+<span class="n">Temperature</span>   <span class="mf">40.000000000000000</span>
+<span class="n">Current</span> <span class="n">Volume</span> <span class="ow">is</span><span class="p">:</span>   <span class="mf">39.464183071187328</span>
+<span class="n">my</span> <span class="n">calculated</span> <span class="n">gruneisen</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.94758846679605901</span>
+<span class="n">my</span> <span class="n">calculated</span> <span class="n">specific</span> <span class="n">heat</span><span class="p">:</span>   <span class="mf">1.4541875815899401</span>
+<span class="n">my</span> <span class="n">calculated</span> <span class="n">bulk</span> <span class="n">modulus</span><span class="p">:</span>  <span class="mf">0.66968252261197314</span>
+<span class="n">calculated</span> <span class="n">beta</span> <span class="o">=</span>   <span class="o">-</span><span class="mf">1.0806246818743969E-006</span>
+<span class="n">elastic</span>
+<span class="o">-</span><span class="mf">7.2854364387643216</span>       <span class="o">-</span><span class="mf">5.3617679414071420</span>       <span class="o">-</span><span class="mf">5.3617679414070265</span>        <span class="mf">8.8636066792102938E-009</span>   <span class="mf">1.2069888990825881E-009</span>   <span class="mf">1.2068871752796343E-009</span>
+<span class="o">-</span><span class="mf">5.3617679414070869</span>       <span class="o">-</span><span class="mf">7.2854364387640818</span>       <span class="o">-</span><span class="mf">5.3617679414068569</span>        <span class="mf">1.2068554253301697E-009</span>   <span class="mf">8.8636579568164597E-009</span>   <span class="mf">1.2068605589486403E-009</span>
+<span class="o">-</span><span class="mf">5.3617679414071437</span>       <span class="o">-</span><span class="mf">5.3617679414070549</span>       <span class="o">-</span><span class="mf">7.2854364387640889</span>        <span class="mf">1.2069699917876204E-009</span>   <span class="mf">1.2069495447408507E-009</span>   <span class="mf">8.8635875559109161E-009</span>
+<span class="o">-</span><span class="mf">8.3631174514409110E-009</span>  <span class="o">-</span><span class="mf">4.7071115546290751E-009</span>  <span class="o">-</span><span class="mf">4.7071123636814083E-009</span>  <span class="o">-</span><span class="mf">14.881121710429831</span>        <span class="mf">1.2393144638154903E-010</span>   <span class="mf">1.2404539918885701E-010</span>
+<span class="o">-</span><span class="mf">4.7070043759087784E-009</span>  <span class="o">-</span><span class="mf">8.3630394947033851E-009</span>  <span class="o">-</span><span class="mf">4.7070017343739520E-009</span>   <span class="mf">1.2392663922588006E-010</span>  <span class="o">-</span><span class="mf">14.881121710429678</span>        <span class="mf">1.2398792816686518E-010</span>
+<span class="o">-</span><span class="mf">4.7071008543127752E-009</span>  <span class="o">-</span><span class="mf">4.7070844606782160E-009</span>  <span class="o">-</span><span class="mf">8.3632129559818321E-009</span>   <span class="mf">1.2406723758800231E-010</span>   <span class="mf">1.2405596603844226E-010</span>  <span class="o">-</span><span class="mf">14.881121710429220</span>
+
+<span class="n">compliance</span>
+<span class="o">-</span><span class="mf">1.3082394889446023</span>       <span class="mf">0.55462664638390591</span>       <span class="mf">0.55462664638388204</span>       <span class="o">-</span><span class="mf">6.8925908783530570E-010</span>   <span class="mf">2.6922679641009340E-010</span>   <span class="mf">2.6922979880380062E-010</span>
+<span class="mf">0.55462664638390735</span>       <span class="o">-</span><span class="mf">1.3082394889446218</span>       <span class="mf">0.55462664638385151</span>        <span class="mf">2.6923738137719943E-010</span>  <span class="o">-</span><span class="mf">6.8925938322747944E-010</span>   <span class="mf">2.6923313072073446E-010</span>
+<span class="mf">0.55462664638388670</span>       <span class="mf">0.55462664638387926</span>       <span class="o">-</span><span class="mf">1.3082394889446018</span>        <span class="mf">2.6922303958373513E-010</span>   <span class="mf">2.6923172291170923E-010</span>  <span class="o">-</span><span class="mf">6.8926030193366936E-010</span>
+<span class="mf">3.8435147375417462E-010</span>  <span class="o">-</span><span class="mf">7.3318969926278909E-011</span>  <span class="o">-</span><span class="mf">7.3318868646515789E-011</span> <span class="o">-</span><span class="mf">0.24081093946118309</span>       <span class="o">-</span><span class="mf">2.0054972257712852E-012</span>  <span class="o">-</span><span class="mf">2.0073412455396363E-012</span>
+<span class="o">-</span><span class="mf">7.3321363602604091E-011</span>   <span class="mf">3.8435273817860167E-010</span>  <span class="o">-</span><span class="mf">7.3321694278298720E-011</span>  <span class="o">-</span><span class="mf">2.0054194348880938E-012</span> <span class="o">-</span><span class="mf">0.24081093946118556</span>       <span class="o">-</span><span class="mf">2.0064112315912288E-012</span>
+<span class="o">-</span><span class="mf">7.3322430162109725E-011</span>  <span class="o">-</span><span class="mf">7.3324482369402487E-011</span>   <span class="mf">3.8436130858012292E-010</span>  <span class="o">-</span><span class="mf">2.0076946413059313E-012</span>  <span class="o">-</span><span class="mf">2.0075122415880799E-012</span> <span class="o">-</span><span class="mf">0.24081093946119300</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p><strong>Explaining code files</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>test.cbp</strong></p></li>
+</ul>
+<p>This is the code::blocks project file that contains dependency and so on, only for Windows.
+It should be ignored unless you need to modify the code files on Windows using the code::blocks IDE.</p>
+<ul class="simple">
+<li><p><strong>main.f95</strong></p></li>
+</ul>
+<p>This is the main program file, read the comments, lots of lines of codes can be turned on or off for multiple-purpose calculations by users.</p>
+<ul class="simple">
+<li><p><strong>Broyden.f95</strong></p></li>
+</ul>
+<p>This is the root finding module that utilizes Broyden’s method.</p>
+<ul class="simple">
+<li><p><strong>check.f90</strong></p></li>
+</ul>
+<p>This contains several test subroutines, including free energy landscape calculations, but mostly can be deprecated.</p>
+<ul class="simple">
+<li><p><strong>ConjugateGradient.f90</strong></p></li>
+</ul>
+<p>This is the root finding module that utilizes conjugate gradient method, currently not in use and may need to be modified before it can be compatible with the current version of SCOP8 main code.</p>
+<ul class="simple">
+<li><p><strong>DFT_force_constants.f95</strong></p></li>
+</ul>
+<p>This declare force constants objects, allocate them and read info from fc#.dat files.</p>
+<ul class="simple">
+<li><p><strong>extratools.f90</strong></p></li>
+</ul>
+<p>This is the legacy code contains various utility functions.</p>
+<ul class="simple">
+<li><p><strong>force_constants.f90</strong></p></li>
+</ul>
+<p>Legacy codes that mostly from FOCEX. Crucial for the input read.</p>
+<ul class="simple">
+<li><p><strong>force_update.f90</strong></p></li>
+</ul>
+<p>This is a module written in 2020 summer mostly contains updating scheme subroutines(which are based on wrong methodology), the useful subroutines for now are those with ASR checking and ASR fixing. This file may be deprecated in the future and integrated into other files.</p>
+<ul class="simple">
+<li><p><strong>Fourier_force_constants.f95</strong></p></li>
+</ul>
+<p>This is a small module that mainly used for Fourier transform force constants.</p>
+<ul class="simple">
+<li><p><strong>geometry.f95</strong></p></li>
+</ul>
+<p>This file contains various constants, math operation interfaces, etc.</p>
+<ul class="simple">
+<li><p><strong>Iteration_parameters.f95</strong></p></li>
+</ul>
+<p>This file is linked with the input file <code class="docutils literal notranslate"><span class="pre">control.params</span></code>. It also declare variational parameters, allocate and initialize them, while reading important parameters such as loop control, temperature, etc from <code class="docutils literal notranslate"><span class="pre">control.params</span></code>.</p>
+<ul class="simple">
+<li><p><strong>kp_1d.f90</strong></p></li>
+</ul>
+<p>This is legacy code that relates with k mesh, should be combined into other module in the future.</p>
+<ul class="simple">
+<li><p><strong>MatrixDiagonalize.f90</strong></p></li>
+</ul>
+<p>This file contains modified legacy code that performs matrix diagonalization.</p>
+<ul class="simple">
+<li><p><strong>mods9.f90</strong> &amp; <strong>others3_nshells.f90</strong></p></li>
+</ul>
+<p>Legacy codes compilation.</p>
+<ul class="simple">
+<li><p><strong>modules_tetra.f90</strong></p></li>
+</ul>
+<p>This is a module for tetrahedron method k mesh generation.</p>
+<ul class="simple">
+<li><p><strong>Structure_info.f95</strong></p></li>
+</ul>
+<p>This file declares atom and structure related object, allocate and initialize them, also read parameters from legacy input files lat_fc.dat, params.inp, etc.</p>
+<ul class="simple">
+<li><p><strong>VA_math.f95</strong></p></li>
+</ul>
+<p>This is the major code file that contains an important module for variational approach, contains subroutines for free energy and its gradients calculation and many others.
+The new and old math regarding whether to couple <span class="math notranslate nohighlight">\(\eta\)</span> with &lt;yy&gt; can be switched between subroutine ‘GetV_avg_And_GradientV_avg2’ and ‘GetV_avg_And_GradientV_avg’</p>
+<ul class="simple">
+<li><p><strong>Files dependency</strong></p></li>
+</ul>
+<p>In order for users to have a general idea of how the code files are connected, below is a file dependency chart for reference.</p>
+<a class="reference internal image-reference" href="_images/SCOP8_Dependencies.png"><img alt="_images/SCOP8_Dependencies.png" src="_images/SCOP8_Dependencies.png" style="width: 1000px;" />
+</a>
+</div></blockquote>
+</li>
+</ul>
+</section>
+<section id="example">
+<h2><span class="section-number">7.3. </span>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
+<p>As an example run, dump all the files from <code class="docutils literal notranslate"><span class="pre">input_sample</span></code> into the folder that has all the code files.</p>
+<ul class="simple">
+<li><p><strong>Run code in Linux</strong></p></li>
+</ul>
+<p>Type <code class="docutils literal notranslate"><span class="pre">make</span></code> in terminal for the code to compile. After compilation, type <code class="docutils literal notranslate"><span class="pre">mpiexec</span> <span class="pre">-np</span> <span class="pre">X</span> <span class="pre">./out.exe</span></code>, replace X by an integer, it means how many cores you want the code running on. Genrally a large number will significantly accelerate the computation speed but turns out to be more unstable.</p>
+<ul>
+<li><p><strong>Run code in Windows(updated)</strong></p>
+<blockquote>
+<div><p>1.Install Visual Studio Code <a class="reference external" href="https://code.visualstudio.com/download">download here</a>.  This is strongly recommended as it is most commonly used and supported ‘all-in-one’ code development environment for Windows by Microsoft community. Coding in C++, Python, Java, Fortran,…etc can be switched to and from with one click inside the IDE. VScode can also be integrated with Git, MinGW bash, WSL for Linux subsystem, SSH-remote connection, Jupyter Notebook, PDF Reader and more via powerful optional extensions.</p>
+<p>2.Install the latest MinGW <a class="reference external" href="https://sourceforge.net/projects/mingw/">download here</a>.  Assume this is installed on C drive and beware that you may later need to download extra package via ‘mingw-get’, which is located in C:MinGWbinmingw-get.exe</p>
+<p>3.Add MinGW to the system environment by:  Open control panel &gt; system advanced settings &gt; add path of “C:MinGW”, see below</p>
+<a class="reference internal image-reference" href="_images/how.jpg"><img alt="_images/how.jpg" src="_images/how.jpg" style="width: 1000px;" />
+</a>
+<p>4.Setup Fortran environment with VScode:</p>
+<blockquote>
+<div><ul>
+<li><p>Install ‘Modern Fortran’ extension <a class="reference external" href="https://marketplace.visualstudio.com/items?itemName=fortran-lang.linter-gfortran">download here</a>.  or press <cite>Ctrl+Shift+X</cite> in VScode and search for ‘Modern Fortran’. There are also some useful extensions such as ‘TODO Highlight’</p></li>
+<li><p>Integrate msys bash(1.0) for compiling and running the code (assuming you installed MinGW in C:MinGW):</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Create a file <cite>Run_MSYS.bat</cite> in C:MinGWmsys1.0, copy and paste the script below into the file</p></li>
+</ul>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="nv">@rem</span> <span class="k">Do</span> <span class="n">not</span> <span class="n">use</span> <span class="s2">&quot;echo off&quot;</span> <span class="n">to</span> <span class="n">not</span> <span class="n">affect</span> <span class="n">any</span> <span class="n">child</span> <span class="n">calls</span><span class="p">.</span>
+<span class="nv">@SETLOCAL</span>
+<span class="nv">@SETLOCAL</span> <span class="n">ENABLEEXTENSIONS</span>
+
+<span class="p">::</span> <span class="n">Figure</span> <span class="n">out</span> <span class="nb">where </span><span class="n">msys</span><span class="s1">&#39;s root folder. If you want, you could just add the folder in the line</span>
+<span class="s1">:: below.</span>
+<span class="s1">@set MSYSROOT=</span>
+<span class="s1">@if &quot;x%MSYSROOT%&quot;==&quot;x&quot; @if exist &quot;%~dp0msys.bat&quot; @set MSYSROOT=%~dp0</span>
+<span class="s1">@if &quot;x%MSYSROOT%&quot;==&quot;x&quot; @if exist &quot;%~dp0.msys-root&quot; @set /P MSYSROOT=&lt;%~dp0.msys-root</span>
+<span class="s1">@if &quot;x%MSYSROOT%&quot;==&quot;x&quot; (</span>
+<span class="s1">@echo Could not locate your mysys root folder.</span>
+<span class="s1">@set /P MSYSROOT=Location:</span>
+<span class="s1">)</span>
+<span class="s1">:: Read as MSYSROOT.trim()</span>
+<span class="s1">@if not &quot;x%MSYSROOT%&quot;==&quot;x&quot; (</span>
+<span class="s1">@for /f &quot;tokens=* delims= &quot; %%a in (&quot;%MSYSROOT%&quot;) do @set MSYSROOT=%%a</span>
+<span class="s1">@for /f &quot;useback tokens=*&quot; %%a in (&#39;</span><span class="k">%</span><span class="n">MSYSROOT</span><span class="p">%</span><span class="s1">&#39;) do @set MSYSROOT=%%~a</span>
+<span class="s1">@if not &quot;%MSYSROOT:~-1%&quot;==&quot;\&quot; @set MSYSROOT=%MSYSROOT%\</span>
+<span class="s1">)</span>
+<span class="s1">:: Verify that root folder exists</span>
+<span class="s1">@if not exist &quot;%MSYSROOT%&quot; (</span>
+<span class="s1">@echo &quot;%MSYSROOT%&quot; is not a valid folder. Please check for .msys-root in %~dp0, or if you entered the path above, please rerun this script and select a valid folder.</span>
+<span class="s1">@exit /B 1</span>
+<span class="s1">) else (</span>
+<span class="s1">@if not &quot;%MSYSROOT%&quot;==&quot;%~dp0&quot; @echo %MSYSROOT%&gt;%~dp0.msys-root</span>
+<span class="s1">)</span>
+
+<span class="s1">:: Home Folder</span>
+<span class="s1">:: If you&#39;</span><span class="n">d</span> <span class="n">prefer</span> <span class="n">the</span> <span class="n">home</span> <span class="n">directory</span> <span class="nb">set </span><span class="n">to</span> <span class="n">your</span> <span class="n">C</span><span class="p">:\</span><span class="n">Users</span><span class="p">\</span><span class="n">Username</span> <span class="n">folder</span><span class="p">,</span> <span class="n">uncomment</span> <span class="n">the</span> <span class="n">two</span> <span class="n">lines</span>
+<span class="p">::</span> <span class="n">below</span><span class="p">.</span>
+<span class="nv">@rem</span> <span class="nv">@if</span> <span class="n">not</span> <span class="n">exist</span> <span class="s2">&quot;%HOME%&quot;</span> <span class="nv">@set</span> <span class="n">HOME</span><span class="p">=</span><span class="k">%</span><span class="n">HOMEDRIVE</span><span class="p">%</span><span class="k">%</span><span class="n">HOMEPATH</span><span class="p">%</span>
+<span class="nv">@rem</span> <span class="nv">@if</span> <span class="n">not</span> <span class="n">exist</span> <span class="s2">&quot;%HOME%&quot;</span> <span class="nv">@set</span> <span class="n">HOME</span><span class="p">=</span><span class="k">%</span><span class="n">USERPROFILE</span><span class="p">%</span>
+<span class="nv">@if</span> <span class="n">not</span> <span class="n">exist</span> <span class="s2">&quot;%HOME%&quot;</span> <span class="nv">@if</span> <span class="n">not</span> <span class="s2">&quot;%MSYSROOT%&quot;</span><span class="p">==</span><span class="s2">&quot;&quot;</span> <span class="nv">@set</span> <span class="n">HOME</span><span class="p">=</span><span class="k">%</span><span class="n">MSYSROOT</span><span class="k">%</span><span class="n">home</span><span class="p">\</span><span class="k">%</span><span class="n">USERNAME</span><span class="p">%</span>
+<span class="nv">@if</span> <span class="n">not</span> <span class="s2">&quot;x%WD%&quot;</span><span class="p">==</span><span class="s2">&quot;x&quot;</span> <span class="nv">@set</span> <span class="n">WD</span><span class="p">=</span>
+<span class="nv">@set</span> <span class="n">PLINK_PROTOCOL</span><span class="p">=</span><span class="n">ssh</span>
+<span class="nv">@if</span> <span class="n">not</span> <span class="n">exist</span> <span class="s2">&quot;%WD%msys-1.0.dll&quot;</span> <span class="nv">@set</span> <span class="n">WD</span><span class="p">=</span><span class="k">%</span><span class="n">MSYSROOT</span><span class="p">%\</span><span class="n">bin</span><span class="p">\</span>
+<span class="nv">@set</span> <span class="n">MSYSCON</span><span class="p">=</span><span class="n">sh</span><span class="p">.</span><span class="n">exe</span>
+
+<span class="p">::</span> <span class="k">Default</span> <span class="n">action</span><span class="p">,</span> <span class="n">open</span> <span class="n">msys</span> <span class="n">and</span> <span class="n">go</span> <span class="n">to</span> <span class="n">the</span> <span class="n">current</span> <span class="n">folder</span><span class="p">.</span>
+<span class="nv">@set</span> <span class="n">OLDCD</span><span class="p">=</span><span class="k">%</span><span class="n">CD</span><span class="p">%</span>
+<span class="nv">@if</span> <span class="n">not</span> <span class="s2">&quot;x%OLDCD%&quot;</span><span class="p">==</span><span class="s2">&quot;x&quot;</span> <span class="nv">@set</span> <span class="n">CURRCD</span><span class="p">=</span><span class="k">%</span><span class="n">CD</span><span class="p">%</span>
+<span class="p">::</span> <span class="n">Get</span> <span class="n">the</span> <span class="n">current</span> <span class="n">console</span> <span class="p">(</span><span class="s2">&quot;OEM&quot;</span><span class="p">)</span> <span class="n">codepage</span><span class="p">.</span>
+<span class="nv">@for</span> <span class="p">/</span><span class="n">f</span> <span class="p">%</span><span class="k">%</span><span class="n">i</span> <span class="k">in</span> <span class="p">(</span><span class="s1">&#39;&quot;%MSYSROOT%bin\getcp.exe&quot; -oem&#39;</span><span class="p">)</span> <span class="k">do</span> <span class="nv">@set</span> <span class="n">cp_oem</span><span class="p">=%</span><span class="k">%</span><span class="n">i</span>
+<span class="p">::</span> <span class="n">Get</span> <span class="n">the</span> <span class="n">current</span> <span class="n">GUI</span> <span class="p">(</span><span class="s2">&quot;ANSI&quot;</span><span class="p">)</span> <span class="n">codepage</span><span class="p">.</span>
+<span class="nv">@for</span> <span class="p">/</span><span class="n">f</span> <span class="p">%</span><span class="k">%</span><span class="n">i</span> <span class="k">in</span> <span class="p">(</span><span class="s1">&#39;&quot;%MSYSROOT%bin\getcp.exe&quot; -ansi&#39;</span><span class="p">)</span> <span class="k">do</span> <span class="nv">@set</span> <span class="n">cp_ansi</span><span class="p">=%</span><span class="k">%</span><span class="n">i</span>
+<span class="p">::</span> <span class="nb">Set </span><span class="n">the</span> <span class="n">console</span> <span class="n">codepage</span> <span class="n">to</span> <span class="n">match</span> <span class="n">the</span> <span class="n">GUI</span> <span class="n">codepage</span><span class="p">.</span>
+<span class="nv">@chcp</span> <span class="k">%</span><span class="n">cp_ansi</span><span class="p">%</span> <span class="p">&gt;</span> <span class="n">nul</span> <span class="p">&lt;</span> <span class="n">nul</span>
+<span class="nv">@if</span> <span class="n">not</span> <span class="s2">&quot;x%OLDCD%&quot;</span><span class="p">==</span><span class="s2">&quot;x&quot;</span> <span class="p">(</span>
+<span class="p">@</span><span class="s2">&quot;%MSYSROOT%bin\bash.exe&quot;</span> <span class="n">-l</span> <span class="n">-i</span> <span class="n">-c</span> <span class="s2">&quot;cd \&quot;</span><span class="nv">$CURRCD</span><span class="p">\</span><span class="s2">&quot;; exec /bin/bash -rcfile ~/.bash_profile&quot;</span>
+<span class="p">)</span> <span class="k">else</span> <span class="p">(</span>
+<span class="p">@</span><span class="s2">&quot;%MSYSROOT%bin\bash.exe&quot;</span> <span class="n">-l</span>
+<span class="p">)</span>
+<span class="p">::</span> <span class="n">Store</span> <span class="n">the</span> <span class="n">error</span> <span class="n">level</span> <span class="n">returned</span> <span class="n">by</span> <span class="n">bash</span><span class="p">.</span>
+<span class="nv">@set</span> <span class="n">ErrorLevel</span><span class="p">=</span><span class="k">%</span><span class="n">ErrorLevel</span><span class="p">%</span>
+<span class="p">::</span> <span class="n">Restore</span> <span class="n">the</span> <span class="n">original</span> <span class="n">console</span> <span class="n">codepage</span><span class="p">.</span>
+<span class="nv">@chcp</span> <span class="k">%</span><span class="n">cp_oem</span><span class="p">%</span> <span class="p">&gt;</span> <span class="n">nul</span> <span class="p">&lt;</span> <span class="n">nul</span>
+<span class="p">::</span> <span class="k">If</span> <span class="n">we</span> <span class="n">had</span> <span class="n">a</span> <span class="n">current</span> <span class="n">directory</span> <span class="n">at</span> <span class="n">the</span> <span class="n">store</span> <span class="n">of</span> <span class="n">the</span> <span class="n">script</span><span class="p">,</span> <span class="n">go</span> <span class="n">back</span> <span class="n">to</span> <span class="n">it</span><span class="p">.</span>
+<span class="nv">@if</span> <span class="n">not</span> <span class="s2">&quot;x%OLDCD%&quot;</span><span class="p">==</span><span class="s2">&quot;x&quot;</span> <span class="nb">chdir </span><span class="p">/</span><span class="n">D</span> <span class="s2">&quot;%OLDCD%&quot;</span>
+
+<span class="p">::</span> <span class="n">quit</span> <span class="n">script</span> <span class="n">with</span> <span class="n">the</span> <span class="n">current</span> <span class="n">error</span> <span class="n">level</span><span class="p">.</span>
+<span class="nv">@exit</span> <span class="p">/</span><span class="n">b</span> <span class="k">%</span><span class="n">ErrorLevel</span><span class="p">%</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Download <cite>getcp.exe</cite>  <a class="reference external" href="https://github.com/msysgit/msysgit/tree/master/mingw/bin">download here</a>.  and put it into C:MinGWmsys1.0bin</p></li>
+<li><p>Open VScode and press <cite>Ctral+Shift+P</cite>, type ‘setting’ and find the ‘Open User Setting(JSON)’ to open the <cite>settings.json</cite> file, add following lines</p></li>
+</ul>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;terminal.integrated.automationProfile.linux&quot;</span><span class="p">:</span> <span class="n">null</span><span class="p">,</span>
+<span class="s2">&quot;terminal.integrated.automationProfile.windows&quot;</span><span class="p">:</span> <span class="n">null</span><span class="p">,</span>
+<span class="s2">&quot;terminal.explorerKind&quot;</span><span class="p">:</span> <span class="s2">&quot;both&quot;</span><span class="p">,</span>
+<span class="s2">&quot;terminal.external.windowsExec&quot;</span><span class="p">:</span> <span class="s2">&quot;C:\\MinGW\\msys\\1.0\\bin\\sh.exe&quot;</span><span class="p">,</span>
+<span class="s2">&quot;terminal.integrated.profiles.windows&quot;</span><span class="p">:</span> <span class="p">{</span>
+
+        <span class="s2">&quot;PowerShell&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;PowerShell&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;icon&quot;</span><span class="p">:</span> <span class="s2">&quot;terminal-powershell&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;Command Prompt&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span>
+                        <span class="s2">&quot;${env:windir}\\Sysnative\\cmd.exe&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;${env:windir}\\System32\\cmd.exe&quot;</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                <span class="s2">&quot;icon&quot;</span><span class="p">:</span> <span class="s2">&quot;terminal-cmd&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;Git Bash&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;Git Bash&quot;</span>
+        <span class="p">},</span>
+
+        <span class="s2">&quot;msys&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">[</span>
+                        <span class="s2">&quot;C:\\MinGW\\msys\\1.0\\Run_MSYS.bat&quot;</span>
+                <span class="p">],</span>
+        <span class="p">}</span>
+<span class="p">},</span>
+<span class="s2">&quot;explorer.sortOrder&quot;</span><span class="p">:</span> <span class="s2">&quot;type&quot;</span><span class="p">,</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<p>5.Setup for MPI in Windows follow the steps  <a class="reference external" href="https://abhila.sh/writing/3/mpi_instructions.html">here</a>.</p>
+<p>6.Compile and Run the code:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Open ‘Developer Command Prompt for VS 2022’, direct to the SCOP8 folder on your local machine</p></li>
+<li><p>Type <cite>code .</cite> NOTICE: this should be the only way to open VScode</p></li>
+<li><p>Press ` Ctrl+Shift+` ` to open the terminal window (remember to select ‘msys’ in the dropdown menu since the default terminal is windows powershell). If previous steps are executed correctly, the terminal should be opened in current directory, where you can input following command to compile and run the code.</p></li>
+</ul>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">gfortran</span> <span class="n">-c</span> <span class="n">constants</span><span class="p">.</span><span class="n">f90</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">geometry</span><span class="p">.</span><span class="n">f95</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">force_constants</span><span class="p">.</span><span class="n">f90</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">zhegv</span><span class="p">.</span><span class="n">f</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">mods9</span><span class="p">.</span><span class="n">f90</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">MatrixDiagonalize</span><span class="p">.</span><span class="n">f90</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">modules_tetra</span><span class="p">.</span><span class="n">f90</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">extratools</span><span class="p">.</span><span class="n">f90</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">Structure_info</span><span class="p">.</span><span class="n">f95</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">DFT_force_constants</span><span class="p">.</span><span class="n">f95</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">kp_1d</span><span class="p">.</span><span class="n">f90</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">others3_nshells</span><span class="p">.</span><span class="n">f90</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">Fourier_force_constants</span><span class="p">.</span><span class="n">f95</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">Iteration_parameters</span><span class="p">.</span><span class="n">f95</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">mpi_params</span><span class="p">.</span><span class="n">f95</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">Broyden</span><span class="p">.</span><span class="n">f95</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">VA_math</span><span class="p">.</span><span class="n">f95</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">force_update</span><span class="p">.</span><span class="n">f90</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">check</span><span class="p">.</span><span class="n">f90</span>
+
+<span class="n">gfortran</span> <span class="n">-c</span> <span class="n">ConjugateGradient</span><span class="p">.</span><span class="n">f90</span>
+
+<span class="n">ar</span> <span class="n">rcs</span> <span class="n">libAll</span><span class="p">.</span><span class="n">a</span> <span class="p">*.</span><span class="n">o</span>
+
+<span class="n">gfortran</span> <span class="n">-o</span> <span class="n">out</span><span class="p">.</span><span class="n">exe</span> <span class="n">main</span><span class="p">.</span><span class="n">f95</span> <span class="n">-IC</span><span class="p">:</span><span class="s1">&#39;\lib\mpi\include&#39;</span> <span class="n">-LC</span><span class="p">:</span><span class="s1">&#39;\lib\mpi\lib&#39;</span> <span class="n">-lmsmpi</span> <span class="n">libAll</span><span class="p">.</span><span class="n">a</span> <span class="n">libmsmpi</span><span class="p">.</span><span class="n">a</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Execute use ‘mpiexec’, for example, if want to use 4 processes, input below (X is as stated above)</p></li>
+</ul>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">mpiexec</span> <span class="n">-np</span> <span class="n">X</span> <span class="p">./</span><span class="n">out</span><span class="p">.</span><span class="n">exe</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div></blockquote>
+</li>
+</ul>
+<p>I do not recommend using this code in Windows environment, although it is developed in Windows.</p>
+<ul class="simple">
+<li><p><strong>Ge Example Results</strong></p></li>
+</ul>
+<p>This is done with the sample input files for 2-atom cell Ge, and should be consistent with or directly using some of the FOCEX results.</p>
+<p>Below are all the computation results from finite temperature 10K to 900K.</p>
+<table class="docutils align-default" id="id6">
+<caption><span class="caption-text">Ge free energy and more at finite temperature computation using SCOP8</span><a class="headerlink" href="#id6" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 5.3%" />
+<col style="width: 6.6%" />
+<col style="width: 6.6%" />
+<col style="width: 6.6%" />
+<col style="width: 6.6%" />
+<col style="width: 6.6%" />
+<col style="width: 6.6%" />
+<col style="width: 6.6%" />
+<col style="width: 6.6%" />
+<col style="width: 6.6%" />
+<col style="width: 7.9%" />
+<col style="width: 5.3%" />
+<col style="width: 7.9%" />
+<col style="width: 7.9%" />
+<col style="width: 6.6%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Temperature</p></th>
+<th class="head"><p>eta</p></th>
+<th class="head"><p>Volume</p></th>
+<th class="head"><p>Gruneisen</p></th>
+<th class="head"><p>Bulk</p></th>
+<th class="head"><p>Beta</p></th>
+<th class="head"><p>Elastic_C11</p></th>
+<th class="head"><p>Elastic_C12</p></th>
+<th class="head"><p>Elastic_C44</p></th>
+<th class="head"><p>SpecificHeat</p></th>
+<th class="head"><p>approx. LTE from eta</p></th>
+<th class="head"><p>Beta/3</p></th>
+<th class="head"><p>Bulk from my_bulk</p></th>
+<th class="head"><p>Bulk from C formula</p></th>
+<th class="head"><p>Beta_new</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td><p>0.00E+00</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>10</p></td>
+<td><p>8.63E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-0.4481168885</p></td>
+<td><p>0.5484096126</p></td>
+<td><p>-3.50E-08</p></td>
+<td><p>131.67567</p></td>
+<td><p>6.89E+01</p></td>
+<td><p>3.72E+01</p></td>
+<td><p>9.58E-02</p></td>
+<td></td>
+<td><p>-1.17E-08</p></td>
+<td><p>8.79E+01</p></td>
+<td><p>89.36319268</p></td>
+<td><p>-3.44E-08</p></td>
+</tr>
+<tr class="row-even"><td><p>15</p></td>
+<td><p>8.63E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-0.6841150614</p></td>
+<td><p>0.5484125659</p></td>
+<td><p>-2.59E-07</p></td>
+<td><p>131.6758</p></td>
+<td><p>6.89E+01</p></td>
+<td><p>3.72E+01</p></td>
+<td><p>4.65E-01</p></td>
+<td></td>
+<td></td>
+<td><p>8.79E+01</p></td>
+<td><p>89.3633061</p></td>
+<td><p>-2.55E-07</p></td>
+</tr>
+<tr class="row-odd"><td><p>20</p></td>
+<td><p>8.62E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-0.7887742581</p></td>
+<td><p>0.5482510542</p></td>
+<td><p>-7.68E-07</p></td>
+<td><p>131.67517</p></td>
+<td><p>6.89E+01</p></td>
+<td><p>3.72E+01</p></td>
+<td><p>1.19345843</p></td>
+<td><p>-2.67E-07</p></td>
+<td><p>-2.56E-07</p></td>
+<td><p>8.78E+01</p></td>
+<td><p>89.28357934</p></td>
+<td><p>-7.55E-07</p></td>
+</tr>
+<tr class="row-even"><td><p>25</p></td>
+<td><p>8.61E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-0.7679261455</p></td>
+<td><p>0.5484226435</p></td>
+<td><p>-1.33E-06</p></td>
+<td><p>131.67461</p></td>
+<td><p>6.88E+01</p></td>
+<td><p>3.72E+01</p></td>
+<td><p>2.124211684</p></td>
+<td><p>-4.95E-07</p></td>
+<td><p>-4.43E-07</p></td>
+<td><p>8.79E+01</p></td>
+<td><p>89.3606233</p></td>
+<td><p>-1.31E-06</p></td>
+</tr>
+<tr class="row-odd"><td><p>30</p></td>
+<td><p>8.58E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-0.739197637</p></td>
+<td><p>0.548430308</p></td>
+<td><p>-1.87E-06</p></td>
+<td><p>131.67299</p></td>
+<td><p>6.88E+01</p></td>
+<td><p>3.72E+01</p></td>
+<td><p>3.100204446</p></td>
+<td><p>-6.64E-07</p></td>
+<td><p>-6.23E-07</p></td>
+<td><p>8.79E+01</p></td>
+<td><p>89.35723348</p></td>
+<td><p>-1.84E-06</p></td>
+</tr>
+<tr class="row-even"><td><p>35</p></td>
+<td><p>8.55E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-0.6923446957</p></td>
+<td><p>0.548442812</p></td>
+<td><p>-2.28E-06</p></td>
+<td><p>131.67136</p></td>
+<td><p>6.88E+01</p></td>
+<td><p>3.72E+01</p></td>
+<td><p>4.047691629</p></td>
+<td><p>-7.41E-07</p></td>
+<td><p>-7.62E-07</p></td>
+<td><p>8.79E+01</p></td>
+<td><p>89.35361448</p></td>
+<td><p>-2.25E-06</p></td>
+</tr>
+<tr class="row-odd"><td><p>40</p></td>
+<td><p>8.51E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-0.6315039103</p></td>
+<td><p>0.5484513368</p></td>
+<td><p>-2.55E-06</p></td>
+<td><p>131.66858</p></td>
+<td><p>6.88E+01</p></td>
+<td><p>3.72E+01</p></td>
+<td><p>4.951309303</p></td>
+<td><p>-7.22E-07</p></td>
+<td><p>-8.50E-07</p></td>
+<td><p>8.79E+01</p></td>
+<td><p>89.34800317</p></td>
+<td><p>-2.51E-06</p></td>
+</tr>
+<tr class="row-even"><td><p>45</p></td>
+<td><p>8.47E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-0.5600888994</p></td>
+<td><p>0.54846009</p></td>
+<td><p>-2.66E-06</p></td>
+<td><p>131.66586</p></td>
+<td><p>6.88E+01</p></td>
+<td><p>3.72E+01</p></td>
+<td><p>5.82024839</p></td>
+<td><p>-6.73E-07</p></td>
+<td><p>-8.86E-07</p></td>
+<td><p>8.79E+01</p></td>
+<td><p>89.34249679</p></td>
+<td><p>-2.61E-06</p></td>
+</tr>
+<tr class="row-odd"><td><p>50</p></td>
+<td><p>8.42E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-0.481988088</p></td>
+<td><p>0.5484610592</p></td>
+<td><p>-2.62E-06</p></td>
+<td><p>131.66189</p></td>
+<td><p>6.88E+01</p></td>
+<td><p>3.72E+01</p></td>
+<td><p>6.667396969</p></td>
+<td><p>-6.07E-07</p></td>
+<td><p>-8.73E-07</p></td>
+<td><p>8.79E+01</p></td>
+<td><p>89.33498794</p></td>
+<td><p>-2.58E-06</p></td>
+</tr>
+<tr class="row-even"><td><p>55</p></td>
+<td><p>8.39E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-0.4012310197</p></td>
+<td><p>0.548457608</p></td>
+<td><p>-2.45E-06</p></td>
+<td><p>131.65805</p></td>
+<td><p>6.88E+01</p></td>
+<td><p>3.72E+01</p></td>
+<td><p>7.501718845</p></td>
+<td><p>-4.98E-07</p></td>
+<td><p>-8.18E-07</p></td>
+<td><p>8.79E+01</p></td>
+<td><p>89.32791534</p></td>
+<td><p>-2.41E-06</p></td>
+</tr>
+<tr class="row-odd"><td><p>60</p></td>
+<td><p>8.35E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-0.3213350532</p></td>
+<td><p>0.5484430933</p></td>
+<td><p>-2.18E-06</p></td>
+<td><p>131.65284</p></td>
+<td><p>6.88E+01</p></td>
+<td><p>3.72E+01</p></td>
+<td><p>8.326218899</p></td>
+<td><p>-3.83E-07</p></td>
+<td><p>-7.27E-07</p></td>
+<td><p>8.79E+01</p></td>
+<td><p>89.31876214</p></td>
+<td><p>-2.15E-06</p></td>
+</tr>
+<tr class="row-even"><td><p>65</p></td>
+<td><p>8.32E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-0.2448441402</p></td>
+<td><p>0.5484206226</p></td>
+<td><p>-1.82E-06</p></td>
+<td><p>131.64783</p></td>
+<td><p>6.88E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>9.139661087</p></td>
+<td><p>-2.36E-07</p></td>
+<td><p>-6.08E-07</p></td>
+<td><p>8.79E+01</p></td>
+<td><p>89.31034086</p></td>
+<td><p>-1.79E-06</p></td>
+</tr>
+<tr class="row-odd"><td><p>70</p></td>
+<td><p>8.29E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-1.73E-01</p></td>
+<td><p>0.5483850365</p></td>
+<td><p>-1.41E-06</p></td>
+<td><p>131.64134</p></td>
+<td><p>6.87E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>9.938046134</p></td>
+<td><p>-9.35E-08</p></td>
+<td><p>-4.68E-07</p></td>
+<td><p>8.79E+01</p></td>
+<td><p>89.29971859</p></td>
+<td><p>-1.38E-06</p></td>
+</tr>
+<tr class="row-even"><td><p>75</p></td>
+<td><p>8.28E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-1.08E-01</p></td>
+<td><p>0.5483394431</p></td>
+<td><p>-9.43E-07</p></td>
+<td><p>131.63516</p></td>
+<td><p>6.87E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>10.71653439</p></td>
+<td><p>7.31E-07</p></td>
+<td><p>-3.14E-07</p></td>
+<td><p>8.79E+01</p></td>
+<td><p>89.2901096</p></td>
+<td><p>-9.28E-07</p></td>
+</tr>
+<tr class="row-odd"><td><p>80</p></td>
+<td><p>8.27E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>-5.01E-02</p></td>
+<td><p>0.5481170117</p></td>
+<td><p>-4.69E-07</p></td>
+<td><p>131.39221</p></td>
+<td><p>6.88E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>11.47032902</p></td>
+<td><p>1.35E-06</p></td>
+<td><p>-1.56E-07</p></td>
+<td><p>8.78E+01</p></td>
+<td><p>89.19966524</p></td>
+<td><p>-4.62E-07</p></td>
+</tr>
+<tr class="row-even"><td><p>85</p></td>
+<td><p>8.27E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>4.79E-03</p></td>
+<td><p>0.5482096683</p></td>
+<td><p>4.76E-08</p></td>
+<td><p>131.62007</p></td>
+<td><p>6.87E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>12.19541512</p></td>
+<td><p>1.81E-06</p></td>
+<td><p>1.59E-08</p></td>
+<td><p>8.78E+01</p></td>
+<td><p>89.26750656</p></td>
+<td><p>4.68E-08</p></td>
+</tr>
+<tr class="row-odd"><td><p>90</p></td>
+<td><p>8.27E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>5.26E-02</p></td>
+<td><p>0.5481256321</p></td>
+<td><p>5.53E-07</p></td>
+<td><p>131.61109</p></td>
+<td><p>6.87E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>12.88878969</p></td>
+<td><p>2.15E-06</p></td>
+<td><p>1.84E-07</p></td>
+<td><p>8.78E+01</p></td>
+<td><p>89.2543674</p></td>
+<td><p>5.44E-07</p></td>
+</tr>
+<tr class="row-even"><td><p>95</p></td>
+<td><p>8.29E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>9.52E-02</p></td>
+<td><p>0.5480309535</p></td>
+<td><p>1.05E-06</p></td>
+<td><p>131.6027</p></td>
+<td><p>6.86E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>13.54842992</p></td>
+<td><p>2.42E-06</p></td>
+<td><p>3.51E-07</p></td>
+<td><p>8.78E+01</p></td>
+<td><p>89.24279829</p></td>
+<td><p>1.04E-06</p></td>
+</tr>
+<tr class="row-odd"><td><p>100</p></td>
+<td><p>8.31E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.1334017055</p></td>
+<td><p>0.5479232223</p></td>
+<td><p>1.54E-06</p></td>
+<td><p>131.5926</p></td>
+<td><p>6.86E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>14.1733765</p></td>
+<td><p>2.63E-06</p></td>
+<td><p>5.14E-07</p></td>
+<td><p>8.78E+01</p></td>
+<td><p>89.22859455</p></td>
+<td><p>1.52E-06</p></td>
+</tr>
+<tr class="row-even"><td><p>150</p></td>
+<td><p>8.94E-04</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.3526021711</p></td>
+<td><p>0.5463150781</p></td>
+<td><p>5.39E-06</p></td>
+<td><p>131.47523</p></td>
+<td><p>6.84E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>18.67313495</p></td>
+<td><p>2.80E-06</p></td>
+<td><p>1.80E-06</p></td>
+<td><p>8.75E+01</p></td>
+<td><p>89.0794465</p></td>
+<td><p>5.29E-06</p></td>
+</tr>
+<tr class="row-odd"><td><p>200</p></td>
+<td><p>1.00E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.4391991685</p></td>
+<td><p>5.44E-01</p></td>
+<td><p>7.58E-06</p></td>
+<td><p>131.32818</p></td>
+<td><p>6.82E+01</p></td>
+<td><p>3.74E+01</p></td>
+<td><p>21.00961504</p></td>
+<td><p>2.94E-06</p></td>
+<td><p>2.53E-06</p></td>
+<td><p>8.72E+01</p></td>
+<td><p>88.90431128</p></td>
+<td><p>7.44E-06</p></td>
+</tr>
+<tr class="row-even"><td><p>250</p></td>
+<td><p>1.14E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.4810731993</p></td>
+<td><p>5.41E-01</p></td>
+<td><p>8.86E-06</p></td>
+<td><p>131.16838</p></td>
+<td><p>6.79E+01</p></td>
+<td><p>3.74E+01</p></td>
+<td><p>22.28955929</p></td>
+<td><p>3.27E-06</p></td>
+<td><p>2.95E-06</p></td>
+<td><p>8.67E+01</p></td>
+<td><p>88.72175503</p></td>
+<td><p>8.66E-06</p></td>
+</tr>
+<tr class="row-odd"><td><p>300</p></td>
+<td><p>1.30E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.5331419931</p></td>
+<td><p>0.5385197293</p></td>
+<td><p>1.02E-05</p></td>
+<td><p>130.99661</p></td>
+<td><p>6.77E+01</p></td>
+<td><p>3.74E+01</p></td>
+<td><p>23.04733631</p></td>
+<td><p>3.47E-06</p></td>
+<td><p>3.40E-06</p></td>
+<td><p>8.63E+01</p></td>
+<td><p>88.52682158</p></td>
+<td><p>9.94E-06</p></td>
+</tr>
+<tr class="row-even"><td><p>350</p></td>
+<td><p>1.47E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.5213073677</p></td>
+<td><p>0.5355080548</p></td>
+<td><p>1.02E-05</p></td>
+<td><p>130.82272</p></td>
+<td><p>6.74E+01</p></td>
+<td><p>3.74E+01</p></td>
+<td><p>23.52727334</p></td>
+<td><p>3.62E-06</p></td>
+<td><p>3.41E-06</p></td>
+<td><p>8.58E+01</p></td>
+<td><p>88.3342433</p></td>
+<td><p>9.95E-06</p></td>
+</tr>
+<tr class="row-odd"><td><p>400</p></td>
+<td><p>1.64E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.5338407529</p></td>
+<td><p>0.5323888177</p></td>
+<td><p>1.07E-05</p></td>
+<td><p>130.64057</p></td>
+<td><p>6.71E+01</p></td>
+<td><p>3.74E+01</p></td>
+<td><p>23.84853655</p></td>
+<td><p>3.73E-06</p></td>
+<td><p>3.56E-06</p></td>
+<td><p>8.53E+01</p></td>
+<td><p>88.13104494</p></td>
+<td><p>1.03E-05</p></td>
+</tr>
+<tr class="row-even"><td><p>450</p></td>
+<td><p>1.82E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.5410411737</p></td>
+<td><p>0.5292028116</p></td>
+<td><p>1.10E-05</p></td>
+<td><p>130.46035</p></td>
+<td><p>6.69E+01</p></td>
+<td><p>3.74E+01</p></td>
+<td><p>24.07322697</p></td>
+<td><p>3.83E-06</p></td>
+<td><p>3.67E-06</p></td>
+<td><p>8.48E+01</p></td>
+<td><p>87.93457448</p></td>
+<td><p>1.06E-05</p></td>
+</tr>
+<tr class="row-odd"><td><p>500</p></td>
+<td><p>2.01E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.5474596268</p></td>
+<td><p>0.5259463365</p></td>
+<td><p>1.13E-05</p></td>
+<td><p>130.27228</p></td>
+<td><p>6.66E+01</p></td>
+<td><p>3.74E+01</p></td>
+<td><p>24.23625244</p></td>
+<td><p>3.90E-06</p></td>
+<td><p>3.76E-06</p></td>
+<td><p>8.43E+01</p></td>
+<td><p>87.7266281</p></td>
+<td><p>1.08E-05</p></td>
+</tr>
+<tr class="row-even"><td><p>550</p></td>
+<td><p>2.20E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.5531118165</p></td>
+<td><p>0.5226546753</p></td>
+<td><p>1.15E-05</p></td>
+<td><p>130.08848</p></td>
+<td><p>6.64E+01</p></td>
+<td><p>3.74E+01</p></td>
+<td><p>24.35801535</p></td>
+<td><p>3.97E-06</p></td>
+<td><p>3.84E-06</p></td>
+<td><p>8.37E+01</p></td>
+<td><p>87.52840224</p></td>
+<td><p>1.10E-05</p></td>
+</tr>
+<tr class="row-odd"><td><p>600</p></td>
+<td><p>2.39E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.5574023146</p></td>
+<td><p>0.519304411</p></td>
+<td><p>1.17E-05</p></td>
+<td><p>129.89625</p></td>
+<td><p>6.61E+01</p></td>
+<td><p>3.74E+01</p></td>
+<td><p>24.45134171</p></td>
+<td><p>4.04E-06</p></td>
+<td><p>3.91E-06</p></td>
+<td><p>8.32E+01</p></td>
+<td><p>87.31707761</p></td>
+<td><p>1.12E-05</p></td>
+</tr>
+<tr class="row-even"><td><p>650</p></td>
+<td><p>2.59E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.561818001</p></td>
+<td><p>0.5159373958</p></td>
+<td><p>1.19E-05</p></td>
+<td><p>129.71006</p></td>
+<td><p>6.59E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>24.52431144</p></td>
+<td><p>4.00E-06</p></td>
+<td><p>3.98E-06</p></td>
+<td><p>8.27E+01</p></td>
+<td><p>87.118005</p></td>
+<td><p>1.13E-05</p></td>
+</tr>
+<tr class="row-odd"><td><p>700</p></td>
+<td><p>2.79E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.5655035883</p></td>
+<td><p>0.512513449</p></td>
+<td><p>1.21E-05</p></td>
+<td><p>129.51446</p></td>
+<td><p>6.56E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>24.58248391</p></td>
+<td><p>3.99E-06</p></td>
+<td><p>4.04E-06</p></td>
+<td><p>8.21E+01</p></td>
+<td><p>86.903926</p></td>
+<td><p>1.15E-05</p></td>
+</tr>
+<tr class="row-even"><td><p>750</p></td>
+<td><p>3.00E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.5689788496</p></td>
+<td><p>0.509086543</p></td>
+<td><p>1.23E-05</p></td>
+<td><p>129.32648</p></td>
+<td><p>6.53E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>24.62951401</p></td>
+<td><p>3.99E-06</p></td>
+<td><p>4.10E-06</p></td>
+<td><p>8.16E+01</p></td>
+<td><p>86.70444611</p></td>
+<td><p>1.16E-05</p></td>
+</tr>
+<tr class="row-odd"><td><p>800</p></td>
+<td><p>3.20E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.5723864668</p></td>
+<td><p>0.5054382475</p></td>
+<td><p>1.25E-05</p></td>
+<td><p>128.89391</p></td>
+<td><p>6.52E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>24.66812955</p></td>
+<td><p>3.99E-06</p></td>
+<td><p>4.16E-06</p></td>
+<td><p>8.10E+01</p></td>
+<td><p>86.40987962</p></td>
+<td><p>1.17E-05</p></td>
+</tr>
+<tr class="row-even"><td><p>850</p></td>
+<td><p>3.41E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.5755337678</p></td>
+<td><p>0.5021212156</p></td>
+<td><p>1.27E-05</p></td>
+<td><p>128.93846</p></td>
+<td><p>6.48E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>24.70015099</p></td>
+<td><p>4.00E-06</p></td>
+<td><p>4.22E-06</p></td>
+<td><p>8.04E+01</p></td>
+<td><p>86.28826934</p></td>
+<td><p>1.18E-05</p></td>
+</tr>
+<tr class="row-odd"><td><p>900</p></td>
+<td><p>3.62E-03</p></td>
+<td><p>46.35325703</p></td>
+<td><p>0.5787399793</p></td>
+<td><p>0.4984155442</p></td>
+<td><p>1.28E-05</p></td>
+<td><p>128.50335</p></td>
+<td><p>6.47E+01</p></td>
+<td><p>3.73E+01</p></td>
+<td><p>24.72705301</p></td>
+<td><p>4.00E-06</p></td>
+<td><p>4.28E-06</p></td>
+<td><p>7.99E+01</p></td>
+<td><p>85.99149908</p></td>
+<td><p>1.19E-05</p></td>
+</tr>
+</tbody>
+</table>
+<p>Below is a sample phonon dispersion plot for Ge at 80K</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="_images/SCOP8_Ge_phonon.png"><img alt="_images/SCOP8_Ge_phonon.png" src="_images/SCOP8_Ge_phonon.png" style="width: 1000px;" />
+</a>
+</div></blockquote>
+<p>Below is a graph for multiple thermodynamics properties computations using SCOP8 at different temperatures.</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="_images/SCOP8_merge_thermo.jpg"><img alt="_images/SCOP8_merge_thermo.jpg" src="_images/SCOP8_merge_thermo.jpg" style="width: 1000px;" />
+</a>
+</div></blockquote>
+<p>Below is a free energy landscape plot of 2 stress tensors variables, with additional pressure switched off and on at a finite temperature, using SCOP8.</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="_images/SCOP8_merge_contour.jpg"><img alt="_images/SCOP8_merge_contour.jpg" src="_images/SCOP8_merge_contour.jpg" style="width: 1000px;" />
+</a>
+</div></blockquote>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="runthermacond.html" class="btn btn-neutral float-left" title="6. Running THERMACOND" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="faq.html" class="btn btn-neutral float-right" title="8. FAQ" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, University of Virginia.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

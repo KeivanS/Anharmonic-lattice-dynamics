@@ -1,0 +1,443 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5. Running FOCEX &mdash; ALADYN 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="6. Running THERMACOND" href="runthermacond.html" />
+    <link rel="prev" title="4. Installation" href="install.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ALADYN
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">2. Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">3. Download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">4. Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">5. Running FOCEX</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#preliminaries">5.1. Preliminaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#workflow-of-focex">5.2. Workflow of FOCEX</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description-of-input-and-output-files">5.3. Description of input and output files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-of-running-focex">5.4. Example of Running FOCEX</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ge">Ge</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="runthermacond.html">6. Running THERMACOND</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscop8.html">7. Running SCOP8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">8. FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ALADYN</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">5. </span>Running FOCEX</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/runfocex.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="running-focex">
+<h1><span class="section-number">5. </span>Running FOCEX<a class="headerlink" href="#running-focex" title="Link to this heading"></a></h1>
+<section id="preliminaries">
+<h2><span class="section-number">5.1. </span>Preliminaries<a class="headerlink" href="#preliminaries" title="Link to this heading"></a></h2>
+<p>The input to FOCEX is a set of foce-displacement files, outputs of DFT calculation of supercells in which atoms have moved according to some scheme. There is a separate file for each supercell shape. Typically users use only one supercell, like 3x3x3, but you can generate more. The needed files by FOCEX are called <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> and <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> if there is only one supercell shape, otherwise you will also have <code class="docutils literal notranslate"><span class="pre">POSCAR2</span></code> and <code class="docutils literal notranslate"><span class="pre">FORCEDISP2</span></code>, etc…
+These files are generated using the utility <code class="docutils literal notranslate"><span class="pre">sc_snaps.x</span></code> which has 3 input files. <code class="docutils literal notranslate"><span class="pre">cell.inp</span></code> contains the information on atoms in the primitive or conventional cell. <code class="docutils literal notranslate"><span class="pre">supercell.inp</span></code> contains the three translation vectors of the supercell in terms of those of the primitive cell as defined in <code class="docutils literal notranslate"><span class="pre">cell.inp</span></code>. Finally in <code class="docutils literal notranslate"><span class="pre">snaps.inp</span></code> the user specifies the temperature for canonical sampling, a typical frequency scale and the number of required snapshots (typically, depending on the size of the supercell, and the number of required force constants 10 to 50 should be enough).
+1-Run <cite>sc_snaps.x</cite> to generate the needed <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code> files corresponding to each snapshot. They have the standard VASP format. After running VASP on each of these files, you collect a bunch of <code class="docutils literal notranslate"><span class="pre">OUTCAR</span></code> files, which you can rename <code class="docutils literal notranslate"><span class="pre">outcar1</span></code>, <code class="docutils literal notranslate"><span class="pre">outcar2</span></code>, … <code class="docutils literal notranslate"><span class="pre">outcarn</span></code>.
+2-Run <code class="docutils literal notranslate"><span class="pre">xtract.sh</span></code> script to generate the <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> file which will be used by FOCEX. The <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> file contains the equilibrium atomic coordinates (force=0) in the supercell.</p>
+<p>Before running FOCEX you also need to prepare its other input files: <code class="docutils literal notranslate"><span class="pre">default.params</span></code> (you need it but don’t have to touch it), <code class="docutils literal notranslate"><span class="pre">structure.params</span></code>, <code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code> containing the dielectric tensor and Born effective charges, <code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code> containing the k-point paths for phonon band structure calculation, <code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code> for density of states and thermodynamic properties calculations. Example are provided, and explanation of each line is in the file itself.</p>
+<p>The  workflow of the FOCEX code is shown below to give a general understanding of how the code is structured and executed</p>
+</section>
+<section id="workflow-of-focex">
+<h2><span class="section-number">5.2. </span>Workflow of FOCEX<a class="headerlink" href="#workflow-of-focex" title="Link to this heading"></a></h2>
+<p>The  workflow of the FOCEX code is shown below to give a general understanding of how the code is structured and executed as a black box. Many of the intermediate steps in this process flow may even not be necessary to actually run the code. The one which are important are highlighted on the workflow diagram and are later explained in detail.</p>
+<a class="reference internal image-reference" href="_images/WorkFlow-FOCEX-Website.svg"><img alt="_images/WorkFlow-FOCEX-Website.svg" class="align-center" src="_images/WorkFlow-FOCEX-Website.svg" style="width: 600px;" />
+</a>
+<p>General steps for running FOCEX to get the force constants are given below:</p>
+</section>
+<section id="description-of-input-and-output-files">
+<h2><span class="section-number">5.3. </span>Description of input and output files<a class="headerlink" href="#description-of-input-and-output-files" title="Link to this heading"></a></h2>
+<ul>
+<li><p><strong>Preparing FOCEX data files</strong></p>
+<blockquote>
+<div><blockquote>
+<div><p>FOCEX code accepts DFT force displacement files prepared by any software like VASP, or Quantum Espresso. We provide utility tools to extract forces and displacements in a supercell from VASP OUTCAR or Quantum Espresso output files. All the generated displacement-force data for each atomic snapshot are concatenated into a single file called FORCEDISP1. The equilibrium atomic positions in the supercell should be in a file called POSCAR1 which has the exact format of the VASP POSCAR file except atom type name. For example if the <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code> file for Ge is this</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Ge8</span>
+<span class="mf">1.0</span>
+<span class="mf">5.6748542148543777</span>    <span class="mf">0.0000000000000000</span>    <span class="mf">0.0000000000000003</span>
+<span class="mf">0.0000000000000009</span>    <span class="mf">5.6748542148543777</span>    <span class="mf">0.0000000000000003</span>
+<span class="mf">0.0000000000000000</span>    <span class="mf">0.0000000000000000</span>    <span class="mf">5.6748542148543777</span>
+<span class="n">Ge</span>
+<span class="mi">8</span>
+<span class="n">direct</span>
+<span class="mf">0.0000000000000000</span>    <span class="mf">0.0000000000000000</span>    <span class="mf">0.5000000000000000</span>
+<span class="mf">0.2500000000000000</span>    <span class="mf">0.2500000000000000</span>    <span class="mf">0.7500000000000000</span>
+<span class="mf">0.0000000000000000</span>    <span class="mf">0.5000000000000000</span>    <span class="mf">0.0000000000000000</span>
+<span class="mf">0.2500000000000000</span>    <span class="mf">0.7500000000000000</span>    <span class="mf">0.2500000000000000</span>
+<span class="mf">0.5000000000000000</span>    <span class="mf">0.0000000000000000</span>    <span class="mf">0.0000000000000000</span>
+<span class="mf">0.7500000000000000</span>    <span class="mf">0.2500000000000000</span>    <span class="mf">0.2500000000000000</span>
+<span class="mf">0.5000000000000000</span>    <span class="mf">0.5000000000000000</span>    <span class="mf">0.5000000000000000</span>
+<span class="mf">0.7500000000000000</span>    <span class="mf">0.7500000000000000</span>    <span class="mf">0.7500000000000000</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Then <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> file is this:</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Ge8</span>
+<span class="mf">1.0</span>
+<span class="mf">5.6748542148543777</span>    <span class="mf">0.0000000000000000</span>    <span class="mf">0.0000000000000003</span>
+<span class="mf">0.0000000000000009</span>    <span class="mf">5.6748542148543777</span>    <span class="mf">0.0000000000000003</span>
+<span class="mf">0.0000000000000000</span>    <span class="mf">0.0000000000000000</span>    <span class="mf">5.6748542148543777</span>
+<span class="mi">8</span>
+<span class="n">direct</span>
+<span class="mf">0.0000000000000000</span>    <span class="mf">0.0000000000000000</span>    <span class="mf">0.5000000000000000</span>
+<span class="mf">0.2500000000000000</span>    <span class="mf">0.2500000000000000</span>    <span class="mf">0.7500000000000000</span>
+<span class="mf">0.0000000000000000</span>    <span class="mf">0.5000000000000000</span>    <span class="mf">0.0000000000000000</span>
+<span class="mf">0.2500000000000000</span>    <span class="mf">0.7500000000000000</span>    <span class="mf">0.2500000000000000</span>
+<span class="mf">0.5000000000000000</span>    <span class="mf">0.0000000000000000</span>    <span class="mf">0.0000000000000000</span>
+<span class="mf">0.7500000000000000</span>    <span class="mf">0.2500000000000000</span>    <span class="mf">0.2500000000000000</span>
+<span class="mf">0.5000000000000000</span>    <span class="mf">0.5000000000000000</span>    <span class="mf">0.5000000000000000</span>
+<span class="mf">0.7500000000000000</span>    <span class="mf">0.7500000000000000</span>    <span class="mf">0.7500000000000000</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div></blockquote>
+<p>If there are other supercells, the equilibrium positions and displacement-force data should be stored in POSCAR2 and FORCEDISP2 … etc. The detailed description of the <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> file is given in the example section <a class="reference internal" href="#example-focex"><span class="std std-ref">Ge</span></a></p>
+</div></blockquote>
+</li>
+</ul>
+<details class="summary-utility-tool">
+<summary>utility tool</summary><p>To prepare the <code class="docutils literal notranslate"><span class="pre">FORCEDISPi</span></code> file there is a shell script inside <code class="docutils literal notranslate"><span class="pre">utility</span></code> folder.  The shell script <code class="docutils literal notranslate"><span class="pre">process_dft.sh</span></code> executes the <code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code> and <code class="docutils literal notranslate"><span class="pre">read_qe.x</span></code> binary to generate force-displacement file for VASP and QE respectively.</p>
+</details><ul>
+<li><p><strong>Preparing input files</strong></p>
+<blockquote>
+<div><p>The input file(s) required to run FOCEX are <code class="docutils literal notranslate"><span class="pre">structure.params</span></code>, <code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code>, <code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code>, <code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code>, <code class="docutils literal notranslate"><span class="pre">defaults.params</span></code>, <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> and <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code>.</p>
+</div></blockquote>
+</li>
+</ul>
+<details class="summary-structure-params">
+<summary>structure.params</summary><p>something about structure.params file</p>
+</details><details class="summary-dielectric-params">
+<summary>dielectric.params</summary><p>something about dielectric.params file</p>
+</details><details class="summary-kpbs-params">
+<summary>kpbs.params</summary><p>something about kpbs.params file</p>
+</details><details class="summary-defaults-params">
+<summary>defaults.params</summary><p>something about defaults.params file</p>
+</details><details class="summary-latdyn-params">
+<summary>latdyn.params</summary><p>something about latdyn.params file</p>
+</details><details class="summary-poscar1">
+<summary>POSCAR1</summary><p>something about POSCAR1</p>
+</details><details class="summary-forcedisp1">
+<summary>FORCEDISP1</summary><p>The format of this file is : First line is a comment and should contain “ # POSITION …”, second line should contain an integer followed by the total energy of the supercell snapshot in eV. Units for positions or displacements should be in Angstrom, and forces in eV/Ang.</p>
+</details><details class="summary-kpbs-params">
+<summary>kpbs.params</summary><p>The first line contains a flag. If 0, the kpoints are given in reduced units of the primitive vectors of the reciprocal space, else they should be in reduced coordinates of the conventional lattice vectors of the reciprocal space. The second line contains the number of kpoints along each direction, The third line contains the number of direction paths. The following lines contain the name of the special point followed by the 3 reduced components of the special kpoint in units of primitive (if flag=0) or conventional (if flag is non-zero) vectors of the reciprocal lattice.</p>
+<p><code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="mi">30</span> <span class="c1"># number of kpoints along each direction</span>
+<span class="mi">4</span>  <span class="c1"># number of directions</span>
+<span class="n">G</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
+<span class="n">K</span> <span class="mf">0.75</span> <span class="mf">0.75</span> <span class="mi">0</span>
+<span class="n">X</span> <span class="mi">1</span> <span class="mi">1</span> <span class="mi">0</span>
+<span class="n">G</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
+<span class="n">L</span> <span class="mf">0.5</span> <span class="mf">0.5</span> <span class="mf">0.5</span>
+</pre></div>
+</div>
+</details><ul>
+<li><p><strong>output files</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p>fc1.dat and fc2_irr.dat</p></li>
+<li><p>fc2.dat and fc2_irr.dat</p></li>
+<li><p>fc3.dat and fc3_irr.dat</p></li>
+<li><p>lat_fc.xyz</p></li>
+<li><p>log***.dat</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</section>
+<section id="example-of-running-focex">
+<h2><span class="section-number">5.4. </span>Example of Running FOCEX<a class="headerlink" href="#example-of-running-focex" title="Link to this heading"></a></h2>
+<section id="ge">
+<span id="example-focex"></span><h3>Ge<a class="headerlink" href="#ge" title="Link to this heading"></a></h3>
+<p>FOrce Constant Extraction (FOCEX) is a code to extract force constants from force-displacements data, the output of which can be used as input to the following codes.
+The installation of FOCEX has to be done before using it and is given in section <a class="reference internal" href="install.html#focex-install"><span class="std std-ref">FOCEX</span></a>. This code, FOCEX (FOrce Constant EXtraction) included in ALATDYN (Anharmonic LATtice DYNamics) employs the
+force constant calculation, 2nd, 3rd and 4th order to be latter used for other thermodynamical properties. The installation of FOCEX is simple and just require the
+fortran compiler.</p>
+<p>An example of <strong>Ge</strong> is provided inside <strong>FOCEX/example</strong> which contains the needed input files described above, and the FOCEX output. In this
+calculation a single Ge atom in the 2x2x2 Ge supercell (64 atoms) is displaced by 4% to evaluate the forces. The force-displacement data is stored in <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> file.
+The equilibrium coordinates are in <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> in the older VASP POSCAR format as below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Ge8</span> <span class="c1"># this is a comment</span>
+<span class="mf">1.0</span>  <span class="c1"># scale factor</span>
+<span class="mf">11.5257244110</span>         <span class="mf">0.0000000000</span>         <span class="mf">0.0000000000</span>  <span class="c1"># supercell</span>
+<span class="mf">0.0000000000</span>        <span class="mf">11.5257244110</span>         <span class="mf">0.0000000000</span>
+<span class="mf">0.0000000000</span>         <span class="mf">0.0000000000</span>        <span class="mf">11.5257244110</span>
+<span class="mi">64</span>  <span class="c1"># number of atoms in the supercell</span>
+<span class="n">Cartesian</span>
+<span class="mf">2.881431103</span>         <span class="mf">0.000000000</span>         <span class="mf">2.881431103</span>
+<span class="mf">2.881431103</span>         <span class="mf">0.000000000</span>         <span class="mf">8.644293308</span>
+<span class="mf">2.881431103</span>         <span class="mf">5.762862206</span>         <span class="mf">2.881431103</span>
+<span class="mf">2.881431103</span>         <span class="mf">5.762862206</span>         <span class="mf">8.644293308</span>
+<span class="mf">8.644293308</span>         <span class="mf">0.000000000</span>         <span class="mf">2.881431103</span>
+<span class="mf">8.644293308</span>         <span class="mf">0.000000000</span>         <span class="mf">8.644293308</span>
+<span class="mf">8.644293308</span>         <span class="mf">5.762862206</span>         <span class="mf">2.881431103</span>
+<span class="mf">8.644293308</span>         <span class="mf">5.762862206</span>         <span class="mf">8.644293308</span>
+<span class="mf">1.440715551</span>         <span class="mf">1.440715551</span>         <span class="mf">1.440715551</span>
+<span class="mf">1.440715551</span>         <span class="mf">1.440715551</span>         <span class="mf">7.203577757</span>
+<span class="mf">1.440715551</span>         <span class="mf">7.203577757</span>         <span class="mf">1.440715551</span>
+<span class="mf">1.440715551</span>         <span class="mf">7.203577757</span>         <span class="mf">7.203577757</span>
+<span class="mf">7.203577757</span>         <span class="mf">1.440715551</span>         <span class="mf">1.440715551</span>
+<span class="mf">7.203577757</span>         <span class="mf">1.440715551</span>         <span class="mf">7.203577757</span>
+<span class="mf">7.203577757</span>         <span class="mf">7.203577757</span>         <span class="mf">1.440715551</span>
+<span class="mf">7.203577757</span>         <span class="mf">7.203577757</span>         <span class="mf">7.203577757</span>
+<span class="mf">2.881431103</span>         <span class="mf">2.881431103</span>         <span class="mf">0.000000000</span>
+<span class="mf">2.881431103</span>         <span class="mf">2.881431103</span>         <span class="mf">5.762862206</span>
+<span class="mf">2.881431103</span>         <span class="mf">8.644293308</span>         <span class="mf">0.000000000</span>
+<span class="mf">2.881431103</span>         <span class="mf">8.644293308</span>         <span class="mf">5.762862206</span>
+<span class="mf">8.644293308</span>         <span class="mf">2.881431103</span>         <span class="mf">0.000000000</span>
+<span class="mf">8.644293308</span>         <span class="mf">2.881431103</span>         <span class="mf">5.762862206</span>
+<span class="mf">8.644293308</span>         <span class="mf">8.644293308</span>         <span class="mf">0.000000000</span>
+<span class="mf">8.644293308</span>         <span class="mf">8.644293308</span>         <span class="mf">5.762862206</span>
+<span class="mf">1.440715551</span>         <span class="mf">4.322146654</span>         <span class="mf">4.322146654</span>
+<span class="mf">1.440715551</span>         <span class="mf">4.322146654</span>        <span class="mf">10.085008860</span>
+<span class="mf">1.440715551</span>        <span class="mf">10.085008860</span>         <span class="mf">4.322146654</span>
+<span class="mf">1.440715551</span>        <span class="mf">10.085008860</span>        <span class="mf">10.085008860</span>
+<span class="mf">7.203577757</span>         <span class="mf">4.322146654</span>         <span class="mf">4.322146654</span>
+<span class="mf">7.203577757</span>         <span class="mf">4.322146654</span>        <span class="mf">10.085008860</span>
+<span class="mf">7.203577757</span>        <span class="mf">10.085008860</span>         <span class="mf">4.322146654</span>
+<span class="mf">7.203577757</span>        <span class="mf">10.085008860</span>        <span class="mf">10.085008860</span>
+<span class="mf">0.000000000</span>         <span class="mf">0.000000000</span>         <span class="mf">0.000000000</span>
+<span class="mf">0.000000000</span>         <span class="mf">0.000000000</span>         <span class="mf">5.762862206</span>
+<span class="mf">0.000000000</span>         <span class="mf">5.762862206</span>         <span class="mf">0.000000000</span>
+<span class="mf">0.000000000</span>         <span class="mf">5.762862206</span>         <span class="mf">5.762862206</span>
+<span class="mf">5.762862206</span>         <span class="mf">0.000000000</span>         <span class="mf">0.000000000</span>
+<span class="mf">5.762862206</span>         <span class="mf">0.000000000</span>         <span class="mf">5.762862206</span>
+<span class="mf">5.762862206</span>         <span class="mf">5.762862206</span>         <span class="mf">0.000000000</span>
+<span class="mf">5.762862206</span>         <span class="mf">5.762862206</span>         <span class="mf">5.762862206</span>
+<span class="mf">4.322146654</span>         <span class="mf">1.440715551</span>         <span class="mf">4.322146654</span>
+<span class="mf">4.322146654</span>         <span class="mf">1.440715551</span>        <span class="mf">10.085008860</span>
+<span class="mf">4.322146654</span>         <span class="mf">7.203577757</span>         <span class="mf">4.322146654</span>
+<span class="mf">4.322146654</span>         <span class="mf">7.203577757</span>        <span class="mf">10.085008860</span>
+<span class="mf">10.085008860</span>         <span class="mf">1.440715551</span>         <span class="mf">4.322146654</span>
+<span class="mf">10.085008860</span>         <span class="mf">1.440715551</span>        <span class="mf">10.085008860</span>
+<span class="mf">10.085008860</span>         <span class="mf">7.203577757</span>         <span class="mf">4.322146654</span>
+<span class="mf">10.085008860</span>         <span class="mf">7.203577757</span>        <span class="mf">10.085008860</span>
+<span class="mf">0.000000000</span>         <span class="mf">2.881431103</span>         <span class="mf">2.881431103</span>
+<span class="mf">0.000000000</span>         <span class="mf">2.881431103</span>         <span class="mf">8.644293308</span>
+<span class="mf">0.000000000</span>         <span class="mf">8.644293308</span>         <span class="mf">2.881431103</span>
+<span class="mf">0.000000000</span>         <span class="mf">8.644293308</span>         <span class="mf">8.644293308</span>
+<span class="mf">5.762862206</span>         <span class="mf">2.881431103</span>         <span class="mf">2.881431103</span>
+<span class="mf">5.762862206</span>         <span class="mf">2.881431103</span>         <span class="mf">8.644293308</span>
+<span class="mf">5.762862206</span>         <span class="mf">8.644293308</span>         <span class="mf">2.881431103</span>
+<span class="mf">5.762862206</span>         <span class="mf">8.644293308</span>         <span class="mf">8.644293308</span>
+<span class="mf">4.322146654</span>         <span class="mf">4.322146654</span>         <span class="mf">1.440715551</span>
+<span class="mf">4.322146654</span>         <span class="mf">4.322146654</span>         <span class="mf">7.203577757</span>
+<span class="mf">4.322146654</span>        <span class="mf">10.085008860</span>         <span class="mf">1.440715551</span>
+<span class="mf">4.322146654</span>        <span class="mf">10.085008860</span>         <span class="mf">7.203577757</span>
+<span class="mf">10.085008860</span>         <span class="mf">4.322146654</span>         <span class="mf">1.440715551</span>
+<span class="mf">10.085008860</span>         <span class="mf">4.322146654</span>         <span class="mf">7.203577757</span>
+<span class="mf">10.085008860</span>        <span class="mf">10.085008860</span>         <span class="mf">1.440715551</span>
+<span class="mf">10.085008860</span>        <span class="mf">10.085008860</span>         <span class="mf">7.203577757</span>
+</pre></div>
+</div>
+<p>Here, only the type of atom is not present in <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> as compared to the new format of VASP POSCAR file. Similarly, <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> is a force-displacement data format
+accepted by FOCEX code and its format for example in the case of Ge is given below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># POSITION (ang)     TOTAL FORCE (eV/Ang)</span>
+   <span class="mi">1</span>       <span class="o">-</span><span class="mf">289.18629538</span> <span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">Etot</span><span class="p">(</span><span class="n">eV</span><span class="p">)</span>     <span class="c1"># snapshot #1</span>
+ <span class="mf">2.8929600000000000</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">2.8814299999999999</span>      <span class="o">-</span><span class="mf">0.11758299999999999</span>       <span class="o">-</span><span class="mf">0.0000000000000000</span>       <span class="o">-</span><span class="mf">0.0000000000000000</span>
+ <span class="mf">2.8814299999999999</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">4.9600000000000002E-004</span>  <span class="o">-</span><span class="mf">0.0000000000000000</span>       <span class="o">-</span><span class="mf">0.0000000000000000</span>
+ <span class="mf">2.8814299999999999</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">4.9600000000000002E-004</span>  <span class="o">-</span><span class="mf">0.0000000000000000</span>       <span class="o">-</span><span class="mf">0.0000000000000000</span>
+ <span class="mf">2.8814299999999999</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">8.6442899999999998</span>       <span class="o">-</span><span class="mf">4.5640000000000003E-003</span>  <span class="o">-</span><span class="mf">0.0000000000000000</span>       <span class="o">-</span><span class="mf">0.0000000000000000</span>
+ <span class="mf">8.6442899999999998</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">3.2899999999999997E-004</span>  <span class="o">-</span><span class="mf">0.0000000000000000</span>       <span class="o">-</span><span class="mf">0.0000000000000000</span>
+ <span class="mf">8.6442899999999998</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">8.6442899999999998</span>       <span class="o">-</span><span class="mf">1.5699999999999999E-004</span>  <span class="o">-</span><span class="mf">0.0000000000000000</span>       <span class="o">-</span><span class="mf">0.0000000000000000</span>
+ <span class="mf">8.6442899999999998</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">2.8814299999999999</span>       <span class="o">-</span><span class="mf">1.5699999999999999E-004</span>  <span class="o">-</span><span class="mf">0.0000000000000000</span>       <span class="o">-</span><span class="mf">0.0000000000000000</span>
+ <span class="mf">8.6442899999999998</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">2.6699999999999998E-004</span>  <span class="o">-</span><span class="mf">0.0000000000000000</span>       <span class="o">-</span><span class="mf">0.0000000000000000</span>
+ <span class="mf">1.4407200000000000</span>        <span class="mf">1.4407200000000000</span>        <span class="mf">1.4407200000000000</span>        <span class="mf">2.8677000000000001E-002</span>  <span class="o">-</span><span class="mf">1.9474999999999999E-002</span>   <span class="mf">1.9474999999999999E-002</span>
+ <span class="mf">1.4407200000000000</span>        <span class="mf">1.4407200000000000</span>        <span class="mf">7.2035799999999997</span>       <span class="o">-</span><span class="mf">4.8099999999999998E-004</span>  <span class="o">-</span><span class="mf">7.1400000000000001E-004</span>   <span class="mf">3.2800000000000000E-004</span>
+ <span class="mf">1.4407200000000000</span>        <span class="mf">7.2035799999999997</span>        <span class="mf">1.4407200000000000</span>       <span class="o">-</span><span class="mf">4.8099999999999998E-004</span>  <span class="o">-</span><span class="mf">3.2800000000000000E-004</span>   <span class="mf">7.1400000000000001E-004</span>
+ <span class="mf">1.4407200000000000</span>        <span class="mf">7.2035799999999997</span>        <span class="mf">7.2035799999999997</span>        <span class="mf">2.4350000000000001E-003</span>  <span class="o">-</span><span class="mf">4.0000000000000003E-005</span>   <span class="mf">4.0000000000000003E-005</span>
+ <span class="mf">7.2035799999999997</span>        <span class="mf">1.4407200000000000</span>        <span class="mf">1.4407200000000000</span>       <span class="o">-</span><span class="mf">1.8400000000000000E-004</span>  <span class="o">-</span><span class="mf">3.3000000000000000E-004</span>   <span class="mf">3.3000000000000000E-004</span>
+ <span class="mf">7.2035799999999997</span>        <span class="mf">1.4407200000000000</span>        <span class="mf">7.2035799999999997</span>        <span class="mf">8.3999999999999995E-005</span>  <span class="o">-</span><span class="mf">4.3999999999999999E-005</span>   <span class="mf">3.4000000000000000E-005</span>
+ <span class="mf">7.2035799999999997</span>        <span class="mf">7.2035799999999997</span>        <span class="mf">1.4407200000000000</span>        <span class="mf">8.3999999999999995E-005</span>  <span class="o">-</span><span class="mf">3.4000000000000000E-005</span>   <span class="mf">4.3999999999999999E-005</span>
+ <span class="mf">7.2035799999999997</span>        <span class="mf">7.2035799999999997</span>        <span class="mf">7.2035799999999997</span>       <span class="o">-</span><span class="mf">2.1599999999999999E-004</span>  <span class="o">-</span><span class="mf">3.4400000000000001E-004</span>   <span class="mf">3.4400000000000001E-004</span>
+ <span class="mf">2.8814299999999999</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">0.0000000000000000</span>       <span class="o">-</span><span class="mf">4.0619999999999996E-003</span>   <span class="mf">7.2599999999999997E-004</span>  <span class="o">-</span><span class="mf">7.2599999999999997E-004</span>
+ <span class="mf">2.8814299999999999</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">5.7628599999999999</span>       <span class="o">-</span><span class="mf">4.0780000000000000E-003</span>  <span class="o">-</span><span class="mf">7.3099999999999999E-004</span>  <span class="o">-</span><span class="mf">7.3099999999999999E-004</span>
+ <span class="mf">2.8814299999999999</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">0.0000000000000000</span>       <span class="o">-</span><span class="mf">4.0780000000000000E-003</span>   <span class="mf">7.3099999999999999E-004</span>   <span class="mf">7.3099999999999999E-004</span>
+ <span class="mf">2.8814299999999999</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">5.7628599999999999</span>       <span class="o">-</span><span class="mf">4.0619999999999996E-003</span>  <span class="o">-</span><span class="mf">7.2599999999999997E-004</span>   <span class="mf">7.2599999999999997E-004</span>
+ <span class="mf">8.6442899999999998</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">1.0700000000000000E-004</span>   <span class="mf">6.0000000000000002E-005</span>  <span class="o">-</span><span class="mf">6.0000000000000002E-005</span>
+ <span class="mf">8.6442899999999998</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">1.0300000000000000E-004</span>  <span class="o">-</span><span class="mf">5.7000000000000003E-005</span>  <span class="o">-</span><span class="mf">5.7000000000000003E-005</span>
+ <span class="mf">8.6442899999999998</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">1.0300000000000000E-004</span>   <span class="mf">5.7000000000000003E-005</span>   <span class="mf">5.7000000000000003E-005</span>
+ <span class="mf">8.6442899999999998</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">1.0700000000000000E-004</span>  <span class="o">-</span><span class="mf">6.0000000000000002E-005</span>   <span class="mf">6.0000000000000002E-005</span>
+ <span class="mf">1.4407200000000000</span>        <span class="mf">4.3221499999999997</span>        <span class="mf">4.3221499999999997</span>       <span class="o">-</span><span class="mf">4.8099999999999998E-004</span>   <span class="mf">3.2800000000000000E-004</span>  <span class="o">-</span><span class="mf">7.1400000000000001E-004</span>
+ <span class="mf">1.4407200000000000</span>        <span class="mf">4.3221499999999997</span>        <span class="mf">10.085010000000000</span>        <span class="mf">2.4350000000000001E-003</span>   <span class="mf">4.0000000000000003E-005</span>  <span class="o">-</span><span class="mf">4.0000000000000003E-005</span>
+ <span class="mf">1.4407200000000000</span>        <span class="mf">10.085010000000000</span>        <span class="mf">4.3221499999999997</span>        <span class="mf">2.8677000000000001E-002</span>   <span class="mf">1.9474999999999999E-002</span>  <span class="o">-</span><span class="mf">1.9474999999999999E-002</span>
+ <span class="mf">1.4407200000000000</span>        <span class="mf">10.085010000000000</span>        <span class="mf">10.085010000000000</span>       <span class="o">-</span><span class="mf">4.8099999999999998E-004</span>   <span class="mf">7.1400000000000001E-004</span>  <span class="o">-</span><span class="mf">3.2800000000000000E-004</span>
+ <span class="mf">7.2035799999999997</span>        <span class="mf">4.3221499999999997</span>        <span class="mf">4.3221499999999997</span>        <span class="mf">8.3999999999999995E-005</span>   <span class="mf">3.4000000000000000E-005</span>  <span class="o">-</span><span class="mf">4.3999999999999999E-005</span>
+ <span class="mf">7.2035799999999997</span>        <span class="mf">4.3221499999999997</span>        <span class="mf">10.085010000000000</span>       <span class="o">-</span><span class="mf">2.1599999999999999E-004</span>   <span class="mf">3.4400000000000001E-004</span>  <span class="o">-</span><span class="mf">3.4400000000000001E-004</span>
+ <span class="mf">7.2035799999999997</span>        <span class="mf">10.085010000000000</span>        <span class="mf">4.3221499999999997</span>       <span class="o">-</span><span class="mf">1.8400000000000000E-004</span>   <span class="mf">3.3000000000000000E-004</span>  <span class="o">-</span><span class="mf">3.3000000000000000E-004</span>
+ <span class="mf">7.2035799999999997</span>        <span class="mf">10.085010000000000</span>        <span class="mf">10.085010000000000</span>        <span class="mf">8.3999999999999995E-005</span>   <span class="mf">4.3999999999999999E-005</span>  <span class="o">-</span><span class="mf">3.4000000000000000E-005</span>
+ <span class="mf">0.0000000000000000</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">1.6290000000000000E-003</span>  <span class="o">-</span><span class="mf">7.2499999999999995E-004</span>   <span class="mf">1.4820000000000000E-003</span>
+ <span class="mf">0.0000000000000000</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">1.6290000000000000E-003</span>   <span class="mf">7.2499999999999995E-004</span>  <span class="o">-</span><span class="mf">1.4820000000000000E-003</span>
+ <span class="mf">0.0000000000000000</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">4.2000000000000002E-004</span>  <span class="o">-</span><span class="mf">5.8000000000000000E-005</span>  <span class="o">-</span><span class="mf">8.8500000000000004E-004</span>
+ <span class="mf">0.0000000000000000</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">4.2000000000000002E-004</span>   <span class="mf">5.8000000000000000E-005</span>   <span class="mf">8.8500000000000004E-004</span>
+ <span class="mf">5.7628599999999999</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">1.6550000000000000E-003</span>  <span class="o">-</span><span class="mf">7.3399999999999995E-004</span>  <span class="o">-</span><span class="mf">1.5030000000000000E-003</span>
+ <span class="mf">5.7628599999999999</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">1.6550000000000000E-003</span>   <span class="mf">7.3399999999999995E-004</span>   <span class="mf">1.5030000000000000E-003</span>
+ <span class="mf">5.7628599999999999</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">4.2000000000000002E-004</span>  <span class="o">-</span><span class="mf">5.7000000000000003E-005</span>   <span class="mf">8.8000000000000003E-004</span>
+ <span class="mf">5.7628599999999999</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">5.7628599999999999</span>        <span class="mf">4.2000000000000002E-004</span>   <span class="mf">5.7000000000000003E-005</span>  <span class="o">-</span><span class="mf">8.8000000000000003E-004</span>
+ <span class="mf">4.3221499999999997</span>        <span class="mf">1.4407200000000000</span>        <span class="mf">4.3221499999999997</span>        <span class="mf">2.8958999999999999E-002</span>   <span class="mf">2.0014000000000001E-002</span>   <span class="mf">2.0014000000000001E-002</span>
+ <span class="mf">4.3221499999999997</span>        <span class="mf">1.4407200000000000</span>        <span class="mf">10.085010000000000</span>       <span class="o">-</span><span class="mf">4.8400000000000000E-004</span>   <span class="mf">7.0799999999999997E-004</span>   <span class="mf">3.3000000000000000E-004</span>
+ <span class="mf">4.3221499999999997</span>        <span class="mf">7.2035799999999997</span>        <span class="mf">4.3221499999999997</span>       <span class="o">-</span><span class="mf">4.8400000000000000E-004</span>   <span class="mf">3.3000000000000000E-004</span>   <span class="mf">7.0799999999999997E-004</span>
+ <span class="mf">4.3221499999999997</span>        <span class="mf">7.2035799999999997</span>        <span class="mf">10.085010000000000</span>        <span class="mf">2.4480000000000001E-003</span>   <span class="mf">4.0000000000000003E-005</span>   <span class="mf">4.0000000000000003E-005</span>
+ <span class="mf">10.085010000000000</span>        <span class="mf">1.4407200000000000</span>        <span class="mf">4.3221499999999997</span>       <span class="o">-</span><span class="mf">1.8000000000000001E-004</span>   <span class="mf">3.2899999999999997E-004</span>   <span class="mf">3.2899999999999997E-004</span>
+ <span class="mf">10.085010000000000</span>        <span class="mf">1.4407200000000000</span>        <span class="mf">10.085010000000000</span>        <span class="mf">7.7999999999999999E-005</span>   <span class="mf">3.4999999999999997E-005</span>   <span class="mf">2.8000000000000000E-005</span>
+ <span class="mf">10.085010000000000</span>        <span class="mf">7.2035799999999997</span>        <span class="mf">4.3221499999999997</span>        <span class="mf">7.7999999999999999E-005</span>   <span class="mf">2.8000000000000000E-005</span>   <span class="mf">3.4999999999999997E-005</span>
+ <span class="mf">10.085010000000000</span>        <span class="mf">7.2035799999999997</span>        <span class="mf">10.085010000000000</span>       <span class="o">-</span><span class="mf">2.1200000000000000E-004</span>   <span class="mf">3.4699999999999998E-004</span>   <span class="mf">3.4699999999999998E-004</span>
+ <span class="mf">0.0000000000000000</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">1.6290000000000000E-003</span>  <span class="o">-</span><span class="mf">1.4820000000000000E-003</span>   <span class="mf">7.2499999999999995E-004</span>
+ <span class="mf">0.0000000000000000</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">4.2000000000000002E-004</span>   <span class="mf">8.8500000000000004E-004</span>   <span class="mf">5.8000000000000000E-005</span>
+ <span class="mf">0.0000000000000000</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">1.6290000000000000E-003</span>   <span class="mf">1.4820000000000000E-003</span>  <span class="o">-</span><span class="mf">7.2499999999999995E-004</span>
+ <span class="mf">0.0000000000000000</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">4.2000000000000002E-004</span>  <span class="o">-</span><span class="mf">8.8500000000000004E-004</span>  <span class="o">-</span><span class="mf">5.8000000000000000E-005</span>
+ <span class="mf">5.7628599999999999</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">1.6550000000000000E-003</span>   <span class="mf">1.5030000000000000E-003</span>   <span class="mf">7.3399999999999995E-004</span>
+ <span class="mf">5.7628599999999999</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">4.2000000000000002E-004</span>  <span class="o">-</span><span class="mf">8.8000000000000003E-004</span>   <span class="mf">5.7000000000000003E-005</span>
+ <span class="mf">5.7628599999999999</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">2.8814299999999999</span>        <span class="mf">1.6550000000000000E-003</span>  <span class="o">-</span><span class="mf">1.5030000000000000E-003</span>  <span class="o">-</span><span class="mf">7.3399999999999995E-004</span>
+ <span class="mf">5.7628599999999999</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">4.2000000000000002E-004</span>   <span class="mf">8.8000000000000003E-004</span>  <span class="o">-</span><span class="mf">5.7000000000000003E-005</span>
+ <span class="mf">4.3221499999999997</span>        <span class="mf">4.3221499999999997</span>        <span class="mf">1.4407200000000000</span>       <span class="o">-</span><span class="mf">4.8400000000000000E-004</span>  <span class="o">-</span><span class="mf">3.3000000000000000E-004</span>  <span class="o">-</span><span class="mf">7.0799999999999997E-004</span>
+ <span class="mf">4.3221499999999997</span>        <span class="mf">4.3221499999999997</span>        <span class="mf">7.2035799999999997</span>        <span class="mf">2.4480000000000001E-003</span>  <span class="o">-</span><span class="mf">4.0000000000000003E-005</span>  <span class="o">-</span><span class="mf">4.0000000000000003E-005</span>
+ <span class="mf">4.3221499999999997</span>        <span class="mf">10.085010000000000</span>        <span class="mf">1.4407200000000000</span>        <span class="mf">2.8958999999999999E-002</span>  <span class="o">-</span><span class="mf">2.0014000000000001E-002</span>  <span class="o">-</span><span class="mf">2.0014000000000001E-002</span>
+ <span class="mf">4.3221499999999997</span>        <span class="mf">10.085010000000000</span>        <span class="mf">7.2035799999999997</span>       <span class="o">-</span><span class="mf">4.8400000000000000E-004</span>  <span class="o">-</span><span class="mf">7.0799999999999997E-004</span>  <span class="o">-</span><span class="mf">3.3000000000000000E-004</span>
+ <span class="mf">10.085010000000000</span>        <span class="mf">4.3221499999999997</span>        <span class="mf">1.4407200000000000</span>        <span class="mf">7.7999999999999999E-005</span>  <span class="o">-</span><span class="mf">2.8000000000000000E-005</span>  <span class="o">-</span><span class="mf">3.4999999999999997E-005</span>
+ <span class="mf">10.085010000000000</span>        <span class="mf">4.3221499999999997</span>        <span class="mf">7.2035799999999997</span>       <span class="o">-</span><span class="mf">2.1200000000000000E-004</span>  <span class="o">-</span><span class="mf">3.4699999999999998E-004</span>  <span class="o">-</span><span class="mf">3.4699999999999998E-004</span>
+ <span class="mf">10.085010000000000</span>        <span class="mf">10.085010000000000</span>        <span class="mf">1.4407200000000000</span>       <span class="o">-</span><span class="mf">1.8000000000000001E-004</span>  <span class="o">-</span><span class="mf">3.2899999999999997E-004</span>  <span class="o">-</span><span class="mf">3.2899999999999997E-004</span>
+ <span class="mf">10.085010000000000</span>        <span class="mf">10.085010000000000</span>        <span class="mf">7.2035799999999997</span>        <span class="mf">7.7999999999999999E-005</span>  <span class="o">-</span><span class="mf">3.4999999999999997E-005</span>  <span class="o">-</span><span class="mf">2.8000000000000000E-005</span>
+<span class="c1"># POSITION (ang)     TOTAL FORCE (eV/Ang)</span>
+   <span class="mi">1</span>       <span class="o">-</span><span class="mf">289.18629538</span> <span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">Etot</span><span class="p">(</span><span class="n">eV</span><span class="p">)</span>     <span class="c1"># snapshot #2</span>
+ <span class="mf">2.8929600000000000</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">2.8814299999999999</span>      <span class="o">-</span><span class="mf">0.11758299999999999</span>       <span class="o">-</span><span class="mf">0.0000000000000000</span>       <span class="o">-</span><span class="mf">0.0000000000000000</span>
+ <span class="mf">2.8814299999999999</span>        <span class="mf">0.0000000000000000</span>        <span class="mf">8.6442899999999998</span>        <span class="mf">4.9600000000000002E-004</span>  <span class="o">-</span><span class="mf">0.0000000000000000</span>       <span class="o">-</span><span class="mf">0.0000000000000000</span>
+ <span class="o">...</span>
+</pre></div>
+</div>
+<p>The first line in <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> is the header and should contain the word POSITION. The second line
+consists of the energy of structure in electron volt and the lines after second are positions (first three columns, <span class="math notranslate nohighlight">\(x\)</span>, <span class="math notranslate nohighlight">\(y\)</span> and <span class="math notranslate nohighlight">\(z\)</span>) and forces
+(the last three columns <span class="math notranslate nohighlight">\(F_x\)</span>, <span class="math notranslate nohighlight">\(F_y\)</span> and <span class="math notranslate nohighlight">\(F_z\)</span> are in <span class="math notranslate nohighlight">\(eV/{\\A}\)</span>) respectively. If there are many force-displacement snapshots of the structure, then the other snapshots follow these lines in the same format. There is a tool and a shell script for converting the VASP outcar or QE outputfile into the FORCEDISP1 format for the FOCEX code. It is available in <strong>utility</strong> folder inside FOCEX. To convert the VASP outcar into FORCEDISP1 user need to execute <code class="docutils literal notranslate"><span class="pre">./process_dft.sh</span> <span class="pre">name_of_vasp_directory(s)</span></code> or <code class="docutils literal notranslate"><span class="pre">./process_dft.sh</span> <span class="pre">name_of_vasp_file</span></code> shell script within utility folder. Here, <code class="docutils literal notranslate"><span class="pre">name_of_vasp_directory(s)</span></code> is the multiple directory containing VASP runs or QE runs or <code class="docutils literal notranslate"><span class="pre">name_of_vasp_file</span></code> is the OUTCAR file(s) for VASP or the outputfile for QE runs. This shell script will call the <code class="docutils literal notranslate"><span class="pre">readoutcar.x</span></code> or <code class="docutils literal notranslate"><span class="pre">readpfpwscf.x</span></code> taking as input the DFT output from VASP or QE. The shell script can be tailored as per your needs. As for the other inputs file of FOCEX, they are given below</p>
+<p><code class="docutils literal notranslate"><span class="pre">structure.params</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="mi">1</span> <span class="mi">1</span> <span class="mi">1</span> <span class="mi">90</span> <span class="mi">90</span> <span class="mi">90</span>          <span class="c1"># a, b, c, alpha, beta, gamma of the conventional cell</span>
+<span class="mi">0</span> <span class="mf">.5</span> <span class="mf">.5</span>   <span class="mf">.5</span> <span class="mi">0</span> <span class="mf">.5</span>   <span class="mf">.5</span> <span class="mf">.5</span> <span class="mi">0</span> <span class="c1"># reduced coordinates of primitive lattice (in this case FCC) in terms of conventional lattice (in this case cubic)</span>
+<span class="mf">5.7628622055</span>            <span class="c1"># scale factor for lattice size</span>
+<span class="mi">1</span> <span class="mi">1</span> <span class="mi">1</span> <span class="mi">1</span>                 <span class="c1"># include FC1234, 1st, 2nd, third and fourth order harmonic force constant(s) in the fitting process. 1 is to include and 0 is to not include</span>
+<span class="mi">1</span> <span class="mi">1</span> <span class="mi">0</span> <span class="mi">0</span>                 <span class="c1"># invariances to impose, (translational, rotational, Huang) last is enforce inv using elimination</span>
+<span class="mi">0</span> <span class="mi">300</span>                   <span class="c1"># temperature and whether or not implement it (do not implement if 0,2, or ..)</span>
+<span class="mi">1</span> <span class="o">.</span><span class="n">true</span><span class="o">.</span>                <span class="c1"># number  of FORCEDISPi files, verbosity</span>
+<span class="mi">1</span>                       <span class="c1"># type of atoms</span>
+<span class="mf">72.64</span>                   <span class="c1"># masses of each type of atoms</span>
+<span class="n">Ge</span>                      <span class="c1"># names of atoms</span>
+<span class="mi">2</span>                       <span class="c1"># number of atoms of each type in the primitive cell</span>
+<span class="mi">1</span>                       <span class="c1"># flag for setting the range of FC2s (if 0 take default; else use below)</span>
+<span class="mi">5</span> <span class="mi">5</span>                     <span class="c1"># number of shells for rank 2 (harmonic) for each atom if not default</span>
+<span class="mi">1</span> <span class="mi">1</span>                     <span class="c1"># number of shells for rank 3 (cubic) for each atom (there is no default value)</span>
+<span class="mi">1</span> <span class="mi">1</span>                     <span class="c1"># number of shells for rank 4 (quartic) for each atom (there is no default value)</span>
+<span class="mi">1</span> <span class="mi">1</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>               <span class="c1"># atom index, type of atom, position x, position y, position z in units of a,b,c of the conventional lattice</span>
+<span class="mi">2</span> <span class="mi">1</span> <span class="mf">0.25</span> <span class="mf">0.25</span> <span class="mf">0.25</span>      <span class="c1"># atom index, type of atom, position x, position y, position z in units of a,b,c</span>
+</pre></div>
+</div>
+<p>The fitting is done using singular value decomposition based on the requested symmetry constraints and <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> and <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> i.e. by creating the force displacement matrix.</p>
+<p>The next input file is <code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code>. It is required to get the phonon dispersion (and eventually thermal conductivity using <code class="docutils literal notranslate"><span class="pre">THERMACOND</span></code>). It consists of a flag which is zero if the Born charges are to be excluded. The second, third and fourth lines contain the dielectric constant tensor values which is written as follows in the example folder inside <code class="docutils literal notranslate"><span class="pre">FOCEX</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="mi">0</span>               <span class="c1"># do not include Born charges in the fitting</span>
+<span class="mf">2.5078</span> <span class="mf">0.0</span>  <span class="mf">0.0</span> <span class="c1"># for example, dielectric constant (necessary but not used if flag is zero)</span>
+<span class="mf">0.0</span> <span class="mf">2.5078</span> <span class="mf">0.0</span>
+<span class="mf">0.0</span> <span class="mf">0.0</span> <span class="mf">2.5078</span>
+<span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>           <span class="c1"># Born charge tensor of atom 1 in order it appears in the ``structure.params``</span>
+<span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
+<span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
+<span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>           <span class="c1"># Born charge tensor of atom 2 in order it appears in the ``structure.params``</span>
+<span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
+<span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>Now, put the <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code>, <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> , <code class="docutils literal notranslate"><span class="pre">structure.params</span></code>, <code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code> and <code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code> in same directory, simply run <code class="docutils literal notranslate"><span class="pre">focex.x</span></code>. After successful
+run <code class="docutils literal notranslate"><span class="pre">fc2.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc2_irr.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc3.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc3_irr.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc4.dat</span></code> and <code class="docutils literal notranslate"><span class="pre">fc4_irr.dat</span></code> along with other output files and log file should be available. <code class="docutils literal notranslate"><span class="pre">fc2.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc2_irr.dat</span></code> are the fitted second order force constants in eV/Ang^2. The former contains all the pairs regardless of symmetry, and the latter contains the irreducible ones from which all the rest is contructed using crystal symmetry. Likewise <code class="docutils literal notranslate"><span class="pre">fc3.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc3_irr.dat</span></code> and <code class="docutils literal notranslate"><span class="pre">fc4.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc4_irr.dat</span></code> contain the third order and fourth order full and irreducible force constants in eV/Ang^3 and eV/Ang^4 respectively. Users are advised to look for more information in the log file <code class="docutils literal notranslate"><span class="pre">log***.dat</span></code> to know more details about the run.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="install.html" class="btn btn-neutral float-left" title="4. Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="runthermacond.html" class="btn btn-neutral float-right" title="6. Running THERMACOND" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, University of Virginia.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
