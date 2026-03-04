@@ -18,7 +18,7 @@
 
  open(uparams,file='default.params',status='old')
    read(uparams,*) tolerance    ! cutoff for smallest "eigenvalue" w to be included
-   if(tolerance.eq.0) tolerance = 1d-5
+   if(tolerance.eq.0) tolerance = 1d-4
 !   read(uparams,*) svdcut    ! cutoff for smallest "eigenvalue" w to be included
 !   if(svdcut.eq.0) svdcut = 1d-10   ! default values
    read(uparams,*) force_error
@@ -2631,9 +2631,9 @@ stop
     do g=1,nr
        rg=rgrd(:,g)+dta 
        rfold = fold_ws(rg,rws26) 
-       if(length(rg-rfold).gt.1d-3) then
-          write(ulog,3)'write_fc2: t,tp,ir,r+tp-t, folded =',tau,taup,g,rg,rfold
-       endif
+!      if(length(rg-rfold).gt.1d-3) then
+!         write(ulog,3)'write_fc2: t,tp,ir,r+tp-t, folded =',tau,taup,g,rg,rfold
+!      endif
        fc2 = trace(phi(tau,taup,:,:,g)) 
        if(abs(fc2).lt.0.00001) cycle
 !      write(uio,3)tau,taup,g,length(rg   ),fc2,cart2red(rfold,'r'),real(phi(tau,taup,:,:,g)) 

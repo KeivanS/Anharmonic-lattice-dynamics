@@ -2658,9 +2658,12 @@ contains
  integer, intent(in) :: n
  real(r15), intent(inout) :: mat2(n,n) 
  real(r15), allocatable:: mean(:,:) 
+ real(r15) dif 
 
 ! n=size(mat2,1)
  allocate(mean(n,n))
+ dif=maxval(abs(mat2-transpose(mat2)))
+ if(dif.gt.1d-4) write(*,*)'SYMMETRIZE2: max|M-M^T|=',dif
  mean=(mat2+transpose(mat2))/2
  mat2=mean
  deallocate(mean)

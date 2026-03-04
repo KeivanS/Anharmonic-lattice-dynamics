@@ -4690,47 +4690,6 @@ end subroutine sort3
 
  end subroutine check_inside_fbz_old
 !================================================
- subroutine symmetrize4(n,mat4) 
-! symmetrizes wrt to swap of indices 1<->2 and 3<->4 
- use constants, only : r15
- use linalgb
- implicit none
- integer, intent(in) :: n       
- real(r15), intent(inout) :: mat4(n,n,n,n) !:,:,:,:) 
- real(r15), allocatable:: mean(:,:),mea2(:,:) 
- integer i,j
-
-! n=size(mat4,1)
-! if(n.ne.3) then
-!   write(*,*)' Symmetrize4: n is ',n
-!   stop
-! endif
- allocate(mean(n,n),mea2(n,n))
- do i=1,n
-    mean=mat4(i,i,:,:)
-    call symmetrize2(n,mean)
-    mat4(i,i,:,:)=mean
- do j=i+1,n
-    mean=mat4(i,j,:,:)
-    mea2=mat4(j,i,:,:)
-    call symmetrize2(n,mean)
-    call symmetrize2(n,mea2)
-    mat4(i,j,:,:)=(mean+mea2)/2
-    mat4(j,i,:,:)=(mean+mea2)/2
- enddo
- enddo
-! now wrt ab<->gd
-! do i=1,n
-! do j=1,n
-!    mean=mat4(:,:,i,j)
-!    call symmetrize2(n,mean)
-!    mat4(:,:,i,j)=mean
-! enddo
-! enddo
-
- deallocate(mean)
- end subroutine symmetrize4
-!================================================
  subroutine convert_to_voigt(a,c)
  use ios, only: ulog,write_out
  use constants, only : r15
@@ -5312,6 +5271,50 @@ end function is_in_wedge
  endif
 
  end subroutine make_periodic
+!===========================================================
+ subroutine symmetrize4(n,mat4) 
+! symmetrizes wrt to swap of indices 1<->2 and 3<->4 
+ use constants, only : r15
+ use linalgb
+ implicit none
+ integer, intent(in) :: n       
+ real(r15), intent(inout) :: mat4(n,n,n,n) !:,:,:,:) 
+ real(r15), allocatable:: mean(:,:),mea2(:,:) 
+ real(r15) dif 
+ integer i,j
+
+! n=size(mat4,1)
+! if(n.ne.3) then
+!   write(*,*)' Symmetrize4: n is ',n
+!   stop
+! endif
+ allocate(mean(n,n),mea2(n,n))
+ do i=1,n
+    mean=mat4(i,i,:,:)
+    call symmetrize2(n,mean)
+    mat4(i,i,:,:)=mean
+ do j=i+1,n
+    mean=mat4(i,j,:,:)
+    mea2=mat4(j,i,:,:)
+    call symmetrize2(n,mean)
+    call symmetrize2(n,mea2)
+    dif=maxval(abs(mean-mea2))
+    if(dif.gt.1d-4) write(*,*)'SYMMETRIZE4: i,j,max|M4-M4^T|=',i,j,dif
+    mat4(i,j,:,:)=(mean+mea2)/2
+    mat4(j,i,:,:)=(mean+mea2)/2
+ enddo
+ enddo
+! now wrt ab<->gd
+! do i=1,n
+! do j=1,n
+!    mean=mat4(:,:,i,j)
+!    call symmetrize2(n,mean)
+!    mat4(:,:,i,j)=mean
+! enddo
+! enddo
+
+ deallocate(mean)
+ end subroutine symmetrize4
 !===========================================================
  subroutine check_herm_sym_R(nat,nr,grid,phi)
 ! checks whether phi_t,t'(R) = phi_t',t(-R)^T

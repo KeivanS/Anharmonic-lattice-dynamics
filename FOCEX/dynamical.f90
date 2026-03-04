@@ -55,7 +55,7 @@
   open(uband,file='bands.dat')
   write(uband,*)'# i,dk_bs(i),kp_bs(:,i),eival_bs(:,i)),length(veloc_bs(:,l,i))/1000'
   do i=1,nkp_bs
-     write(uband,6)i,dk_bs(i),kp_bs(:,i),abs(eigenval_bs(:,i)),(length(veloc_bs(:,l,i))/1000,l=1,ndyn)
+     write(uband,6)i,dk_bs(i),kp_bs(:,i),eigenval_bs(:,i),(length(veloc_bs(:,l,i))/1000,l=1,ndyn)
   enddo
   close(uband)
 
@@ -1752,11 +1752,12 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 ! qiu should be symmetric if ASR exact; its symmetric part comes in residual stress 
  do s=1,ndyn
     matr=qiu(s,:,:)
-    if( maxval(abs(matr-transpose(matr))) .gt. 1d-4 ) then
-       write(ulog,*)'Qiu(s,:,:) not symmetric for s=',s
-       call warn5(ulog,'QIU not symmetric ',matr) 
-       call symmetrize2(3,matr)
-       qiu(s,:,:)=matr
+    sump= maxval(abs(matr-transpose(matr)))
+    if( sump .gt. 1d-4 ) then
+       write(ulog,*)'Qiu(s,:,:) not symmetric for s,max(abs(dif))=',s,sump
+       call warn2(ulog,'QIU not symmetric ') 
+ !     call symmetrize2(3,matr)   !! to be checked again!!
+ !     qiu(s,:,:)=matr
     endif
  enddo
 
@@ -1807,6 +1808,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  enddo
 
  atld0   = atld0   /volume_r0*ee*1d30*1d-9
+ write(*,*)' GET_PHI_ZETA: symmetrizing atld0'
  call symmetrize4(3,atld0) 
  bulkmod = bulkmod /volume_r0*ee*1d30*1d-9
  call convert_to_voigt(atld0,c0)
@@ -1938,6 +1940,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  enddo
  enddo
  atld0=atld0/volume_r0*ee*1d30*1d-9
+ write(*,*)' MECHANICAL0: symmetrizing atld0'
  call symmetrize4(3,atld0) 
 
  do la =1,3
@@ -2115,6 +2118,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  enddo
  enddo
  qgq  =qgq  /volume_r0*ee*1d30*1d-9
+ write(*,*)' symmetrizing QGQ'
  call symmetrize4(3,qgq) 
 
   write(uio,*)'checking symmetry for QGQ'
