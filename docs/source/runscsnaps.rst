@@ -59,13 +59,30 @@ Installation
 
    git clone https://github.com/KeivanS/SC_SNAPS.git
    cd SC_SNAPS
+   make venv             # one-time: Python packages for the GUI
    make compile          # builds sc_snaps.x and installs it in ~/BIN
 
 ``make compile`` compiles ``sc_snaps.f90`` with ``gfortran -O2`` and moves the
 executable to ``$(BINDIR)``, which defaults to ``~/BIN``. Override it with
 ``make compile BINDIR=/somewhere/else``.
 
-For the graphical interface you additionally need:
+``make venv`` creates a local virtual environment ``.venv`` with
+``--system-site-packages`` — so a NumPy or Matplotlib you already have is reused
+and only the missing packages are downloaded — and installs the rest into it.
+The Makefile then uses ``.venv/bin/python`` automatically; nothing needs to be
+activated.
+
+.. note::
+
+   The virtual environment is not optional on a Python marked *externally
+   managed* (PEP 668), which is the case for Homebrew's Python and for most
+   Linux distribution packages. There, ``pip install flask`` is refused with
+   ``error: externally-managed-environment`` and the GUI stops at
+   ``ModuleNotFoundError: No module named 'flask'``. If your Python is not
+   externally managed you can skip ``make venv`` and simply
+   ``pip install flask numpy matplotlib scipy``.
+
+For the graphical interface you need:
 
 .. list-table::
    :header-rows: 1
@@ -79,7 +96,8 @@ For the graphical interface you additionally need:
      - ``pip install flask`` — required to start the GUI at all.
    * - NumPy, Matplotlib, SciPy
      - Only for the analysis plots. Without them the GUI still runs, but the
-       plot panels return "Missing library".
+       plot panels return "Missing library". SciPy is used for the Gaussian
+       fits in the component and velocity histograms.
    * - `Jmol <https://jmol.sourceforge.net/>`_
      - Optional structure viewer. Any viewer that accepts a file argument
        (VESTA, OVITO, …) works — just point the GUI at it.
