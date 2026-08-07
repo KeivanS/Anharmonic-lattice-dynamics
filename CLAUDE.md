@@ -43,6 +43,19 @@ snapshots, ranks 1–3). Reproduces:
 The `fc*.dat`, `log*.dat`, `svd-all.dat` etc. **stored** in that folder are from
 an older version — different column layout. Don't use them as reference.
 
+## Regression testing FOCEX
+
+Build a reference binary from an untouched checkout and a second from the working
+tree, run both on the same inputs, and compare **every** output file, not just
+`fc*.dat`. Test inputs are in `~/PROJECTS/MATERIALS`; the three that span the
+symmetry range are **BZO** (cubic perovskite, ~2 min), **MoTe2/TEST**
+(hexagonal, deliberately short range, ~20 s) and **TEST_GeSe** (orthorhombic,
+low symmetry, ~7 min). `NaCl` has no POSCAR/FORCEDISP and cannot run a fit.
+
+Runs are reproducible as of 2026-08-07. Before the `finitedif_vel` fix they were
+not, and any phonon-level comparison was meaningless — check that first if
+outputs differ for no reason.
+
 ## Things that bite
 
 - `sc_snaps.x` aborts at run time with `Recursive call to nonrecursive procedure
