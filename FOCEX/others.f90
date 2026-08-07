@@ -9,7 +9,7 @@
  use geometry
  implicit none
  character lineout*80,frmt*90
- integer i0,j,i,n,m,mxzero,mx,mxi,l,rnk,ichkloop   &
+ integer i0,j,i,n,m,mxzero,mx,mxi,l,rnk,ichkloop,mxnt,mxnti   &
  &      ,ntermszero,nd,ntindp,ierz,iert,ieri,ierg,mzero(maxrank),mxgrps
  integer, allocatable:: iatmtermzero(:,:),ixyztermzero(:,:)
 ! type arraysize
@@ -49,48 +49,46 @@
  rankloop: do rnk=1,maxrank !,1,-1
   if ( include_fc(rnk) .ne. 0 ) then
 
-    ierz=1; iert=1;  ieri=1; ierg=0
-    mxgrps = maxgroups(rnk)
-    mx     = maxterms(rnk)
-    mxi    = maxtermsindep(rnk)
-    mxzero = maxtermzero(rnk)
+    ierz=0; iert=0;  ieri=0; ierg=0
 
     write(ulog,4)' ******************** FOR rank *****************= ',rnk
     write(*   ,4)' ***** FOR rank = ',rnk
 
-    ichkloop=0
-! start from a small maxterms and maxtermszero and increase by 100 or more if too small
-  checkloop: do while (ierg+ierz+iert+ieri.ne.0)
-     ichkloop=ichkloop+1
-     write(*   ,4) 'Checkloop: icheckloop=',ichkloop
-     write(*   ,4) 'maxtrmzero,maxgrp=',mxzero,mxgrps
-!     write(*   ,4) 'ntermsindep=',ntermsindep
-!     write(*   ,4) 'nterms     =',nterms
-     write(ulog,4) 'iteration,maxtrmzero,maxgrp,maxternindep,maxterms=',ichkloop,mxzero,mxgrps,mxi,mx
-!     write(ulog,4) 'ntermsindp=',ntia
-!     write(ulog,4) 'nterms    =',nta
-!     mx=maxval(nta) ; mxi=maxval(ntia)
-!    allocate(mapmat(mx,mxi,maxgroups) &
-!    &     ,iatmtrm(rnk,mx,maxgroups),ixyztrm(rnk,mx,maxgroups)  &
-!    &     ,iatmtermindp(rnk,mx,maxgroups),ixyztermindp(rnk,mx,maxgroups)  )
-!  if(ichkloop .eq.1) then
-     if(.not.allocated(nterm))       allocate(nterm(mxgrps))
-     if(.not.allocated(ntermsindep)) allocate(ntermsindep(mxgrps))
-     if(.not.allocated(mapmat))      allocate( mapmat(mx,mxi,mxgrps)); mapmat=0
-     if(.not.allocated(iatmtrm))     allocate( iatmtrm(rnk,mx,mxgrps));iatmtrm=0
-     if(.not.allocated(ixyztrm))     allocate( ixyztrm(rnk,mx,mxgrps));ixyztrm=0
-     if(.not.allocated(iatmtermindp)) allocate( iatmtermindp(rnk,mx,mxgrps));iatmtermindp=0
-     if(.not.allocated(ixyztermindp)) allocate( ixyztermindp(rnk,mx,mxgrps));ixyztermindp=0
-     if(.not.allocated(iatmtermzero)) allocate( iatmtermzero(rnk,mxzero));iatmtermzero=0
-     if(.not.allocated(ixyztermzero)) allocate( ixyztermzero(rnk,mxzero));ixyztermzero=0
-! k1 2/12/23
-! k1 3/5/23
-!     if(.not.allocated(iatmtermzero)) allocate( iatmtermzero(rnk,ntermszero))
-!     if(.not.allocated( ixyztermzero)) allocate(  ixyztermzero(rnk,ntermszero))
-!     if(.not.allocated(iatmtermzero)) allocate(iatmtermzero(rnk,mzero(rnk)))
-!     if(.not.allocated(ixyztermzero )) allocate( ixyztermzero(rnk,mzero(rnk)))
-! k2 2/12/23
-!     write(ulog,4)' calling collect_force_constants ier:ztig=',ierz,iert,ieri,ierg
+ 4 format(a,9(i5))
+
+! ---------------------------------------------------------------------------
+! First pass: find the exact sizes. This allocates nterm(1:ngroups) and
+! ntermsindep(1:ngroups) and returns the largest of each, so that every array
+! below is allocated once, at the size actually needed. No guessing, and no
+! restart of the symmetry analysis.
+! ---------------------------------------------------------------------------
+     call size_force_constants(rnk,nshells(rnk,:),ngroups(rnk),  &
+     &       ntermszero,mxnt,mxnti,mx,mxi,mxzero)
+
+     write(ulog,4)'EXACT SIZES: rank,ngroups,max nterm,max ntindep,ntermszero=', &
+     &             rnk,ngroups(rnk),mxnt,mxnti,ntermszero
+     write(*   ,4)'EXACT SIZES: rank,ngroups,max nterm,max ntindep,ntermszero=', &
+     &             rnk,ngroups(rnk),mxnt,mxnti,ntermszero
+
+! collect_force_constants rejects on ngroups.ge.maxgroups and on
+! ntermszero.ge.maxtermszero, so give those two one slot of headroom. mx and
+! mxi are the work bounds that size_force_constants found to be sufficient.
+     mxgrps = max(ngroups(rnk),1) + 1
+     mxzero = max(ntermszero ,1) + 1
+
+! ---------------------------------------------------------------------------
+! Second pass: allocate once, at the size actually needed, then fill.
+! ---------------------------------------------------------------------------
+     allocate( mapmat(mx,mxi,mxgrps)); mapmat=0
+     allocate( iatmtrm(rnk,mx,mxgrps));iatmtrm=0
+     allocate( ixyztrm(rnk,mx,mxgrps));ixyztrm=0
+     allocate( iatmtermindp(rnk,mx,mxgrps));iatmtermindp=0
+     allocate( ixyztermindp(rnk,mx,mxgrps));ixyztermindp=0
+     allocate( iatmtermzero(rnk,mxzero));iatmtermzero=0
+     allocate( ixyztermzero(rnk,mxzero));ixyztermzero=0
+     if(allocated(nterm))       deallocate(nterm)
+     if(allocated(ntermsindep)) deallocate(ntermsindep)
+     allocate(nterm(mxgrps),ntermsindep(mxgrps)); nterm=0; ntermsindep=0
 
      call collect_force_constants(rnk,nshells(rnk,:),  &
      &       rnk,mx,mxi,mxzero,mxgrps,   &
@@ -100,71 +98,12 @@
      &       ntermszero,iatmtermzero,ixyztermzero,   &
      &       ierz,iert,ieri,ierg)
 
-!     write(ulog,4)' collect_force_constants called with ier:ztig=',ierz,iert,ieri,ierg
-!     write(ulog,*)' ntermszero,ngroups,ntindep,nt=',ntermszero,ngroups,sum(ntermsindep(1:ngroups(rnk))) &
-!     &   ,sum(nterm(1:ngroups(rnk)))
-
- 4 format(a,9(i5))
-
-     if (ierz.ne.0) then
-   !      write(ulog,*)' before mxtermszero, nterms0=',mxzero ,ntermszero
-!       if(ichkloop.eq.1) then
-          mxzero = mxzero*2 !+ 50*rnk !,ntermszero)
-!       else
-!          mxzero=mxzero+ntermszero
-!       endif
-         if (allocated(iatmtermzero)) deallocate(iatmtermzero)
-         if (allocated(ixyztermzero)) deallocate(ixyztermzero)
+     if (ierz+iert+ieri+ierg .ne. 0) then
+        write(ulog,4)'SETUP_MAPS: sizes from size_force_constants were rejected'// &
+     &               ' by collect_force_constants, ier z,t,i,g=',ierz,iert,ieri,ierg
+        write(*   ,4)'SETUP_MAPS: sizing disagreement, ier z,t,i,g=',ierz,iert,ieri,ierg
+        stop
      endif
-     write(ulog,*)' mxtermszero  is now ',mxzero
-     if (iert.ne.0) then
-    !     write(ulog,*)' before mxterms,sum(nterms)=',mx,sum(nterm)
-!       if(ichkloop.eq.1) then
-         mx = mx*2 !+100*natom_prim_cell*nshells(rnk,1)**(rnk-1) !,sum(nterm(1:ngroups(rnk))))
-!       else
-!          mx=mx+sum(nterm(1:ngroups(rnk)))
-!       endif
-!         write(ulog,*)' ntermall=',sum(nterm)
-         if (allocated(mapmat)) deallocate(mapmat)
-         if (allocated(iatmtrm)) deallocate(iatmtrm)
-         if (allocated(ixyztrm)) deallocate(ixyztrm)
-         if (allocated(iatmtermindp)) deallocate(iatmtermindp)
-         if (allocated(ixyztermindp)) deallocate(ixyztermindp)
-     endif
-     write(ulog,*)' maxterms      is now ',mx
-   !  write(ulog,*)' before mxtermsindep,sum(ntermsindep)=',mxi,sum(ntermsindep)
-     if (ieri.ne.0) then
-!       if(ichkloop.eq.1) then
-         mxi= mxi*2 !+5*natom_prim_cell*nshells(rnk,1)**(rnk-1) !,sum(ntermsindep(1:ngroups(rnk))))
-!       else
-!          mxi=mxi+sum(ntermsindep(1:ngroups(rnk)))
-!       endif
-         if (allocated(mapmat)) deallocate(mapmat)
-!         if (allocated(iatmtrm)) deallocate(iatmtrm)
-!         if (allocated(ixyztrm)) deallocate(ixyztrm)
-!         if (allocated(iatmtermindp)) deallocate(iatmtermindp)
-!         if (allocated(ixyztermindp)) deallocate(ixyztermindp)
-     endif
-     write(ulog,*)' maxtermsindep is now ',mxi
-     if (ierg.ne.0) then
-    !     write(ulog,*)' before maxgroups, ngroups=',mxgrps,ngroups(rnk)
-!       if(ichkloop.eq.1) then
-         mxgrps= mxgrps*2 !+2**(rnk-1)*natom_prim_cell*nshells(rnk,1) !,ngroups(rnk))
-!       else
-!         mxgrps=ngroups(rnk)
-!       endif
-         if (allocated(nterm)) deallocate(nterm)
-         if (allocated(ntermsindep)) deallocate(ntermsindep)
-         if (allocated(mapmat)) deallocate(mapmat)
-         if (allocated(iatmtrm)) deallocate(iatmtrm)
-         if (allocated(ixyztrm)) deallocate(ixyztrm)
-         if (allocated(iatmtermindp)) deallocate(iatmtermindp)
-         if (allocated(ixyztermindp)) deallocate(ixyztermindp)
-      !   if (allocated(nterm)) deallocate(ixyztermindp)
-     endif
-     write(ulog,*)' maxgroups     is now ',mxgrps
-
-  enddo checkloop
 
      write(frmt,'(a,i3,a)') '(a,i1,a,',natom_prim_cell,'(1x,i2),a,i8,a,i5,a)'   
 

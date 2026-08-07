@@ -1836,6 +1836,299 @@
 
       end subroutine getstarp
 !****************************************************************************
+      subroutine size_force_constants(nrank,nshell,ngroups, &
+     &     ntermszero,maxnterm,maxntermsindep,mxwork,mxiwork,mxzwork)
+!! Determines the EXACT sizes of the force-constant arrays of rank nrank, before
+!! any of them is allocated. It walks the same group-discovery loop as
+!! collect_force_constants, but keeps only what is needed to recognise a term
+!! that has already been seen, and throws away the coefficient matrix. Its
+!! outputs are meant to be used to allocate the arrays that
+!! collect_force_constants then fills, so that no array is ever over-allocated
+!! and the symmetry analysis never has to be restarted with a larger guess.
+!!
+!! arguments:
+!!     nrank (input), order of the derivative
+!!     nshell (input), neighbor shells to include, per atom of the primitive cell
+!!     ngroups (output), number of groups of symmetry-related terms
+!!     ntermszero (output), total number of terms that vanish by symmetry
+!!     maxnterm, maxntermsindep (output), the largest per-group count of all
+!!          terms and of independent terms
+!!     mxwork, mxiwork, mxzwork (output), work-array bounds that were sufficient
+!!          for every call to force_constants. These are what the caller must
+!!          allocate, NOT maxnterm: inside force_constants the same bound
+!!          maxterms also limits the number of symmetry equations neqs, which is
+!!          generally larger than the number of terms in the group.
+!!
+!! The per-group counts themselves are returned in the module arrays
+!! svd_stuff::nterm and svd_stuff::ntermsindep, which this routine allocates to
+!! exactly ngroups elements.
+!!
+!! The per-group work arrays handed to force_constants are grown and the call
+!! retried when they turn out to be too small. That retry costs one group, not
+!! the whole analysis.
+      use atoms_force_constants
+      use svd_stuff, only : nterm,ntermsindep
+      use ios , only : ulog
+      use constants, only : r15
+      implicit none
+      integer, intent(in) :: nrank,nshell(natom_prim_cell)
+      integer, intent(out):: ngroups,ntermszero,maxnterm,maxntermsindep
+      integer, intent(out):: mxwork,mxiwork,mxzwork
+
+! growable store of the terms of every group found so far, kept flat:
+! group g occupies keyat(:,gofs(g)+1 : gofs(g)+gcnt(g))
+      integer, allocatable :: keyat(:,:),keyxyz(:,:),gofs(:),gcnt(:)
+      integer, allocatable :: zat(:,:),zxyz(:,:)
+      integer, allocatable :: ntg(:),ntig(:)
+! per-group scratch handed to force_constants
+      integer, allocatable :: iatind(:,:),ixyzind(:,:),iatall(:,:),ixyzall(:,:)
+      integer, allocatable :: iat0(:,:),ixyz0(:,:)
+      real(r15), allocatable :: amloc(:,:)
+
+      integer i,j,k,m,n0,iatom,iatom0,iatomd(nrank),ixyz,ngroupsave,nzsave
+      integer ixyzd(nrank),icell(3),iatomd2(nrank),ixyzd2(nrank)
+      integer nkey,mxkey,mxgrp,mxzero,mxt,mxti,mxt0,ierz,iert,ieri,itry,g,i1,i2
+      integer ntloc,ntiloc
+      logical firsttime,seen
+
+      if(nrank.gt.8)then
+        write(ulog,*)'SIZE_FORCE_CONSTANTS: nrank too large ',nrank
+        stop
+      endif
+
+! initial capacities; these only affect how often we reallocate, never the result
+      mxkey = 4096 ; mxgrp = 256 ; mxzero = 1024
+      allocate(keyat(nrank,mxkey),keyxyz(nrank,mxkey))
+      allocate(gofs(mxgrp),gcnt(mxgrp),ntg(mxgrp),ntig(mxgrp))
+      allocate(zat(nrank,mxzero),zxyz(nrank,mxzero))
+! per-group scratch: start modest, grown on demand below
+      mxt = 64 ; mxti = 16 ; mxt0 = 64
+      call alloc_scratch
+
+      ngroups=0 ; ntermszero=0 ; nkey=0
+
+      iatom0loop: do iatom0=1,natom_prim_cell
+        do iatom=1,natoms
+          if(iatomneighbor(iatom0,iatom).le.nshell(iatom0))exit
+          if(iatom.eq.natoms)then
+            write(6,*)'SIZE_FORCE_CONSTANTS: first nearest neighbor not found'
+            stop
+          endif
+        enddo
+        iatomd(1:nrank)=iatom
+        iatomd(nrank)=iatom-1
+        iatomd(1)=iatom0
+        firsttime=.true.
+        nextatomloop: do while(.true.)
+          if(firsttime)then
+            firsttime=.false.
+          else
+            if(nrank.eq.1)exit nextatomloop
+          endif
+          iloop: do i=nrank,2,-1
+            jloop: do j=iatomd(i)+1,natoms
+              if(iatomneighbor(iatom0,j).le.nshell(iatom0))then
+                do k=2,i-1
+                  do m=1,3
+                    icell(m)=iatomcell(m,iatomd(k))-iatomcell(m,j)
+                  enddo
+                  call find_atompos(icell,iatomcell0(iatomd(k)),m)
+                  if(m.eq.0)cycle jloop
+                  if(iatomneighbor(iatomcell0(j),m).gt.nshell(iatom0)) cycle jloop
+                enddo
+                iatomd(i:nrank)=j
+                exit iloop
+              endif
+            enddo jloop
+            if(i.eq.2)cycle iatom0loop
+          enddo iloop
+
+! already known, as an atom set?
+          ixyzd=1
+          call unique_force_constant(nrank,iatomd,ixyzd,iatomd2,ixyzd2)
+          do i=1,nkey
+            seen=.true.
+            do j=1,nrank
+              if(keyat(j,i).ne.iatomd2(j))then
+                 seen=.false. ; exit
+              endif
+            enddo
+            if(seen) cycle nextatomloop
+          enddo
+          do i=1,ntermszero
+            seen=.true.
+            do j=1,nrank
+              if(zat(j,i).ne.iatomd2(j))then
+                 seen=.false. ; exit
+              endif
+            enddo
+            if(seen) cycle nextatomloop
+          enddo
+
+          ngroupsave=ngroups
+          nzsave=ntermszero
+          ixyzloop: do ixyz=1,3**nrank
+            m=ixyz-1
+            do i=1,nrank
+              ixyzd(i)=mod(m,3)+1
+              m=m/3
+            enddo
+            call unique_force_constant(nrank,iatomd,ixyzd, iatomd2,ixyzd2)
+! already generated in this pass over the coordinate sets?
+            do g=ngroupsave+1,ngroups
+              i1=gofs(g)+1 ; i2=gofs(g)+gcnt(g)
+              do i=i1,i2
+                seen=.true.
+                do j=1,nrank
+                  if(keyat(j,i).ne.iatomd2(j).or.keyxyz(j,i).ne.ixyzd2(j))then
+                     seen=.false. ; exit
+                  endif
+                enddo
+                if(seen) cycle ixyzloop
+              enddo
+            enddo
+            do i=nzsave+1,ntermszero
+              seen=.true.
+              do j=1,nrank
+                if(zat(j,i).ne.iatomd2(j).or.zxyz(j,i).ne.ixyzd2(j))then
+                   seen=.false. ; exit
+                endif
+              enddo
+              if(seen) cycle ixyzloop
+            enddo
+
+! new group: generate its terms, growing the scratch until it fits
+            itry=0
+            retry: do
+              itry=itry+1
+              if(itry.gt.40)then
+                write(ulog,*)'SIZE_FORCE_CONSTANTS: scratch growth did not converge'
+                stop
+              endif
+              call force_constants(nrank,amloc,iatomd2,ixyzd2,  &
+     &             ntiloc,iatind,ixyzind, ntloc,iatall,ixyzall,  &
+     &             n0,iat0,ixyz0, nrank,mxt,mxti,mxt0, ierz,iert,ieri)
+              if(ierz.eq.0 .and. iert.eq.0 .and. ieri.eq.0) exit retry
+              if(iert.ne.0) mxt  = 2*mxt
+              if(ieri.ne.0) mxti = 2*mxti
+              if(ierz.ne.0) mxt0 = 2*mxt0
+              if(mxti.gt.mxt) mxti=mxt
+              call alloc_scratch
+            enddo retry
+
+            ngroups=ngroups+1
+            call grow_groups(ngroups)
+            ntg (ngroups)=ntloc
+            ntig(ngroups)=ntiloc
+
+! record this group's terms for the duplicate tests, and the new zero terms
+            call grow_keys(nkey+ntg(ngroups))
+            gofs(ngroups)=nkey
+            gcnt(ngroups)=ntg(ngroups)
+            do i=1,ntg(ngroups)
+              keyat (1:nrank,nkey+i)=iatall (1:nrank,i)
+              keyxyz(1:nrank,nkey+i)=ixyzall(1:nrank,i)
+            enddo
+            nkey=nkey+ntg(ngroups)
+
+            call grow_zeros(ntermszero+n0)
+            do i=1,n0
+              zat (1:nrank,ntermszero+i)=iat0 (1:nrank,i)
+              zxyz(1:nrank,ntermszero+i)=ixyz0(1:nrank,i)
+            enddo
+            ntermszero=ntermszero+n0
+
+! a group with no surviving term is not a group
+            if(ntg(ngroups).eq.0)then
+              nkey=nkey-gcnt(ngroups)
+              ngroups=ngroups-1
+            endif
+          enddo ixyzloop
+        enddo nextatomloop
+      enddo iatom0loop
+
+      if(allocated(nterm))       deallocate(nterm)
+      if(allocated(ntermsindep)) deallocate(ntermsindep)
+      allocate(nterm(max(ngroups,1)),ntermsindep(max(ngroups,1)))
+      nterm=0 ; ntermsindep=0
+      if(ngroups.gt.0)then
+        nterm      (1:ngroups)=ntg (1:ngroups)
+        ntermsindep(1:ngroups)=ntig(1:ngroups)
+      endif
+      maxnterm       = 0
+      maxntermsindep = 0
+      if(ngroups.gt.0)then
+        maxnterm       = maxval(nterm(1:ngroups))
+        maxntermsindep = maxval(ntermsindep(1:ngroups))
+      endif
+
+      mxwork  = mxt
+      mxiwork = mxti
+      mxzwork = mxt0
+
+      write(ulog,3)'SIZE_FORCE_CONSTANTS: rank,ngroups,ntermszero=',nrank,ngroups,ntermszero
+      write(ulog,3)'SIZE_FORCE_CONSTANTS: sum(nt),sum(ntind),max nt,max ntind=', &
+     &      sum(nterm),sum(ntermsindep),maxnterm,maxntermsindep
+      write(ulog,3)'SIZE_FORCE_CONSTANTS: work bounds mxt,mxti,mxt0=',mxwork,mxiwork,mxzwork
+      write(*   ,3)'SIZE_FORCE_CONSTANTS: rank,ngroups,ntermszero=',nrank,ngroups,ntermszero
+
+      deallocate(keyat,keyxyz,gofs,gcnt,zat,zxyz,ntg,ntig)
+      deallocate(iatind,ixyzind,iatall,ixyzall,iat0,ixyz0,amloc)
+
+ 3    format(a,99(i8))
+
+      contains
+
+      subroutine alloc_scratch
+      if(allocated(iatind )) deallocate(iatind,ixyzind,iatall,ixyzall,iat0,ixyz0,amloc)
+      allocate(iatind(nrank,mxt),ixyzind(nrank,mxt))
+      allocate(iatall(nrank,mxt),ixyzall(nrank,mxt))
+      allocate(iat0(nrank,mxt0),ixyz0(nrank,mxt0))
+      allocate(amloc(mxt,mxti))
+      end subroutine alloc_scratch
+
+      subroutine grow_keys(need)
+      integer, intent(in) :: need
+      integer, allocatable :: t1(:,:),t2(:,:)
+      if(need.le.mxkey) return
+      do while(mxkey.lt.need)
+         mxkey=2*mxkey
+      enddo
+      allocate(t1(nrank,mxkey),t2(nrank,mxkey)); t1=0; t2=0
+      t1(:,1:nkey)=keyat(:,1:nkey) ; t2(:,1:nkey)=keyxyz(:,1:nkey)
+      call move_alloc(t1,keyat) ; call move_alloc(t2,keyxyz)
+      end subroutine grow_keys
+
+      subroutine grow_zeros(need)
+      integer, intent(in) :: need
+      integer, allocatable :: t1(:,:),t2(:,:)
+      if(need.le.mxzero) return
+      do while(mxzero.lt.need)
+         mxzero=2*mxzero
+      enddo
+      allocate(t1(nrank,mxzero),t2(nrank,mxzero)); t1=0; t2=0
+      t1(:,1:ntermszero)=zat(:,1:ntermszero) ; t2(:,1:ntermszero)=zxyz(:,1:ntermszero)
+      call move_alloc(t1,zat) ; call move_alloc(t2,zxyz)
+      end subroutine grow_zeros
+
+      subroutine grow_groups(need)
+      integer, intent(in) :: need
+      integer, allocatable :: t1(:),t2(:),t3(:),t4(:)
+      integer nold
+      if(need.le.mxgrp) return
+      nold=mxgrp
+      do while(mxgrp.lt.need)
+         mxgrp=2*mxgrp
+      enddo
+      allocate(t1(mxgrp),t2(mxgrp),t3(mxgrp),t4(mxgrp)); t1=0;t2=0;t3=0;t4=0
+      t1(1:nold)=gofs(1:nold) ; t2(1:nold)=gcnt(1:nold)
+      t3(1:nold)=ntg (1:nold) ; t4(1:nold)=ntig(1:nold)
+      call move_alloc(t1,gofs) ; call move_alloc(t2,gcnt)
+      call move_alloc(t3,ntg ) ; call move_alloc(t4,ntig)
+      end subroutine grow_groups
+
+      end subroutine size_force_constants
+!****************************************************************************
        subroutine collect_force_constants(nrank,nshell,   &
      &     maxrank,maxterms,maxtermsindep,maxtermszero,maxgroups,  &
      &     ngroups,amat,  &
