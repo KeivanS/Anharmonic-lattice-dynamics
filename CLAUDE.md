@@ -84,10 +84,22 @@ build at zero warnings.
   masses *and* charges). Documented in `docs/source/runscsnaps.rst`; that repo
   has its own `CLAUDE.md` with the details.
 
-## This working copy is not a git repo
+## Where the git clone is
 
-`/Users/ke4c/PROJECTS/Anharmonic-lattice-dynamics-main-3` has no `.git`, so
-nothing here can be committed or pushed. A real clone is needed before any of
-this reaches GitHub or Read the Docs. (`git` over HTTPS to GitHub does work from
-this machine when the Bash sandbox is disabled; `WebFetch` and sandboxed `curl`
-do not.)
+**This directory is not a git repo** — it is an unzipped snapshot. The clone to
+commit from is:
+
+```
+"/Users/ke4c/Documents/Documents - MAE-/GitHub/Anharmonic-lattice-dynamics"
+```
+
+(note the space in the path). Work there, or edit here and port the files over —
+as of 2026-08-07 the two trees are identical apart from deliberate edits. That
+clone also holds untracked user work (`FOCEX/SNAPS/`, `FOCEX/todo`) and a local
+uncommitted `.gitignore` line — leave all three alone. It was 214 commits behind
+origin/main on 2026-08-07; check with `git fetch && git status -sb` before
+assuming it is current.
+
+`git` over HTTPS to GitHub works **only with the Bash sandbox disabled**;
+`WebFetch` and sandboxed `curl` cannot reach github.com at all. Other hosts
+(readthedocs.io, PyPI) are fine.
