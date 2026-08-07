@@ -6,6 +6,8 @@ energy with respect to atomic displacements about their equilibrium
 position. We write the potential energy in the following form:
 
 .. math::
+    :label: actualPotential
+
     V = V_0 + \sum_i \Pi_i u_i +  \frac{1}{2!} \sum_{ij}\Phi_{ij} \, u_i u_j +  \frac{1}{3!} \sum_{ijk}\Psi_{ijk} \,
     u_i u_j u_k + \frac{1}{4!} \sum_{ijkl}\chi_{ijkl} \, u_i u_j u_k u_l
 
@@ -188,7 +190,7 @@ Choice of variational parameter
 From here we can use variational approach in an iterative manner to
 minimize the trial Free energy :math:`F_{trial}` by solving the
 gradients of it with respect to different variational parameters. The
-Broyden method is being used in the code for this non-linear root
+Broyden method [Broyden]_ is being used in the code for this non-linear root
 finding process. As mentioned previously, the variational parameters in
 this formalism are internal relaxation of atoms :math:`u_i^0`, strain
 tensor :math:`\eta` and trial harmonic force constants :math:`K_{ij}`.
@@ -459,7 +461,7 @@ Elastic constants
 -----------------
 
 
-It is possible to extract the elastic constants from the knowledge of the force constants :cite:`Wallace1998`. Below, we outline a simpler method and provide the final formulas.
+It is possible to extract the elastic constants from the knowledge of the force constants [Wallace1998]_. Below, we outline a simpler method and provide the final formulas.
 
 Under a uniform applied strain, denoted by :math:`\eta_{\alpha\beta} = \partial u_{\alpha} / \partial r_{\beta}`, a point :math:`x` of the medium is moved to :math:`x'_{\alpha} = x_{\alpha} + \eta_{\alpha\beta} x_{\beta}`, and the total energy of the harmonic crystal is increased, by definition of the elastic constants, by:
 
@@ -610,3 +612,5 @@ Direct
 .. [Broyden] Broyden, C.G., 1965. A class of methods for solving nonlinear simultaneous equations. Mathematics of Computation 19, 577. 
 
 .. [Esfarjani2018] Ohno, K., Esfarjani, K., Kawazoe, Y., 2018. Computational materials science: From Ab Initio to Monte Carlo methods. 2nd ed., Springer Series in Solid-State Sciences, Berlin Heidelberg.
+
+.. [Wallace1998] Wallace, D.C., 1998. Thermodynamics of Crystals. Dover Publications, New York.

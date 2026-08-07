@@ -1,76 +1,68 @@
-###### Example for input parameter file to run FOrce Constants EXtraction(FOCEX)
+# FOCEX examples
 
-###### params.inp
+Each subfolder is a complete, self-contained FOCEX run: it holds every input
+file needed, plus the output of a previous run for comparison.
 
-1. `1 1 1 90 90 90`  &rarr; crystal structure x,y,z, $ \alpha $, $ \beta $, $ \gamma $
+The full description of every input and output file is in the manual,
+[Running FOCEX](https://aladyn.readthedocs.io/en/latest/runfocex.html)
+(source: `docs/source/runfocex.rst`). This page is only a quick summary.
 
-2. `0 0.5 0.5 0.5 0 0.5 0.5 0.5  0` &rarr; primitive lattice vector for example here in Ge
+## Ge
 
-3. `5.762862` &rarr; lattice scale factor, must be consistent with POSCAR file
+Germanium in the diamond structure: a 216-atom supercell (3x3x3 of the 8-atom
+conventional cubic cell, a = 5.7022565 Ang) and 36 snapshots in which all atoms
+are thermally displaced. Ranks 1, 2 and 3 are fitted.
 
-4. `9` &rarr; number of maximum shell to include in the force constant calculation from the supercell
+### Running it
 
-5. `1 1 1 0` &rarr;  1st, 2nd, 3rd and 4th order force constants, 1 is include and 0 is do not include in the fitting
+```bash
+mkdir -p ~/runs/Ge && cd ~/runs/Ge
+cp <repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
+~/BIN/v16                 # or whatever you named the FOCEX binary
+```
 
-6. `1 0 0 0` &rarr;  flags for including translational and rotational and Huang invariance constraints, 1 is to include and 0 to not include
+The run is serial and takes a few minutes on one core. Expected results:
 
-7. `0.0001 1.e-5`  &rarr; tolerance for equating (two coordinates in general), margin for eliminating a FC
+| quantity | value |
+| --- | --- |
+| snapshots read | 36 |
+| irreducible FC2 / FC3 | 78 / 95 (173 unknowns in total) |
+| translational / rotational / Huang constraints | 14 / 84 / 15 |
+| fit error `||F_dft - F_fit|| / ||F_dft||` | 0.036 % |
+| C11, C12, C44 | 121.1, 68.0, 47.4 GPa |
+| Bulk modulus (Hill) | 85.7 GPa |
+| Debye temperature | 313.6 K |
 
-8. `1d-9` &rarr;     svd cutoff for the smallest eigenvalue to be included
+### Input files
 
-9. `1  .TRUE.`
+| file | contents |
+| --- | --- |
+| `structure.params` | primitive cell, ranks to fit, FC ranges, invariance and fit options |
+| `dielectric.params` | Born-charge flag, dielectric tensor, Born effective charges (all zero here: Ge is non-polar) |
+| `latdyn.params` | k-mesh, DOS mesh and broadening, temperature range for the thermodynamics |
+| `kpbs.params` | k-point path for the phonon band structure |
+| `default.params` | numerical thresholds and array limits; a `0` on a line means "use the built-in default" |
+| `POSCAR1` | equilibrium positions of the supercell, old (VASP-4) POSCAR format — **no element-name line** |
+| `FORCEDISP1` | the 36 snapshots: positions/displacements, forces and total energy |
 
-10. `1` &rarr; number of types of atom
+`FORCEDISP1` in this example uses the "vasprun" block format, in which the
+header line carries the energy after `(eV):` and each atom line contains a
+displacement (in Bohr) followed by a force. The alternative — and preferred —
+format, produced by `utility/read_outcar.x` and `utility/read_qe.x`, starts each
+block with a line containing the word `POSITION` and lists absolute positions in
+Ang and forces in eV/Ang. Both are described in the manual.
 
-11. `72.64` &rarr; Mass of each individual atom
+### Output files
 
-12. `Ge` &rarr; Name of atoms
+The interesting ones are `fc2.dat`/`fc2_irr.dat` and `fc3.dat`/`fc3_irr.dat`
+(the full and the irreducible force constants, in eV/Ang^2 and eV/Ang^3),
+`lat_fc.dat` (the structure information that goes with them — the other ALATDYN
+codes need it), `bs_freq.dat` and `bands.dat` (phonon dispersion), `ibz_dos.dat`
+(density of states), `mech.dat` (elastic tensor and moduli), `thermo_QHA.dat`
+(quasi-harmonic thermodynamics) and the `log*.dat` file, which records
+everything the code decided and should be read after every run.
 
-13. `2` &rarr;    number of atoms in the primitive cell, coordinates are in reduced units (of cubic cell)
-
-14. `1 1`
-
-15. `5 5` &rarr; number of neighbors for calculating force constants
-
-16. `1 1`
-
-17. `1 1`
-
-18. `1 1 0.00 0.00 0.00` &rarr; position of first atom in the primitive lattice
-
-19. `2 1 0.25 0.25 0.25` &rarr; position of second atom in the primitive lattice
-
-20. `300.00` &rarr; Temperature to evaluate force constant at, force constant files won’t be generated at this point but independent force constant displayed at the terminal
-
-    
-
-    ###### POSCAR1
-
-    This file is the POSCAR file for supercell
-
-    ###### OUTCAR1
-
-    This file consists of position of displaced atom along x, y and z-direction and $F_x$, $F_y$ and $F_z$ along with the energy of each of the displaced structure. For example:
-
-    `\# POSITION   TOTAL FORCE`
-
-       `1    -289.18629538 =t, Etot(eV)`
-
-      `2.89296000    0.00000000    2.88142999   -0.11758299    -0.00000000    -0.00000000`   
-
-      `2.88142999    0.00000000    8.64428999    4.96000000E-004 -0.0000000    -0.00000000`   
-
-      `2.88142999    5.76285999    2.88142999    4.96000000E-004 -0.00000000    -0.00000000 `  
-
-      `2.88142999    5.76285999    8.64428999    -4.564000003E-003 -0.00000000    -0.00000000`
-
-    `…               …                     …                 …        …             …`
-
-    Here, the first line is the header for position and force for each atom in x, y and z direction. The second line consists of the energy of structure and the lines after second are positions (first three columns, x,y and z) and forces (the last three columns Fx, Fy and Fz).
-
-    
-
-    
-
-
-
+> **Note.** The output files stored in `Ge/` were produced by an older version
+> of the code. Their numbers, and the column layout of the `fc*.dat` files,
+> differ slightly from what the current version writes. Use a fresh run as the
+> reference.

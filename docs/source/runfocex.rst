@@ -1,364 +1,899 @@
 Running FOCEX
-==============
+=============
 
-.. FOrce Constant EXtraction (FOCEX)
-.. ---------------------------------
+Overview
+--------
 
-.. role:: raw-math(raw)
-	:format: latex html
+**FOCEX** (*FOrce Constant EXtraction*) takes a set of force–displacement data
+computed in one or several supercells — typically by a DFT code such as VASP or
+Quantum Espresso — and extracts from it the harmonic and anharmonic force
+constants (FCs) of the crystal, defined as the derivatives of the potential
+energy with respect to atomic displacements (see :doc:`theory`).
 
-.. only:: html
-	:math:`\\require{mediawiki-texvc}`
+The extraction proceeds in three stages:
 
-Preliminaries
------------------
-The input to FOCEX is a set of foce-displacement files, outputs of DFT calculation of supercells in which atoms have moved according to some scheme. There is a separate file for each supercell shape. Typically users use only one supercell, like 3x3x3, but you can generate more. The needed files by FOCEX are called ``POSCAR1`` and ``FORCEDISP1`` if there is only one supercell shape, otherwise you will also have ``POSCAR2`` and ``FORCEDISP2``, etc... 
-These files are generated using the utility ``sc_snaps.x`` which has 3 input files. ``cell.inp`` contains the information on atoms in the primitive or conventional cell. ``supercell.inp`` contains the three translation vectors of the supercell in terms of those of the primitive cell as defined in ``cell.inp``. Finally in ``snaps.inp`` the user specifies the temperature for canonical sampling, a typical frequency scale and the number of required snapshots (typically, depending on the size of the supercell, and the number of required force constants 10 to 50 should be enough). 
-1-Run `sc_snaps.x` to generate the needed ``POSCAR`` files corresponding to each snapshot. They have the standard VASP format. After running VASP on each of these files, you collect a bunch of ``OUTCAR`` files, which you can rename ``outcar1``, ``outcar2``, ... ``outcarn``. 
-2-Run ``xtract.sh`` script to generate the ``FORCEDISP1`` file which will be used by FOCEX. The ``POSCAR1`` file contains the equilibrium atomic coordinates (force=0) in the supercell.
+1. **Symmetry analysis.** From the primitive cell described in
+   ``structure.params``, FOCEX finds the space-group operations of the crystal,
+   builds the neighbor shells around each atom of the primitive cell, and
+   determines which FCs of each requested rank are *irreducible* (independent).
+   All remaining FCs are expressed as linear combinations of these.
 
-Before running FOCEX you also need to prepare its other input files: ``default.params`` (you need it but don't have to touch it), ``structure.params``, ``dielectric.params`` containing the dielectric tensor and Born effective charges, ``kpbs.params`` containing the k-point paths for phonon band structure calculation, ``latdyn.params`` for density of states and thermodynamic properties calculations. Example are provided, and explanation of each line is in the file itself.
+2. **Linear fit by SVD.** Each snapshot in ``FORCEDISPi`` contributes
+   :math:`3 N_{sc}` linear equations relating the DFT forces to the unknown
+   irreducible FCs. Rows expressing translational (ASR), rotational and Huang
+   invariance are added to this system, which is then solved in the
+   least-squares sense by singular value decomposition.
 
+3. **Post-processing.** From the fitted FCs, FOCEX computes the phonon band
+   structure, group velocities, density of states, mode Gruneisen parameters,
+   elastic and compliance tensors, sound speeds, Debye temperature, and
+   quasi-harmonic thermodynamic properties (free energy, heat capacity,
+   entropy, thermal expansion) over a temperature range.
 
-The  workflow of the FOCEX code is shown below to give a general understanding of how the code is structured and executed 
+The FCs written by FOCEX are also the input of the other ALATDYN codes
+(``THERMACOND``, ``SCOP8``, ``ANFOMOD``).
 
-Workflow of FOCEX
------------------
-The  workflow of the FOCEX code is shown below to give a general understanding of how the code is structured and executed as a black box. Many of the intermediate steps in this process flow may even not be necessary to actually run the code. The one which are important are highlighted on the workflow diagram and are later explained in detail. 
+.. note::
+
+   Ranks up to 8 can be fitted, but only ranks 1–4 are written to ``fcN.dat``
+   files. In practice ranks 2 (harmonic), 3 (cubic) and 4 (quartic) are the
+   useful ones.
+
+Workflow
+--------
 
 .. image:: ./WorkFlow-FOCEX-Website.svg
   :width: 600
   :align: center
 
-General steps for running FOCEX to get the force constants are given below:
+In words, a complete calculation consists of the following steps. Steps 1–3 are
+done outside FOCEX and produce the two "data" files ``POSCAR1`` and
+``FORCEDISP1``; steps 4–5 are the FOCEX run itself.
 
-Description of input and output files
--------------------------------------
+#. **Generate snapshots.** Use ``sc_snaps.x`` (in ``FOCEX/utility``) to build a
+   supercell and a set of snapshots in which all atoms are displaced according
+   to a canonical (thermal) distribution at a chosen temperature.
+#. **Run the DFT code** on each snapshot to obtain the forces on every atom.
+#. **Collect the results** into ``POSCAR1`` (equilibrium supercell) and
+   ``FORCEDISP1`` (positions/displacements + forces + energy for every
+   snapshot), using ``read_outcar.x`` / ``read_qe.x`` and the helper scripts.
+#. **Prepare the five parameter files** ``structure.params``,
+   ``dielectric.params``, ``latdyn.params``, ``kpbs.params`` and
+   ``default.params``.
+#. **Run FOCEX** in that directory. It writes the force constants, the phonon
+   and thermodynamic properties, and a detailed log file.
 
-* **Preparing FOCEX data files**
+If you want to use more than one supercell shape (recommended when you fit
+cubic and quartic terms), repeat steps 1–3 for each shape and name the results
+``POSCAR1``/``FORCEDISP1``, ``POSCAR2``/``FORCEDISP2``, …
 
-    FOCEX code accepts DFT force displacement files prepared by any software like VASP, or Quantum Espresso. We provide utility tools to extract forces and displacements in a supercell from VASP OUTCAR or Quantum Espresso output files. All the generated displacement-force data for each atomic snapshot are concatenated into a single file called FORCEDISP1. The equilibrium atomic positions in the supercell should be in a file called POSCAR1 which has the exact format of the VASP POSCAR file except atom type name. For example if the ``POSCAR`` file for Ge is this
+.. _focex-quickstart:
 
-     .. code-block:: python
+Quick start: the Ge example
+---------------------------
 
-        Ge8
-	1.0
-   	5.6748542148543777    0.0000000000000000    0.0000000000000003
-   	0.0000000000000009    5.6748542148543777    0.0000000000000003
-   	0.0000000000000000    0.0000000000000000    5.6748542148543777
-	Ge
-	8
-	direct
-   	0.0000000000000000    0.0000000000000000    0.5000000000000000
-   	0.2500000000000000    0.2500000000000000    0.7500000000000000
-   	0.0000000000000000    0.5000000000000000    0.0000000000000000
-   	0.2500000000000000    0.7500000000000000    0.2500000000000000
-   	0.5000000000000000    0.0000000000000000    0.0000000000000000
-   	0.7500000000000000    0.2500000000000000    0.2500000000000000
-   	0.5000000000000000    0.5000000000000000    0.5000000000000000
-   	0.7500000000000000    0.7500000000000000    0.7500000000000000 
+A complete, ready-to-run example is provided in ``FOCEX/example/Ge``. It uses a
+216-atom supercell of germanium (:math:`3\times3\times3` of the 8-atom
+conventional cubic cell, :math:`a = 5.7022565` Å) and 36 snapshots.
 
-    Then ``POSCAR1`` file is this:
+.. code-block:: bash
 
-      .. code-block:: python
+   # after compiling (see the Installation chapter)
+   mkdir -p ~/runs/Ge && cd ~/runs/Ge
+   cp <path-to-repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
+   <path-to-your-binary>          # e.g.  ~/BIN/v16
 
-        Ge8
-        1.0
-        5.6748542148543777    0.0000000000000000    0.0000000000000003
-        0.0000000000000009    5.6748542148543777    0.0000000000000003
-        0.0000000000000000    0.0000000000000000    5.6748542148543777
-        8
-        direct
-        0.0000000000000000    0.0000000000000000    0.5000000000000000
-        0.2500000000000000    0.2500000000000000    0.7500000000000000
-        0.0000000000000000    0.5000000000000000    0.0000000000000000
-        0.2500000000000000    0.7500000000000000    0.2500000000000000
-        0.5000000000000000    0.0000000000000000    0.0000000000000000
-        0.7500000000000000    0.2500000000000000    0.2500000000000000
-        0.5000000000000000    0.5000000000000000    0.5000000000000000
-        0.7500000000000000    0.7500000000000000    0.7500000000000000
+On a single modern core the run takes a few minutes. It should end with
 
-   If there are other supercells, the equilibrium positions and displacement-force data should be stored in POSCAR2 and FORCEDISP2 ... etc. The detailed description of the ``FORCEDISP1`` file is given in the example section :ref:`example-focex` 
+.. code-block:: text
 
-.. collapse:: utility tool
+   Program  FOCEX ended at ...
 
-  To prepare the ``FORCEDISPi`` file there is a shell script inside ``utility`` folder.  The shell script ``process_dft.sh`` executes the ``read_outcar.x`` and ``read_qe.x`` binary to generate force-displacement file for VASP and QE respectively.  
+and produce, among others, ``fc2.dat``, ``fc2_irr.dat``, ``fc3.dat``,
+``fc3_irr.dat``, ``bs_freq.dat``, ``ibz_dos.dat``, ``mech.dat``,
+``thermo_QHA.dat`` and a log file whose name encodes the run settings (see
+:ref:`focex-logname`).
 
-* **Preparing input files**
+The reference results for this example are:
 
-    The input file(s) required to run FOCEX are ``structure.params``, ``dielectric.params``, ``kpbs.params``, ``latdyn.params``, ``defaults.params``, ``POSCAR1`` and ``FORCEDISP1``.  
+.. code-block:: text
 
-.. collapse:: structure.params
+   number of configurations (snapshots)     36
+   independent (irreducible) FC2 / FC3      78 / 95   (173 in total)
+   translational / rotational / Huang       14 / 84 / 15  constraints
+   fit quality  || F_dft - F_fit || / || F_dft ||   0.036 %
+   C11, C12, C44 (GPa)                      121.1, 68.0, 47.4
+   Bulk modulus (Hill, GPa)                 85.7
+   Debye temperature (K)                    313.6
 
-    something about structure.params file
+.. warning::
 
-.. collapse:: dielectric.params
+   The files shipped *next to* the example inputs (``fc2.dat``, ``log*.dat``,
+   ``svd-all.dat``, …) were produced by an older version of the code; their
+   numbers and, for the FC files, their column layout differ slightly from what
+   the current version writes. Trust a fresh run rather than the stored output.
 
-    something about dielectric.params file
+Preparing the DFT data
+----------------------
 
-.. collapse:: kpbs.params
+Generating the snapshots (``sc_snaps.x``)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    something about kpbs.params file
+``sc_snaps.x`` builds a supercell from the primitive cell and writes a set of
+POSCAR-format snapshots in which *all* atoms are displaced simultaneously,
+sampled from a classical canonical distribution at temperature ``T`` along the
+normal modes of a simple model potential. Displacing all atoms at once (rather
+than one atom at a time) makes far better use of each expensive DFT run.
 
-.. collapse:: defaults.params
+It reads three small input files, all of which live in ``FOCEX/utility``:
 
-    something about defaults.params file
+``cell.inp`` — the primitive/conventional cell
 
-.. collapse:: latdyn.params
+.. code-block:: text
 
-    something about latdyn.params file
+   1 1 1   90 90 90                # conventional cell a,b,c,alpha,beta,gamma
+   0 0.5 0.5 0.5 0 0.5 0.5 0.5 0   # primitive vectors R01,R02,R03 in units of the conventional cell
+   5.                              # length scale of the lattice parameters (Ang)
+   2                               # number of atom types
+   1   1                           # number of atoms of each type
+   23  35.45                       # mass of each type (uma)
+   Na Mg                           # names of the types
+   0 0 0                           # reduced coordinates (conventional units) of atom 1
+   0 0 0.5                         # ... of atom 2
 
-.. collapse:: POSCAR1
+``supercell.inp`` — the supercell, in units of the **conventional** cell vectors
 
-    something about POSCAR1
+.. code-block:: text
 
-.. collapse:: FORCEDISP1
+   3 0 0     # supercell vectors in terms of the conventional cell vectors
+   0 3 0
+   0 0 3
 
-    The format of this file is : First line is a comment and should contain " # POSITION ...", second line should contain an integer followed by the total energy of the supercell snapshot in eV. Units for positions or displacements should be in Angstrom, and forces in eV/Ang. 
+``snaps.inp`` — the sampling parameters
 
-.. collapse:: kpbs.params
+.. code-block:: text
 
-    The first line contains a flag. If 0, the kpoints are given in reduced units of the primitive vectors of the reciprocal space, else they should be in reduced coordinates of the conventional lattice vectors of the reciprocal space. The second line contains the number of kpoints along each direction, The third line contains the number of direction paths. The following lines contain the name of the special point followed by the 3 reduced components of the special kpoint in units of primitive (if flag=0) or conventional (if flag is non-zero) vectors of the reciprocal lattice. 
-    
-    ``kpbs.params``
+   500    # average/typical phonon frequency (1/cm); 500/cm = 15 THz
+   300    # temperature (K) for the canonical sampling of displacements
+   15     # number of snapshots (20-50 is usually plenty)
 
-    .. code-block:: python
+Running ``sc_snaps.x`` produces
 
-      30 # number of kpoints along each direction
-      4  # number of directions
-      G 0 0 0
-      K 0.75 0.75 0
-      X 1 1 0
-      G 0 0 0
-      L 0.5 0.5 0.5
+* ``poscar_000`` — the **undistorted** supercell,
+* ``poscar_001`` … ``poscar_0nn`` — the displaced snapshots,
+* ``snapshots.xyz``, ``SC.xyz`` — the same information for visualisation,
+* ``log.dat``, ``freqs.dat``, ``modes.dat`` — diagnostics of the model
+  normal modes used for the sampling.
 
-* **output files**
+Each ``poscar_0nn`` is a VASP POSCAR in Cartesian coordinates; the last three
+columns are the sampled velocities and are ignored by VASP.
 
-	* fc1.dat and fc2_irr.dat
+.. tip::
 
-	* fc2.dat and fc2_irr.dat
+   How many snapshots do you need? The fit needs at least as many force
+   components (:math:`3 N_{sc}` per snapshot) as there are independent FCs, and
+   comfortably more for a stable least-squares solution. The Ge example uses
+   36 snapshots × 648 force components = 23 328 equations for 173 unknowns.
+   Start with 10–20 snapshots and add more if the singular values reported in
+   ``svd-all.dat`` become small or the fit error is large.
 
-	* fc3.dat and fc3_irr.dat
+.. note::
 
-	* lat_fc.xyz 
+   The description above is of the copy bundled in ``FOCEX/utility``, which is
+   older than the standalone release. SC-SNAPS is now developed in its own
+   repository and comes with a graphical interface; its current input format
+   differs (line 3 of ``cell.inp`` takes two values, line 6 takes masses and
+   charges). See :doc:`runscsnaps`.
 
-	* log***.dat
- 
-Example of Running FOCEX
------------------------
+Running the DFT code
+^^^^^^^^^^^^^^^^^^^^
 
-.. _example-focex:
+Run a *single-point* (no relaxation) force calculation on each snapshot.
+Accurate forces matter: use a well-converged k-mesh and plane-wave cutoff, and
+tight electronic convergence, since the FCs are obtained by differentiating
+these forces.
 
-Ge
-^^^^
+``FOCEX/utility/runall.sh`` shows the pattern for VASP:
 
-FOrce Constant Extraction (FOCEX) is a code to extract force constants from force-displacements data, the output of which can be used as input to the following codes.
-The installation of FOCEX has to be done before using it and is given in section :ref:`focex-install`. This code, FOCEX (FOrce Constant EXtraction) included in ALATDYN (Anharmonic LATtice DYNamics) employs the
-force constant calculation, 2nd, 3rd and 4th order to be latter used for other thermodynamical properties. The installation of FOCEX is simple and just require the
-fortran compiler.
+.. code-block:: bash
 
-An example of **Ge** is provided inside **FOCEX/example** which contains the needed input files described above, and the FOCEX output. In this
-calculation a single Ge atom in the 2x2x2 Ge supercell (64 atoms) is displaced by 4% to evaluate the forces. The force-displacement data is stored in ``FORCEDISP1`` file.
-The equilibrium coordinates are in ``POSCAR1`` in the older VASP POSCAR format as below. 
+   for x in poscar_*
+   do
+     cp $x POSCAR
+     mpirun -np 8 vasp_std
+     read_outcar.x                    # writes pos-forc.dat from OUTCAR
+     cat pos-forc.dat >> FORCEDISP1   # append this snapshot
+   done
 
-.. code-block:: python
+``runall-slurm.sh`` is the equivalent for a Slurm cluster.
 
-  Ge8 # this is a comment
-  1.0  # scale factor
-  11.5257244110         0.0000000000         0.0000000000  # supercell
-  0.0000000000        11.5257244110         0.0000000000
-  0.0000000000         0.0000000000        11.5257244110
-  64  # number of atoms in the supercell
-  Cartesian
-  2.881431103         0.000000000         2.881431103
-  2.881431103         0.000000000         8.644293308
-  2.881431103         5.762862206         2.881431103
-  2.881431103         5.762862206         8.644293308
-  8.644293308         0.000000000         2.881431103
-  8.644293308         0.000000000         8.644293308
-  8.644293308         5.762862206         2.881431103
-  8.644293308         5.762862206         8.644293308
-  1.440715551         1.440715551         1.440715551
-  1.440715551         1.440715551         7.203577757
-  1.440715551         7.203577757         1.440715551
-  1.440715551         7.203577757         7.203577757
-  7.203577757         1.440715551         1.440715551
-  7.203577757         1.440715551         7.203577757
-  7.203577757         7.203577757         1.440715551
-  7.203577757         7.203577757         7.203577757
-  2.881431103         2.881431103         0.000000000
-  2.881431103         2.881431103         5.762862206
-  2.881431103         8.644293308         0.000000000
-  2.881431103         8.644293308         5.762862206
-  8.644293308         2.881431103         0.000000000
-  8.644293308         2.881431103         5.762862206
-  8.644293308         8.644293308         0.000000000
-  8.644293308         8.644293308         5.762862206
-  1.440715551         4.322146654         4.322146654
-  1.440715551         4.322146654        10.085008860
-  1.440715551        10.085008860         4.322146654
-  1.440715551        10.085008860        10.085008860
-  7.203577757         4.322146654         4.322146654
-  7.203577757         4.322146654        10.085008860
-  7.203577757        10.085008860         4.322146654
-  7.203577757        10.085008860        10.085008860
-  0.000000000         0.000000000         0.000000000
-  0.000000000         0.000000000         5.762862206
-  0.000000000         5.762862206         0.000000000
-  0.000000000         5.762862206         5.762862206
-  5.762862206         0.000000000         0.000000000
-  5.762862206         0.000000000         5.762862206
-  5.762862206         5.762862206         0.000000000
-  5.762862206         5.762862206         5.762862206
-  4.322146654         1.440715551         4.322146654
-  4.322146654         1.440715551        10.085008860
-  4.322146654         7.203577757         4.322146654
-  4.322146654         7.203577757        10.085008860
-  10.085008860         1.440715551         4.322146654
-  10.085008860         1.440715551        10.085008860
-  10.085008860         7.203577757         4.322146654
-  10.085008860         7.203577757        10.085008860
-  0.000000000         2.881431103         2.881431103
-  0.000000000         2.881431103         8.644293308
-  0.000000000         8.644293308         2.881431103
-  0.000000000         8.644293308         8.644293308
-  5.762862206         2.881431103         2.881431103
-  5.762862206         2.881431103         8.644293308
-  5.762862206         8.644293308         2.881431103
-  5.762862206         8.644293308         8.644293308
-  4.322146654         4.322146654         1.440715551
-  4.322146654         4.322146654         7.203577757
-  4.322146654        10.085008860         1.440715551
-  4.322146654        10.085008860         7.203577757
-  10.085008860         4.322146654         1.440715551
-  10.085008860         4.322146654         7.203577757
-  10.085008860        10.085008860         1.440715551
-  10.085008860        10.085008860         7.203577757
+Building ``POSCARi`` and ``FORCEDISPi``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Here, only the type of atom is not present in ``POSCAR1`` as compared to the new format of VASP POSCAR file. Similarly, ``FORCEDISP1`` is a force-displacement data format
-accepted by FOCEX code and its format for example in the case of Ge is given below.
+**POSCAR1** holds the *equilibrium* atomic positions of the supercell. It is the
+undistorted snapshot ``poscar_000`` (or the POSCAR you used to build the
+snapshots) **with the line containing the element names removed** — FOCEX
+expects the older VASP-4 POSCAR layout, in which the counts of atoms of each
+type follow the third lattice vector directly:
 
-.. code-block:: python
+.. code-block:: bash
 
-  # POSITION (ang)     TOTAL FORCE (eV/Ang)  
-     1       -289.18629538 =t, Etot(eV)     # snapshot #1
-   2.8929600000000000        0.0000000000000000        2.8814299999999999      -0.11758299999999999       -0.0000000000000000       -0.0000000000000000
-   2.8814299999999999        0.0000000000000000        8.6442899999999998        4.9600000000000002E-004  -0.0000000000000000       -0.0000000000000000
-   2.8814299999999999        5.7628599999999999        2.8814299999999999        4.9600000000000002E-004  -0.0000000000000000       -0.0000000000000000
-   2.8814299999999999        5.7628599999999999        8.6442899999999998       -4.5640000000000003E-003  -0.0000000000000000       -0.0000000000000000
-   8.6442899999999998        0.0000000000000000        2.8814299999999999        3.2899999999999997E-004  -0.0000000000000000       -0.0000000000000000
-   8.6442899999999998        0.0000000000000000        8.6442899999999998       -1.5699999999999999E-004  -0.0000000000000000       -0.0000000000000000
-   8.6442899999999998        5.7628599999999999        2.8814299999999999       -1.5699999999999999E-004  -0.0000000000000000       -0.0000000000000000
-   8.6442899999999998        5.7628599999999999        8.6442899999999998        2.6699999999999998E-004  -0.0000000000000000       -0.0000000000000000
-   1.4407200000000000        1.4407200000000000        1.4407200000000000        2.8677000000000001E-002  -1.9474999999999999E-002   1.9474999999999999E-002
-   1.4407200000000000        1.4407200000000000        7.2035799999999997       -4.8099999999999998E-004  -7.1400000000000001E-004   3.2800000000000000E-004
-   1.4407200000000000        7.2035799999999997        1.4407200000000000       -4.8099999999999998E-004  -3.2800000000000000E-004   7.1400000000000001E-004
-   1.4407200000000000        7.2035799999999997        7.2035799999999997        2.4350000000000001E-003  -4.0000000000000003E-005   4.0000000000000003E-005
-   7.2035799999999997        1.4407200000000000        1.4407200000000000       -1.8400000000000000E-004  -3.3000000000000000E-004   3.3000000000000000E-004
-   7.2035799999999997        1.4407200000000000        7.2035799999999997        8.3999999999999995E-005  -4.3999999999999999E-005   3.4000000000000000E-005
-   7.2035799999999997        7.2035799999999997        1.4407200000000000        8.3999999999999995E-005  -3.4000000000000000E-005   4.3999999999999999E-005
-   7.2035799999999997        7.2035799999999997        7.2035799999999997       -2.1599999999999999E-004  -3.4400000000000001E-004   3.4400000000000001E-004
-   2.8814299999999999        2.8814299999999999        0.0000000000000000       -4.0619999999999996E-003   7.2599999999999997E-004  -7.2599999999999997E-004
-   2.8814299999999999        2.8814299999999999        5.7628599999999999       -4.0780000000000000E-003  -7.3099999999999999E-004  -7.3099999999999999E-004
-   2.8814299999999999        8.6442899999999998        0.0000000000000000       -4.0780000000000000E-003   7.3099999999999999E-004   7.3099999999999999E-004
-   2.8814299999999999        8.6442899999999998        5.7628599999999999       -4.0619999999999996E-003  -7.2599999999999997E-004   7.2599999999999997E-004
-   8.6442899999999998        2.8814299999999999        0.0000000000000000        1.0700000000000000E-004   6.0000000000000002E-005  -6.0000000000000002E-005
-   8.6442899999999998        2.8814299999999999        5.7628599999999999        1.0300000000000000E-004  -5.7000000000000003E-005  -5.7000000000000003E-005
-   8.6442899999999998        8.6442899999999998        0.0000000000000000        1.0300000000000000E-004   5.7000000000000003E-005   5.7000000000000003E-005
-   8.6442899999999998        8.6442899999999998        5.7628599999999999        1.0700000000000000E-004  -6.0000000000000002E-005   6.0000000000000002E-005
-   1.4407200000000000        4.3221499999999997        4.3221499999999997       -4.8099999999999998E-004   3.2800000000000000E-004  -7.1400000000000001E-004
-   1.4407200000000000        4.3221499999999997        10.085010000000000        2.4350000000000001E-003   4.0000000000000003E-005  -4.0000000000000003E-005
-   1.4407200000000000        10.085010000000000        4.3221499999999997        2.8677000000000001E-002   1.9474999999999999E-002  -1.9474999999999999E-002
-   1.4407200000000000        10.085010000000000        10.085010000000000       -4.8099999999999998E-004   7.1400000000000001E-004  -3.2800000000000000E-004
-   7.2035799999999997        4.3221499999999997        4.3221499999999997        8.3999999999999995E-005   3.4000000000000000E-005  -4.3999999999999999E-005
-   7.2035799999999997        4.3221499999999997        10.085010000000000       -2.1599999999999999E-004   3.4400000000000001E-004  -3.4400000000000001E-004
-   7.2035799999999997        10.085010000000000        4.3221499999999997       -1.8400000000000000E-004   3.3000000000000000E-004  -3.3000000000000000E-004
-   7.2035799999999997        10.085010000000000        10.085010000000000        8.3999999999999995E-005   4.3999999999999999E-005  -3.4000000000000000E-005
-   0.0000000000000000        0.0000000000000000        0.0000000000000000        1.6290000000000000E-003  -7.2499999999999995E-004   1.4820000000000000E-003
-   0.0000000000000000        0.0000000000000000        5.7628599999999999        1.6290000000000000E-003   7.2499999999999995E-004  -1.4820000000000000E-003
-   0.0000000000000000        5.7628599999999999        0.0000000000000000        4.2000000000000002E-004  -5.8000000000000000E-005  -8.8500000000000004E-004
-   0.0000000000000000        5.7628599999999999        5.7628599999999999        4.2000000000000002E-004   5.8000000000000000E-005   8.8500000000000004E-004
-   5.7628599999999999        0.0000000000000000        0.0000000000000000        1.6550000000000000E-003  -7.3399999999999995E-004  -1.5030000000000000E-003
-   5.7628599999999999        0.0000000000000000        5.7628599999999999        1.6550000000000000E-003   7.3399999999999995E-004   1.5030000000000000E-003
-   5.7628599999999999        5.7628599999999999        0.0000000000000000        4.2000000000000002E-004  -5.7000000000000003E-005   8.8000000000000003E-004
-   5.7628599999999999        5.7628599999999999        5.7628599999999999        4.2000000000000002E-004   5.7000000000000003E-005  -8.8000000000000003E-004
-   4.3221499999999997        1.4407200000000000        4.3221499999999997        2.8958999999999999E-002   2.0014000000000001E-002   2.0014000000000001E-002
-   4.3221499999999997        1.4407200000000000        10.085010000000000       -4.8400000000000000E-004   7.0799999999999997E-004   3.3000000000000000E-004
-   4.3221499999999997        7.2035799999999997        4.3221499999999997       -4.8400000000000000E-004   3.3000000000000000E-004   7.0799999999999997E-004
-   4.3221499999999997        7.2035799999999997        10.085010000000000        2.4480000000000001E-003   4.0000000000000003E-005   4.0000000000000003E-005
-   10.085010000000000        1.4407200000000000        4.3221499999999997       -1.8000000000000001E-004   3.2899999999999997E-004   3.2899999999999997E-004
-   10.085010000000000        1.4407200000000000        10.085010000000000        7.7999999999999999E-005   3.4999999999999997E-005   2.8000000000000000E-005
-   10.085010000000000        7.2035799999999997        4.3221499999999997        7.7999999999999999E-005   2.8000000000000000E-005   3.4999999999999997E-005
-   10.085010000000000        7.2035799999999997        10.085010000000000       -2.1200000000000000E-004   3.4699999999999998E-004   3.4699999999999998E-004
-   0.0000000000000000        2.8814299999999999        2.8814299999999999        1.6290000000000000E-003  -1.4820000000000000E-003   7.2499999999999995E-004
-   0.0000000000000000        2.8814299999999999        8.6442899999999998        4.2000000000000002E-004   8.8500000000000004E-004   5.8000000000000000E-005
-   0.0000000000000000        8.6442899999999998        2.8814299999999999        1.6290000000000000E-003   1.4820000000000000E-003  -7.2499999999999995E-004
-   0.0000000000000000        8.6442899999999998        8.6442899999999998        4.2000000000000002E-004  -8.8500000000000004E-004  -5.8000000000000000E-005
-   5.7628599999999999        2.8814299999999999        2.8814299999999999        1.6550000000000000E-003   1.5030000000000000E-003   7.3399999999999995E-004
-   5.7628599999999999        2.8814299999999999        8.6442899999999998        4.2000000000000002E-004  -8.8000000000000003E-004   5.7000000000000003E-005
-   5.7628599999999999        8.6442899999999998        2.8814299999999999        1.6550000000000000E-003  -1.5030000000000000E-003  -7.3399999999999995E-004
-   5.7628599999999999        8.6442899999999998        8.6442899999999998        4.2000000000000002E-004   8.8000000000000003E-004  -5.7000000000000003E-005
-   4.3221499999999997        4.3221499999999997        1.4407200000000000       -4.8400000000000000E-004  -3.3000000000000000E-004  -7.0799999999999997E-004
-   4.3221499999999997        4.3221499999999997        7.2035799999999997        2.4480000000000001E-003  -4.0000000000000003E-005  -4.0000000000000003E-005
-   4.3221499999999997        10.085010000000000        1.4407200000000000        2.8958999999999999E-002  -2.0014000000000001E-002  -2.0014000000000001E-002
-   4.3221499999999997        10.085010000000000        7.2035799999999997       -4.8400000000000000E-004  -7.0799999999999997E-004  -3.3000000000000000E-004
-   10.085010000000000        4.3221499999999997        1.4407200000000000        7.7999999999999999E-005  -2.8000000000000000E-005  -3.4999999999999997E-005
-   10.085010000000000        4.3221499999999997        7.2035799999999997       -2.1200000000000000E-004  -3.4699999999999998E-004  -3.4699999999999998E-004
-   10.085010000000000        10.085010000000000        1.4407200000000000       -1.8000000000000001E-004  -3.2899999999999997E-004  -3.2899999999999997E-004
-   10.085010000000000        10.085010000000000        7.2035799999999997        7.7999999999999999E-005  -3.4999999999999997E-005  -2.8000000000000000E-005
-  # POSITION (ang)     TOTAL FORCE (eV/Ang)  
-     1       -289.18629538 =t, Etot(eV)     # snapshot #2
-   2.8929600000000000        0.0000000000000000        2.8814299999999999      -0.11758299999999999       -0.0000000000000000       -0.0000000000000000
-   2.8814299999999999        0.0000000000000000        8.6442899999999998        4.9600000000000002E-004  -0.0000000000000000       -0.0000000000000000
-   ...
+   sed '6d' poscar_000 > POSCAR1     # delete the "Na Mg" (element names) line
 
+**FORCEDISP1** is the concatenation of the per-snapshot force/position blocks.
+Two converters are provided in ``FOCEX/utility``:
 
-The first line in ``FORCEDISP1`` is the header and should contain the word POSITION. The second line
-consists of the energy of structure in electron volt and the lines after second are positions (first three columns, :math:`x`, :math:`y` and :math:`z`) and forces
-(the last three columns :math:`F_x`, :math:`F_y` and :math:`F_z` are in :math:`eV/{\\A}`) respectively. If there are many force-displacement snapshots of the structure, then the other snapshots follow these lines in the same format. There is a tool and a shell script for converting the VASP outcar or QE outputfile into the FORCEDISP1 format for the FOCEX code. It is available in **utility** folder inside FOCEX. To convert the VASP outcar into FORCEDISP1 user need to execute ``./process_dft.sh name_of_vasp_directory(s)`` or ``./process_dft.sh name_of_vasp_file`` shell script within utility folder. Here, ``name_of_vasp_directory(s)`` is the multiple directory containing VASP runs or QE runs or ``name_of_vasp_file`` is the OUTCAR file(s) for VASP or the outputfile for QE runs. This shell script will call the ``readoutcar.x`` or ``readpfpwscf.x`` taking as input the DFT output from VASP or QE. The shell script can be tailored as per your needs. As for the other inputs file of FOCEX, they are given below
+* ``read_outcar.x`` reads the file named ``OUTCAR`` in the current directory and
+  writes ``pos-forc.dat``;
+* ``read_qe.x`` does the same for a Quantum Espresso (PWSCF) output file, whose
+  name it expects on standard input:
+
+  .. code-block:: bash
+
+     echo pw.out | read_qe.x
+
+Both write format A below, converting to Å and eV/Å as needed. One ``OUTCAR``
+may contain several ionic steps; each becomes one snapshot.
+
+Either can be driven by the shell scripts ``xtract.sh`` (loops over ``OUTCAR*``
+files in one directory) or ``process_dft.sh`` (walks a directory tree looking
+for ``OUTCAR`` files). Both simply concatenate the resulting ``pos-forc.dat``
+files into ``FORCEDISP1``; adapt them to your directory layout.
+
+.. _focex-poscar:
+
+Format of ``POSCARi``
+^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: text
+
+   This line is a comment and ignored           <- line 1: free-form comment
+    1.000000                                    <- scale factor (see note)
+      17.1067694871620333    0.0000000000    0.0000000000    <- supercell vector 1
+       0.0000000000   17.1067694871620333    0.0000000000    <- supercell vector 2
+       0.0000000000    0.0000000000   17.1067694871620333    <- supercell vector 3
+     216                                        <- number of atoms of each type (one integer per type)
+   Direct                                       <- "Direct"/"D" or "Cartesian"/"C"
+       0.0000000000    0.0000000000    0.0000000000
+       0.0000000000    0.0000000000    0.3333333333
+       ...                                      <- one line per atom
+
+Notes:
+
+* There is **no element-name line**: line 6 must contain ``natom_type``
+  integers, in the same order as the types declared in ``structure.params``.
+* The scale factor multiplies the three lattice vectors (and Cartesian atomic
+  positions). A *negative* value is interpreted, as in VASP, as minus the
+  volume of the cell.
+* A ``Selective dynamics`` line before the coordinate flag is tolerated.
+* Extra columns after the three coordinates (element labels, velocities) are
+  ignored.
+* FOCEX checks that the volume per atom of the supercell matches that of the
+  primitive cell declared in ``structure.params`` and stops if they differ.
+
+.. _focex-forcedisp:
+
+Format of ``FORCEDISPi``
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Each snapshot is one block. Two block formats are recognised; a file may not
+mix them.
+
+**Format A — "POSITION" (recommended).** This is what ``read_outcar.x`` and
+``read_qe.x`` write. Positions are absolute Cartesian coordinates in Å, forces
+in eV/Å:
+
+.. code-block:: text
+
+   # POSITION (Ang)     TOTAL FORCE (eV/Ang)         <- must contain the word POSITION
+        1       -289.18629538 =t, Etot(eV)           <- snapshot index, total energy (eV)
+     2.89296000   0.00000000   2.88142999   -0.11758300  -0.00000000  -0.00000000
+     2.88142999   0.00000000   8.64428999    0.00049600  -0.00000000  -0.00000000
+     ...                                             <- exactly N_sc lines, in POSCARi order
+        2       -289.1953     =t, Etot(eV)           <- snapshot index, total energy (eV)
+     2.89396000   0.00400000   2.88342999   -0.11758300  -0.00000000  -0.00000000
+     2.85142999   0.02000000   8.67428999    0.00049600  -0.00000000  -0.00000000
+     ...                                             <- exactly N_sc lines, in POSCARi order
+
+The first line of a block is recognised by the word ``POSITION``; the second
+line must contain an integer followed by the total energy of that snapshot in
+eV; then come exactly :math:`N_{sc}` lines of ``x y z Fx Fy Fz``. The atoms must
+appear in the same order as in ``POSCARi``. FOCEX subtracts the equilibrium
+positions itself and folds the resulting displacement back into the supercell,
+so wrapped/unwrapped coordinates are both fine.
+
+**Format B — "vasprun".** Used by the shipped Ge example. The header line must
+contain the word ``vasprun`` and the substring ``(eV):`` followed by the energy;
+the following :math:`N_{sc}` lines contain **displacements** (not absolute
+positions) and forces:
+
+.. code-block:: text
+
+   # Filename: vasprun1.xml, Snapshot: 1, E_pot (eV): -1057.32911508
+         0.0188971    0.0000000    0.0000000   -4.24665168E-03  0.0  0.0
+         0.0000000    0.0000000    0.0000000    7.67997159E-06  ...
+         ...
+
+The displacements are multiplied internally by 0.529177 and the forces by
+27.2116 before use (i.e. displacements are read in Bohr). Prefer format A for
+new work: its units are unambiguous.
+
+.. note::
+
+   Energies are only used when the Boltzmann weighting of snapshots is switched
+   on (``itemp = 1`` in ``structure.params``). FOCEX subtracts the lowest energy
+   of the first file and normalises by the number of atoms, so the absolute
+   reference is irrelevant. Even when the weighting is off, the energy column
+   must be present and parsable.
+
+Input files
+-----------
+
+Five parameter files must be present in the run directory, next to
+``POSCARi``/``FORCEDISPi``. All of them are read by list-directed (free-format)
+Fortran ``read`` statements: **only the leading numbers of each line matter**,
+and anything after them on the same line is treated as a comment. The *number
+and order of the lines is fixed* — do not insert or delete lines.
+
+.. _focex-structure-params:
 
 ``structure.params``
+^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: python
+The main input file: it describes the primitive cell, the range of the FCs and
+the options of the fit.
 
-  1 1 1 90 90 90          # a, b, c, alpha, beta, gamma of the conventional cell
-  0 .5 .5   .5 0 .5   .5 .5 0 # reduced coordinates of primitive lattice (in this case FCC) in terms of conventional lattice (in this case cubic)
-  5.7628622055            # scale factor for lattice size
-  1 1 1 1                 # include FC1234, 1st, 2nd, third and fourth order harmonic force constant(s) in the fitting process. 1 is to include and 0 is to not include
-  1 1 0 0                 # invariances to impose, (translational, rotational, Huang) last is enforce inv using elimination
-  0 300                   # temperature and whether or not implement it (do not implement if 0,2, or ..)
-  1 .true.                # number  of FORCEDISPi files, verbosity
-  1                       # type of atoms
-  72.64                   # masses of each type of atoms
-  Ge                      # names of atoms
-  2                       # number of atoms of each type in the primitive cell
-  1                       # flag for setting the range of FC2s (if 0 take default; else use below)
-  5 5                     # number of shells for rank 2 (harmonic) for each atom if not default
-  1 1                     # number of shells for rank 3 (cubic) for each atom (there is no default value)
-  1 1                     # number of shells for rank 4 (quartic) for each atom (there is no default value)
-  1 1 0 0 0               # atom index, type of atom, position x, position y, position z in units of a,b,c of the conventional lattice
-  2 1 0.25 0.25 0.25      # atom index, type of atom, position x, position y, position z in units of a,b,c
+.. code-block:: text
 
-The fitting is done using singular value decomposition based on the requested symmetry constraints and ``POSCAR1`` and ``FORCEDISP1`` i.e. by creating the force displacement matrix. 
+   1 1 1 90 90 90                 #  1  a,b,c,alpha,beta,gamma of the CONVENTIONAL cell
+   0 0.5 0.5  0.5 0 0.5  0.5 0.5 0  # 2  primitive vectors in units of the conventional cell
+   5.7022565                      #  3  scale factor multiplying a,b,c (Ang)
+   1 1 1 0 0 0 0 0                #  4  include ranks 1...8 in the fit (0=no, 1=yes, 2=read)
+   1 1 0 0                        #  5  itrans, irot, ihuang, enforce_inv
+   0 300                          #  6  itemp(0=no temperature weighting), tempk
+   1 .false.                      #  7  number of FORCEDISP/POSCAR file pairs, verbosity
+   1                              #  8  number of atom types
+   72.64                          #  9  mass of each type (uma)
+   Ge                             # 10  name of each type
+   2                              # 11  number of atoms in the primitive cell
+   0                              # 12  fc2range (0=default covers all the largest supercell)
+   11 11                          # 13  neighbor shells for rank 2, ONE PER ATOM of the prim. cell(if fc2range>0)
+   3 3                            # 14  neighbor shells for rank 3
+   0 0                            # 15  neighbor shells for rank 4
+   0 0                            # 16  neighbor shells for rank 5
+   0 0                            # 17  neighbor shells for rank 6
+   0 0                            # 18  neighbor shells for rank 7
+   0 0                            # 19  neighbor shells for rank 8
+   1 1 0    0    0                # 20  atom 1: index, type, reduced coordinates (CONVENTIONAL units)
+   2 1 0.25 0.25 0.25             # 21  atom 2: index, type, reduced coordinates
 
+Line by line:
 
-The next input file is ``dielectric.params``. It is required to get the phonon dispersion (and eventually thermal conductivity using ``THERMACOND``). It consists of a flag which is zero if the Born charges are to be excluded. The second, third and fourth lines contain the dielectric constant tensor values which is written as follows in the example folder inside ``FOCEX``
+**1. Conventional cell** — ``a b c alpha beta gamma``. The lengths are
+multiplied by the scale factor of line 3; the angles are in degrees.
+
+**2. Primitive lattice** — nine numbers, read as three groups of three: the
+Cartesian-free components of :math:`R_{01}, R_{02}, R_{03}` expressed in units
+of the conventional cell vectors. For the FCC example above,
+:math:`R_{01} = (0, a/2, a/2)`. Use ``1 0 0 0 1 0 0 0 1`` if your conventional
+cell *is* the primitive cell.
+
+**3. Scale factor** — multiplies ``a``, ``b`` and ``c``. It must be consistent
+with ``POSCARi``: FOCEX compares the volume per atom of both cells and stops on
+a mismatch.
+
+**4. Ranks to include** — eight flags, for ranks 1 to 8:
+
+  * ``0`` — this rank is excluded from the model;
+  * ``1`` — this rank is fitted;
+  * ``2`` — this rank is read from an existing ``fcN_irr.dat`` instead of being
+    fitted (experimental — check the log carefully if you use it).
+
+  Rank 1 (the residual force :math:`\Pi`) should normally be included: it is
+  zero only if the reference structure is exactly at its energy minimum.
+
+**5. Invariance flags** — ``itrans irot ihuang enforce_inv``; ``1`` switches the
+constraint on, ``0`` off.
+
+  * ``itrans`` — translational invariance (acoustic sum rule). Keep it on;
+    without it the acoustic branches will not go to zero at :math:`\Gamma`.
+  * ``irot`` — rotational invariance. Relates rank :math:`n` to rank
+    :math:`n+1`; useful when several ranks are fitted together.
+  * ``ihuang`` — Huang : makes sure elastic tensor is symetric ; needed for low-symmetry crystals.
+  * ``enforce_inv`` — how the constraints are imposed. ``0``: the constraint
+    equations are appended as extra rows of the least-squares system and are
+    therefore satisfied only approximately. ``1``: the force equations alone are
+    solved by SVD and the solution is then projected onto the kernel of the
+    constraint matrix, so the invariances are satisfied *exactly*; the
+    elimination is documented in ``elimination.dat`` and ``svd-elim.dat``.
+
+**6. Temperature weighting** — ``itemp tempk``. With ``itemp = 0`` every
+snapshot has the same weight (``tempk`` is then unused but must be present).
+With ``itemp = 1`` snapshots are weighted by the Boltzmann factor
+:math:`e^{-E/k_B T}` at ``tempk`` (K), using the energies read from
+``FORCEDISPi``. Use ``0`` unless you know you want the weighting.
+
+**7. Data files and verbosity** — ``fdfiles verbose``. ``fdfiles`` is the number
+of supercell shapes, i.e. of ``POSCARi``/``FORCEDISPi`` *pairs*
+(``i = 1 … fdfiles``); it must be a single digit. ``verbose`` is a Fortran
+logical (``.true.``/``.false.``); ``.true.`` writes the fit matrices to
+``amatrx.dat`` and adds per-snapshot dumps to the log — very large files, use it
+only for debugging.
+
+**8–10. Atom types** — the number of distinct elements, then their masses (uma)
+and names, in the *same order as the atom counts in* ``POSCARi``.
+
+**11. Atoms in the primitive cell** — the *total* number of atoms in the
+primitive cell (not per type).
+
+**12.** ``fc2range`` — how the range of the harmonic FCs is chosen:
+
+  * ``0`` — automatic: the range is the largest sphere that fits in the
+    Wigner-Seitz cell of the biggest supercell provided, and the shell counts on
+    line 13 are overwritten accordingly. This is the safe default.
+  * ``1`` — use the shell counts of line 13; any shell reaching beyond the
+    supercell is still discarded, with a warning in the log.
+
+**13–19. Neighbor shells** — one line per rank (2 … 8), each containing
+``natom_prim_cell`` integers: how many neighbor shells around each atom of the
+primitive cell are included for that rank. ``0`` means "no FC of this rank on
+this atom". Ranks whose flag on line 4 is ``0`` are ignored, but their line must
+still be present. The radius of each shell is listed in the log file and in
+``pairs.dat``, so you can convert shells to Å after a first run.
+
+**20…** — one line per atom of the primitive cell: ``index type x y z``, where
+the index must run 1, 2, 3 … in order, ``type`` refers to lines 8–10, and
+``x y z`` are **reduced coordinates in units of the conventional cell vectors**
+(not the primitive ones).
+
+.. tip::
+
+   Convergence with respect to range is the main physical approximation in
+   FOCEX. Increase the number of harmonic shells until the phonon dispersion
+   stops changing, and check that the cubic/quartic shells you request are
+   really sampled by your supercell — one shell for rank 4 and two or three for
+   rank 3 is a common, economical starting point.
 
 ``dielectric.params``
+^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: python
+Long-range electrostatics. Required even for non-polar crystals, in which case
+only the first line matters.
 
-  0               # do not include Born charges in the fitting
-  2.5078 0.0  0.0 # for example, dielectric constant (necessary but not used if flag is zero) 
-  0.0 2.5078 0.0
-  0.0 0.0 2.5078
-  0 0 0           # Born charge tensor of atom 1 in order it appears in the ``structure.params``
-  0 0 0 
-  0 0 0
-  0 0 0           # Born charge tensor of atom 2 in order it appears in the ``structure.params``
-  0 0 0
-  0 0 0 
+.. code-block:: text
 
-Now, put the ``POSCAR1``, ``FORCEDISP1`` , ``structure.params``, ``dielectric.params`` and ``kpbs.params`` in same directory, simply run ``focex.x``. After successful
-run ``fc2.dat``, ``fc2_irr.dat``, ``fc3.dat``, ``fc3_irr.dat``, ``fc4.dat`` and ``fc4_irr.dat`` along with other output files and log file should be available. ``fc2.dat``, ``fc2_irr.dat`` are the fitted second order force constants in eV/Ang^2. The former contains all the pairs regardless of symmetry, and the latter contains the irreducible ones from which all the rest is contructed using crystal symmetry. Likewise ``fc3.dat``, ``fc3_irr.dat`` and ``fc4.dat``, ``fc4_irr.dat`` contain the third order and fourth order full and irreducible force constants in eV/Ang^3 and eV/Ang^4 respectively. Users are advised to look for more information in the log file ``log***.dat`` to know more details about the run.
- 
+   0                                    # born_flag (0 to exclude NA corrections)
+   15.842   0.000   0.000               # dielectric tensor epsilon (3 lines)
+    0.000  16.455   0.000
+    0.000   0.000  16.638
+   0 0 0                                # Born effective charge tensor of atom 1 (3 lines)
+   0 0 0
+   0 0 0
+   0 0 0                                # Born effective charge tensor of atom 2
+   0 0 0
+   0 0 0
+
+* ``born_flag = 0`` — Born charges are ignored (correct for non-polar crystals
+  such as Si, Ge, and the simplest choice to start with ; no LO-TO splitting).
+* ``born_flag = 1`` — nothing is subtracted from the DFT forces, but the
+  non-analytical (Parlinski) term is added to the dynamical matrix.
+* ``born_flag = 2`` — the Ewald force is subtracted from the input forces before
+  the fit, so that the fitted FCs are purely short-ranged, and the
+  non-analytical term is added back when the dynamical matrix is built. This is
+  the recommended setting for polar materials.
+* ``born_flag = 3, 4, 6, 7, 8, 9`` — variants of the subtraction scheme intended
+  for development and testing; the log file states which one is active.
+
+There must be exactly ``natom_prim_cell`` Born-charge blocks, in the order in
+which the atoms are declared in ``structure.params``. The acoustic sum rule is
+imposed on the charges automatically (the excess is spread equally over the
+atoms), and the ASR-corrected values are echoed to the log.
+
+``latdyn.params``
+^^^^^^^^^^^^^^^^^
+
+Controls the Brillouin-zone sampling and the thermodynamic post-processing.
+
+.. code-block:: text
+
+   12 12 12          # 1  k-mesh (n1,n2,n3) for BZ integrations
+   0 0 0  1 0 0      # 2  shift of the mesh (fractions of a mesh step); normal direction
+   300 350.0         # 3  number of frequency points for the DOS; omega_max (1/cm)
+   10                # 4  Gaussian broadening of the DOS (1/cm)
+   .False.           # 5  (read but not used; verbosity is set in structure.params)
+   0 900             # 6  Tmin, Tmax (K) range for the thermodynamic properties
+   0                 # 7  0 = quantum (Bose-Einstein), 1 = classical occupations
+
+Line 2 contains **six** numbers: the three components of the mesh shift followed
+by the three components of a unit vector used as the surface normal for the
+mode-counting/conductance and optical outputs. A missing normal is
+the most common cause of a crash in this file.
+
+The temperature loop runs from ``Tmin`` to ``Tmax`` with a step of 2 K below
+40 K, 5 K below 150 K and 50 K above (about 30 temperatures for 0–900 K); any
+third number on line 6 is ignored.
+
+``kpbs.params``
+^^^^^^^^^^^^^^^
+
+The k-point path for the phonon band structure.
+
+.. code-block:: text
+
+   0             # 1  units: 0 = reduced coordinates of the CONVENTIONAL reciprocal cell,
+                 #           1 = reduced coordinates of the PRIMITIVE reciprocal cell
+   40            # 2  number of k-points along each segment
+   7             # 3  number of segments (directions)
+   X 0    1    1        # name and coordinates of the start of segment 1
+   K 0    0.75 0.75     # end of segment 1 / start of segment 2
+   G 0    0.   0.0001   # ...
+   X 1    0    0
+   L 0.5  0.5  0.5
+   W 0.   0.5  1
+   U 0.25 0.25 1
+   G 0    0.   0.0001   # end of segment 7
+
+There must be exactly ``number of segments + 1`` k-point lines: the path is
+continuous, and each line is both the end of one segment and the start of the
+next. The label is a short string used for the tick marks in ``KTICS.BS`` file used for plotting.
+
+.. tip::
+
+   Give :math:`\Gamma` a tiny offset (``0 0 0.0001``) as in the example above.
+   Exactly at :math:`q = 0` the non-analytical term of a polar crystal is
+   direction-dependent and undefined, and degeneracies make band sorting
+   ambiguous.
+
+``default.params``
+^^^^^^^^^^^^^^^^^^
+
+Numerical thresholds and array-size limits. **A zero on any line means "use the
+built-in default"**, which is what the comment on that line states — so in
+practice you copy this file unchanged and never touch it. It has 36 lines, in
+this order: tolerance, force error, neighbor-cell cutoff, margin, then
+``maxterms(1:8)``, ``maxtermzero(1:8)``, ``maxtermsindep(1:8)`` and
+``maxgroups(1:8)``.
+
+.. code-block:: text
+
+   0      tolerance for equating to zero (2d-3)      # if 0 take the default value
+   0      force error value for inversion/regularization (1d-5)
+   0      cutoff for how many cells away (6 cells) to include when making neighborlists
+   0      margin for eliminating small force constants (1d-6)
+   0      maxterms(1)=40
+   ...
+
+The four meaningful knobs are:
+
+* **tolerance** (default :math:`10^{-4}` Å) — two coordinates closer than this
+  are considered equal when identifying symmetry-equivalent atoms. Increase it
+  if a slightly distorted or loosely converged structure makes FOCEX miss
+  symmetry operations.
+* **force error** (default :math:`10^{-5}`) — the estimated noise level of the
+  DFT forces. Its square is used as the SVD cutoff: singular values smaller than
+  ``w_max × force_error²`` are discarded in the inversion.
+* **cutoff** (default 6) — how many cells away neighbors are searched for; it
+  sets the size of the internal ``atompos`` list.
+* **margin** (default :math:`10^{-6}`) — FCs smaller than this are not written
+  to the ``fcN.dat`` files.
+
+The ``maxterms``/``maxgroups`` entries are upper bounds on the number of terms
+and groups stored per rank. If a run stops complaining that one of these is too
+small, raise the corresponding line for that rank.
+
+Running FOCEX
+-------------
+
+FOCEX takes no command-line argument and reads no standard input: put all the
+input files in one directory, ``cd`` into it and run the binary.
+
+.. code-block:: bash
+
+   cd my_material
+   ls
+   # default.params  dielectric.params  kpbs.params  latdyn.params
+   # structure.params  POSCAR1  FORCEDISP1
+   ~/BIN/v16 | tee focex.out
+
+The run is serial and memory-bound: the largest array is the fit matrix, of
+size (number of force components + constraints) × (number of independent FCs).
+The Ge example builds a 23 441 × 173 matrix and needs a few minutes and well
+under 1 GB.
+
+.. _focex-logname:
+
+The log file name
+^^^^^^^^^^^^^^^^^
+
+The log file records the settings of the run in its own name, so that runs with
+different ranges or options do not overwrite each other:
+
+.. code-block:: text
+
+   log 1 df B00 _ 00_03_0 _ tr00 .dat
+       |  |   |     |         |
+       |  |   |     |         +-- imposed invariances: t=transl, r=rot, h=Huang, E=enforced
+       |  |   |     +------------ shells used for ranks 2, 3 and 4 (00 = default/not fitted)
+       |  |   +------------------ B + born_flag
+       |  +---------------------- df = default FC2 range, rd = range read from structure.params
+       |                          Td / Tr = same, with Boltzmann weighting (itemp=1)
+       +------------------------- number of FORCEDISP files
+
+Output files
+------------
+
+Force constants
+^^^^^^^^^^^^^^^
+
+``fcN_irr.dat`` (N = 1…4)
+    The **irreducible** (independent) force constants of rank N — the actual
+    output of the fit. Everything else can be regenerated from these by
+    symmetry.
+
+``fcN.dat`` (N = 1…4)
+    The **full** set of force constants of rank N, i.e. every symmetry-related
+    term reconstructed from the irreducible ones. This is the file consumed by
+    ``THERMACOND``, ``SCOP8`` and ``ANFOMOD``.
+
+Units are eV/Å\ :sup:`N`: eV/Å for rank 1, eV/Å² for the harmonic FCs, eV/Å³ for
+the cubic ones and eV/Å⁴ for the quartic ones.
+
+Both files use the same layout (``fcN.dat`` has one extra header line). A line
+of ``fc2_irr.dat`` looks like this:
+
+.. code-block:: text
+
+   # RANK   2  tensors :term,group,(iatom,ixyz)_2 d^nU/dx_{i,alpha}^n
+        1     1      1 1      2 1    -2.853242    2.4691   2  0  0  0  -0.2500 -0.2500 -0.2500
+
+and its fields are, from left to right:
+
+#. index of the term inside its group;
+#. index of the group — a group is a set of FCs related to each other by
+   symmetry, with one or a few independent members;
+#. ``rank`` pairs of (atom index, Cartesian direction), here ``1 1`` and
+   ``2 1``, i.e. :math:`\Phi^{xx}` between atom 1 and atom 2. The direction is
+   1 = x, 2 = y, 3 = z; the atom indices refer to the neighbor list written in
+   ``lat_fc.dat``;
+#. the value of the force constant;
+#. the pair distance :math:`|r_i - r_j|` in Å (rank 2 only; zero for the other
+   ranks);
+#. for atoms 2 … rank, the quadruplet :math:`(\tau, n_1, n_2, n_3)` giving the
+   atom's index in the primitive cell and the cell it belongs to, in units of
+   the primitive translation vectors;
+#. rank 2 only: the three components of :math:`r_i - r_j` in units of the
+   conventional cell vectors.
+
+``lat_fc.dat``
+    The structural information that goes with the FCs: primitive translation
+    vectors, atoms of the primitive cell, which ranks were included, the shell
+    counts actually used, the number of groups and terms per rank, and the
+    Cartesian coordinates of every neighbor atom referred to by the ``fcN.dat``
+    files. **The other ALATDYN codes read this file together with the**
+    ``fcN.dat`` **files.** ``lat0_fc.dat`` is the same information before the
+    range of FC2 is trimmed to the supercell.
+
+``trace_fc.dat``
+    Trace of the harmonic FC tensor for every pair, versus pair distance — the
+    quickest way to see how fast the harmonic interaction decays and whether
+    your range is sufficient. Plot it with ``fcs.plt``.
+
+``bond_fci.dat``, ``springs1.dat``, ``springs2.dat``, ``pairs.dat``
+    The pairs connected by FC2, and the shell radii and their multiplicities,
+    for inspection and plotting.
+
+Phonons and thermodynamics
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``bs_freq.dat``
+    Band structure along the ``kpbs.params`` path: ``nk, nb, dk, k(3),
+    frequency (1/cm), velocity(3) (km/s), |velocity|``, one line per (k-point,
+    band).
+
+``bands.dat``
+    The same data with all bands of a k-point on one line — convenient for
+    plotting: ``index, dk, kx, ky, kz``, then the :math:`3 N_{prim}`
+    **eigenvalues** :math:`\omega^2` (in eV/Å²/uma — multiply the square root by
+    521.11 to get cm\ :sup:`-1`, which is what ``bandgen.plt`` does), then the
+    :math:`3 N_{prim}` group-velocity magnitudes in km/s.
+    ``KTICS.BS`` contains a ready-made gnuplot ``set xtics`` command with the
+    labels and positions of the special points, and ``KPOINT.BS`` the
+    coordinates of the path in the three conventions.
+
+``ibz_bands.dat``
+    Frequencies and velocities on the irreducible wedge of the ``latdyn.params``
+    mesh.
+
+``ibz_dos.dat`` / ``fbz_dos.dat``
+    Phonon density of states, from a Gaussian smearing over the irreducible
+    wedge and from the tetrahedron method over the full zone, respectively.
+    Columns: ``omega (1/cm), index, integrated DOS, total DOS, then the
+    per-branch DOS``.
+
+``bs_grun.dat`` / ``ibz_grun.dat``
+    Mode Gruneisen parameters along the path and in the irreducible wedge
+    (written only when rank 3 is included).
+
+``mech.dat``
+    Mechanical properties: the :math:`\Phi`, :math:`\zeta`, :math:`\Xi` tensors,
+    the elastic tensor (GPa, Voigt 6×6), the compliance tensor, the residual
+    strain and internal displacements, then the Voigt/Reuss/Hill bulk and shear
+    moduli, Young modulus, Poisson ratio, anisotropy ratio, sound velocities and
+    Debye temperature.
+
+``thermo_QHA.dat``
+    Quasi-harmonic thermodynamics versus temperature, one line per temperature:
+    ``T(K), E_eq(kJ/mol), F_eq(kJ/mol), V_eq/V0, strain, Cv, Cp(J/K/mol),
+    S(J/K/mol), linear CTE(1/K), Gruneisen, B(T)/B(0)``.
+
+``temp_free.dat``
+    The free energy versus strain curve at each temperature that is minimised to
+    produce ``thermo_QHA.dat`` — useful to check that the minimum is well inside
+    the scanned strain range.
+
+``chi_real.dat`` / ``chi_imag.dat``
+    Real and imaginary parts of the dielectric response versus frequency, plus
+    the refractive index ``n`` and extinction coefficient ``k``.
+
+``conductance.dat``
+    Mode-counting (ballistic conductance) along the ``normal`` direction of
+    ``latdyn.params``. The band loop that fills it is currently disabled in the
+    source, so in this version the file is written but contains only zeros.
+
+Diagnostics
+^^^^^^^^^^^
+
+``log*.dat``
+    The main log. Everything the code decided — symmetry operations, neighbor
+    shells and their radii, the number of independent FCs per rank, the number
+    of constraints of each type, the fit error, the invariance violations of the
+    final solution — is here. **Read it after every run.**
+
+``svd-all.dat`` (or ``svd-elim.dat`` when ``enforce_inv = 1``)
+    The singular values of the fit matrix, its condition number, the cutoff
+    applied, the solution with its error bars, the residual ``Ax-b`` for every
+    equation, and the summary line ``MAE, largest errors in force(eV/Ang),
+    percent deviation``.
+
+``times.dat``
+    Wall/CPU time after each stage of the run — the place to look when a run
+    seems stuck.
+
+``maps.dat``, ``corresp.dat``, ``amatrx.dat``, ``matrix_svd-all.dat``, ``symmetry.dat``, ``elimination.dat``
+    Internal tables (symmetry mapping of the FCs, the fit matrix itself, the U
+    and V matrices of the SVD, the space-group operations, the kernel used to
+    enforce invariances). They can be very large and are only needed for
+    debugging.
+
+``atompos.xyz``, ``poscar.xyz``, ``primlatt.xyz``, ``supercell_*.xyz``, ``latfc.xyz``, ``rgrid*.xyz``, ``ggrid*.xyz``, ``WS*_boundary.xyz``
+    Structures, real- and reciprocal-space grids and Wigner-Seitz cell
+    boundaries in ``.xyz`` format, for visualisation (VMD, OVITO, gnuplot).
+
+Checking the quality of the fit
+-------------------------------
+
+After a run, look at these numbers, in this order:
+
+#. **The relative fit error**, in the log and at the end of ``svd-all.dat``:
+
+   .. code-block:: text
+
+      Percent error, || F_dft-F_fit || / || F_dft || =    0.036 %
+      MAE, largest errors in force(eV/Ang),percent deviation=  0.287E-05  0.154E-03  0.361E-01
+
+   A few percent is normal for a well-converged model; tens of percent means the
+   range or the ranks are insufficient (or the snapshots are too anharmonic for
+   the truncation).
+
+#. **The singular values** at the top of ``svd-all.dat``, and the condition
+   number printed just below them. A very large condition number means some
+   combinations of FCs are not constrained by your data — add snapshots, add a
+   second supercell shape, or reduce the range.
+
+#. **The invariance violations** listed in the log (``MAIN: Invariance
+   violations`` when ``enforce_inv = 1``, or ``write_invariance_violations``
+   otherwise). They should be at the level of the force noise.
+
+#. **The acoustic branches**: plot ``bands.dat`` and check that the three
+   acoustic frequencies go to zero linearly at :math:`\Gamma` and that no branch
+   is imaginary (frequencies are reported as negative when
+   :math:`\omega^2 < 0`).
+
+#. **The decay of the FCs**: plot ``trace_fc.dat`` and confirm that the harmonic
+   interaction has decayed well before your cutoff radius.
+
+Plotting the results
+--------------------
+
+Gnuplot scripts for the standard figures are provided in the ``FOCEX``
+directory; run them in the directory containing the output files.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 80
+
+   * - Script
+     - Figure
+   * - ``bandgen.plt``
+     - Phonon dispersion from ``bands.dat``. Pass the number of branches, e.g.
+       ``gnuplot -e "nbands=6" bandgen.plt``.
+   * - ``bvel.plt``
+     - Dispersion coloured by group velocity.
+   * - ``all.plt``
+     - Combined dispersion + DOS + Gruneisen figure.
+   * - ``fcs.plt``
+     - Trace of FC2 versus pair distance (``trace_fc.dat``).
+   * - ``pair.plt``
+     - Distribution of pair distances (``pairs.dat``).
+   * - ``qha.plt``
+     - Thermal expansion, heat capacity and Gruneisen versus T
+       (``thermo_QHA.dat``).
+   * - ``thermo.plt``
+     - Free energy versus strain (``temp_free.dat``).
+   * - ``chi.plt``
+     - Dielectric function and optical constants.
+   * - ``kp.plt``, ``ws.plt``
+     - k-point meshes and Wigner-Seitz cells, for checking the grids.
+
+The tick marks of the band-structure plots come from ``KTICS.BS``, which FOCEX
+writes for the path you defined; the ranges hard-coded in some of the scripts
+may need adjusting for your material.
+
+Troubleshooting
+---------------
+
+``FORCEDISP file ... does not exist`` / ``poscar file ... does not exist``
+    ``fdfiles`` on line 7 of ``structure.params`` is larger than the number of
+    ``POSCARi``/``FORCEDISPi`` pairs actually present.
+
+``the word POSITION was not found in FORCEDISP file``
+    The block headers of ``FORCEDISPi`` are not recognised: each snapshot must
+    begin with a line containing ``POSITION`` (format A) or ``vasprun`` together
+    with ``(eV):`` (format B). See :ref:`focex-forcedisp`.
+
+``supercell inconsistency; check input coordinates again``
+    The volume per atom of ``POSCARi`` and of the primitive cell defined in
+    ``structure.params`` disagree. Check the scale factor (line 3), the
+    conventional cell (line 1) and the primitive vectors (line 2).
+
+``End of file`` while reading ``default.params`` or ``latdyn.params``
+    The file has fewer lines than the version of the code expects. Copy the
+    template from the ``FOCEX`` directory rather than reusing an old one:
+    ``default.params`` must have 36 lines, and line 2 of ``latdyn.params`` must
+    contain six numbers (shift **and** normal).
+
+``Bad real number in item 4 of list input`` (``latdyn.params``)
+    Line 2 contains only the three shift components; append the three components
+    of the normal vector, e.g. ``0 0 0  1 0 0``.
+
+``positions must be sorted according to the labels 1,2,3...``
+    The atom lines at the end of ``structure.params`` must be numbered
+    consecutively starting from 1.
+
+``POSCAR: positions are not in direct or cartesian coordinates``
+    Line 7 of ``POSCARi`` must start with ``D``/``d`` or ``C``/``c``. Remember
+    that the element-name line of the modern VASP format must be **removed**.
+
+Run stops with an array-bound or allocation error in ``setup_maps``
+    One of the ``maxterms``/``maxgroups``/``maxtermsindep`` limits in
+    ``default.params`` is too small for the range you requested. Replace the
+    ``0`` on the relevant line by an explicit, larger value.
+
+Imaginary (negative) acoustic frequencies near :math:`\Gamma`
+    Almost always a violated acoustic sum rule: set ``itrans = 1`` and, if
+    necessary, ``enforce_inv = 1`` on line 5 of ``structure.params``.
+
+The fit error is large, or the FCs change a lot when you add a shell
+    The model is not converged. Add snapshots, add neighbor shells for rank 2,
+    and use a larger supercell — the range of FC2 can never exceed the
+    Wigner-Seitz cell of the supercell you provide.
+
+Using the results in the other ALATDYN codes
+--------------------------------------------
+
+``THERMACOND`` (thermal conductivity), ``SCOP8`` (self-consistent phonons) and
+``ANFOMOD`` (force-field molecular dynamics) all start from the FOCEX output.
+Copy ``lat_fc.dat`` together with ``fc1.dat``, ``fc2.dat``, ``fc3.dat`` (and
+``fc4.dat`` if you fitted it) into their run directory; see
+:doc:`runthermacond` and :doc:`runscop8` for the additional input each of them
+needs.

@@ -1,5 +1,5 @@
 Anharmonic-LATtice-DYNamics (ALATDYN)
-====================================
+=====================================
 
 .. image:: _static/img/aladyn-logo.png
   :width: 400
@@ -13,6 +13,7 @@ Anharmonic-LATtice-DYNamics (ALATDYN)
    theory
    download
    install
+   runscsnaps
    runfocex
    runthermacond
    runscop8

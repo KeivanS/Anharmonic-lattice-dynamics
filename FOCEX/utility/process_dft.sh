@@ -20,7 +20,7 @@ for (( i=1; i<=${count_outcar}; i++ )){
 each_outcar=`find $1 -name "OUTCAR"|sed -n ${i}p`
 each_outcar_dir=`find $1 -name "OUTCAR"|sed -n ${i}p|awk -F "OUTCAR" '{print $1}'`
 cd ${each_outcar_dir}
-~/aladyn/readoutcar.x
+read_outcar.x
 wait $!
 cat pos-forc.dat >> ${workdir}/FORCEDISP1
 rm pos-forc.dat

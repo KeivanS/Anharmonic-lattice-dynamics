@@ -1,13 +1,7 @@
 Running SCOP8
 =============
 
-.. Self-CoOnsistent Phonon (SCOP8)
-.. --------------------------------------
-.. role:: raw-math(raw)
-  :format: latex html
-
-.. only:: html
-  :math:`\\require{mediawiki-texvc}`
+.. Self-COnsistent PHonons (SCOP8)
 
 Workflow of SCOP8
 -----------------
@@ -30,8 +24,8 @@ Description of input and output files
 	The second group of input file(s) required to run SCOP8 are ``structure.params``, ``lat_fc.dat``, ``fc2.dat``, ``fc3.dat`` and ``fc4.dat``.  
 	Those are generated from running FOCEX beforehand, they are raw input and should be left as is. Refer to 'Running FOCEX' for further details about these files.
 
-	The third group of input file(s) required to run SCOP8 are ``control.params``, ``params.phon``, ``kpbs.params`` and ``targetInitialize.dat``(depends)
-	Those are input files that uniquely for SCOP8 and can be customized by users, further details will be explained below
+	The third group of input file(s) required to run SCOP8 are ``control.params``, ``params.phon``, ``kpbs.params`` and ``targetInitialize.dat`` (depending on the choice of options).
+	Those input files are specific to SCOP8 and can be customized by users; further details are explained below.
 
 	A sample of input files can be found in the subfolder ``input_sample`` inside the SCOP8 folder.
  
@@ -137,8 +131,9 @@ Description of input and output files
 	Import output files will be briefly explained below.
 	A sample of output files can be found in the subfolder ``output_sample`` inside the ``SCOP8`` folder.
 
-	* **convergence.dat** 
-	This file keeps a record of free energy value and L1 norm of all gradients at each iteration. So you can monitor how well the Broyden loops converge.
+	* **convergence.dat**
+
+	  This file keeps a record of free energy value and L1 norm of all gradients at each iteration. So you can monitor how well the Broyden loops converge.
 
 	.. code-block:: python
 

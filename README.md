@@ -35,7 +35,7 @@ The developers should follow these conventions when adding their contribution to
 To build the docs webpage locally:
 
 ```bash
-pip install sphinx sphinx-rtd-theme
+pip install -r docs/requirements.txt
 cd docs
 make html
 ```
