@@ -424,16 +424,25 @@
   real(r15),intent(out) :: vgr(3,ndn),evl0(ndn)
   complex(r15),intent(out) :: evc0(ndn,ndn)
   integer i,l
-  real(r15) q1(3),dq,dq0,v2(3,ndn),evlp(ndn),evlm(ndn) ,rand(3),qr(3),v1(3,ndn)
+  real(r15) q1(3),dq,dq0,v2(3,ndn),evlp(ndn),evlm(ndn) ,shft(3),qr(3),v1(3,ndn)
   complex(r15) evct(ndn,ndn)
+! a fixed direction whose components are mutually incommensurate: sqrt(2)-1,
+! sqrt(3)-1, sqrt(5)-2. Shifting along it leaves the point on no symmetry plane
+! or axis of any lattice, which is what lifts the band degeneracies.
+  real(r15), parameter :: uinc(3)= (/ 0.41421356237309505d0,  &
+  &                                   0.73205080756887729d0,  &
+  &                                   0.23606797749978970d0 /)
 
-! use a small random shift to move away from high symmetry points and remove degeneracies
- call random_number(rand)
-!  write(*,4)'FD: rand=',rand
+! shift slightly off the high-symmetry directions so that degenerate bands are
+! separated before the finite differences are taken. This used to be a random
+! shift (call random_number), which made the frequencies, the DOS and the QHA
+! properties differ from one run to the next; the acoustic branches near Gamma
+! are small enough that the shift was their whole value. The direction is now
+! fixed, so runs are reproducible.
  dq0=3d-4 *volume_g0**0.33333333  ! to break the degeneracies
- rand=(2*rand-1)*dq0
- qr=qq + rand  ! add a small random # to break degeneracies
- dq=3d-5 *volume_g0**0.33333333  
+ shft=dq0*uinc/sqrt(dot_product(uinc,uinc))
+ qr=qq + shft
+ dq=3d-5 *volume_g0**0.33333333
 
       write(*,4)' get_freq k= ',qr
 
