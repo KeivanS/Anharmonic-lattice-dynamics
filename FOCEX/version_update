@@ -55,6 +55,28 @@
 
 8.16 Cleaned up some details bout elastic constants, added the Leontiev-Agne formula for gamma, alpha and Cp in the QHA
 
+8.17 exact sizing of the force-constant arrays: size_force_constants determines
+     ngroups, nterm and ntermsindep before anything is allocated, so setup_maps
+     allocates once instead of guessing and restarting the whole symmetry
+     analysis (4 restarts on BZO, 9 on GeSe). mapmat was being allocated at the
+     product of three guessed bounds: 3.2 GB on BZO rank 2 for ~100 kB of data.
+     Peak memory 3314->23 MB (BZO), 2128->99 MB (MoTe2), 5426->510 MB (GeSe),
+     with every output file byte-identical.
+     finitedif_vel shifted every q point by call random_number to lift band
+     degeneracies, but the generator is seeded from the OS, so frequencies, DOS
+     and QHA properties differed from run to run (the Gruneisen parameter moved
+     from -27 to -46 between two runs of the same binary). The shift is now
+     along a fixed incommensurate direction: same purpose, reproducible.
+     enforce_inv=1 now does a constrained fit inside the kernel of the
+     invariance matrix instead of orthogonally projecting the unconstrained
+     solution onto it. A projection is not a constrained fit; on MoTe2 it gave
+     ~3400% residual where the constrained fit gives 35%. THIS CHANGES THE
+     NUMBERS enforce_inv=1 PRODUCED BEFORE.
+     enforce_inv=2 added: LASSO in the same kernel basis, L1 weight chosen
+     automatically by 5-fold cross-validation. Useful when the model is
+     underdetermined; inert when it is not. See lasso.f90, constrained_fit.f90.
+     Note svd_set destroys the matrix passed to it (svdcmp returns U in it).
+
 to do:  
 -make group velocities volume-dependent using gruneisen
 -for include_fc=2 reads fcs(rnk) from a file, and properly store it in the 1D array fcs(ngr?) for usage in the setup_amatrix code.

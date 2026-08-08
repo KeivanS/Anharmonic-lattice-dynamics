@@ -56,6 +56,27 @@ Runs are reproducible as of 2026-08-07. Before the `finitedif_vel` fix they were
 not, and any phonon-level comparison was meaningless — check that first if
 outputs differ for no reason.
 
+## How the force constants are solved for (enforce_inv)
+
+`structure.params` line 5, 4th value:
+
+- **0** — invariance rows stacked with the force rows, SVD on the whole system.
+- **1** — constrained fit inside the kernel of the invariance matrix
+  (`fit_kernel_basis`, `constrained_fit.f90`). `x = K y`, so the invariances are
+  exact by construction and `K` *is* the elimination of the dependent FCs.
+  Until 2026-08-07 this instead projected the unconstrained solution onto the
+  kernel, which is **not** a constrained fit and gave ~3400 % residual on MoTe2
+  where the constrained fit gives 35 %. Results predating `83b709b` differ.
+- **2** — same, but the reduced problem is solved by LASSO (`lasso.f90`), with
+  the L1 weight chosen by 5-fold cross-validation on held-out force rows. Worth
+  it only when the model is underdetermined: on MoTe2 with 880 free parameters
+  and 1152 equations it keeps 88 and stays physical while the SVD produces
+  ±15000 cm⁻¹ phonons; on well-determined GeSe it keeps 789 of 795 and matches
+  the SVD. Sparsity is in the free parameters `y`, not in `x = K y`.
+
+`svd_set` declares its matrix `intent(inout)` and `svdcmp` returns U in it, so
+**it destroys the matrix you pass**. Give it a copy.
+
 ## Things that bite
 
 - `sc_snaps.x` aborts at run time with `Recursive call to nonrecursive procedure
