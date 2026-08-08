@@ -189,7 +189,13 @@
  if (itrans.ne.0) invr(1:1)='t'
  if (irot.ne.0) invr(2:2)='r'
  if (ihuang.ne.0) invr(3:3)='h'
- if (enforce_inv.ne.0) invr(4:4)='E'
+ if (enforce_inv.eq.1) invr(4:4)='E'
+ if (enforce_inv.eq.2) invr(4:4)='L'   ! L1 / LASSO
+ if (enforce_inv.lt.0 .or. enforce_inv.gt.2) then
+    write(*,*)'READ_STRUCTURE: enforce_inv must be 0 (SVD on the stacked system),'
+    write(*,*)' 1 (constrained fit in the kernel) or 2 (LASSO); read ',enforce_inv
+    stop
+ endif
  open(ulog  ,file=fn1//fdf//it//bornflg//'_'//r4//'_'//invr//'.dat'   ,status='unknown')
 
  call date_and_time(date=today,time=now,zone=zone)

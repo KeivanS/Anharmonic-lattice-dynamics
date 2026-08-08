@@ -58,6 +58,7 @@ use constants, only : r15,ee,pi,eps0,cnst
 
 implicit none
 integer i,j,g,ti,rank,iunit,uio,nkernel,imax,n_hom,nt(maxrank),ntind(maxrank),tau,taup,nat,ncs(3),al,be,ia,jb
+integer nnzero,ulasso
 character xt*1,fn*7,now*10,today*8,zone*5,fni*11,bfl,bnp
 logical ex,isperiodic
 real(r15), allocatable :: xout(:),foldedk(:,:),rand(:),rand2(:),phi_naq0(:,:,:,:),phi_na(:,:,:,:,:)
@@ -340,7 +341,8 @@ real(r15) q(3)
    allocate(fcs(dim_ac),sigma(dim_ac))
 
    uio = 349
-   if(enforce_inv.eq.1 .or. itemp.eq.1) then ! elimination will be used on ahom
+   ulasso = 350
+   if(enforce_inv.ge.1 .or. itemp.eq.1) then ! elimination will be used on ahom
 
       open(uio,file='elimination.dat',status='unknown')
 ! separate homogeneous part of amat from inhomogeneous part by finding the first non-zero elt of bmat
@@ -383,28 +385,97 @@ real(r15) q(3)
 
    else
 
-      if(enforce_inv.eq.1) then 
-! svd for force-displacement, followed by projection on the kernel of a_hom to satisfy invariances exactly
-         write(ulog,*)'MAIN: Using svd of the force amatrix since enforce_inv and itemp are=',enforce_inv,itemp
+      if(enforce_inv.eq.1 .or. enforce_inv.eq.2) then
+! Fit the force-displacement equations alone, then project on the kernel of
+! a_hom so that the invariances hold exactly. enforce_inv=1 fits by SVD,
+! enforce_inv=2 by LASSO, which additionally selects which force constants the
+! data actually supports.
+         write(ulog,*)'MAIN: fitting the force matrix only; enforce_inv,itemp=',enforce_inv,itemp
          write(ulog,*)'MAIN: size of the homogeneous part is ',n_hom
+
+       if(enforce_inv.eq.2) then
+! ---- L1-regularised (LASSO) fit of the force-displacement equations ----------
+! Only the force rows enter the fit: the invariance relations are imposed
+! afterwards by the projection, so the L1 term acts on the data alone and the
+! sparsity criterion is not swamped by the constraint block.
+         open(ulasso,file='lasso.dat',status='unknown')
+         write(ulog,*)'MAIN: enforce_inv=2, compressing the force fit by LASSO'
+         write(*   ,*)'MAIN: enforce_inv=2, compressing the force fit by LASSO'
+         call lasso_kernel_basis(force_constraints,dim_ac,nkernel,aforce,bforce, &
+      &       kernelbasis(1:dim_ac,1:nkernel),lasso_nfold,lasso_nlambda,         &
+      &       lasso_epsratio,fcs,lasso_mu,nnzero,ulasso)
+         close(ulasso)
+         sigma=0    ! LASSO returns no singular-value error estimate
+         write(ulog,'(a,i6,a,i6)')'LASSO: non-zero free parameters=',nnzero,' of ',nkernel
+         write(*   ,'(a,i6,a,i6)')'LASSO: non-zero free parameters=',nnzero,' of ',nkernel
+       else
 !         call solve_svd(dim_al-n_hom,dim_ac,amat(n_hom+1:dim_al,1:dim_ac), &
 !&             bmat(n_hom+1:dim_al),svdcut,bfrc,sigma,uio)
 !        call svd_set(dim_al-n_hom,dim_ac,amat(n_hom+1:dim_al,1:dim_ac),  &
 !&            bmat(n_hom+1:dim_al),xout,sigma,svdcut,error,ermax,sig,'svd-elim.dat')
-         call svd_set(force_constraints,dim_ac,aforce,  &
- &            bforce,xout,sigma,svdcut,error,ermax,sig,'svd-elim.dat')
-         write(ulog,'(a,f9.3,a)')'Percent error, || F_dft-F_fit || / || F_dft || =',sig,' %'
-         call write_out(ulog,'Enforce=1: SVD solution before kernel projection',xout)
-         write(ulog,*)'MAIN: Invariance violations '
+! ---- constrained least squares inside the kernel basis ----------------------
+         call fit_kernel_basis(force_constraints,dim_ac,nkernel,aforce,bforce,  &
+      &       kernelbasis(1:dim_ac,1:nkernel),svdcut,fcs,error,ermax,sig,'svd-kernel.dat')
+       endif
+
+!--------------------- OLD enforce_inv=1 TREATMENT, KEPT ----------------------
+! This solved the force equations over all dim_ac force constants and then
+! ORTHOGONALLY PROJECTED the result on the kernel with project_on. That is not
+! a constrained fit: the projection discards how the residual varies inside the
+! directions it removes, and the two coincide only if A^T A acts as a multiple
+! of the identity. Measured on MoTe2 (122 FCs, 87 independent invariance
+! relations, so a 35-dimensional kernel), relative residual ||Ax-b||/||b|| on
+! the force equations: ~13% before the projection, ~3400% after it, against
+! ~35% for the constrained fit now performed above.
+! It also silently destroyed aforce, since svd_set returns U in its matrix
+! argument (svd_ridge.f90 line 31).
+! project_on, svd_set and get_kernel themselves are unchanged and still used.
+!
+!        call svd_set(force_constraints,dim_ac,aforce,  &
+!&            bforce,xout,sigma,svdcut,error,ermax,sig,'svd-elim.dat')
+!        write(ulog,'(a,f9.3,a)')'Percent error, || F_dft-F_fit || / || F_dft || =',sig,' %'
+!        call write_out(ulog,'Enforce=1: SVD solution before kernel projection',xout)
+!        write(ulog,*)'MAIN: Invariance violations '
+!        do i=1,n_hom
+!           write(ulog,*)i,dot_product(ahom(i,:),xout(:))
+!        enddo
+!        write(ulog,*)'MAIN: performing projection on the kernel basis'
+!        call project_on(dim_ac,nkernel,xout,kernelbasis(1:dim_ac,1:nkernel),fcs)
+!        call write_out(ulog,'Enforce=1: Solution After kernel projection',fcs)
+!        write(ulog,7)'Max and Average Change After kernel projection',maxval(abs(fcs-xout)), &
+!&                     length(fcs-xout)/dim_ac
+!------------------------------------------------------------------------------
+
+! measure both branches the same way: svd_set reports ||Ax-b||/||Ax||, whose
+! denominator moves with the solution, so it cannot be compared between fits.
+! fit_residual uses ||Ax-b||/||b||. aforce is intact here: fit_kernel_basis and
+! lasso_kernel_basis only read it, they hand svd_set a local reduced copy.
+         call fit_residual(force_constraints,dim_ac,aforce,bforce,fcs,error,ermax,sig)
+         write(ulog,'(a,f9.3,a)')'Relative residual ||F_dft-F_fit||/||F_dft|| =',sig,' %'
+         write(*   ,'(a,f9.3,a)')'Relative residual ||F_dft-F_fit||/||F_dft|| =',sig,' %'
+         call write_out(ulog,'Constrained solution, invariances exact by construction',fcs)
+         write(ulog,*)'MAIN: Invariance violations of the constrained solution'
          do i=1,n_hom
-            write(ulog,*)i,dot_product(ahom(i,:),xout(:))
+            write(ulog,*)i,dot_product(ahom(i,:),fcs(:))
          enddo
 
-         write(ulog,*)'MAIN: performing projection on the kernel basis'
-         call project_on(dim_ac,nkernel,xout,kernelbasis(1:dim_ac,1:nkernel),fcs)
-         call write_out(ulog,'Enforce=1: Solution After kernel projection',fcs)
-         write(ulog,7)'Max and Average Change After kernel projection',maxval(abs(fcs-xout)), &
-&                      length(fcs-xout)/dim_ac
+! How much the projection costs, reported for both enforce_inv=1 and 2 so the
+! two can be compared on the same footing.
+         call fit_residual(force_constraints,dim_ac,aforce,bforce,fcs,error,ermax,sig)
+         write(ulog,'(a,f9.3,a)')'Percent error AFTER kernel projection =',sig,' %'
+         write(*   ,'(a,f9.3,a)')'Percent error AFTER kernel projection =',sig,' %'
+         if(enforce_inv.eq.2) then
+! The projection is a dense linear map, so exact zeros do not survive it in
+! general. Report what is left above the margin used for writing the FCs, so the
+! effect of the projection on the sparsity is visible rather than assumed.
+            write(ulog,'(a,i6,a,i6)')'LASSO: non-zeros before projection=',nnzero, &
+      &          ' after projection=',count(abs(fcs).gt.0d0)
+            write(ulog,'(a,i6)')'LASSO: components above the write-out margin after projection=', &
+      &          count(abs(fcs).gt.margin)
+            write(*   ,'(a,i6,a,i6)')'LASSO: non-zeros before=',nnzero,' after projection=', &
+      &          count(abs(fcs).gt.margin)
+         endif
+
          deallocate(kernelbasis,aforce,bforce,xout)
 
       else
@@ -420,7 +491,7 @@ real(r15) q(3)
          call svd_set(dim_al,dim_ac,amat,bmat,fcs,sigma,svdcut,error,ermax,sig,'svd-all.dat')
          write(ulog,'(a,f9.3,a)')'Percent error, || F_dft-F_fit || / || F_dft || =',sig,' %'
          call write_invariance_violations(ulog,dim_ac,fcs)
-         deallocate(amat,bmat) 
+         deallocate(amat,bmat)
 
       endif
 

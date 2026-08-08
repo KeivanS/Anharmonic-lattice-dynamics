@@ -19,6 +19,8 @@ SUBF90 = \
   aux_na.f90 \
   ios.f90 \
   svd_ridge.f90 \
+  lasso.f90 \
+  constrained_fit.f90 \
   extratools.f90 \
   others.f90 \
   setup_amatrix.f90 \
