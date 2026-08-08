@@ -392,20 +392,140 @@ a mismatch.
   Rank 1 (the residual force :math:`\Pi`) should normally be included: it is
   zero only if the reference structure is exactly at its energy minimum.
 
-**5. Invariance flags** — ``itrans irot ihuang enforce_inv``; ``1`` switches the
-constraint on, ``0`` off.
+**5. Invariance flags** — ``itrans irot ihuang enforce_inv``. The first three
+are ``1`` to switch the constraint on, ``0`` off; ``enforce_inv`` selects how
+the fit is solved and takes the values 0, 1 or 2.
 
   * ``itrans`` — translational invariance (acoustic sum rule). Keep it on;
     without it the acoustic branches will not go to zero at :math:`\Gamma`.
   * ``irot`` — rotational invariance. Relates rank :math:`n` to rank
     :math:`n+1`; useful when several ranks are fitted together.
   * ``ihuang`` — Huang : makes sure elastic tensor is symetric ; needed for low-symmetry crystals.
-  * ``enforce_inv`` — how the constraints are imposed. ``0``: the constraint
-    equations are appended as extra rows of the least-squares system and are
-    therefore satisfied only approximately. ``1``: the force equations alone are
-    solved by SVD and the solution is then projected onto the kernel of the
-    constraint matrix, so the invariances are satisfied *exactly*; the
-    elimination is documented in ``elimination.dat`` and ``svd-elim.dat``.
+  * ``enforce_inv`` — see :ref:`focex-enforce-inv` just below.
+
+.. _focex-enforce-inv:
+
+Choosing ``enforce_inv``
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+``enforce_inv`` decides how the invariance relations are imposed and how the
+force constants are solved for. The three settings solve genuinely different
+problems.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 8 92
+
+   * - Value
+     - What it does
+   * - ``0``
+     - The invariance relations are appended as extra rows of the
+       force-displacement system and the whole thing is solved by SVD. The
+       invariances are then satisfied only in the least-squares sense. This is
+       the default and the usual choice.
+   * - ``1``
+     - The force equations are fitted *subject to* the invariances, by working
+       in the kernel of the constraint matrix. The invariances hold **exactly**.
+   * - ``2``
+     - As ``1``, but the reduced problem is solved by LASSO, which also decides
+       which force constants the data actually supports. See below.
+
+**How ``1`` works.** The invariance relations are homogeneous, so the force
+constants that satisfy them all form a linear subspace. If ``K`` is an
+orthonormal basis of that subspace — the kernel of the constraint matrix — then
+writing :math:`x = K y` satisfies every invariance identically, whatever
+:math:`y` is. FOCEX then fits the free parameters :math:`y`, and recovers all
+the force constants from :math:`x = K y`. ``K`` is the elimination of the
+dependent force constants written in a well-conditioned basis, so no separate
+back-substitution step is needed.
+
+The number of free parameters is the dimension of that kernel, which is printed
+in the log as ``Kernel of A, ... is of dimension``. It can be much smaller than
+the number of force constants: for a 122-parameter MoTe2 model with all three
+invariances on, 87 of the relations are independent and only 35 free parameters
+remain. If that number is very small, the invariances are over-determining your
+model, and the fit will be poor no matter how good the data — increase the
+range, or switch some of ``irot``/``ihuang`` off.
+
+.. note::
+
+   Before version 8.17, ``enforce_inv = 1`` solved the unconstrained problem and
+   then orthogonally projected the answer onto the kernel. That is not the same
+   as fitting under the constraint and could be far worse. Numbers produced with
+   ``enforce_inv = 1`` by an earlier version should be regenerated.
+   ``enforce_inv = 0`` is unaffected.
+
+.. _focex-lasso:
+
+``enforce_inv = 2``: selecting the force constants by LASSO
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+With ``enforce_inv = 2`` the reduced problem is solved by minimising
+
+.. math::
+   \frac{1}{2}\, \| A x - b \|^2 \;+\; \mu \sum_j n_j \, |x_j|
+
+instead of by SVD. The second term is an :math:`L_1` penalty, with :math:`n_j`
+the norm of column :math:`j` so that the penalty does not depend on the units of
+each rank — ranks 2, 3 and 4 carry different powers of Ångström.
+
+**What it is for.** An :math:`L_1` penalty drives parameters to *exactly* zero
+rather than merely making them small. When you request many neighbour shells or
+high ranks, the number of candidate force constants grows quickly and most of
+them are not determined by the data. Least squares then distributes small,
+noise-driven values over all of them, which fits the snapshots you have and
+predicts everything else badly. The :math:`L_1` term instead keeps only the
+force constants the data supports.
+
+**When it helps, and when it does not.** It matters when the model is
+underdetermined — a long range, high ranks, or few snapshots. It is close to
+harmless otherwise. Two measured examples:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 16 16 34
+
+   * - Case
+     - free params
+     - equations
+     - result
+   * - MoTe2, FC2 to 25 shells, FC3 to 10, **2 snapshots**
+     - 880
+     - 1152
+     - SVD uses all 880 and gives phonons from −15030 to 14820 cm\ :sup:`-1`;
+       LASSO keeps **88** and gives −242 to 268 cm\ :sup:`-1`
+   * - GeSe, **well determined**
+     - 795
+     - 2880
+     - LASSO keeps **789 of 795** and reproduces the SVD phonons to 0.4 cm\ :sup:`-1`
+
+In the first case the SVD has the *better* residual on the data it was fitted to
+— 13.9 % against 36.8 % — and phonons three orders of magnitude beyond anything
+physical. That is what overfitting looks like, and it is why the residual on the
+training data is not a useful measure of a fit.
+
+**You do not choose** :math:`\mu`. FOCEX selects it by five-fold
+cross-validation: the force rows are split into five groups, and for each
+candidate :math:`\mu` the model is fitted on four groups and its error measured
+on the fifth, each group being held out once. The :math:`\mu` that minimises the
+error on data the fit never saw is the one used. Forty values of :math:`\mu` are
+scanned, from the smallest value that zeroes every coefficient down by four
+orders of magnitude. The whole scan is written to ``lasso.dat``, and the
+selected value appears in the log as ``LASSO: selected mu``.
+
+.. tip::
+
+   Check ``LASSO: non-zero free parameters`` in the log. If it is close to the
+   total, the data already determines your model and ``enforce_inv = 0`` or
+   ``1`` will do the same job more cheaply. If it is a small fraction, the
+   :math:`L_1` term is doing real work and the SVD result should be treated with
+   suspicion.
+
+.. note::
+
+   The sparsity is in the free parameters, not in the force constants
+   themselves: the retained parameters are combinations :math:`x = K y`, so the
+   printed ``fcN.dat`` files are not themselves sparse.
 
 **6. Temperature weighting** — ``itemp tempk``. With ``itemp = 0`` every
 snapshot has the same weight (``tempk`` is then unused but must be present).
@@ -749,11 +869,19 @@ Diagnostics
     of constraints of each type, the fit error, the invariance violations of the
     final solution — is here. **Read it after every run.**
 
-``svd-all.dat`` (or ``svd-elim.dat`` when ``enforce_inv = 1``)
+``svd-all.dat`` (``enforce_inv = 0``) or ``svd-kernel.dat`` (``enforce_inv = 1``)
     The singular values of the fit matrix, its condition number, the cutoff
     applied, the solution with its error bars, the residual ``Ax-b`` for every
     equation, and the summary line ``MAE, largest errors in force(eV/Ang),
-    percent deviation``.
+    percent deviation``. With ``enforce_inv = 1`` the matrix is the reduced one,
+    so there are as many singular values as there are free parameters.
+
+``lasso.dat`` (``enforce_inv = 2`` only)
+    The cross-validation scan used to pick :math:`\mu`: one line per value of
+    :math:`\mu` with the mean cross-validation error and its standard error,
+    preceded by per-fold diagnostics giving the iteration count and the number
+    of non-zero parameters along the path. Plot column 3 against column 2 to see
+    the error curve and where it turns over. See :ref:`focex-lasso`.
 
 ``times.dat``
     Wall/CPU time after each stage of the run — the place to look when a run

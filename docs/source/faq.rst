@@ -90,9 +90,28 @@ be imaginary. See "Checking the quality of the fit" in :doc:`runfocex`.
 **My acoustic branches are imaginary near** :math:`\Gamma` **.**
 
 The acoustic sum rule is not satisfied. Set ``itrans = 1`` and if needed ``irot = 1; ihuang = 1`` in
-``structure.params`` and, if the violations persist, ``enforce_inv = 1`` so that
-the invariances are imposed exactly by projection rather than in the
-least-squares sense.
+``structure.params`` and, if the violations persist, ``enforce_inv = 1``, which
+fits under the invariances instead of adding them to the least-squares system,
+so they hold exactly. See :ref:`focex-enforce-inv`.
+
+**When should I use** ``enforce_inv = 2`` **(LASSO)?**
+
+When the model has more parameters than the data really determines: a long
+force-constant range, ranks 3 and 4 together, or few snapshots. It keeps only
+the force constants the data supports and sets the rest to zero, which stops the
+fit absorbing noise. On a deliberately underdetermined MoTe2 test it kept 88 of
+880 free parameters and gave physical phonons where the plain SVD gave
+frequencies of ±15000 cm\ :sup:`-1`. On a well-determined case it keeps almost
+everything and matches the SVD, so it costs little to try. The weight of the
+:math:`L_1` term is chosen for you by cross-validation. See :ref:`focex-lasso`.
+
+**The fit residual got worse when I turned on** ``enforce_inv = 2`` **.**
+
+Expected, and not by itself a problem. The residual is measured on the snapshots
+the model was fitted to, and it always improves as more parameters are allowed —
+an overfitted model has the smallest residual and the worst predictions. Judge
+the result on the phonons instead, and on ``LASSO: non-zero free parameters`` in
+the log.
 
 **The optical frequencies are wrong for my polar material.**
 
