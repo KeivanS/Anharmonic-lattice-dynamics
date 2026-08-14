@@ -356,9 +356,9 @@ Type ``make`` in terminal for the code to compile. After compilation, type ``mpi
 
 * **Run code in Windows(updated)**
 
-	1.Install Visual Studio Code `download here <https://code.visualstudio.com/download>`_.  This is strongly recommended as it is most commonly used and supported 'all-in-one' code development environment for Windows by Microsoft community. Coding in C++, Python, Java, Fortran,...etc can be switched to and from with one click inside the IDE. VScode can also be integrated with Git, MinGW bash, WSL for Linux subsystem, SSH-remote connection, Jupyter Notebook, PDF Reader and more via powerful optional extensions.
+	1.Install Visual Studio Code `download here <https://code.visualstudio.com/download>`__.  This is strongly recommended as it is most commonly used and supported 'all-in-one' code development environment for Windows by Microsoft community. Coding in C++, Python, Java, Fortran,...etc can be switched to and from with one click inside the IDE. VScode can also be integrated with Git, MinGW bash, WSL for Linux subsystem, SSH-remote connection, Jupyter Notebook, PDF Reader and more via powerful optional extensions.
 
-	2.Install the latest MinGW `download here <https://sourceforge.net/projects/mingw/>`_.  Assume this is installed on C drive and beware that you may later need to download extra package via 'mingw-get', which is located in C:\MinGW\bin\mingw-get.exe
+	2.Install the latest MinGW `download here <https://sourceforge.net/projects/mingw/>`__.  Assume this is installed on C drive and beware that you may later need to download extra package via 'mingw-get', which is located in C:\MinGW\bin\mingw-get.exe
 
 	3.Add MinGW to the system environment by:  Open control panel > system advanced settings > add path of "C:\MinGW", see below
 
@@ -367,7 +367,7 @@ Type ``make`` in terminal for the code to compile. After compilation, type ``mpi
 
 	4.Setup Fortran environment with VScode:
 
-		* Install 'Modern Fortran' extension `download here <https://marketplace.visualstudio.com/items?itemName=fortran-lang.linter-gfortran>`_.  or press `Ctrl+Shift+X` in VScode and search for 'Modern Fortran'. There are also some useful extensions such as 'TODO Highlight'
+		* Install 'Modern Fortran' extension `download here <https://marketplace.visualstudio.com/items?itemName=fortran-lang.linter-gfortran>`__.  or press `Ctrl+Shift+X` in VScode and search for 'Modern Fortran'. There are also some useful extensions such as 'TODO Highlight'
 
 		* Integrate msys bash(1.0) for compiling and running the code (assuming you installed MinGW in C:\MinGW):
 
@@ -438,7 +438,7 @@ Type ``make`` in terminal for the code to compile. After compilation, type ``mpi
 				@exit /b %ErrorLevel%
 
 			
-			* Download `getcp.exe`  `download here <https://github.com/msysgit/msysgit/tree/master/mingw/bin>`_.  and put it into C:\MinGW\msys\1.0\bin
+			* Download `getcp.exe`  `download here <https://github.com/msysgit/msysgit/tree/master/mingw/bin>`__.  and put it into C:\MinGW\msys\1.0\bin
 
 			* Open VScode and press `Ctral+Shift+P`, type 'setting' and find the 'Open User Setting(JSON)' to open the `settings.json` file, add following lines
 

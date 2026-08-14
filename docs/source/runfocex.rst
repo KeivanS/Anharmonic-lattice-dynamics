@@ -46,25 +46,29 @@ Workflow
   :width: 600
   :align: center
 
-In words, a complete calculation consists of the following steps. Steps 1–3 are
+In words, a complete calculation consists of the following steps. Steps 1–2 are
 done outside FOCEX and produce the two "data" files ``POSCAR1`` and
-``FORCEDISP1``; steps 4–5 are the FOCEX run itself.
+``FORCEDISP1``; steps 3–4 are the FOCEX run itself.
 
-#. **Generate snapshots.** Use ``sc_snaps.x`` (in ``FOCEX/utility``) to build a
+#. **Generate snapshots.** Use ``sc_snaps.x`` (:doc:`runscsnaps`) to build a
    supercell and a set of snapshots in which all atoms are displaced according
-   to a canonical (thermal) distribution at a chosen temperature.
-#. **Run the DFT code** on each snapshot to obtain the forces on every atom.
-#. **Collect the results** into ``POSCAR1`` (equilibrium supercell) and
-   ``FORCEDISP1`` (positions/displacements + forces + energy for every
-   snapshot), using ``read_outcar.x`` / ``read_qe.x`` and the helper scripts.
+   to a canonical (thermal) distribution at a chosen temperature. ``POSCAR1``
+   is the undisplaced one, ``poscar_000``.
+#. **Run the DFT code** on each snapshot to obtain the forces on every atom, and
+   **collect the results** into ``FORCEDISP1`` (positions + forces + energy for
+   every snapshot) with ``read_outcar.x`` / ``read_qe.x`` and one of the four
+   helper scripts.
 #. **Prepare the five parameter files** ``structure.params``,
    ``dielectric.params``, ``latdyn.params``, ``kpbs.params`` and
    ``default.params``.
 #. **Run FOCEX** in that directory. It writes the force constants, the phonon
    and thermodynamic properties, and a detailed log file.
 
+Steps 1 and 2 are covered in :ref:`focex-dftdata` below; the parameter files in
+:ref:`focex-inputs`.
+
 If you want to use more than one supercell shape (recommended when you fit
-cubic and quartic terms), repeat steps 1–3 for each shape and name the results
+cubic and quartic terms), repeat steps 1–2 for each shape and name the results
 ``POSCAR1``/``FORCEDISP1``, ``POSCAR2``/``FORCEDISP2``, …
 
 .. _focex-quickstart:
@@ -113,60 +117,81 @@ The reference results for this example are:
    numbers and, for the FC files, their column layout differ slightly from what
    the current version writes. Trust a fresh run rather than the stored output.
 
+.. _focex-dftdata:
+
 Preparing the DFT data
 ----------------------
 
-Generating the snapshots (``sc_snaps.x``)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Everything in this section happens *before* FOCEX runs, and it has only one
+purpose: to produce the two data files ``POSCAR1`` (the undisplaced supercell)
+and ``FORCEDISP1`` (positions, forces and energy for every snapshot).
 
-``sc_snaps.x`` builds a supercell from the primitive cell and writes a set of
+For the common case — VASP, on one machine — the whole preparation is five
+commands:
+
+.. code-block:: bash
+
+   export PATH=$PATH:~/ALADYN/bin    # so the utility programs are found
+
+   sc_snaps.x                        # 1. snapshots: reads cell.inp, supercell.inp, snaps.inp
+   sed '6d' poscar_000 > POSCAR1     #    the undisplaced supercell, in VASP-4 layout
+
+   rm -f FORCEDISP1                  # 2. DFT runs + collection
+   ./runall.sh                       #    edit the VASP command inside it first
+
+What remains is to write the five ``*.params`` files (:ref:`focex-inputs`) and
+run FOCEX in the same directory. The two steps are described one at a time
+below.
+
+Step 1 — generate the snapshots
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``sc_snaps.x`` builds the supercell from the primitive cell and writes a set of
 POSCAR-format snapshots in which *all* atoms are displaced simultaneously,
-sampled from a classical canonical distribution at temperature ``T`` along the
-normal modes of a simple model potential. Displacing all atoms at once (rather
-than one atom at a time) makes far better use of each expensive DFT run.
+sampled from a classical canonical distribution at a chosen temperature.
+Displacing all atoms at once, rather than one atom at a time, makes far better
+use of each expensive DFT run. It reads three small files:
 
-It reads three small input files, all of which live in ``FOCEX/utility``:
+.. list-table::
+   :header-rows: 1
+   :widths: 24 76
 
-``cell.inp`` — the primitive/conventional cell
+   * - File
+     - What it sets
+   * - ``cell.inp``
+     - The primitive and conventional cell, the elements, their masses and
+       charges, and the atomic coordinates.
+   * - ``supercell.inp``
+     - A 3×3 integer matrix whose rows are the supercell translation vectors.
+   * - ``snaps.inp``
+     - Average phonon frequency (cm\ :sup:`-1`), sampling temperature (K), and
+       the number of snapshots.
 
-.. code-block:: text
+and writes ``poscar_000`` — the **undisplaced** supercell — plus one
+``poscar_001``, ``poscar_002``, … per snapshot, together with
+``snapshots.xyz``, ``log.dat``, ``freqs.dat`` and ``modes.dat`` for inspection.
+Each ``poscar_0nn`` is a Cartesian VASP POSCAR whose last three columns are the
+sampled velocities; VASP ignores them.
 
-   1 1 1   90 90 90                # conventional cell a,b,c,alpha,beta,gamma
-   0 0.5 0.5 0.5 0 0.5 0.5 0.5 0   # primitive vectors R01,R02,R03 in units of the conventional cell
-   5.                              # length scale of the lattice parameters (Ang)
-   2                               # number of atom types
-   1   1                           # number of atoms of each type
-   23  35.45                       # mass of each type (uma)
-   Na Mg                           # names of the types
-   0 0 0                           # reduced coordinates (conventional units) of atom 1
-   0 0 0.5                         # ... of atom 2
+.. important::
 
-``supercell.inp`` — the supercell, in units of the **conventional** cell vectors
+   The three input files, the sampling itself and the graphical interface are
+   documented in full in :doc:`runscsnaps` — start there. SC-SNAPS now lives in
+   `its own repository <https://github.com/KeivanS/SC_SNAPS>`_ and its input
+   format differs from the older copy bundled in ``FOCEX/utility``: line 3 of
+   ``cell.inp`` takes **two** values (scale factor and ``convcoord``) and line 6
+   takes masses **and** charges. Prefer the standalone version.
 
-.. code-block:: text
+``POSCAR1`` comes straight out of this step — it is ``poscar_000`` with the
+element-name line deleted, because FOCEX expects the older VASP-4 layout in
+which the atom counts follow the third lattice vector directly
+(see :ref:`focex-poscar`):
 
-   3 0 0     # supercell vectors in terms of the conventional cell vectors
-   0 3 0
-   0 0 3
+.. code-block:: bash
 
-``snaps.inp`` — the sampling parameters
+   sed '6d' poscar_000 > POSCAR1
 
-.. code-block:: text
-
-   500    # average/typical phonon frequency (1/cm); 500/cm = 15 THz
-   300    # temperature (K) for the canonical sampling of displacements
-   15     # number of snapshots (20-50 is usually plenty)
-
-Running ``sc_snaps.x`` produces
-
-* ``poscar_000`` — the **undistorted** supercell,
-* ``poscar_001`` … ``poscar_0nn`` — the displaced snapshots,
-* ``snapshots.xyz``, ``SC.xyz`` — the same information for visualisation,
-* ``log.dat``, ``freqs.dat``, ``modes.dat`` — diagnostics of the model
-  normal modes used for the sampling.
-
-Each ``poscar_0nn`` is a VASP POSCAR in Cartesian coordinates; the last three
-columns are the sampled velocities and are ignored by VASP.
+The ``poscar_0nn`` snapshots themselves go to the DFT code unchanged.
 
 .. tip::
 
@@ -177,68 +202,110 @@ columns are the sampled velocities and are ignored by VASP.
    Start with 10–20 snapshots and add more if the singular values reported in
    ``svd-all.dat`` become small or the fit error is large.
 
+Step 2 — run the DFT code and collect the forces
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Run **one single-point SCF calculation per snapshot** — no relaxation. Accurate
+forces matter: use a well-converged k-mesh and plane-wave cutoff and tight
+electronic convergence, because the force constants are obtained by
+differentiating these forces.
+
+Two converters turn a DFT output into the block format FOCEX reads. Both take
+no command-line arguments and both write a file called ``pos-forc.dat`` in the
+current directory, in :ref:`format A <focex-forcedisp>` (positions in Å, forces
+in eV/Å), converting units as needed:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 24 76
+
+   * - Converter
+     - Reads
+   * - ``read_outcar.x``
+     - A VASP file named exactly ``OUTCAR``, in the current directory.
+   * - ``read_qe.x``
+     - A Quantum Espresso (PWSCF) output whose **filename it reads from
+       standard input**: ``echo pw.out | read_qe.x``.
+
+``FORCEDISP1`` is then nothing more than every snapshot's ``pos-forc.dat``,
+concatenated. Four scripts in ``FOCEX/utility`` do the looping for you — pick
+the one that matches your situation:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 26 74
+
+   * - Script
+     - Use it when
+   * - ``runall.sh``
+     - You run VASP yourself, serially, on one machine. It loops over
+       ``poscar_*``, copies each to ``POSCAR``, runs VASP, converts, and appends
+       to ``FORCEDISP1``. Edit the ``mpirun`` line for your setup.
+   * - ``runall-slurm.sh``
+     - You are on a Slurm cluster. This one covers **steps 1 and 2 together**:
+       it runs ``sc_snaps.x``, submits a job array with one snapshot per task
+       (each in its own ``000/``, ``001/``, … directory), and queues a dependent
+       job that concatenates ``*/pos-forc.dat`` into ``FORCEDISP1``. Set
+       ``ACCOUNT``, ``PARTITION`` and ``CORES`` at the top first, and have
+       ``INCAR``, ``KPOINTS`` and ``POTCAR`` in place.
+   * - ``xtract.sh``
+     - The DFT runs are already done and the outputs sit in one directory as
+       ``OUTCAR1``, ``OUTCAR2``, … It deletes ``FORCEDISP1``, then converts and
+       appends each in turn.
+   * - ``process_dft.sh <dir>``
+     - The DFT runs are already done and each output is an ``OUTCAR`` in its own
+       subdirectory. It finds every ``OUTCAR`` beneath ``<dir>``, converts it in
+       place, and appends to ``FORCEDISP1`` in the directory you launched from.
+
+All four invoke ``read_outcar.x`` by name, so the ``DESTDIR`` you installed the
+utilities into (``~/ALADYN/bin`` by default) must be on your ``PATH``.
+
 .. note::
 
-   The description above is of the copy bundled in ``FOCEX/utility``, which is
-   older than the standalone release. SC-SNAPS is now developed in its own
-   repository and comes with a graphical interface; its current input format
-   differs (line 3 of ``cell.inp`` takes two values, line 6 takes masses and
-   charges). See :doc:`runscsnaps`.
+   There is no ready-made script for Quantum Espresso. Despite its usage
+   message, ``process_dft.sh`` only ever searches for ``OUTCAR`` and only calls
+   ``read_outcar.x``. For QE, loop yourself:
 
-Running the DFT code
-^^^^^^^^^^^^^^^^^^^^
+   .. code-block:: bash
 
-Run a *single-point* (no relaxation) force calculation on each snapshot.
-Accurate forces matter: use a well-converged k-mesh and plane-wave cutoff, and
-tight electronic convergence, since the FCs are obtained by differentiating
-these forces.
+      rm -f FORCEDISP1
+      for d in snap_*/ ; do
+        ( cd "$d" && echo pw.out | read_qe.x )
+        cat "$d"/pos-forc.dat >> FORCEDISP1
+      done
 
-``FOCEX/utility/runall.sh`` shows the pattern for VASP:
+.. warning:: Four things that go wrong here
 
-.. code-block:: bash
+   * **Use a single-point calculation.** ``read_outcar.x`` writes one block for
+     *every ionic step* it finds in the ``OUTCAR``. Leave a relaxation switched
+     on (``NSW > 0``) and a single run silently becomes many "snapshots", all
+     referred to the wrong equilibrium positions. Set ``IBRION = -1``,
+     ``NSW = 0``.
+   * **Re-running appends.** Only ``xtract.sh`` removes ``FORCEDISP1`` before it
+     starts; ``runall.sh``, ``process_dft.sh`` and the Slurm collection job all
+     append to whatever is already there, so a second attempt silently doubles
+     the file. Run ``rm -f FORCEDISP1`` before you restart. (Conversely,
+     ``xtract.sh`` prints a harmless ``rm: FORCEDISP1: No such file or
+     directory`` on a fresh directory.)
+   * **The converters use fixed filenames.** ``read_outcar.x`` reads
+     ``./OUTCAR`` and writes ``./pos-forc.dat``, and neither name can be
+     changed on the command line. That is why the scripts copy the file or
+     ``cd`` into its directory instead of passing a path.
+   * **Keep the atom order.** Within each block the atoms must appear in the
+     same order as in ``POSCAR1``. They do if the ``poscar_0nn`` files produced
+     by ``sc_snaps.x`` were used throughout and the DFT code was not allowed to
+     re-sort them.
 
-   for x in poscar_*
-   do
-     cp $x POSCAR
-     mpirun -np 8 vasp_std
-     read_outcar.x                    # writes pos-forc.dat from OUTCAR
-     cat pos-forc.dat >> FORCEDISP1   # append this snapshot
-   done
+.. note::
 
-``runall-slurm.sh`` is the equivalent for a Slurm cluster.
+   The scripts include ``poscar_000``, the undisplaced cell, in both the DFT
+   runs and ``FORCEDISP1``. Its block carries zero displacements and near-zero
+   forces, so it contributes nothing to the fit — but it is a free check: if
+   those residual forces are not small, the structure you built the supercell
+   from was not properly relaxed.
 
-Building ``POSCARi`` and ``FORCEDISPi``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-**POSCAR1** holds the *equilibrium* atomic positions of the supercell. It is the
-undistorted snapshot ``poscar_000`` (or the POSCAR you used to build the
-snapshots) **with the line containing the element names removed** — FOCEX
-expects the older VASP-4 POSCAR layout, in which the counts of atoms of each
-type follow the third lattice vector directly:
-
-.. code-block:: bash
-
-   sed '6d' poscar_000 > POSCAR1     # delete the "Na Mg" (element names) line
-
-**FORCEDISP1** is the concatenation of the per-snapshot force/position blocks.
-Two converters are provided in ``FOCEX/utility``:
-
-* ``read_outcar.x`` reads the file named ``OUTCAR`` in the current directory and
-  writes ``pos-forc.dat``;
-* ``read_qe.x`` does the same for a Quantum Espresso (PWSCF) output file, whose
-  name it expects on standard input:
-
-  .. code-block:: bash
-
-     echo pw.out | read_qe.x
-
-Both write format A below, converting to Å and eV/Å as needed. One ``OUTCAR``
-may contain several ionic steps; each becomes one snapshot.
-
-Either can be driven by the shell scripts ``xtract.sh`` (loops over ``OUTCAR*``
-files in one directory) or ``process_dft.sh`` (walks a directory tree looking
-for ``OUTCAR`` files). Both simply concatenate the resulting ``pos-forc.dat``
-files into ``FORCEDISP1``; adapt them to your directory layout.
+The exact layout of the two files these steps produce is given below, for
+reference or for when you generate them some other way.
 
 .. _focex-poscar:
 
@@ -325,6 +392,28 @@ new work: its units are unambiguous.
    of the first file and normalises by the number of atoms, so the absolute
    reference is irrelevant. Even when the weighting is off, the energy column
    must be present and parsable.
+
+Checklist before running FOCEX
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+At the end of steps 1 and 2 the working directory must contain the two data
+files, next to the five parameter files described in the next section:
+
+.. code-block:: text
+
+   POSCAR1            <- sed '6d' poscar_000 > POSCAR1
+   FORCEDISP1         <- the concatenated pos-forc.dat blocks
+   structure.params   <- the five parameter files
+   dielectric.params
+   latdyn.params
+   kpbs.params
+   default.params
+
+To fit with more than one supercell shape — recommended when you want cubic and
+quartic terms — repeat steps 1 and 2 for each shape and name the results
+``POSCAR2``/``FORCEDISP2``, ``POSCAR3``/``FORCEDISP3``, and so on.
+
+.. _focex-inputs:
 
 Input files
 -----------

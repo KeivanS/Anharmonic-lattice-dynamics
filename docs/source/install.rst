@@ -153,7 +153,7 @@ SCOP8
 * On Windows
 
   * Put the MinGW package under the root folder,
-    `download here <https://drive.google.com/file/d/1mdHpw7Eac_hwmtHLrHkKdj9zlLljesz8/view?pli=1>`_.
+    `download here <https://drive.google.com/file/d/1mdHpw7Eac_hwmtHLrHkKdj9zlLljesz8/view?pli=1>`__.
     The newest version of MinGW may not work properly.
   * Open *Control Panel > System advanced settings* and add the path of
     ``root:\MingW``, see below:
@@ -162,7 +162,7 @@ SCOP8
        :width: 1000
 
   * Install the IDE code\:\:blocks,
-    `download here <https://www.codeblocks.org/downloads/>`_.
+    `download here <https://www.codeblocks.org/downloads/>`__.
   * Set up the environment in code\:\:blocks: *menu > settings > compiler*, set
     **GNU Fortran** as default and auto-detect compilers (you may need to
     uncheck all the optional compiling options).
