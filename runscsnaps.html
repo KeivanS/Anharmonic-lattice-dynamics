@@ -1,0 +1,459 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5. Running SC-SNAPS &mdash; ALADYN 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="6. Running FOCEX" href="runfocex.html" />
+    <link rel="prev" title="4. Installation" href="install.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ALADYN
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">2. Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">3. Download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">4. Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">5. Running SC-SNAPS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">5.1. Overview</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#how-it-works">How it works</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">5.2. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#input-files">5.3. Input files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#cell-inp-the-primitive-cell"><code class="docutils literal notranslate"><span class="pre">cell.inp</span></code> — the primitive cell</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#supercell-inp-the-supercell"><code class="docutils literal notranslate"><span class="pre">supercell.inp</span></code> — the supercell</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#snaps-inp-the-sampling"><code class="docutils literal notranslate"><span class="pre">snaps.inp</span></code> — the sampling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#output-files">5.4. Output files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-graphical-interface">5.5. The graphical interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#what-the-interface-offers">What the interface offers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#defaults-json"><code class="docutils literal notranslate"><span class="pre">defaults.json</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#poscar2xyz-py"><code class="docutils literal notranslate"><span class="pre">poscar2xyz.py</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#from-snapshots-to-force-constants">5.6. From snapshots to force constants</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="runfocex.html">6. Running FOCEX</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runthermacond.html">7. Running THERMACOND</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscop8.html">8. Running SCOP8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">9. FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ALADYN</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">5. </span>Running SC-SNAPS</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/runscsnaps.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="running-sc-snaps">
+<h1><span class="section-number">5. </span>Running SC-SNAPS<a class="headerlink" href="#running-sc-snaps" title="Link to this heading"></a></h1>
+<section id="overview">
+<h2><span class="section-number">5.1. </span>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p><strong>SC-SNAPS</strong> builds a supercell from a primitive cell and generates a set of
+snapshots in which <em>all</em> atoms are displaced at once, sampled from a classical
+canonical (thermal) distribution at a chosen temperature. Those snapshots are
+the configurations you send to your DFT code; the resulting forces are what
+<a class="reference internal" href="runfocex.html"><span class="doc">Running FOCEX</span></a> fits.</p>
+<p>Displacing every atom in every snapshot, rather than one atom at a time, is what
+makes the approach economical: each DFT run then yields <span class="math notranslate nohighlight">\(3 N_{sc}\)</span>
+independent pieces of information about the force constants instead of three.</p>
+<p>SC-SNAPS is distributed from its own repository,
+<a class="reference external" href="https://github.com/KeivanS/SC_SNAPS">github.com/KeivanS/SC_SNAPS</a>, which
+contains the Fortran generator, a browser-based graphical interface, a
+POSCAR-to-XYZ converter and example input files. An older copy of the generator
+alone is still bundled in <code class="docutils literal notranslate"><span class="pre">FOCEX/utility</span></code>; prefer the standalone repository.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The two versions differ in their input format. In the current version, line 3
+of <code class="docutils literal notranslate"><span class="pre">cell.inp</span></code> carries <strong>two</strong> numbers (scale factor <em>and</em> the
+<code class="docutils literal notranslate"><span class="pre">convcoord</span></code> flag) and line 6 carries masses <strong>and</strong> charges. Input files
+written for the bundled copy will not work unchanged.</p>
+</div>
+<section id="how-it-works">
+<h3>How it works<a class="headerlink" href="#how-it-works" title="Link to this heading"></a></h3>
+<ol class="arabic">
+<li><p>The primitive cell is read and replicated to fill the supercell.</p></li>
+<li><p>A model dynamical matrix is built from a simple harmonic pair interaction
+between neighbors within twice the shortest bond length, and diagonalised.
+The resulting frequencies are then rescaled so that their mean square equals
+the “average frequency” you specify — the model only has to give a
+<em>reasonable</em> set of eigenvectors and a <em>realistic spread</em> of frequencies.</p></li>
+<li><p>For each snapshot, every mode <span class="math notranslate nohighlight">\(\lambda\)</span> (except the three
+translational ones) is given a random classical thermal amplitude,</p>
+<div class="math notranslate nohighlight">
+\[u_i \;\propto\; \sum_{\lambda} \frac{e_{i\lambda}}{\omega_\lambda}
+\sqrt{\frac{k_B T}{m_i}} \; \xi_\lambda ,\]</div>
+<p>with <span class="math notranslate nohighlight">\(\xi_\lambda\)</span> drawn from a normal distribution; a conjugate set of
+Gaussians gives the corresponding velocities.</p>
+</li>
+</ol>
+<p>Because the frequencies enter only through the ratio
+<span class="math notranslate nohighlight">\(\sqrt{T}/\omega\)</span>, the <em>shape</em> of the displacement distribution is
+realistic even though the model potential is crude — you are choosing a
+displacement amplitude, expressed in the physically meaningful units of a
+temperature.</p>
+</section>
+</section>
+<section id="installation">
+<h2><span class="section-number">5.2. </span>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/KeivanS/SC_SNAPS.git
+<span class="nb">cd</span><span class="w"> </span>SC_SNAPS
+make<span class="w"> </span>venv<span class="w">             </span><span class="c1"># one-time: Python packages for the GUI</span>
+make<span class="w"> </span>compile<span class="w">          </span><span class="c1"># builds sc_snaps.x and installs it in ~/BIN</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">compile</span></code> compiles <code class="docutils literal notranslate"><span class="pre">sc_snaps.f90</span></code> with <code class="docutils literal notranslate"><span class="pre">gfortran</span> <span class="pre">-O2</span></code> and moves the
+executable to <code class="docutils literal notranslate"><span class="pre">$(BINDIR)</span></code>, which defaults to <code class="docutils literal notranslate"><span class="pre">~/BIN</span></code>. Override it with
+<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">compile</span> <span class="pre">BINDIR=/somewhere/else</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">venv</span></code> creates a local virtual environment <code class="docutils literal notranslate"><span class="pre">.venv</span></code> with
+<code class="docutils literal notranslate"><span class="pre">--system-site-packages</span></code> — so a NumPy or Matplotlib you already have is reused
+and only the missing packages are downloaded — and installs the rest into it.
+The Makefile then uses <code class="docutils literal notranslate"><span class="pre">.venv/bin/python</span></code> automatically; nothing needs to be
+activated.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The virtual environment is not optional on a Python marked <em>externally
+managed</em> (PEP 668), which is the case for Homebrew’s Python and for most
+Linux distribution packages. There, <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">flask</span></code> is refused with
+<code class="docutils literal notranslate"><span class="pre">error:</span> <span class="pre">externally-managed-environment</span></code> and the GUI stops at
+<code class="docutils literal notranslate"><span class="pre">ModuleNotFoundError:</span> <span class="pre">No</span> <span class="pre">module</span> <span class="pre">named</span> <span class="pre">'flask'</span></code>. If your Python is not
+externally managed you can skip <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">venv</span></code> and simply
+<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">flask</span> <span class="pre">numpy</span> <span class="pre">matplotlib</span> <span class="pre">scipy</span></code>.</p>
+</div>
+<p>For the graphical interface you need:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Requirement</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Python ≥ 3.8</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Flask</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">flask</span></code> — required to start the GUI at all.</p></td>
+</tr>
+<tr class="row-even"><td><p>NumPy, Matplotlib, SciPy</p></td>
+<td><p>Only for the analysis plots. Without them the GUI still runs, but the
+plot panels return “Missing library”. SciPy is used for the Gaussian
+fits in the component and velocity histograms.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://jmol.sourceforge.net/">Jmol</a></p></td>
+<td><p>Optional structure viewer. Any viewer that accepts a file argument
+(VESTA, OVITO, …) works — just point the GUI at it.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If you compile <code class="docutils literal notranslate"><span class="pre">sc_snaps.f90</span></code> with <code class="docutils literal notranslate"><span class="pre">-fcheck=all</span></code> (as the ALATDYN
+<code class="docutils literal notranslate"><span class="pre">make.inc</span></code> does) the program aborts at run time with <code class="docutils literal notranslate"><span class="pre">Recursive</span> <span class="pre">call</span> <span class="pre">to</span>
+<span class="pre">nonrecursive</span> <span class="pre">procedure</span> <span class="pre">'findif'</span></code>: the finite-difference helper calls itself
+through <code class="docutils literal notranslate"><span class="pre">d1v</span></code>/<code class="docutils literal notranslate"><span class="pre">d2v</span></code>, which <code class="docutils literal notranslate"><span class="pre">-fcheck=recursion</span></code> flags. SC-SNAPS’s own
+Makefile uses plain <code class="docutils literal notranslate"><span class="pre">-O2</span></code> and is unaffected. If you need the checks, add
+<code class="docutils literal notranslate"><span class="pre">-frecursive</span></code>.</p>
+</div>
+</section>
+<section id="input-files">
+<h2><span class="section-number">5.3. </span>Input files<a class="headerlink" href="#input-files" title="Link to this heading"></a></h2>
+<p>All three files are read with list-directed Fortran <code class="docutils literal notranslate"><span class="pre">read</span></code> statements: only
+the leading values of each line are parsed, and anything after them is a
+comment. The number and order of lines is fixed.</p>
+<section id="cell-inp-the-primitive-cell">
+<h3><code class="docutils literal notranslate"><span class="pre">cell.inp</span></code> — the primitive cell<a class="headerlink" href="#cell-inp-the-primitive-cell" title="Link to this heading"></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>1 1 1   90 90 90                 # 1  CONVENTIONAL cell: a b c alpha beta gamma
+0 0.5 0.5, 0.5 0 0.5, 0.5 0.5 0  # 2  primitive vectors in conventional units
+4.247  0                         # 3  scale factor (Ang); convcoord flag
+2                                # 4  number of atom types
+1 1                              # 5  number of atoms of each type in the primitive cell
+24.31  16.00   2 -2              # 6  the masses, then the charges
+Mg O                             # 7  element names
+  0   0   0                      # 8  reduced coordinates, atom 1 (in units of conventional cell)
+  0.5 0.5 0.5                    # 9  reduced coordinates, atom 2
+</pre></div>
+</div>
+<p><strong>Line 1</strong> — the conventional cell. <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">b</span> <span class="pre">c</span></code> are multiplied by the scale factor
+of line 3; the angles are in degrees.</p>
+<p><strong>Line 2</strong> — nine numbers read as three groups of three: the primitive
+translation vectors expressed in units of the conventional cell vectors. Commas
+are accepted as separators. Use <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">0</span> <span class="pre">0</span>&#160; <span class="pre">0</span> <span class="pre">1</span> <span class="pre">0</span>&#160; <span class="pre">0</span> <span class="pre">0</span> <span class="pre">1</span></code> if the conventional cell
+<em>is</em> the primitive cell.</p>
+<p><strong>Line 3</strong> — <code class="docutils literal notranslate"><span class="pre">scale</span></code>, then <code class="docutils literal notranslate"><span class="pre">convcoord</span></code>. <strong>Both values are required.</strong> The
+flag decides the units of the atomic coordinates below <em>and</em> of
+<code class="docutils literal notranslate"><span class="pre">supercell.inp</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">convcoord</span> <span class="pre">=</span> <span class="pre">0</span></code> — reduced coordinates of the <strong>conventional</strong> cell;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">convcoord</span> <span class="pre">≠</span> <span class="pre">0</span></code> — reduced coordinates of the <strong>primitive</strong> cell.</p></li>
+</ul>
+<p><strong>Line 4</strong> — number of distinct elements.</p>
+<p><strong>Line 5</strong> — how many atoms of each type the primitive cell contains.</p>
+<p><strong>Line 6</strong> — <code class="docutils literal notranslate"><span class="pre">ntype</span></code> masses (uma) followed by <code class="docutils literal notranslate"><span class="pre">ntype</span></code> charges, all on one
+line. The charges are carried through to <code class="docutils literal notranslate"><span class="pre">snapshots.xyz</span></code> for visualisation and
+are not used in the sampling.</p>
+<p><strong>Line 7</strong> — the element names (two characters each).</p>
+<p><strong>Lines 8 onward</strong> — one line per atom, giving its three reduced coordinates in units of CONVENTIONAL vectors.
+The atoms must be grouped by type, in the order declared on line 5. Trailing
+text on these lines (an oxidation-state label, for instance) is ignored.</p>
+</section>
+<section id="supercell-inp-the-supercell">
+<h3><code class="docutils literal notranslate"><span class="pre">supercell.inp</span></code> — the supercell<a class="headerlink" href="#supercell-inp-the-supercell" title="Link to this heading"></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>2 0 0
+0 3 0
+0 0 4
+</pre></div>
+</div>
+<p>A 3×3 integer matrix whose <strong>rows</strong> are the supercell translation vectors, in
+units of the conventional cell when <code class="docutils literal notranslate"><span class="pre">convcoord</span> <span class="pre">=</span> <span class="pre">0</span></code> and of the primitive cell
+otherwise. A diagonal matrix gives the usual <span class="math notranslate nohighlight">\(n_1 \times n_2 \times n_3\)</span>
+supercell; off-diagonal entries let you build a more compact cell of the same
+volume, which is often a better use of a given atom budget. The number of atoms
+generated is <span class="math notranslate nohighlight">\(|\det| \times\)</span> (atoms in the primitive cell), and SC-SNAPS
+stops if the volume ratio is not an integer.</p>
+</section>
+<section id="snaps-inp-the-sampling">
+<h3><code class="docutils literal notranslate"><span class="pre">snaps.inp</span></code> — the sampling<a class="headerlink" href="#snaps-inp-the-sampling" title="Link to this heading"></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>400    # 1  average phonon frequency (1/cm)
+100    # 2  temperature (K)
+15     # 3  number of snapshots
+</pre></div>
+</div>
+<p><strong>Average frequency</strong> — the model frequencies are rescaled so that their mean
+square matches this value. Set it near the middle of your material’s phonon
+spectrum (a Debye-like scale); 400 cm<sup>-1</sup> ≈ 12 THz is a reasonable
+starting point for a hard covalent solid, less for a soft or heavy one. It fixes
+the overall size of the displacements together with the temperature.</p>
+<p><strong>Temperature</strong> — the sampling temperature. Choose it at or somewhat above the
+temperature at which you intend to use the force constants: large enough that
+the anharmonic terms show in the forces, small enough that the truncated Taylor
+expansion still applies. Check the amplitude of displacements in the histogram.
+0.01-0.02 Ang is a reasonable value</p>
+<p><strong>Number of snapshots</strong> — 20–50 usually suffices; the practical ceiling is 999.
+See the sizing rule in <a class="reference internal" href="runfocex.html"><span class="doc">Running FOCEX</span></a>.</p>
+</section>
+</section>
+<section id="output-files">
+<h2><span class="section-number">5.4. </span>Output files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Contents</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">poscar_000</span></code></p></td>
+<td><p>The <strong>undistorted</strong> supercell, in VASP POSCAR format, Cartesian.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">poscar_001</span></code> …</p></td>
+<td><p>One thermally displaced snapshot each, same format.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">snapshots.xyz</span></code></p></td>
+<td><p>All snapshots in XYZ format, each atom line carrying element, position,
+charge and velocity — for visualisation and for the GUI’s histograms.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">log.dat</span></code></p></td>
+<td><p>Cells and reciprocal cells, generated supercell coordinates, shortest
+bond length, cutoff, and the model frequencies.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">freqs.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">modes.dat</span></code></p></td>
+<td><p>The eigenvalues and eigenvectors of the model dynamical matrix.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The <code class="docutils literal notranslate"><span class="pre">poscar_*</span></code> files carry six columns per atom: the three Cartesian
+coordinates followed by the three velocity components. VASP ignores the extra
+columns.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p><code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> for FOCEX is <code class="docutils literal notranslate"><span class="pre">poscar_000</span></code> <strong>with the element-name line (line 6)
+deleted</strong> — FOCEX expects the older VASP-4 layout in which the atom counts
+follow the third lattice vector directly:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sed<span class="w"> </span><span class="s1">&#39;6d&#39;</span><span class="w"> </span>poscar_000<span class="w"> </span>&gt;<span class="w"> </span>POSCAR1
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">poscar_0nn</span></code> files themselves are fed to VASP unchanged.</p>
+</div>
+</section>
+<section id="the-graphical-interface">
+<h2><span class="section-number">5.5. </span>The graphical interface<a class="headerlink" href="#the-graphical-interface" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>run<span class="w">     </span><span class="c1"># starts the server and opens http://localhost:5050</span>
+</pre></div>
+</div>
+<p>The GUI is a local Flask application — nothing leaves your machine and no
+internet connection is needed. The working directory is the one you launch it
+from, and can be changed in the browser at any time without restarting.</p>
+<p>The port (5050) is fixed. To restart after a crash, or to free the port:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>lsof<span class="w"> </span>-ti<span class="w"> </span>:5050<span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span><span class="nb">kill</span><span class="w"> </span>-9
+</pre></div>
+</div>
+<section id="what-the-interface-offers">
+<h3>What the interface offers<a class="headerlink" href="#what-the-interface-offers" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Paths.</strong> The location of <code class="docutils literal notranslate"><span class="pre">sc_snaps.x</span></code>, of the structure viewer and of the
+<code class="docutils literal notranslate"><span class="pre">poscar2xyz.py</span></code> converter, editable in the browser.</p></li>
+<li><p><strong>Input editors.</strong> <code class="docutils literal notranslate"><span class="pre">cell.inp</span></code>, <code class="docutils literal notranslate"><span class="pre">snaps.inp</span></code> and <code class="docutils literal notranslate"><span class="pre">supercell.inp</span></code> in three
+text areas, pre-filled with templates and annotated with format hints. <em>Load
+existing files</em> fills them from the working directory; <strong>Save input files</strong>
+writes them back. Editing alone does not touch the disk.</p></li>
+<li><p><strong>Run and watch.</strong> <em>Run sc_snaps.x</em> saves the inputs, starts the job, and
+streams its output live into the log box.</p></li>
+<li><p><strong>Browse and visualise.</strong> Generated <code class="docutils literal notranslate"><span class="pre">poscar_*</span></code> files and <code class="docutils literal notranslate"><span class="pre">snapshots.xyz</span></code>
+appear as clickable chips; a click shows the file inline, and <em>Convert &amp; open
+in Jmol</em> converts it to XYZ and launches the viewer.</p></li>
+<li><p><strong>Analysis plots.</strong> Beyond what is needed simply to run the code, the GUI
+plots the quantities you want to see before committing to a set of expensive
+DFT runs:</p>
+<ul>
+<li><p>a <strong>thermal displacement histogram</strong>, per element, with mean and standard
+deviation of <span class="math notranslate nohighlight">\(|r - r_0|\)</span>;</p></li>
+<li><p>the same resolved into <strong>Cartesian components</strong>;</p></li>
+<li><p>a <strong>velocity histogram</strong>;</p></li>
+<li><p>the <strong>frequency spectrum</strong> of the model dynamical matrix, from
+<code class="docutils literal notranslate"><span class="pre">freqs.dat</span></code>.</p></li>
+</ul>
+</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The displacement histogram is the fastest sanity check on your sampling. Mean
+displacements of a few hundredths of an Å are typical; if they approach a
+tenth of the bond length, the snapshots are too anharmonic for a
+Taylor-expanded force-constant model, and you should lower the temperature or
+raise the average frequency.</p>
+</div>
+</section>
+<section id="defaults-json">
+<h3><code class="docutils literal notranslate"><span class="pre">defaults.json</span></code><a class="headerlink" href="#defaults-json" title="Link to this heading"></a></h3>
+<p>If a file named <code class="docutils literal notranslate"><span class="pre">defaults.json</span></code> exists in the working directory, it overrides
+the interface’s built-in defaults — the three executable paths and the three
+input templates:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;execpath&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;~/BIN/sc_snaps.x&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;visualizer&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;~/bin/jmol&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;converter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;~/BIN/poscar2xyz.py&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;cell&quot;</span><span class="p">:</span><span class="w">      </span><span class="s2">&quot;1 1 1   90 90 90\n 0 0.5 0.5, 0.5 0 0.5, 0.5 0.5 0\n 4.247 0\n ...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;snaps&quot;</span><span class="p">:</span><span class="w">     </span><span class="s2">&quot;400\n 300\n 10&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;supercell&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2 0 0\n 0 2 0\n 0 0 2&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>An invalid or absent file is silently ignored and the built-in defaults are
+used. Note that a template stored here must itself be a valid input file — in
+particular, line 3 of the <code class="docutils literal notranslate"><span class="pre">cell</span></code> template needs both the scale factor and the
+<code class="docutils literal notranslate"><span class="pre">convcoord</span></code> flag.</p>
+</section>
+<section id="poscar2xyz-py">
+<h3><code class="docutils literal notranslate"><span class="pre">poscar2xyz.py</span></code><a class="headerlink" href="#poscar2xyz-py" title="Link to this heading"></a></h3>
+<p>The converter used by the <em>open in Jmol</em> buttons is also a standalone tool:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>poscar2xyz.py<span class="w"> </span>poscar_001<span class="w">              </span><span class="c1"># -&gt; poscar_001.xyz</span>
+python3<span class="w"> </span>poscar2xyz.py<span class="w"> </span>poscar_*<span class="w">                </span><span class="c1"># batch</span>
+python3<span class="w"> </span>poscar2xyz.py<span class="w"> </span>poscar_001<span class="w"> </span>-o<span class="w"> </span>out.xyz<span class="w">   </span><span class="c1"># explicit name</span>
+</pre></div>
+</div>
+<p>It handles both the modern and the old POSCAR layouts, direct and Cartesian
+coordinates, negative (volume) scale factors and selective-dynamics lines.</p>
+</section>
+</section>
+<section id="from-snapshots-to-force-constants">
+<h2><span class="section-number">5.6. </span>From snapshots to force constants<a class="headerlink" href="#from-snapshots-to-force-constants" title="Link to this heading"></a></h2>
+<p>Once the DFT runs are done, collect the results into <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> and
+<code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> and run FOCEX. That part of the workflow — the converters, the
+file formats and the FOCEX input files — is described in <a class="reference internal" href="runfocex.html"><span class="doc">Running FOCEX</span></a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="install.html" class="btn btn-neutral float-left" title="4. Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="runfocex.html" class="btn btn-neutral float-right" title="6. Running FOCEX" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, University of Virginia.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

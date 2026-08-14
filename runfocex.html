@@ -1,0 +1,1206 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6. Running FOCEX &mdash; ALADYN 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="7. Running THERMACOND" href="runthermacond.html" />
+    <link rel="prev" title="5. Running SC-SNAPS" href="runscsnaps.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ALADYN
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">2. Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">3. Download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">4. Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscsnaps.html">5. Running SC-SNAPS</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">6. Running FOCEX</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">6.1. Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#workflow">6.2. Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#quick-start-the-ge-example">6.3. Quick start: the Ge example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#preparing-the-dft-data">6.4. Preparing the DFT data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#step-1-generate-the-snapshots">Step 1 — generate the snapshots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#step-2-run-the-dft-code-and-collect-the-forces">Step 2 — run the DFT code and collect the forces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#format-of-poscari">Format of <code class="docutils literal notranslate"><span class="pre">POSCARi</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#format-of-forcedispi">Format of <code class="docutils literal notranslate"><span class="pre">FORCEDISPi</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#checklist-before-running-focex">Checklist before running FOCEX</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#input-files">6.5. Input files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#structure-params"><code class="docutils literal notranslate"><span class="pre">structure.params</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#choosing-enforce-inv">Choosing <code class="docutils literal notranslate"><span class="pre">enforce_inv</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#enforce-inv-2-selecting-the-force-constants-by-lasso"><code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">2</span></code>: selecting the force constants by LASSO</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dielectric-params"><code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#latdyn-params"><code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kpbs-params"><code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#default-params"><code class="docutils literal notranslate"><span class="pre">default.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id1">6.6. Running FOCEX</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-log-file-name">The log file name</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#output-files">6.7. Output files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#force-constants">Force constants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#phonons-and-thermodynamics">Phonons and thermodynamics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#checking-the-quality-of-the-fit">6.8. Checking the quality of the fit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#plotting-the-results">6.9. Plotting the results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">6.10. Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-the-results-in-the-other-alatdyn-codes">6.11. Using the results in the other ALATDYN codes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="runthermacond.html">7. Running THERMACOND</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscop8.html">8. Running SCOP8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">9. FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ALADYN</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">6. </span>Running FOCEX</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/runfocex.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="running-focex">
+<h1><span class="section-number">6. </span>Running FOCEX<a class="headerlink" href="#running-focex" title="Link to this heading"></a></h1>
+<section id="overview">
+<h2><span class="section-number">6.1. </span>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p><strong>FOCEX</strong> (<em>FOrce Constant EXtraction</em>) takes a set of force–displacement data
+computed in one or several supercells — typically by a DFT code such as VASP or
+Quantum Espresso — and extracts from it the harmonic and anharmonic force
+constants (FCs) of the crystal, defined as the derivatives of the potential
+energy with respect to atomic displacements (see <a class="reference internal" href="theory.html"><span class="doc">Theory</span></a>).</p>
+<p>The extraction proceeds in three stages:</p>
+<ol class="arabic simple">
+<li><p><strong>Symmetry analysis.</strong> From the primitive cell described in
+<code class="docutils literal notranslate"><span class="pre">structure.params</span></code>, FOCEX finds the space-group operations of the crystal,
+builds the neighbor shells around each atom of the primitive cell, and
+determines which FCs of each requested rank are <em>irreducible</em> (independent).
+All remaining FCs are expressed as linear combinations of these.</p></li>
+<li><p><strong>Linear fit by SVD.</strong> Each snapshot in <code class="docutils literal notranslate"><span class="pre">FORCEDISPi</span></code> contributes
+<span class="math notranslate nohighlight">\(3 N_{sc}\)</span> linear equations relating the DFT forces to the unknown
+irreducible FCs. Rows expressing translational (ASR), rotational and Huang
+invariance are added to this system, which is then solved in the
+least-squares sense by singular value decomposition.</p></li>
+<li><p><strong>Post-processing.</strong> From the fitted FCs, FOCEX computes the phonon band
+structure, group velocities, density of states, mode Gruneisen parameters,
+elastic and compliance tensors, sound speeds, Debye temperature, and
+quasi-harmonic thermodynamic properties (free energy, heat capacity,
+entropy, thermal expansion) over a temperature range.</p></li>
+</ol>
+<p>The FCs written by FOCEX are also the input of the other ALATDYN codes
+(<code class="docutils literal notranslate"><span class="pre">THERMACOND</span></code>, <code class="docutils literal notranslate"><span class="pre">SCOP8</span></code>, <code class="docutils literal notranslate"><span class="pre">ANFOMOD</span></code>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Ranks up to 8 can be fitted, but only ranks 1–4 are written to <code class="docutils literal notranslate"><span class="pre">fcN.dat</span></code>
+files. In practice ranks 2 (harmonic), 3 (cubic) and 4 (quartic) are the
+useful ones.</p>
+</div>
+</section>
+<section id="workflow">
+<h2><span class="section-number">6.2. </span>Workflow<a class="headerlink" href="#workflow" title="Link to this heading"></a></h2>
+<a class="reference internal image-reference" href="_images/WorkFlow-FOCEX-Website.svg"><img alt="_images/WorkFlow-FOCEX-Website.svg" class="align-center" src="_images/WorkFlow-FOCEX-Website.svg" width="600" />
+</a>
+<p>In words, a complete calculation consists of the following steps. Steps 1–2 are
+done outside FOCEX and produce the two “data” files <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> and
+<code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code>; steps 3–4 are the FOCEX run itself.</p>
+<ol class="arabic simple">
+<li><p><strong>Generate snapshots.</strong> Use <code class="docutils literal notranslate"><span class="pre">sc_snaps.x</span></code> (<a class="reference internal" href="runscsnaps.html"><span class="doc">Running SC-SNAPS</span></a>) to build a
+supercell and a set of snapshots in which all atoms are displaced according
+to a canonical (thermal) distribution at a chosen temperature. <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code>
+is the undisplaced one, <code class="docutils literal notranslate"><span class="pre">poscar_000</span></code>.</p></li>
+<li><p><strong>Run the DFT code</strong> on each snapshot to obtain the forces on every atom, and
+<strong>collect the results</strong> into <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> (positions + forces + energy for
+every snapshot) with <code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code> / <code class="docutils literal notranslate"><span class="pre">read_qe.x</span></code> and one of the four
+helper scripts.</p></li>
+<li><p><strong>Prepare the five parameter files</strong> <code class="docutils literal notranslate"><span class="pre">structure.params</span></code>,
+<code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code>, <code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code>, <code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code> and
+<code class="docutils literal notranslate"><span class="pre">default.params</span></code>.</p></li>
+<li><p><strong>Run FOCEX</strong> in that directory. It writes the force constants, the phonon
+and thermodynamic properties, and a detailed log file.</p></li>
+</ol>
+<p>Steps 1 and 2 are covered in <a class="reference internal" href="#focex-dftdata"><span class="std std-ref">Preparing the DFT data</span></a> below; the parameter files in
+<a class="reference internal" href="#focex-inputs"><span class="std std-ref">Input files</span></a>.</p>
+<p>If you want to use more than one supercell shape (recommended when you fit
+cubic and quartic terms), repeat steps 1–2 for each shape and name the results
+<code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code>/<code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code>, <code class="docutils literal notranslate"><span class="pre">POSCAR2</span></code>/<code class="docutils literal notranslate"><span class="pre">FORCEDISP2</span></code>, …</p>
+</section>
+<section id="quick-start-the-ge-example">
+<span id="focex-quickstart"></span><h2><span class="section-number">6.3. </span>Quick start: the Ge example<a class="headerlink" href="#quick-start-the-ge-example" title="Link to this heading"></a></h2>
+<p>A complete, ready-to-run example is provided in <code class="docutils literal notranslate"><span class="pre">FOCEX/example/Ge</span></code>. It uses a
+216-atom supercell of germanium (<span class="math notranslate nohighlight">\(3\times3\times3\)</span> of the 8-atom
+conventional cubic cell, <span class="math notranslate nohighlight">\(a = 5.7022565\)</span> Å) and 36 snapshots.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># after compiling (see the Installation chapter)</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span>~/runs/Ge<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>~/runs/Ge
+cp<span class="w"> </span>&lt;path-to-repo&gt;/FOCEX/example/Ge/<span class="o">{</span>structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1<span class="o">}</span><span class="w"> </span>.
+&lt;path-to-your-binary&gt;<span class="w">          </span><span class="c1"># e.g.  ~/BIN/v16</span>
+</pre></div>
+</div>
+<p>On a single modern core the run takes a few minutes. It should end with</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Program  FOCEX ended at ...
+</pre></div>
+</div>
+<p>and produce, among others, <code class="docutils literal notranslate"><span class="pre">fc2.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc2_irr.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc3.dat</span></code>,
+<code class="docutils literal notranslate"><span class="pre">fc3_irr.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">bs_freq.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">ibz_dos.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">mech.dat</span></code>,
+<code class="docutils literal notranslate"><span class="pre">thermo_QHA.dat</span></code> and a log file whose name encodes the run settings (see
+<a class="reference internal" href="#focex-logname"><span class="std std-ref">The log file name</span></a>).</p>
+<p>The reference results for this example are:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>number of configurations (snapshots)     36
+independent (irreducible) FC2 / FC3      78 / 95   (173 in total)
+translational / rotational / Huang       14 / 84 / 15  constraints
+fit quality  || F_dft - F_fit || / || F_dft ||   0.036 %
+C11, C12, C44 (GPa)                      121.1, 68.0, 47.4
+Bulk modulus (Hill, GPa)                 85.7
+Debye temperature (K)                    313.6
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The files shipped <em>next to</em> the example inputs (<code class="docutils literal notranslate"><span class="pre">fc2.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">log*.dat</span></code>,
+<code class="docutils literal notranslate"><span class="pre">svd-all.dat</span></code>, …) were produced by an older version of the code; their
+numbers and, for the FC files, their column layout differ slightly from what
+the current version writes. Trust a fresh run rather than the stored output.</p>
+</div>
+</section>
+<section id="preparing-the-dft-data">
+<span id="focex-dftdata"></span><h2><span class="section-number">6.4. </span>Preparing the DFT data<a class="headerlink" href="#preparing-the-dft-data" title="Link to this heading"></a></h2>
+<p>Everything in this section happens <em>before</em> FOCEX runs, and it has only one
+purpose: to produce the two data files <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> (the undisplaced supercell)
+and <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> (positions, forces and energy for every snapshot).</p>
+<p>For the common case — VASP, on one machine — the whole preparation is five
+commands:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:~/ALADYN/bin<span class="w">    </span><span class="c1"># so the utility programs are found</span>
+
+sc_snaps.x<span class="w">                        </span><span class="c1"># 1. snapshots: reads cell.inp, supercell.inp, snaps.inp</span>
+sed<span class="w"> </span><span class="s1">&#39;6d&#39;</span><span class="w"> </span>poscar_000<span class="w"> </span>&gt;<span class="w"> </span>POSCAR1<span class="w">     </span><span class="c1">#    the undisplaced supercell, in VASP-4 layout</span>
+
+rm<span class="w"> </span>-f<span class="w"> </span>FORCEDISP1<span class="w">                  </span><span class="c1"># 2. DFT runs + collection</span>
+./runall.sh<span class="w">                       </span><span class="c1">#    edit the VASP command inside it first</span>
+</pre></div>
+</div>
+<p>What remains is to write the five <code class="docutils literal notranslate"><span class="pre">*.params</span></code> files (<a class="reference internal" href="#focex-inputs"><span class="std std-ref">Input files</span></a>) and
+run FOCEX in the same directory. The two steps are described one at a time
+below.</p>
+<section id="step-1-generate-the-snapshots">
+<h3>Step 1 — generate the snapshots<a class="headerlink" href="#step-1-generate-the-snapshots" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">sc_snaps.x</span></code> builds the supercell from the primitive cell and writes a set of
+POSCAR-format snapshots in which <em>all</em> atoms are displaced simultaneously,
+sampled from a classical canonical distribution at a chosen temperature.
+Displacing all atoms at once, rather than one atom at a time, makes far better
+use of each expensive DFT run. It reads three small files:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 24.0%" />
+<col style="width: 76.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>What it sets</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cell.inp</span></code></p></td>
+<td><p>The primitive and conventional cell, the elements, their masses and
+charges, and the atomic coordinates.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">supercell.inp</span></code></p></td>
+<td><p>A 3×3 integer matrix whose rows are the supercell translation vectors.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">snaps.inp</span></code></p></td>
+<td><p>Average phonon frequency (cm<sup>-1</sup>), sampling temperature (K), and
+the number of snapshots.</p></td>
+</tr>
+</tbody>
+</table>
+<p>and writes <code class="docutils literal notranslate"><span class="pre">poscar_000</span></code> — the <strong>undisplaced</strong> supercell — plus one
+<code class="docutils literal notranslate"><span class="pre">poscar_001</span></code>, <code class="docutils literal notranslate"><span class="pre">poscar_002</span></code>, … per snapshot, together with
+<code class="docutils literal notranslate"><span class="pre">snapshots.xyz</span></code>, <code class="docutils literal notranslate"><span class="pre">log.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">freqs.dat</span></code> and <code class="docutils literal notranslate"><span class="pre">modes.dat</span></code> for inspection.
+Each <code class="docutils literal notranslate"><span class="pre">poscar_0nn</span></code> is a Cartesian VASP POSCAR whose last three columns are the
+sampled velocities; VASP ignores them.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The three input files, the sampling itself and the graphical interface are
+documented in full in <a class="reference internal" href="runscsnaps.html"><span class="doc">Running SC-SNAPS</span></a> — start there. SC-SNAPS now lives in
+<a class="reference external" href="https://github.com/KeivanS/SC_SNAPS">its own repository</a> and its input
+format differs from the older copy bundled in <code class="docutils literal notranslate"><span class="pre">FOCEX/utility</span></code>: line 3 of
+<code class="docutils literal notranslate"><span class="pre">cell.inp</span></code> takes <strong>two</strong> values (scale factor and <code class="docutils literal notranslate"><span class="pre">convcoord</span></code>) and line 6
+takes masses <strong>and</strong> charges. Prefer the standalone version.</p>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> comes straight out of this step — it is <code class="docutils literal notranslate"><span class="pre">poscar_000</span></code> with the
+element-name line deleted, because FOCEX expects the older VASP-4 layout in
+which the atom counts follow the third lattice vector directly
+(see <a class="reference internal" href="#focex-poscar"><span class="std std-ref">Format of POSCARi</span></a>):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sed<span class="w"> </span><span class="s1">&#39;6d&#39;</span><span class="w"> </span>poscar_000<span class="w"> </span>&gt;<span class="w"> </span>POSCAR1
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">poscar_0nn</span></code> snapshots themselves go to the DFT code unchanged.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>How many snapshots do you need? The fit needs at least as many force
+components (<span class="math notranslate nohighlight">\(3 N_{sc}\)</span> per snapshot) as there are independent FCs, and
+comfortably more for a stable least-squares solution. The Ge example uses
+36 snapshots × 648 force components = 23 328 equations for 173 unknowns.
+Start with 10–20 snapshots and add more if the singular values reported in
+<code class="docutils literal notranslate"><span class="pre">svd-all.dat</span></code> become small or the fit error is large.</p>
+</div>
+</section>
+<section id="step-2-run-the-dft-code-and-collect-the-forces">
+<h3>Step 2 — run the DFT code and collect the forces<a class="headerlink" href="#step-2-run-the-dft-code-and-collect-the-forces" title="Link to this heading"></a></h3>
+<p>Run <strong>one single-point SCF calculation per snapshot</strong> — no relaxation. Accurate
+forces matter: use a well-converged k-mesh and plane-wave cutoff and tight
+electronic convergence, because the force constants are obtained by
+differentiating these forces.</p>
+<p>Two converters turn a DFT output into the block format FOCEX reads. Both take
+no command-line arguments and both write a file called <code class="docutils literal notranslate"><span class="pre">pos-forc.dat</span></code> in the
+current directory, in <a class="reference internal" href="#focex-forcedisp"><span class="std std-ref">format A</span></a> (positions in Å, forces
+in eV/Å), converting units as needed:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 24.0%" />
+<col style="width: 76.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Converter</p></th>
+<th class="head"><p>Reads</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code></p></td>
+<td><p>A VASP file named exactly <code class="docutils literal notranslate"><span class="pre">OUTCAR</span></code>, in the current directory.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">read_qe.x</span></code></p></td>
+<td><p>A Quantum Espresso (PWSCF) output whose <strong>filename it reads from
+standard input</strong>: <code class="docutils literal notranslate"><span class="pre">echo</span> <span class="pre">pw.out</span> <span class="pre">|</span> <span class="pre">read_qe.x</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> is then nothing more than every snapshot’s <code class="docutils literal notranslate"><span class="pre">pos-forc.dat</span></code>,
+concatenated. Four scripts in <code class="docutils literal notranslate"><span class="pre">FOCEX/utility</span></code> do the looping for you — pick
+the one that matches your situation:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 26.0%" />
+<col style="width: 74.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Script</p></th>
+<th class="head"><p>Use it when</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">runall.sh</span></code></p></td>
+<td><p>You run VASP yourself, serially, on one machine. It loops over
+<code class="docutils literal notranslate"><span class="pre">poscar_*</span></code>, copies each to <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code>, runs VASP, converts, and appends
+to <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code>. Edit the <code class="docutils literal notranslate"><span class="pre">mpirun</span></code> line for your setup.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">runall-slurm.sh</span></code></p></td>
+<td><p>You are on a Slurm cluster. This one covers <strong>steps 1 and 2 together</strong>:
+it runs <code class="docutils literal notranslate"><span class="pre">sc_snaps.x</span></code>, submits a job array with one snapshot per task
+(each in its own <code class="docutils literal notranslate"><span class="pre">000/</span></code>, <code class="docutils literal notranslate"><span class="pre">001/</span></code>, … directory), and queues a dependent
+job that concatenates <code class="docutils literal notranslate"><span class="pre">*/pos-forc.dat</span></code> into <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code>. Set
+<code class="docutils literal notranslate"><span class="pre">ACCOUNT</span></code>, <code class="docutils literal notranslate"><span class="pre">PARTITION</span></code> and <code class="docutils literal notranslate"><span class="pre">CORES</span></code> at the top first, and have
+<code class="docutils literal notranslate"><span class="pre">INCAR</span></code>, <code class="docutils literal notranslate"><span class="pre">KPOINTS</span></code> and <code class="docutils literal notranslate"><span class="pre">POTCAR</span></code> in place.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">xtract.sh</span></code></p></td>
+<td><p>The DFT runs are already done and the outputs sit in one directory as
+<code class="docutils literal notranslate"><span class="pre">OUTCAR1</span></code>, <code class="docutils literal notranslate"><span class="pre">OUTCAR2</span></code>, … It deletes <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code>, then converts and
+appends each in turn.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">process_dft.sh</span> <span class="pre">&lt;dir&gt;</span></code></p></td>
+<td><p>The DFT runs are already done and each output is an <code class="docutils literal notranslate"><span class="pre">OUTCAR</span></code> in its own
+subdirectory. It finds every <code class="docutils literal notranslate"><span class="pre">OUTCAR</span></code> beneath <code class="docutils literal notranslate"><span class="pre">&lt;dir&gt;</span></code>, converts it in
+place, and appends to <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> in the directory you launched from.</p></td>
+</tr>
+</tbody>
+</table>
+<p>All four invoke <code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code> by name, so the <code class="docutils literal notranslate"><span class="pre">DESTDIR</span></code> you installed the
+utilities into (<code class="docutils literal notranslate"><span class="pre">~/ALADYN/bin</span></code> by default) must be on your <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>There is no ready-made script for Quantum Espresso. Despite its usage
+message, <code class="docutils literal notranslate"><span class="pre">process_dft.sh</span></code> only ever searches for <code class="docutils literal notranslate"><span class="pre">OUTCAR</span></code> and only calls
+<code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code>. For QE, loop yourself:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rm<span class="w"> </span>-f<span class="w"> </span>FORCEDISP1
+<span class="k">for</span><span class="w"> </span>d<span class="w"> </span><span class="k">in</span><span class="w"> </span>snap_*/<span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="o">(</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$d</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>pw.out<span class="w"> </span><span class="p">|</span><span class="w"> </span>read_qe.x<span class="w"> </span><span class="o">)</span>
+<span class="w">  </span>cat<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$d</span><span class="s2">&quot;</span>/pos-forc.dat<span class="w"> </span>&gt;&gt;<span class="w"> </span>FORCEDISP1
+<span class="k">done</span>
+</pre></div>
+</div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Four things that go wrong here</p>
+<ul class="simple">
+<li><p><strong>Use a single-point calculation.</strong> <code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code> writes one block for
+<em>every ionic step</em> it finds in the <code class="docutils literal notranslate"><span class="pre">OUTCAR</span></code>. Leave a relaxation switched
+on (<code class="docutils literal notranslate"><span class="pre">NSW</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>) and a single run silently becomes many “snapshots”, all
+referred to the wrong equilibrium positions. Set <code class="docutils literal notranslate"><span class="pre">IBRION</span> <span class="pre">=</span> <span class="pre">-1</span></code>,
+<code class="docutils literal notranslate"><span class="pre">NSW</span> <span class="pre">=</span> <span class="pre">0</span></code>.</p></li>
+<li><p><strong>Re-running appends.</strong> Only <code class="docutils literal notranslate"><span class="pre">xtract.sh</span></code> removes <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> before it
+starts; <code class="docutils literal notranslate"><span class="pre">runall.sh</span></code>, <code class="docutils literal notranslate"><span class="pre">process_dft.sh</span></code> and the Slurm collection job all
+append to whatever is already there, so a second attempt silently doubles
+the file. Run <code class="docutils literal notranslate"><span class="pre">rm</span> <span class="pre">-f</span> <span class="pre">FORCEDISP1</span></code> before you restart. (Conversely,
+<code class="docutils literal notranslate"><span class="pre">xtract.sh</span></code> prints a harmless <code class="docutils literal notranslate"><span class="pre">rm:</span> <span class="pre">FORCEDISP1:</span> <span class="pre">No</span> <span class="pre">such</span> <span class="pre">file</span> <span class="pre">or</span>
+<span class="pre">directory</span></code> on a fresh directory.)</p></li>
+<li><p><strong>The converters use fixed filenames.</strong> <code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code> reads
+<code class="docutils literal notranslate"><span class="pre">./OUTCAR</span></code> and writes <code class="docutils literal notranslate"><span class="pre">./pos-forc.dat</span></code>, and neither name can be
+changed on the command line. That is why the scripts copy the file or
+<code class="docutils literal notranslate"><span class="pre">cd</span></code> into its directory instead of passing a path.</p></li>
+<li><p><strong>Keep the atom order.</strong> Within each block the atoms must appear in the
+same order as in <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code>. They do if the <code class="docutils literal notranslate"><span class="pre">poscar_0nn</span></code> files produced
+by <code class="docutils literal notranslate"><span class="pre">sc_snaps.x</span></code> were used throughout and the DFT code was not allowed to
+re-sort them.</p></li>
+</ul>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The scripts include <code class="docutils literal notranslate"><span class="pre">poscar_000</span></code>, the undisplaced cell, in both the DFT
+runs and <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code>. Its block carries zero displacements and near-zero
+forces, so it contributes nothing to the fit — but it is a free check: if
+those residual forces are not small, the structure you built the supercell
+from was not properly relaxed.</p>
+</div>
+<p>The exact layout of the two files these steps produce is given below, for
+reference or for when you generate them some other way.</p>
+</section>
+<section id="format-of-poscari">
+<span id="focex-poscar"></span><h3>Format of <code class="docutils literal notranslate"><span class="pre">POSCARi</span></code><a class="headerlink" href="#format-of-poscari" title="Link to this heading"></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>This line is a comment and ignored           &lt;- line 1: free-form comment
+ 1.000000                                    &lt;- scale factor (see note)
+   17.1067694871620333    0.0000000000    0.0000000000    &lt;- supercell vector 1
+    0.0000000000   17.1067694871620333    0.0000000000    &lt;- supercell vector 2
+    0.0000000000    0.0000000000   17.1067694871620333    &lt;- supercell vector 3
+  216                                        &lt;- number of atoms of each type (one integer per type)
+Direct                                       &lt;- &quot;Direct&quot;/&quot;D&quot; or &quot;Cartesian&quot;/&quot;C&quot;
+    0.0000000000    0.0000000000    0.0000000000
+    0.0000000000    0.0000000000    0.3333333333
+    ...                                      &lt;- one line per atom
+</pre></div>
+</div>
+<p>Notes:</p>
+<ul class="simple">
+<li><p>There is <strong>no element-name line</strong>: line 6 must contain <code class="docutils literal notranslate"><span class="pre">natom_type</span></code>
+integers, in the same order as the types declared in <code class="docutils literal notranslate"><span class="pre">structure.params</span></code>.</p></li>
+<li><p>The scale factor multiplies the three lattice vectors (and Cartesian atomic
+positions). A <em>negative</em> value is interpreted, as in VASP, as minus the
+volume of the cell.</p></li>
+<li><p>A <code class="docutils literal notranslate"><span class="pre">Selective</span> <span class="pre">dynamics</span></code> line before the coordinate flag is tolerated.</p></li>
+<li><p>Extra columns after the three coordinates (element labels, velocities) are
+ignored.</p></li>
+<li><p>FOCEX checks that the volume per atom of the supercell matches that of the
+primitive cell declared in <code class="docutils literal notranslate"><span class="pre">structure.params</span></code> and stops if they differ.</p></li>
+</ul>
+</section>
+<section id="format-of-forcedispi">
+<span id="focex-forcedisp"></span><h3>Format of <code class="docutils literal notranslate"><span class="pre">FORCEDISPi</span></code><a class="headerlink" href="#format-of-forcedispi" title="Link to this heading"></a></h3>
+<p>Each snapshot is one block. Two block formats are recognised; a file may not
+mix them.</p>
+<p><strong>Format A — “POSITION” (recommended).</strong> This is what <code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code> and
+<code class="docutils literal notranslate"><span class="pre">read_qe.x</span></code> write. Positions are absolute Cartesian coordinates in Å, forces
+in eV/Å:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span># POSITION (Ang)     TOTAL FORCE (eV/Ang)         &lt;- must contain the word POSITION
+     1       -289.18629538 =t, Etot(eV)           &lt;- snapshot index, total energy (eV)
+  2.89296000   0.00000000   2.88142999   -0.11758300  -0.00000000  -0.00000000
+  2.88142999   0.00000000   8.64428999    0.00049600  -0.00000000  -0.00000000
+  ...                                             &lt;- exactly N_sc lines, in POSCARi order
+     2       -289.1953     =t, Etot(eV)           &lt;- snapshot index, total energy (eV)
+  2.89396000   0.00400000   2.88342999   -0.11758300  -0.00000000  -0.00000000
+  2.85142999   0.02000000   8.67428999    0.00049600  -0.00000000  -0.00000000
+  ...                                             &lt;- exactly N_sc lines, in POSCARi order
+</pre></div>
+</div>
+<p>The first line of a block is recognised by the word <code class="docutils literal notranslate"><span class="pre">POSITION</span></code>; the second
+line must contain an integer followed by the total energy of that snapshot in
+eV; then come exactly <span class="math notranslate nohighlight">\(N_{sc}\)</span> lines of <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">y</span> <span class="pre">z</span> <span class="pre">Fx</span> <span class="pre">Fy</span> <span class="pre">Fz</span></code>. The atoms must
+appear in the same order as in <code class="docutils literal notranslate"><span class="pre">POSCARi</span></code>. FOCEX subtracts the equilibrium
+positions itself and folds the resulting displacement back into the supercell,
+so wrapped/unwrapped coordinates are both fine.</p>
+<p><strong>Format B — “vasprun”.</strong> Used by the shipped Ge example. The header line must
+contain the word <code class="docutils literal notranslate"><span class="pre">vasprun</span></code> and the substring <code class="docutils literal notranslate"><span class="pre">(eV):</span></code> followed by the energy;
+the following <span class="math notranslate nohighlight">\(N_{sc}\)</span> lines contain <strong>displacements</strong> (not absolute
+positions) and forces:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span># Filename: vasprun1.xml, Snapshot: 1, E_pot (eV): -1057.32911508
+      0.0188971    0.0000000    0.0000000   -4.24665168E-03  0.0  0.0
+      0.0000000    0.0000000    0.0000000    7.67997159E-06  ...
+      ...
+</pre></div>
+</div>
+<p>The displacements are multiplied internally by 0.529177 and the forces by
+27.2116 before use (i.e. displacements are read in Bohr). Prefer format A for
+new work: its units are unambiguous.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Energies are only used when the Boltzmann weighting of snapshots is switched
+on (<code class="docutils literal notranslate"><span class="pre">itemp</span> <span class="pre">=</span> <span class="pre">1</span></code> in <code class="docutils literal notranslate"><span class="pre">structure.params</span></code>). FOCEX subtracts the lowest energy
+of the first file and normalises by the number of atoms, so the absolute
+reference is irrelevant. Even when the weighting is off, the energy column
+must be present and parsable.</p>
+</div>
+</section>
+<section id="checklist-before-running-focex">
+<h3>Checklist before running FOCEX<a class="headerlink" href="#checklist-before-running-focex" title="Link to this heading"></a></h3>
+<p>At the end of steps 1 and 2 the working directory must contain the two data
+files, next to the five parameter files described in the next section:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>POSCAR1            &lt;- sed &#39;6d&#39; poscar_000 &gt; POSCAR1
+FORCEDISP1         &lt;- the concatenated pos-forc.dat blocks
+structure.params   &lt;- the five parameter files
+dielectric.params
+latdyn.params
+kpbs.params
+default.params
+</pre></div>
+</div>
+<p>To fit with more than one supercell shape — recommended when you want cubic and
+quartic terms — repeat steps 1 and 2 for each shape and name the results
+<code class="docutils literal notranslate"><span class="pre">POSCAR2</span></code>/<code class="docutils literal notranslate"><span class="pre">FORCEDISP2</span></code>, <code class="docutils literal notranslate"><span class="pre">POSCAR3</span></code>/<code class="docutils literal notranslate"><span class="pre">FORCEDISP3</span></code>, and so on.</p>
+</section>
+</section>
+<section id="input-files">
+<span id="focex-inputs"></span><h2><span class="section-number">6.5. </span>Input files<a class="headerlink" href="#input-files" title="Link to this heading"></a></h2>
+<p>Five parameter files must be present in the run directory, next to
+<code class="docutils literal notranslate"><span class="pre">POSCARi</span></code>/<code class="docutils literal notranslate"><span class="pre">FORCEDISPi</span></code>. All of them are read by list-directed (free-format)
+Fortran <code class="docutils literal notranslate"><span class="pre">read</span></code> statements: <strong>only the leading numbers of each line matter</strong>,
+and anything after them on the same line is treated as a comment. The <em>number
+and order of the lines is fixed</em> — do not insert or delete lines.</p>
+<section id="structure-params">
+<span id="focex-structure-params"></span><h3><code class="docutils literal notranslate"><span class="pre">structure.params</span></code><a class="headerlink" href="#structure-params" title="Link to this heading"></a></h3>
+<p>The main input file: it describes the primitive cell, the range of the FCs and
+the options of the fit.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>1 1 1 90 90 90                 #  1  a,b,c,alpha,beta,gamma of the CONVENTIONAL cell
+0 0.5 0.5  0.5 0 0.5  0.5 0.5 0  # 2  primitive vectors in units of the conventional cell
+5.7022565                      #  3  scale factor multiplying a,b,c (Ang)
+1 1 1 0 0 0 0 0                #  4  include ranks 1...8 in the fit (0=no, 1=yes, 2=read)
+1 1 0 0                        #  5  itrans, irot, ihuang, enforce_inv
+0 300                          #  6  itemp(0=no temperature weighting), tempk
+1 .false.                      #  7  number of FORCEDISP/POSCAR file pairs, verbosity
+1                              #  8  number of atom types
+72.64                          #  9  mass of each type (uma)
+Ge                             # 10  name of each type
+2                              # 11  number of atoms in the primitive cell
+0                              # 12  fc2range (0=default covers all the largest supercell)
+11 11                          # 13  neighbor shells for rank 2, ONE PER ATOM of the prim. cell(if fc2range&gt;0)
+3 3                            # 14  neighbor shells for rank 3
+0 0                            # 15  neighbor shells for rank 4
+0 0                            # 16  neighbor shells for rank 5
+0 0                            # 17  neighbor shells for rank 6
+0 0                            # 18  neighbor shells for rank 7
+0 0                            # 19  neighbor shells for rank 8
+1 1 0    0    0                # 20  atom 1: index, type, reduced coordinates (CONVENTIONAL units)
+2 1 0.25 0.25 0.25             # 21  atom 2: index, type, reduced coordinates
+</pre></div>
+</div>
+<p>Line by line:</p>
+<p><strong>1. Conventional cell</strong> — <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">b</span> <span class="pre">c</span> <span class="pre">alpha</span> <span class="pre">beta</span> <span class="pre">gamma</span></code>. The lengths are
+multiplied by the scale factor of line 3; the angles are in degrees.</p>
+<p><strong>2. Primitive lattice</strong> — nine numbers, read as three groups of three: the
+Cartesian-free components of <span class="math notranslate nohighlight">\(R_{01}, R_{02}, R_{03}\)</span> expressed in units
+of the conventional cell vectors. For the FCC example above,
+<span class="math notranslate nohighlight">\(R_{01} = (0, a/2, a/2)\)</span>. Use <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">1</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">1</span></code> if your conventional
+cell <em>is</em> the primitive cell.</p>
+<p><strong>3. Scale factor</strong> — multiplies <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">b</span></code> and <code class="docutils literal notranslate"><span class="pre">c</span></code>. It must be consistent
+with <code class="docutils literal notranslate"><span class="pre">POSCARi</span></code>: FOCEX compares the volume per atom of both cells and stops on
+a mismatch.</p>
+<p><strong>4. Ranks to include</strong> — eight flags, for ranks 1 to 8:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">0</span></code> — this rank is excluded from the model;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">1</span></code> — this rank is fitted;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2</span></code> — this rank is read from an existing <code class="docutils literal notranslate"><span class="pre">fcN_irr.dat</span></code> instead of being
+fitted (experimental — check the log carefully if you use it).</p></li>
+</ul>
+<p>Rank 1 (the residual force <span class="math notranslate nohighlight">\(\Pi\)</span>) should normally be included: it is
+zero only if the reference structure is exactly at its energy minimum.</p>
+</div></blockquote>
+<p><strong>5. Invariance flags</strong> — <code class="docutils literal notranslate"><span class="pre">itrans</span> <span class="pre">irot</span> <span class="pre">ihuang</span> <span class="pre">enforce_inv</span></code>. The first three
+are <code class="docutils literal notranslate"><span class="pre">1</span></code> to switch the constraint on, <code class="docutils literal notranslate"><span class="pre">0</span></code> off; <code class="docutils literal notranslate"><span class="pre">enforce_inv</span></code> selects how
+the fit is solved and takes the values 0, 1 or 2.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">itrans</span></code> — translational invariance (acoustic sum rule). Keep it on;
+without it the acoustic branches will not go to zero at <span class="math notranslate nohighlight">\(\Gamma\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">irot</span></code> — rotational invariance. Relates rank <span class="math notranslate nohighlight">\(n\)</span> to rank
+<span class="math notranslate nohighlight">\(n+1\)</span>; useful when several ranks are fitted together.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ihuang</span></code> — Huang : makes sure elastic tensor is symetric ; needed for low-symmetry crystals.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">enforce_inv</span></code> — see <a class="reference internal" href="#focex-enforce-inv"><span class="std std-ref">Choosing enforce_inv</span></a> just below.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="choosing-enforce-inv">
+<span id="focex-enforce-inv"></span><h3>Choosing <code class="docutils literal notranslate"><span class="pre">enforce_inv</span></code><a class="headerlink" href="#choosing-enforce-inv" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">enforce_inv</span></code> decides how the invariance relations are imposed and how the
+force constants are solved for. The three settings solve genuinely different
+problems.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 8.0%" />
+<col style="width: 92.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Value</p></th>
+<th class="head"><p>What it does</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
+<td><p>The invariance relations are appended as extra rows of the
+force-displacement system and the whole thing is solved by SVD. The
+invariances are then satisfied only in the least-squares sense. This is
+the default and the usual choice.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+<td><p>The force equations are fitted <em>subject to</em> the invariances, by working
+in the kernel of the constraint matrix. The invariances hold <strong>exactly</strong>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p></td>
+<td><p>As <code class="docutils literal notranslate"><span class="pre">1</span></code>, but the reduced problem is solved by LASSO, which also decides
+which force constants the data actually supports. See below.</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>How ``1`` works.</strong> The invariance relations are homogeneous, so the force
+constants that satisfy them all form a linear subspace. If <code class="docutils literal notranslate"><span class="pre">K</span></code> is an
+orthonormal basis of that subspace — the kernel of the constraint matrix — then
+writing <span class="math notranslate nohighlight">\(x = K y\)</span> satisfies every invariance identically, whatever
+<span class="math notranslate nohighlight">\(y\)</span> is. FOCEX then fits the free parameters <span class="math notranslate nohighlight">\(y\)</span>, and recovers all
+the force constants from <span class="math notranslate nohighlight">\(x = K y\)</span>. <code class="docutils literal notranslate"><span class="pre">K</span></code> is the elimination of the
+dependent force constants written in a well-conditioned basis, so no separate
+back-substitution step is needed.</p>
+<p>The number of free parameters is the dimension of that kernel, which is printed
+in the log as <code class="docutils literal notranslate"><span class="pre">Kernel</span> <span class="pre">of</span> <span class="pre">A,</span> <span class="pre">...</span> <span class="pre">is</span> <span class="pre">of</span> <span class="pre">dimension</span></code>. It can be much smaller than
+the number of force constants: for a 122-parameter MoTe2 model with all three
+invariances on, 87 of the relations are independent and only 35 free parameters
+remain. If that number is very small, the invariances are over-determining your
+model, and the fit will be poor no matter how good the data — increase the
+range, or switch some of <code class="docutils literal notranslate"><span class="pre">irot</span></code>/<code class="docutils literal notranslate"><span class="pre">ihuang</span></code> off.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Before version 8.17, <code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">1</span></code> solved the unconstrained problem and
+then orthogonally projected the answer onto the kernel. That is not the same
+as fitting under the constraint and could be far worse. Numbers produced with
+<code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">1</span></code> by an earlier version should be regenerated.
+<code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">0</span></code> is unaffected.</p>
+</div>
+</section>
+<section id="enforce-inv-2-selecting-the-force-constants-by-lasso">
+<span id="focex-lasso"></span><h3><code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">2</span></code>: selecting the force constants by LASSO<a class="headerlink" href="#enforce-inv-2-selecting-the-force-constants-by-lasso" title="Link to this heading"></a></h3>
+<p>With <code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">2</span></code> the reduced problem is solved by minimising</p>
+<div class="math notranslate nohighlight">
+\[\frac{1}{2}\, \| A x - b \|^2 \;+\; \mu \sum_j n_j \, |x_j|\]</div>
+<p>instead of by SVD. The second term is an <span class="math notranslate nohighlight">\(L_1\)</span> penalty, with <span class="math notranslate nohighlight">\(n_j\)</span>
+the norm of column <span class="math notranslate nohighlight">\(j\)</span> so that the penalty does not depend on the units of
+each rank — ranks 2, 3 and 4 carry different powers of Ångström.</p>
+<p><strong>What it is for.</strong> An <span class="math notranslate nohighlight">\(L_1\)</span> penalty drives parameters to <em>exactly</em> zero
+rather than merely making them small. When you request many neighbour shells or
+high ranks, the number of candidate force constants grows quickly and most of
+them are not determined by the data. Least squares then distributes small,
+noise-driven values over all of them, which fits the snapshots you have and
+predicts everything else badly. The <span class="math notranslate nohighlight">\(L_1\)</span> term instead keeps only the
+force constants the data supports.</p>
+<p><strong>When it helps, and when it does not.</strong> It matters when the model is
+underdetermined — a long range, high ranks, or few snapshots. It is close to
+harmless otherwise. Two measured examples:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 34.0%" />
+<col style="width: 16.0%" />
+<col style="width: 16.0%" />
+<col style="width: 34.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Case</p></th>
+<th class="head"><p>free params</p></th>
+<th class="head"><p>equations</p></th>
+<th class="head"><p>result</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>MoTe2, FC2 to 25 shells, FC3 to 10, <strong>2 snapshots</strong></p></td>
+<td><p>880</p></td>
+<td><p>1152</p></td>
+<td><p>SVD uses all 880 and gives phonons from −15030 to 14820 cm<sup>-1</sup>;
+LASSO keeps <strong>88</strong> and gives −242 to 268 cm<sup>-1</sup></p></td>
+</tr>
+<tr class="row-odd"><td><p>GeSe, <strong>well determined</strong></p></td>
+<td><p>795</p></td>
+<td><p>2880</p></td>
+<td><p>LASSO keeps <strong>789 of 795</strong> and reproduces the SVD phonons to 0.4 cm<sup>-1</sup></p></td>
+</tr>
+</tbody>
+</table>
+<p>In the first case the SVD has the <em>better</em> residual on the data it was fitted to
+— 13.9 % against 36.8 % — and phonons three orders of magnitude beyond anything
+physical. That is what overfitting looks like, and it is why the residual on the
+training data is not a useful measure of a fit.</p>
+<p><strong>You do not choose</strong> <span class="math notranslate nohighlight">\(\mu\)</span>. FOCEX selects it by five-fold
+cross-validation: the force rows are split into five groups, and for each
+candidate <span class="math notranslate nohighlight">\(\mu\)</span> the model is fitted on four groups and its error measured
+on the fifth, each group being held out once. The <span class="math notranslate nohighlight">\(\mu\)</span> that minimises the
+error on data the fit never saw is the one used. Forty values of <span class="math notranslate nohighlight">\(\mu\)</span> are
+scanned, from the smallest value that zeroes every coefficient down by four
+orders of magnitude. The whole scan is written to <code class="docutils literal notranslate"><span class="pre">lasso.dat</span></code>, and the
+selected value appears in the log as <code class="docutils literal notranslate"><span class="pre">LASSO:</span> <span class="pre">selected</span> <span class="pre">mu</span></code>.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Check <code class="docutils literal notranslate"><span class="pre">LASSO:</span> <span class="pre">non-zero</span> <span class="pre">free</span> <span class="pre">parameters</span></code> in the log. If it is close to the
+total, the data already determines your model and <code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">0</span></code> or
+<code class="docutils literal notranslate"><span class="pre">1</span></code> will do the same job more cheaply. If it is a small fraction, the
+<span class="math notranslate nohighlight">\(L_1\)</span> term is doing real work and the SVD result should be treated with
+suspicion.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The sparsity is in the free parameters, not in the force constants
+themselves: the retained parameters are combinations <span class="math notranslate nohighlight">\(x = K y\)</span>, so the
+printed <code class="docutils literal notranslate"><span class="pre">fcN.dat</span></code> files are not themselves sparse.</p>
+</div>
+<p><strong>6. Temperature weighting</strong> — <code class="docutils literal notranslate"><span class="pre">itemp</span> <span class="pre">tempk</span></code>. With <code class="docutils literal notranslate"><span class="pre">itemp</span> <span class="pre">=</span> <span class="pre">0</span></code> every
+snapshot has the same weight (<code class="docutils literal notranslate"><span class="pre">tempk</span></code> is then unused but must be present).
+With <code class="docutils literal notranslate"><span class="pre">itemp</span> <span class="pre">=</span> <span class="pre">1</span></code> snapshots are weighted by the Boltzmann factor
+<span class="math notranslate nohighlight">\(e^{-E/k_B T}\)</span> at <code class="docutils literal notranslate"><span class="pre">tempk</span></code> (K), using the energies read from
+<code class="docutils literal notranslate"><span class="pre">FORCEDISPi</span></code>. Use <code class="docutils literal notranslate"><span class="pre">0</span></code> unless you know you want the weighting.</p>
+<p><strong>7. Data files and verbosity</strong> — <code class="docutils literal notranslate"><span class="pre">fdfiles</span> <span class="pre">verbose</span></code>. <code class="docutils literal notranslate"><span class="pre">fdfiles</span></code> is the number
+of supercell shapes, i.e. of <code class="docutils literal notranslate"><span class="pre">POSCARi</span></code>/<code class="docutils literal notranslate"><span class="pre">FORCEDISPi</span></code> <em>pairs</em>
+(<code class="docutils literal notranslate"><span class="pre">i</span> <span class="pre">=</span> <span class="pre">1</span> <span class="pre">…</span> <span class="pre">fdfiles</span></code>); it must be a single digit. <code class="docutils literal notranslate"><span class="pre">verbose</span></code> is a Fortran
+logical (<code class="docutils literal notranslate"><span class="pre">.true.</span></code>/<code class="docutils literal notranslate"><span class="pre">.false.</span></code>); <code class="docutils literal notranslate"><span class="pre">.true.</span></code> writes the fit matrices to
+<code class="docutils literal notranslate"><span class="pre">amatrx.dat</span></code> and adds per-snapshot dumps to the log — very large files, use it
+only for debugging.</p>
+<p><strong>8–10. Atom types</strong> — the number of distinct elements, then their masses (uma)
+and names, in the <em>same order as the atom counts in</em> <code class="docutils literal notranslate"><span class="pre">POSCARi</span></code>.</p>
+<p><strong>11. Atoms in the primitive cell</strong> — the <em>total</em> number of atoms in the
+primitive cell (not per type).</p>
+<p><strong>12.</strong> <code class="docutils literal notranslate"><span class="pre">fc2range</span></code> — how the range of the harmonic FCs is chosen:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">0</span></code> — automatic: the range is the largest sphere that fits in the
+Wigner-Seitz cell of the biggest supercell provided, and the shell counts on
+line 13 are overwritten accordingly. This is the safe default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">1</span></code> — use the shell counts of line 13; any shell reaching beyond the
+supercell is still discarded, with a warning in the log.</p></li>
+</ul>
+</div></blockquote>
+<p><strong>13–19. Neighbor shells</strong> — one line per rank (2 … 8), each containing
+<code class="docutils literal notranslate"><span class="pre">natom_prim_cell</span></code> integers: how many neighbor shells around each atom of the
+primitive cell are included for that rank. <code class="docutils literal notranslate"><span class="pre">0</span></code> means “no FC of this rank on
+this atom”. Ranks whose flag on line 4 is <code class="docutils literal notranslate"><span class="pre">0</span></code> are ignored, but their line must
+still be present. The radius of each shell is listed in the log file and in
+<code class="docutils literal notranslate"><span class="pre">pairs.dat</span></code>, so you can convert shells to Å after a first run.</p>
+<p><strong>20…</strong> — one line per atom of the primitive cell: <code class="docutils literal notranslate"><span class="pre">index</span> <span class="pre">type</span> <span class="pre">x</span> <span class="pre">y</span> <span class="pre">z</span></code>, where
+the index must run 1, 2, 3 … in order, <code class="docutils literal notranslate"><span class="pre">type</span></code> refers to lines 8–10, and
+<code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">y</span> <span class="pre">z</span></code> are <strong>reduced coordinates in units of the conventional cell vectors</strong>
+(not the primitive ones).</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Convergence with respect to range is the main physical approximation in
+FOCEX. Increase the number of harmonic shells until the phonon dispersion
+stops changing, and check that the cubic/quartic shells you request are
+really sampled by your supercell — one shell for rank 4 and two or three for
+rank 3 is a common, economical starting point.</p>
+</div>
+</section>
+<section id="dielectric-params">
+<h3><code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code><a class="headerlink" href="#dielectric-params" title="Link to this heading"></a></h3>
+<p>Long-range electrostatics. Required even for non-polar crystals, in which case
+only the first line matters.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>0                                    # born_flag (0 to exclude NA corrections)
+15.842   0.000   0.000               # dielectric tensor epsilon (3 lines)
+ 0.000  16.455   0.000
+ 0.000   0.000  16.638
+0 0 0                                # Born effective charge tensor of atom 1 (3 lines)
+0 0 0
+0 0 0
+0 0 0                                # Born effective charge tensor of atom 2
+0 0 0
+0 0 0
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">born_flag</span> <span class="pre">=</span> <span class="pre">0</span></code> — Born charges are ignored (correct for non-polar crystals
+such as Si, Ge, and the simplest choice to start with ; no LO-TO splitting).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">born_flag</span> <span class="pre">=</span> <span class="pre">1</span></code> — nothing is subtracted from the DFT forces, but the
+non-analytical (Parlinski) term is added to the dynamical matrix.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">born_flag</span> <span class="pre">=</span> <span class="pre">2</span></code> — the Ewald force is subtracted from the input forces before
+the fit, so that the fitted FCs are purely short-ranged, and the
+non-analytical term is added back when the dynamical matrix is built. This is
+the recommended setting for polar materials.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">born_flag</span> <span class="pre">=</span> <span class="pre">3,</span> <span class="pre">4,</span> <span class="pre">6,</span> <span class="pre">7,</span> <span class="pre">8,</span> <span class="pre">9</span></code> — variants of the subtraction scheme intended
+for development and testing; the log file states which one is active.</p></li>
+</ul>
+<p>There must be exactly <code class="docutils literal notranslate"><span class="pre">natom_prim_cell</span></code> Born-charge blocks, in the order in
+which the atoms are declared in <code class="docutils literal notranslate"><span class="pre">structure.params</span></code>. The acoustic sum rule is
+imposed on the charges automatically (the excess is spread equally over the
+atoms), and the ASR-corrected values are echoed to the log.</p>
+</section>
+<section id="latdyn-params">
+<h3><code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code><a class="headerlink" href="#latdyn-params" title="Link to this heading"></a></h3>
+<p>Controls the Brillouin-zone sampling and the thermodynamic post-processing.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>12 12 12          # 1  k-mesh (n1,n2,n3) for BZ integrations
+0 0 0  1 0 0      # 2  shift of the mesh (fractions of a mesh step); normal direction
+300 350.0         # 3  number of frequency points for the DOS; omega_max (1/cm)
+10                # 4  Gaussian broadening of the DOS (1/cm)
+.False.           # 5  (read but not used; verbosity is set in structure.params)
+0 900             # 6  Tmin, Tmax (K) range for the thermodynamic properties
+0                 # 7  0 = quantum (Bose-Einstein), 1 = classical occupations
+</pre></div>
+</div>
+<p>Line 2 contains <strong>six</strong> numbers: the three components of the mesh shift followed
+by the three components of a unit vector used as the surface normal for the
+mode-counting/conductance and optical outputs. A missing normal is
+the most common cause of a crash in this file.</p>
+<p>The temperature loop runs from <code class="docutils literal notranslate"><span class="pre">Tmin</span></code> to <code class="docutils literal notranslate"><span class="pre">Tmax</span></code> with a step of 2 K below
+40 K, 5 K below 150 K and 50 K above (about 30 temperatures for 0–900 K); any
+third number on line 6 is ignored.</p>
+</section>
+<section id="kpbs-params">
+<h3><code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code><a class="headerlink" href="#kpbs-params" title="Link to this heading"></a></h3>
+<p>The k-point path for the phonon band structure.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>0             # 1  units: 0 = reduced coordinates of the CONVENTIONAL reciprocal cell,
+              #           1 = reduced coordinates of the PRIMITIVE reciprocal cell
+40            # 2  number of k-points along each segment
+7             # 3  number of segments (directions)
+X 0    1    1        # name and coordinates of the start of segment 1
+K 0    0.75 0.75     # end of segment 1 / start of segment 2
+G 0    0.   0.0001   # ...
+X 1    0    0
+L 0.5  0.5  0.5
+W 0.   0.5  1
+U 0.25 0.25 1
+G 0    0.   0.0001   # end of segment 7
+</pre></div>
+</div>
+<p>There must be exactly <code class="docutils literal notranslate"><span class="pre">number</span> <span class="pre">of</span> <span class="pre">segments</span> <span class="pre">+</span> <span class="pre">1</span></code> k-point lines: the path is
+continuous, and each line is both the end of one segment and the start of the
+next. The label is a short string used for the tick marks in <code class="docutils literal notranslate"><span class="pre">KTICS.BS</span></code> file used for plotting.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Give <span class="math notranslate nohighlight">\(\Gamma\)</span> a tiny offset (<code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">0</span> <span class="pre">0.0001</span></code>) as in the example above.
+Exactly at <span class="math notranslate nohighlight">\(q = 0\)</span> the non-analytical term of a polar crystal is
+direction-dependent and undefined, and degeneracies make band sorting
+ambiguous.</p>
+</div>
+</section>
+<section id="default-params">
+<h3><code class="docutils literal notranslate"><span class="pre">default.params</span></code><a class="headerlink" href="#default-params" title="Link to this heading"></a></h3>
+<p>Numerical thresholds and array-size limits. <strong>A zero on any line means “use the
+built-in default”</strong>, which is what the comment on that line states — so in
+practice you copy this file unchanged and never touch it. It has 36 lines, in
+this order: tolerance, force error, neighbor-cell cutoff, margin, then
+<code class="docutils literal notranslate"><span class="pre">maxterms(1:8)</span></code>, <code class="docutils literal notranslate"><span class="pre">maxtermzero(1:8)</span></code>, <code class="docutils literal notranslate"><span class="pre">maxtermsindep(1:8)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">maxgroups(1:8)</span></code>.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>0      tolerance for equating to zero (2d-3)      # if 0 take the default value
+0      force error value for inversion/regularization (1d-5)
+0      cutoff for how many cells away (6 cells) to include when making neighborlists
+0      margin for eliminating small force constants (1d-6)
+0      maxterms(1)=40
+...
+</pre></div>
+</div>
+<p>The four meaningful knobs are:</p>
+<ul class="simple">
+<li><p><strong>tolerance</strong> (default <span class="math notranslate nohighlight">\(10^{-4}\)</span> Å) — two coordinates closer than this
+are considered equal when identifying symmetry-equivalent atoms. Increase it
+if a slightly distorted or loosely converged structure makes FOCEX miss
+symmetry operations.</p></li>
+<li><p><strong>force error</strong> (default <span class="math notranslate nohighlight">\(10^{-5}\)</span>) — the estimated noise level of the
+DFT forces. Its square is used as the SVD cutoff: singular values smaller than
+<code class="docutils literal notranslate"><span class="pre">w_max</span> <span class="pre">×</span> <span class="pre">force_error²</span></code> are discarded in the inversion.</p></li>
+<li><p><strong>cutoff</strong> (default 6) — how many cells away neighbors are searched for; it
+sets the size of the internal <code class="docutils literal notranslate"><span class="pre">atompos</span></code> list.</p></li>
+<li><p><strong>margin</strong> (default <span class="math notranslate nohighlight">\(10^{-6}\)</span>) — FCs smaller than this are not written
+to the <code class="docutils literal notranslate"><span class="pre">fcN.dat</span></code> files.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">maxterms</span></code>/<code class="docutils literal notranslate"><span class="pre">maxgroups</span></code> entries are upper bounds on the number of terms
+and groups stored per rank. If a run stops complaining that one of these is too
+small, raise the corresponding line for that rank.</p>
+</section>
+</section>
+<section id="id1">
+<h2><span class="section-number">6.6. </span>Running FOCEX<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<p>FOCEX takes no command-line argument and reads no standard input: put all the
+input files in one directory, <code class="docutils literal notranslate"><span class="pre">cd</span></code> into it and run the binary.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>my_material
+ls
+<span class="c1"># default.params  dielectric.params  kpbs.params  latdyn.params</span>
+<span class="c1"># structure.params  POSCAR1  FORCEDISP1</span>
+~/BIN/v16<span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>focex.out
+</pre></div>
+</div>
+<p>The run is serial and memory-bound: the largest array is the fit matrix, of
+size (number of force components + constraints) × (number of independent FCs).
+The Ge example builds a 23 441 × 173 matrix and needs a few minutes and well
+under 1 GB.</p>
+<section id="the-log-file-name">
+<span id="focex-logname"></span><h3>The log file name<a class="headerlink" href="#the-log-file-name" title="Link to this heading"></a></h3>
+<p>The log file records the settings of the run in its own name, so that runs with
+different ranges or options do not overwrite each other:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>log 1 df B00 _ 00_03_0 _ tr00 .dat
+    |  |   |     |         |
+    |  |   |     |         +-- imposed invariances: t=transl, r=rot, h=Huang, E=enforced
+    |  |   |     +------------ shells used for ranks 2, 3 and 4 (00 = default/not fitted)
+    |  |   +------------------ B + born_flag
+    |  +---------------------- df = default FC2 range, rd = range read from structure.params
+    |                          Td / Tr = same, with Boltzmann weighting (itemp=1)
+    +------------------------- number of FORCEDISP files
+</pre></div>
+</div>
+</section>
+</section>
+<section id="output-files">
+<h2><span class="section-number">6.7. </span>Output files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<section id="force-constants">
+<h3>Force constants<a class="headerlink" href="#force-constants" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">fcN_irr.dat</span></code> (N = 1…4)</dt><dd><p>The <strong>irreducible</strong> (independent) force constants of rank N — the actual
+output of the fit. Everything else can be regenerated from these by
+symmetry.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">fcN.dat</span></code> (N = 1…4)</dt><dd><p>The <strong>full</strong> set of force constants of rank N, i.e. every symmetry-related
+term reconstructed from the irreducible ones. This is the file consumed by
+<code class="docutils literal notranslate"><span class="pre">THERMACOND</span></code>, <code class="docutils literal notranslate"><span class="pre">SCOP8</span></code> and <code class="docutils literal notranslate"><span class="pre">ANFOMOD</span></code>.</p>
+</dd>
+</dl>
+<p>Units are eV/Å<sup>N</sup>: eV/Å for rank 1, eV/Å² for the harmonic FCs, eV/Å³ for
+the cubic ones and eV/Å⁴ for the quartic ones.</p>
+<p>Both files use the same layout (<code class="docutils literal notranslate"><span class="pre">fcN.dat</span></code> has one extra header line). A line
+of <code class="docutils literal notranslate"><span class="pre">fc2_irr.dat</span></code> looks like this:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span># RANK   2  tensors :term,group,(iatom,ixyz)_2 d^nU/dx_{i,alpha}^n
+     1     1      1 1      2 1    -2.853242    2.4691   2  0  0  0  -0.2500 -0.2500 -0.2500
+</pre></div>
+</div>
+<p>and its fields are, from left to right:</p>
+<ol class="arabic simple">
+<li><p>index of the term inside its group;</p></li>
+<li><p>index of the group — a group is a set of FCs related to each other by
+symmetry, with one or a few independent members;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rank</span></code> pairs of (atom index, Cartesian direction), here <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">1</span></code> and
+<code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">1</span></code>, i.e. <span class="math notranslate nohighlight">\(\Phi^{xx}\)</span> between atom 1 and atom 2. The direction is
+1 = x, 2 = y, 3 = z; the atom indices refer to the neighbor list written in
+<code class="docutils literal notranslate"><span class="pre">lat_fc.dat</span></code>;</p></li>
+<li><p>the value of the force constant;</p></li>
+<li><p>the pair distance <span class="math notranslate nohighlight">\(|r_i - r_j|\)</span> in Å (rank 2 only; zero for the other
+ranks);</p></li>
+<li><p>for atoms 2 … rank, the quadruplet <span class="math notranslate nohighlight">\((\tau, n_1, n_2, n_3)\)</span> giving the
+atom’s index in the primitive cell and the cell it belongs to, in units of
+the primitive translation vectors;</p></li>
+<li><p>rank 2 only: the three components of <span class="math notranslate nohighlight">\(r_i - r_j\)</span> in units of the
+conventional cell vectors.</p></li>
+</ol>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">lat_fc.dat</span></code></dt><dd><p>The structural information that goes with the FCs: primitive translation
+vectors, atoms of the primitive cell, which ranks were included, the shell
+counts actually used, the number of groups and terms per rank, and the
+Cartesian coordinates of every neighbor atom referred to by the <code class="docutils literal notranslate"><span class="pre">fcN.dat</span></code>
+files. <strong>The other ALATDYN codes read this file together with the</strong>
+<code class="docutils literal notranslate"><span class="pre">fcN.dat</span></code> <strong>files.</strong> <code class="docutils literal notranslate"><span class="pre">lat0_fc.dat</span></code> is the same information before the
+range of FC2 is trimmed to the supercell.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">trace_fc.dat</span></code></dt><dd><p>Trace of the harmonic FC tensor for every pair, versus pair distance — the
+quickest way to see how fast the harmonic interaction decays and whether
+your range is sufficient. Plot it with <code class="docutils literal notranslate"><span class="pre">fcs.plt</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">bond_fci.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">springs1.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">springs2.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">pairs.dat</span></code></dt><dd><p>The pairs connected by FC2, and the shell radii and their multiplicities,
+for inspection and plotting.</p>
+</dd>
+</dl>
+</section>
+<section id="phonons-and-thermodynamics">
+<h3>Phonons and thermodynamics<a class="headerlink" href="#phonons-and-thermodynamics" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">bs_freq.dat</span></code></dt><dd><p>Band structure along the <code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code> path: <code class="docutils literal notranslate"><span class="pre">nk,</span> <span class="pre">nb,</span> <span class="pre">dk,</span> <span class="pre">k(3),</span>
+<span class="pre">frequency</span> <span class="pre">(1/cm),</span> <span class="pre">velocity(3)</span> <span class="pre">(km/s),</span> <span class="pre">|velocity|</span></code>, one line per (k-point,
+band).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">bands.dat</span></code></dt><dd><p>The same data with all bands of a k-point on one line — convenient for
+plotting: <code class="docutils literal notranslate"><span class="pre">index,</span> <span class="pre">dk,</span> <span class="pre">kx,</span> <span class="pre">ky,</span> <span class="pre">kz</span></code>, then the <span class="math notranslate nohighlight">\(3 N_{prim}\)</span>
+<strong>eigenvalues</strong> <span class="math notranslate nohighlight">\(\omega^2\)</span> (in eV/Å²/uma — multiply the square root by
+521.11 to get cm<sup>-1</sup>, which is what <code class="docutils literal notranslate"><span class="pre">bandgen.plt</span></code> does), then the
+<span class="math notranslate nohighlight">\(3 N_{prim}\)</span> group-velocity magnitudes in km/s.
+<code class="docutils literal notranslate"><span class="pre">KTICS.BS</span></code> contains a ready-made gnuplot <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">xtics</span></code> command with the
+labels and positions of the special points, and <code class="docutils literal notranslate"><span class="pre">KPOINT.BS</span></code> the
+coordinates of the path in the three conventions.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">ibz_bands.dat</span></code></dt><dd><p>Frequencies and velocities on the irreducible wedge of the <code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code>
+mesh.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">ibz_dos.dat</span></code> / <code class="docutils literal notranslate"><span class="pre">fbz_dos.dat</span></code></dt><dd><p>Phonon density of states, from a Gaussian smearing over the irreducible
+wedge and from the tetrahedron method over the full zone, respectively.
+Columns: <code class="docutils literal notranslate"><span class="pre">omega</span> <span class="pre">(1/cm),</span> <span class="pre">index,</span> <span class="pre">integrated</span> <span class="pre">DOS,</span> <span class="pre">total</span> <span class="pre">DOS,</span> <span class="pre">then</span> <span class="pre">the</span>
+<span class="pre">per-branch</span> <span class="pre">DOS</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">bs_grun.dat</span></code> / <code class="docutils literal notranslate"><span class="pre">ibz_grun.dat</span></code></dt><dd><p>Mode Gruneisen parameters along the path and in the irreducible wedge
+(written only when rank 3 is included).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">mech.dat</span></code></dt><dd><p>Mechanical properties: the <span class="math notranslate nohighlight">\(\Phi\)</span>, <span class="math notranslate nohighlight">\(\zeta\)</span>, <span class="math notranslate nohighlight">\(\Xi\)</span> tensors,
+the elastic tensor (GPa, Voigt 6×6), the compliance tensor, the residual
+strain and internal displacements, then the Voigt/Reuss/Hill bulk and shear
+moduli, Young modulus, Poisson ratio, anisotropy ratio, sound velocities and
+Debye temperature.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">thermo_QHA.dat</span></code></dt><dd><p>Quasi-harmonic thermodynamics versus temperature, one line per temperature:
+<code class="docutils literal notranslate"><span class="pre">T(K),</span> <span class="pre">E_eq(kJ/mol),</span> <span class="pre">F_eq(kJ/mol),</span> <span class="pre">V_eq/V0,</span> <span class="pre">strain,</span> <span class="pre">Cv,</span> <span class="pre">Cp(J/K/mol),</span>
+<span class="pre">S(J/K/mol),</span> <span class="pre">linear</span> <span class="pre">CTE(1/K),</span> <span class="pre">Gruneisen,</span> <span class="pre">B(T)/B(0)</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">temp_free.dat</span></code></dt><dd><p>The free energy versus strain curve at each temperature that is minimised to
+produce <code class="docutils literal notranslate"><span class="pre">thermo_QHA.dat</span></code> — useful to check that the minimum is well inside
+the scanned strain range.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">chi_real.dat</span></code> / <code class="docutils literal notranslate"><span class="pre">chi_imag.dat</span></code></dt><dd><p>Real and imaginary parts of the dielectric response versus frequency, plus
+the refractive index <code class="docutils literal notranslate"><span class="pre">n</span></code> and extinction coefficient <code class="docutils literal notranslate"><span class="pre">k</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">conductance.dat</span></code></dt><dd><p>Mode-counting (ballistic conductance) along the <code class="docutils literal notranslate"><span class="pre">normal</span></code> direction of
+<code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code>. The band loop that fills it is currently disabled in the
+source, so in this version the file is written but contains only zeros.</p>
+</dd>
+</dl>
+</section>
+<section id="diagnostics">
+<h3>Diagnostics<a class="headerlink" href="#diagnostics" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">log*.dat</span></code></dt><dd><p>The main log. Everything the code decided — symmetry operations, neighbor
+shells and their radii, the number of independent FCs per rank, the number
+of constraints of each type, the fit error, the invariance violations of the
+final solution — is here. <strong>Read it after every run.</strong></p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">svd-all.dat</span></code> (<code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">0</span></code>) or <code class="docutils literal notranslate"><span class="pre">svd-kernel.dat</span></code> (<code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">1</span></code>)</dt><dd><p>The singular values of the fit matrix, its condition number, the cutoff
+applied, the solution with its error bars, the residual <code class="docutils literal notranslate"><span class="pre">Ax-b</span></code> for every
+equation, and the summary line <code class="docutils literal notranslate"><span class="pre">MAE,</span> <span class="pre">largest</span> <span class="pre">errors</span> <span class="pre">in</span> <span class="pre">force(eV/Ang),</span>
+<span class="pre">percent</span> <span class="pre">deviation</span></code>. With <code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">1</span></code> the matrix is the reduced one,
+so there are as many singular values as there are free parameters.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">lasso.dat</span></code> (<code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">2</span></code> only)</dt><dd><p>The cross-validation scan used to pick <span class="math notranslate nohighlight">\(\mu\)</span>: one line per value of
+<span class="math notranslate nohighlight">\(\mu\)</span> with the mean cross-validation error and its standard error,
+preceded by per-fold diagnostics giving the iteration count and the number
+of non-zero parameters along the path. Plot column 3 against column 2 to see
+the error curve and where it turns over. See <a class="reference internal" href="#focex-lasso"><span class="std std-ref">enforce_inv = 2: selecting the force constants by LASSO</span></a>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">times.dat</span></code></dt><dd><p>Wall/CPU time after each stage of the run — the place to look when a run
+seems stuck.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">maps.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">corresp.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">amatrx.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">matrix_svd-all.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">symmetry.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">elimination.dat</span></code></dt><dd><p>Internal tables (symmetry mapping of the FCs, the fit matrix itself, the U
+and V matrices of the SVD, the space-group operations, the kernel used to
+enforce invariances). They can be very large and are only needed for
+debugging.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">atompos.xyz</span></code>, <code class="docutils literal notranslate"><span class="pre">poscar.xyz</span></code>, <code class="docutils literal notranslate"><span class="pre">primlatt.xyz</span></code>, <code class="docutils literal notranslate"><span class="pre">supercell_*.xyz</span></code>, <code class="docutils literal notranslate"><span class="pre">latfc.xyz</span></code>, <code class="docutils literal notranslate"><span class="pre">rgrid*.xyz</span></code>, <code class="docutils literal notranslate"><span class="pre">ggrid*.xyz</span></code>, <code class="docutils literal notranslate"><span class="pre">WS*_boundary.xyz</span></code></dt><dd><p>Structures, real- and reciprocal-space grids and Wigner-Seitz cell
+boundaries in <code class="docutils literal notranslate"><span class="pre">.xyz</span></code> format, for visualisation (VMD, OVITO, gnuplot).</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="checking-the-quality-of-the-fit">
+<h2><span class="section-number">6.8. </span>Checking the quality of the fit<a class="headerlink" href="#checking-the-quality-of-the-fit" title="Link to this heading"></a></h2>
+<p>After a run, look at these numbers, in this order:</p>
+<ol class="arabic">
+<li><p><strong>The relative fit error</strong>, in the log and at the end of <code class="docutils literal notranslate"><span class="pre">svd-all.dat</span></code>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Percent error, || F_dft-F_fit || / || F_dft || =    0.036 %
+MAE, largest errors in force(eV/Ang),percent deviation=  0.287E-05  0.154E-03  0.361E-01
+</pre></div>
+</div>
+<p>A few percent is normal for a well-converged model; tens of percent means the
+range or the ranks are insufficient (or the snapshots are too anharmonic for
+the truncation).</p>
+</li>
+<li><p><strong>The singular values</strong> at the top of <code class="docutils literal notranslate"><span class="pre">svd-all.dat</span></code>, and the condition
+number printed just below them. A very large condition number means some
+combinations of FCs are not constrained by your data — add snapshots, add a
+second supercell shape, or reduce the range.</p></li>
+<li><p><strong>The invariance violations</strong> listed in the log (<code class="docutils literal notranslate"><span class="pre">MAIN:</span> <span class="pre">Invariance</span>
+<span class="pre">violations</span></code> when <code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">1</span></code>, or <code class="docutils literal notranslate"><span class="pre">write_invariance_violations</span></code>
+otherwise). They should be at the level of the force noise.</p></li>
+<li><p><strong>The acoustic branches</strong>: plot <code class="docutils literal notranslate"><span class="pre">bands.dat</span></code> and check that the three
+acoustic frequencies go to zero linearly at <span class="math notranslate nohighlight">\(\Gamma\)</span> and that no branch
+is imaginary (frequencies are reported as negative when
+<span class="math notranslate nohighlight">\(\omega^2 &lt; 0\)</span>).</p></li>
+<li><p><strong>The decay of the FCs</strong>: plot <code class="docutils literal notranslate"><span class="pre">trace_fc.dat</span></code> and confirm that the harmonic
+interaction has decayed well before your cutoff radius.</p></li>
+</ol>
+</section>
+<section id="plotting-the-results">
+<h2><span class="section-number">6.9. </span>Plotting the results<a class="headerlink" href="#plotting-the-results" title="Link to this heading"></a></h2>
+<p>Gnuplot scripts for the standard figures are provided in the <code class="docutils literal notranslate"><span class="pre">FOCEX</span></code>
+directory; run them in the directory containing the output files.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 80.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Script</p></th>
+<th class="head"><p>Figure</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bandgen.plt</span></code></p></td>
+<td><p>Phonon dispersion from <code class="docutils literal notranslate"><span class="pre">bands.dat</span></code>. Pass the number of branches, e.g.
+<code class="docutils literal notranslate"><span class="pre">gnuplot</span> <span class="pre">-e</span> <span class="pre">&quot;nbands=6&quot;</span> <span class="pre">bandgen.plt</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bvel.plt</span></code></p></td>
+<td><p>Dispersion coloured by group velocity.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">all.plt</span></code></p></td>
+<td><p>Combined dispersion + DOS + Gruneisen figure.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fcs.plt</span></code></p></td>
+<td><p>Trace of FC2 versus pair distance (<code class="docutils literal notranslate"><span class="pre">trace_fc.dat</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pair.plt</span></code></p></td>
+<td><p>Distribution of pair distances (<code class="docutils literal notranslate"><span class="pre">pairs.dat</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">qha.plt</span></code></p></td>
+<td><p>Thermal expansion, heat capacity and Gruneisen versus T
+(<code class="docutils literal notranslate"><span class="pre">thermo_QHA.dat</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">thermo.plt</span></code></p></td>
+<td><p>Free energy versus strain (<code class="docutils literal notranslate"><span class="pre">temp_free.dat</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">chi.plt</span></code></p></td>
+<td><p>Dielectric function and optical constants.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kp.plt</span></code>, <code class="docutils literal notranslate"><span class="pre">ws.plt</span></code></p></td>
+<td><p>k-point meshes and Wigner-Seitz cells, for checking the grids.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The tick marks of the band-structure plots come from <code class="docutils literal notranslate"><span class="pre">KTICS.BS</span></code>, which FOCEX
+writes for the path you defined; the ranges hard-coded in some of the scripts
+may need adjusting for your material.</p>
+</section>
+<section id="troubleshooting">
+<h2><span class="section-number">6.10. </span>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">FORCEDISP</span> <span class="pre">file</span> <span class="pre">...</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">exist</span></code> / <code class="docutils literal notranslate"><span class="pre">poscar</span> <span class="pre">file</span> <span class="pre">...</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">exist</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">fdfiles</span></code> on line 7 of <code class="docutils literal notranslate"><span class="pre">structure.params</span></code> is larger than the number of
+<code class="docutils literal notranslate"><span class="pre">POSCARi</span></code>/<code class="docutils literal notranslate"><span class="pre">FORCEDISPi</span></code> pairs actually present.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">the</span> <span class="pre">word</span> <span class="pre">POSITION</span> <span class="pre">was</span> <span class="pre">not</span> <span class="pre">found</span> <span class="pre">in</span> <span class="pre">FORCEDISP</span> <span class="pre">file</span></code></dt><dd><p>The block headers of <code class="docutils literal notranslate"><span class="pre">FORCEDISPi</span></code> are not recognised: each snapshot must
+begin with a line containing <code class="docutils literal notranslate"><span class="pre">POSITION</span></code> (format A) or <code class="docutils literal notranslate"><span class="pre">vasprun</span></code> together
+with <code class="docutils literal notranslate"><span class="pre">(eV):</span></code> (format B). See <a class="reference internal" href="#focex-forcedisp"><span class="std std-ref">Format of FORCEDISPi</span></a>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">supercell</span> <span class="pre">inconsistency;</span> <span class="pre">check</span> <span class="pre">input</span> <span class="pre">coordinates</span> <span class="pre">again</span></code></dt><dd><p>The volume per atom of <code class="docutils literal notranslate"><span class="pre">POSCARi</span></code> and of the primitive cell defined in
+<code class="docutils literal notranslate"><span class="pre">structure.params</span></code> disagree. Check the scale factor (line 3), the
+conventional cell (line 1) and the primitive vectors (line 2).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">End</span> <span class="pre">of</span> <span class="pre">file</span></code> while reading <code class="docutils literal notranslate"><span class="pre">default.params</span></code> or <code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code></dt><dd><p>The file has fewer lines than the version of the code expects. Copy the
+template from the <code class="docutils literal notranslate"><span class="pre">FOCEX</span></code> directory rather than reusing an old one:
+<code class="docutils literal notranslate"><span class="pre">default.params</span></code> must have 36 lines, and line 2 of <code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code> must
+contain six numbers (shift <strong>and</strong> normal).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Bad</span> <span class="pre">real</span> <span class="pre">number</span> <span class="pre">in</span> <span class="pre">item</span> <span class="pre">4</span> <span class="pre">of</span> <span class="pre">list</span> <span class="pre">input</span></code> (<code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code>)</dt><dd><p>Line 2 contains only the three shift components; append the three components
+of the normal vector, e.g. <code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span>&#160; <span class="pre">1</span> <span class="pre">0</span> <span class="pre">0</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">positions</span> <span class="pre">must</span> <span class="pre">be</span> <span class="pre">sorted</span> <span class="pre">according</span> <span class="pre">to</span> <span class="pre">the</span> <span class="pre">labels</span> <span class="pre">1,2,3...</span></code></dt><dd><p>The atom lines at the end of <code class="docutils literal notranslate"><span class="pre">structure.params</span></code> must be numbered
+consecutively starting from 1.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">POSCAR:</span> <span class="pre">positions</span> <span class="pre">are</span> <span class="pre">not</span> <span class="pre">in</span> <span class="pre">direct</span> <span class="pre">or</span> <span class="pre">cartesian</span> <span class="pre">coordinates</span></code></dt><dd><p>Line 7 of <code class="docutils literal notranslate"><span class="pre">POSCARi</span></code> must start with <code class="docutils literal notranslate"><span class="pre">D</span></code>/<code class="docutils literal notranslate"><span class="pre">d</span></code> or <code class="docutils literal notranslate"><span class="pre">C</span></code>/<code class="docutils literal notranslate"><span class="pre">c</span></code>. Remember
+that the element-name line of the modern VASP format must be <strong>removed</strong>.</p>
+</dd>
+<dt>Run stops with an array-bound or allocation error in <code class="docutils literal notranslate"><span class="pre">setup_maps</span></code></dt><dd><p>One of the <code class="docutils literal notranslate"><span class="pre">maxterms</span></code>/<code class="docutils literal notranslate"><span class="pre">maxgroups</span></code>/<code class="docutils literal notranslate"><span class="pre">maxtermsindep</span></code> limits in
+<code class="docutils literal notranslate"><span class="pre">default.params</span></code> is too small for the range you requested. Replace the
+<code class="docutils literal notranslate"><span class="pre">0</span></code> on the relevant line by an explicit, larger value.</p>
+</dd>
+<dt>Imaginary (negative) acoustic frequencies near <span class="math notranslate nohighlight">\(\Gamma\)</span></dt><dd><p>Almost always a violated acoustic sum rule: set <code class="docutils literal notranslate"><span class="pre">itrans</span> <span class="pre">=</span> <span class="pre">1</span></code> and, if
+necessary, <code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">1</span></code> on line 5 of <code class="docutils literal notranslate"><span class="pre">structure.params</span></code>.</p>
+</dd>
+<dt>The fit error is large, or the FCs change a lot when you add a shell</dt><dd><p>The model is not converged. Add snapshots, add neighbor shells for rank 2,
+and use a larger supercell — the range of FC2 can never exceed the
+Wigner-Seitz cell of the supercell you provide.</p>
+</dd>
+</dl>
+</section>
+<section id="using-the-results-in-the-other-alatdyn-codes">
+<h2><span class="section-number">6.11. </span>Using the results in the other ALATDYN codes<a class="headerlink" href="#using-the-results-in-the-other-alatdyn-codes" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">THERMACOND</span></code> (thermal conductivity), <code class="docutils literal notranslate"><span class="pre">SCOP8</span></code> (self-consistent phonons) and
+<code class="docutils literal notranslate"><span class="pre">ANFOMOD</span></code> (force-field molecular dynamics) all start from the FOCEX output.
+Copy <code class="docutils literal notranslate"><span class="pre">lat_fc.dat</span></code> together with <code class="docutils literal notranslate"><span class="pre">fc1.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc2.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc3.dat</span></code> (and
+<code class="docutils literal notranslate"><span class="pre">fc4.dat</span></code> if you fitted it) into their run directory; see
+<a class="reference internal" href="runthermacond.html"><span class="doc">Running THERMACOND</span></a> and <a class="reference internal" href="runscop8.html"><span class="doc">Running SCOP8</span></a> for the additional input each of them
+needs.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="runscsnaps.html" class="btn btn-neutral float-left" title="5. Running SC-SNAPS" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="runthermacond.html" class="btn btn-neutral float-right" title="7. Running THERMACOND" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, University of Virginia.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

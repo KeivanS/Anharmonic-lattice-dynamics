@@ -1,0 +1,244 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anharmonic-LATtice-DYNamics (ALATDYN) &mdash; ALADYN 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="1. Introduction" href="intro.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            ALADYN
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">2. Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">3. Download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">4. Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscsnaps.html">5. Running SC-SNAPS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runfocex.html">6. Running FOCEX</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runthermacond.html">7. Running THERMACOND</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscop8.html">8. Running SCOP8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">9. FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">ALADYN</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Anharmonic-LATtice-DYNamics (ALATDYN)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="anharmonic-lattice-dynamics-alatdyn">
+<h1>Anharmonic-LATtice-DYNamics (ALATDYN)<a class="headerlink" href="#anharmonic-lattice-dynamics-alatdyn" title="Link to this heading"></a></h1>
+<a class="reference internal image-reference" href="_images/aladyn-logo.png"><img alt="_images/aladyn-logo.png" src="_images/aladyn-logo.png" width="400" />
+</a>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#what-is-alatdyn">1.1. What is ALATDYN?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#where-to-start">1.2. Where to start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#citation">1.3. Citation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#getting-help">1.4. Getting help</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#acknowledgment">1.5. Acknowledgment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#contact">1.6. Contact</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">2. Theory</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="theory.html#general-symmetries-of-the-problem">2.1. General symmetries of the problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory.html#point-and-or-space-group-symmetries">2.2. Point and/or space group symmetries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory.html#variational-approach-using-bogoliubov-s-inequality">2.3. Variational approach using Bogoliubov’s inequality</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="theory.html#choice-of-variational-parameter">Choice of variational parameter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="theory.html#preserve-acoustic-sum-rule">Preserve acoustic sum rule</a></li>
+<li class="toctree-l3"><a class="reference internal" href="theory.html#divergence-in-dynamic-displacement-correlations">Divergence in dynamic displacement correlations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="theory.html#elastic-constants">2.4. Elastic constants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory.html#gruneisen-parameter">2.5. Gruneisen parameter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory.html#phonon-boltzmann-transport-equation">2.6. Phonon Boltzmann Transport Equation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="theory.html#iterative">Iterative</a></li>
+<li class="toctree-l3"><a class="reference internal" href="theory.html#direct">Direct</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">3. Download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">4. Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#requirements">4.1. Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#getting-the-code">4.2. Getting the code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#building-everything-at-once">4.3. Building everything at once</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="install.html#focex">FOCEX</a></li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#the-utility-programs">The utility programs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#scop8">SCOP8</a></li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#thermacond">THERMACOND</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#checking-the-installation">4.4. Checking the installation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="runscsnaps.html">5. Running SC-SNAPS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="runscsnaps.html#overview">5.1. Overview</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="runscsnaps.html#how-it-works">How it works</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="runscsnaps.html#installation">5.2. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runscsnaps.html#input-files">5.3. Input files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="runscsnaps.html#cell-inp-the-primitive-cell"><code class="docutils literal notranslate"><span class="pre">cell.inp</span></code> — the primitive cell</a></li>
+<li class="toctree-l3"><a class="reference internal" href="runscsnaps.html#supercell-inp-the-supercell"><code class="docutils literal notranslate"><span class="pre">supercell.inp</span></code> — the supercell</a></li>
+<li class="toctree-l3"><a class="reference internal" href="runscsnaps.html#snaps-inp-the-sampling"><code class="docutils literal notranslate"><span class="pre">snaps.inp</span></code> — the sampling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="runscsnaps.html#output-files">5.4. Output files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runscsnaps.html#the-graphical-interface">5.5. The graphical interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="runscsnaps.html#what-the-interface-offers">What the interface offers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="runscsnaps.html#defaults-json"><code class="docutils literal notranslate"><span class="pre">defaults.json</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="runscsnaps.html#poscar2xyz-py"><code class="docutils literal notranslate"><span class="pre">poscar2xyz.py</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="runscsnaps.html#from-snapshots-to-force-constants">5.6. From snapshots to force constants</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="runfocex.html">6. Running FOCEX</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="runfocex.html#overview">6.1. Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runfocex.html#workflow">6.2. Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runfocex.html#quick-start-the-ge-example">6.3. Quick start: the Ge example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runfocex.html#preparing-the-dft-data">6.4. Preparing the DFT data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#step-1-generate-the-snapshots">Step 1 — generate the snapshots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#step-2-run-the-dft-code-and-collect-the-forces">Step 2 — run the DFT code and collect the forces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#format-of-poscari">Format of <code class="docutils literal notranslate"><span class="pre">POSCARi</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#format-of-forcedispi">Format of <code class="docutils literal notranslate"><span class="pre">FORCEDISPi</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#checklist-before-running-focex">Checklist before running FOCEX</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="runfocex.html#input-files">6.5. Input files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#structure-params"><code class="docutils literal notranslate"><span class="pre">structure.params</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#choosing-enforce-inv">Choosing <code class="docutils literal notranslate"><span class="pre">enforce_inv</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#enforce-inv-2-selecting-the-force-constants-by-lasso"><code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">2</span></code>: selecting the force constants by LASSO</a></li>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#dielectric-params"><code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#latdyn-params"><code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#kpbs-params"><code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#default-params"><code class="docutils literal notranslate"><span class="pre">default.params</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="runfocex.html#id1">6.6. Running FOCEX</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#the-log-file-name">The log file name</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="runfocex.html#output-files">6.7. Output files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#force-constants">Force constants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#phonons-and-thermodynamics">Phonons and thermodynamics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="runfocex.html#diagnostics">Diagnostics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="runfocex.html#checking-the-quality-of-the-fit">6.8. Checking the quality of the fit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runfocex.html#plotting-the-results">6.9. Plotting the results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runfocex.html#troubleshooting">6.10. Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runfocex.html#using-the-results-in-the-other-alatdyn-codes">6.11. Using the results in the other ALATDYN codes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="runthermacond.html">7. Running THERMACOND</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="runthermacond.html#workflow-of-thermacond">7.1. Workflow of THERMACOND</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runthermacond.html#description-of-input-and-output-files">7.2. Description of input and output files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runthermacond.html#example">7.3. Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="runscop8.html">8. Running SCOP8</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="runscop8.html#workflow-of-scop8">8.1. Workflow of SCOP8</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runscop8.html#description-of-input-and-output-files">8.2. Description of input and output files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runscop8.html#example">8.3. Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">9. FAQ</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#general">9.1. General</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#preparing-the-input">9.2. Preparing the input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#running-and-interpreting">9.3. Running and interpreting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#compilation">9.4. Compilation</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This project is under active development.</p>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="intro.html" class="btn btn-neutral float-right" title="1. Introduction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, University of Virginia.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

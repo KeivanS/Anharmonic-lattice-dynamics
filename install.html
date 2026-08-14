@@ -1,0 +1,306 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4. Installation &mdash; ALADYN 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5. Running SC-SNAPS" href="runscsnaps.html" />
+    <link rel="prev" title="3. Download" href="download.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ALADYN
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">2. Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">3. Download</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#requirements">4.1. Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#getting-the-code">4.2. Getting the code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-everything-at-once">4.3. Building everything at once</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#focex">FOCEX</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-utility-programs">The utility programs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#scop8">SCOP8</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#thermacond">THERMACOND</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#checking-the-installation">4.4. Checking the installation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="runscsnaps.html">5. Running SC-SNAPS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runfocex.html">6. Running FOCEX</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runthermacond.html">7. Running THERMACOND</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscop8.html">8. Running SCOP8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">9. FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ALADYN</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">4. </span>Installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/install.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation">
+<h1><span class="section-number">4. </span>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
+<section id="requirements">
+<h2><span class="section-number">4.1. </span>Requirements<a class="headerlink" href="#requirements" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>A Fortran compiler — GNU <code class="docutils literal notranslate"><span class="pre">gfortran</span></code> (version 9 or newer) or Intel
+<code class="docutils literal notranslate"><span class="pre">ifort</span></code>/<code class="docutils literal notranslate"><span class="pre">ifx</span></code>. FOCEX and ANFOMOD need nothing else.</p></li>
+<li><p>An MPI implementation (<code class="docutils literal notranslate"><span class="pre">mpif90</span></code>) — only for SCOP8 and THERMACOND.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">make</span></code>.</p></li>
+<li><p>Optional, for plotting the results: <code class="docutils literal notranslate"><span class="pre">gnuplot</span></code>.</p></li>
+</ul>
+<p>No external numerical library is required: the LAPACK routine used for the
+diagonalisation (<code class="docutils literal notranslate"><span class="pre">zhegv</span></code>) is bundled with the source.</p>
+</section>
+<section id="getting-the-code">
+<h2><span class="section-number">4.2. </span>Getting the code<a class="headerlink" href="#getting-the-code" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
+<span class="nb">cd</span><span class="w"> </span>Anharmonic-lattice-dynamics
+</pre></div>
+</div>
+</section>
+<section id="building-everything-at-once">
+<h2><span class="section-number">4.3. </span>Building everything at once<a class="headerlink" href="#building-everything-at-once" title="Link to this heading"></a></h2>
+<p>The top-level <code class="docutils literal notranslate"><span class="pre">make.inc</span></code> holds the compiler settings shared by the four codes:</p>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">DESTDIR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>~/ALADYN/bin
+
+<span class="c"># ANFOMOD, FOCEX</span>
+<span class="nv">FF</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>gfortran
+
+<span class="c"># SCOP8, THERMACOND</span>
+<span class="nv">FC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>mpif90
+<span class="nv">F90</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>mpif90
+
+<span class="nv">FLAGS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>-O2<span class="w"> </span>-fcheck<span class="o">=</span>all<span class="w"> </span>-ffree-line-length-0
+</pre></div>
+</div>
+<p>Edit it if you use a different compiler or want a different installation
+directory, then</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w">          </span><span class="c1"># builds ANFOMOD, FOCEX, SCOP8 and THERMACOND</span>
+make<span class="w"> </span>clean<span class="w">    </span><span class="c1"># removes the object and module files</span>
+</pre></div>
+</div>
+<p>Finally add the installation directory to your <code class="docutils literal notranslate"><span class="pre">PATH</span></code> — put the line in your
+<code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code> or <code class="docutils literal notranslate"><span class="pre">~/.zshrc</span></code> so that it is set in every session:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PATH</span><span class="si">}</span>:~/ALADYN/bin
+</pre></div>
+</div>
+<section id="focex">
+<span id="focex-install"></span><h3>FOCEX<a class="headerlink" href="#focex" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>~/BIN<span class="w">            </span><span class="c1"># see the note below</span>
+<span class="nb">cd</span><span class="w"> </span>FOCEX
+make
+</pre></div>
+</div>
+<p>This compiles the sources listed in <code class="docutils literal notranslate"><span class="pre">FOCEX/Makefile</span></code> and produces a single
+executable. Two details of that Makefile are worth knowing:</p>
+<ul class="simple">
+<li><p>the name of the executable is set by the <code class="docutils literal notranslate"><span class="pre">exe</span></code> variable near the top
+(currently <code class="docutils literal notranslate"><span class="pre">v16</span></code>, following the version number <code class="docutils literal notranslate"><span class="pre">ver</span></code> of the code), and</p></li>
+<li><p>the executable is moved to <code class="docutils literal notranslate"><span class="pre">~/BIN</span></code>, <strong>not</strong> to the <code class="docutils literal notranslate"><span class="pre">DESTDIR</span></code> of
+<code class="docutils literal notranslate"><span class="pre">make.inc</span></code>. Create that directory first, or change the <code class="docutils literal notranslate"><span class="pre">mv</span></code> line to
+install somewhere else.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">FOCEX/Makefile</span></code> also has its own <code class="docutils literal notranslate"><span class="pre">FF</span></code> and <code class="docutils literal notranslate"><span class="pre">FLAGS</span></code> variables. The default</p>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">FF</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>gfortran
+<span class="nv">FLAGS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>-O2<span class="w"> </span>-fcheck<span class="o">=</span>all
+</pre></div>
+</div>
+<p>is a good compromise between speed and safety. Useful alternatives, commented
+out in the file, are <code class="docutils literal notranslate"><span class="pre">-fbacktrace</span> <span class="pre">-g</span></code> (for debugging) and
+<code class="docutils literal notranslate"><span class="pre">-Wall</span> <span class="pre">-Wextra</span> <span class="pre">-fimplicit-none</span></code> (for development).</p>
+</section>
+<section id="the-utility-programs">
+<h3>The utility programs<a class="headerlink" href="#the-utility-programs" title="Link to this heading"></a></h3>
+<p>The tools that prepare the input of FOCEX and post-process DFT output are built
+separately:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>~/ALADYN/bin<span class="w">     </span><span class="c1"># or whatever DESTDIR you set in make.inc</span>
+<span class="nb">cd</span><span class="w"> </span>FOCEX/utility
+make
+</pre></div>
+</div>
+<p>This produces four executables and moves them to <code class="docutils literal notranslate"><span class="pre">DESTDIR</span></code>:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 22.0%" />
+<col style="width: 78.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Executable</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sc_snaps.x</span></code></p></td>
+<td><p>Builds a supercell and generates thermally displaced snapshots
+(<code class="docutils literal notranslate"><span class="pre">poscar_000</span></code>, <code class="docutils literal notranslate"><span class="pre">poscar_001</span></code>, …) from <code class="docutils literal notranslate"><span class="pre">cell.inp</span></code>,
+<code class="docutils literal notranslate"><span class="pre">supercell.inp</span></code> and <code class="docutils literal notranslate"><span class="pre">snaps.inp</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code></p></td>
+<td><p>Extracts positions, forces and energy from a VASP <code class="docutils literal notranslate"><span class="pre">OUTCAR</span></code> in the
+current directory into <code class="docutils literal notranslate"><span class="pre">pos-forc.dat</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">read_qe.x</span></code></p></td>
+<td><p>The same for a Quantum Espresso (PWSCF) output file, whose name is read
+from standard input: <code class="docutils literal notranslate"><span class="pre">echo</span> <span class="pre">pw.out</span> <span class="pre">|</span> <span class="pre">read_qe.x</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">poscar2xyz.x</span></code></p></td>
+<td><p>Converts a POSCAR to <code class="docutils literal notranslate"><span class="pre">.xyz</span></code> for visualisation.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code class="docutils literal notranslate"><span class="pre">sc_snaps.x</span></code> stops at run time with <code class="docutils literal notranslate"><span class="pre">Recursive</span> <span class="pre">call</span> <span class="pre">to</span> <span class="pre">nonrecursive</span>
+<span class="pre">procedure</span> <span class="pre">'findif'</span></code> when it is built with <code class="docutils literal notranslate"><span class="pre">-fcheck=all</span></code>, as the default
+<code class="docutils literal notranslate"><span class="pre">make.inc</span></code> above does: <code class="docutils literal notranslate"><span class="pre">-fcheck=all</span></code> implies <code class="docutils literal notranslate"><span class="pre">-fcheck=recursion</span></code>, and
+the finite-difference helper does call itself through <code class="docutils literal notranslate"><span class="pre">d1v</span></code>/<code class="docutils literal notranslate"><span class="pre">d2v</span></code>.
+Compiled without the checks (plain <code class="docutils literal notranslate"><span class="pre">-O2</span></code>) it runs. To keep the checks, add
+<code class="docutils literal notranslate"><span class="pre">-frecursive</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gfortran<span class="w"> </span>-O2<span class="w"> </span>-fcheck<span class="o">=</span>all<span class="w"> </span>-frecursive<span class="w"> </span>-ffree-line-length-0<span class="w"> </span>sc_snaps.f90<span class="w"> </span>-o<span class="w"> </span>sc_snaps.x
+</pre></div>
+</div>
+<p>The standalone SC-SNAPS release (<a class="reference internal" href="runscsnaps.html"><span class="doc">Running SC-SNAPS</span></a>) builds with plain <code class="docutils literal notranslate"><span class="pre">-O2</span></code>
+and is not affected.</p>
+</div>
+</section>
+<section id="scop8">
+<span id="scop8-install"></span><h3>SCOP8<a class="headerlink" href="#scop8" title="Link to this heading"></a></h3>
+<ul>
+<li><p>On Linux</p>
+<ul>
+<li><p>Adjust the <code class="docutils literal notranslate"><span class="pre">FLAGS</span></code> option in <code class="docutils literal notranslate"><span class="pre">SCOP8/Makefile</span></code> if you need different
+compiler flags:</p>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">FLAGS</span><span class="o">=</span><span class="w"> </span><span class="c1">#-O3 #-C # to check everything O3 #g -p #for profiling with gprof</span>
+</pre></div>
+</div>
+</li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">make</span></code> in <code class="docutils literal notranslate"><span class="pre">SCOP8</span></code>; this creates the binary <code class="docutils literal notranslate"><span class="pre">main.x</span></code>.</p></li>
+</ul>
+</li>
+<li><p>On Windows</p>
+<ul>
+<li><p>Put the MinGW package under the root folder,
+<a class="reference external" href="https://drive.google.com/file/d/1mdHpw7Eac_hwmtHLrHkKdj9zlLljesz8/view?pli=1">download here</a>.
+The newest version of MinGW may not work properly.</p></li>
+<li><p>Open <em>Control Panel &gt; System advanced settings</em> and add the path of
+<code class="docutils literal notranslate"><span class="pre">root:\MingW</span></code>, see below:</p>
+<a class="reference internal image-reference" href="_images/how.jpg"><img alt="_images/how.jpg" src="_images/how.jpg" width="1000" />
+</a>
+</li>
+<li><p>Install the IDE code::blocks,
+<a class="reference external" href="https://www.codeblocks.org/downloads/">download here</a>.</p></li>
+<li><p>Set up the environment in code::blocks: <em>menu &gt; settings &gt; compiler</em>, set
+<strong>GNU Fortran</strong> as default and auto-detect compilers (you may need to
+uncheck all the optional compiling options).</p></li>
+<li><p>Load the project in code::blocks by double clicking <em>test.cbp</em>.</p></li>
+<li><p>Compile and run the code by pressing F9.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="thermacond">
+<h3>THERMACOND<a class="headerlink" href="#thermacond" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">make</span></code> in the <code class="docutils literal notranslate"><span class="pre">THERMACOND</span></code> directory. THERMACOND needs a <code class="docutils literal notranslate"><span class="pre">gfortran</span></code>
+compiler and MPI. After a successful compilation, a binary named after the
+version (e.g. <code class="docutils literal notranslate"><span class="pre">kap8</span></code> for version 8) is created in that directory; it takes
+no input from the terminal and is invoked simply as <code class="docutils literal notranslate"><span class="pre">./kap8</span></code>.</p></li>
+<li><p>To compute the collision matrices in parallel, the bash script <code class="docutils literal notranslate"><span class="pre">splitjob.sh</span></code>
+distributes the k-mesh over many cores.</p></li>
+</ul>
+</section>
+</section>
+<section id="checking-the-installation">
+<h2><span class="section-number">4.4. </span>Checking the installation<a class="headerlink" href="#checking-the-installation" title="Link to this heading"></a></h2>
+<p>The quickest end-to-end test is the germanium example shipped with FOCEX; see
+<a class="reference internal" href="runfocex.html#focex-quickstart"><span class="std std-ref">Quick start: the Ge example</span></a>. It exercises the symmetry analysis, the SVD fit and the
+whole phonon/thermodynamics post-processing, and finishes in a few minutes on a
+single core.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="download.html" class="btn btn-neutral float-left" title="3. Download" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="runscsnaps.html" class="btn btn-neutral float-right" title="5. Running SC-SNAPS" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, University of Virginia.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
