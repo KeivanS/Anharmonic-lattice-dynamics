@@ -97,7 +97,7 @@ separately:
    cd FOCEX/utility
    make
 
-This produces four executables and moves them to ``DESTDIR``:
+This produces three executables and moves them to ``DESTDIR``:
 
 .. list-table::
    :header-rows: 1
@@ -105,10 +105,6 @@ This produces four executables and moves them to ``DESTDIR``:
 
    * - Executable
      - Purpose
-   * - ``sc_snaps.x``
-     - Builds a supercell and generates thermally displaced snapshots
-       (``poscar_000``, ``poscar_001``, …) from ``cell.inp``,
-       ``supercell.inp`` and ``snaps.inp``.
    * - ``read_outcar.x``
      - Extracts positions, forces and energy from a VASP ``OUTCAR`` in the
        current directory into ``pos-forc.dat``.
@@ -118,21 +114,15 @@ This produces four executables and moves them to ``DESTDIR``:
    * - ``poscar2xyz.x``
      - Converts a POSCAR to ``.xyz`` for visualisation.
 
-.. warning::
+.. note::
 
-   ``sc_snaps.x`` stops at run time with ``Recursive call to nonrecursive
-   procedure 'findif'`` when it is built with ``-fcheck=all``, as the default
-   ``make.inc`` above does: ``-fcheck=all`` implies ``-fcheck=recursion``, and
-   the finite-difference helper does call itself through ``d1v``/``d2v``.
-   Compiled without the checks (plain ``-O2``) it runs. To keep the checks, add
-   ``-frecursive``:
-
-   .. code-block:: bash
-
-      gfortran -O2 -fcheck=all -frecursive -ffree-line-length-0 sc_snaps.f90 -o sc_snaps.x
-
-   The standalone SC-SNAPS release (:doc:`runscsnaps`) builds with plain ``-O2``
-   and is not affected.
+   The snapshot generator ``sc_snaps.x`` is **not** built here. It is developed
+   in its own repository, `github.com/KeivanS/SC_SNAPS
+   <https://github.com/KeivanS/SC_SNAPS>`__, and comes with a graphical
+   interface; install it from there, as described in :doc:`runscsnaps`. A copy
+   of its source used to be bundled in ``FOCEX/utility`` but had drifted several
+   versions behind, and its ``cell.inp`` format no longer matched, so it was
+   removed rather than left to mislead.
 
 .. _scop8-install:
 

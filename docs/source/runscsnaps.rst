@@ -17,15 +17,17 @@ independent pieces of information about the force constants instead of three.
 SC-SNAPS is distributed from its own repository,
 `github.com/KeivanS/SC_SNAPS <https://github.com/KeivanS/SC_SNAPS>`_, which
 contains the Fortran generator, a browser-based graphical interface, a
-POSCAR-to-XYZ converter and example input files. An older copy of the generator
-alone is still bundled in ``FOCEX/utility``; prefer the standalone repository.
+POSCAR-to-XYZ converter and example input files. **This is the only place it is
+maintained** — install it from there, not from ALATDYN.
 
 .. note::
 
-   The two versions differ in their input format. In the current version, line 3
-   of ``cell.inp`` carries **two** numbers (scale factor *and* the
-   ``convcoord`` flag) and line 6 carries masses **and** charges. Input files
-   written for the bundled copy will not work unchanged.
+   Older versions of ALATDYN bundled a copy of the generator alone in
+   ``FOCEX/utility``. It has been removed, because it had fallen several
+   versions behind and its input format no longer matched: in the current
+   version, line 3 of ``cell.inp`` carries **two** numbers (scale factor *and*
+   the ``convcoord`` flag) and line 6 carries masses **and** charges. Input
+   files written for that bundled copy will not work unchanged.
 
 How it works
 ^^^^^^^^^^^^
@@ -104,12 +106,12 @@ For the graphical interface you need:
 
 .. warning::
 
-   If you compile ``sc_snaps.f90`` with ``-fcheck=all`` (as the ALATDYN
-   ``make.inc`` does) the program aborts at run time with ``Recursive call to
-   nonrecursive procedure 'findif'``: the finite-difference helper calls itself
-   through ``d1v``/``d2v``, which ``-fcheck=recursion`` flags. SC-SNAPS's own
-   Makefile uses plain ``-O2`` and is unaffected. If you need the checks, add
-   ``-frecursive``.
+   SC-SNAPS's own Makefile uses plain ``-O2`` and is fine. But if you compile
+   ``sc_snaps.f90`` by hand with ``-fcheck=all`` — the flags ALATDYN's
+   ``make.inc`` sets, so this bites anyone reusing them — the program aborts at
+   run time with ``Recursive call to nonrecursive procedure 'findif'``: the
+   finite-difference helper calls itself through ``d1v``/``d2v``, which
+   ``-fcheck=recursion`` flags. Add ``-frecursive`` if you need the checks.
 
 Input files
 -----------

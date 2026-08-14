@@ -175,12 +175,19 @@ sampled velocities; VASP ignores them.
 
 .. important::
 
-   The three input files, the sampling itself and the graphical interface are
-   documented in full in :doc:`runscsnaps` — start there. SC-SNAPS now lives in
-   `its own repository <https://github.com/KeivanS/SC_SNAPS>`_ and its input
-   format differs from the older copy bundled in ``FOCEX/utility``: line 3 of
-   ``cell.inp`` takes **two** values (scale factor and ``convcoord``) and line 6
-   takes masses **and** charges. Prefer the standalone version.
+   SC-SNAPS is **not** part of this repository. It is developed and distributed
+   separately, at `github.com/KeivanS/SC_SNAPS
+   <https://github.com/KeivanS/SC_SNAPS>`__, and comes with a graphical
+   interface. Install it from there; ``cd FOCEX/utility && make`` does not build
+   it. The three input files, the sampling and the interface are documented in
+   full in :doc:`runscsnaps` — start there.
+
+   Older versions of ALATDYN bundled a copy of ``sc_snaps.f90`` in
+   ``FOCEX/utility``. It has been removed: it had fallen several versions behind
+   and read an incompatible ``cell.inp`` — line 3 now takes **two** values
+   (scale factor and ``convcoord``) and line 6 takes masses **and** charges. If
+   you have input files written for that old copy, they need updating before the
+   current SC-SNAPS will read them.
 
 ``POSCAR1`` comes straight out of this step — it is ``poscar_000`` with the
 element-name line deleted, because FOCEX expects the older VASP-4 layout in

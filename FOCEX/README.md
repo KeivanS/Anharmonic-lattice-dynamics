@@ -32,8 +32,8 @@ compiler or its options, `exe` to change the name of the executable (currently
 `v16`, following the version number `ver`), and the `mv` line to install
 somewhere other than `~/BIN`.
 
-The helper programs that prepare the input (`sc_snaps.x`) and convert DFT output
-(`read_outcar.x`, `read_qe.x`, `poscar2xyz.x`) are built separately:
+The helper programs that convert DFT output (`read_outcar.x`, `read_qe.x`,
+`poscar2xyz.x`) are built separately:
 
 ```bash
 mkdir -p ~/ALADYN/bin   # or the DESTDIR set in ../make.inc
@@ -41,7 +41,11 @@ cd utility
 make
 ```
 
-Note that `sc_snaps.f90` needs `-frecursive` with gfortran 12 and newer.
+The snapshot generator `sc_snaps.x` is **not** built here. It lives in its own
+repository, <https://github.com/KeivanS/SC_SNAPS>, together with a graphical
+interface; install it from there. The copy that used to be bundled in `utility/`
+was several versions behind and read an incompatible `cell.inp`, and has been
+removed.
 
 ## Running
 

@@ -4,7 +4,9 @@ include ../../make.inc
 SOURCES = $(wildcard *.f90)
 
 # combine many of them into one name "ALL" ; used for backup
-ALL=$(SOURCES) cell.inp snaps.inp supercell.inp Makefile 
+# (sc_snaps.f90 and its cell.inp/snaps.inp/supercell.inp used to live here; the
+#  generator is now developed in github.com/KeivanS/SC_SNAPS -- see the docs)
+ALL=$(SOURCES) $(wildcard *.sh) Makefile
 
 # List of executable files (replace .f90 with .x)
 EXECUTABLES = $(SOURCES:.f90=.x)

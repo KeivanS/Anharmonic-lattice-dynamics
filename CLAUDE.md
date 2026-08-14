@@ -20,7 +20,9 @@ cd FOCEX && mkdir -p ~/BIN && make       # ~4 min; produces ~/BIN/v16
 `FOCEX/Makefile` does **not** include the top-level `make.inc`: it hardcodes
 `FF=gfortran`, `FLAGS=-O2 -fcheck=all`, names the binary from `exe=v16`, and
 `mv`s it to `~/BIN`, which it does not create. The utility programs are separate
-(`cd FOCEX/utility && make`, installs to `make.inc`'s `DESTDIR=~/ALADYN/bin`).
+(`cd FOCEX/utility && make`, installs to `make.inc`'s `DESTDIR=~/ALADYN/bin`) —
+that builds `read_outcar.x`, `read_qe.x` and `poscar2xyz.x` only. `sc_snaps.x`
+comes from the SC_SNAPS repo; the stale bundled copy was removed 2026-08-14.
 
 FOCEX takes no arguments and no stdin. Run it in a directory holding:
 `structure.params`, `dielectric.params`, `latdyn.params`, `kpbs.params`,
@@ -79,11 +81,12 @@ outputs differ for no reason.
 
 ## Things that bite
 
-- `sc_snaps.x` aborts at run time with `Recursive call to nonrecursive procedure
-  'findif'` **when built with `-fcheck=all`** (which `make.inc` sets):
+- `sc_snaps.x` (in the SC_SNAPS repo) aborts at run time with `Recursive call to
+  nonrecursive procedure 'findif'` **when built with `-fcheck=all`** (which this
+  repo's `make.inc` sets, so it bites anyone reusing those flags):
   `-fcheck=all` implies `-fcheck=recursion`, and `findif` does recurse via
   `d1v`/`d2v`. Verified: `-O2` fine, `-O2 -fcheck=all` aborts, adding
-  `-frecursive` fixes it. Not changed in the Makefiles — documented only.
+  `-frecursive` fixes it. SC_SNAPS's own Makefile uses plain `-O2`.
 - The parameter files are read positionally by list-directed `read`. A missing
   line or a missing value silently swallows the next record and crashes later
   with a confusing message. `default.params` must have 36 lines; line 2 of
@@ -112,11 +115,12 @@ build at zero warnings.
 
 ## Related repos
 
-- `github.com/KeivanS/SC_SNAPS`, cloned at `~/PROJECTS/SC_SNAPS` — the current
-  home of SC-SNAPS, with a Flask GUI. Its `cell.inp` format has changed relative
-  to the copy bundled in `FOCEX/utility/` (line 3 takes two values, line 6 takes
-  masses *and* charges). Documented in `docs/source/runscsnaps.rst`; that repo
-  has its own `CLAUDE.md` with the details.
+- `github.com/KeivanS/SC_SNAPS`, cloned at `~/PROJECTS/SC_SNAPS` — the **only**
+  home of SC-SNAPS, with a Flask GUI. The stale copy in `FOCEX/utility/` was
+  removed 2026-08-14; it had diverged from this one across ~2200 lines and read
+  an older `cell.inp` (line 3 now takes two values, line 6 takes masses *and*
+  charges). Documented in `docs/source/runscsnaps.rst`; that repo has its own
+  `CLAUDE.md` with the details.
 
 ## Where the git clone is
 

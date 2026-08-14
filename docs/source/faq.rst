@@ -149,8 +149,11 @@ Compilation
 procedure 'findif'".**
 
 It was built with ``-fcheck=all``, which turns on ``-fcheck=recursion``, and the
-finite-difference helper genuinely recurses. Build it with plain ``-O2``, or
-keep the checks and add ``-frecursive``; see :ref:`focex-install`.
+finite-difference helper genuinely recurses. Build it with plain ``-O2``, as
+SC-SNAPS's own Makefile does, or keep the checks and add ``-frecursive``. Note
+that ``sc_snaps.x`` is built from the `SC_SNAPS repository
+<https://github.com/KeivanS/SC_SNAPS>`__, not from ``FOCEX/utility``; see
+:doc:`runscsnaps`.
 
 **``make`` fails on the last line with "No such file or directory".**
 
