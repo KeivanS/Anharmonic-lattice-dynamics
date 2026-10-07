@@ -94,8 +94,11 @@ outputs differ for no reason.
 - `bands.dat` columns 6+ are ω², not ω (`bandgen.plt` applies `521.1*sqrt()`).
 - `conductance.dat` is written but its band loop is `do j=1,-1`, so it is all
   zeros.
-- `POSCARi` uses the **VASP-4** layout — no element-name line. `POSCAR1` is
-  `sc_snaps.x`'s `poscar_000` with line 6 deleted.
+- `POSCARi` takes **either** VASP layout since 2026-08-14: `read_supercell` in
+  `ios.f90` reads the line after the third lattice vector as text and retries on
+  the next one if it does not parse as `natom_type` integers, so the VASP-5
+  element-name line is optional. `POSCAR1` is now `cp poscar_000 POSCAR1`; the
+  old `sed '6d'` recipe still works and is still in old scripts.
 - `FORCEDISPi` has two accepted block formats: "POSITION" (absolute positions
   in Å, forces in eV/Å — what `read_outcar.x`/`read_qe.x` write, preferred) and
   "vasprun" (displacements in Bohr, forces scaled by 27.2116). **Open question:**

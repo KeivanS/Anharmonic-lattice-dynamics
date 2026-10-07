@@ -233,13 +233,17 @@ columns.
 
 .. important::
 
-   ``POSCAR1`` for FOCEX is ``poscar_000`` **with the element-name line (line 6)
-   deleted** — FOCEX expects the older VASP-4 layout in which the atom counts
-   follow the third lattice vector directly:
+   ``POSCAR1`` for FOCEX is ``poscar_000`` used as it is:
 
    .. code-block:: bash
 
-      sed '6d' poscar_000 > POSCAR1
+      cp poscar_000 POSCAR1
+
+   The files follow the current VASP format, with a line of element names
+   between the third lattice vector and the atom counts, and FOCEX has read that
+   layout since version 8.18. Older versions accepted only the VASP-4 layout and
+   needed the element-name line removed with ``sed '6d' poscar_000 > POSCAR1``;
+   that still works, so scripts written for it need no change.
 
    The ``poscar_0nn`` files themselves are fed to VASP unchanged.
 

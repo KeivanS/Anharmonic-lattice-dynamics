@@ -134,7 +134,7 @@ commands:
    export PATH=$PATH:~/ALADYN/bin    # so the utility programs are found
 
    sc_snaps.x                        # 1. snapshots: reads cell.inp, supercell.inp, snaps.inp
-   sed '6d' poscar_000 > POSCAR1     #    the undisplaced supercell, in VASP-4 layout
+   cp poscar_000 POSCAR1             #    the undisplaced supercell
 
    rm -f FORCEDISP1                  # 2. DFT runs + collection
    ./runall.sh                       #    edit the VASP command inside it first
@@ -189,14 +189,18 @@ sampled velocities; VASP ignores them.
    you have input files written for that old copy, they need updating before the
    current SC-SNAPS will read them.
 
-``POSCAR1`` comes straight out of this step — it is ``poscar_000`` with the
-element-name line deleted, because FOCEX expects the older VASP-4 layout in
-which the atom counts follow the third lattice vector directly
-(see :ref:`focex-poscar`):
+``POSCAR1`` comes straight out of this step — it is ``poscar_000``, the
+undisplaced supercell, copied under the name FOCEX expects:
 
 .. code-block:: bash
 
-   sed '6d' poscar_000 > POSCAR1
+   cp poscar_000 POSCAR1
+
+No editing is needed: since version 8.18 FOCEX accepts both the modern VASP-5
+layout that ``sc_snaps.x`` writes, with a line of element names before the atom
+counts, and the older VASP-4 one without it (see :ref:`focex-poscar`). Earlier
+versions read only the VASP-4 layout and required that line to be deleted with
+``sed '6d'``; doing so still works.
 
 The ``poscar_0nn`` snapshots themselves go to the DFT code unchanged.
 
@@ -326,6 +330,7 @@ Format of ``POSCARi``
       17.1067694871620333    0.0000000000    0.0000000000    <- supercell vector 1
        0.0000000000   17.1067694871620333    0.0000000000    <- supercell vector 2
        0.0000000000    0.0000000000   17.1067694871620333    <- supercell vector 3
+   Ge                                           <- element names (optional, see note)
      216                                        <- number of atoms of each type (one integer per type)
    Direct                                       <- "Direct"/"D" or "Cartesian"/"C"
        0.0000000000    0.0000000000    0.0000000000
@@ -334,8 +339,14 @@ Format of ``POSCARi``
 
 Notes:
 
-* There is **no element-name line**: line 6 must contain ``natom_type``
-  integers, in the same order as the types declared in ``structure.params``.
+* **The element-name line is optional.** Both the modern VASP-5 layout shown
+  above and the older VASP-4 one, in which the atom counts follow the third
+  lattice vector directly, are accepted: FOCEX reads the line after the lattice
+  vectors and, if it cannot be parsed as integers, takes it as the element names
+  and reads the counts from the next line. Files written by ``sc_snaps.x`` and
+  by VASP itself can therefore be used unchanged.
+* The counts line must contain ``natom_type`` integers, in the same order as the
+  types declared in ``structure.params``.
 * The scale factor multiplies the three lattice vectors (and Cartesian atomic
   positions). A *negative* value is interpreted, as in VASP, as minus the
   volume of the cell.
@@ -408,7 +419,7 @@ files, next to the five parameter files described in the next section:
 
 .. code-block:: text
 
-   POSCAR1            <- sed '6d' poscar_000 > POSCAR1
+   POSCAR1            <- cp poscar_000 POSCAR1
    FORCEDISP1         <- the concatenated pos-forc.dat blocks
    structure.params   <- the five parameter files
    dielectric.params
@@ -1095,8 +1106,15 @@ Troubleshooting
     consecutively starting from 1.
 
 ``POSCAR: positions are not in direct or cartesian coordinates``
-    Line 7 of ``POSCARi`` must start with ``D``/``d`` or ``C``/``c``. Remember
-    that the element-name line of the modern VASP format must be **removed**.
+    The line following the atom counts of ``POSCARi`` must start with ``D``/``d``
+    or ``C``/``c`` (a ``Selective dynamics`` line before it is tolerated).
+
+``READ_SUPERCELL: could not read N atom counts from POSCARi``
+    The line where the atom counts were expected — the one after the third
+    lattice vector, or after the element names — does not hold ``natom_type``
+    integers. The offending line is echoed below the message. Either the counts
+    are missing or misspelled, or ``natom_type`` in ``structure.params`` does not
+    match the number of species in the supercell. See :ref:`focex-poscar`.
 
 Run stops with an array-bound or allocation error in ``setup_maps``
     One of the ``maxterms``/``maxgroups``/``maxtermsindep`` limits in

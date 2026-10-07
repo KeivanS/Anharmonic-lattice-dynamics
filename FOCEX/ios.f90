@@ -463,7 +463,7 @@
  use constants, only : r15
  implicit none
  character line*90, poscar*(*)
- integer i
+ integer i,ierr
  real(r15) latt_const,om,a,b,c
  type(vector) pos
  logical exst
@@ -504,8 +504,28 @@
  write(ulog,*)' box size in 2nd direction=',box(2)
  write(ulog,*)' box size in 3rd direction=',box(3)
 
-! number of atoms participating in MD,
- read(uposcar,*)(natom(i),i=1,natom_type)
+! Number of atoms of each type.
+! VASP-5 and newer write a line of ELEMENT NAMES immediately before the counts;
+! VASP-4 wrote the counts straight after the third lattice vector. Accept both:
+! read the line as text and try to parse the counts out of it. Element names
+! cannot be read as integers, so a failed parse means this was the name line and
+! the counts are on the next one. Until 2026-08-14 only the VASP-4 layout was
+! accepted, which is why the docs used to tell the user to delete line 6 of
+! sc_snaps.x's poscar_000 -- no longer necessary.
+ read(uposcar,'(a)') line
+ read(line,*,iostat=ierr)(natom(i),i=1,natom_type)
+ if (ierr.ne.0) then       ! that was the element-name line; counts follow
+    read(uposcar,'(a)') line
+    read(line,*,iostat=ierr)(natom(i),i=1,natom_type)
+ endif
+ if (ierr.ne.0) then
+    write(ulog,*)'READ_SUPERCELL: could not read ',natom_type,' atom counts from ',poscar
+    write(ulog,'(a)')' offending line: '//trim(line)
+    write(ulog,*)' expected one integer per atom type, in the order of structure.params'
+    write(*   ,*)'READ_SUPERCELL: could not read ',natom_type,' atom counts from ',poscar
+    write(*   ,'(a)')' offending line: '//trim(line)
+    stop
+ endif
  natom_super_cell = sum(natom)
 ! if (.not. (natom_super_cell*volume_r0/(natom_prim_cell*volume_r) .myeq. 1d0 ) ) then
 !    write(ulog,*)' supercell inconsistency; check input coordinates again'
