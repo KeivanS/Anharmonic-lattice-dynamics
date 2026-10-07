@@ -57,10 +57,10 @@ M=`date "+%F-%k_%M"`
 # below contains seconds as well as minutes and everything else
 A=`date "+%F_%T"`
 B=`date "+%F"`
-ver=8.17
+ver=8.18
 backup=FCX_$(ver)_$(M)
 arch=focex_$(ver)_$(M)
-exe=v16
+exe=v17
 # exe=fcx_$(ver).x
 
 $(exe): $(SUBO) $(MAINO) 

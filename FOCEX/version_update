@@ -77,6 +77,18 @@
      underdetermined; inert when it is not. See lasso.f90, constrained_fit.f90.
      Note svd_set destroys the matrix passed to it (svdcmp returns U in it).
 
+8.18 POSCARi may be in VASP-5 layout: read_supercell reads the line after the
+     third lattice vector as text and, if it does not parse as natom_type
+     integers, treats it as the element-name line and reads the counts from the
+     next one. The VASP-4 layout still works, so poscar_000 from sc_snaps.x can be
+     copied to POSCAR1 without deleting line 6. A line that is neither stops the
+     run with READ_SUPERCELL and echoes the offending line.
+     The installed binary is now named v17 (exe in the Makefile); scripts that
+     call v16 need updating.
+     Removed the stale bundled copy of SC-SNAPS from utility/; the current one is
+     github.com/KeivanS/SC_SNAPS.
+     Outputs are byte-identical to 8.17 on VASP-4 inputs.
+
 to do:  
 -make group velocities volume-dependent using gruneisen
 -for include_fc=2 reads fcs(rnk) from a file, and properly store it in the 1D array fcs(ngr?) for usage in the setup_amatrix code.
