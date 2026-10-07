@@ -51,7 +51,7 @@
 ! we use this small random shift to move away from high symmetry points and remove degeneracies
 ! but need to worry about band connections -> band_sort (in case finite_diff is used)
 ! if dk is small enough, but larger than dq=1d-4 below, then this should not affect bandsorting.
-  call random_number(rand)
+! call random_number(rand)
   rand=0 !(2*rand-1)*1d-4 *volume_g0**0.33333333 
 
     write(*,*)'entering MAKE_KP_BS'
