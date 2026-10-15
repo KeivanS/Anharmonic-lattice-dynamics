@@ -8,12 +8,13 @@
  use atoms_force_constants
  use svd_stuff
  use born, only : born_flag
- use constants, only : r15
+ use constants, only : r15, pi
  implicit none
- integer i,counter,tau ,rnk
+ integer i,counter,tau ,rnk,ios_cc
  real(r15) scal,force_error
  character fdf*1,r4*7,invr*4,incl*8,it*2,zone*5,now*10,today*8,bornflg*3
  character, intent(in):: fn1*(*)
+ character line1*512,line3*200
  real tim
 
  open(uparams,file='default.params',status='old')
@@ -96,9 +97,28 @@
 
  open(uparams,file='structure.params',status='old')
 
- read(uparams,*) latticeparameters   ! (a,b,c,alpha,beta,gamma)
+ read(uparams,'(a)') line1
+! line 1 is either (a,b,c,alpha,beta,gamma) or, if it holds 9 numbers, the three
+! conventional vectors a1 a2 a3 in cartesian coordinates (same frame as POSCARi)
+ read(line1,*,iostat=ios_cc) convcart
+ conv_cartesian = (ios_cc.eq.0)
+ if(conv_cartesian) then
+    do i=1,3
+       latticeparameters(i)=sqrt(dot_product(convcart(:,i),convcart(:,i)))
+    enddo
+    latticeparameters(4)=acos(dot_product(convcart(:,2),convcart(:,3))/latticeparameters(2)/latticeparameters(3))*180/pi
+    latticeparameters(5)=acos(dot_product(convcart(:,1),convcart(:,3))/latticeparameters(1)/latticeparameters(3))*180/pi
+    latticeparameters(6)=acos(dot_product(convcart(:,1),convcart(:,2))/latticeparameters(1)/latticeparameters(2))*180/pi
+ else
+    read(line1,*) latticeparameters   ! (a,b,c,alpha,beta,gamma)
+ endif
  read(uparams,*) primitivelattice    ! prim latt vectors in terms of conventional above
- read(uparams,*) scal  ! scale factor for lattparams is read from params.inp
+ read(uparams,'(a)') line3   ! scale factor for lattparams, then optionally convcoord
+! Read line 3 as text so that the old one-value form ("1.0 scale") still works:
+! convcoord=0 (coordinates in conventional units) unless an integer follows scal.
+ read(line3,*) scal
+ read(line3,*,iostat=ios_cc) scal, convcoord
+ if(ios_cc.ne.0) convcoord=0
 ! read(uparams,*) maxneighbors       ! # of neigr-shells to use for each rank
  read(uparams,*) include_fc    ! if=0 do not include this rank
 ! read(uparams,*) nshells , radius      ! # of neigr-shells to use for each rank
@@ -229,6 +249,10 @@
  write(ulog,*) 'Reading ',natom_type,' atom types with ',natom_prim_cell,'atoms in the primitive cell'
 
  latticeparameters(1:3) = latticeparameters(1:3)*scal
+ if(conv_cartesian) then
+    convcart = convcart*scal
+    call write_out(ulog,'Conventional vectors read in cartesian (on lines) ',transpose(convcart))
+ endif
  call write_out(ulog,'Conventional Lattice parameters a,b,c  ',latticeparameters(1:3))
  call write_out(ulog,'Three angles alpha,beta,gamma (degrees) ',latticeparameters(4:6))
  call write_out(ulog,'Primitive lattice vectors in conventional units ',transpose(primitivelattice))
@@ -236,7 +260,7 @@
 ! indices of atoms in primitive cell must be same order as in POSCAR
  counter = 0
  natom = 0
- write(ulog,*)'Atoms: tau, name,type,mass,reduced coordinates in conventional cell '
+ write(ulog,*)'Atoms: tau, name,type,mass,reduced coordinates (convcoord=',convcoord,')'
  do i=1,natom_prim_cell
 ! positions here must be D format in conventional cell for use by fcs_init
 ! order does not matter; we use whatever is in this file
@@ -654,17 +678,17 @@
  write(ulog,*)' CHECKING the commensurability between primcell and supercell'
  call check_int(rs1,a,ier,g01,g02,g03)
  write(ulog,4)'checking rs1 in units of r0i,ier=',a,ier
- if (ier .eq. 1) stop
+ if (ier .eq. 1) call stop_not_commensurate(1,a)
  n_sc(:,1)=nint(a)
  write(ulog,*)' direct coords of rs1=',n_sc(:,1)
  call check_int(rs2,a,ier,g01,g02,g03)
  write(ulog,4)'checking rs2 in units of r0i,ier=',a,ier
- if (ier .eq. 1) stop
+ if (ier .eq. 1) call stop_not_commensurate(2,a)
  n_sc(:,2)=nint(a)
  write(ulog,*)' direct coords of rs2=',n_sc(:,2)
  call check_int(rs3,a,ier,g01,g02,g03)
  write(ulog,4)'checking rs3 in units of r0i,ier=',a,ier
- if (ier .eq. 1) stop
+ if (ier .eq. 1) call stop_not_commensurate(3,a)
  n_sc(:,3)=nint(a)
  write(ulog,*)' direct coords of rs3=',n_sc(:,3)
 
@@ -838,6 +862,19 @@
  enddo
 
  close(173)
+
+ contains
+
+ subroutine stop_not_commensurate(k,a)
+ integer, intent(in) :: k
+ real(r15), intent(in) :: a(3)
+ write(*,'(a,i1,a,3f10.4)')' supercell vector ',k,' of POSCAR in units of the primitive vectors =',a
+ write(*,*)'is not integer: supercell and primitive cell are not commensurate in this frame.'
+ write(*,*)'If these are nearly integers, the cell of structure.params line 1 is probably'
+ write(*,*)'rotated relative to POSCAR: give line 1 as the 9 cartesian components of the'
+ write(*,*)'conventional vectors, in the same frame as POSCAR.'
+ stop
+ end subroutine stop_not_commensurate
 
  end subroutine check_input_poscar_consistency_new
 !===========================================================

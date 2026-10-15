@@ -31,7 +31,7 @@ integer, parameter,public :: c15 = 8
 module params
  use constants, only : r15
  real(r15) tolerance,margin,scalelengths,alfaborn,tempk,rcutoff,coef
- integer nconfigs,classical,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,itemp
+ integer nconfigs,classical,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,itemp,convcoord
  integer , allocatable :: nshells(:,:)  !nshells(8,natom_prim_cell) up to which shell to include for each rank of FC (read from input file)
  integer include_fc(8), icutoff !,nsmax  ! whether to include FCs of that rank ,max# of shells looping
  real(r15) tmin,tmax,qcros(3),svdc,lmax ! lmax is the cutoff length of FC2 limited by the supercell WS
@@ -1183,6 +1183,8 @@ contains
  type(vector) r01,r02,r03,g01,g02,g03  ! tr vect of prim cell and its recip spce
  real(r15) volume_r,volume_g,volume_r0,volume_g0,a0_scale,asc_scale
  real(r15) lattice_parameter,latticeparameters(6),primitivelattice(3,3)
+ real(r15) convcart(3,3)  ! conventional vectors in cartesian (columns), if given on line 1
+ logical conv_cartesian   ! true if line 1 of structure.params has 9 numbers (convcart)
  real(r15),dimension(3,3):: conv_to_cart,cart_to_conv,prim_to_conv,conv_to_prim,  &
   &                       prim_to_cart,cart_to_prim ,cart_to_redpr,cart_to_redsc
  real(r15) box(3),boxg(3),density
@@ -1625,6 +1627,9 @@ end function fold_ws
       endif
       latp=latticeparameters ! for short
 !      latp(4:6) = latp(4:6)*d2r   ! convert angles from degree to radian
+   if(conv_cartesian) then ! conventional vectors given in cartesian; keep their orientation
+      conv_to_cart=convcart
+   else  ! from (a,b,c,alpha,beta,gamma): a along x, b in the xy plane
       conv_to_cart(1,1)=latp(1)
       conv_to_cart(1,2)=latp(2)*dcosd(latp(6))
       conv_to_cart(2,2)=latp(2)*dsind(latp(6))
@@ -1633,6 +1638,7 @@ end function fold_ws
      &     -dcosd(latp(6))*dcosd(latp(5)))  /dsind(latp(6))
       conv_to_cart(3,3)=sqrt(latp(3)**2-conv_to_cart(1,3)**2   &
      &     -conv_to_cart(2,3)**2)
+   endif
       write(*,*)'conv_to_cart has conventional vectors on its columns='
       write(*,*)'prim_to_cart has primitive vectors on its columns'
       write(*,*)'cart_to_conv has conventional reciprocal vectors on its lines (no 2pi)'
@@ -1688,7 +1694,7 @@ end function fold_ws
  real(r15) particle_density,volcut,r1(3),r2(3),r3(3),volmax,rshells(3,26),rc1
  external unitcell,symmetry_init
 
-! generate r0i and g0i rom latticeparameters, primitivelattice
+! generate r0i and g0i from latticeparameters, primitivelattice
   call transform_input_structure
   call calculate_volume(r01,r02,r03,volume_r0)
   call calculate_volume(g01,g02,g03,volume_g0)
@@ -1716,18 +1722,23 @@ end function fold_ws
   write(ulog,3)' Lengths of g0i = ',boxg
 ! write(ulog,3)' volume_r0,volume_g0 = ',volume_r0,volume_g0
 
-  write(ulog,*)' Reduced Atomic positions in conventionals, mass ====================== '
+
+  write(ulog,*)' Atomic positions as read; convcoord=',convcoord,' (0: conventional, else primitive units)'
   do i=1,natom_prim_cell
-     atom0(i)%equilibrium_pos=atompos0(:,i)
      write(ulog,8)atom0(i)%name,atom0(i)%at_type,atom0(i)%tau,atompos0(:,i),atom0(i)%mass
   enddo
 
 ! convert to cartesian
-  write(ulog,*)' reduced Atomic positions in primitive, mass ====================== '
+  write(ulog,*)' reduced Atomic positions in conventional, then primitive units, mass ======== '
   do i=1,natom_prim_cell
-     atompos0(:,i)=matmul(conv_to_cart,atompos0(:,i))
-     write(ulog,8)' '//atom0(i)%name,atom0(i)%at_type,  &
-&    atom0(i)%tau,matmul(cart_to_prim,atompos0(:,i)),atom0(i)%mass
+     if(convcoord.eq.0) then ! atompos0 is in units of the conventional vectors (line 1)
+        atompos0(:,i)=matmul(conv_to_cart,atompos0(:,i))
+     else                    ! atompos0 is in units of the primitive vectors (line 2)
+        atompos0(:,i)=matmul(conv_to_cart,matmul(prim_to_conv,atompos0(:,i)))
+     endif
+     write(ulog,8)' '//atom0(i)%name,atom0(i)%at_type,atom0(i)%tau,  &
+&    matmul(cart_to_conv,atompos0(:,i)),matmul(cart_to_prim,atompos0(:,i)),atom0(i)%mass
+
 ! bring to [0 r0i[
      call unitcell(cart_to_prim,prim_to_cart,atompos0(:,i), atompos0(:,i))
      atom0(i)%equilibrium_pos = atompos0(:,i)

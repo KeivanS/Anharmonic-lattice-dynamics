@@ -476,8 +476,22 @@ the options of the fit.
 
 Line by line:
 
-**1. Conventional cell** — ``a b c alpha beta gamma``. The lengths are
-multiplied by the scale factor of line 3; the angles are in degrees.
+**1. Conventional cell** — either six or nine numbers.
+
+* ``a b c alpha beta gamma``: lengths, multiplied by the scale factor of line 3,
+  and angles in degrees. FOCEX then builds its own Cartesian frame with
+  :math:`\mathbf a` along :math:`x` and :math:`\mathbf b` in the :math:`xy`
+  plane.
+* ``a1x a1y a1z a2x a2y a2z a3x a3y a3z``: the three conventional vectors in
+  Cartesian coordinates (also multiplied by the scale factor). This keeps the
+  orientation you give, so the cell can be copied from the lattice lines of the
+  DFT ``POSCAR``.
+
+``POSCARi`` and ``FORCEDISPi`` hold Cartesian vectors, so they must be in the
+**same frame** as this cell. If the DFT cell is not oriented with
+:math:`\mathbf a \parallel x` and :math:`\mathbf b` in the :math:`xy` plane,
+use the nine-number form; otherwise the commensurability check fails (see
+:ref:`focex-troubleshooting`).
 
 **2. Primitive lattice** — nine numbers, read as three groups of three: the
 Cartesian-free components of :math:`R_{01}, R_{02}, R_{03}` expressed in units
@@ -485,9 +499,13 @@ of the conventional cell vectors. For the FCC example above,
 :math:`R_{01} = (0, a/2, a/2)`. Use ``1 0 0 0 1 0 0 0 1`` if your conventional
 cell *is* the primitive cell.
 
-**3. Scale factor** — multiplies ``a``, ``b`` and ``c``. It must be consistent
-with ``POSCARi``: FOCEX compares the volume per atom of both cells and stops on
-a mismatch.
+**3. Scale factor and coordinate units** — ``scal [convcoord]``. ``scal``
+multiplies the conventional cell of line 1. It must be consistent with
+``POSCARi``: FOCEX compares the volume per atom of both cells and stops on a
+mismatch. The optional integer ``convcoord`` sets the units of the atomic
+positions (lines 20…): ``0`` (the default, also when it is omitted) for the
+conventional vectors of line 1, any other value for the primitive vectors of
+line 2.
 
 **4. Ranks to include** — eight flags, for ranks 1 to 8:
 
@@ -670,8 +688,9 @@ still be present. The radius of each shell is listed in the log file and in
 
 **20…** — one line per atom of the primitive cell: ``index type x y z``, where
 the index must run 1, 2, 3 … in order, ``type`` refers to lines 8–10, and
-``x y z`` are **reduced coordinates in units of the conventional cell vectors**
-(not the primitive ones).
+``x y z`` are reduced coordinates in units of the **conventional** cell
+vectors if ``convcoord = 0`` (line 3, the default), or of the **primitive**
+vectors otherwise.
 
 .. tip::
 
@@ -1074,6 +1093,8 @@ The tick marks of the band-structure plots come from ``KTICS.BS``, which FOCEX
 writes for the path you defined; the ranges hard-coded in some of the scripts
 may need adjusting for your material.
 
+.. _focex-troubleshooting:
+
 Troubleshooting
 ---------------
 
@@ -1090,6 +1111,15 @@ Troubleshooting
     The volume per atom of ``POSCARi`` and of the primitive cell defined in
     ``structure.params`` disagree. Check the scale factor (line 3), the
     conventional cell (line 1) and the primitive vectors (line 2).
+
+``supercell vector k of POSCAR in units of the primitive vectors = ... is not integer``
+    The supercell of ``POSCARi`` is not an integer combination of the primitive
+    vectors (the log shows it as ``checking rsk in units of r0i``). If the
+    numbers are close to integers, or are integers permuted or with wrong
+    signs, the cell is rotated relative to ``POSCARi``: the six-number form of
+    line 1 always puts :math:`\mathbf a` along :math:`x`. Give line 1 as the
+    nine Cartesian components of the conventional vectors, in the frame of
+    ``POSCARi``. Otherwise check lines 1–3 and the supercell itself.
 
 ``End of file`` while reading ``default.params`` or ``latdyn.params``
     The file has fewer lines than the version of the code expects. Copy the

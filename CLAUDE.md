@@ -94,6 +94,21 @@ outputs differ for no reason.
 - `bands.dat` columns 6+ are ω², not ω (`bandgen.plt` applies `521.1*sqrt()`).
 - `conductance.dat` is written but its band loop is `do j=1,-1`, so it is all
   zeros.
+- `structure.params` line 3 is `scal [convcoord]`. It is read as text, so the
+  old one-value form (`5.70 # scale`) still works and means `convcoord=0`.
+  `convcoord=0`: atom positions are in units of the conventional vectors
+  (line 1); otherwise in units of the primitive vectors (line 2, columns of
+  `prim_to_conv`). Both are converted to Cartesian in `make_unitcell` before
+  `unitcell`, which expects Cartesian input.
+- `structure.params` line 1 is **6 numbers** `a b c alpha beta gamma` (FOCEX
+  then puts a along x, b in the xy plane) **or 9 numbers**, the conventional
+  vectors a1 a2 a3 in Cartesian, kept as given (since 2026-10-15; detected by
+  whether 9 reals parse). POSCARi/FORCEDISPi/dielectric tensors are Cartesian
+  and must be in the same frame, so a DFT cell not oriented a∥x needs the
+  9-number form — otherwise "rs1 in units of r0i" comes out *nearly* integer
+  and FOCEX stops with "supercell vector k of POSCAR ... is not integer"
+  (e.g. AgCrP2S6_PARA, whose cell has a along y; it is 2×1×2 and runs with
+  poscar0's vectors on line 1).
 - `POSCARi` takes **either** VASP layout since 2026-08-14: `read_supercell` in
   `ios.f90` reads the line after the third lattice vector as text and retries on
   the next one if it does not parse as `natom_type` integers, so the VASP-5
@@ -127,19 +142,10 @@ build at zero warnings.
 
 ## Where the git clone is
 
-**This directory is not a git repo** — it is an unzipped snapshot. The clone to
-commit from is:
-
-```
-"/Users/ke4c/Documents/Documents - MAE-/GitHub/Anharmonic-lattice-dynamics"
-```
-
-(note the space in the path). Work there, or edit here and port the files over —
-as of 2026-08-07 the two trees are identical apart from deliberate edits. That
-clone also holds untracked user work (`FOCEX/SNAPS/`, `FOCEX/todo`) and a local
-uncommitted `.gitignore` line — leave all three alone. It was 214 commits behind
-origin/main on 2026-08-07; check with `git fetch && git status -sb` before
-assuming it is current.
+As of 2026-10-15 **this directory is the git clone** (`main`, tracking
+`origin/main`) — commit from here. The old clone under
+`~/Documents/Documents - MAE-/GitHub/` is no longer the working copy.
+Current focus is the **FOCEX** folder.
 
 `git` over HTTPS to GitHub works **only with the Bash sandbox disabled**;
 `WebFetch` and sandboxed `curl` cannot reach github.com at all. Other hosts

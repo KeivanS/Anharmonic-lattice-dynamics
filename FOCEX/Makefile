@@ -60,7 +60,7 @@ B=`date "+%F"`
 ver=8.18
 backup=FCX_$(ver)_$(M)
 arch=focex_$(ver)_$(M)
-exe=v17
+exe=v$(ver)
 # exe=fcx_$(ver).x
 
 $(exe): $(SUBO) $(MAINO) 
