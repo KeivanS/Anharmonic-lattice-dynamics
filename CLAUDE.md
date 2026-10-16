@@ -21,7 +21,13 @@ cd FOCEX && mkdir -p ~/BIN && make       # ~4 min; produces ~/BIN/v16
 `FF=gfortran`, `FLAGS=-O2 -fcheck=all`, names the binary from `exe=v16`, and
 `mv`s it to `~/BIN`, which it does not create. The utility programs are separate
 (`cd FOCEX/utility && make`, installs to `make.inc`'s `DESTDIR=~/ALADYN/bin`) —
-that builds `read_outcar.x`, `read_qe.x` and `poscar2xyz.x` only. `sc_snaps.x`
+that builds `read_outcar.x`, `read_qe.x` and `poscar2xyz.x` only.
+`FOCEX/utility/poscar2focex.py` (numpy + spglib, not in the Makefile): POSCAR →
+`structure.params` (Niggli-reduced, conventional axes along x,y,z; 9-number line 1,
+line 2 = spglib transformation, atoms in conventional units, other lines = Ge
+defaults marked "default, check") + `POSCAR_focex` (the frame of line 1). Same cell
+as VASP-Flow's `modules/cell_reduce.py`. Verified 2026-10-16: generated from a
+skewed, rotated Ge cell, the Ge example gives identical fc2/fc3 (78 / 173). `sc_snaps.x`
 comes from the SC_SNAPS repo; the stale bundled copy was removed 2026-08-14.
 
 FOCEX takes no arguments and no stdin. Run it in a directory holding:

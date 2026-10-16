@@ -41,6 +41,11 @@ cd utility
 make
 ```
 
+`utility/poscar2focex.py` (Python, numpy + spglib) writes a `structure.params`
+from a POSCAR: Niggli-reduced cell, conventional axes along x, y, z, atoms in
+conventional units; it also writes `POSCAR_focex`, the cell to build the
+supercells from.
+
 The snapshot generator `sc_snaps.x` is **not** built here. It lives in its own
 repository, <https://github.com/KeivanS/SC_SNAPS>, together with a graphical
 interface; install it from there. The copy that used to be bundled in `utility/`

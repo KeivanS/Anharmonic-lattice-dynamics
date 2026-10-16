@@ -114,6 +114,18 @@ This produces three executables and moves them to ``DESTDIR``:
    * - ``poscar2xyz.x``
      - Converts a POSCAR to ``.xyz`` for visualisation.
 
+``FOCEX/utility/poscar2focex.py`` (Python with numpy and spglib, not built by
+``make``) turns a POSCAR into a ``structure.params``: it Niggli-reduces the cell,
+rotates it so that the conventional axes lie along x, y, z, and writes lines 1--3
+(conventional vectors in Cartesian, primitive vectors in conventional units, scale)
+and the atom lines (number, type, coordinates in conventional units).  Masses and
+names come from the POSCAR; the other lines are the defaults of
+``FOCEX/example/Ge``, marked ``default, check``.  It also writes ``POSCAR_focex``,
+the reduced and rotated primitive cell: build the supercells from it, so that they
+are in the frame of line 1::
+
+   python3 poscar2focex.py POSCAR      # -> structure.params, POSCAR_focex
+
 .. note::
 
    The snapshot generator ``sc_snaps.x`` is **not** built here. It is developed
