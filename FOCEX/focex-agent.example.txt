@@ -1,0 +1,50 @@
+# focex-agent instructions -- example (copy to instructions.txt and edit)
+#
+#   ~/vaspenv/bin/python FOCEX/focex-agent.py init -i instructions.txt -s POSCAR --profile rivanna
+#   cd <Project> && sbatch run_workflow.sh          # or: bash run_workflow.sh on a workstation
+#
+# Only Project and RANKS are required; everything else has a default.
+
+Project: AgCrP2S6
+
+# ── force constants (REQUIRED: the ranks; the ranges default to 6 2 1 0 0 0 0) ──
+RANKS: 1 1 0 0 0 0 0 0      # harmonic; 1 1 1 0 ... adds cubic, 1 1 1 1 ... cubic and quartic
+RANGE: 6 2 1 0 0 0 0        # neighbour shells for ranks 2..8, the same for every atom
+# FC2RANGE: 0               # 0 = FC2 range from the supercell
+
+# ── DFT (VASP-Flow keywords: FUNCTIONAL, MAGMOM, GGA_U, MPI, ENCUT, KMESH_DENSITY ...) ──
+FUNCTIONAL: PBEsol
+MAGMOM: Cr=3.0
+MPI: 40
+# ACCURACY: Accurate        # Accurate: ENCUT 600, EDIFF 1E-7, EDIFFG -0.001, PREC Accurate
+#                           # Normal:   ENCUT 450, EDIFF 1E-6, EDIFFG -0.003, PREC Normal
+# DFPT: auto                # auto = only if the SCF shows a gap | on | off
+# BORN_TRANSPOSE: yes       # VASP prints Z*(field, displacement); FOCEX reads Z(displacement, field)
+
+# ── snapshots (SC_SNAPS) ──
+# SUPERCELL: SMALL          # SMALL: >= 10 A, <= 100 atoms;  LARGE: >= 14 A, <= 300 atoms;
+#                           # or 9 integers (rows, primitive units)
+# SNAPSHOTS: 50
+# TEMPERATURE: 30           # K, retuned so that the rms displacement is DISP_TARGET
+# AVG_FREQ: 400             # 1/cm
+# DISP_TARGET: 0.02         # A
+
+# ── FOCEX ──
+# FOCEX_MESH: fine          # latdyn.params mesh: coarse | fine | kpra | n1 n2 n3
+# KPATH: 0                  # 0 = automatic high-symmetry path; 1 = give a kpbs_params block
+# BS_NKPTS: 40
+# LASSO_RATIO: 2            # equations/unknowns below this -> extra LASSO run (enforce_inv = 2)
+
+# ── programs (defaults shown) ──
+# FOCEX_X: ~/BIN/v8.18      # default: the newest ~/BIN/v*
+# SC_SNAPS_X: ~/BIN/sc_snaps.x
+# READ_OUTCAR_X: ~/ALADYN/bin/read_outcar.x
+
+# ── any generated file can be replaced or amended by a block named after it ──
+# INCAR blocks are merged tag by tag (INCAR = every step; INCAR_relax, INCAR_scf,
+# INCAR_dfpt, INCAR_snaps = one step); the others are written verbatim:
+# KPOINTS, KPOINTS_snaps, cell_inp, supercell_inp, snaps_inp, structure_params,
+# latdyn_params, kpbs_params, dielectric_params, default_params.
+INCAR_snaps
+  ALGO = Normal
+INCAR_snaps_END

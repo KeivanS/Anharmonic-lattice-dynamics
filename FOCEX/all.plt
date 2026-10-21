@@ -1,6 +1,7 @@
+# all placeholders are in capital letters and need to be edited
 set term pdfcairo #postscript solid color enhanced # pdfcairo
-set output "all-Ge.pdf"
-set  multiplot layout 1,3 margins 0.10 ,0.95,0.15,0.90 spacing 0.13,0.02  title "Phonons of Germanium" #, 0.01 , 0.01
+set output "all-NAME.pdf"
+set  multiplot layout 1,3 margins 0.10 ,0.95,0.15,0.90 spacing 0.13,0.02  title "Phonons of NAME" #, 0.01 , 0.01
 
 # freq versus gruneisen ===========================
 
@@ -8,7 +9,7 @@ set  multiplot layout 1,3 margins 0.10 ,0.95,0.15,0.90 spacing 0.13,0.02  title 
 #set size 0.3 ,1
 #set lmargin 0
 #set rmargin 0
-a=500
+a=MAX_FREQUENCY_IN_INVERSE_CM
 set yrange [0:a]
 set ylabel 'Frequency (1/cm)'
 #set label  'Gruneisen' at graph 0.2,0.8 font ',8'
@@ -18,6 +19,8 @@ set grid ytics
 set xtics in 1
 set xlabel "Gruneisen"
 
+# THIS HAS AS MANY LINES AS THERE ARE BANDS; ACCORDINGLY COLUMN NYMBERS MUST BE EDITED
+# Second column goes from 6 to 6+3N-1 and first column goes from 6+3N to 6+6N-1 (N=#of atoms)
 plot 'ibz_grun.dat'   u 12:6  w p pt 1 ps 0.1 notitle ,\
      'ibz_grun.dat'   u 13:7  w p pt 1 ps 0.1 notitle ,\
      'ibz_grun.dat'   u 14:8  w p pt 1 ps 0.1 notitle ,\
@@ -26,7 +29,7 @@ plot 'ibz_grun.dat'   u 12:6  w p pt 1 ps 0.1 notitle ,\
      'ibz_grun.dat'   u 17:11 w p pt 1 ps 0.1 notitle
 
 # fbz_dos is from tetrahedon method  =================================
-
+# DOES NOT NEED EDITING AND SHOULD WORK BY DEFAULT
 #set origin 0.35,0
 set lmargin at screen 0.3
 set size ratio 3.0 #  0.2,1
@@ -55,19 +58,21 @@ set y2range [0:a*3/100]
 set y2label 'Frequency (THz)'
 set y2tics nomirror
 set format y ""
-set xrange [0 : 3.44 ]
-############# Get the following line from "KTICS.BS"  #################
+############# REPLACE THE FOLLOWING LINE BY THE CONTENTS OF "KTICS.BS"  #################
  set xtics ( "L" 0.000,"G" 0.500,"K" 1.112,"X" 1.316,"W" 1.605,"L" 2.013,"K" 2.367,"W" 2.571,"X" 2.860,"G" 3.435 )
+####### ACCORDINGLY REPLACE THE XRANGE BY THE LARGEST (LAST) NUMBER IN THE "KTICS.BS"
+set xrange [0 : MAX_K_VALUE ]
 set grid xtics
 set xlabel "Wavenumbers"
 set palette maxcolors 30  # adjust the number of colors as needed
 set palette defined       # model RGB
-set cblabel "Group velovity(km/s)"
+set cblabel "Group Velocity(km/s)"
 set cbtics
 #set bmargin 5
 set colorbox user origin 0.92,0.05  # Places box at 95% right, 5% up from bottom
 set colorbox size 0.02,0.85     
-set cbrange [0:7 ] # same range as palette definition
+#
+set cbrange [0: MAX_GROUP_VELOCITY ] # same range as palette definition
 
 plot 'bs_freq.dat' u 3:7:11 w p pt 10 ps 0.23 lc palette z notitle
 

@@ -64,6 +64,32 @@ Runs are reproducible as of 2026-08-07. Before the `finitedif_vel` fix they were
 not, and any phonon-level comparison was meaningless — check that first if
 outputs differ for no reason.
 
+## focex-agent.py (FOCEX/, since 2026-10-21)
+
+POSCAR -> VASP relax/SCF/DFPT -> SC_SNAPS -> supercell VASP runs -> FORCEDISP1 -> FOCEX ->
+plots, restartable (`state.json`, `report.log`). Manual: `docs/source/runfocexagent.rst`;
+example input: `FOCEX/focex-agent.example.txt`. Run it with `~/vaspenv/bin/python` (needs
+numpy, spglib, pymatgen; Homebrew python3 has none of them).
+
+- Imports VASP-Flow (`~/VASP-Flow` or `$VASP_FLOW_DIR`): `InstructionParser` for the VASP
+  keywords, `VASPInputGenerator` for INCAR/KPOINTS/MAGMOM/GGA+U/KPAR-NCORE/k-path/DFPT,
+  `vasp-agent.py` for POTCAR and profiles. Static INCARs are made from VASP-Flow's
+  relaxation INCAR, so their tag lists go under `incar_raw['relax']`. Don't copy that code.
+- Its own blocks (`INCAR_snaps ... INCAR_snaps_END`, `structure_params`, ...) are cut out
+  before VASP-Flow's parser sees the file -- that parser rejects them otherwise.
+- POSCAR0 is rotated so its spglib conventional cell is exactly FOCEX's/SC_SNAPS's frame
+  from a,b,c,alpha,beta,gamma; `cell.inp` and `structure.params` share lines 1-2.
+  Verified: Ge example gives byte-identical fc2/fc3/mech.dat to a plain FOCEX run.
+- Supercells are multiples of the conventional cell. A skewed HNF supercell (Ge, 60 atoms)
+  made FOCEX stop in `set_dynmat_std` with `R+tp-t not inside!` (default FC2 range reaches
+  outside the supercell's WS cell) -- a FOCEX issue still open.
+- Born charges are transposed from VASP's (field, displacement) to FOCEX's
+  `charge(displacement, field)` (`aux_na.f90` contracts q with the 2nd index). The VASP
+  convention is from memory, not checked against VASP docs: `BORN_TRANSPOSE` switches it.
+- Test it without VASP: point `VASP_STD` at a fake that writes OUTCAR/CONTCAR/EIGENVAL with
+  the markers `outcar_status` looks for (General timing, EDIFF is reached, reached required
+  accuracy, BORN EFFECTIVE CHARGES).
+
 ## How the force constants are solved for (enforce_inv)
 
 `structure.params` line 5, 4th value:
