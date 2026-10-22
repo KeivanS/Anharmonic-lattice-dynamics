@@ -920,7 +920,7 @@ class Agent:
             os.remove(f)
         t0 = time.time()
         with open(os.path.join(d, 'focex.out'), 'w') as fh:
-            subprocess.run(self.fx['focex_x'], cwd=d, stdout=fh, stderr=subprocess.STDOUT)
+            rc = subprocess.run(self.fx['focex_x'], cwd=d, stdout=fh, stderr=subprocess.STDOUT).returncode
         res = dict(ok=False, minutes=(time.time() - t0) / 60, err=None, eq=None, unk=None, w2min=None, wmax=None)
         logs = sorted(glob.glob(os.path.join(d, 'log*.dat')), key=os.path.getmtime)
         if not logs:
@@ -936,9 +936,11 @@ class Agent:
         if w2 is not None:
             res['w2min'] = float(w2.min() * OMEGA2_CM)
             res['wmax'] = float(math.sqrt(max(w2.max(), 0) * OMEGA2_CM))
-        res['ok'] = res['err'] is not None and w2 is not None
+        res['ok'] = rc == 0 and res['err'] is not None and w2 is not None
         if not res['ok']:
-            res['why'] = 'FOCEX did not finish; see focex.out and ' + os.path.basename(logs[-1])
+            # a run can crash after it wrote the fit error and bands.dat (e.g. in the elastic constants)
+            res['why'] = (f'FOCEX stopped with exit code {rc}' if rc else 'FOCEX did not finish') + \
+                '; see focex.out and ' + os.path.basename(logs[-1])
         return res
 
     @staticmethod
