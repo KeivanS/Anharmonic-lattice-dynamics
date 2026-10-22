@@ -1,7 +1,13 @@
-4 4 4        # kmesh (n1,n2,n3) along each reciprocal vector for Brillouin zone summations
-0 0 0  1 0 0 # shift of the above kpoint grid (fractions of a mesh step); normal to the surface
-300 350.0    # number of frequency points for the DOS, omega_max (1/cm)
-10           # width of the gaussian broadening for the DOS (1/cm)
-.False.      # read but not used (verbosity is set in structure.params)
-0 900        # Tmin(K), Tmax(K) for the thermodynamic properties
-0            # 0 for quantum (Bose-Einstein) occupations, 1 for classical (kT/hbar.omega)
+4 4 4        # 1 kmesh (n1,n2,n3) along each reciprocal vector for Brillouin zone summations
+0 0 0  1 0 0 # 2 shift of the grid (fractions of a mesh step); normal to the surface
+300 350.0    # 3 number of frequency points for the DOS, omega_max (1/cm)
+10 30        # 4 gaussian width of the DOS, eta = Im(omega) in the self-energy (1/cm)
+.False.      # 5 verbosity
+0 900 31     # 6 Tmin(K), Tmax(K), number of temperatures
+0            # 7 0 quantum (Bose-Einstein) occupations, 1 classical (kT/hbar.omega)
+0            # 8 THERMACOND job: 0 bands, DOS, Gruneisen; 1 +linewidths on the band path; 2 +kappa direct; 3 +kappa iterative
+0            # 9 THERMACOND direct solver: 0 conjugate gradient, 1 SVD
+0            # 10 THERMACOND V3 x delta: 0 write to disk (reused if present), 1 keep in memory
+0            # 11 THERMACOND isotope scattering: 0 no, 1 natural abundances
+0 0 0 0      # 12 THERMACOND calc_cross, q_cross(3)
+100000       # 13 THERMACOND sample length (microns) for boundary scattering

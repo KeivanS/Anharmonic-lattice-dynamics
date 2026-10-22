@@ -478,22 +478,23 @@ the options of the fit.
 
 Line by line:
 
-**1. Conventional cell** — either six or nine numbers.
-
-* ``a b c alpha beta gamma``: lengths, multiplied by the scale factor of line 3,
-  and angles in degrees. FOCEX then builds its own Cartesian frame with
-  :math:`\mathbf a` along :math:`x` and :math:`\mathbf b` in the :math:`xy`
-  plane.
-* ``a1x a1y a1z a2x a2y a2z a3x a3y a3z``: the three conventional vectors in
-  Cartesian coordinates (also multiplied by the scale factor). This keeps the
-  orientation you give, so the cell can be copied from the lattice lines of the
-  DFT ``POSCAR``.
+**1. Conventional cell** — ``a b c alpha beta gamma``: lengths, multiplied by
+the scale factor of line 3, and angles in degrees. FOCEX builds its Cartesian
+frame from them with :math:`\mathbf a` along :math:`x` and :math:`\mathbf b` in
+the :math:`xy` plane.
 
 ``POSCARi`` and ``FORCEDISPi`` hold Cartesian vectors, so they must be in the
-**same frame** as this cell. If the DFT cell is not oriented with
-:math:`\mathbf a \parallel x` and :math:`\mathbf b` in the :math:`xy` plane,
-use the nine-number form; otherwise the commensurability check fails (see
-:ref:`focex-troubleshooting`).
+**same frame**. ``focex-agent.py`` (:ref:`focex-agent`) arranges this by rotating
+the DFT cell into FOCEX's frame before any supercell is made. To keep the frame
+of an existing DFT cell instead, use a unit cube as the "conventional" cell::
+
+   1 1 1 90 90 90                 # 1
+   a1x a1y a1z a2x a2y a2z a3x a3y a3z   # 2  Cartesian primitive vectors (A)
+   1.0 1                          # 3  atomic coordinates in primitive units
+
+Line 2 is then in Cartesian units and the atom lines are the fractional
+coordinates of the DFT primitive cell. Otherwise the commensurability check
+fails (see :ref:`focex-troubleshooting`).
 
 **2. Primitive lattice** — nine numbers, read as three groups of three: the
 Cartesian-free components of :math:`R_{01}, R_{02}, R_{03}` expressed in units
@@ -740,26 +741,30 @@ atoms), and the ASR-corrected values are echoed to the log.
 ``latdyn.params``
 ^^^^^^^^^^^^^^^^^
 
-Controls the Brillouin-zone sampling and the thermodynamic post-processing.
+Brillouin-zone sampling and thermodynamics. The file is shared with THERMACOND:
+FOCEX reads lines 1–7, and lines 8–13 are THERMACOND's job control
+(:ref:`thermacond-latdyn`). The template in ``FOCEX/latdyn.params`` has all 13.
 
 .. code-block:: text
 
    12 12 12          # 1  k-mesh (n1,n2,n3) for BZ integrations
    0 0 0  1 0 0      # 2  shift of the mesh (fractions of a mesh step); normal direction
    300 350.0         # 3  number of frequency points for the DOS; omega_max (1/cm)
-   10                # 4  Gaussian broadening of the DOS (1/cm)
-   .False.           # 5  (read but not used; verbosity is set in structure.params)
-   0 900             # 6  Tmin, Tmax (K) range for the thermodynamic properties
+   10 30             # 4  Gaussian broadening of the DOS (1/cm); eta (THERMACOND)
+   .False.           # 5  verbosity (THERMACOND; FOCEX uses structure.params line 7)
+   0 900 31          # 6  Tmin, Tmax (K); number of temperatures (THERMACOND)
    0                 # 7  0 = quantum (Bose-Einstein), 1 = classical occupations
+   0                 # 8-13: THERMACOND only
+   ...
 
 Line 2 contains **six** numbers: the three components of the mesh shift followed
 by the three components of a unit vector used as the surface normal for the
 mode-counting/conductance and optical outputs. A missing normal is
 the most common cause of a crash in this file.
 
-The temperature loop runs from ``Tmin`` to ``Tmax`` with a step of 2 K below
-40 K, 5 K below 150 K and 50 K above (about 30 temperatures for 0–900 K); any
-third number on line 6 is ignored.
+FOCEX's temperature loop runs from ``Tmin`` to ``Tmax`` with a step of 2 K below
+40 K, 5 K below 150 K and 50 K above (about 30 temperatures for 0–900 K); the
+third number on line 6 is used only by THERMACOND.
 
 ``kpbs.params``
 ^^^^^^^^^^^^^^^
@@ -1118,10 +1123,10 @@ Troubleshooting
     The supercell of ``POSCARi`` is not an integer combination of the primitive
     vectors (the log shows it as ``checking rsk in units of r0i``). If the
     numbers are close to integers, or are integers permuted or with wrong
-    signs, the cell is rotated relative to ``POSCARi``: the six-number form of
-    line 1 always puts :math:`\mathbf a` along :math:`x`. Give line 1 as the
-    nine Cartesian components of the conventional vectors, in the frame of
-    ``POSCARi``. Otherwise check lines 1–3 and the supercell itself.
+    signs, the cell is rotated relative to ``POSCARi``: line 1 always puts
+    :math:`\mathbf a` along :math:`x`. Keep the POSCAR frame with the unit-cube
+    form of lines 1–3 (see line 1 under :ref:`focex-structure-params`), or rotate
+    the DFT data. Otherwise check lines 1–3 and the supercell itself.
 
 ``End of file`` while reading ``default.params`` or ``latdyn.params``
     The file has fewer lines than the version of the code expects. Copy the

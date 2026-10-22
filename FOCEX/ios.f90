@@ -8,13 +8,13 @@
  use atoms_force_constants
  use svd_stuff
  use born, only : born_flag
- use constants, only : r15, pi
+ use constants, only : r15
  implicit none
  integer i,counter,tau ,rnk,ios_cc
  real(r15) scal,force_error
  character fdf*1,r4*7,invr*4,incl*8,it*2,zone*5,now*10,today*8,bornflg*3
  character, intent(in):: fn1*(*)
- character line1*512,line3*200
+ character line3*200
  real tim
 
  open(uparams,file='default.params',status='old')
@@ -97,21 +97,7 @@
 
  open(uparams,file='structure.params',status='old')
 
- read(uparams,'(a)') line1
-! line 1 is either (a,b,c,alpha,beta,gamma) or, if it holds 9 numbers, the three
-! conventional vectors a1 a2 a3 in cartesian coordinates (same frame as POSCARi)
- read(line1,*,iostat=ios_cc) convcart
- conv_cartesian = (ios_cc.eq.0)
- if(conv_cartesian) then
-    do i=1,3
-       latticeparameters(i)=sqrt(dot_product(convcart(:,i),convcart(:,i)))
-    enddo
-    latticeparameters(4)=acos(dot_product(convcart(:,2),convcart(:,3))/latticeparameters(2)/latticeparameters(3))*180/pi
-    latticeparameters(5)=acos(dot_product(convcart(:,1),convcart(:,3))/latticeparameters(1)/latticeparameters(3))*180/pi
-    latticeparameters(6)=acos(dot_product(convcart(:,1),convcart(:,2))/latticeparameters(1)/latticeparameters(2))*180/pi
- else
-    read(line1,*) latticeparameters   ! (a,b,c,alpha,beta,gamma)
- endif
+ read(uparams,*) latticeparameters   ! (a,b,c,alpha,beta,gamma)
  read(uparams,*) primitivelattice    ! prim latt vectors in terms of conventional above
  read(uparams,'(a)') line3   ! scale factor for lattparams, then optionally convcoord
 ! Read line 3 as text so that the old one-value form ("1.0 scale") still works:
@@ -249,10 +235,6 @@
  write(ulog,*) 'Reading ',natom_type,' atom types with ',natom_prim_cell,'atoms in the primitive cell'
 
  latticeparameters(1:3) = latticeparameters(1:3)*scal
- if(conv_cartesian) then
-    convcart = convcart*scal
-    call write_out(ulog,'Conventional vectors read in cartesian (on lines) ',transpose(convcart))
- endif
  call write_out(ulog,'Conventional Lattice parameters a,b,c  ',latticeparameters(1:3))
  call write_out(ulog,'Three angles alpha,beta,gamma (degrees) ',latticeparameters(4:6))
  call write_out(ulog,'Primitive lattice vectors in conventional units ',transpose(primitivelattice))
@@ -870,9 +852,10 @@
  real(r15), intent(in) :: a(3)
  write(*,'(a,i1,a,3f10.4)')' supercell vector ',k,' of POSCAR in units of the primitive vectors =',a
  write(*,*)'is not integer: supercell and primitive cell are not commensurate in this frame.'
- write(*,*)'If these are nearly integers, the cell of structure.params line 1 is probably'
- write(*,*)'rotated relative to POSCAR: give line 1 as the 9 cartesian components of the'
- write(*,*)'conventional vectors, in the same frame as POSCAR.'
+ write(*,*)'If these are nearly integers, the cell built from structure.params line 1'
+ write(*,*)'(a along x, b in the xy plane) is rotated relative to POSCAR. To keep the POSCAR'
+ write(*,*)'frame use line 1 = 1 1 1 90 90 90, line 2 = the cartesian primitive vectors,'
+ write(*,*)'line 3 = 1.0 1 and atomic coordinates in primitive units.'
  stop
  end subroutine stop_not_commensurate
 

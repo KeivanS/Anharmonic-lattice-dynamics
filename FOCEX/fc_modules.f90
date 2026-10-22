@@ -1183,8 +1183,6 @@ contains
  type(vector) r01,r02,r03,g01,g02,g03  ! tr vect of prim cell and its recip spce
  real(r15) volume_r,volume_g,volume_r0,volume_g0,a0_scale,asc_scale
  real(r15) lattice_parameter,latticeparameters(6),primitivelattice(3,3)
- real(r15) convcart(3,3)  ! conventional vectors in cartesian (columns), if given on line 1
- logical conv_cartesian   ! true if line 1 of structure.params has 9 numbers (convcart)
  real(r15),dimension(3,3):: conv_to_cart,cart_to_conv,prim_to_conv,conv_to_prim,  &
   &                       prim_to_cart,cart_to_prim ,cart_to_redpr,cart_to_redsc
  real(r15) box(3),boxg(3),density
@@ -1627,9 +1625,6 @@ end function fold_ws
       endif
       latp=latticeparameters ! for short
 !      latp(4:6) = latp(4:6)*d2r   ! convert angles from degree to radian
-   if(conv_cartesian) then ! conventional vectors given in cartesian; keep their orientation
-      conv_to_cart=convcart
-   else  ! from (a,b,c,alpha,beta,gamma): a along x, b in the xy plane
       conv_to_cart(1,1)=latp(1)
       conv_to_cart(1,2)=latp(2)*dcosd(latp(6))
       conv_to_cart(2,2)=latp(2)*dsind(latp(6))
@@ -1638,7 +1633,6 @@ end function fold_ws
      &     -dcosd(latp(6))*dcosd(latp(5)))  /dsind(latp(6))
       conv_to_cart(3,3)=sqrt(latp(3)**2-conv_to_cart(1,3)**2   &
      &     -conv_to_cart(2,3)**2)
-   endif
       write(*,*)'conv_to_cart has conventional vectors on its columns='
       write(*,*)'prim_to_cart has primitive vectors on its columns'
       write(*,*)'cart_to_conv has conventional reciprocal vectors on its lines (no 2pi)'

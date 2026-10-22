@@ -6,15 +6,14 @@
 1. Niggli reduction (Krivy & Gruber 1976, epsilon tests of Grosse-Kunstleve et al. 2004):
    the primitive cell with the shortest lattice vectors -- the same cell whatever primitive
    cell of the crystal you start from.
-2. Orientation: the crystal is rotated so that the axes of its conventional cell lie along
-   x, y, z (spglib's standard orientation).  A conventional cell that is itself primitive
+2. Orientation: the crystal is rotated so that its conventional cell is exactly where FOCEX
+   builds it from a,b,c,alpha,beta,gamma (a along x, b in the xy plane).  A conventional cell that is itself primitive
    (P lattice) and reduced is used as it is; otherwise, of the bases of the reduced cell the
    one that reads best is taken: vector i along axis i, else perpendicular to it, shorter
    vectors first, right-handed, most positive components.  E.g. fcc (0,a,a),(a,0,a),(a,a,0);
    body-centred tetragonal (a,0,0),(0,a,0),(a/2,a/2,c/2); hexagonal (a,0,0),(a/2,a*sqrt3/2,0),c.
 3. Writes
-   structure.params  line 1: the conventional vectors a1 a2 a3 in Cartesian (9 numbers, A),
-                             in the frame of POSCAR_focex
+   structure.params  line 1: a b c alpha beta gamma of the conventional cell (A, degrees)
                      line 2: the primitive vectors in units of the conventional ones
                      line 3: 1.0 0  (scale; coordinates in conventional units)
                      atom lines: atom number, atom type, coordinates in units of the
@@ -206,6 +205,23 @@ def canonical(A, F, types):
     return V, F, get(ds, 'international')
 
 
+def lattice_params(C):
+    """a, b, c (A) and alpha, beta, gamma (degrees) of the cell with vectors C (rows)."""
+    n = np.linalg.norm(C, axis=1)
+    ang = lambda i, j: np.degrees(np.arccos(np.clip(C[i] @ C[j] / n[i] / n[j], -1, 1)))
+    return [n[0], n[1], n[2], ang(1, 2), ang(0, 2), ang(0, 1)]
+
+
+def focex_frame(latp):
+    """Conventional vectors (rows) as FOCEX and SC-SNAPS build them from a,b,c,alpha,beta,gamma."""
+    a, b, c = latp[:3]
+    al, be, ga = np.radians(latp[3:])
+    cx = c * np.cos(be)
+    cy = c * (np.cos(al) - np.cos(ga) * np.cos(be)) / np.sin(ga)
+    return np.array([[a, 0, 0], [b * np.cos(ga), b * np.sin(ga), 0],
+                     [cx, cy, np.sqrt(c * c - cx * cx - cy * cy)]])
+
+
 def describe(L):
     n = np.linalg.norm(L, axis=1)
     ang = lambda i, j: np.degrees(np.arccos(np.clip(L[i] @ L[j] / n[i] / n[j], -1, 1)))
@@ -238,6 +254,12 @@ def main():
     ds, prec = dataset(V, F, p['types'])
     P = np.array(get(ds, 'transformation_matrix'))      # x_conv = P x_prim (+ origin shift)
     C = np.linalg.inv(P).T @ V                           # conventional vectors (rows), same frame
+    # rotate everything so that C is where FOCEX puts it from (a,b,c,alpha,beta,gamma)
+    latp = lattice_params(C)
+    Q = np.linalg.solve(C, focex_frame(latp))            # C @ Q = FOCEX's conventional cell
+    if not np.allclose(Q @ Q.T, np.eye(3), atol=1e-8) or np.linalg.det(Q) < 0:
+        sys.exit('cannot rotate the cell into the FOCEX frame (left-handed conventional cell?)')
+    V, C = V @ Q, focex_frame(latp)
     prim_in_conv = P.T                                   # row i: primitive vector i in units of C
     Xc = F @ P.T                                         # atoms in conventional units, same origin
     assert np.allclose(prim_in_conv @ C, V, atol=1e-8)
@@ -250,11 +272,11 @@ def main():
             sys.exit('unknown element %r on line 6 of the POSCAR' % el)
         masses.append(MASS[el.split('_')[0]])
 
-    c1 = ' '.join('%.10f' % x for x in clean(C).ravel())
+    c1 = ' '.join('%.10f' % x for x in latp)
     c2 = ' '.join('%.12g' % x for x in clean(prim_in_conv, 12).ravel())
     per_atom = lambda v: ' '.join([str(v)] * n)
     lines = [
-        '%s  # conventional vectors a1 a2 a3 in Cartesian (A); %s' % (c1, describe(C)),
+        '%s  # a b c alpha beta gamma of the conventional cell' % c1,
         '%s  # primitive vectors R01 R02 R03 in units of the conventional vectors' % c2,
         '1.0 0              # scale for line 1; 0 = coordinates in units of the conventional vectors',
         '1 1 1 0 0 0 0 0    # default, check: include rank r=1..8 in the fit (0/1)',
