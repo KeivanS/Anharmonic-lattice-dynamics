@@ -395,6 +395,11 @@ open(ufc0,file='lat_fc.dat' ,status='old')
       nterms(rank)=mx
    endif
    write(*,*) '********** FCs for rank=3',mx
+   if (mx.eq.0) then   ! all cubic FCs zero: no anharmonic scattering, infinite lifetimes, NaN kappa
+      write(ulog,*)'READ_FC3: fc3.dat has no terms although lat_fc.dat includes rank 3'
+      write(*,*)'READ_FC3: fc3.dat has no terms although lat_fc.dat includes rank 3; check the FOCEX fit'
+      error stop 'READ_FC3: no cubic force constants'
+   endif
    rewind(ufc3)
    write(ulog,*)'Rank=3, reading nterms(3)=',mx,' terms'
    allocate(iatomterm_3(rank,mx),ixyzterm_3(rank,mx),igroup_3(mx), fcs_3(mx))
@@ -462,8 +467,10 @@ open(ufc0,file='lat_fc.dat' ,status='old')
  complex(8), intent(out) :: dynmat(ndim,ndim),ddyn(ndim,ndim,3)
  real(8), intent(in) :: kpt(3)
  complex(8) junk
- real(8) mi,mj,all,rr(3),delt(3)
+ real(8) mi,mj,all,rr(3),delt(3),devmax
+ real(8), parameter :: tol=1d-6  ! relative; about the accuracy of the atomic coordinates
  integer i0,j,j0,al,be,i3,j3,t !,ired
+ integer, save :: nwarn=0
 
 ! write(*,*)'set dynamical matrix: fc2=',size(fcs_2)
 ! write(*,3)fcs_2
@@ -518,37 +525,22 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 ! write(*,*) ' Terms loop done, dynmat is defined '
 
 5 format(a,5i5,9(f8.3))
- all = sum(cdabs(dynmat(:,:)))/(ndim*ndim)
-! make sure it is hermitian
+! make sure it is hermitian: warn if max|D-D^+| > tol*max|D| (a large deviation points
+! to an error elsewhere, e.g. in the phase factors), then replace D by (D+D^+)/2
+ all = max(maxval(cdabs(dynmat)),tiny(1d0))
+ devmax = 0
  do t=1,ndim
-!    call write_out(6,'dynmat=',dynmat(t,:))
-    if (abs(aimag(dynmat(t,t))) .gt. 9d-4*abs(real(dynmat(t,t))) ) then
-       write(ulog,*)' dynmat is not hermitian on its diagonal'
-       write(ulog,*)' diagonal element i=',t,dynmat(t,t)
-!      stop
-!   else
-       dynmat(t,t) = cmplx(real(dynmat(t,t)),0d0)
-    endif
-  do j=t+1,ndim-1
-    if (abs(aimag(dynmat(t,j))+aimag(dynmat(j,t))) .gt. 9d-4*all ) then
-       write(ulog,*)' dynmat is not hermitian in AIMAG of its off-diagonal elts'
-       write(ulog,*)' off-diagonal element i,j=',t,j,dynmat(t,j),dynmat(j,t)
-       write(ulog,*)' comparing to avg(abs(dynmat))=',all
-!      stop
-    elseif(abs(real(dynmat(t,j))-real(dynmat(j,t))) .gt. 9d-4*all ) then
-       write(ulog,*)' dynmat is not hermitian in REAL of its off-diagonal elts'
-       write(ulog,*)' off-diagonal element i,j=',t,j,dynmat(t,j),dynmat(j,t)
-       write(ulog,*)' comparing to avg(abs(dynmat))=',all
-!      stop
-    else
-    endif
-! enforcing it to be hermitian!!
-    mi=(aimag(dynmat(t,j))-aimag(dynmat(j,t)))/2
-    mj=(real (dynmat(t,j))+real (dynmat(j,t)))/2
-    dynmat(t,j) = cmplx(mj, mi)
-    dynmat(j,t) = cmplx(mj,-mi)
-  enddo
+ do j=t,ndim
+    devmax = max(devmax,cdabs(dynmat(t,j)-conjg(dynmat(j,t))))
  enddo
+ enddo
+ if (devmax .gt. tol*all) then
+    nwarn=nwarn+1
+    write(ulog,'(a,es10.3,a,3(1x,f10.5))')' WARNING SET_DYNAMICAL_MATRIX: max|D-D^+|/max|D|=', &
+ &        devmax/all,' at k=',kpt
+    if(nwarn.eq.1) write(*,*)'WARNING SET_DYNAMICAL_MATRIX: dynamical matrix not hermitian; see log'
+ endif
+ dynmat = (dynmat + transpose(conjg(dynmat)))/2
 
 ! enforce it to be real if all imaginary componenents are very small
  all = sum(abs(aimag(dynmat(:,:))))/(ndim*ndim)
@@ -4375,6 +4367,10 @@ enddo
  real(8) absvec
  complex(8), allocatable:: dynmat(:,:),eivc(:,:),ddyn(:,:,:),temp(:,:)
  real(8) khat(3)
+ real(8), parameter :: w2neg=-25d0   ! 1/cm^2
+ integer, save :: nneg=0
+ integer, save :: rotseed=-1
+ character(len=32) envval
 
  nd2 = min(ndn,12)
  allocate(dynmat(ndn,ndn),mp(ndn),eivl(ndn),eivc(ndn,ndn),ddyn(ndn,ndn,3),temp(ndn,ndn))
@@ -4412,6 +4408,20 @@ enddo
       write(ulog,4) eivl
     endif
 
+! omega^2 < w2neg is an instability (or a bad fit): stop. Small negative values (round-off near
+! Gamma) only give a warning and are replaced by |omega^2| below. Same threshold as focex-agent.
+    if (minval(eivl)*cnst**2 .lt. w2neg) then
+       write(ulog,'(a,f12.2,a,3(1x,f10.5))')' GET_FREQ_VG: omega^2=',minval(eivl)*cnst**2, &
+ &          ' 1/cm^2 at k=',kp
+       write(   *,'(a,f12.2,a,3(1x,f10.5))')' GET_FREQ_VG: omega^2=',minval(eivl)*cnst**2, &
+ &          ' 1/cm^2 at k=',kp
+       error stop 'GET_FREQ_VG: imaginary frequencies (omega^2 < -25 1/cm^2); check the force constants'
+    elseif (minval(eivl) .lt. 0) then
+       nneg=nneg+1
+       write(ulog,'(a,f10.4,a,3(1x,f10.5))')' WARNING GET_FREQ_VG: omega^2=',minval(eivl)*cnst**2, &
+ &          ' 1/cm^2 taken as |omega^2| at k=',kp
+       if(nneg.eq.1) write(*,*)'WARNING GET_FREQ_VG: small negative omega^2 replaced by |omega^2|; see log'
+    endif
     do j=1,ndn
        eival(j) = abs(eivl(mp(j)))  ! so that all frequencies are positive
        do l=1,ndn
@@ -4426,6 +4436,16 @@ enddo
           eivec(:,l)=cmplx(0,1)*eivec(:,l)
        endif
     enddo
+
+! test hook: THERMACOND_ROTATE_DEGENERATE=<seed> applies a random unitary rotation inside every
+! degenerate set (frequencies within 1e-3 1/cm), to check that results do not depend on that basis
+    if (rotseed.lt.0) then
+       call get_environment_variable('THERMACOND_ROTATE_DEGENERATE',envval,status=ier)
+       rotseed=0
+       if (ier.eq.0) read(envval,*,iostat=ier) rotseed
+       if (rotseed.ne.0) write(ulog,*)'GET_FREQ_VG: TEST, degenerate eigenvectors rotated, seed',rotseed
+    endif
+    if (rotseed.gt.0) call rotate_degenerate(ndn,eival,eivec,rotseed)
 
   if (verbose) then
     do l=1,ndn
@@ -4493,6 +4513,53 @@ enddo
  9 format(a,i5,99(1x,2(1x,f9.3),1x))
 
  end subroutine get_freq_vg
+!===========================================================
+ subroutine rotate_degenerate(ndn,eival,eivec,seed)
+!! test only: eivec(:,set) <- eivec(:,set) Q, Q a random unitary matrix, for each set of modes
+!! whose frequencies agree within 1e-3 1/cm (eival ascending). seed: its own generator, advanced
+!! at each call so that every k-point gets a different rotation.
+ use constants
+ implicit none
+ integer, intent(in) :: ndn,seed
+ real(8), intent(in) :: eival(ndn)
+ complex(8), intent(inout) :: eivec(ndn,ndn)
+ integer(8), save :: st=0
+ integer i0,i1,n,a,b
+ real(8) w(ndn),x1,x2
+ complex(8), allocatable :: q(:,:)
+ if (st.eq.0) st=modulo(int(seed,8)*7919_8+12345_8,2147483646_8)+1
+ w=sqrt(abs(eival))*cnst
+ i0=1
+ do while (i0.le.ndn)
+    i1=i0
+    do while (i1.lt.ndn)
+       if (abs(w(i1+1)-w(i0)).ge.1d-3) exit
+       i1=i1+1
+    enddo
+    n=i1-i0+1
+    if (n.gt.1) then
+       allocate(q(n,n))
+       do a=1,n ; do b=1,n
+          x1=rnd() ; x2=rnd()
+          q(a,b)=cmplx(x1-0.5d0,x2-0.5d0,8)
+       enddo ; enddo
+       do b=1,n                                   ! Gram-Schmidt: q unitary
+          do a=1,b-1
+             q(:,b)=q(:,b)-dot_product(q(:,a),q(:,b))*q(:,a)
+          enddo
+          q(:,b)=q(:,b)/sqrt(real(dot_product(q(:,b),q(:,b))))
+       enddo
+       eivec(:,i0:i1)=matmul(eivec(:,i0:i1),q)
+       deallocate(q)
+    endif
+    i0=i1+1
+ enddo
+ contains
+ real(8) function rnd()
+ st=modulo(st*48271_8,2147483647_8)          ! Park-Miller; products stay below 2^47
+ rnd=dble(st)/2147483647d0
+ end function rnd
+ end subroutine rotate_degenerate
 !===========================================================
 !subroutine sort_polarizations(n,nk,eivl,eivc,mp,q)
 ! put all longitudinal modes first, then transverse ones in the

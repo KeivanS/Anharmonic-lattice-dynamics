@@ -64,7 +64,7 @@
  real(8), allocatable :: P1all(:,:,:,:,:),P2all(:,:,:,:,:),F2loc(:,:,:)
  integer, allocatable :: counts(:),displs(:)
  integer ukvt,kapRTA,tauf,kapd,tauef,kappai,tauefi,udist,ukw
- real(8) kRTA(3,3),kdir(3,3),resid,kWP(3,3),kWC(3,3)
+ real(8) kRTA(3,3),kdir(3,3),resid,kWP(3,3),kWC(3,3),kblk(3,3)
 ! modes closer than degtol (1/cm) are treated as degenerate (|V3|^2 averaging, Wigner kappa_P).
 ! Symmetry-degenerate modes of Ge come out split by up to 1.5e-5 1/cm (4e-7 relative), while
 ! the closest non-degenerate ones are 1e-2 1/cm apart.
@@ -370,6 +370,7 @@
        call calculate_w3_ibz_split_sq(kglob,nloc*nkc*ndyn**3,ndyn,nkc,kpc,eigenval,eigenvec,nv3o)
        call average_degenerate_v3(kglob)
        call calculate_FGR_mpi2(kglob,ndyn,nv3o)
+       call average_degenerate_p(kglob)
     endif
     deallocate(v33s8)
     call timing('V3*delta in memory')
@@ -389,6 +390,7 @@
        call calculate_w3_ibz_split_sq(ksub,nkc*ndyn**3,ndyn,nkc,kpc,eigenval,eigenvec,nv3o)
        call average_degenerate_v3(ksub)
        call calculate_FGR_mpi2(ksub,ndyn,nv3o)
+       call average_degenerate_p(ksub)
        call write_v3(k)
        nnew=nnew+1
     enddo
@@ -475,12 +477,16 @@
        tauef=7450 ; kapd=8450
        open(tauef,file='tau_RTAandeff.dat',status='unknown')
        open(kapd,file='kappa_direct.dat',status='unknown')
-       write(ukvt,'(a)')'# T(K)  kappa_RTA xx yy zz xy xz yz   kappa_direct xx yy zz xy xz yz (W/mK)   |Ax-b|/|b|'
+       write(ukvt,'(a)')'# degenerate modes as blocks: kappa_RTA = kappa_P (Wigner, trace form), kappa_direct = per-mode'
+       write(ukvt,'(a)')'# value + kappa_P - per-mode RTA; then the per-mode values (basis-dependent at degeneracies)'
+       write(ukvt,'(a)')'# T(K)  kappa_RTA(6)  kappa_direct(6)  |Ax-b|/|b|  per-mode: kappa_RTA(6) kappa_direct(6); xx yy zz xy xz yz, W/mK'
     else
        tauefi=9450 ; kappai=4451
        open(tauefi,file='tau_RTAandeff_iter.dat',status='unknown')
        open(kappai,file='kappa_iter.dat',status='unknown')
-       write(ukvt,'(a)')'# T(K)  kappa_RTA xx yy zz xy xz yz   kappa_iterative xx yy zz xy xz yz (W/mK)  iterations'
+       write(ukvt,'(a)')'# degenerate modes as blocks: kappa_RTA = kappa_P (Wigner, trace form), kappa_iterative = per-mode'
+       write(ukvt,'(a)')'# value + kappa_P - per-mode RTA; then the per-mode values (basis-dependent at degeneracies)'
+       write(ukvt,'(a)')'# T(K)  kappa_RTA(6)  kappa_iterative(6)  iterations  per-mode: kappa_RTA(6) kappa_iterative(6); xx yy zz xy xz yz, W/mK'
     endif
  endif
  if (job.eq.2) allocate(RHS(n),DirectSolution(n))
@@ -546,8 +552,10 @@
           call total_kappa(kdir)
           call write_kappa(ndyn,tempk,veloc,eigenval,kapd,tauef)
           call write_F('direct')
-          write(ukvt,'(f9.2,12(1x,f12.5),1x,es10.3)')tempk,(kRTA(i,i),i=1,3),kRTA(1,2),kRTA(1,3),kRTA(2,3),  &
-               (kdir(i,i),i=1,3),kdir(1,2),kdir(1,3),kdir(2,3),resid
+          kblk=kdir+kWP-kRTA
+          write(ukvt,'(f9.2,12(1x,f12.5),1x,es10.3,12(1x,f12.5))')tempk,(kWP(i,i),i=1,3),kWP(1,2),kWP(1,3),kWP(2,3), &
+               (kblk(i,i),i=1,3),kblk(1,2),kblk(1,3),kblk(2,3),resid, &
+               (kRTA(i,i),i=1,3),kRTA(1,2),kRTA(1,3),kRTA(2,3),(kdir(i,i),i=1,3),kdir(1,2),kdir(1,3),kdir(2,3)
           flush(ukvt)
           deallocate(Collision_Matrix,Ax)
        endif
@@ -557,8 +565,10 @@
        call total_kappa(kdir)
        if (root) then
           call write_F('iterative')
-          write(ukvt,'(f9.2,12(1x,f12.5),1x,i5)')tempk,(kRTA(i,i),i=1,3),kRTA(1,2),kRTA(1,3),kRTA(2,3),  &
-               (kdir(i,i),i=1,3),kdir(1,2),kdir(1,3),kdir(2,3),nit
+          kblk=kdir+kWP-kRTA
+          write(ukvt,'(f9.2,12(1x,f12.5),1x,i5,12(1x,f12.5))')tempk,(kWP(i,i),i=1,3),kWP(1,2),kWP(1,3),kWP(2,3), &
+               (kblk(i,i),i=1,3),kblk(1,2),kblk(1,3),kblk(2,3),nit, &
+               (kRTA(i,i),i=1,3),kRTA(1,2),kRTA(1,3),kRTA(2,3),(kdir(i,i),i=1,3),kdir(1,2),kdir(1,3),kdir(2,3)
           flush(ukvt)
        endif
        call timing('iterative solution')
@@ -591,17 +601,49 @@
     s=s+1
     i1=mapinv(n1)
     call degenerate_sets(i1,g,ng)                    ! l1 at q1
-    call average_axis(s,0,1,g,ng)
+    call average_axis(v33s8,s,0,1,g,ng)
     do n2=1,nkc
        call degenerate_sets(n2,g,ng)                 ! l2 at q2
-       call average_axis(s,n2,2,g,ng)
+       call average_axis(v33s8,s,n2,2,g,ng)
        q3=-kpc(:,i1)-kpc(:,n2)
        call get_k_info(q3,NC,i3,ia,ib,ic,g1,g2,g3,ins)
        call degenerate_sets(i3,g,ng)                 ! l3 at q3
-       call average_axis(s,n2,3,g,ng)
+       call average_axis(v33s8,s,n2,3,g,ng)
     enddo
  enddo
  end subroutine average_degenerate_v3
+
+!---------------------------------------------------------------
+ subroutine average_degenerate_p(kr)
+!! P1smpi, P2smpi = |V3|^2 x tetrahedron delta weight, averaged over the degenerate sets at q2 and
+!! at q3 (q1+q2 for P1, q1-q2 for P2). The delta weights are per band index, so the |V3|^2
+!! averaging alone leaves P different among the partners of a set, and the collision term
+!! sum_l2 P F_l2 then depends on the basis of the set (Ge 4^3 iterative kappa: 0.3 % between
+!! random rotations). Sums over a set, hence every rate Q and the RTA, are unchanged.
+ use lattice, only : g1,g2,g3
+ integer, intent(in) :: kr(2)
+ integer s,n1,n2,i1,i3,ia,ib,ic,ins,ng
+ integer g(ndyn)
+ real(8) q3(3)
+ s=0
+ do n1=kr(1),kr(2)
+    s=s+1
+    i1=mapinv(n1)
+    do n2=1,nkc
+       call degenerate_sets(n2,g,ng)                 ! l2 at q2
+       call average_axis(P1smpi,s,n2,2,g,ng)
+       call average_axis(P2smpi,s,n2,2,g,ng)
+       q3=kpc(:,i1)+kpc(:,n2)
+       call get_k_info(q3,NC,i3,ia,ib,ic,g1,g2,g3,ins)
+       call degenerate_sets(i3,g,ng)                 ! l3 at q1+q2
+       call average_axis(P1smpi,s,n2,3,g,ng)
+       q3=kpc(:,i1)-kpc(:,n2)
+       call get_k_info(q3,NC,i3,ia,ib,ic,g1,g2,g3,ins)
+       call degenerate_sets(i3,g,ng)                 ! l3 at q1-q2
+       call average_axis(P2smpi,s,n2,3,g,ng)
+    enddo
+ enddo
+ end subroutine average_degenerate_p
 
 !---------------------------------------------------------------
  subroutine degenerate_sets(nk,grp,n)
@@ -615,9 +657,10 @@
     grp(l)=n
  enddo
  end subroutine degenerate_sets
- subroutine average_axis(s,n2,ax,grp,n)
-!! average v33s8(s,n2,l1,l2,l3) over the modes of each set along axis ax (1: l1, 2: l2, 3: l3);
-!! n2=0 means every q2
+ subroutine average_axis(arr,s,n2,ax,grp,n)
+!! average arr(s,n2,l1,l2,l3) (v33s8, P1smpi or P2smpi) over the modes of each set along axis ax
+!! (1: l1, 2: l2, 3: l3); n2=0 means every q2
+ real(8), intent(inout) :: arr(:,:,:,:,:)
  integer, intent(in) :: s,n2,ax,grp(ndyn),n
  integer m,cnt,j1,lo,hi,jc,kc
  real(8), allocatable :: a(:,:,:)
@@ -633,16 +676,16 @@
        select case (ax)
        case (1)
           allocate(a(1,ndyn,ndyn)) ; a(1,:,:)=0
-          do jc=1,ndyn ; if (grp(jc).eq.m) a(1,:,:)=a(1,:,:)+v33s8(s,j1,jc,:,:) ; enddo
-          do jc=1,ndyn ; if (grp(jc).eq.m) v33s8(s,j1,jc,:,:)=a(1,:,:)/cnt ; enddo
+          do jc=1,ndyn ; if (grp(jc).eq.m) a(1,:,:)=a(1,:,:)+arr(s,j1,jc,:,:) ; enddo
+          do jc=1,ndyn ; if (grp(jc).eq.m) arr(s,j1,jc,:,:)=a(1,:,:)/cnt ; enddo
        case (2)
           allocate(a(ndyn,1,ndyn)) ; a(:,1,:)=0
-          do jc=1,ndyn ; if (grp(jc).eq.m) a(:,1,:)=a(:,1,:)+v33s8(s,j1,:,jc,:) ; enddo
-          do jc=1,ndyn ; if (grp(jc).eq.m) v33s8(s,j1,:,jc,:)=a(:,1,:)/cnt ; enddo
+          do jc=1,ndyn ; if (grp(jc).eq.m) a(:,1,:)=a(:,1,:)+arr(s,j1,:,jc,:) ; enddo
+          do jc=1,ndyn ; if (grp(jc).eq.m) arr(s,j1,:,jc,:)=a(:,1,:)/cnt ; enddo
        case (3)
           allocate(a(ndyn,ndyn,1)) ; a(:,:,1)=0
-          do kc=1,ndyn ; if (grp(kc).eq.m) a(:,:,1)=a(:,:,1)+v33s8(s,j1,:,:,kc) ; enddo
-          do kc=1,ndyn ; if (grp(kc).eq.m) v33s8(s,j1,:,:,kc)=a(:,:,1)/cnt ; enddo
+          do kc=1,ndyn ; if (grp(kc).eq.m) a(:,:,1)=a(:,:,1)+arr(s,j1,:,:,kc) ; enddo
+          do kc=1,ndyn ; if (grp(kc).eq.m) arr(s,j1,:,:,kc)=a(:,:,1)/cnt ; enddo
        end select
        deallocate(a)
     enddo

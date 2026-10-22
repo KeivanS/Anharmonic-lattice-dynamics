@@ -122,7 +122,15 @@ How it is computed
   (x >= y >= z >= 0 for a cubic lattice, 0-30 degrees for a hexagonal one). The number of
   points and their weights agree with spglib.
 * Degenerate modes (frequencies within 1e-3 1/cm): their eigenvectors are defined only up to a
-  rotation within the degenerate set, so ``|V3|^2`` is averaged over the set at q1, q2 and q3.
+  rotation within the degenerate set, so ``|V3|^2`` is averaged over the set at q1, q2 and q3,
+  and so is ``|V3|^2`` times the tetrahedron weight (P1, P2) at q2 and q3. Then every partner
+  of a set has the same lifetime and the same collision kernel, F = tau (v + Delta) with Delta
+  common to the set, and the conductivity is per-mode value + kappa_P - per-mode RTA: the
+  one-velocity-per-mode term is replaced by the trace over the set of the velocity matrix
+  (the degenerate block of kappa_P). This is what ``kappa_vs_T.dat`` reports; checked by
+  random rotations of the degenerate eigenvectors (``THERMACOND_ROTATE_DEGENERATE=<seed>``,
+  test only): Ge 4x4x4 RTA and iterative results identical to all printed digits, while the
+  per-mode values moved by 3 %.
 * Wigner conductivity: in the RTA, ``kappa_wigner.dat`` gives the conductivity of Simoncelli,
   Marzari and Mauri (Nat. Phys. 15, 809 (2019)): kappa_P from pairs of degenerate modes (the
   usual RTA term, in a form that does not depend on the eigenvector basis) and kappa_C from
@@ -141,9 +149,11 @@ file                           contents
 ``KPOINT.FBZ``, ``KPOINT.IBZ`` k-mesh and irreducible wedge with weights
 ``veloc.dat``                  group velocities on the mesh (Hellmann-Feynman)
 ``veltest.dat``                finite-difference and Hellmann-Feynman velocities, band path and mesh
-``kappa_vs_T.dat``             one line per temperature: RTA and direct (job 2) or iterative (job 3)
-                               conductivity tensor xx yy zz xy xz yz (W/mK); job 2 adds the
-                               relative residual of the linear solution, job 3 the iterations
+``kappa_vs_T.dat``             one line per temperature: RTA (= kappa_P) and direct (job 2) or
+                               iterative (job 3) conductivity tensor xx yy zz xy xz yz (W/mK),
+                               degenerate modes as blocks; job 2 adds the relative residual of the
+                               linear solution, job 3 the iterations; then the per-mode values
+                               (RTA, direct/iterative), which depend on the degenerate basis
 ``kappa_RTA.dat``              conductivity per band in the RTA, for each temperature
 ``kappa_wigner.dat``           jobs 2, 3: one line per temperature: RTA, kappa_P, kappa_C and
                                kappa_P + kappa_C (Wigner, RTA linewidths), xx yy zz xy xz yz
@@ -160,6 +170,17 @@ file                           contents
 ``phonlog.dat``                log of the run
 ``times.dat``                  CPU time of each step
 ============================== ======================================================================
+
+Checks
+------
+
+* :math:`\omega^2 < -25` cm\ :sup:`-2` at any k-point stops the run (instability or bad fit);
+  smaller negative values (round-off near :math:`\Gamma`) are replaced by :math:`|\omega^2|`
+  with a warning in ``phonlog.dat``. ``focex-agent.py`` flags the same threshold.
+* The dynamical matrix is replaced by :math:`(D+D^\dagger)/2`; a warning in ``phonlog.dat``
+  reports :math:`\max|D-D^\dagger|/\max|D| > 10^{-6}`, which points to an error elsewhere.
+* An empty ``fc3.dat`` (all cubic FCs zero in the FOCEX fit) stops the run instead of giving
+  infinite lifetimes.
 
 Example
 -------
@@ -180,10 +201,13 @@ As of October 2026:
 * isotope scattering (line 11 = 1) is not yet available with jobs 2 and 3;
 * the optical properties at the zone centre (self-energy at q = 0, dielectric function)
   of the previous job control are not yet part of job 0;
-* the per-mode RTA (``kappa_RTA.dat``, first block of ``kappa_vs_T.dat``) and the direct and
-  iterative solutions use one velocity per mode, which is not defined at degenerate points:
-  for Ge they come out slightly anisotropic (0.4 % on 6x6x6). Use ``kappa_wigner.dat`` for the
-  RTA; the treatment of degenerate modes in the full solutions is being worked on;
+* the per-band files (``kappa_RTA.dat``, ``kappa_iter.dat``, ``kappa_direct.dat``,
+  ``distribution_F.dat``) are per mode and depend on the degenerate basis; the totals in
+  ``kappa_vs_T.dat`` do not;
+* the iterative result for Ge 4x4x4 is anisotropic by 0.24 % (zz high), independently of the
+  basis, while the RTA is exactly isotropic: the collision kernel does not have the full
+  symmetry (tetrahedron orientation or the star handling of q2, q3), being checked together
+  with the next item;
 * the direct solution (job 2) and the iterative one (job 3) do not agree; the direct
   (IBZ-reduced) collision matrix is being checked;
 * before 22 October 2026 the k-point symmetry was wrong for hexagonal, trigonal, monoclinic
