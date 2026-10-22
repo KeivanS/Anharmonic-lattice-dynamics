@@ -1460,7 +1460,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 !===========================================================
  subroutine make_hermitian(n,dyn,ddyn)
 !! measures how far dyn is from hermitian, warns if max|D-D^+| > tol*max|D|, and
-!! replaces dyn by (D+D^+)/2. A large deviation points to an error elsewhere (e.g. in the
+!! replaces dyn by (D+D^+)/2 (loop over the upper triangle). A large deviation points to an error elsewhere (e.g. in the
 !! phase factors), not to round-off. ddyn is not touched.
  use constants
  use ios, only : ulog
@@ -1468,28 +1468,33 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  integer, intent(in):: n
  complex(r15), intent(inout) :: dyn(n,n),ddyn(n,n,3)
  real(r15), parameter :: tol=1d-6  ! relative; about the accuracy of the atomic coordinates
- real(r15) nrm1,dev,devmax
+ real(r15) nrm1,dev,devmax,mi,mj
+ complex(r15) dt,djt
  integer t,j,tmax,jmax
  integer, save :: nwarn=0
 
  nrm1 = max(maxval(cdabs(dyn)),tiny(1d0))
- devmax=0; tmax=1; jmax=1
+ devmax=0; tmax=1; jmax=1; dt=0; djt=0
+! upper triangle (diagonal included): measure the deviation, then set D(t,j) and D(j,t) from
+! the average of the real parts and half the difference of the imaginary parts
  do t=1,n
  do j=t,n
     dev=cdabs(dyn(t,j)-conjg(dyn(j,t)))
     if(dev.gt.devmax) then
-       devmax=dev; tmax=t; jmax=j
+       devmax=dev; tmax=t; jmax=j; dt=dyn(t,j); djt=dyn(j,t)
     endif
+    mi=(aimag(dyn(t,j))-aimag(dyn(j,t)))/2
+    mj=(real (dyn(t,j))+real (dyn(j,t)))/2
+    dyn(t,j)=dcmplx(mj, mi)
+    dyn(j,t)=dcmplx(mj,-mi)
  enddo
  enddo
  if (devmax .gt. tol*nrm1) then
     nwarn=nwarn+1
     write(ulog,'(a,es10.3,a,2i4,a,2(2es12.4,2x))')' WARNING MAKE_HERMITIAN: max|D-D^+|/max|D|=', &
- &        devmax/nrm1,' at i,j=',tmax,jmax,' D(i,j),D(j,i)=',dyn(tmax,jmax),dyn(jmax,tmax)
+ &        devmax/nrm1,' at i,j=',tmax,jmax,' D(i,j),D(j,i)=',dt,djt
     if(nwarn.eq.1) write(*,*)'WARNING MAKE_HERMITIAN: dynamical matrix not hermitian; see log'
  endif
-! enforcing it to be hermitian in any case
- dyn = (dyn + transpose(conjg(dyn)))/2
 
  end subroutine make_hermitian
 !===========================================================
