@@ -3,10 +3,17 @@
 FOCEX agent: from a POSCAR to phonons
 =====================================
 
-``FOCEX/focex-agent.py`` runs the whole FOCEX workflow from the primitive cell of a crystal:
-VASP relaxation and SCF, Born charges, SC-SNAPS snapshots, the supercell VASP runs, the
-force collection, the five ``*.params`` files, FOCEX and the plots. Every step uses defaults
-that can be overridden, and every step is checked and written to ``report.log``.
+``FOCEX/focex-agent.py`` runs the FOCEX workflow in one of two ways:
+
+* **full** (``-s POSCAR``): from the primitive cell of a crystal -- VASP relaxation and SCF,
+  Born charges, SC-SNAPS snapshots, the supercell VASP runs, the force collection, the five
+  ``*.params`` files, FOCEX and the plots;
+* **FOCEX only** (``DATA: <folder>`` in the instructions): from existing ``POSCARi`` /
+  ``FORCEDISPi`` (and optionally Born charges) -- the ``*.params`` files, FOCEX and the plots;
+  see *Existing data* below.
+
+Every step uses defaults that can be overridden, and every step is checked and written to
+``report.log``.
 
 Requirements
 ------------
@@ -28,6 +35,10 @@ Running it
    cp FOCEX/focex-agent.example.txt instructions.txt      # edit: Project and RANKS are required
    ~/vaspenv/bin/python FOCEX/focex-agent.py init -i instructions.txt -s POSCAR --profile rivanna
    cd <Project> && sbatch run_workflow.sh                  # bash run_workflow.sh on a workstation
+
+   # FOCEX only, on existing POSCAR1/FORCEDISP1 (no VASP, no SC-SNAPS): DATA: <folder> in instructions.txt
+   ~/vaspenv/bin/python FOCEX/focex-agent.py init -i instructions.txt
+   ~/vaspenv/bin/python FOCEX/focex-agent.py run <Project>
 
    ~/vaspenv/bin/python FOCEX/focex-agent.py run <Project> --only snaps     # redo one task
    ~/vaspenv/bin/python FOCEX/focex-agent.py run <Project> --retry-failed   # = resubmit_failed.sh

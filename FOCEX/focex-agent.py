@@ -52,6 +52,10 @@ import time
 
 sys.dont_write_bytecode = True                  # no __pycache__ in utility/ or VASP-Flow
 os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
+# one thread per MPI rank (VASP-Flow's job scripts do the same): Homebrew's OpenBLAS is an OpenMP
+# build that ignores OPENBLAS_NUM_THREADS -- ZnO, 96 atoms, 8 ranks: 17 threads per rank and no
+# SCF step in 30 minutes
+os.environ.setdefault('OMP_NUM_THREADS', os.environ.get('VASP_OMP_NUM_THREADS', '1'))
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))           # the FOCEX folder: templates
