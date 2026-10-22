@@ -650,10 +650,10 @@
  use constants, only : pi
  use constants, only : r15
  implicit none
- integer i,j,k,counter,ier,nt(3),n1,isave
+ integer i,j,k,counter,ier,nt(3),n1,isave,itry
  real(r15) a(3),invn(3,3)
  type(vector) shift0,vec
- logical matched,all_matched
+ logical matched,all_matched,typed
 
 ! first describe r_i in terms of r0_i, and make sure the lin comb is integer
  write(ulog,*)' ----------------------------------------------------------'
@@ -689,11 +689,19 @@
 
  write(ulog,*)'FINDING possible translation vectors, trying them on other atoms'
 
+! First try (typed): every POSCAR atom must also sit on a site of the species its counts line
+! gives it -- this picks the right origin when the positions alone cannot (MgO: both rocksalt
+! sublattices fit). If that fails, second try as before: species from the positions only, with
+! a warning (MoTe2 test: counts line 64 128 in the Mo Te order of structure.params, atoms Te-first).
+ typeloop: do itry=1,2
+ typed = itry.eq.1
 ! write(*,*)'# ier,i0,j0,k_sc; vec,vred='
  checkloop: do i=1,natom_prim_cell !,1,-1
+    all_matched=.False.
     shift0 = atom0(i)%equilibrium_pos - atom_sc(1)%equilibrium_pos
     write(ulog,7)'atom in PRIMCELL & SC:',i,atom0(i)%at_type,atom0(i)%equilibrium_pos,atom_sc(1)%equilibrium_pos
     write(ulog,11)'trying shift vector to match atom_sc(1)=',i,v2a(shift0),cart2red(v2a(shift0),'r')
+    if (typed .and. atom0(i)%at_type .ne. poscar_type(1)) cycle checkloop
 
 ! does it fall on any of the primitive cell atoms?
 ! try this shift see if all atoms in SC can be mapped to the PC by it.
@@ -701,6 +709,7 @@
     SC: do k = 2,natom_super_cell
        matched = .false.
        PRIM: do j = 1,natom_prim_cell  ! one of the prim-cell atoms has to match
+          if (typed .and. atom0(j)%at_type .ne. poscar_type(k)) cycle PRIM
           vec =  shift0 + atom_sc(k)%equilibrium_pos - atom0(j)%equilibrium_pos
 
 ! In first loop (line 67-72), replace with:
@@ -738,6 +747,14 @@
 !   if (matched) exit checkloop
     endif
  enddo checkloop
+ if (all_matched) exit typeloop
+ if (typed) then
+    write(ulog,*)'WARNING: the POSCAR atoms do not sit on sites of the species given by its counts line'
+    write(ulog,*)'         (in the order of structure.params); species are taken from the positions'
+    write(*   ,*)'WARNING: the POSCAR atoms do not sit on sites of the species given by its counts line'
+    write(*   ,*)'         (in the order of structure.params); species are taken from the positions'
+ endif
+ enddo typeloop
 
 ! shift = r_primcell(i)-r_supercell(1) of direct coordinates a
 
@@ -749,7 +766,7 @@
  else
     write(ulog,*)' NO SHIFT VECTOR COULD BE DEFINED!, check your coordinates again'
     write(6   ,*)' NO SHIFT VECTOR COULD BE DEFINED!, check your coordinates again'
-    stop
+    error stop 'NO SHIFT VECTOR COULD BE DEFINED'
  endif
 
 ! shifting vector has been identified. We can now identify all SC atoms
@@ -766,6 +783,7 @@
          counter = 0
          matched = .false.
          PRIM2: do j = 1,natom_prim_cell  ! which prim-cell atom does k match?
+            if (typed .and. atom0(j)%at_type .ne. poscar_type(k)) cycle PRIM2
 
 ! vec = atom_sc(k)-atom_sc(1)+atom_prim(isave)-atom_prim(j)  !! isave being fixed
          vec =  atom_sc(k)%equilibrium_pos - atom0(j)%equilibrium_pos+shift0
@@ -795,7 +813,8 @@
             call write_out(ulog,'SC ATOM which can not be mapped to the prim cell ',k)
             write(ulog,*)' check your coordinates '
             write(ulog,3)atom_sc(k)%equilibrium_pos
-            stop
+            write(*,*)'SC ATOM ',k,' can not be mapped to the primitive cell'
+            error stop 'SC ATOM can not be mapped to the primitive cell'
          elseif ( counter .ge. 2) then
             write(ulog,*)' CHECK: more than one atom matched! check your coordinates'
             write(*   ,*)' CHECK: more than one atom matched! check your coordinates'
@@ -858,6 +877,19 @@
  write(*,*)'line 3 = 1.0 1 and atomic coordinates in primitive units.'
  stop
  end subroutine stop_not_commensurate
+
+ integer function poscar_type(k)
+!! species of atom k of POSCARi, from its counts line (species in the order of structure.params)
+ integer, intent(in) :: k
+ integer t
+ poscar_type=0
+ do t=1,natom_type
+    if (k .le. sum(natom(1:t))) then
+       poscar_type=t
+       return
+    endif
+ enddo
+ end function poscar_type
 
  end subroutine check_input_poscar_consistency_new
 !===========================================================

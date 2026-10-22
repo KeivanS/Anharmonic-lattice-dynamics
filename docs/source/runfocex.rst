@@ -941,7 +941,10 @@ Phonons and thermodynamics
 ``bs_freq.dat``
     Band structure along the ``kpbs.params`` path: ``nk, nb, dk, k(3),
     frequency (1/cm), velocity(3) (km/s), |velocity|``, one line per (k-point,
-    band).
+    band). Bands are connected from one k-point to the next by the largest total
+    eigenvector overlap (degenerate eigenvectors first rotated to match the previous
+    point; no connection across more than 5 times the average level spacing). At
+    :math:`\Gamma` of a polar crystal the LO branches jump, as they should.
 
 ``bands.dat``
     The same data with all bands of a k-point on one line — convenient for
@@ -1145,6 +1148,25 @@ Troubleshooting
 ``POSCAR: positions are not in direct or cartesian coordinates``
     The line following the atom counts of ``POSCARi`` must start with ``D``/``d``
     or ``C``/``c`` (a ``Selective dynamics`` line before it is tolerated).
+
+``NO SHIFT VECTOR COULD BE DEFINED`` / ``SC ATOM ... can not be mapped to the primitive cell``
+    Some atom of ``POSCARi`` does not sit on a lattice translate of an atom of
+    ``structure.params`` (within ``tolerance``, ``default.params`` line 1): wrong
+    scale factor (Cartesian positions are multiplied by line 2 of the POSCAR, as in
+    VASP), a cell in another orientation, or unrelaxed positions.
+
+``WARNING: the POSCAR atoms do not sit on sites of the species given by its counts line``
+    FOCEX first maps each POSCAR atom onto a site of the species its counts line gives
+    it (species in the order of ``structure.params``); this also fixes the origin when
+    positions alone cannot (both sublattices of rocksalt). If no such mapping exists,
+    the species are taken from the positions and this warning is printed: check the
+    order of the counts line.
+
+``WARNING: the lattice of structure.params lines 1-2 is symmetric only to ...``
+    The symmetry operations found for the lattice are not exactly orthogonal, because
+    lines 1–2 give irrational ratios with too few digits (e.g. ``1.7320508`` for
+    :math:`\sqrt 3`). Use full precision: with 8 digits, MgO in an orthorhombic
+    description lost a group of cubic force constants and all FC3 came out zero.
 
 ``READ_SUPERCELL: could not read N atom counts from POSCARi``
     The line where the atom counts were expected — the one after the third

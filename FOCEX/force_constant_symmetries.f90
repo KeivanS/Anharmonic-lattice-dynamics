@@ -27,6 +27,7 @@
      &     iatom2,itype2,iatom3,ipntop,   &
      &     itype,isg,aux(3,3)
       real(r15) tempi(3,3),fract(3),v(3),v2(3),temp(3,3),at1star(3),tol !r(3),
+      real(r15) orth_err
 
 ! maxneighbors= largest # of neighbor shells <  50 usually unless very low symmetry
       tol=1d-3 ! used to ID atoms related by symmetries
@@ -113,6 +114,26 @@
          call write_out(usym,'Symmetry operation (op_matrix) ',op_matrix(:,:,g))
       enddo
       write(*,*)'after lattpgcount loop'
+
+! the operations were accepted with tolerance tol; if lines 1-2 of structure.params give the
+! lattice with too few digits (e.g. sqrt(3)=1.7320508), the cartesian op_matrix are not
+! orthogonal and the force-constant symmetry analysis can merge or drop groups (MgO described
+! in an orthorhombic cell gave zero FC3). Exact input gives ~1e-15.
+      orth_err=0
+      do g=1,lattpgcount
+         temp=matmul(transpose(op_matrix(:,:,g)),op_matrix(:,:,g))
+         do j=1,3
+            temp(j,j)=temp(j,j)-1
+         enddo
+         orth_err=max(orth_err,maxval(abs(temp)))
+      enddo
+      write(ulog,*)'SYMMETRY_INIT: max |S^T S - 1| of the lattice operations =',orth_err
+      if (orth_err .gt. 1d-10) then
+         write(ulog,*)'WARNING: the lattice of structure.params lines 1-2 is symmetric only to ',orth_err
+         write(ulog,*)'         give its numbers with more digits (e.g. sqrt(3)=1.7320508075688772)'
+         write(*,*)'WARNING: the lattice of structure.params lines 1-2 is symmetric only to ',orth_err
+         write(*,*)'         give its numbers with more digits (e.g. sqrt(3)=1.7320508075688772)'
+      endif
 
 ! find transformation matrices for k vectors if R'=S.R then q'=S^(-1)^T q also hods for the unimodular form
       do g=1,lattpgcount
@@ -2312,7 +2333,7 @@
 ! did not find it: generate terms
             ngroups=ngroups+1
 
-            if(ngroups.ge.maxgroups)then
+            if(ngroups.gt.maxgroups)then     ! slots 1..maxgroups are valid
 !! can add to the size of arrays ixyzterm*, iatomterm* 
               write(6,*)' maxgroups is too small ',maxgroups
               ierg=ierg+1

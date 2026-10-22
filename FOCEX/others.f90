@@ -70,8 +70,10 @@
      write(*   ,4)'EXACT SIZES: rank,ngroups,max nterm,max ntindep,ntermszero=', &
      &             rnk,ngroups(rnk),mxnt,mxnti,ntermszero
 
-! collect_force_constants rejects on ngroups.ge.maxgroups and on
-! ntermszero.ge.maxtermszero, so give those two one slot of headroom. mx and
+! One slot of headroom each: collect_force_constants counts a candidate group
+! before it finds that all its terms vanish (and removes it again), so ngroups
+! reaches the final number + 1 if that happens after the last group (MgO, rank 3);
+! it rejects on ngroups.gt.maxgroups and on ntermszero.ge.maxtermszero. mx and
 ! mxi are the work bounds that size_force_constants found to be sufficient.
      mxgrps = max(ngroups(rnk),1) + 1
      mxzero = max(ntermszero ,1) + 1

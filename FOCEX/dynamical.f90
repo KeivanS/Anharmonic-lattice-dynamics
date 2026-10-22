@@ -1459,59 +1459,37 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  end subroutine set_dynamical_matrix_new
 !===========================================================
  subroutine make_hermitian(n,dyn,ddyn)
+!! measures how far dyn is from hermitian, warns if max|D-D^+| > tol*max|D|, and
+!! replaces dyn by (D+D^+)/2. A large deviation points to an error elsewhere (e.g. in the
+!! phase factors), not to round-off. ddyn is not touched.
  use constants
  use ios, only : ulog
  implicit none
  integer, intent(in):: n
  complex(r15), intent(inout) :: dyn(n,n),ddyn(n,n,3)
- real(r15) nrm1,mi,mj,tol
- integer t,j,i3
+ real(r15), parameter :: tol=1d-6  ! relative; about the accuracy of the atomic coordinates
+ real(r15) nrm1,dev,devmax
+ integer t,j,tmax,jmax
+ integer, save :: nwarn=0
 
- tol=1d-10
- nrm1 = max(maxval(cdabs(dyn)),1d0)  
-! make sure dyn and ddyn are both hermitian
+ nrm1 = max(maxval(cdabs(dyn)),tiny(1d0))
+ devmax=0; tmax=1; jmax=1
  do t=1,n
-    if (abs(aimag(dyn(t,t))) .gt. tol*nrm1) then !abs(real(dynmat(t,t))) ) then
-       call warn2(ulog,'MAKE_HERMITIAN: dynmat is not hermitian on its diagonal')
-       call warn2(6,'MAKE_HERMITIAN: dynmat is not hermitian on its diagonal')
-       write(ulog,*)' diagonal element i=',t,dyn(t,t)
-       write(ulog,*)' setting its imaginary part to zero!'
-       dyn(t,t  ) = dcmplx(real( dyn(t,t  )),0d0)
+ do j=t,n
+    dev=cdabs(dyn(t,j)-conjg(dyn(j,t)))
+    if(dev.gt.devmax) then
+       devmax=dev; tmax=t; jmax=j
     endif
-!   if (maxval(abs(aimag(ddyn(t,t,:)))) .gt. tol*nrm1) then !abs(real(dynmat(t,t))) ) then
-!      call warn2(ulog,'MAKE_HERMITIAN: D(dynmat)/dk is not hermitian on its diagonal')
-!      write(ulog,*)' diagonal elements =',t,ddyn(t,t,:)
-!      write(ulog,*)' setting its imaginary part to zero!'
-!      ddyn(t,t,:  ) = dcmplx(real( ddyn(t,t,: )),0d0)
-!   endif
-    do j=t+1,n-1
-      if (abs(aimag(dyn(t,j))+aimag(dyn(j,t))) .gt. tol*nrm1 ) then
-        call warn2(ulog,'MAKE_HERMITIAN: dynmat is not hermitian in AIMAG of its off-diagonal elts')
-        call warn2(6,'MAKE_HERMITIAN: dynmat is not hermitian in AIMAG of its off-diagonal elts')
-        write(ulog,*)' off-diagonal element i,j=',t,j,aimag(dyn(t,j)),aimag(dyn(j,t))
-        write(ulog,*)' compared to max(abs(dynmat))=',nrm1
-!       stop
-      elseif(abs(real(dyn(t,j))-real(dyn(j,t))) .gt. tol*nrm1 ) then
-         call warn2(ulog,'MAKE_HERMITIAN: dynmat is not hermitian in REAL of its off-diagonal elts')
-         call warn2(6,'MAKE_HERMITIAN: dynmat is not hermitian in REAL of its off-diagonal elts')
-         write(ulog,*)' off-diagonal element i,j=',t,j,real(dyn(t,j)),real(dyn(j,t))
-         write(ulog,*)' compared to max(abs(dynmat))=',nrm1
-!        stop
-      endif
-!   enforcing it to be hermitian in any case!!'
-      mi=(aimag(dyn(t,j))-aimag(dyn(j,t)))/2
-      mj=(real (dyn(t,j))+real (dyn(j,t)))/2
-      dyn(t,j) = dcmplx(mj, mi)
-      dyn(j,t) = dcmplx(mj,-mi)
-!     do i3=1,3  ! ddyn is hermitian (ddyn^*T = ddyn)
-!        mi=(aimag(ddyn(t,j,i3))-aimag(ddyn(j,t,i3)))/2
-!        mj=(real (ddyn(t,j,i3))+real (ddyn(j,t,i3)))/2
-!        ddyn(t,j,i3) = dcmplx(mj, mi)   ! ddyn is hermitian
-!        ddyn(j,t,i3) = dcmplx(mj,-mi)  ! Transpose(conjg(ddyn))= ddyn
-!     enddo
-   enddo
  enddo
-
+ enddo
+ if (devmax .gt. tol*nrm1) then
+    nwarn=nwarn+1
+    write(ulog,'(a,es10.3,a,2i4,a,2(2es12.4,2x))')' WARNING MAKE_HERMITIAN: max|D-D^+|/max|D|=', &
+ &        devmax/nrm1,' at i,j=',tmax,jmax,' D(i,j),D(j,i)=',dyn(tmax,jmax),dyn(jmax,tmax)
+    if(nwarn.eq.1) write(*,*)'WARNING MAKE_HERMITIAN: dynamical matrix not hermitian; see log'
+ endif
+! enforcing it to be hermitian in any case
+ dyn = (dyn + transpose(conjg(dyn)))/2
 
  end subroutine make_hermitian
 !===========================================================
@@ -1922,8 +1900,9 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  do tau=1,natom_prim_cell
 ! cnt2=0  ! cumulative number of independent terms up to group (g-1)
  gloop: do g=1,map(2)%ngr
-    if(map(2)%keep(counteri(2,g,ti)).ne.1) cycle
     do ti=1,map(2)%ntind(g)  ! index of independent terms in that group g
+! (this test was before the ti loop, with ti undefined: one-atom cells stopped here)
+       if(map(2)%keep(counteri(2,g,ti)).ne.1) cycle
        ired = map(1)%nkeptind + current(2,g,ti)   ! this is the corresponding index of i in ared
        if( sum(map(2)%keep(1:counteri(2,g,ti))) .gt. map(2)%nkeptind) then
           write(*,*)'MECHANICAL0: size of fc2 exceeded, ired=',ired
@@ -2681,158 +2660,218 @@ enddo
  end subroutine check_asr_dynmat
 !===========================================================
 subroutine band_sort_bs(nkp,ndyn,kp,eival,eivec,vel)
- use constants, only : r15
+!! orders the bands along the path by eigenvector continuity (2026-10-22; replaces the greedy
+!! three-step version, which could give one eigenvalue to two bands and drop another):
+!! - inside each degenerate set at k (|w_i-w_j| < degtol) the eigenvectors are first rotated to
+!!   match the previous point's vectors best (polar decomposition of the overlap block), so the
+!!   arbitrary basis of a degenerate subspace does not decide the connection;
+!! - bands at k-1 and k are then matched by the assignment with the largest total overlap
+!!   |<e_b(k-1)|e_m(k)>|^2 (Hungarian algorithm): always a permutation;
+!! - a connection across more than 5 x the average level spacing (bandwidth/ndyn, as in the old
+!!   version) is penalized; a small energy term breaks ties between equal overlaps. Without the
+!!   window, BZO connected 295 to 607 1/cm on the first step away from Gamma (LO-TO);
+!! - at a jump in the path (|dk| > 4 x the median step) the order restarts from the energies.
+!! Only the order changes: the eigenvalues, eigenvectors and velocities written are the ones of
+!! get_frequencies; the rotated vectors are used only as the reference for the next point.
+ use constants, only : r15,cnst
+ use ios, only : ulog
 implicit none
 integer, intent(in) :: nkp,ndyn
 real(r15), intent(in) :: kp(3,nkp)
 real(r15), intent(inout) :: eival(ndyn,nkp) ,vel(3,ndyn,nkp)
 complex(r15), intent(inout) :: eivec(ndyn,ndyn,nkp)
+real(r15), parameter :: degtol=1d-3   ! 1/cm, same as THERMACOND
+integer b,k,m,g,i0,i1,ier,ng,nweak
+integer, allocatable :: emap(:,:),srt(:),top(:),perm(:)
+real(r15), allocatable :: w(:),cost(:,:),dk(:),wt(:),lam(:),dks(:),wref(:)
+complex(r15), allocatable :: ref(:,:),e(:,:),a(:,:),mm(:,:),h(:,:),q(:,:),u(:,:)
+real(r15) dkmed,c,window
 
-integer b,k,l,m
-integer ntbd !Number of connections to be determined
-integer, allocatable :: emap(:,:)  !Temp matrix for reordering eigenvalues 
-complex(r15), allocatable :: overlap(:,:)
-real(r15), allocatable :: overlap_q(:,:) ,dk(:)
-real(r15) avg_gap,deiv,bandwidth
-real(r15) , allocatable :: eival_tmp(:),vg_tmp(:,:)  !Temp matrices for reordering eigenvalues 
-complex(r15), allocatable :: eivec_tmp(:,:)
-
- allocate(eival_tmp(ndyn),vg_tmp(3,ndyn), eivec_tmp(ndyn,ndyn), emap(ndyn,nkp) )
-
-!First estimate the maximum band derivative bmax=max(dE/dk)
-! gap=0
-! fsaf=10
- allocate(dk(2:nkp))
+ allocate(emap(ndyn,nkp),srt(ndyn),perm(ndyn),w(ndyn),cost(ndyn,ndyn),dk(nkp),dks(nkp),wref(ndyn))
+ allocate(ref(ndyn,ndyn),e(ndyn,ndyn))
+ dk=0
  do k=2,nkp
-    dk(k)=sqrt((kp(1,k)-kp(1,k-1))**2+(kp(2,k)-kp(2,k-1))**2+(kp(3,k)-kp(3,k-1))**2)
- end do
- bandwidth=maxval(eival)-minval(eival)
- avg_gap=bandwidth/ndyn
- write(*,*) "5*average gap=energy window for band sorting:", 5*avg_gap
+    dk(k)=sqrt(sum((kp(:,k)-kp(:,k-1))**2))
+ enddo
+ dks=dk; call sort_real(nkp-1,dks(2:nkp))
+ dkmed=dks(1+nkp/2)
 
-!Start from the first k-point, which will be used as the reference for other k points
  do b=1,ndyn
-    emap(b,:)=b
- end do
-
-!from the second k-point to the last, calculate the overlap matrix and do band sorting
- allocate (overlap(ndyn,ndyn),overlap_q(ndyn,ndyn))
+    emap(b,1)=b
+ enddo
+ ref=eivec(:,:,1)
+ wref=sign(sqrt(abs(eival(:,1))),eival(:,1))*cnst
+ window=5*(maxval(sign(sqrt(abs(eival)),eival))-minval(sign(sqrt(abs(eival)),eival)))*cnst/ndyn
+ write(ulog,*)'BAND_SORT_BS: connections across more than ',window,' 1/cm are penalized'
+ nweak=0
 
  kloop: do k=2,nkp
-
-! analyze band connectivity only if "nearly degenerate"
-    ntbd=ndyn
-    overlap=matmul(transpose(dconjg(eivec(:,:,k-1))),eivec(:,:,k))
-    do b=1,ndyn
-    do l=1,ndyn
-        overlap_q(b,l)=dble ( overlap(b,l)*dconjg(overlap(b,l)) )
-    end do
-    end do
-
-! find the largest gap for that kpoint; bandwidth/ndyn= typical level spacing
-!   maxgap=0
-!   do j=2,ndyn
-!      deiv = eival(j,i)-eival(j-1,i)  
-!      maxgap = max(maxgap,abs(eival(j,i)-eival(j-1,i)))  ! assumes eival is ordered
-!   end do
-
-!Step 0: if two bands with energy difference larger than 5*avg_gap, the bands are not supposed to be connected
-    do b=1,ndyn-1
-    do l=b+1,ndyn
-       if (abs(eival(b,k-1)-eival(l,k)) .ge. 5d0*avg_gap) then  !bmax*dk(i)) then
-          overlap_q(b,l)=0
-       end if
-    end do
-    end do
-
-!Step 1: find matrix elements larger than 0.51, which indicates a strong connectivity
+    if (dk(k).gt.4*dkmed) then   ! a jump in the path: start again from the energy order
+       do b=1,ndyn
+          emap(b,k)=b
+       enddo
+       ref=eivec(:,:,k)
+       wref=sign(sqrt(abs(eival(:,k))),eival(:,k))*cnst
+       cycle kloop
+    endif
+    e=eivec(:,:,k)
+    w=sign(sqrt(abs(eival(:,k))),eival(:,k))*cnst
+    call sort_index(ndyn,w,srt)
+! rotate inside each degenerate set
+    i0=1
+    do while (i0.le.ndyn)
+       i1=i0
+       do while (i1.lt.ndyn)
+          if (abs(w(srt(i1+1))-w(srt(i0))).ge.degtol) exit
+          i1=i1+1
+       enddo
+       ng=i1-i0+1
+       if (ng.gt.1) call align_block(srt(i0:i1),ng)
+       i0=i1+1
+    enddo
+! optimal assignment of the reference bands b to the bands m at k
     do b=1,ndyn
     do m=1,ndyn
-        if (overlap_q(b,m) .ge. 0.51) then
-            do l=1,ndyn
-                if ( emap(l,k-1) .eq. b) then
-                    emap(l,k)=m
-                end if
-            end do
-            ntbd=ntbd-1
-            overlap_q(b,:)=0  !Connected ones will not be examined again
-            overlap_q(:,m)=0
-        end if
-    end do
-    end do
-
-    if (ntbd .ne. 0) then !If there are unresolved connections remaining
-!Step 2: find the largest remaining matrix elements in each row, and connect eigenvalues connected by that.
-       do b=1,ndyn
-          if (maxval(overlap_q(b,:)) .ge. 0.1) then
-kkloop:      do m=1,ndyn
-                if (overlap_q(b,m) .eq. maxval(overlap_q(b,:))) then
-                   if (overlap_q(b,m) .lt. 0.3) then
-                     write(*,*) "Warning: the overlap matrix element is &
-   &                             smaller than 0,3, there may be ambiguity for band connectivity"
-                     write(*,*) "k-point:",kp(:,k),"index of kp:",k,"Matrix element:",overlap_q(b,m)
-                   end if
-                   do l=1,ndyn
-                      if ( emap(l,k-1) .eq. b) then
-                         emap(l,k)=m
-                      end if
-                   end do
-                   ntbd=ntbd-1
-                   overlap_q(b,:)=0
-                   overlap_q(:,m)=0
-                   exit kkloop
-                end if
-             end do kkloop
-          end if
-       end do
-    end if
-
-    if (ntbd .ne. 0) then !If there are still unresolved connections remaining
-!Step 3: connect the remaining pairs in a ascending order
-      do b=1,ndyn
-      do m=1,ndyn
-         if (overlap_q(b,m) .ne. 0) then
-            write(*,*) "Warning: the overlap matrix element is smaller than 0.3, &
-          &  there may be ambiguity to determine the band connectivity"
-            write(*,*) "k-point:",kp(:,k),"index of kp:",k,"Matrix element:",overlap_q(b,m)
-            do l=1,ndyn
-               if ( emap(l,k-1) .eq. b) then
-                  emap(l,k)=m
-               end if
-            end do
-            ntbd=ntbd-1
-            overlap_q(b,:)=0
-            overlap_q(:,m)=0
-         end if
-       end do
-       end do
-    end if
-
-    if (ntbd .ne. 0) then
-        write(*,*) 'error: band sorting failed'
-        write(*,*) 'k-point:',k,kp(:,k),ntbd
-    end if
-
- !  write(*,*)'k,emap(:,k)=',k,emap(:,k)
-
- end do kloop
+       cost(b,m)=1-abs(dot_product(ref(:,b),e(:,m)))**2 + 1d-3*abs(wref(b)-w(m))/window
+       if (abs(wref(b)-w(m)).gt.window) cost(b,m)=cost(b,m)+10
+    enddo
+    enddo
+    call hungarian_min(ndyn,cost,perm)
+    do b=1,ndyn
+       c=abs(dot_product(ref(:,b),e(:,perm(b))))**2        ! overlap of the chosen connection
+       emap(b,k)=perm(b)
+       ref(:,b)=e(:,perm(b))
+       wref(b)=w(perm(b))
+       if (c.lt.0.3) then
+          nweak=nweak+1
+          write(ulog,'(a,i6,3(1x,f9.4),a,i4,a,f6.3)')' BAND_SORT_BS: weak connection at k',k,kp(:,k), &
+ &              ' band',b,' overlap',c
+       endif
+    enddo
+ enddo kloop
+ if (nweak.gt.0) write(*,*)'BAND_SORT_BS: ',nweak,' connections with overlap < 0.3; see log'
 
  do k=1,nkp
-    do b=1,ndyn
-       eival_tmp(  b)=eival(  b,k)
-       eivec_tmp(:,b)=eivec(:,b,k)
-       vg_tmp   (:,b)=vel  (:,b,k)
-    end do
-    do b=1,ndyn
-       eival(  b,k)=eival_tmp(  emap(b,k))
-       eivec(:,b,k)=eivec_tmp(:,emap(b,k))
-       vel  (:,b,k)=vg_tmp   (:,emap(b,k))
-    end do
- end do
+    eival(:,k)=eival(emap(:,k),k)
+    eivec(:,:,k)=eivec(:,emap(:,k),k)
+    vel(:,:,k)=vel(:,emap(:,k),k)
+ enddo
+ deallocate(emap,srt,perm,w,cost,dk,dks,ref,e,wref)
 
- deallocate(overlap,overlap_q,emap,eival_tmp,eivec_tmp,vg_tmp)
+ contains
+
+ subroutine align_block(idx,n)
+!! rotates the degenerate eigenvectors e(:,idx) by U (unitary) to maximize Re Tr(M U), M = the
+!! overlap of the n reference vectors closest to the subspace with it: U = M^+ (M M^+)^(-1/2)
+ integer, intent(in) :: n,idx(n)
+ integer j,l,mx(1)
+ allocate(a(ndyn,n),wt(ndyn),top(n),mm(n,n),h(n,n),q(n,n),u(n,n),lam(n))
+ a=matmul(conjg(transpose(ref)),e(:,idx))       ! a(b,j) = <ref_b|e_j>
+ do j=1,ndyn
+    wt(j)=sum(abs(a(j,:))**2)
+ enddo
+ do j=1,n
+    mx=maxloc(wt); top(j)=mx(1); wt(mx(1))=-1
+ enddo
+ mm=a(top,:)
+ h=matmul(mm,conjg(transpose(mm)))
+ call diagonalize(n,h,lam,n,q,ier)
+ if (ier.eq.0 .and. minval(lam).gt.1d-8) then
+    do l=1,n
+       q(:,l)=q(:,l)/sqrt(sqrt(lam(l)))
+    enddo
+    u=matmul(conjg(transpose(mm)),matmul(q,conjg(transpose(q))))
+    e(:,idx)=matmul(e(:,idx),u)
+ endif                                           ! else (subspace nearly orthogonal): keep the basis
+ deallocate(a,wt,top,mm,h,q,u,lam)
+ end subroutine align_block
 
 end subroutine band_sort_bs
+!===========================================================
+ subroutine hungarian_min(n,a,assign)
+!! assignment minimizing sum_i a(i,assign(i)) (Kuhn-Munkres with potentials, O(n^3))
+ use constants, only : r15
+ implicit none
+ integer, intent(in) :: n
+ real(r15), intent(in) :: a(n,n)
+ integer, intent(out) :: assign(n)
+ real(r15) u(0:n),v(0:n),minv(0:n),cur,delta
+ integer p(0:n),way(0:n),i,j,i0,j0,j1
+ logical used(0:n)
+ u=0; v=0; p=0; way=0
+ do i=1,n
+    p(0)=i; j0=0; minv=huge(1d0); used=.false.
+    do
+       used(j0)=.true.; i0=p(j0); delta=huge(1d0); j1=0
+       do j=1,n
+          if (.not.used(j)) then
+             cur=a(i0,j)-u(i0)-v(j)
+             if (cur.lt.minv(j)) then
+                minv(j)=cur; way(j)=j0
+             endif
+             if (minv(j).lt.delta) then
+                delta=minv(j); j1=j
+             endif
+          endif
+       enddo
+       do j=0,n
+          if (used(j)) then
+             u(p(j))=u(p(j))+delta; v(j)=v(j)-delta
+          else
+             minv(j)=minv(j)-delta
+          endif
+       enddo
+       j0=j1
+       if (p(j0).eq.0) exit
+    enddo
+    do
+       j1=way(j0); p(j0)=p(j1); j0=j1
+       if (j0.eq.0) exit
+    enddo
+ enddo
+ do j=1,n
+    assign(p(j))=j
+ enddo
+ end subroutine hungarian_min
+!===========================================================
+ subroutine sort_index(n,x,idx)
+!! idx = permutation that sorts x in ascending order (insertion sort; n is small)
+ use constants, only : r15
+ implicit none
+ integer, intent(in) :: n
+ real(r15), intent(in) :: x(n)
+ integer, intent(out) :: idx(n)
+ integer i,j,t
+ do i=1,n
+    idx(i)=i
+ enddo
+ do i=2,n
+    t=idx(i); j=i-1
+    do while (j.ge.1)
+       if (x(idx(j)).le.x(t)) exit
+       idx(j+1)=idx(j); j=j-1
+    enddo
+    idx(j+1)=t
+ enddo
+ end subroutine sort_index
+!===========================================================
+ subroutine sort_real(n,x)
+!! sorts x in ascending order in place (insertion sort)
+ use constants, only : r15
+ implicit none
+ integer, intent(in) :: n
+ real(r15), intent(inout) :: x(n)
+ integer i,j
+ real(r15) t
+ do i=2,n
+    t=x(i); j=i-1
+    do while (j.ge.1)
+       if (x(j).le.t) exit
+       x(j+1)=x(j); j=j-1
+    enddo
+    x(j+1)=t
+ enddo
+ end subroutine sort_real
 !==========================================================
  subroutine diagonalize(n,mat,eival,nv,eivec,ier)
 ! n=size of mat; nv is the number of needed eigenvectors
