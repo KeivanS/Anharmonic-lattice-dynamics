@@ -159,14 +159,24 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
     trigonal, monoclinic and triclinic cells (MoTe2 included) until 2026-10-22; now op_matrix.
     IBZ checked against spglib 2.7.0 (get_ir_reciprocal_mesh, time reversal) on 4x4x4 and 6x6x4:
     Ge 8/34, Imma test 18/42, wurtzite 12/21, P3m1 test 13/24, star sizes identical.
-- OPEN: the per-mode RTA (mode_kappa) and the direct/iterative solutions use one velocity per
-  mode and rotate the IBZ velocity onto the star, both basis-dependent at degenerate points:
-  Ge 6^3 RTA 29.88/29.91/30.00, off-diagonal 0.04. Needs a block (matrix) distribution in
-  degenerate subspaces or a fixed rotated basis -- the user's choice. The direct-vs-iterative
-  numbers above predate the 2026-10-22 fixes.
-- OPEN (seen, not fixed): set_dynamical_matrix's hermitising loop is `j=t+1,ndim-1` (misses the
-  last column); THERMACOND's NA term (Gaussian-damped, rho=|G|/4, no exp(iq(ta-tb)) phase) may not
-  match FOCEX's NA treatment -- check on a polar material.
+- Degenerate blocks (item (c), 2026-10-22): P1/P2 (|V3|^2 x tetrahedron weight) are also averaged
+  over the sets at q2 and q3 (`average_degenerate_p`; sums, hence Q and RTA, unchanged), so
+  F = tau (v + Delta) with Delta common to a set, and kappa_vs_T.dat reports per-mode value +
+  kappa_P - per-mode RTA (RTA column = kappa_P). Test hook THERMACOND_ROTATE_DEGENERATE=<seed>
+  (random unitary in each degenerate set, `rotate_degenerate` in rest.f90): Ge 4^3 job 3 block
+  RTA and iterative identical to all digits for seeds 0/1/2; per-mode values moved 3 %.
+- OPEN: that block iterative value is anisotropic, basis-independently: Ge 4^3 100 K
+  41.035/41.027/41.126 (RTA exactly isotropic) -- kernel symmetry (tetrahedra orientation or the
+  star handling of q2/q3 in update_mpi); check with the direct-vs-iterative item. The
+  direct-vs-iterative numbers above predate the 2026-10-22 fixes.
+- Checks (2026-10-22, rules agreed with the user): omega^2 < -25 1/cm^2 stops `get_freq_vg`
+  (error stop), -25..0 -> warning and |omega^2| (same -25 as focex-agent); D -> (D+D^+)/2 in
+  full (the old loop `j=t+1,ndim-1` missed the last column), warning if max|D-D^+|/max|D| > 1e-6
+  (same in FOCEX `make_hermitian`); empty fc3.dat stops (READ_FC3) instead of infinite tau / NaN.
+  The symmetrisation exposed the per-mode basis dependence below (Ge 4^3 RTA moved 0.5 % for a
+  1e-16 change of D; kappa_P moved 1e-6).
+- OPEN (seen, not fixed): THERMACOND's NA term (Gaussian-damped, rho=|G|/4, no exp(iq(ta-tb))
+  phase) may not match FOCEX's NA treatment -- check on a polar material.
 - job 1 is slow: function_self_w3 recomputes V3 over the mesh for each (k, mode); use few
   points per segment in kpbs.params.
 
@@ -193,12 +203,10 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
 
 ## Things that bite
 
-- `sc_snaps.x` (in the SC_SNAPS repo) aborts at run time with `Recursive call to
-  nonrecursive procedure 'findif'` **when built with `-fcheck=all`** (which this
-  repo's `make.inc` sets, so it bites anyone reusing those flags):
-  `-fcheck=all` implies `-fcheck=recursion`, and `findif` does recurse via
-  `d1v`/`d2v`. Verified: `-O2` fine, `-O2 -fcheck=all` aborts, adding
-  `-frecursive` fixes it. SC_SNAPS's own Makefile uses plain `-O2`.
+- `sc_snaps.x` built before 2026-10-22 aborts with `Recursive call to nonrecursive
+  procedure 'findif'` when compiled with `-fcheck=all` (`d2v` called `findif(r,d1v)`, and
+  `d1v` calls `findif`). Fixed in SC_SNAPS: `d2v` writes the same central difference out;
+  identical freqs.dat/modes.dat, any flags work. Rebuilt copies in `~/BIN` and `~/ALADYN/bin`.
 - The parameter files are read positionally by list-directed `read`. A missing
   line or a missing value silently swallows the next record and crashes later
   with a confusing message. `default.params` must have 36 lines; line 2 of
@@ -238,6 +246,23 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
   that factor is a Hartree, not a Rydberg, and carries no 1/a_B — flagged to the
   author, unresolved.
 - `read_qe.x` takes its input filename on **stdin**: `echo pw.out | read_qe.x`.
+- POSCARi species (2026-10-22): `check_input_poscar_consistency_new` first requires each atom
+  to sit on a site of the species its counts line gives it (order of structure.params) --
+  this fixes the origin where positions cannot (MgO sublattices); if impossible it falls back
+  to species from positions with a WARNING (MoTe2 test POSCAR1: counts 64 128 but Te first).
+  Both "cannot map" stops are `error stop` now. Cartesian POSCAR positions are multiplied by
+  line 2 (VASP rule): MgO-ANH3-cubic's POSCAR1 (16.86 with positions in A) was invalid.
+- Lattice precision: lines 1-2 with irrational ratios to 7-8 digits (1.7320508) make the
+  Cartesian symmetry ops non-orthogonal (1.6e-8) and the FC symmetry analysis silently wrong
+  (MgO in an orthorhombic cell: one FC3 group lost, all FC3 = 0; full precision fixes it;
+  exact mechanism inside the term analysis not pinned down). symmetry_init warns above 1e-10.
+- Band order (bs_freq.dat, bands.dat, bs_grun.dat; `band_sort_bs`, 2026-10-22): Hungarian
+  assignment on |<e(k-1)|e(k)>|^2 after aligning degenerate subspaces (polar decomposition),
+  5 x mean level spacing window as before. The old greedy version left unconnected bands at
+  their initial index: GeSe had a copied row at 179 of 180 k-points. Ge/BZO/MoTe2 unchanged.
+- `setup_maps`: `collect_force_constants` counts a candidate group before dropping it when all
+  its terms vanish, so its test is `ngroups.gt.maxgroups` with maxgroups = exact + 1 (the
+  `.ge.` test stopped MgO rank 3 with "sizing disagreement").
 
 ## Docs
 
