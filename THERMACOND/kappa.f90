@@ -121,7 +121,7 @@
   close(1008)
   call gruneisen(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,eigenvec_bs,ugrun,grun_bs)
   allocate(kpc(3,nkc),mappos(nkc),wk(nkc))
-  call make_kp_reg(nc,g1,g2,g3,shft,kpc,wk)
+  call make_kp_reg(nc,g01,g02,g03,shft,kpc,wk)   ! integer fractions of the primitive reciprocal vectors
   call deallocate_eig_bs
   call deallocate_kp_bs
   call timing('After band structure')
@@ -151,6 +151,7 @@
   deallocate(evc)
   call allocate_tetra(nc(1),nc(2),nc(3),wmesh,ndyn)
   call make_kp_reg_tet(nc(1),nc(2),nc(3),shft(1),shft(2),shft(3),kpc,wk)
+  call check_mesh_labels
   call calc_tet(nc(1),nc(2),nc(3),ndyn,kpc)
   deallocate(dos,dkc)
   deallocate(grun)
@@ -174,6 +175,33 @@
  contains
 
 !---------------------------------------------------------------
+ subroutine check_mesh_labels()
+!! every routine finds mesh points with get_k_info (index from the reduced coordinates on
+!! g1,g2,g3, modulo G; Gamma-centred labelling for even meshes, as made by make_kp_reg and
+!! make_kp_reg_tet). Stop if kpc(:,i), kpc(:,i)+G or the IBZ representatives are not found
+!! at their own index, or if -k is not the inverse of k.
+ integer ii,nn,a1,a2,a3,ins,nbad
+ real(8) qq(3)
+ nbad=0
+ do ii=1,nkc
+    call get_k_info(kpc(:,ii),NC,nn,a1,a2,a3,g1,g2,g3,ins)
+    if (nn.ne.ii) nbad=nbad+1
+    qq=kpc(:,ii)+g1-2*g2+g3
+    call get_k_info(qq,NC,nn,a1,a2,a3,g1,g2,g3,ins)
+    if (nn.ne.ii) nbad=nbad+1
+    call get_k_info(-kpc(:,ii),NC,nn,a1,a2,a3,g1,g2,g3,ins)
+    qq=kpc(:,nn)+kpc(:,ii)                         ! must be a reciprocal lattice vector
+    qq=[dot_product(qq,v2a(r1)),dot_product(qq,v2a(r2)),dot_product(qq,v2a(r3))]/(2*pi)
+    if (maxval(abs(qq-nint(qq))).gt.1d-6) nbad=nbad+1
+ enddo
+ do ii=1,nibz
+    call get_k_info(kibz(:,ii),NC,nn,a1,a2,a3,g1,g2,g3,ins)
+    if (nn.ne.mapinv(ii)) nbad=nbad+1
+ enddo
+ write(ulog,*)'CHECK_MESH_LABELS: k, k+G, -k and IBZ points found at their indices; errors=',nbad
+ if (nbad.ne.0) error stop 'CHECK_MESH_LABELS: mesh and get_k_info disagree'
+ end subroutine check_mesh_labels
+
  subroutine timing(what)
  character(*), intent(in) :: what
  call cpu_time(cputim)

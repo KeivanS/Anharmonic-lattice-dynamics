@@ -922,8 +922,8 @@ contains
  use geometry
  use constants
  implicit none
- type(vector) r1,r2,r3,g1,g2,g3     ! translation vectors of the supercell
- type(vector) r01,r02,r03,g01,g02,g03  ! tr vect of prim cell and its recip spce
+ type(vector) r1,r2,r3,g1,g2,g3     ! primitive cell of lat_fc.dat and its reciprocal (2pi): the k-mesh
+ type(vector) r01,r02,r03,g01,g02,g03  ! the same primitive cell (r0i from structure.params, checked equal)
  type(vector) r1conv,r2conv,r3conv,g1conv,g2conv,g3conv
  real(8) volume_r,volume_g,lattice_parameter,latticeparameters(6),primitivelattice(3,3)
  real(8) conv_to_cart(3,3),conv_to_prim(3,3), cart_to_prim(3,3), prim_to_cart(3,3),prim_to_conv(3,3)

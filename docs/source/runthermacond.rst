@@ -116,6 +116,13 @@ How it is computed
 * Group velocities: Hellmann-Feynman, v = <e|dD/dq|e>/2omega, including the derivative of the
   non-analytic (Born charge) term. The finite-difference velocities are written next to them in
   ``veltest.dat`` as a check; they agree to about 1e-4 except at band crossings.
+* k-mesh (``latdyn.params`` line 1): integer fractions of the primitive reciprocal vectors of
+  ``lat_fc.dat`` (the run stops if ``structure.params`` has a different primitive cell). Even
+  meshes are Gamma-centred (reduced coordinates -1/2 ... 1/2 - 1/n), odd ones start at Gamma;
+  the shift on line 2 is not used. Mesh points are found everywhere by their reduced
+  coordinates modulo G (``get_k_info``); this is checked at start-up for k, k+G, -k and the
+  irreducible points (``CHECK_MESH_LABELS`` in ``phonlog.dat``). Odd meshes stopped in the
+  tetrahedron set-up before 23 October 2026.
 * Irreducible zone: the stars use the Laue group of the crystal (its point group and
   inversion); the representative of each star is the image in the first Brillouin zone
   furthest along a fixed generic direction, so the irreducible points fill one wedge

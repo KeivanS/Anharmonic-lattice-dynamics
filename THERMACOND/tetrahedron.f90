@@ -19,7 +19,11 @@
     open(126,file='KPOINT_tet.MP',status='unknown')
     write(126,*)'# i ,kp(:,i), wk(i)'
     ep = 0d0  ! shift by a small amount so that only one boundary K remains in the FBZ after folding
-    shft = (-0.5d0)*(g1+g2+g3)
+! same mesh as make_kp_reg (modules.f90): Gamma-centred, i.e. shifted by -(g1+g2+g3)/2, only
+! when all three divisions are even. The corners below must be mesh points too: with the shift
+! applied to them unconditionally an odd mesh stopped in get_k_info ("is not a kpoint").
+    shft = 0
+    if (mod(nx,2).eq.0 .and. mod(ny,2).eq.0 .and. mod(nz,2).eq.0) shft = (-0.5d0)*(g1+g2+g3)
 
 !    allocate(tet((nx-1)*(ny-1)*(nz-1)*6), stat=ierr)
 !    if (ierr/=0) print*, "tet : Allocation failed"
