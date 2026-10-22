@@ -2347,10 +2347,11 @@ stop
  endif
 
  open(ufco,file=fn)
- write(ufco,*)' Crystal data: translation vectors of the primitive cell '
- write(ufco,9)r01
- write(ufco,9)r02
- write(ufco,9)r03
+ write(ufco,*)' Crystal data: translation vectors of the primitive cell ', &
+ &   '  (columns 4-6: the conventional cell vectors, Cartesian; older readers take columns 1-3)'
+ write(ufco,9)r01,r1conv
+ write(ufco,9)r02,r2conv
+ write(ufco,9)r03,r3conv
  write(ufco,*)' Crystal data: atoms in primitive cell: label,type,x,y,z,mass '
  write(ufco,*)natom_prim_cell
  do i=1,natom_prim_cell

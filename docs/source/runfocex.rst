@@ -919,7 +919,8 @@ and its fields are, from left to right:
 
 ``lat_fc.dat``
     The structural information that goes with the FCs: primitive translation
-    vectors, atoms of the primitive cell, which ranks were included, the shell
+    vectors (since 23 October 2026 each line also carries the conventional vector in
+    columns 4-6; readers that take three numbers are unaffected), atoms of the primitive cell, which ranks were included, the shell
     counts actually used, the number of groups and terms per rank, and the
     Cartesian coordinates of every neighbor atom referred to by the ``fcN.dat``
     files. **The other ALATDYN codes read this file together with the**
@@ -985,7 +986,12 @@ Phonons and thermodynamics
 ``temp_free.dat``
     The free energy versus strain curve at each temperature that is minimised to
     produce ``thermo_QHA.dat`` — useful to check that the minimum is well inside
-    the scanned strain range.
+    the scanned strain range. Columns: T, linear strain, F (kJ/mol), P (GPa), index of
+    the F minimum, B, B(strain), Gruneisen, weight, then the parts of F and P: static
+    (F0 = -P0 dV + B V0 (dV/V0)^2/2 with P0 the residual pressure, P0 - B dV/V0), the
+    harmonic-only term (F_agne = -N k T ln(V/V0), P_agne = N k T/V; zero when FC3 are
+    included) and the phonons. P is -dF/dV of the same F, so P = 0 at the minimum of F
+    (before 23 October 2026 the static term was missing from P).
 
 ``chi_real.dat`` / ``chi_imag.dat``
     Real and imaginary parts of the dielectric response versus frequency, plus

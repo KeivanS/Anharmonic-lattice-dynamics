@@ -333,7 +333,8 @@
   open(uio,file='temp_free.dat')
   write(utherm,'(a)')"# T(K) , E_eq(kJ/mol) , F_eq(kJ/mol),V_eq/V0,strain , Cv, "// &
  &      "Cp(J/K.mol), S(J/K.mol) , lin_CTE(1/K),Grun , B(T)/B(0)"
-  write(uio,*)'# temperature, strain , E_free(kJ/mol) , Pressure (GPa) , imin,bulkmod,boft,gruneisen,probability'
+  write(uio,*)'# temperature, strain , E_free(kJ/mol) , Pressure (GPa) , imin,bulkmod,boft,gruneisen,probability,'// &
+ &   ' F0,P0 (static), F_agne,P_agne (harmonic-only term), F_ph,P_ph (phonons); F in kJ/mol, P in GPa'
   tempk=tmin 
   temploop: do i=1,500 ! this allows to from 5K to Tmax 
      if(tempk.lt.40) then ! at t<150 put more T values differing by 5 K
@@ -2269,7 +2270,9 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  integer b,k,nat,i,imin,imin2,rk,factorial
  real(r15) x0,x1,x2,cv_nk,cv,etot,hw,nbe,mdedv,pres0,nbx,s0,s1,s2,f0,f1,f2,mtx(3,3),fx(3),abc(3),grune,gr2
  real(r15) eq_strain ,strain(3*imax+1),free(3*imax+1),pres(3*imax+1),prob(3*imax+1),gr(3*imax+1),grn(ndyn,nk),bmod(3*imax+1),boft2
- real(r15) eq_free2,eq_pres,eq_volm2,eq_strain2,frac,cvt2,sump,dvbyv,ev2kjpermol,arg,fmin,fmax,kteff
+ real(r15) eq_free2,eq_pres,eq_volm2,eq_strain2,frac,cvt2,sump,dvbyv,ev2kjpermol,arg,fmin,fmax,kteff,geff
+ real(r15) fst(3*imax+1),pst(3*imax+1),fag(3*imax+1),pag(3*imax+1)
+ logical agne
  real(r15) ,save :: vol0
 
     nat = ndyn/3
@@ -2288,9 +2291,12 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 ! calculate free energy and pressure for every volume or strain
     pres =  -sum( (/ (sigma0(b,b),b=1,3)/) )/3   ! this is in GPa
     write(ulog,*)'Pressure=sigma0(GPa)=',pres(1)
+    pres0 = pres(1)                      ! residual pressure at V0 (GPa); F gets -pres0*(V-V0)
+    agne = .false.
     if (maxval(abs(grin)).lt.1d-6) then  ! if harmonic theory only
-       pres = pres + 1d-9*k_b *natom_prim_cell/volume_r0*1d30*temprk
-       write(ulog,*)'Pressure=sigma0+NkT/V(GPa)=',pres(1)
+! P_agne = N k T / V, so that the harmonic case has a thermal expansion; its free energy is
+! F_agne = -N k T ln(V/V0) (added below, so that P = -dF/dV and the F minimum moves with it)
+       agne = .true.
        gr2 = 1.5*(3-4*xagne*xagne)/(1+2*xagne*xagne)
        grn=gr2
     else
@@ -2304,17 +2310,31 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
        dvbyv = (1+strain(i))**3 - 1 ! used to be  (1+2*strain(i))**1.5 - 1
 ! harmonic calculation; no Gruneisen available; use Leontiev Approx
 
-       etot=0.5*dvbyv*dvbyv*volume_r0*1d-30 * hbulkmod*1d9 * ev2kjpermol
+! static energy E0(V) = -P0 (V-V0) + B V0 (dV/V0)^2 / 2, and its pressure -dE0/dV = P0 - B dV/V0:
+! P(V) must be -dF/dV of the same F(V), so that P=0 is the minimum of F (the static term was
+! missing from P before 2026-10-23: Ge P=0 at +10 % strain instead of the F minimum at +0.25 %)
+       etot=(0.5*dvbyv*dvbyv*hbulkmod - pres0*dvbyv)*volume_r0*1d-30*1d9 * ev2kjpermol
        free(i)=etot
+       pres(i)=pres0 - hbulkmod*dvbyv
+       fst(i)=free(i) ; pst(i)=pres(i) ; fag(i)=0 ; pag(i)=0
+       if (agne) then
+          pag(i) = k_b*natom_prim_cell*temprk/(volume_r0*(1+dvbyv)*1d-30)*1d-9   ! P_agne, GPa
+          fag(i) = -k_b*natom_prim_cell*temprk*log(1+dvbyv) * ev2kjpermol        ! F_agne
+          pres(i)= pres(i) + pag(i)
+          free(i)= free(i) + fag(i)
+       endif
       
        do k=1,nk
        do b=1,ndyn
           x0=h_plank*mysqrt(abs(eival(b,k)))*cnst*100*c_light/(k_b*temprk)  
         if (x0.gt.0) then
+! geff = -dln(omega)/dln(V) of the omega(V) used here, so that the pressure below is -dF/dV
           if (strain(i)*grn(b,k).lt. 0 ) then ! use the following to avoid divergence or negative x1
              x1= x0 * (1-3*grn(b,k)*strain(i))  
+             geff = grn(b,k)*(1+strain(i))/(1-3*grn(b,k)*strain(i))
           else
              x1= x0 / (1+3*grn(b,k)*strain(i)) 
+             geff = grn(b,k)*(1+strain(i))/(1+3*grn(b,k)*strain(i))
           endif
           if (x1.gt.60) then
              nbx=0
@@ -2323,16 +2343,18 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
           else ! limit x1 to x0/100
              x1=x0/100d0
              nbx=nbe(x1,1d0,classical)
+             geff=0                          ! frequency held fixed
           endif
         else
           x1=abs(x0)/100 ! treat negative freqs as near zero =0.001*kT  
           nbx=nbe(x1,1d0,classical)
+          geff=0
         endif
           cv_nk = x1*x1*nbx*(1+nbx) ![x/2/sinh(x/2)]^2  
           hw = x1*k_b*temprk  ! hbar*omega in Joules
           cv  = cv + cv_nk*wk(k)   ! this is in J/K units : per unit cell
           grune  = grune + cv_nk*wk(k)*grn(b,k)   ! this is in J/K units : per unit cell
-          pres(i)= pres(i) + hw * (nbx + 0.5d0) * wk(k) * grn(b,k)/(volume_r0*1d-30)*1d-9 ! in GPa 
+          pres(i)= pres(i) + hw * (nbx + 0.5d0) * wk(k) * geff/(volume_r0*(1+dvbyv)*1d-30)*1d-9 ! in GPa
           etot   = etot    + hw * (nbx + 0.5d0)                * wk(k) * ev2kjpermol 
           free(i)= free(i) + k_b*temprk*(x1/2+log(1-exp(-x1))) * wk(k) * ev2kjpermol  
  !        write(*,7)' kp,band,x,hw,nbx,pres,free=',k,b,x1,hw,nbx,pres(i),free(i)
@@ -2378,7 +2400,8 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
     boft =sum(bmod*prob)/sum(prob)
     write(ulog,5)'------------------At T: boft(imin),boft(prob)=',temprk,boft2,boft
     do i=1,1+3*imax 
-       write(uio,3)temprk,strain(i),free(i),pres(i),dble(imin),hbulkmod,bmod(i) ,gr(i),prob(i)
+       write(uio,3)temprk,strain(i),free(i),pres(i),dble(imin),hbulkmod,bmod(i) ,gr(i),prob(i), &
+ &                 fst(i),pst(i),fag(i),pag(i),free(i)-fst(i)-fag(i),pres(i)-pst(i)-pag(i)
     enddo
 
 ! #################       Now do strain minimization     #########################
