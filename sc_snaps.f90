@@ -50,10 +50,13 @@ module pairpot
      function d2v(r) result(v2)
      implicit none
      real(8), intent(in):: r
-     real(8) v2 ,findif
+     real(8) v2
+     real(8), parameter:: h=1d-6   ! same step as findif
 
 !     v2=2*a*a*D*(2*exp(-a*(r-req))-1)*exp(-a*(r-req))
-      v2=findif(r,d1v)
+! the same as findif(r,d1v), written out: that call would re-enter findif (d1v calls it),
+! which is illegal for a non-recursive function and aborts under -fcheck=all
+      v2=(d1v(r+h)-d1v(r-h))/(2*h)
 
      end function d2v
 

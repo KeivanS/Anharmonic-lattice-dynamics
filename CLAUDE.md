@@ -34,11 +34,10 @@ The user's `python3` is Homebrew 3.14 and is `EXTERNALLY-MANAGED` (PEP 668):
 `numpy` and `python-matplotlib` formulae) and installs the rest. The Makefile
 then picks `.venv/bin/python` up automatically via a `wildcard` test.
 
-**Do not add `-fcheck=all`.** It implies `-fcheck=recursion`, and `findif` does
-recurse (`d2v` → `findif` → `d1v` → `findif`), so the program aborts at run time
-with `Recursive call to nonrecursive procedure 'findif'`. Verified: `-O2` works,
-`-O2 -fcheck=all` aborts, `-O2 -fcheck=all -frecursive` works. The proper fix
-would be to declare `findif`, `d1v` and `d2v` as `recursive`.
+Any flags work since 2026-10-22, `-fcheck=all` included: `d2v` used to call `findif(r,d1v)`,
+which re-enters `findif` (`d1v` calls it) and aborted with `Recursive call to nonrecursive
+procedure 'findif'` under `-fcheck=recursion`. `d2v` now writes the same central difference out
+(same step h); freqs.dat and modes.dat are byte-identical to before.
 
 ## Input format (this is the part that has drifted)
 
