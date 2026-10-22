@@ -15,7 +15,8 @@ Requirements
   the agent imports its INCAR/KPOINTS generator, GGA+U and MAGMOM rules, KPAR/NCORE rule,
   POTCAR builder, SLURM profiles and high-symmetry k-path. The POTCAR library is
   ``$VASP_POTCAR_DIR``, as for VASP-Flow.
-* Python with numpy, spglib and pymatgen (VASP-Flow's environment).
+* Python with numpy, spglib and pymatgen (VASP-Flow's environment, e.g. ``~/vaspenv/bin/python``;
+  a bare Homebrew ``python3`` has none of them).
 * ``sc_snaps.x`` (SC-SNAPS), ``read_outcar.x`` (``FOCEX/utility``), the FOCEX binary, and gnuplot
   for the plots.
 
@@ -25,8 +26,12 @@ Running it
 .. code-block:: bash
 
    cp FOCEX/focex-agent.example.txt instructions.txt      # edit: Project and RANKS are required
-   python3 FOCEX/focex-agent.py init -i instructions.txt -s POSCAR --profile rivanna
+   ~/vaspenv/bin/python FOCEX/focex-agent.py init -i instructions.txt -s POSCAR --profile rivanna
    cd <Project> && sbatch run_workflow.sh                  # bash run_workflow.sh on a workstation
+
+   ~/vaspenv/bin/python FOCEX/focex-agent.py run <Project> --only snaps     # redo one task
+   ~/vaspenv/bin/python FOCEX/focex-agent.py run <Project> --retry-failed   # = resubmit_failed.sh
+   ~/vaspenv/bin/python FOCEX/focex-agent.py plots <Project>                # remake the plots
 
 ``run_workflow.sh`` calls ``focex-agent.py run <Project>``, which does the tasks below in order.
 A finished task is recorded in ``state.json`` and skipped, so after a time limit the same script
@@ -43,11 +48,12 @@ scf        ``02_scf``: same INCAR (ISIF = 1, NSW = 0) and KPOINTS; reuses CHGCAR
            the second reduction left the basis unchanged; band gap from EIGENVAL
 dfpt       ``02_scf/dfpt``, only if there is a gap (``DFPT: auto``): epsilon_inf and Born charges
 snaps      ``03_snaps``: ``cell.inp``, ``supercell.inp``, ``snaps.inp``; SC-SNAPS; mean and standard
-           deviation of the displacements; the temperature is retuned once (T proportional to
-           the mean square) if the rms displacement is not within 15 % of ``DISP_TARGET``; the
+           deviation of the displacements; if the rms displacement is not within 15 % of
+           ``DISP_TARGET`` the temperature is rescaled (T proportional to the mean square) and
+           SC-SNAPS rerun, at most twice; the
            undistorted supercell is checked to be commensurate with POSCAR0 before any VASP run
 supercells ``04_supercells/snap_NNN``: INCAR as the SCF plus ISYM = 0 and no WAVECAR/CHGCAR,
-           commensurate Gamma mesh, MAGMOM expanded to the supercell
+           Gamma mesh (see *Supercell k-mesh* below), MAGMOM expanded to the supercell
 vasp_snaps the supercell runs, one after the other; failures are diagnosed in ``report.log``
            and ``resubmit_failed.sh`` reruns them (no OUTCAR is ever overwritten: an old one
            is kept as ``OUTCAR.1``, ``OUTCAR.2`` ...)
@@ -87,6 +93,45 @@ line 2 the primitive vectors in conventional units, line 3 ``1.0 0`` (atoms in c
 units), line 5 ``1 1 1 0``, line 7 ``1 .false.``. POSCAR0 is rotated so that its conventional
 cell lies exactly where FOCEX and SC-SNAPS build it from these six numbers (a along x, b in the
 xy plane), so POSCAR1, FORCEDISP1 and the Born charges are all in that frame.
+
+Supercell k-mesh
+----------------
+
+If the supercell matrix (rows, primitive units) is diagonal up to a permutation, the mesh is
+the primitive one divided by the multiples, rounded up: 6 10 8 with 2 x 2 x 2 gives 3 5 4,
+exactly commensurate. Otherwise -- which includes every multiple of a centred conventional cell,
+e.g. fcc or bcc -- the supercell mesh only keeps the k-point spacing of the primitive mesh
+(n_i = round(b_i(sc) / dk), b the lengths of the reciprocal vectors, dk the geometric mean of b_i / N_i of the primitive mesh); it is
+then not in general exactly commensurate. ``KPOINTS_snaps`` sets it by hand.
+
+Project folder
+--------------
+
+=========================== ==============================================================
+``instructions.txt``        copy of the input (``init`` appends the k-mesh density it chose)
+``POSCAR.input``            the structure given; ``POSCAR.init`` reduced and oriented
+``POSCAR0``                 relaxed cell, frame of every later step
+``state.json``              finished tasks, supercell matrix, gap, epsilon, Born charges
+``report.log``              one entry per task: OK/FAILED, minutes, what was checked
+``run_workflow.sh``         the batch script (VASP-Flow profile); ``resubmit_failed.sh``
+``01_relax``, ``02_scf``    VASP; ``02_scf/dfpt`` the DFPT run
+``03_snaps``                ``cell.inp``, ``supercell.inp``, ``snaps.inp``, ``poscar_NNN``
+``04_supercells``           ``snap_NNN/`` one VASP run each; ``FORCEDISP1``, ``POSCAR1``
+``05_focex``                the FOCEX run and plots; ``NOBORN/``, ``LASSO/`` when made
+=========================== ==============================================================
+
+WAVECAR, CHG, CHGCAR, WFULL, TMPCAR and PROCAR are deleted from ``01_relax`` after the SCF, from
+``02_scf`` after the DFPT (or when it is skipped), and from each ``snap_NNN`` after its run.
+OUTCARs are never deleted.
+
+Thermal conductivity
+--------------------
+
+THERMACOND reads ``lat_fc.dat``, ``fc2.dat`` and ``fc3.dat`` of the FOCEX run, so give at least
+``RANKS: 1 1 1 0 0 0 0 0``. The agent does not run it: in ``05_focex`` set lines 8-13 of
+``latdyn.params`` (job, solver, ...; see :ref:`thermacond-latdyn`) and run ``kap8`` there,
+or in a copy with ``structure.params``, ``dielectric.params``, ``kpbs.params`` and the three
+``*.dat`` files.
 
 Overriding any file
 -------------------
