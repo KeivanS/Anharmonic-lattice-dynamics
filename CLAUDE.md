@@ -96,6 +96,17 @@ numpy, spglib, pymatgen; Homebrew python3 has none of them).
 - Born charges are transposed from VASP's (field, displacement) to FOCEX's
   `charge(displacement, field)` (`aux_na.f90` contracts q with the 2nd index). The VASP
   convention is from memory, not checked against VASP docs: `BORN_TRANSPOSE` switches it.
+- DATA mode (2026-10-23): `DATA: <folder>` (POSCARi/FORCEDISPi, optional primitive POSCAR and
+  dielectric.params in the data frame; `SPECIES:` if no element line) -> `init_data`: lattice
+  symmetrized (`ideal_frame`: spglib std_lattice parameters, same basis/order; MgO-Safoura data
+  7.6e-7 A off), Kabsch rotation into the FOCEX frame applied to POSCARi, FORCEDISPi (pos+force),
+  eps/Z (R^T T R); tasks relax..collect marked provided. Verified on MgO-Safoura: NOBORN fit
+  7.197 %, 35 unknowns, 647 1/cm, B 184.0, G 117.3 GPa = direct run in the original frame.
+- FOCEX's Zener ratio and mean sound speed / Debye T use tensor components as if the conventional
+  axes were x,y,z: MgO in the rhombohedral orientation 806 K vs 982 K in the FOCEX frame (B, G
+  invariant). Open: make vbar frame-invariant.
+- Normal mode writes structure.params from the relaxed CONTCAR unsymmetrized (~1e-7): same risk as
+  above (lost FC groups at 1.6e-8 non-orthogonality); not yet idealized.
 - Test it without VASP: point `VASP_STD` at a fake that writes OUTCAR/CONTCAR/EIGENVAL with
   the markers `outcar_status` looks for (General timing, EDIFF is reached, reached required
   accuracy, BORN EFFECTIVE CHARGES).
@@ -177,6 +188,13 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
   1e-16 change of D; kappa_P moved 1e-6).
 - OPEN (seen, not fixed): THERMACOND's NA term (Gaussian-damped, rho=|G|/4, no exp(iq(ta-tb))
   phase) may not match FOCEX's NA treatment -- check on a polar material.
+- k-mesh: the compiled `make_kp_reg` is the one in modules.f90 (kpoints.f90 is not in the
+  Makefile): g1,g2,g3 = g01,g02,g03 = reciprocal of lat_fc.dat's primitive cell (read_lattice
+  now stops if structure.params' r0i differ); even meshes Gamma-centred (shift -1/2), odd from
+  Gamma; latdyn line-2 shift ignored. get_k_info assumes exactly that labelling (verified 4^3-7^3:
+  k, k+G, -k, IBZ; counts = spglib 8/10/16/20; `check_mesh_labels` runs every time). Odd meshes
+  stopped in make_kp_reg_tet ("is not a kpoint": corners shifted by -(g1+g2+g3)/2 unconditionally)
+  until 2026-10-23.
 - job 1 is slow: function_self_w3 recomputes V3 over the mesh for each (k, mode); use few
   points per segment in kpbs.params.
 

@@ -94,6 +94,35 @@ units), line 5 ``1 1 1 0``, line 7 ``1 .false.``. POSCAR0 is rotated so that its
 cell lies exactly where FOCEX and SC-SNAPS build it from these six numbers (a along x, b in the
 xy plane), so POSCAR1, FORCEDISP1 and the Born charges are all in that frame.
 
+Existing data (FOCEX only)
+--------------------------
+
+To fit force constants to forces that are already computed, give ``DATA: <folder>`` in the
+instructions (no ``-s``): ``focex-agent.py init -i instructions.txt`` and then ``run``. The folder
+holds ``POSCAR1``, ``FORCEDISP1`` (and ``POSCAR2``, ``FORCEDISP2``, ... -- all pairs are used)
+in any orientation, and optionally
+
+* ``POSCAR``: the primitive cell in the frame of the data; otherwise spglib finds it from
+  ``POSCAR1`` (keeping its orientation);
+* ``dielectric.params``: epsilon_inf and the Born charges in the frame of the data, one block per
+  atom of that ``POSCAR`` (without a ``POSCAR`` this is accepted only with one atom per species).
+
+``SPECIES: Mg O`` names the species when the POSCARs have no element line. ``init`` symmetrizes
+the lattice of the primitive cell (spglib's idealized lattice parameters, same basis and atom
+order: lattice parameters given to 6-7 digits make FOCEX's symmetry analysis lose force-constant
+groups), rotates it into the FOCEX frame, rotates ``POSCARi`` and the positions and forces of
+``FORCEDISPi`` with the same matrix (best fit) and epsilon and Z as R^T T R, writes ``POSCAR0`` and
+``04_supercells/``, and marks relax ... collect as provided; ``run`` then does ``focex`` and
+``plots`` as for a full run, with the same blocks and keywords (``RANKS``, ``RANGE``,
+``FC2RANGE``, ``structure_params``, ...). The report gives the rotation and the size of the
+symmetrization.
+
+Checked on MgO data in a rhombohedral orientation (``MgO-Safoura``): without Born charges the
+fit error (7.197 %), the 35 unknowns, the highest frequency (647 1/cm), the bulk and shear
+moduli are those of a FOCEX run in the original frame; the Zener ratio and the mean sound speed
+(Debye temperature 982 K instead of 806 K) are meaningful only in the FOCEX frame, where the
+conventional axes are x, y, z.
+
 Supercell k-mesh
 ----------------
 

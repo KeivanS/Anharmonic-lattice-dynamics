@@ -2,6 +2,7 @@
 """focex-agent.py -- from a primitive POSCAR to FOCEX phonons, with VASP and SC_SNAPS.
 
     focex-agent.py init [-i instructions.txt] [-s POSCAR] [--profile rivanna]
+    focex-agent.py init -i instructions.txt      # with DATA: <folder> -- FOCEX on existing data
     focex-agent.py run  <project>              # every task, in order, restartable
     focex-agent.py run  <project> --retry-failed
     focex-agent.py run  <project> --only snaps  # one task
@@ -19,6 +20,14 @@ Tasks (each is recorded in <project>/report.log and skipped once done):
   5 collect    read_outcar.x -> FORCEDISP1, POSCAR1 = poscar_000; all runs checked
   6 focex      the five *.params files, FOCEX (+ NOBORN and LASSO runs when needed)
   7 plots      bvel.plt / all.plt / qha.plt filled in, makeplots.sh
+
+Existing data (no VASP, no SC_SNAPS): DATA: <folder> with POSCAR1, FORCEDISP1 (POSCAR2,
+FORCEDISP2, ...), optionally POSCAR (the primitive cell, same frame as the data; otherwise the
+primitive cell of POSCAR1 found by spglib) and dielectric.params (epsilon and the Born charges
+in the order of the atoms of that POSCAR). SPECIES: Mg O names the species when the POSCARs have
+no element line. Everything is rotated into the FOCEX frame (POSCARi lattice and positions,
+FORCEDISPi positions and forces, epsilon and Z as R^T T R); tasks relax ... collect are marked
+"provided" and run goes straight to focex and plots.
 
 Every generated input can be replaced by a block in the instructions file, named after the
 file:  INCAR ... INCAR_END  (also INCAR_relax, INCAR_scf, INCAR_dfpt, INCAR_snaps),
@@ -158,6 +167,8 @@ def parse_instructions(path):
     fx['lasso_ratio'] = float(keyword(rest, 'LASSO_RATIO', 2.0))
     fx['born_transpose'] = (keyword(rest, 'BORN_TRANSPOSE') or 'yes').lower() in ('yes', 'true', '1')
     fx['focex_x'] = os.path.expanduser(keyword(rest, 'FOCEX_X') or newest_focex())
+    fx['data'] = os.path.expanduser(keyword(rest, 'DATA') or '')
+    fx['species'] = (keyword(rest, 'SPECIES') or '').split()
     fx['sc_snaps_x'] = os.path.expanduser(keyword(rest, 'SC_SNAPS_X') or '~/BIN/sc_snaps.x')
     fx['read_outcar_x'] = os.path.expanduser(keyword(rest, 'READ_OUTCAR_X') or '~/ALADYN/bin/read_outcar.x')
     fx['profile'] = keyword(rest, 'PROFILE')
@@ -303,6 +314,67 @@ def frame_of(poscar):
     if not c['in_frame']:
         sys.exit(f'{poscar} is not in the FOCEX frame of its conventional cell (was it edited?)')
     return p, c
+
+
+def read_poscar_any(path, species=()):
+    """POSCAR with or without the VASP-5 element line (then species from SPECIES:)."""
+    L = open(path).read().splitlines()
+    s = float(L[1].split()[0])
+    A = np.array([[float(x) for x in L[i].split()[:3]] for i in range(2, 5)])
+    if s < 0:
+        s = (-s / abs(np.linalg.det(A))) ** (1.0 / 3.0)
+    A = A * s
+    i = 5
+    if L[5].split() and not L[5].split()[0][0].isdigit():
+        species, i = L[5].split(), 6
+    counts = [int(x) for x in L[i].split()[:len(species) or None]]
+    if len(species) != len(counts):
+        sys.exit(f'{path}: {len(counts)} atom counts but species {list(species)}; give SPECIES: in the instructions')
+    i += 1
+    if L[i].strip()[:1] in 'Ss':
+        i += 1
+    cart = L[i].strip()[:1] in 'CcKk'
+    X = np.array([[float(x) for x in L[i + 1 + k].split()[:3]] for k in range(sum(counts))])
+    F = X * s @ np.linalg.inv(A) if cart else X
+    types = [k for k, n in enumerate(counts) for _ in range(n)]
+    return {'A': A, 'species': list(species), 'counts': counts, 'F': F, 'X': F @ A, 'types': types}
+
+
+def ideal_frame(V, F, types):
+    """(V0, R, dev): the primitive cell V (rows, frame of the data) on the symmetrized lattice
+    (spglib's idealized lattice parameters) in the FOCEX frame, same basis and atom order, and the
+    rotation R (det +1) that takes the data onto it (best fit): vectors (rows) v R, tensors
+    R^T T R. dev = max |V R - V0| (A), the size of the idealization. An unsymmetrized lattice
+    (DFT data have ~1e-6 A) made FOCEX's force-constant symmetry analysis lose groups."""
+    ds, _ = p2f.dataset(V, F, types)
+    P = np.array(p2f.get(ds, 'transformation_matrix'))              # x_conv = P x_prim
+    latp = lattice_params(np.array(p2f.get(ds, 'std_lattice')))      # symmetrized
+    V0 = P.T @ focex_frame(latp)
+    U, _, Wt = np.linalg.svd(V.T @ V0)                                # Kabsch: min |V R - V0|
+    R = U @ Wt
+    if np.linalg.det(R) < 0:
+        sys.exit('DATA: the cell is left-handed relative to the FOCEX frame')
+    V0[np.abs(V0) < 1e-12] = 0.0
+    return V0, R, float(np.abs(V @ R - V0).max())
+
+
+def rotate_forcedisp(src, dst, R):
+    """FORCEDISPi: every line of six (or more) numbers is position (or displacement) and force;
+    both rotate as row vectors. Other lines (block headers) are copied."""
+    out = []
+    for line in open(src).read().splitlines():
+        t = line.split()
+        try:
+            v = [float(x) for x in t[:6]]
+            ok = len(t) >= 6 and '=' not in line
+        except ValueError:
+            ok = False
+        if ok:
+            a, b = np.array(v[:3]) @ R, np.array(v[3:6]) @ R
+            line = '  %15.9f %15.9f %15.9f   %15.9f %15.9f %15.9f' % (*a, *b) + \
+                   ('  ' + ' '.join(t[6:]) if len(t) > 6 else '')
+        out.append(line)
+    write(dst, '\n'.join(out) + '\n')
 
 
 def snap_files(d):
@@ -831,7 +903,7 @@ class Agent:
              ' '.join(str(x) for x in fx['ranks']) + '   # ranks 1..8 included',
              line5 + '   # translational, rotational, Huang invariances; enforce_inv (2 = LASSO)',
              '0 300   # itemp, tempk',
-             '1 .false.   # number of POSCARi/FORCEDISPi pairs, verbosity',
+             f"{self.state.get('npairs', 1)} .false.   # number of POSCARi/FORCEDISPi pairs, verbosity",
              f"{len(p['species'])}   # number of atom types",
              ' '.join('%.4f' % m for m in masses) + '   # masses (amu)',
              ' '.join(p['species']) + '   # names',
@@ -896,8 +968,9 @@ class Agent:
 
     def run_focex(self, d, born, line5, label):
         os.makedirs(d, exist_ok=True)
-        for f in ('POSCAR1', 'FORCEDISP1'):
-            shutil.copy(self.d('04_supercells', f), d)
+        for i in range(1, self.state.get('npairs', 1) + 1):
+            for f in (f'POSCAR{i}', f'FORCEDISP{i}'):
+                shutil.copy(self.d('04_supercells', f), d)
         write(os.path.join(d, 'structure.params'), self.structure_params(line5))
         write(os.path.join(d, 'latdyn.params'), self.latdyn_params())
         write(os.path.join(d, 'kpbs.params'), self.kpbs_params())
@@ -1075,6 +1148,8 @@ def init(args):
         sys.exit(f'{proj} exists; use --force to start it again')
     os.makedirs(proj, exist_ok=True)
     shutil.copy(args.instructions, os.path.join(proj, 'instructions.txt'))
+    if fx['data']:
+        return init_data(args, fx, proj)
     shutil.copy(args.structure, os.path.join(proj, 'POSCAR.input'))
     p = read_vasp_cell(args.structure)
     c = canonical_cell(p)
@@ -1108,6 +1183,76 @@ def init(args):
     a.write_resubmit([])
     rep(f'wrote {proj}: POSCAR.init, 01_relax/, run_workflow.sh  ->  cd {os.path.basename(proj)} && '
         + ('sbatch' if a.profile.get('slurm') else 'bash') + ' run_workflow.sh')
+
+
+def init_data(args, fx, proj):
+    """FOCEX on existing POSCARi/FORCEDISPi (DATA: folder): rotate into the FOCEX frame, write
+    POSCAR0 and 04_supercells/, mark the DFT tasks as provided."""
+    src = fx['data']
+    n = 0
+    while os.path.isfile(os.path.join(src, f'POSCAR{n + 1}')) and os.path.isfile(os.path.join(src, f'FORCEDISP{n + 1}')):
+        n += 1
+    if n == 0:
+        sys.exit(f'DATA: no POSCAR1 + FORCEDISP1 in {src}')
+    sc = read_poscar_any(os.path.join(src, 'POSCAR1'), fx['species'])
+    prim_file = os.path.join(src, 'POSCAR')
+    if os.path.isfile(prim_file):
+        p = read_poscar_any(prim_file, fx['species'] or sc['species'])
+        how = 'POSCAR of the DATA folder'
+    else:
+        import spglib
+        # no_idealize: keep the orientation of the data (find_primitive would rotate the cell)
+        V, F, t = spglib.standardize_cell((sc['A'], sc['F'], sc['types']), to_primitive=True,
+                                          no_idealize=True, symprec=1e-3)
+        o = np.argsort(t, kind='stable')
+        V, F, t = np.array(V), np.array(F)[o], np.array(t)[o]
+        counts = [int((t == k).sum()) for k in range(len(sc['species']))]
+        p = {'A': V, 'F': F, 'types': list(t), 'species': sc['species'], 'counts': counts}
+        how = 'primitive cell of POSCAR1 (spglib)'
+    V0, R, dev = ideal_frame(p['A'], p['F'], p['types'])
+    if dev > 1e-3:
+        sys.exit(f'DATA: the primitive cell is {dev:.1e} A from its symmetrized lattice; check the data')
+    write_poscar(os.path.join(proj, 'POSCAR0'), f"{fx['project']} ({how}, FOCEX frame)",
+                 V0, p['species'], p['counts'], p['F'] % 1.0)
+    p0, c = frame_of(os.path.join(proj, 'POSCAR0'))
+    top = os.path.join(proj, '04_supercells')
+    os.makedirs(top, exist_ok=True)
+    for i in range(1, n + 1):
+        q = read_poscar_any(os.path.join(src, f'POSCAR{i}'), fx['species'] or sc['species'])
+        write_poscar(os.path.join(top, f'POSCAR{i}'), f'POSCAR{i} of {src}, rotated into the FOCEX frame',
+                     q['A'] @ R, q['species'], q['counts'], q['F'])
+        rotate_forcedisp(os.path.join(src, f'FORCEDISP{i}'), os.path.join(top, f'FORCEDISP{i}'), R)
+    state = {'profile': args.profile or fx['profile'] or '', 'created': now(), 'npairs': n,
+             'data': os.path.abspath(src), 'rotation': R.tolist(), 'sg': c['sg']}
+    diel = os.path.join(src, 'dielectric.params')
+    if os.path.isfile(diel) and not fx['blocks'].get('dielectric_params'):
+        rows = []
+        for l in open(diel).read().splitlines()[1:]:          # line 1: born_flag
+            try:
+                rows.append([float(x) for x in l.split()[:3]])
+            except ValueError:
+                continue
+        rows = [r for r in rows if len(r) == 3]
+        na = len(p['F'])
+        if not os.path.isfile(prim_file) and max(p['counts']) > 1:
+            sys.exit(f'DATA: {diel} lists Born charges per atom of a primitive cell: put that cell, as POSCAR '
+                     f'in the frame of the data, in {src} (the order of the atoms is not defined otherwise)')
+        if len(rows) < 3 + 3 * na:
+            sys.exit(f'DATA: {diel} has {len(rows)} rows of 3 numbers, {3 + 3 * na} needed')
+        eps = np.array(rows[:3])
+        Z = [np.array(rows[3 + 3 * k:6 + 3 * k]) for k in range(na)]
+        if any(np.abs(z).max() > 0 for z in Z):
+            state['eps'] = (R.T @ eps @ R).tolist()
+            state['Z'] = [(R.T @ z @ R).tolist() for z in Z]
+    state['done'] = {t: 'provided (DATA)' for t in TASKS[:TASKS.index('focex')]}
+    write(os.path.join(proj, 'state.json'), json.dumps(state, indent=1))
+    a = Agent(proj)
+    a.rep(f"focex-agent init (DATA): {fx['project']}, {n} POSCAR/FORCEDISP pair(s) from {src}; {how}: "
+          f"{len(p['F'])} atoms, space group {c['sg']}; rotation into the FOCEX frame "
+          + ('none' if np.allclose(R, np.eye(3), atol=1e-9) else np.array2string(R, precision=6).replace('\n', ''))
+          + f'; lattice symmetrized by {dev:.1e} A'
+          + ('; Born charges and epsilon from dielectric.params' if state.get('Z') else ''))
+    a.rep(f"then:  {sys.executable} {os.path.abspath(__file__)} run {proj}   (tasks focex, plots)")
 
 
 def main():
