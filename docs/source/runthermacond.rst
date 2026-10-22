@@ -116,6 +116,9 @@ How it is computed
 * Group velocities: Hellmann-Feynman, v = <e|dD/dq|e>/2omega, including the derivative of the
   non-analytic (Born charge) term. The finite-difference velocities are written next to them in
   ``veltest.dat`` as a check; they agree to about 1e-4 except at band crossings.
+* ``structure.params`` is optional: without it the cell, species, masses and positions are
+  taken from ``lat_fc.dat`` (written by FOCEX since 23 October 2026, with the conventional
+  cell). Results are identical either way (Ge 4x4x4 job 3).
 * k-mesh (``latdyn.params`` line 1): integer fractions of the primitive reciprocal vectors of
   ``lat_fc.dat`` (the run stops if ``structure.params`` has a different primitive cell). Even
   meshes are Gamma-centred (reduced coordinates -1/2 ... 1/2 - 1/n), odd ones start at Gamma;

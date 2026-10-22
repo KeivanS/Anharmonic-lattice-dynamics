@@ -102,6 +102,12 @@
  integer i,counter,label,convcoord,ios_cc
  real(8) scal,junk,x(3)
  character jjj*1,line3*200
+ logical ex
+ inquire(file='structure.params',exist=ex)
+ if (.not.ex) then
+    call read_input_from_latfc   ! everything from lat_fc.dat (FOCEX >= 2026-10-23)
+    return
+ endif
  open(uparams,file='structure.params',status='old')
 
  read(uparams,*) latticeparameters   ! (a,b,c,alpha,beta,gamma)
@@ -174,6 +180,72 @@
 ! enddo
 
 end subroutine read_input_fit
+!============================================================
+ subroutine read_input_from_latfc
+!! without structure.params: the conventional cell (columns 4-6 of the primitive-vector lines,
+!! written by FOCEX since 2026-10-23), the primitive vectors and the atoms (label, name, type,
+!! Cartesian position, mass) from lat_fc.dat, in the form read_input_fit leaves them
+ use ios
+ use params
+ use lattice
+ use atoms_force_constants
+ implicit none
+ integer i,j,k,ios_l,ttyp,ier
+ real(8) v(6),cv(3,3),pr(3,3),cvi(3,3),x(3),mss
+ character line*300,nam*2
+ open(ufc0,file='lat_fc.dat',status='old')
+ read(ufc0,'(a)') line
+ do i=1,3
+    read(ufc0,'(a)') line
+    read(line,*,iostat=ios_l) v
+    if (ios_l.ne.0) then
+       write(*,*)'READ_INPUT: no structure.params, and lat_fc.dat has no conventional cell (columns 4-6;'
+       write(*,*)'            written by FOCEX since 2026-10-23): give structure.params'
+       error stop 'READ_INPUT: structure.params missing'
+    endif
+    pr(:,i)=v(1:3) ; cv(:,i)=v(4:6)               ! columns: primitive and conventional vectors
+ enddo
+ read(ufc0,'(a)') line
+ read(ufc0,*) natoms0
+ call allocate_primcell(natoms0)
+ natom_type=0
+ do i=1,natoms0
+    read(ufc0,*) j,nam,ttyp,x,mss
+    atom_type(j)=ttyp
+    natom_type=max(natom_type,ttyp)
+ enddo
+ rewind(ufc0)
+ do i=1,6          ! header, 3 vector lines, atoms header, number of atoms
+    read(ufc0,'(a)') line
+ enddo
+ call allocate_mass(natom_type)
+ natom=0
+ call xmatinv(cv,cvi,ier)
+ do i=1,natoms0
+    read(ufc0,*) j,nam,ttyp,x,mss
+    mas(ttyp)=mss ; atname(ttyp)=nam ; natom(ttyp)=natom(ttyp)+1
+    atom0(j)%equilibrium_pos = matmul(cvi,x)                       ! conventional units
+ enddo
+ close(ufc0)
+ do k=1,3
+    latticeparameters(k)=sqrt(sum(cv(:,k)**2))
+ enddo
+ latticeparameters(4)=acos(dot_product(cv(:,2),cv(:,3))/latticeparameters(2)/latticeparameters(3))*180/pi
+ latticeparameters(5)=acos(dot_product(cv(:,1),cv(:,3))/latticeparameters(1)/latticeparameters(3))*180/pi
+ latticeparameters(6)=acos(dot_product(cv(:,1),cv(:,2))/latticeparameters(1)/latticeparameters(2))*180/pi
+ primitivelattice=matmul(cvi,pr)                                     ! columns: prim in conv units
+ lattice_parameter=1
+ maxneighbors=60
+ do i=1,natoms0
+    atom0(i)%name = atname(atom_type(i))
+    atom0(i)%at_type  = atom_type(i)
+    atom0(i)%mass = mas(atom_type(i))
+    atom0(i)%tau  = i
+    atompos0(:,i) = atom0(i)%equilibrium_pos
+ enddo
+ write(ulog,*)'READ_INPUT: no structure.params; cell and atoms from lat_fc.dat'
+ write(ulog,'(a,6f12.6)')' conventional a b c alpha beta gamma =',latticeparameters
+ end subroutine read_input_from_latfc
 !==========================================================
  subroutine read_lattice
  use ios
