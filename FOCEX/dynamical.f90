@@ -466,6 +466,9 @@
   do l=1,ndn
      write(330,5)' ',l,evl0(l),vgr(:,l), length(vgr(:,l)) , v1(:,l),length(v1(:,l))
   enddo
+! return the Hellmann-Feynman velocities; the finite differences above are only a check
+! (written to veltest.dat), and they underestimate v near band crossings
+  vgr=v1
 
 
  4 format(a,3(1x,f8.4),a,3(1x,g11.4))
