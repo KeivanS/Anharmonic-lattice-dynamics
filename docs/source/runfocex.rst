@@ -60,9 +60,9 @@ done outside FOCEX and produce the two "data" files ``POSCAR1`` and
    helper scripts.
 #. **Prepare the five parameter files** ``structure.params``,
    ``dielectric.params``, ``latdyn.params``, ``kpbs.params`` and
-   ``default.params``.  ``FOCEX/utility/poscar2focex.py POSCAR`` writes a
-   ``structure.params`` from a POSCAR (see :doc:`install`); make the supercells
-   from the ``POSCAR_focex`` it writes alongside.
+   ``default.params``.  ``poscar2focex.x POSCAR`` writes ``structure.params`` and
+   ``kpbs.params`` from a POSCAR (see :doc:`install`); make the supercells from the
+   ``POSCAR_focex`` it writes alongside.
 #. **Run FOCEX** in that directory. It writes the force constants, the phonon
    and thermodynamic properties, and a detailed log file.
 

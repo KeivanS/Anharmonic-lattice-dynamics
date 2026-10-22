@@ -113,18 +113,36 @@ This produces three executables and moves them to ``DESTDIR``:
        from standard input: ``echo pw.out | read_qe.x``.
    * - ``poscar2xyz.x``
      - Converts a POSCAR to ``.xyz`` for visualisation.
+   * - ``poscar2focex.x``
+     - POSCAR to ``structure.params``, ``POSCAR_focex`` and ``kpbs.params`` (below).
 
-``FOCEX/utility/poscar2focex.py`` (Python with numpy and spglib, not built by
-``make``) turns a POSCAR into a ``structure.params``: it Niggli-reduces the cell,
-rotates it so that the conventional axes lie along x, y, z, and writes lines 1--3
-(conventional vectors in Cartesian, primitive vectors in conventional units, scale)
-and the atom lines (number, type, coordinates in conventional units).  Masses and
-names come from the POSCAR; the other lines are the defaults of
-``FOCEX/example/Ge``, marked ``default, check``.  It also writes ``POSCAR_focex``,
-the reduced and rotated primitive cell: build the supercells from it, so that they
-are in the frame of line 1::
+``poscar2focex.x POSCAR`` (options ``-o``, ``-p``, ``-k`` for the three output names,
+``-s symprec`` in Angstrom, default 1e-3, ``-f`` to overwrite) finds the symmetry of the
+crystal itself, with no external library: Niggli reduction, the operations of the
+lattice, those of the crystal (with their fractional translations), the crystal system and
+the Bravais lattice. The cell and the band-structure path follow Setyawan and Curtarolo,
+Comput. Mater. Sci. 49, 299 (2010), the convention of pymatgen's ``KPathSetyawanCurtarolo``
+and of VASP-Flow's k-path:
 
-   python3 poscar2focex.py POSCAR      # -> structure.params, POSCAR_focex
+* ``structure.params``: line 1 a b c alpha beta gamma of the conventional cell, line 2 the
+  primitive vectors in conventional units, line 3 ``1.0 0``, the atoms in conventional
+  units; masses and names from the POSCAR, the other lines the defaults of
+  ``FOCEX/example/Ge``, marked ``default, check``;
+* ``POSCAR_focex``: the primitive cell in the frame FOCEX builds from line 1 (a along x,
+  b in the xy plane); build the supercells from it;
+* ``kpbs.params``: the Setyawan-Curtarolo path for the lattice and its sub-case (FCC,
+  BCT1, ORCF2, RHL1, MCLC3, TRI1a, ...), in primitive reduced coordinates.
+
+The output does not depend on how the input cell is written: any primitive basis,
+orientation or origin gives the same files. For a crystal of lower symmetry than its
+lattice (pyrite, wurtzite) the setting of the atoms is fixed by a canonical rule, and a
+chiral crystal is never mirrored. Checked against pymatgen on 26 structures covering all
+Setyawan-Curtarolo lattices and 24 of their 26 sub-cases (MCLC2 and MCLC4 are exact
+equalities between the lattice parameters), and on 78 randomly rewritten inputs; the test
+scripts and the results are in ``FOCEX/utility/tests/poscar2focex``.
+
+``FOCEX/utility/poscar2focex.py`` (Python, numpy and spglib) is the earlier version; it is
+kept because ``focex-agent.py`` uses its functions.
 
 .. note::
 

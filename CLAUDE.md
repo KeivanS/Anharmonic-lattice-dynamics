@@ -21,8 +21,18 @@ cd FOCEX && mkdir -p ~/BIN && make       # ~3 min; produces ~/BIN/v8.18
 `FF=gfortran`, `FLAGS=-O2 -fcheck=all`, names the binary `exe=v$(ver)` (`ver=8.18` -> `v8.18`), and
 `mv`s it to `~/BIN`, which it does not create. The utility programs are separate
 (`cd FOCEX/utility && make`, installs to `make.inc`'s `DESTDIR=~/ALADYN/bin`) —
-that builds `read_outcar.x`, `read_qe.x` and `poscar2xyz.x` only.
-`FOCEX/utility/poscar2focex.py` (numpy + spglib, not in the Makefile): POSCAR →
+that builds `read_outcar.x`, `read_qe.x`, `poscar2xyz.x` and `poscar2focex.x`.
+`poscar2focex.x` (since 2026-10-22, standalone Fortran, no spglib): POSCAR -> structure.params,
+POSCAR_focex, kpbs.params in the Setyawan-Curtarolo convention (pymatgen's analyzer.py
+`get_conventional_standard_structure(international_monoclinic=False)` and kpath.py
+`KPathSetyawanCurtarolo` were the reference). Crystal system from the crystal's own rotations;
+rhombohedral primitive (2,1,1),(-1,1,1),(-1,-2,1)/3 (pymatgen's order is left-handed and mirrors
+the crystal); atoms in a canonical setting (proper rotations of the cell, then origin, then input
+order) so the output is independent of the input basis/orientation/origin. Verified: 26 test
+structures (all S-C sub-cases but MCLC2/4) match pymatgen in sub-case, path, conventional and
+primitive cells and reduced k; 78 randomly skewed/rotated/shifted inputs give identical files;
+skewed rotated Ge -> FOCEX example gives byte-identical fc2/fc3/fc*_irr/lat_fc/mech.dat.
+`FOCEX/utility/poscar2focex.py` (numpy + spglib, the earlier version; focex-agent.py imports it): POSCAR →
 `structure.params` (Niggli-reduced, rotated into FOCEX's frame of the conventional
 cell; 6-number line 1, line 2 = spglib transformation, atoms in conventional units, other lines = Ge
 defaults marked "default, check") + `POSCAR_focex` (the frame of line 1). Same cell
@@ -216,7 +226,7 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
   r0i" and "supercell vector k of POSCAR ... is not integer" (e.g. AgCrP2S6_PARA, a
   along y). Keep the DFT frame with line 1 `1 1 1 90 90 90`, line 2 the Cartesian
   primitive vectors, line 3 `1.0 1`, atoms in primitive units; or let
-  focex-agent.py / poscar2focex.py rotate the cell before the supercells are made.
+  focex-agent.py / poscar2focex.x rotate the cell before the supercells are made.
 - `POSCARi` takes **either** VASP layout since 2026-08-14: `read_supercell` in
   `ios.f90` reads the line after the third lattice vector as text and retries on
   the next one if it does not parse as `natom_type` integers, so the VASP-5
