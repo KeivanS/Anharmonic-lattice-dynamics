@@ -886,6 +886,7 @@ end subroutine cal_P2
 ! with the restriction of k2 in the IRREDUCIBLE BZ defined by ki(3,ni) included in kp(3,nk)
 !
  use kpoints
+ use pre_matrix_elt, only : eiqr2
  use ios
  use phi3
  use lattice
@@ -910,7 +911,7 @@ end subroutine cal_P2
  utemp=100
 
 
- call cal_eiqr2(nk,ndn)    ! calculate eiqr2, eivec2
+ if (.not.allocated(eiqr2)) call cal_eiqr2(nk,ndn)    ! calculate eiqr2, eivec2 (once)
 
  write(*,*)'exited cal_eiqr2...'
 
@@ -1066,6 +1067,7 @@ close(uv3)
 ! with the restriction of k2 in the IRREDUCIBLE BZ defined by ki(3,ni) included in kp(3,nk)
 !
  use kpoints
+ use pre_matrix_elt, only : eiqr2
  use ios
  use phi3
  use lattice
@@ -1091,7 +1093,7 @@ close(uv3)
  utemp=100
 
 
- call cal_eiqr2(nk,ndn)    ! calculate eiqr2, eivec2
+ if (.not.allocated(eiqr2)) call cal_eiqr2(nk,ndn)    ! calculate eiqr2, eivec2 (once)
 
  !write(*,*)'exited cal_eiqr2...'
 
@@ -2131,7 +2133,10 @@ integer s,ier
 real(8) fs(3), ff(3), tempi(3,3)
  
 
-  fs(:) = MATMUL(op_kmatrix(:,:,s),ff(:))
+! ff and fs are Cartesian vectors (F, v): rotate with the Cartesian matrix op_matrix.
+! op_kmatrix is the operation in the conventional reciprocal basis; the two coincide only for
+! orthogonal conventional axes along x,y,z (cubic, tetragonal, orthorhombic)
+  fs(:) = MATMUL(op_matrix(:,:,s),ff(:))
 
 
 end subroutine syop_f
@@ -2798,10 +2803,10 @@ open(701,file='sycmatrix.dat')
                 s2=d2+(j-1)
                 ! i=1
                 ! j=1
-                Cs(s1,s2) = Cs(s1,s2) + (C * op_kmatrix(i,j,kvecops(ns)))
+                Cs(s1,s2) = Cs(s1,s2) + (C * op_matrix(i,j,kvecops(ns)))
                 !write(*,*)'n1,n1i,l1,n2,l2,ni0,narms,ns,n0,s1,s2, C'
-!! K1  write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_kmatrix(i,j,kvecops(ns)),kvecops(ns), Cs(s1,s2)
-                write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_kmatrix(i,j,kvecops(ns)),kvecops(ns), Cs(s1,s2)
+!! K1  write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_matrix(i,j,kvecops(ns)),kvecops(ns), Cs(s1,s2)
+                write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_matrix(i,j,kvecops(ns)),kvecops(ns), Cs(s1,s2)
                 !s2=s2+1
             enddo
            !s1=s1+1
@@ -2967,10 +2972,10 @@ open(701,file='sycmatrix.dat')
                 s2=d2+(j-1)
                 ! i=1
                 ! j=1
-                Collision_Matrix(s1,s2) = Collision_Matrix(s1,s2) + (C * op_kmatrix(i,j,kvecops(ns)))
+                Collision_Matrix(s1,s2) = Collision_Matrix(s1,s2) + (C * op_matrix(i,j,kvecops(ns)))
                 !write(*,*)'n1,n1i,l1,n2,l2,ni0,narms,ns,n0,s1,s2, C'
-!! K1  write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_kmatrix(i,j,kvecops(ns)),kvecops(ns), Cs(s1,s2)
-                write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_kmatrix(i,j,kvecops(ns)),kvecops(ns), Collision_Matrix(s1,s2)
+!! K1  write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_matrix(i,j,kvecops(ns)),kvecops(ns), Cs(s1,s2)
+                write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_matrix(i,j,kvecops(ns)),kvecops(ns), Collision_Matrix(s1,s2)
                 !s2=s2+1
             enddo
            !s1=s1+1
@@ -3146,10 +3151,10 @@ k_shift=ksbst(1)-1
                 s2=d2+(j-1)
                 ! i=1
                 ! j=1
-                Collision_Matrixmpi(s1,s2) = Collision_Matrixmpi(s1,s2) + (C * op_kmatrix(i,j,kvecops(ns)))
+                Collision_Matrixmpi(s1,s2) = Collision_Matrixmpi(s1,s2) + (C * op_matrix(i,j,kvecops(ns)))
                 !write(*,*)'n1,n1i,l1,n2,l2,ni0,narms,ns,n0,s1,s2, C'
-!! K1 write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_kmatrix(i,j,kvecops(ns)),kvecops(ns),Cs(s1,s2)
-        !        write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_kmatrix(i,j,kvecops(ns)),kvecops(ns), Collision_Matrix(s1,s2)
+!! K1 write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_matrix(i,j,kvecops(ns)),kvecops(ns),Cs(s1,s2)
+        !        write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_matrix(i,j,kvecops(ns)),kvecops(ns), Collision_Matrix(s1,s2)
                 !s2=s2+1
             enddo
            !s1=s1+1
@@ -3317,10 +3322,10 @@ open(701,file='sycmatrix.dat')
                 s2=d2+(j-1)
                 ! i=1
                 ! j=1
-                Collision_Matrix(s1,s2) = Collision_Matrix(s1,s2) + (C * op_kmatrix(i,j,kvecops(ns)))
+                Collision_Matrix(s1,s2) = Collision_Matrix(s1,s2) + (C * op_matrix(i,j,kvecops(ns)))
                 !write(*,*)'n1,n1i,l1,n2,l2,ni0,narms,ns,n0,s1,s2, C'
-!! K1 write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_kmatrix(i,j,kvecops(ns)),kvecops(ns),Cs(s1,s2)
-                write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_kmatrix(i,j,kvecops(ns)),kvecops(ns), Collision_Matrix(s1,s2)
+!! K1 write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_matrix(i,j,kvecops(ns)),kvecops(ns),Cs(s1,s2)
+                write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_matrix(i,j,kvecops(ns)),kvecops(ns), Collision_Matrix(s1,s2)
                 !s2=s2+1
             enddo
            !s1=s1+1
@@ -3506,10 +3511,10 @@ open(701,file='sycmatrix.dat')
                 s2=d2+(j-1)
                 ! i=1
                 ! j=1
-                Collision_Matrix(s1,s2) = Collision_Matrix(s1,s2) + (C * op_kmatrix(i,j,kvecops(ns)))
+                Collision_Matrix(s1,s2) = Collision_Matrix(s1,s2) + (C * op_matrix(i,j,kvecops(ns)))
                 !write(*,*)'n1,n1i,l1,n2,l2,ni0,narms,ns,n0,s1,s2, C'
-!! K1 write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_kmatrix(i,j,kvecops(ns)),kvecops(ns), Cs(s1,s2)^M
-                write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_kmatrix(i,j,kvecops(ns)),kvecops(ns), Collision_Matrix(s1,s2)
+!! K1 write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_matrix(i,j,kvecops(ns)),kvecops(ns), Cs(s1,s2)^M
+                write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_matrix(i,j,kvecops(ns)),kvecops(ns), Collision_Matrix(s1,s2)
                 !s2=s2+1
             enddo
            !s1=s1+1
@@ -3695,11 +3700,11 @@ open(701,file='sycmatrix.dat')
                 s2=d2+(j-1)
                 ! i=1
                 ! j=1
-                Collision_Matrix(s1,s2) = Collision_Matrix(s1,s2) + (C * op_kmatrix(i,j,kvecops(ns)))
+                Collision_Matrix(s1,s2) = Collision_Matrix(s1,s2) + (C * op_matrix(i,j,kvecops(ns)))
                 !write(*,*)'n1,n1i,l1,n2,l2,ni0,narms,ns,n0,s1,s2, C'
 !! K1
-!write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_kmatrix(i,j,kvecops(ns)),kvecops(ns), Cs(s1,s2)^M
-                write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_kmatrix(i,j,kvecops(ns)),kvecops(ns),Collision_Matrix(s1,s2)
+!write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_matrix(i,j,kvecops(ns)),kvecops(ns), Cs(s1,s2)^M
+                write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_matrix(i,j,kvecops(ns)),kvecops(ns),Collision_Matrix(s1,s2)
                 !s2=s2+1
             enddo
            !s1=s1+1
@@ -5563,7 +5568,7 @@ use atoms_force_constants
 implicit none
 
 integer nk, nibbz,narms,kvecop(48), kvecops(48)
-integer i,ds,s,j,sl
+integer i,ds,s,j,sl,i1,i2,i3,ins,seen(48)
 real(8) q(3),qk(3),kvecstar(3,48),kvecstars(3,48)
 real(8) kp(3,nk)
 !sl=0
@@ -5571,18 +5576,21 @@ real(8) kp(3,nk)
 ds=0
 !    q=kibbz(:,i)
     call getstar(q,primitivelattice,narms,kvecstar,kvecop)
+! keep the star members that are mesh points modulo G, each mesh point once (getstar can
+! return k and k+G, e.g. L and -L); comparing with kp exactly lost the members that fall on
+! the other side of the mesh cell
     do s=1,narms
-       do j=1,nk
-          qk=kp(:,j)
-          if (qk .myeq. kvecstar(:,s)) then
-             ds=ds+1
-             kvecstars(:,ds)=kvecstar(:,s)
-             kvecops(ds)=kvecop(s)
-!             sl=sl+1
-!            write(190,*)sl,i,ds,kvecops(ds),kvecstars(:,ds)
-          endif
-        enddo
-     enddo
+       qk(1)=(kvecstar(:,s) .dot. r1)/2/pi*nc(1)
+       qk(2)=(kvecstar(:,s) .dot. r2)/2/pi*nc(2)
+       qk(3)=(kvecstar(:,s) .dot. r3)/2/pi*nc(3)
+       if (any(abs(qk-nint(qk)).ge.1d-5)) cycle
+       call get_k_info(kvecstar(:,s),nc,j,i1,i2,i3,g1,g2,g3,ins)
+       if (any(seen(1:ds).eq.j)) cycle
+       ds=ds+1
+       seen(ds)=j
+       kvecstars(:,ds)=kvecstar(:,s)
+       kvecops(ds)=kvecop(s)
+    enddo
 !enddo
 
 
@@ -6937,7 +6945,7 @@ real(8), allocatable :: P1sm(:,:,:,:,:), P2sm(:,:,:,:,:)  ! v33sq_5(:,:,:,:,:),
 nx=NC(1); ny=NC(2); nz=NC(3)
 unt=9400
 
-call allocate_iter(nibz,nkc,ndn)
+if (.not.allocated(dist)) call allocate_iter(nibz,nkc,ndn)
 call cal_freq(nkc,ndn)
 write(ulog,*) 'cal_freq done'
 
@@ -7238,7 +7246,7 @@ real(8) F_arbi(nkc)
 nx=NC(1); ny=NC(2); nz=NC(3)
 unt=9400
 
-call allocate_iter(nibz,nkc,ndn)
+if (.not.allocated(dist)) call allocate_iter(nibz,nkc,ndn)
 call cal_freq(nkc,ndn)
 write(ulog,*) 'cal_freq done'
 
@@ -7995,8 +8003,10 @@ nx=NC(1); ny=NC(2); nz=NC(3)
 
 uQ=9402
 unt=9400
-open(uQ,file='Qvalue.dat',status='unknown')
-write(uQ,*) 'nk,la,Q'
+! Qvalue.dat is written by Qandtau from the values gathered over all ranks; writing it here
+! left only this rank's last point in it when this routine runs after Qandtau (job 3)
+!open(uQ,file='Qvalue.dat',status='unknown')
+!write(uQ,*) 'nk,la,Q'
 
 Qvaluempi(:,:)=0    ! in cm^-1
 Qvalue_Nmpi(:,:)=0
@@ -8167,7 +8177,7 @@ nkI1_loop: do ibz=1,ksubsize3
           ! tauinv_tot(ibz,ii) = tauinv_N(ibz,ii) + tauinv_U(ibz,ii)
 
 
-write(uQ,*)Qvaluempi(ibz,ii),ibz,ii,ibz+k_shift,ii
+!write(uQ,*)Qvaluempi(ibz,ii),ibz,ii,ibz+k_shift,ii
 !write(*,*)Qvaluempi(ibz,ii),ibz,ii,ibz+k_shift,ii
     enddo laI1_loop
 
@@ -8181,7 +8191,7 @@ enddo nkI1_loop
 
 
 
-close(uQ)
+!close(uQ)
 
 7 format(5(i6),2(2x,g14.8))
 
@@ -8573,7 +8583,7 @@ integer s, ier
 real(8) ff(3), fs2(3), tempi(3,3)
 
 
-  call xmatinv(op_kmatrix(:,:,s),tempi,ier)
+  call xmatinv(op_matrix(:,:,s),tempi,ier)      ! Cartesian, as in syop_f
 
   fs2(:) = MATMUL(tempi,ff(:))
 

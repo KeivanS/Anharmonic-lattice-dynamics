@@ -13,6 +13,10 @@ Ge  #O   Mg    names
 0 0     number of shells for rank 2 for each atom if not default
 6 6   number of shells for rank 3 for each atom
 0 0   number of shells for rank 4 for each atom
+0 0   number of shells for rank 5 for each atom
+0 0   number of shells for rank 6 for each atom
+0 0   number of shells for rank 7 for each atom
+0 0   number of shells for rank 8 for each atom
 1 1 0 0 0 
 2 1 0.25 0.25 0.25
 

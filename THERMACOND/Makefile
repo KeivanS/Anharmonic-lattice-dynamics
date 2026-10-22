@@ -1,66 +1,58 @@
-FF=mpif90  -fbounds-check -g #gfortran #ifort
-FLAGS= -ffree-line-length-0 -g #-fdec-math #-fbounds-check -fbacktrace #g -inline-debug-info #-p #for profiling with gprof
+# THERMACOND
+#   make            parallel build with mpif90 -> kap8            (run: kap8, or mpirun -np N kap8)
+#   make serial     serial build with gfortran and no MPI library -> kap8_serial
+#   make DEBUG=1    either of the above with -g -fbounds-check -fbacktrace instead of -O2
+#   make clean
+# Objects and .mod files go to obj_mpi/ or obj_serial/, not next to the sources.
+# macOS with Homebrew Open MPI: if mpif90 picks an older gfortran than the one Open MPI was
+# built with ("created by a different version of GNU Fortran"), set
+#   export OMPI_FC=/opt/homebrew/bin/gfortran   and   export SDKROOT=$(xcrun --show-sdk-path)
 
-MOD=modules.f90  
-SUBKAP=zhegv.f force_constants.f90 sub.f90 rest.f90  extratools.f90 svd.f90 tetrahedron.f90 cg.f90 emissivity.f90
-KAPA=kappa.f90
+MPIFC ?= mpif90
+FC     = gfortran
+ifeq ($(DEBUG),1)
+  OPT = -g -fbounds-check -fbacktrace
+else
+  OPT = -O2
+endif
+FLAGS = $(OPT) -ffree-line-length-0
 
-# combine many of them into one name "ALL"
-ALL=$(SUBKAP) $(KAPA) structure.params dielectric.params latdyn.params kpbs.params 
+# modules.f90 first (it holds the modules); kappa.f90 (the main program) last
+SRC  = modules.f90 zhegv.f force_constants.f90 sub.f90 rest.f90 extratools.f90 svd.f90 \
+       tetrahedron.f90 cg.f90 emissivity.f90
+OBJS = $(addsuffix .o,$(basename $(SRC)))
 
-# declare the list of object files associated with the .f90 files
-MODS=$(addsuffix .o, $(basename $(MOD)))
-SUBKAPS=$(addsuffix .o, $(basename $(SUBKAP)))
+kap8: $(addprefix obj_mpi/,$(OBJS) kappa.o)
+	$(MPIFC) $(FLAGS) $^ -o $@
 
+serial: kap8_serial
+kap8_serial: $(addprefix obj_serial/,mpi_stub.o $(OBJS) kappa.o)
+	$(FC) $(FLAGS) $^ -o $@
 
-# this is how to attach today's date to the backup .tar file
-version=8
-A=`date "+%F-%k_%M"`
-C=kap$(version).`date "+%F|%T"`
-#MYBIN=/Users/ke4c/BIN/
+# every source uses the modules of modules.f90; the main program uses all of them
+$(addprefix obj_mpi/,$(filter-out modules.o,$(OBJS))):    obj_mpi/modules.o
+$(addprefix obj_serial/,$(filter-out modules.o,$(OBJS))): obj_serial/modules.o
+obj_mpi/kappa.o:    $(addprefix obj_mpi/,$(OBJS))
+obj_serial/kappa.o: $(addprefix obj_serial/,mpi_stub.o $(OBJS))
 
+obj_mpi/%.o: %.f90
+	@mkdir -p obj_mpi
+	$(MPIFC) $(FLAGS) -Jobj_mpi -c $< -o $@
+obj_mpi/%.o: %.f
+	@mkdir -p obj_mpi
+	$(MPIFC) $(FLAGS) -Jobj_mpi -c $< -o $@
+obj_serial/%.o: %.f90
+	@mkdir -p obj_serial
+	$(FC) $(FLAGS) -Jobj_serial -c $< -o $@
+obj_serial/%.o: %.f
+	@mkdir -p obj_serial
+	$(FC) $(FLAGS) -Jobj_serial -c $< -o $@
 
-kap$(version): $(MODS) $(SUBKAPS) $(KAPA) 
-	$(FF) $(FLAGS) $(MODS) $(SUBKAPS) $(KAPA) -o $@ 
-#	mv kap$(version) $(MYBIN)
-
-mfpband: mfpthermal.f90
-	$(FF) mfpthermal.f90 -o $@
-#	mv mfpband $(MYBIN)
-
-# rules to make the "simple" object files from sources
-.SUFFIXES: .f90
-.f90.o:
-	$(FF) $(FLAGS) -c $<
-.f90 :
-	$(FF) $(FLAGS) $< -o $@
-.f.o:
-	$(FF) $(FLAGS) -c $<
-.f :
-	$(FF) $(FLAGS) $< -o $@
-
-# tests , cleanup and archiving
-ec:
-#	echo $(MYBIN)
-write:
-	echo $(ALL)
 clean:
-	rm  *.o *.mod 
+	rm -rf obj_mpi obj_serial kap8 kap8_serial
+
+# source archive with today's date
 archive:
-	mkdir BACKUP-$(C)
-	cp $(ALL) Makefile BACKUP-$(C)
-	tar -cvf all.tar BACKUP-$(C)
-	mv all.tar $(C).tar
-	gzip $(C).tar
+	tar -czf thermacond.`date "+%F"`.tar.gz Makefile *.f90 *.f
 
-tt:
-	rm -rf TEST test.tar.gz test.tar
-	mkdir TEST
-	cp $(MOD) $(MOD2) $(SUB3) Makefile params.inp TEST
-	tar -cvf test.tar TEST
-	gzip test.tar
-
-# $@ is the name of the file to be made
-# $? is the names of the changed dependents 
-# $< the name of the related file that caused the action
-# $* the prefix shared by target and dependent files
+.PHONY: serial clean archive

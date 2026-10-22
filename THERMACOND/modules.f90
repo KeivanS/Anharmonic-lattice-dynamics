@@ -1452,6 +1452,7 @@ end module exactBTE2
  integer nv3,readv3,writev3, iter, split, calc_kappa, max_iter, job, iso ! sy added iter,split, calk, max_iter
  real(8) v3_threshold,const33, conv_error , conv_max_error, conv_max_diff, conv_diff, conv_diff_kap, conv_max_diff_kap,conv_iter,update_mix   ! sy added conv_norm, conv_max, update
  integer ksub_size
+ integer solver_direct, v3_store   ! latdyn.params lines 9 and 10
  character(99) v3path
 
  contains
@@ -2020,7 +2021,11 @@ end module exactBTE2
  implicit none
  integer nk,nkibz,i,j,l,narms,kvecop(48)
  integer, allocatable :: mcor(:)
- real(8) zro,q(3),kvecstar(3,48),sw,skc(3)
+ real(8) zro,q(3),kvecstar(3,48),sw,skc(3),qws(3),krep(3),best,f
+ integer jrep
+! generic direction u: components 0.9 > sqrt(2)-1 > sqrt(5)-2 > 0, decreasing and mutually
+! incommensurate, so that no symmetry operation of any lattice leaves u fixed
+ real(8), parameter :: uwedge(3)=(/ 0.9d0, 0.41421356237309505d0, 0.23606797749978970d0 /)
  real(8) kp(3,nk) !,wk(nk)
  real(8) , allocatable :: k2(:,:),lg(:),w2(:)
  logical exists,foundit
@@ -2032,70 +2037,37 @@ end module exactBTE2
  write(ulog,*)'MAKE_KP_IBZ: generating kpoints in the irreducible FBZ '
  write(*   ,*)'MAKE_KP_IBZ: nk,wk(nk),k2(:,nk)'
  call write_out(ulog,'reduced primitivelattice=',primitivelattice)
- nibz=0 ; mapibz=0; mapinv=0; w2=1
+ nibz=0 ; mapibz=0; mapinv=0; w2=0
+! Each new mesh point starts a star (getstar: distinct modulo G); every member is mapped onto
+! its mesh point modulo G, so each star is one IBZ point whose weight is its number of mesh
+! points.  The representative is the member, folded into the Wigner-Seitz cell, with the
+! largest u.k for a fixed generic direction u: {k: u.k >= u.Rk for all R} is a fundamental
+! domain of the point group, so the IBZ points fill one connected wedge around u (for a cubic
+! lattice x >= y >= z >= 0).
  kploop: do i=1,nk
-!    q = kp(:,i)
-! kp is in cartesian coordinates, we need to convert it to reduced units:
-    q(1)=(kp(:,i)  .dot. r1) /2/pi
-    q(2)=(kp(:,i)  .dot. r2) /2/pi
-    q(3)=(kp(:,i)  .dot. r3) /2/pi
-! below the cartesian components of kp are needed
+    if (mapibz(i).ne.0) cycle kploop
+    nibz=nibz+1
     call getstar(kp(:,i),primitivelattice,narms,kvecstar,kvecop)
-!   call getstar(q      ,primitivelattice,narms,kvecstar,kvecop)
- !  write(ulog,4)'i,kp,q=',i,kp(:,i),q
-! see if already exists among the previously assigned ones
-    exists=.False.
-    if(verbose) write(ulog,4)'list of kvecstar(l),l=1,narms for kp_red=',i,q
+    best=-huge(1d0) ; jrep=i ; krep=kp(:,i)
     lloop: do l=1,narms
-    if(verbose)   write(ulog,4)'stars are:',l,kvecstar(:,l)
-! set weight for the first kpoint where nibz=0
-        jloop: do j=1,nibz
-          if (length(k2(:,j) - kvecstar(:,l)) .lt.1d-4) then
-! first bring the star in the FBZ, then compare to the existing points
-             exists=.True.
-             w2(j)=w2(j)+1d0
-             mapibz(i)=j
-!            write(ulog,4)' this kpoint turned out to exist ',j,k2(:,j)
-             exit lloop
-          endif
-        enddo jloop
+       call mesh_index(kvecstar(:,l),j)
+       if (j.eq.0) cycle lloop                    ! star member not on the mesh (shifted mesh)
+       if (mapibz(j).eq.0) then
+          mapibz(j)=nibz
+          w2(nibz)=w2(nibz)+1
+       elseif (mapibz(j).ne.nibz) then
+          write(ulog,*)'GET_WEIGHTS: mesh point ',j,' is in the stars of IBZ points ',mapibz(j),nibz
+          stop 'GET_WEIGHTS: inconsistent stars, see the log'
+       endif
+       call fold_ws(kvecstar(:,l),qws)
+       f=dot_product(uwedge,qws)
+       if (f.gt.best+1d-8 .or. (abs(f-best).le.1d-8 .and. lexi_greater(qws,krep))) then
+          best=f ; jrep=j ; krep=qws
+       endif
     enddo lloop
-
-!   write(ulog,4)' kpoint, folded one  ',i,kp(:,i),exists,j,k2(:,j)
-    if(exists ) then
-       cycle kploop
-    else
-       nibz=nibz+1
-!  choose the kpoint star in the first quadrant: at least  works for cubic systems     
-    !  call getstar(kp(:,i),primitivelattice,narms,kvecstar,kvecop)
-    !  foundit=.False.
-    !  strloop: do l=1,narms
-    !     q= kvecstar(:,l)
-    !     if ( q(1).ge.q(2) .and. q(2).ge.q(3) .and. q(3).ge.-1d-5) then
-    !        k2(:,nibz)=q
-    !        foundit=.True.
-    !        exit strloop
-    !     endif
-    !  enddo strloop
-
-       if (nibz.eq.1) w2(nibz) = 1
-       mapibz(i) = nibz
-       mapinv(nibz)=i
-    !  if (.not. foundit) then    
-          k2(:,nibz)=kp(:,i)
-          write(ulog,4)'new vector*:',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz)),q
-          write(*,4)'new vector*:',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz))
-    !  else
-    !     write(ulog,4)'new vector :',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz))
-    !     write(*,4)'new vector :',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz))
-    !  endif
-    endif
- ! test for FCC 
- !  q(:) = kp(:,i)
- !  if ( q(1).ge.q(2) .and. q(2).ge.q(3) .and. q(3).ge.-1d-5) then
- !     write(bzf,3)i,q
- !  endif
-
+    mapinv(nibz)=jrep
+    k2(:,nibz)=krep
+    write(ulog,4)'new vector*:',nibz,w2(nibz),k2(:,nibz),length(k2(:,nibz))
  enddo kploop
  write(ulog,*)'GET_WEIGHTS: generated ',nibz,' points in the irreducible FBZ'
 
@@ -2158,6 +2130,59 @@ close(988)
 3 format(i7,2x,3(1x,f9.4),2x,f14.8,2x,3(1x,f9.5),3x,f9.5)
 4 format(a,i7,2x,f9.5,2x,99(1x,f9.5))
 5 format(a,2x,99(1x,f9.5))
+
+ contains
+
+ subroutine mesh_index(q,j)
+!! j = index of the mesh point equal to q modulo G (0 if q is not a mesh point); the mesh of
+!! make_kp_reg has reduced coordinates (integer)/nc, so q is on it iff nc*q_reduced is integer
+ real(8), intent(in) :: q(3)
+ integer, intent(out) :: j
+ real(8) r(3)
+ integer i1,i2,i3,ins
+ r(1)=(q .dot. r1)/2/pi*nc(1) ; r(2)=(q .dot. r2)/2/pi*nc(2) ; r(3)=(q .dot. r3)/2/pi*nc(3)
+ j=0
+ if (any(abs(r-nint(r)).gt.1d-5)) return
+ call get_k_info(q,nc,j,i1,i2,i3,g1,g2,g3,ins)
+ end subroutine mesh_index
+
+ subroutine fold_ws(q,w)
+!! w = q+G with the smallest |w| (G a reciprocal lattice vector): the image in the FBZ.
+!! On the zone boundary several images are equally short: take the one with the largest u.w
+!! (u = uwedge), so that boundary points also fall in the wedge around u
+ real(8), intent(in) :: q(3)
+ real(8), intent(out) :: w(3)
+ real(8) r(3),v(3),b0(3),gg(3,3),tol
+ integer n1,n2,n3
+ gg(:,1)=v2a(g1) ; gg(:,2)=v2a(g2) ; gg(:,3)=v2a(g3)
+ r(1)=(q .dot. r1)/2/pi ; r(2)=(q .dot. r2)/2/pi ; r(3)=(q .dot. r3)/2/pi
+ r=r-nint(r)
+ b0=matmul(gg,r) ; w=b0
+ do n1=-2,2 ; do n2=-2,2 ; do n3=-2,2
+    v=b0+n1*gg(:,1)+n2*gg(:,2)+n3*gg(:,3)
+    tol=1d-6*max(sum(w*w),1d-6)   ! lat_fc.dat gives the cell to ~1e-10: equal lengths differ by more
+    if (sum(v*v).lt.sum(w*w)-tol) then
+       w=v
+    elseif (abs(sum(v*v)-sum(w*w)).le.tol) then
+       if (dot_product(uwedge,v).gt.dot_product(uwedge,w)+1d-8 .or.                           &
+ &        (abs(dot_product(uwedge,v)-dot_product(uwedge,w)).le.1d-8 .and. lexi_greater(v,w))) w=v
+    endif
+ enddo ; enddo ; enddo
+ end subroutine fold_ws
+
+ logical function lexi_greater(a,b)
+!! a > b in the order (x, then y, then z), with a tolerance; breaks ties deterministically
+ real(8), intent(in) :: a(3),b(3)
+ integer m
+ lexi_greater=.false.
+ do m=1,3
+    if (a(m).gt.b(m)+1d-8) then
+       lexi_greater=.true. ; return
+    elseif (a(m).lt.b(m)-1d-8) then
+       return
+    endif
+ enddo
+ end function lexi_greater
 
  end subroutine get_weights
 !===========================================================

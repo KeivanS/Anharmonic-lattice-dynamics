@@ -1,19 +1,13 @@
-30 30 30  .false.
-0 0 0   shift
-300  350  dosmesh, omega_max
-10 30
-.False.   Verbosity
-300 300 1  Tempk
-2   iter 
-2   ksub_size and below path to where to write
-./      
-0
-0       if 1 then classical calculation lse quantum
-0 0 0 0    calc_cross q_cross
-100       sample length in microns (for boundary scattering)
-
-
-
-# for RTA         run1: 0 0 0 1 0   ; run2: 0 0 1 0 1
-# for iterative   run1: 1 1 0 1 0   ; run2: 1 1 2 1 0  ; run3: 1 1 1 1 1
- 
+30 30 30      # 1 kmesh
+0 0 0  0 0 1   # 2 shift, surface normal
+300 350       # 3 DOS points, omega_max (1/cm)
+10 30         # 4 DOS width, eta (1/cm)
+.False.       # 5 verbosity
+300 300 1     # 6 Tmin Tmax nT (K)
+0             # 7 0 quantum, 1 classical
+1             # 8 job: linewidths along the band path
+0             # 9 direct solver: 0 CG, 1 SVD
+0             # 10 V3*delta: 0 on disk (V3DELTA/), 1 in memory
+0             # 11 isotope scattering
+0 0 0 0       # 12 calc_cross, q_cross
+100           # 13 sample length (microns)

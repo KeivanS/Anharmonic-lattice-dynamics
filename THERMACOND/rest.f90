@@ -1,5 +1,12 @@
 !==========================================================
  subroutine read_params
+!! reads latdyn.params, the file shared with FOCEX (FOCEX reads lines 1-7 only):
+!!  1 kmesh n1 n2 n3            2 shift(3), surface normal(3)   3 DOS points, omega_max (1/cm)
+!!  4 DOS width, eta (1/cm)     5 verbosity                     6 Tmin, Tmax (K), number of T
+!!  7 0 quantum, 1 classical    8 job (0 bands/DOS/Gruneisen, 1 +linewidths on the band path,
+!!  2 +kappa direct, 3 +kappa iterative)  9 direct solver 0 CG, 1 SVD
+!! 10 V3*delta 0 on disk (reused if present), 1 in memory   11 isotopes 0/1
+!! 12 calc_cross, q_cross(3)   13 sample length (microns)
  use ios
  use om_dos
  use params
@@ -8,31 +15,37 @@
  use kpoints
  use atoms_force_constants
  implicit none
-! integer i
+ character(256) line
+ integer ln,ios_l
 
   open(uparams,file='latdyn.params',status='old')
   write(6,*) 'READ_PARAMS: opening latdyn.params'
-  read(uparams,*)nc,dos_bs_only ! kmesh 
-  write(*,*) 'READ_PARAMS: kmesh= ',nc
-  read(uparams,*)shft !x,shfty,shftz ! shift in units of mesh
-  read(uparams,*)normald
-  read(uparams,*)wmesh,wmax  ! no of w mesh points and max frequency for DOS
-  write(*,*) 'READ_PARAMS: just read wmesh,wmax ',wmesh,wmax
-  read(uparams,*)width,etaz  ! width of gaussian broadening for DOS,imag part of om
-  write(*,*) 'READ_PARAMS: just read width,etaz ',width,etaz
+  ln=0
+  call next_line ; read(line,*,iostat=ios_l) nc                 ; call check('kmesh n1 n2 n3')
+  call next_line ; read(line,*,iostat=ios_l) shft,normald       ; call check('shift(3) and surface normal(3), six numbers')
+  call next_line ; read(line,*,iostat=ios_l) wmesh,wmax         ; call check('number of DOS points, omega_max')
+  call next_line ; read(line,*,iostat=ios_l) width,etaz         ; call check('DOS width, eta')
+  call next_line ; read(line,*,iostat=ios_l) verbose            ; call check('verbosity (.true./.false.)')
+  call next_line ; read(line,*,iostat=ios_l) tmin,tmax,ntemp    ; call check('Tmin, Tmax, number of temperatures')
+  call next_line ; read(line,*,iostat=ios_l) classical          ; call check('0 quantum / 1 classical')
+  call next_line ; read(line,*,iostat=ios_l) job                ; call check('job 0..3')
+  call next_line ; read(line,*,iostat=ios_l) solver_direct      ; call check('direct solver 0 CG / 1 SVD')
+  call next_line ; read(line,*,iostat=ios_l) v3_store           ; call check('V3*delta 0 disk / 1 memory')
+  call next_line ; read(line,*,iostat=ios_l) iso                ; call check('isotope scattering 0/1')
+  call next_line ; read(line,*,iostat=ios_l) calc_cross,q_cross ; call check('calc_cross and q_cross(3)')
+  call next_line ; read(line,*,iostat=ios_l) lmicron            ; call check('sample length (microns)')
+  close(uparams)
+  if (job.lt.0 .or. job.gt.3) then
+     write(*,*)'READ_PARAMS: latdyn.params line 8: job must be 0, 1, 2 or 3, not ',job
+     stop
+  endif
+  if (ntemp.lt.1) ntemp=1
+  dos_bs_only = (job.eq.0)
   tau0=1e-11
-  write(*,*) 'READ_PARAMS: default tau0 set to ',tau0
-  read(uparams,*)verbose
-  write(*,*) 'READ_PARAMS: just read verbose ',verbose
-  read(uparams,*)tmin,tmax,ntemp      ! temps in Kelvin to calculate thermal expansion and other thermal ppties
-  write(*,*) 'READ_PARAMS: tmin,tmax,ntemp=',tmin,tmax,ntemp
-  read(uparams,*)job      ! if=1 then read from a file, else generate  ! sy added iter,split,calk
-  write(*,*)'iter,split,readv3,writev3,calk=',iter,split,readv3,writev3,calc_kappa
-  read(uparams,*)ksub_size  ! each v33sq.xxx.dat file contains V33sq(ksub_size,nkc,ndn,ndn,ndn)
-  read(uparams,'(a)') v3path              ! path to v33sq.dat files
-  read(uparams,*)iso
-! initialize some default parameters
- tolerance =0.0001
+  ksub_size=1
+  v3path='./'
+! default convergence parameters of the iterative solution
+  tolerance =0.0001
   max_iter=150
   conv_error=1E-5
   conv_max_error=1E-4
@@ -42,37 +55,42 @@
   conv_max_diff_kap=1E-4
   Conv_iter=1E-6
   update_mix=0.4  ! mixing of new iteration
-  write(*,*)'max_iter, conv_error, conv_max_error, conv_diff, conv_max_diff, conv_diff_kap, conv_max_diff_kap,conv_iter,update_mix'   
-  write(*,*)max_iter, conv_error, conv_max_error, conv_diff, conv_max_diff, conv_diff_kap, conv_max_diff_kap,conv_iter,update_mix   
   v3_threshold=1E-7        ! in 1/cm keep all v33 of norm above v3_threshold
-  write(*,*)'v3_threshold=',  v3_threshold  
-  read(uparams,*)classical     ! if =1 then use classical distribution (kT/hw)
-  read(uparams,*)calc_cross,q_cross  ! if =1 then calculate the cross section at qcros (reduced U)
-  read(uparams,*)lmicron     ! sample length in microns
 
-!!mine
-
-  close(uparams)
-
-  write(ulog,*) 'READ_PARAMS: read and kpoints allocated'
+  write(ulog,*) 'READ_PARAMS: latdyn.params read'
   write(ulog,3)'nc1,nc2,nc3=',nc
-  write(ulog,*)'wmesh, wmax=',wmesh,wmax
-  write(ulog,*)'read/writev3=',readv3,writev3
-! etaz = max(etaz,wmax/wmesh)
-! write(ulog,*)' in case etaz is too small we use the following'
-! write(ulog,*)'width,etaz =',width,etaz
-  write(ulog,*)'Tmin,Tmax(K=',tmin,tmax
+  write(ulog,*)'shift, normal=',shft,normald
+  write(ulog,*)'wmesh, wmax=',wmesh,wmax,'  width, eta=',width,etaz
+  write(ulog,*)'Tmin,Tmax(K), nT=',tmin,tmax,ntemp
+  write(ulog,*)'job, direct solver (0 CG, 1 SVD), V3*delta (0 disk, 1 memory), iso=',job,solver_direct,v3_store,iso
+  write(ulog,*)'calc_cross, q_cross, sample length (microns)=',calc_cross,q_cross,lmicron
   if (classical .eq. 1) then
      write(ulog,*)'Calculation is done in the CLASSICAL limit'
   else
      write(ulog,*)'Calculation is done in the QUANTUM limit'
   endif
-  if (dos_bs_only) then
-     write(ulog,*)' DOS will only be calculated (on the coarse mesh) ',nc
-!    write(ulog,*)' and the program will stop after that!'
-  endif
 
 3 format(a,6(1x,i6))
+ contains
+
+  subroutine next_line
+  ln=ln+1
+  read(uparams,'(a)',iostat=ios_l) line
+  if (ios_l.ne.0) then
+     write(*,*)'READ_PARAMS: latdyn.params ends before line ',ln,': it needs 13 lines'
+     stop
+  endif
+  end subroutine next_line
+
+  subroutine check(what)
+  character(*), intent(in) :: what
+  if (ios_l.ne.0) then
+     write(*,*)'READ_PARAMS: cannot read latdyn.params line ',ln,'; expected ',what
+     write(*,*)'   the line is: ',trim(line)
+     stop
+  endif
+  end subroutine check
+
  end subroutine read_params
 !==========================================================
  subroutine read_input_fit
@@ -81,14 +99,17 @@
  use lattice
  use atoms_force_constants
  implicit none
- integer i,counter,label
- real(8) scal,junk
- character jjj*1
+ integer i,counter,label,convcoord,ios_cc
+ real(8) scal,junk,x(3)
+ character jjj*1,line3*200
  open(uparams,file='structure.params',status='old')
 
  read(uparams,*) latticeparameters   ! (a,b,c,alpha,beta,gamma)
  read(uparams,*) primitivelattice     ! prim latt vectors in terms of conventional above
- read(uparams,*) lattice_parameter
+ read(uparams,'(a)') line3     ! scale factor, then optionally convcoord (as in FOCEX)
+ read(line3,*) lattice_parameter
+ read(line3,*,iostat=ios_cc) lattice_parameter, convcoord
+ if (ios_cc.ne.0) convcoord=0  ! 0: atoms in conventional units; else in primitive units
  latticeparameters(1:3) = latticeparameters(1:3)*lattice_parameter
  read(uparams,*) include_fc    ! if=1 include this rank
  read(uparams,*) junk ! itrans,irot,ihunag,all
@@ -115,7 +136,12 @@
  natom = 0
  do i=1,natoms0
 ! positions here must be D format in conventional cell for use by fcs_init
-    read(uparams,*) label,atom_type(label),atom0(label)%equilibrium_pos
+    read(uparams,*) label,atom_type(label),x
+    if (convcoord.eq.0) then
+       atom0(label)%equilibrium_pos = x                         ! conventional units
+    else
+       atom0(label)%equilibrium_pos = matmul(primitivelattice,x) ! primitive -> conventional units
+    endif
 ! this is useless because natom(:) is read from POSCAR1
     if (atom_type(i).eq.counter) then
         natom(atom_type(i)) = natom(atom_type(i))+1
@@ -158,21 +184,61 @@ end subroutine read_input_fit
  use svd_stuff
  use constants
  implicit none
- character line*90,name*2
+ character line*300,name*2
  integer i,j,tt,ttyp,natoms2,n1  !,at_count,n2,n3
  real(8) mss !a1,a2,a3,om,a,b,c,
  type(vector) tau1,vv
 
 open(ufc0,file='lat_fc.dat' ,status='old')
-
-do while (line(1:22) .ne. '  Crystal data: transl')
- read(ufc0,'(a)') line
-enddo
- read(ufc0,*) r1   ! coordinates of the primitive cell vectors
- read(ufc0,*) r2
- read(ufc0,*) r3
+! lat_fc.dat (written by FOCEX) is read by its section headers, so that both the present
+! layout and older ones work; the neighbour-atom list follows the 'maxshells' header
+ include_fc=0; ngroups=0; nterms=0; n1=-1
+ do
+    read(ufc0,'(a)',end=97) line
+    if (index(line,'Crystal data: translation vectors').gt.0) then
+       read(ufc0,*) r1   ! coordinates of the primitive cell vectors
+       read(ufc0,*) r2
+       read(ufc0,*) r3
+    elseif (index(line,'atoms in primitive cell').gt.0) then
+       read(ufc0,*) n1
+       if (n1 .ne. natoms0) then
+          write(ulog,*)' natoms0 in lat_fc.dat incompatible with structure.params ',n1,natoms0
+          write(*,*)' natoms0 in lat_fc.dat incompatible with structure.params ',n1,natoms0
+          stop
+       endif
+       do i=1,natoms0
+          read(ufc0,*)tt,name,ttyp,tau1,mss  ! atomic types names coordinates and and masses
+          if(tt .eq. i .and. ttyp .eq. atom0(i)%at_type .and. abs(atom0(i)%mass-mss).lt.1d-3) then
+             write(ulog,*)'####### compatibility with structure.params checked  ######### ',i
+          else
+             write(ulog,*)'READ_LATTICE: structure.params and lat_fc.dat are not compatible'
+             write(ulog,*)' i, atom type, mass ', i,tt,  atom0(i)%at_type,ttyp, atom0(i)%mass,mss
+             write(*,*)'READ_LATTICE: atom ',i,' of structure.params and lat_fc.dat differ (label, type or mass)'
+             stop
+          endif
+       enddo
+    elseif (index(line,'Included ranks of FCs').gt.0) then
+       read(ufc0,*) (include_fc(j),j=1,4)
+    elseif (index(line,'Number of groups for each rank').gt.0) then   ! present FOCEX
+       read(ufc0,*) (ngroups(j),j=1,4)
+    elseif (index(line,'Crystal data: groups').gt.0) then              ! older layout: numbers on the line
+       read(line(index(line,'groups')+6:),*) (ngroups(j),j=1,4)
+    elseif (index(line,'Number of FCs for each rank').gt.0) then
+       read(ufc0,*) (nterms(j),j=1,4)
+    elseif (index(line,'maxshells,Neighborshell atoms').gt.0) then
+       read(ufc0,*) nsmax,natoms2
+       exit
+    endif
+ enddo
+ if (n1.lt.0) then
+    write(*,*)'READ_LATTICE: no primitive-cell atoms in lat_fc.dat'
+    stop
+ endif
+ write(ulog,*)'include_fc  =',include_fc
+ write(ulog,*)'ngroups     =',ngroups
+ write(ulog,*)'nterms      =',nterms
+ write(ulog,*)'nsmax,natoms=',nsmax,natoms2
  r01=r1; r02=r2; r03=r3
-
 ! now generate the lattice ppties in real and recip spaces
   call make_reciprocal_lattice_2pi(r1,r2,r3,g1,g2,g3)
   call calculate_volume(r1,r2,r3,volume_r)
@@ -193,66 +259,6 @@ enddo
   write(ulog,3)' g3= ',g3
   write(ulog,3)' boxg = ',boxg
   write(ulog,3)' volume_r,volume_g = ',volume_r,volume_g
-
- read(ufc0,*) line
-! read(ufc,*) natoms0
-! ############ check compatibiliy with input file "params.inp" ###########
- read(ufc0,*) n1
- if (n1 .ne. natoms0) then
-    write(ulog,*)' natoms0 in lat_fc.dat incompatible with structure.params ',n1,natoms0
-    stop
- endif
-! call allocate_primcell(natoms0)
- do i=1,natoms0
-!  read(ufc1,*)atom0(i)%tau, atom_type(i),atom0(i)%equilibrium_pos,atom0(i)%mass
-    read(ufc0,*)tt,name,ttyp,tau1,mss  ! atomic types names coordinates and and masses 
-    vv%x= tau1.dot.g1 ; vv%y= tau1.dot.g2 ; vv%z= tau1.dot.g3
-    vv = (1/2d0/pi)*vv  ! reduced coordinates of atoms in primcell
-    if(tt .eq. i .and. ttyp .eq. atom0(i)%at_type .and. atom0(i)%mass .eq. mss) then
-      write(ulog,*)'####### compatibility with structure.params checked  ######### ',i
-    else
-      write(ulog,*)'READ_LATTICE: structure.params and lat_fc.dat are not compatible'
-      write(ulog,*)' i, atom type, mass '
-      write(ulog,*) i,tt,  atom0(i)%at_type,ttyp, atom0(i)%mass,mss
-! fix it so that if eq pos are the same module translarion vectors, it's OK
-      write(ulog,3)' reduced coordinates ',atom0(i)%equilibrium_pos,vv
-      stop
-    endif
- enddo
-
-
- read(ufc0,*) line
-! read(ufc0,*) line
- read(ufc0,*) (include_fc(j),j=1,4)
- write(ulog,*) (include_fc(j),j=1,4)
-
-
- read(ufc0,*) line ! these are for nshells
- read(ufc0,*) line
- read(ufc0,*) line
- read(ufc0,*) line
- read(ufc0,*) line
- read(ufc0,*) line
- read(ufc0,*) line
- read(ufc0,*) line
-
- read(ufc0,*) line
- write(ulog,*) line
- read(ufc0,*) (ngroups(j),j=1,4)
- write(ulog,*) (ngroups(j),j=1,4)
-
- read(ufc0,*) line
- write(ulog,*) line
- read(ufc0,*) (nterms(j),j=1,4)
- write(ulog,*) (nterms(j),j=1,4)
-
- read(ufc0,*) line
- read(ufc0,*) line
-
- read(ufc0,*) line
- write(ulog,*) line
- read(ufc0,*) nsmax,natoms2
- write(ulog,*) nsmax,natoms2
 
   maxatoms=natoms2-300 
   imaxat=1
@@ -293,6 +299,8 @@ enddo
  close(ufc0)
  write(ulog,*)' COORDINATES read successfully '
  return
+97 write(*,*)'READ_LATTICE: lat_fc.dat ended before the neighbour-atom list (maxshells header)'
+   stop
 
 99 write(*,*) "End of lat_fc.dat file reached!"
    write(*,*) "check the number of shells in params.inp, it is probably too large!"
@@ -347,9 +355,9 @@ enddo
        read(ufc2,*,end=92)t
  enddo
 92 mx=j-1
- if (mx.ne.nterms(rank)) then
-    write(*,*)'READ_FC2: number of lines read=',mx,' inconsistent with ',nterms(2),' from lat_fc.dat'
-    stop
+ if (mx.ne.nterms(rank)) then   ! FOCEX writes only FCs above its margin
+    write(ulog,*)'READ_FC2: ',mx,' terms in fc2.dat, ',nterms(rank),' in lat_fc.dat (zeros omitted)'
+    nterms(rank)=mx
  endif
  rewind(ufc2)
  write(ulog,*)'Rank=2, reading nterms(2)=',mx,' terms'
@@ -382,9 +390,9 @@ enddo
        read(ufc3,*,end=93)t
    enddo
 93 mx=j-1
-   if (mx.ne.nterms(rank)) then
-      write(*,*)'READ_FC3: number of lines read=',mx,' inconsistent with ',nterms(3),' from lat_fc.dat'
-      stop
+   if (mx.ne.nterms(rank)) then   ! FOCEX writes only FCs above its margin
+      write(ulog,*)'READ_FC3: ',mx,' terms in fc3.dat, ',nterms(rank),' in lat_fc.dat (zeros omitted)'
+      nterms(rank)=mx
    endif
    write(*,*) '********** FCs for rank=3',mx
    rewind(ufc3)
@@ -417,9 +425,9 @@ enddo
        read(ufc4,*,end=94)t
  enddo
 94 mx=j-1
- if (mx.ne.nterms(rank)) then
-    write(*,*)'READ_FC4: number of lines read=',mx,' inconsistent with ',nterms(4),' from lat_fc.dat'
-    stop
+ if (mx.ne.nterms(rank)) then   ! FOCEX writes only FCs above its margin
+    write(ulog,*)'READ_FC4: ',mx,' terms in fc4.dat, ',nterms(rank),' in lat_fc.dat (zeros omitted)'
+    nterms(rank)=mx
  endif
  rewind(ufc4)
  write(ulog,*)'Rank=4, reading nterms(4)=',mx,' terms'
@@ -2246,6 +2254,10 @@ enddo
  complex(8), allocatable:: dynmat(:,:),eivc(:,:),ddyn(:,:,:)
  real(8) khat(3)
  character ext*3
+ real(8) vfd(3,ndn),evfd(ndn)
+ complex(8) ecfd(ndn,ndn)
+ integer, parameter :: uveltest=331
+ logical, save :: first_call=.true.
 
 ! open files and write the group velocities
 ! do l=1,ndn
@@ -2261,6 +2273,12 @@ enddo
 ! write(uio,*)'# dynmat allocated, printing: Kpoint, eival(j),j=1,ndyn)'
 
 open(800,file='finitvel.dat')
+ if (first_call) then
+    open(uveltest,file='veltest.dat',status='replace')
+    first_call=.false.
+ else
+    open(uveltest,file='veltest.dat',status='old',position='append')
+ endif
 
  kloop: do i=1,nkp
 
@@ -2269,7 +2287,13 @@ write(800,*)i
  write(*,*)'GET_FREQUENCIES: before setting up dynmat, kp number ',i
 
 ! write(uio,*)'############ before setting up dynmat, kp number ',i
-    call finitedif_vel(kp(:,i),ndn,vg(:,:,i),eivl,eivc) 
+    call get_freq_vg(kp(:,i),ndn,eivl,eivc,vg(:,:,i))       ! Hellmann-Feynman velocities
+    call finitedif_vel(kp(:,i),ndn,vfd,evfd,ecfd)               ! finite differences, for veltest.dat
+    write(uveltest,'(a,3(1x,f9.5))')'# la, omega^2, v_FD(3), |v_FD|, v_HF(3), |v_HF| (m/s); k=',kp(:,i)
+    do l=1,ndn
+       write(uveltest,'(i5,1x,g11.4,2(5x,f11.3,3(1x,f11.3)))')l,eivl(l),vfd(:,l)*c_light,  &
+ &          length(vfd(:,l))*c_light,vg(:,l,i)*c_light,length(vg(:,l,i))*c_light
+    enddo
 
 !   call set_dynamical_matrix(kp(:,i),dynmat,ndn,ddyn)
 !
@@ -2387,6 +2411,7 @@ write(800,*)i
  enddo
  enddo
 close(800)
+close(uveltest)
 ! do l=1,ndn
 !    close(uvel+l)
 ! enddo
@@ -3525,7 +3550,7 @@ enddo
  real(8), intent(in) :: q(3)
  real(8) zag(3),zbg(3),qeq,om0,ma,mb,rr(3)
  integer na,nb,i,j
- real(8) eps_scale,q2,gg
+ real(8) eps_scale,q2,gg,dqeq(3),cna
 
  eps_scale=8.8541878176D-12/1D10/ee
  gg=(length(g1)*length(g2)*length(g3))**0.33
@@ -3567,9 +3592,14 @@ enddo
 !4*pi*zag(i)*zbg(j)/(qeq*eps_scale)/om0/sqrt(ma*mb)*exp(-q2/rho2)
       dynmat(i+3*(na-1),j+3*(nb-1)) = dynmat(i+3*(na-1),j+3*(nb-1))+ &
       & zag(i)*zbg(j)/(qeq*eps_scale)/om0/sqrt(ma*mb)*exp(-q2/rho2)
-  !! ALSO NEED TO CORRECT THE GROUP VELOCITIES
-   !  ddyn(i+3*(na-1),j+3*(nb-1)) = ddyn(i+3*(na-1),j+3*(nb-1))+ &
-   !  & zag(i)*zbg(j)/(qeq*eps_scale)/om0/sqrt(ma*mb)*exp(-q2/rho2)
+! d/dq of the term above, for the group velocities; left out at q=0, where it is undefined
+      if (q2.gt.1d-16) then
+         cna = exp(-q2/rho2)/(eps_scale*om0*sqrt(ma*mb))
+         dqeq = matmul(epsil+transpose(epsil),q)
+         ddyn(i+3*(na-1),j+3*(nb-1),:) = ddyn(i+3*(na-1),j+3*(nb-1),:) + cna*(            &
+         &    (atom0(na)%charge(:,i)*zbg(j)+zag(i)*atom0(nb)%charge(:,j))/qeq          &
+         &   - zag(i)*zbg(j)*dqeq/qeq**2 - zag(i)*zbg(j)/qeq*2*q/rho2 )
+      endif
    end do
    end do
  end do
@@ -4317,6 +4347,19 @@ enddo
  end subroutine phase
 !===========================================================
  subroutine get_freq(kp,ndn,eival,eivec)
+!! eigenvalues (omega^2) and eigenvectors at kp, sorted in ascending order
+ implicit none
+ integer, intent(in) :: ndn
+ real(8), intent(in) :: kp(3)
+ real(8), intent(out):: eival(ndn)
+ complex(8), intent(out) :: eivec(ndn,ndn)
+ real(8) vg(3,ndn)
+ call get_freq_vg(kp,ndn,eival,eivec,vg)
+ end subroutine get_freq
+!===========================================================
+ subroutine get_freq_vg(kp,ndn,eival,eivec,vg)
+!! as get_freq, plus the group velocities vg (units of c_light) from the Hellmann-Feynman
+!! theorem, v_l = < e_l | dD/dk | e_l > / (2 omega_l), dD/dk including the non-analytic term
  use params
  use ios
  use constants
@@ -4324,12 +4367,12 @@ enddo
  implicit none
  integer, intent(in) :: ndn
  real(8), intent(in) :: kp(3)
- real(8), intent(out):: eival(ndn)
+ real(8), intent(out):: eival(ndn),vg(3,ndn)
  complex(8), intent(out) :: eivec(ndn,ndn)
  integer i,j,k,l,ier,nd2,al
  integer, allocatable :: mp(:)
  real(8), allocatable :: eivl(:)
- real(8) absvec,vg(3,ndn)
+ real(8) absvec
  complex(8), allocatable:: dynmat(:,:),eivc(:,:),ddyn(:,:,:),temp(:,:)
  real(8) khat(3)
 
@@ -4432,6 +4475,13 @@ enddo
 !   enddo
 !   enddo
 
+ do al=1,3
+    temp = matmul(transpose(conjg(eivec)),matmul(ddyn(:,:,al),eivec))
+    do l=1,ndn
+       vg(al,l) = real(temp(l,l))/2/sqrt(abs(eival(l))+1d-24)*cnst*1d-10*100*2*pi
+    enddo
+ enddo
+
  deallocate(eivl,eivc,dynmat,mp,ddyn,temp)
 
  3 format(a,i5,9(1x,f13.4))
@@ -4442,7 +4492,7 @@ enddo
  8 format(99(1x,2(1x,f9.3),1x))
  9 format(a,i5,99(1x,2(1x,f9.3),1x))
 
- end subroutine get_freq
+ end subroutine get_freq_vg
 !===========================================================
 !subroutine sort_polarizations(n,nk,eivl,eivc,mp,q)
 ! put all longitudinal modes first, then transverse ones in the

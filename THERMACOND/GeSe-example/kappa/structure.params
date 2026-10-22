@@ -13,6 +13,10 @@ Ge  Se   names of atoms
 34 34 34 34 35 35 35 35  !13 13 13 13 12 12 12 12    
 20 20 20 20 22 22 22 22 
 0 2 2 2 2 2 2 2 
+0 0 0 0 0 0 0 0   number of shells for rank 5 for each atom
+0 0 0 0 0 0 0 0   number of shells for rank 6 for each atom
+0 0 0 0 0 0 0 0   number of shells for rank 7 for each atom
+0 0 0 0 0 0 0 0   number of shells for rank 8 for each atom
 1 1  0.75000000000000   0.11350283893953   0.87791768989055     
 2 1  0.25000000000000   0.61350283893953   0.62208231010945      
 3 1  0.25000000000000   0.88649716106047   0.12208231010945      

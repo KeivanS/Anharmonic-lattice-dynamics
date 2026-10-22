@@ -19,7 +19,7 @@
       integer maxshell
 !      parameter(maxshell=10)
 
-      integer i,j,k,m,n,i1,i2,i3,j1,j2,j3,nd2save,ncmp,nshell,   &
+      integer i,j,k,m,n,i1,i2,i3,j1,j2,j3,nd2save,ncmp,nshell,nsearch,   &
      &     natoms_in,iatomtype(natoms_in),ier,ifractcount,iatom,   &
      &     iatom2,itype2,iatom3,ipntop,   &
      &     itype,isg,iatom0,iop,icell(3),   &
@@ -281,7 +281,10 @@
         m=0
 ! collect distances to nearest neighbors
 ! do one shell of unit cells at a time
-        do n=0,nsmax !maxshell
+! search cells out to at least 30 shells: nsmax (FOCEX's maxshells in lat_fc.dat) can be too
+! small to find maxneighbors distinct distances; the FC range itself comes from fc2/fc3.dat
+        nsearch=max(nsmax,30)
+        do n=0,nsearch
           foundone=.false.
           do i1=-n,n
           do i2=-n,n
@@ -336,8 +339,8 @@
 ! list is filled
           if(nd2save.eq.maxneighbors.and.m.eq.0)m=1
 ! we reached the last shell before we finished the list
-          if(n.eq.nsmax)then
-            write(6,*)'Error:  maxshell is not large enough ',nsmax
+          if(n.eq.nsearch)then
+            write(6,*)'Error:  maxshell is not large enough ',nsearch
             close(20)
             stop
           endif
@@ -1752,18 +1755,40 @@
 !     narms (output), number of star vectors associated with kvec
 !     kvecstar(3,1:narms), all the stars of kvec
 !     kvecop(i), the symmetry operation number for the star vecor i
+! The operations are those of the Laue group of the crystal: the rotation parts of its
+! space-group operations (isgop, screw axes and glide planes included) and their products
+! with inversion (time reversal, omega(-k)=omega(k)).  Operations of the lattice point group
+! outside it (a crystal of lower symmetry than its lattice) are skipped: they would make
+! inequivalent k-points equivalent.
       use atoms_force_constants
+      use lattice, only : r1,r2,r3
+      use geometry, only : v2a
+      use constants, only : pi
       implicit none
       integer i,j,k,m,n,narms,kvecop(48),ier,ncmp
       double precision kvec(3),kvecstar(3,48),primlatt(3,3),v(3),  &
      &     v2(3),v3(3),kvecstarp(3,48)
+      logical laue
       narms=0
 !      print*,'lattpgcount=',lattpgcount
       iloop: do i=1,lattpgcount
+        laue=.false.
+        do j=1,isgopcount
+          if (isgop(j).eq.i) laue=.true.
+          if (all(abs(op_matrix(:,:,i)+op_matrix(:,:,isgop(j))).lt.1d-6)) laue=.true.
+        enddo
+        if (.not.laue) cycle iloop
+! kvec is Cartesian: rotate it with the Cartesian matrix op_matrix (orthogonal, so k -> R k).
+! op_kmatrix, the operation in the conventional reciprocal basis, equals it only for orthogonal
+! conventional axes along x,y,z; for hexagonal, trigonal, monoclinic cells it gave wrong stars
 ! apply symmetry operation to k to get v=kstar      
-        call xvmlt(op_kmatrix(1,1,i),kvec,v,3,3,3)
-! find the reduced coordinates of v and store in v2        
-        call xmatmlt(v,primlatt,v2,1,3,3,1,3,1)
+        call xvmlt(op_matrix(1,1,i),kvec,v,3,3,3)
+! find the reduced coordinates of v and store in v2: v2_i = v.r_i/2pi with r_i the primitive
+! vectors.  (v times primlatt, used before, is not that, so k and k+G, e.g. L and -L, were
+! kept as different arms.)
+        v2(1)=dot_product(v,v2a(r1))/(2*pi)
+        v2(2)=dot_product(v,v2a(r2))/(2*pi)
+        v2(3)=dot_product(v,v2a(r3))/(2*pi)
 
 ! now check if v2 - any_previous_v2 is integer (differ by a G vector)
 ! if so, skip; else store this v as a new star vector
