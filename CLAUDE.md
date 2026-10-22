@@ -195,8 +195,25 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
   k, k+G, -k, IBZ; counts = spglib 8/10/16/20; `check_mesh_labels` runs every time). Odd meshes
   stopped in make_kp_reg_tet ("is not a kpoint": corners shifted by -(g1+g2+g3)/2 unconditionally)
   until 2026-10-23.
+- structure.params optional (2026-10-23): `read_input_from_latfc` (rest.f90) takes the cell,
+  species, masses, positions from lat_fc.dat, whose primitive-vector lines now carry the
+  conventional vectors in columns 4-6 (FOCEX write_lat_fc; list-directed readers -- ANFOMOD,
+  THERMACOND -- take columns 1-3). Ge 4^3 job 3 byte-identical with/without structure.params.
 - job 1 is slow: function_self_w3 recomputes V3 over the mesh for each (k, mode); use few
   points per segment in kpbs.params.
+
+## PLANNED RELEASE (user, 2026-10-23, very important): read some FC ranks, fit the others
+
+include_fc(rank)=2 (structure.params line 4): fcN.dat of that rank is input, the include_fc=1
+ranks are fitted. Force part: the read rank's columns times its known FCs go to the right-hand
+side (A_fit x_fit = b - A_read x_read) and those columns leave amat and the unknowns. Invariance
+part (built rank by rank: translational within a rank, rotational couples rank n and n+1, Huang
+rank 2): the same column partition makes the rows coupling a read and a fitted rank inhomogeneous,
+C_fit x_fit = -C_read x_read; enforce_inv=1/2 then needs x = x_p + K y with a particular solution.
+Existing pieces: focex.f90 opens fcN_irr.dat and calls read_fcs (readfc), nindepfc counts only
+include_fc=1 ranks; ios.f90 ~136 "fix this to be also able to read only some files and fit the
+rest". To check: RHS subtraction in read_snaps_set_aforce; the invariance rows. Discuss the design
+with the user before coding.
 
 ## How the force constants are solved for (enforce_inv)
 
@@ -236,6 +253,12 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
   `veltest.dat`. Regression on Ge, BZO, MoTe2, GeSe: only those velocity columns changed.
 - The log line "Initial Pressure(GPa), gr,xagne" prints an uninitialised `gr` (~1e-314).
 - fc*.dat carry ~7 significant digits; symmetry-equivalent FCs then differ at ~1e-7.
+- QHA (`QHA_free_energy_vs_strain`, 2026-10-23): P(V) is now -dF/dV of the same F(V): the static
+  pressure P0 - B dV/V0 was missing from P (Ge: P=0 at +10 % strain, F minimum at +0.25 %), F
+  lacked -P0 dV, and the phonon pressure uses the exact -dln(omega)/dlnV of the omega(V) used
+  (gamma (1+e)/(1 +- 3 gamma e), over V not V0). Harmonic-only fits keep P_agne = NkT/V (user's
+  term for a harmonic thermal expansion) with F_agne = -NkT ln(V/V0) in F, so it does expand
+  (BZO 300 K dV/V 0.43 -> 0.56 %). temp_free.dat columns 10-15: F0,P0,F_agne,P_agne,F_ph,P_ph.
 - `conductance.dat` is written but its band loop is `do j=1,-1`, so it is all
   zeros.
 - `structure.params` line 3 is `scal [convcoord]`. It is read as text, so the
