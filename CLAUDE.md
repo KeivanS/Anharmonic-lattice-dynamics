@@ -105,6 +105,13 @@ ZnO/GaN/BAs run scripts still use and which is kept until the user removes it).
   goes; the user then submits `run_workflow.sh` from there (both modes). `run`/`plots` subcommands
   are what the scripts call. The project's copy is `focex-agent-instructions.txt` (old projects:
   `instructions.txt`, still read).
+- THERMACOND task (2026-10-23, user's design): last task `thermacond`, run iff THERMACOND_JOB
+  (latdyn line 8; else line 8 of a latdyn_params block; default 0 = skipped) is 1/2/3. Copies
+  lat_fc/fc2/fc3/structure/dielectric/kpbs from 05_focex to 06_thermacond, writes latdyn lines 1, 6,
+  8, 9 from THERMACOND_MESH / _T / _JOB / _SOLVER, runs THERMACOND_X (newest ~/ALADYN/bin/tcond-*.x,
+  MPI build) with the profile's MPI command; report: <= 7 temperatures, kappa_RTA, full, kappa_C,
+  warning if full < 0.99 RTA (open direct-solver issue). diagnose.py: TC_PAT. Tested on argon (6^3,
+  RTA isotropic, ~1/T; job 0 skipped; missing binary held).
 - Snapshot temperature (user's rule, 2026-10-23): a `TEMPERATURE:` given is used as is (effective
   phonons at that T); only without it is the default 30 K retuned to `DISP_TARGET` (Ar: 50 K kept,
   rms 0.0138 A). `SUPERCELL:` 9 integers = supercell.inp rows, RS_i = sum_j n_ij R0_j (primitive).

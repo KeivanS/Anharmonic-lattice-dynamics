@@ -256,7 +256,7 @@ The options of ``focex-agent.py`` are all optional:
 Mode from_scratch: from a POSCAR to phonons
 -------------------------------------------
 
-``run_workflow.sh`` runs ``focex-agent.py run <PROJECT_DIR>``, which does the ten tasks below in
+``run_workflow.sh`` runs ``focex-agent.py run <PROJECT_DIR>``, which does the eleven tasks below in
 order. Each finished task is recorded in ``state.json`` and in ``report.log``, with what was
 checked; a task that fails stops the workflow, and starting ``run_workflow.sh`` again continues
 from that task. A job that hits its time limit is simply submitted again.
@@ -315,6 +315,9 @@ from that task. A job that hits its time limit is simply submitted again.
 ``plots``
    The gnuplot scripts ``bvel.plt``, ``all.plt``, ``qha.plt`` are filled in and run in every FOCEX
    folder (:ref:`agent-results`); ``makeplots.sh`` remakes them.
+``thermacond``
+   THERMACOND in ``06_thermacond``: linewidths or the thermal conductivity, when ``THERMACOND_JOB``
+   is 1, 2 or 3; skipped for 0, the default (:ref:`agent-thermacond`).
 
 Defaults
 ~~~~~~~~
@@ -535,6 +538,21 @@ VASP-Flow (its manual lists all of them); the common ones are below.
    * - ``BS_NKPTS``
      - 40
      - points per segment of the band path
+   * - **THERMACOND** (:ref:`agent-thermacond`)
+     -
+     -
+   * - ``THERMACOND_JOB``
+     - 0
+     - 0 none; 1 linewidths; 2 kappa, direct; 3 kappa, iterative (latdyn line 8)
+   * - ``THERMACOND_MESH``
+     - the FOCEX mesh
+     - n1 n2 n3 (line 1)
+   * - ``THERMACOND_T``
+     - 0 900 31
+     - Tmin Tmax (K), number of temperatures (line 6)
+   * - ``THERMACOND_SOLVER``
+     - 0
+     - job 2: 0 conjugate gradient, 1 SVD (line 9)
    * - **programs**
      -
      -
@@ -547,6 +565,9 @@ VASP-Flow (its manual lists all of them); the common ones are below.
    * - ``READ_OUTCAR_X``
      - ``~/ALADYN/bin/read_outcar.x``
      - reads OUTCARs
+   * - ``THERMACOND_X``
+     - newest ``~/ALADYN/bin/tcond-*.x``
+     - THERMACOND (MPI build)
 
 .. _agent-override:
 
@@ -655,6 +676,8 @@ The project folder and the results
      - ``snap_NNN/`` (one VASP run each), ``POSCAR1``, ``FORCEDISP1``
    * - ``05_focex``
      - FOCEX: inputs, outputs, plots; ``NOBORN/`` and ``LASSO/`` when made
+   * - ``06_thermacond``
+     - THERMACOND (``THERMACOND_JOB`` 1-3): ``kappa_vs_T.dat``, ``kappa_wigner.dat``, ...
    * - ``diagnosis``
      - written by ``diagnose.py``: ``report.txt``, ``fix_it.sh``, backups
 
@@ -738,12 +761,55 @@ commands as they are. Run ``diagnose.py`` again when the resubmitted job has fin
    "SET_DYNMAT_STD: R+tp-t not inside!"; HELD for review: use a supercell with the symmetry of the
    lattice, then redo from the snapshots.*
 
+.. _agent-thermacond:
+
 Thermal conductivity
 --------------------
 
-THERMACOND reads ``lat_fc.dat``, ``fc2.dat`` and ``fc3.dat`` from ``05_focex``, so fit at least the
-cubic force constants (``RANKS: 1 1 1 0 0 0 0 0``). The agent does not run it: in ``05_focex`` set
-lines 8--13 of ``latdyn.params`` (see :doc:`runthermacond`) and run ``tcond-2.0.x`` there.
+The last task, ``thermacond``, runs THERMACOND on the force constants of ``05_focex``. Whether it
+runs is decided by the THERMACOND job, line 8 of ``latdyn.params``, which you set in the
+instruction file:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 72
+
+   * - ``THERMACOND_JOB``
+     - what THERMACOND does
+   * - 0 (default)
+     - nothing: the task is skipped (FOCEX has already given the bands, DOS and Grüneisen
+       parameters)
+   * - 1
+     - three-phonon linewidths of every mode along the band path (``lw-selfenergy.dat``)
+   * - 2
+     - thermal conductivity: RTA and the direct solution of the BTE
+   * - 3
+     - thermal conductivity: RTA and the iterative solution of the BTE
+
+.. code-block:: text
+
+   RANKS: 1 1 1 0 0 0 0 0        # cubic force constants are needed
+   THERMACOND_JOB: 2
+   THERMACOND_MESH: 12 12 12     # latdyn.params line 1 for THERMACOND (default: the FOCEX mesh)
+   THERMACOND_T: 100 900 9       # line 6: Tmin, Tmax (K), number of temperatures
+   # THERMACOND_SOLVER: 0        # line 9, job 2: 0 conjugate gradient, 1 SVD
+
+The task copies ``lat_fc.dat``, ``fc2.dat``, ``fc3.dat``, ``structure.params``,
+``dielectric.params`` and ``kpbs.params`` from ``05_focex`` to ``06_thermacond``, writes there
+FOCEX's ``latdyn.params`` with lines 1, 6, 8 and 9 from these keywords, and runs ``tcond-2.0.x``
+with the MPI command of the profile; ``05_focex`` is not changed. A ``latdyn_params`` block
+(:ref:`agent-override`) sets all 13 lines for both FOCEX and THERMACOND, and its line 8 is the job
+unless ``THERMACOND_JOB`` is given. The mesh is the expensive choice: the FOCEX default (``fine``)
+is usually far too dense, so set ``THERMACOND_MESH`` and converge kappa with it.
+
+The report gives, at up to seven of the temperatures, kappa_RTA, the full (direct or iterative)
+solution and the coherences term kappa_C of the Wigner formulation (W/mK, average of the
+diagonal), and a warning if the full solution falls below the RTA, which it should not do (the
+direct solver has an open issue: compare with job 3). The complete results are in
+``06_thermacond``: ``kappa_vs_T.dat``, ``kappa_wigner.dat``, ``Qvalue.dat`` (scattering rates) and
+the other files described in :doc:`runthermacond`. An existing project gets the task by adding
+``THERMACOND_JOB`` to its ``focex-agent-instructions.txt`` and submitting ``run_workflow.sh``
+again: the finished tasks are skipped.
 
 Version history
 ---------------

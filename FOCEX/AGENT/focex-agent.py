@@ -25,6 +25,7 @@ Tasks (each is recorded in <PROJECT_DIR>/report.log and skipped once done):
   collect    read_outcar.x -> FORCEDISP1, POSCAR1 = poscar_000; all runs checked
   focex      the five *.params files, FOCEX (+ NOBORN and LASSO runs when needed)
   plots      bvel.plt / all.plt / qha.plt filled in, makeplots.sh
+  thermacond THERMACOND in 06_thermacond if THERMACOND_JOB (latdyn.params line 8) is 1, 2 or 3
 MODE: extract_only (DATA: <folder> with POSCAR1, FORCEDISP1, [POSCAR2, FORCEDISP2, ...],
 optionally POSCAR = primitive cell and dielectric.params, all in the frame of the data) rotates
 the data into the FOCEX frame and does focex and plots only.
@@ -94,7 +95,9 @@ INSTR = 'focex-agent-instructions.txt'    # default instruction file; its copy i
 OLD_INSTR = 'instructions.txt'            # name of that copy before 2026-10-23
 MODES = ('from_scratch', 'extract_only')
 TASKS = ('relax', 'poscar0', 'scf', 'dfpt', 'snaps', 'supercells', 'vasp_snaps', 'collect',
-         'focex', 'plots')
+         'focex', 'plots', 'thermacond')
+TC_JOB = {0: 'bands, DOS, Gruneisen only (no THERMACOND run)', 1: 'linewidths on the band path',
+          2: 'RTA + direct solution', 3: 'RTA + iterative solution'}
 
 
 # ── instructions ──────────────────────────────────────────────────────────────
@@ -198,6 +201,24 @@ def parse_instructions(path):
         '~/ALADYN/bin/sc_snaps.x', '~/BIN/sc_snaps.x'))
     fx['read_outcar_x'] = os.path.expanduser(keyword(rest, 'READ_OUTCAR_X') or '~/ALADYN/bin/read_outcar.x')
     fx['profile'] = keyword(rest, 'PROFILE')
+    # THERMACOND: latdyn.params line 8 decides; THERMACOND_JOB, else line 8 of a latdyn_params block
+    job = keyword(rest, 'THERMACOND_JOB')
+    if job is None and blocks.get('latdyn_params'):
+        lines = blocks['latdyn_params'].splitlines()
+        job = lines[7].split()[0] if len(lines) > 7 and lines[7].split() else None
+    try:
+        fx['tc_job'] = int(job) if job is not None else 0
+    except ValueError:
+        sys.exit(f'THERMACOND_JOB must be 0, 1, 2 or 3, not {job!r}')
+    if fx['tc_job'] not in TC_JOB:
+        sys.exit(f'THERMACOND_JOB must be 0, 1, 2 or 3, not {fx["tc_job"]}')
+    fx['tc_job_given'] = job is not None
+    fx['tc_mesh'] = (keyword(rest, 'THERMACOND_MESH') or '').split()
+    fx['tc_T'] = (keyword(rest, 'THERMACOND_T') or '').split()
+    fx['tc_solver'] = keyword(rest, 'THERMACOND_SOLVER')
+    if fx['tc_mesh'] and len(fx['tc_mesh']) != 3 or fx['tc_T'] and len(fx['tc_T']) != 3:
+        sys.exit('THERMACOND_MESH needs 3 integers (n1 n2 n3), THERMACOND_T 3 numbers (Tmin Tmax nT)')
+    fx['thermacond_x'] = os.path.expanduser(keyword(rest, 'THERMACOND_X') or newest_tcond())
     fx['blocks'] = blocks
     return inst, fx
 
@@ -205,6 +226,13 @@ def parse_instructions(path):
 def first_file(*paths):
     """The first of paths that exists (the first one if none does)."""
     return next((p for p in paths if os.path.isfile(os.path.expanduser(p))), paths[0])
+
+
+def newest_tcond():
+    """The newest MPI build ~/ALADYN/bin/tcond-<version>.x (not the -serial one)."""
+    c = sorted((f for f in glob.glob(os.path.expanduser('~/ALADYN/bin/tcond-[0-9]*.x')) if 'serial' not in f),
+               key=os.path.getmtime)
+    return c[-1] if c else '~/ALADYN/bin/tcond-2.0.x'
 
 
 def newest_focex():
@@ -1184,6 +1212,77 @@ class Agent:
         if unknown:
             m += f'; unfilled placeholders: {" ".join(sorted(unknown))}'
         return r.returncode == 0, m
+
+    # ---- task 8: THERMACOND ----------------------------------------------------
+    def t_thermacond(self):
+        """THERMACOND on the force constants of 05_focex, in 06_thermacond, when THERMACOND_JOB
+        (latdyn.params line 8) is 1, 2 or 3."""
+        job, fx = self.fx['tc_job'], self.fx
+        if job == 0:
+            return True, ('skipped: THERMACOND_JOB 0' + ('' if fx['tc_job_given'] else ' (not given)')
+                          + ' -- set THERMACOND_JOB: 2 or 3 for the thermal conductivity')
+        src, d = self.d('05_focex'), self.d('06_thermacond')
+        fc3 = os.path.join(src, 'fc3.dat')
+        if not os.path.isfile(fc3) or not any(l.split() and not l.lstrip().startswith('#')
+                                               for l in open(fc3).read().splitlines()[1:]):
+            return False, 'THERMACOND needs cubic force constants: fit rank 3 (RANKS: 1 1 1 0 0 0 0 0)'
+        if not os.path.isfile(fx['thermacond_x']):
+            return False, (f"THERMACOND binary not found at {fx['thermacond_x']} (make thermacond, or "
+                           'set THERMACOND_X)')
+        os.makedirs(d, exist_ok=True)
+        for f in ('lat_fc.dat', 'fc2.dat', 'fc3.dat', 'structure.params', 'dielectric.params', 'kpbs.params'):
+            if os.path.isfile(os.path.join(src, f)):
+                shutil.copy(os.path.join(src, f), d)
+        L = open(os.path.join(src, 'latdyn.params')).read().splitlines()
+        if fx['tc_mesh']:
+            L[0] = ' '.join(fx['tc_mesh']) + '        # 1 kmesh (THERMACOND_MESH)'
+        if fx['tc_T']:
+            L[5] = ' '.join(fx['tc_T']) + '        # 6 Tmin(K), Tmax(K), number of temperatures (THERMACOND_T)'
+        L[7] = f'{job}            # 8 THERMACOND job ({TC_JOB[job]})'
+        if fx['tc_solver'] is not None:
+            L[8] = f"{fx['tc_solver']}            # 9 THERMACOND direct solver: 0 conjugate gradient, 1 SVD"
+        write(os.path.join(d, 'latdyn.params'), '\n'.join(L) + '\n')
+        cmd = self.gen(self.d('POSCAR0'), 'scf')._get_mpi_cmd(fx['thermacond_x'])
+        t0 = time.time()
+        rc = subprocess.run(f'{cmd} > thermacond.out 2>&1', shell=True, cwd=d).returncode
+        head = (f"job {job} ({TC_JOB[job]}), mesh {L[0].split('#')[0].strip()}, T {L[5].split('#')[0].strip()}, "
+                f'{(time.time() - t0) / 60:.1f} min')
+        if job == 1:
+            ok = rc == 0 and os.path.isfile(os.path.join(d, 'lw-selfenergy.dat'))
+            return ok, head + ('; linewidths in lw-selfenergy.dat' if ok else self.tc_failure(d, rc))
+        rows = self.kappa_rows(os.path.join(d, 'kappa_vs_T.dat'))
+        if rc != 0 or not rows:
+            return False, head + self.tc_failure(d, rc)
+        kc = {round(r[0], 2): r for r in self.kappa_rows(os.path.join(d, 'kappa_wigner.dat'))}
+        full = 'direct' if job == 2 else 'iterative'
+        msg = [head, f'T(K)   kappa_RTA   kappa_{full}   kappa_C   (W/mK, average of xx yy zz)']
+        for r in [rows[i] for i in sorted({round(k * (len(rows) - 1) / 6) for k in range(7)})]:   # <= 7, ends included
+            c = kc.get(round(r[0], 2))
+            msg.append(f'{r[0]:7.1f} {sum(r[1:4]) / 3:10.3f} {sum(r[7:10]) / 3:12.3f} '
+                       + (f'{sum(c[13:16]) / 3:9.4f}' if c and len(c) > 15 else '      n/a'))
+        low = [r[0] for r in rows if sum(r[7:10]) < 0.99 * sum(r[1:4])]
+        if low:
+            msg.append(f'WARNING: the {full} solution is below the RTA at {len(low)} temperature(s); the full '
+                       'solution should not be lower -- the direct solver has an open issue (compare with job 3)')
+        return True, '\n  '.join(msg)
+
+    @staticmethod
+    def kappa_rows(path):
+        rows = []
+        if os.path.isfile(path):
+            for l in open(path).read().splitlines():
+                if l.strip() and not l.lstrip().startswith('#'):
+                    try:
+                        rows.append([float(x) for x in l.split()])
+                    except ValueError:
+                        pass
+        return rows
+
+    @staticmethod
+    def tc_failure(d, rc):
+        tail = [l.strip() for l in open(os.path.join(d, 'thermacond.out'), errors='replace').read().splitlines()
+                if l.strip()][-3:] if os.path.isfile(os.path.join(d, 'thermacond.out')) else []
+        return f'; THERMACOND failed (exit code {rc}); thermacond.out: ' + ' / '.join(tail)
 
     # ---- driver --------------------------------------------------------------
     def run(self, only=None, retry=False):

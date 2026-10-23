@@ -46,10 +46,19 @@ MPI: 40                     # MPI ranks for VASP
 # BS_NKPTS: 40
 # LASSO_RATIO: 2            # equations/unknowns below this -> extra LASSO run (enforce_inv = 2)
 
+# ── thermal conductivity (THERMACOND, after FOCEX; latdyn.params lines 8, 1, 6, 9) ──
+THERMACOND_JOB: 0           # 0: no THERMACOND (FOCEX already gives bands, DOS, Gruneisen);
+#                           # 1: + three-phonon linewidths on the band path;
+#                           # 2: + kappa, RTA and direct solution; 3: + kappa, RTA and iterative
+# THERMACOND_MESH: 12 12 12  # k-mesh for THERMACOND (default: the FOCEX mesh, often too dense)
+# THERMACOND_T: 100 900 9    # Tmin Tmax (K), number of temperatures (default: FOCEX's 0 900 31)
+# THERMACOND_SOLVER: 0       # job 2: 0 conjugate gradient, 1 SVD
+
 # ── programs (defaults shown) ──
 # FOCEX_X: ~/ALADYN/bin/focex-8.19.x   # default: the newest ~/ALADYN/bin/focex-*.x
 # SC_SNAPS_X: ~/ALADYN/bin/sc_snaps.x   # (else ~/BIN/sc_snaps.x)
 # READ_OUTCAR_X: ~/ALADYN/bin/read_outcar.x
+# THERMACOND_X: ~/ALADYN/bin/tcond-2.0.x   # default: the newest ~/ALADYN/bin/tcond-*.x (MPI build)
 
 # ── any generated file can be replaced or amended by a block named after it ──
 # INCAR blocks are merged tag by tag (INCAR = every step; INCAR_relax, INCAR_scf,

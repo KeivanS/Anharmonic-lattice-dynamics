@@ -305,7 +305,7 @@ threads per rank before you start the workflow.
 % ============================================================
 \section{Mode from\_scratch: from a POSCAR to phonons}\label{sec:scratch}
 % ============================================================
-\cmd{run_workflow.sh} runs \cmd{focex-agent.py run <PROJECT_DIR>}, which does the ten tasks below
+\cmd{run_workflow.sh} runs \cmd{focex-agent.py run <PROJECT_DIR>}, which does the eleven tasks below
 in order. Each finished task is recorded in \cmd{state.json} and in \cmd{report.log}, with what was
 checked; a task that fails stops the workflow, and starting \cmd{run_workflow.sh} again continues
 from that task. A job that hits its time limit is simply submitted again.
@@ -356,6 +356,8 @@ from that task. A job that hits its time limit is simply submitted again.
   \cmd{latdyn.params} does not fit the frequencies, FOCEX is run again with one that does.
 \item[plots] The gnuplot scripts \cmd{bvel.plt}, \cmd{all.plt}, \cmd{qha.plt} are filled in and run
   in every FOCEX folder (Section~\ref{sec:results}); \cmd{makeplots.sh} remakes them.
+\item[thermacond] THERMACOND in \cmd{06_thermacond}: linewidths or the thermal conductivity, when
+  \cmd{THERMACOND_JOB} is 1, 2 or 3; skipped for 0, the default (Section~\ref{sec:thermacond}).
 \end{description}
 
 \subsection{Defaults}
@@ -452,7 +454,7 @@ unknowns, the frequencies and the elastic moduli are those of a FOCEX run in the
 One keyword per line, \cmd{KEYWORD: value}; \cmd{#} starts a comment. The VASP keywords are those
 of VASP-Flow (its manual lists all of them); the common ones are below.
 
-\begin{longtable}{@{}>{\ttfamily}p{0.2\linewidth}>{\raggedright\arraybackslash}p{0.21\linewidth}>{\raggedright\arraybackslash}p{0.51\linewidth}@{}}
+\begin{longtable}{@{}>{\ttfamily}p{0.24\linewidth}>{\raggedright\arraybackslash}p{0.2\linewidth}>{\raggedright\arraybackslash}p{0.48\linewidth}@{}}
 \thead \normalfont\bfseries keyword & \textbf{default} & \textbf{meaning} \\ \midrule \endhead
 \multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{project}}} \\
 Project & (required) & a name, used in titles and as the default folder \\
@@ -490,10 +492,16 @@ DISP\_TARGET & 0.02 & \AA, the rms displacement wanted (only without TEMPERATURE
 FOCEX\_MESH & fine & k-mesh of latdyn.params: coarse, fine, a density, or 3 integers \\
 KPATH & 0 & 0: automatic band path; 1: give a \cmd{kpbs_params} block \\
 BS\_NKPTS & 40 & points per segment of the band path \\
+\multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{THERMACOND}} (Section~\ref{sec:thermacond})} \\
+THERMACOND\_JOB & 0 & 0 none; 1 linewidths; 2 kappa, direct; 3 kappa, iterative (latdyn line 8) \\
+THERMACOND\_MESH & the FOCEX mesh & n1 n2 n3 (line 1) \\
+THERMACOND\_T & 0 900 31 & Tmin Tmax (K), number of temperatures (line 6) \\
+THERMACOND\_SOLVER & 0 & job 2: 0 conjugate gradient, 1 SVD (line 9) \\
 \multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{programs}}} \\
 FOCEX\_X & newest \cmd{~/ALADYN/bin/} \cmd{focex-*.x} & the FOCEX binary \\
 SC\_SNAPS\_X & \cmd{~/ALADYN/bin/} \cmd{sc_snaps.x} & SC-SNAPS \\
 READ\_OUTCAR\_X & \cmd{~/ALADYN/bin/} \cmd{read_outcar.x} & reads OUTCARs \\
+THERMACOND\_X & newest \cmd{~/ALADYN/bin/} \cmd{tcond-*.x} & THERMACOND (MPI build) \\
 \bottomrule
 \end{longtable}
 
@@ -584,6 +592,7 @@ POSCAR.input, POSCAR.init, POSCAR0 & your structure; reduced and oriented; relax
 03\_snaps & SC-SNAPS input and the snapshots \cmd{poscar_NNN} \\
 04\_supercells & \cmd{snap_NNN/} (one VASP run each), \cmd{POSCAR1}, \cmd{FORCEDISP1} \\
 05\_focex & FOCEX: inputs, outputs, plots; \cmd{NOBORN/} and \cmd{LASSO/} when made \\
+06\_thermacond & THERMACOND (\cmd{THERMACOND_JOB} 1--3): \cmd{kappa_vs_T.dat}, \cmd{kappa_wigner.dat}, \dots \\
 diagnosis & written by \cmd{diagnose.py}: \cmd{report.txt}, \cmd{fix_it.sh}, backups \\
 \bottomrule
 \end{longtable}
@@ -647,12 +656,48 @@ symmetry of the lattice, then redo from the snapshots.}
 \end{tipbox}
 
 % ============================================================
-\section{Thermal conductivity}
+\section{Thermal conductivity}\label{sec:thermacond}
 % ============================================================
-THERMACOND reads \cmd{lat_fc.dat}, \cmd{fc2.dat} and \cmd{fc3.dat} from \cmd{05_focex}, so fit
-at least the cubic force constants (\cmd{RANKS: 1 1 1 0 0 0 0 0}). The agent does not run it: in
-\cmd{05_focex} set lines 8--13 of \cmd{latdyn.params} (see the THERMACOND manual) and run
-\cmd{tcond-2.0.x} there.
+The last task, \cmd{thermacond}, runs THERMACOND on the force constants of \cmd{05_focex}. Whether
+it runs is decided by the THERMACOND job, line 8 of \cmd{latdyn.params}, which you set in the
+instruction file:
+
+\medskip
+\noindent\begin{tabularx}{\linewidth}{@{}>{\ttfamily}p{0.31\linewidth}X@{}}
+\thead \normalfont\bfseries THERMACOND\_JOB & \textbf{what THERMACOND does} \\ \midrule
+0 (default) & nothing: the task is skipped (FOCEX has already given the bands, DOS and Gr\"uneisen
+  parameters) \\
+1 & three-phonon linewidths of every mode along the band path (\cmd{lw-selfenergy.dat}) \\
+2 & thermal conductivity: RTA and the direct solution of the BTE \\
+3 & thermal conductivity: RTA and the iterative solution of the BTE \\
+\bottomrule
+\end{tabularx}
+
+\medskip
+\begin{lstlisting}
+RANKS: 1 1 1 0 0 0 0 0        # cubic force constants are needed
+THERMACOND_JOB: 2
+THERMACOND_MESH: 12 12 12     # latdyn.params line 1 for THERMACOND (default: the FOCEX mesh)
+THERMACOND_T: 100 900 9       # line 6: Tmin, Tmax (K), number of temperatures
+# THERMACOND_SOLVER: 0        # line 9, job 2: 0 conjugate gradient, 1 SVD
+\end{lstlisting}
+The task copies \cmd{lat_fc.dat}, \cmd{fc2.dat}, \cmd{fc3.dat}, \cmd{structure.params},
+\cmd{dielectric.params} and \cmd{kpbs.params} from \cmd{05_focex} to \cmd{06_thermacond}, writes
+there FOCEX's \cmd{latdyn.params} with lines 1, 6, 8 and 9 from these keywords, and runs
+\cmd{tcond-2.0.x} with the MPI command of the profile; \cmd{05_focex} is not changed. A
+\cmd{latdyn_params} block (Section~\ref{sec:override}) sets all 13 lines for both FOCEX and
+THERMACOND, and its line 8 is the job unless \cmd{THERMACOND_JOB} is given. The mesh is the
+expensive choice: the FOCEX default (\cmd{fine}) is usually far too dense, so set
+\cmd{THERMACOND_MESH} and converge \cmd{kappa} with it.
+
+The report gives, at up to seven of the temperatures, $\kappa_{RTA}$, the full (direct or iterative)
+solution and the coherences term $\kappa_C$ of the Wigner formulation (W/mK, average of the
+diagonal), and a warning if the full solution falls below the RTA, which it should not do (the
+direct solver has an open issue: compare with job~3). The complete results are in
+\cmd{06_thermacond}: \cmd{kappa_vs_T.dat}, \cmd{kappa_wigner.dat}, \cmd{Qvalue.dat} (scattering
+rates) and the other files described in the THERMACOND manual. An existing project gets the task
+by adding \cmd{THERMACOND_JOB} to its \cmd{focex-agent-instructions.txt} and submitting
+\cmd{run_workflow.sh} again: the finished tasks are skipped.
 
 % ============================================================
 \section{Version history}

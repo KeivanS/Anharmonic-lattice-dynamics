@@ -44,7 +44,7 @@ __version__ = '1.0'
 AGENT = os.path.dirname(os.path.realpath(__file__))
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
 TASKS = ('relax', 'poscar0', 'scf', 'dfpt', 'snaps', 'supercells', 'vasp_snaps', 'collect',
-         'focex', 'plots')
+         'focex', 'plots', 'thermacond')
 INSTR, OLD_INSTR = 'focex-agent-instructions.txt', 'instructions.txt'
 VASP_DIR = {'relax': '01_relax', 'scf': '02_scf', 'dfpt': '02_scf/dfpt'}
 BLOCK = {'relax': 'INCAR_relax', 'scf': 'INCAR_scf', 'dfpt': 'INCAR_dfpt', 'vasp_snaps': 'INCAR_snaps'}
@@ -81,6 +81,23 @@ FOCEX_PAT = [
      'remove it or set include_fc'),
     ('volume', r'[Vv]olume is zero', 'a cell with zero volume (structure.params lines 1-2)',
      'check structure.params'),
+]
+
+
+# THERMACOND messages in 06_thermacond/thermacond.out: (cause, regex, meaning, what to do)
+TC_PAT = [
+    ('imaginary', r'imaginary frequencies', 'the force constants give imaginary frequencies on the k-mesh',
+     'check the FOCEX fit (05_focex: min omega^2, LASSO run) before computing kappa'),
+    ('no_fc3', r'READ_FC3: (fc3.dat has no terms|no cubic force constants)', 'no cubic force constants',
+     'fit rank 3 (RANKS: 1 1 1 0 0 0 0 0)'),
+    ('isotope', r'isotope scattering is not yet available', 'isotope scattering was requested (latdyn line 11)',
+     'set line 11 of a latdyn_params block to 0'),
+    ('cell', r'different primitive cells|incompatible with structure.params|differ \(label', 'lat_fc.dat and '
+     'structure.params describe different cells', 'redo the focex task (it writes both)'),
+    ('mesh', r'is not a kpoint|CHECK_MESH_LABELS: mesh and get_k_info disagree', 'a k-mesh labelling error',
+     'use another THERMACOND_MESH and report the case'),
+    ('mpi', r'PMPI_Init|MPI_Init|mpirun was unable|ORTE|PRTE', 'MPI could not start THERMACOND',
+     'check the MPI command of the profile; resubmit'),
 ]
 
 
@@ -276,6 +293,8 @@ def diagnose(pr):
                                     items[0][2], fix, held, todo))
     elif t == 'focex':
         findings += focex_findings(pr, msg)
+    elif t == 'thermacond':
+        findings.append(thermacond_finding(pr, msg))
     else:
         findings.append(other_finding(pr, t, msg))
     return status, '', findings
@@ -314,6 +333,30 @@ def focex_findings(pr, msg):
         out.append(Finding('focex', '05_focex', 'unknown', 'FOCEX failed', 'report.log: ' + msg, held=True,
                            todo='read 05_focex/focex.out'))
     return out
+
+
+def thermacond_finding(pr, msg):
+    if 'needs cubic force constants' in msg:
+        return Finding('thermacond', '06_thermacond', 'no_fc3', 'no cubic force constants in 05_focex', msg,
+                       held=True, todo='fit rank 3 (RANKS: 1 1 1 0 0 0 0 0), redo from the focex task')
+    if 'binary not found' in msg:
+        return Finding('thermacond', '06_thermacond', 'program', 'the THERMACOND binary is missing', msg,
+                       held=True, todo='make thermacond in Anharmonic-lattice-dynamics, or set THERMACOND_X')
+    text = read(pr.f('06_thermacond', 'thermacond.out'), tail=400000) + '\n' + pr.job_log()
+    for cause, rx, meaning, todo in TC_PAT:
+        hit = re.search(rx, text)
+        if hit:
+            fix = [('resubmit', 'run_workflow.sh')] if cause == 'mpi' else []
+            return Finding('thermacond', '06_thermacond', cause, meaning, f'thermacond.out: "{hit.group(0)}"',
+                           held=cause != 'mpi', todo=todo, fix=fix)
+    lim = re.search(r'DUE TO TIME LIMIT|time limit', text, re.I)
+    if lim:
+        return Finding('thermacond', '06_thermacond', 'timeout', vd.CAUSE_TEXT['timeout'], f'log: "{lim.group(0)}"',
+                       fix=[('walltime', 2), ('resubmit', 'run_workflow.sh')], todo='walltime x2, resubmit '
+                       '(V3DELTA/ is kept and reused)')
+    tail = [l for l in read(pr.f('06_thermacond', 'thermacond.out')).splitlines() if l.strip()][-4:]
+    return Finding('thermacond', '06_thermacond', 'unknown', 'THERMACOND stopped without a known message',
+                   'report.log: ' + msg[:400], tail, held=True, todo='read 06_thermacond/thermacond.out')
 
 
 def other_finding(pr, t, msg):
