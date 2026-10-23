@@ -177,12 +177,11 @@ sampled velocities; VASP ignores them.
 
 .. important::
 
-   SC-SNAPS is **not** part of this repository. It is developed and distributed
-   separately, at `github.com/KeivanS/SC_SNAPS
-   <https://github.com/KeivanS/SC_SNAPS>`__, and comes with a graphical
-   interface. Install it from there; ``cd FOCEX/utility && make`` does not build
-   it. The three input files, the sampling and the interface are documented in
-   full in :doc:`runscsnaps` — start there.
+   SC-SNAPS is in the ``SC_SNAPS`` folder of this repository (also published on its own
+   at `github.com/KeivanS/SC_SNAPS <https://github.com/KeivanS/SC_SNAPS>`__, identical),
+   with a graphical interface. ``make sc_snaps`` in the top folder builds it;
+   ``cd FOCEX/utility && make`` does not. The three input files, the sampling and the
+   interface are documented in full in :doc:`runscsnaps` — start there.
 
    Older versions of ALATDYN bundled a copy of ``sc_snaps.f90`` in
    ``FOCEX/utility``. It has been removed: it had fallen several versions behind

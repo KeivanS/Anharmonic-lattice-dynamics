@@ -6,7 +6,8 @@ Requirements
 
 * A Fortran compiler — GNU ``gfortran`` (version 9 or newer) or Intel
   ``ifort``/``ifx``. FOCEX and ANFOMOD need nothing else.
-* An MPI implementation (``mpif90``) — only for SCOP8 and THERMACOND.
+* An MPI implementation (``mpif90``) — only for THERMACOND (``make thermacond-serial``
+  builds it without MPI) and SCOP8.
 * ``make``.
 * Optional, for plotting the results: ``gnuplot``.
 
@@ -24,7 +25,8 @@ Getting the code
 Building everything at once
 ---------------------------
 
-The top-level ``make.inc`` holds the compiler settings shared by the four codes:
+One ``make`` in the top folder builds every part and installs the executables in
+``DESTDIR``, set in the top-level ``make.inc``:
 
 .. code-block:: makefile
 
@@ -39,13 +41,23 @@ The top-level ``make.inc`` holds the compiler settings shared by the four codes:
 
    FLAGS = -O2 -fcheck=all -ffree-line-length-0
 
-Edit it if you use a different compiler or want a different installation
-directory, then
+Edit it if you want a different installation directory (or give ``make DESTDIR=...``);
+FOCEX and THERMACOND set their own compiler options in their Makefiles. Then
 
 .. code-block:: bash
 
-   make          # builds ANFOMOD, FOCEX, SCOP8 and THERMACOND
-   make clean    # removes the object and module files
+   make                    # = make all: everything below except SCOP8
+   make focex              # FOCEX (focex-8.19.x) and its utilities (read_outcar.x, ...)
+   make sc_snaps           # SC-SNAPS (sc_snaps.x, poscar2xyz.py)
+   make thermacond         # THERMACOND with MPI (tcond-2.0.x); thermacond-serial: without
+   make anfomod            # ANFOMOD
+   make python-tools       # links focex-agent, focex-diagnose to FOCEX/AGENT
+   make scop8              # SCOP8, not part of "make": it does not compile at present
+   make clean              # removes the object and module files
+
+On macOS with Homebrew's Open MPI, set ``export OMPI_FC=/opt/homebrew/bin/gfortran`` and
+``export SDKROOT=$(xcrun --show-sdk-path)`` before ``make`` (see :doc:`runthermacond`).
+The sections below describe each part and how to build it on its own.
 
 Finally add the installation directory to your ``PATH`` — put the line in your
 ``~/.bashrc`` or ``~/.zshrc`` so that it is set in every session:
@@ -144,13 +156,11 @@ kept because ``focex-agent.py`` uses its functions.
 
 .. note::
 
-   The snapshot generator ``sc_snaps.x`` is **not** built here. It is developed
-   in its own repository, `github.com/KeivanS/SC_SNAPS
-   <https://github.com/KeivanS/SC_SNAPS>`__, and comes with a graphical
-   interface; install it from there, as described in :doc:`runscsnaps`. A copy
-   of its source used to be bundled in ``FOCEX/utility`` but had drifted several
-   versions behind, and its ``cell.inp`` format no longer matched, so it was
-   removed rather than left to mislead.
+   The snapshot generator ``sc_snaps.x`` is built from the ``SC_SNAPS`` folder, not here:
+   ``make sc_snaps`` in the top folder (or the top-level ``make``) installs it in
+   ``~/ALADYN/bin``; see :doc:`runscsnaps`. The folder is identical to the separate
+   repository `github.com/KeivanS/SC_SNAPS <https://github.com/KeivanS/SC_SNAPS>`__. The
+   old copy in ``FOCEX/utility`` was several versions behind and was removed.
 
 .. _scop8-install:
 

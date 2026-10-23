@@ -3,6 +3,11 @@
 A browser-based graphical interface for the `sc_snaps.x` supercell snapshot
 generator. Runs locally as a Flask web app — no internet connection required.
 
+SC-SNAPS is also part of the ALATDYN suite,
+[Anharmonic-lattice-dynamics](https://github.com/KeivanS/Anharmonic-lattice-dynamics), as its
+`SC_SNAPS` folder; both are the same code. There, `make sc_snaps` in the top folder builds
+`sc_snaps.x` into `~/ALADYN/bin` with the other programs.
+
 ---
 
 ## What it does

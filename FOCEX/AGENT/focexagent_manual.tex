@@ -156,8 +156,9 @@ Python $\geq$ 3.8 with numpy, spglib, pymatgen & the agent and \cmd{diagnose.py}
   environment, below \\
 VASP-Flow & writes the VASP inputs and batch scripts & \cmd{git clone}, below \\
 FOCEX, \cmd{read_outcar.x} & the fit; reading the forces from the OUTCARs & this repository,
-  \cmd{make} \\
-SC-SNAPS (\cmd{sc_snaps.x}) & the snapshots (from\_scratch only) & its own repository, \cmd{make} \\
+  \cmd{make focex} \\
+SC-SNAPS (\cmd{sc_snaps.x}) & the snapshots (from\_scratch only) & this repository,
+  \cmd{make sc_snaps} \\
 gnuplot & the plots (PDF) & \cmd{brew install gnuplot}, \cmd{apt install gnuplot}, or a module \\
 a Fortran compiler & building FOCEX and SC-SNAPS & \cmd{gfortran} (GCC) \\
 \bottomrule
@@ -168,15 +169,12 @@ The same commands on a workstation and on the login node of a cluster (there, lo
 and GCC first, e.g.\ \cmd{module load gcc python}).
 \begin{lstlisting}[language=bash]
 cd ~
-# 1. this repository (FOCEX, its utilities, the agent) and SC-SNAPS
+# 1. this repository: FOCEX, its utilities, SC-SNAPS, the agent
 git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
-git clone https://github.com/KeivanS/SC_SNAPS.git
-mkdir -p ~/BIN ~/ALADYN/bin
-# FOCEX -> ~/ALADYN/bin/focex-8.19.x (3 min), its utilities (read_outcar.x, ...) -> ~/ALADYN/bin
-# (the top-level make builds THERMACOND and SCOP8 as well; they need MPI)
-(cd Anharmonic-lattice-dynamics/FOCEX && make)
-(cd Anharmonic-lattice-dynamics/FOCEX/utility && make)
-(cd SC_SNAPS && make)                                     # -> ~/BIN/sc_snaps.x
+cd Anharmonic-lattice-dynamics
+make focex sc_snaps     # FOCEX, read_outcar.x, ..., sc_snaps.x -> ~/ALADYN/bin (3 min)
+                        # plain "make" also builds THERMACOND (needs MPI) and ANFOMOD
+cd ~
 
 # 2. VASP-Flow; the agent imports it from ~/VASP-Flow
 #    (another place: export VASP_FLOW_DIR=/that/place)
@@ -464,7 +462,7 @@ KPATH & 0 & 0: automatic band path; 1: give a \cmd{kpbs_params} block \\
 BS\_NKPTS & 40 & points per segment of the band path \\
 \multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{programs}}} \\
 FOCEX\_X & newest \cmd{~/ALADYN/bin/} \cmd{focex-*.x} & the FOCEX binary \\
-SC\_SNAPS\_X & \cmd{~/BIN/sc_snaps.x} & SC-SNAPS \\
+SC\_SNAPS\_X & \cmd{~/ALADYN/bin/} \cmd{sc_snaps.x} & SC-SNAPS \\
 READ\_OUTCAR\_X & \cmd{~/ALADYN/bin/} \cmd{read_outcar.x} & reads OUTCARs \\
 \bottomrule
 \end{longtable}

@@ -60,12 +60,12 @@ single-atom displacements of the frozen-phonon method. But thermal snapshots in
 which all atoms move at once carry far more information per DFT run, which is
 why SC-SNAPS generates them (:doc:`runscsnaps`).
 
-**Which SC-SNAPS should I use — the one in FOCEX/utility or the separate repo?**
+**Which SC-SNAPS should I use?**
 
-The separate repository, `github.com/KeivanS/SC_SNAPS
-<https://github.com/KeivanS/SC_SNAPS>`_. It is the maintained version and adds a
-graphical interface. Its ``cell.inp`` format has changed, so old input files
-need editing; see :doc:`runscsnaps`.
+The ``SC_SNAPS`` folder of ALATDYN, which is identical to the separate repository
+`github.com/KeivanS/SC_SNAPS <https://github.com/KeivanS/SC_SNAPS>`_. The old copy in
+``FOCEX/utility`` (removed) read an older ``cell.inp``, so old input files need editing;
+see :doc:`runscsnaps`.
 
 **Do I need the Born effective charges?**
 
@@ -151,9 +151,8 @@ procedure 'findif'".**
 It was built with ``-fcheck=all``, which turns on ``-fcheck=recursion``, and the
 finite-difference helper genuinely recurses. Build it with plain ``-O2``, as
 SC-SNAPS's own Makefile does, or keep the checks and add ``-frecursive``. Note
-that ``sc_snaps.x`` is built from the `SC_SNAPS repository
-<https://github.com/KeivanS/SC_SNAPS>`__, not from ``FOCEX/utility``; see
-:doc:`runscsnaps`.
+that ``sc_snaps.x`` is built from the ``SC_SNAPS`` folder (``make sc_snaps``), not from
+``FOCEX/utility``; see :doc:`runscsnaps`.
 
 **``make`` fails on the last line with "No such file or directory".**
 

@@ -14,11 +14,11 @@ Displacing every atom in every snapshot, rather than one atom at a time, is what
 makes the approach economical: each DFT run then yields :math:`3 N_{sc}`
 independent pieces of information about the force constants instead of three.
 
-SC-SNAPS is distributed from its own repository,
-`github.com/KeivanS/SC_SNAPS <https://github.com/KeivanS/SC_SNAPS>`_, which
-contains the Fortran generator, a browser-based graphical interface, a
-POSCAR-to-XYZ converter and example input files. **This is the only place it is
-maintained** — install it from there, not from ALATDYN.
+SC-SNAPS is in the ``SC_SNAPS`` folder of ALATDYN, next to FOCEX and THERMACOND: the
+Fortran generator, a browser-based graphical interface, a POSCAR-to-XYZ converter and
+example input files. It is also published on its own, identical, at
+`github.com/KeivanS/SC_SNAPS <https://github.com/KeivanS/SC_SNAPS>`_ (the folder is a git
+subtree of that repository), for those who want only the snapshot generator.
 
 .. note::
 
@@ -59,13 +59,15 @@ Installation
 
 .. code-block:: bash
 
-   git clone https://github.com/KeivanS/SC_SNAPS.git
+   cd Anharmonic-lattice-dynamics
+   make sc_snaps         # builds sc_snaps.x and installs it in ~/ALADYN/bin
    cd SC_SNAPS
    make venv             # one-time: Python packages for the GUI
-   make compile          # builds sc_snaps.x and installs it in ~/BIN
 
-``make compile`` compiles ``sc_snaps.f90`` with ``gfortran -O2`` and moves the
-executable to ``$(BINDIR)``, which defaults to ``~/BIN``. Override it with
+``make sc_snaps`` (also part of the top-level ``make``) compiles ``sc_snaps.f90`` with
+``gfortran -O2`` and puts ``sc_snaps.x`` and ``poscar2xyz.py`` in ``~/ALADYN/bin``, with
+the other ALATDYN programs. Inside ``SC_SNAPS`` (or a clone of the separate repository),
+``make compile`` does the same into ``$(BINDIR)``, default ``~/BIN``; override it with
 ``make compile BINDIR=/somewhere/else``.
 
 ``make venv`` creates a local virtual environment ``.venv`` with

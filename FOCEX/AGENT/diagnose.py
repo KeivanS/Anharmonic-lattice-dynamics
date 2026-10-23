@@ -318,7 +318,7 @@ def focex_findings(pr, msg):
 
 def other_finding(pr, t, msg):
     rules = [('sc_snaps.x not found', 'program', 'the SC-SNAPS program is missing',
-              'build it (git clone https://github.com/KeivanS/SC_SNAPS; make) or set SC_SNAPS_X'),
+              'build it (make sc_snaps in Anharmonic-lattice-dynamics) or set SC_SNAPS_X'),
              ('read_outcar.x not found', 'program', 'read_outcar.x is missing',
               'build it (cd FOCEX/utility && make) or set READ_OUTCAR_X'),
              ('produced no poscar_000', 'sc_snaps', 'SC-SNAPS made no snapshots', 'read the SC-SNAPS output quoted above'),

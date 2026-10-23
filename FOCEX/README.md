@@ -45,11 +45,9 @@ make
 Curtarolo (2010). `utility/poscar2focex.py` (numpy + spglib) is the earlier
 version, kept for `focex-agent.py`.
 
-The snapshot generator `sc_snaps.x` is **not** built here. It lives in its own
-repository, <https://github.com/KeivanS/SC_SNAPS>, together with a graphical
-interface; install it from there. The copy that used to be bundled in `utility/`
-was several versions behind and read an incompatible `cell.inp`, and has been
-removed.
+The snapshot generator `sc_snaps.x` is not built here but from `../SC_SNAPS`
+(`make sc_snaps` in the top folder installs it in `~/ALADYN/bin`), which also has a
+graphical interface. That folder is identical to <https://github.com/KeivanS/SC_SNAPS>.
 
 ## Running
 

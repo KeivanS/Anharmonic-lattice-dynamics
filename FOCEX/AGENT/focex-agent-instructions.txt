@@ -44,7 +44,7 @@ MPI: 40                     # MPI ranks for VASP
 
 # ── programs (defaults shown) ──
 # FOCEX_X: ~/ALADYN/bin/focex-8.19.x   # default: the newest ~/ALADYN/bin/focex-*.x
-# SC_SNAPS_X: ~/BIN/sc_snaps.x
+# SC_SNAPS_X: ~/ALADYN/bin/sc_snaps.x   # (else ~/BIN/sc_snaps.x)
 # READ_OUTCAR_X: ~/ALADYN/bin/read_outcar.x
 
 # ── any generated file can be replaced or amended by a block named after it ──

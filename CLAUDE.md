@@ -20,10 +20,11 @@ cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-8.19.x
 Executables (2026-10-23, user's rule): all in `~/ALADYN/bin` (`DESTDIR`; the top-level `make`
 passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-8.19.x` (8.18 and earlier: `~/BIN/v8.18`),
 THERMACOND `tcond-2.0.x` / `tcond-2.0-serial.x` (was `kap8` in its
-source folder). The top-level `make` builds ANFOMOD, FOCEX, FOCEX/utility, SCOP8, THERMACOND and
-links the Python tools; SCOP8 does not compile (`VA_math.f95:7416` calls `dotproduct(...)`, which
-does not exist -- geometry.f95 has only the `.dot.` operator; from 07f9f456, YuanLiang21120,
-2025-04-02); it is built last, so make builds the rest and then stops there (user: ignore SCOP8 for now).
+source folder). Top-level `make` (= `make all`, user's spec 2026-10-23): python-tools, focex (FOCEX +
+FOCEX/utility), sc_snaps, thermacond, anfomod; single targets of those names, `thermacond-serial`,
+`scop8` (not in all: SCOP8 does not compile -- `VA_math.f95:7416` calls `dotproduct(...)`, which does
+not exist, geometry.f95 has only the `.dot.` operator; from 07f9f456, YuanLiang21120, 2025-04-02;
+user: ignore SCOP8 for now). Verified in a scratch copy: make all exit 0, make clean exit 0.
 Old utility builds were kept in `~/ALADYN/bin/old_2026-10-23/`. Tags (2026-10-23, approved): focex-8.19; the agent is
 versioned separately, focex-agent-1.0 (`__version__` in focex-agent.py and diagnose.py, manual title and
 its Version history section); VASP-Flow v2.6 (at ef92326) and v2.7.
@@ -357,8 +358,14 @@ build at zero warnings.
 
 ## Related repos
 
-- `github.com/KeivanS/SC_SNAPS`, cloned at `~/PROJECTS/SC_SNAPS` — the **only**
-  home of SC-SNAPS, with a Flask GUI. The stale copy in `FOCEX/utility/` was
+- SC-SNAPS is the folder `SC_SNAPS/`, a **git subtree** of `github.com/KeivanS/SC_SNAPS`
+  (added 2026-10-23 at 66267c1, full history; user's choice over a submodule so that a plain
+  clone/pull brings it). Edit it only here; publish to the separate repository with
+  `git subtree push --prefix=SC_SNAPS sc_snaps main` (remote `sc_snaps`; sandbox off). A change
+  made in that repository directly comes in with `git subtree pull --prefix=SC_SNAPS sc_snaps
+  main`. `~/PROJECTS/SC_SNAPS` is the old clone, no longer the working copy. Built by
+  `make sc_snaps` (top level, BINDIR = DESTDIR with ~ expanded: its Makefile quotes it) ->
+  ~/ALADYN/bin/sc_snaps.x; the agent looks there, then ~/BIN. With a Flask GUI. The stale copy in `FOCEX/utility/` was
   removed 2026-08-14; it had diverged from this one across ~2200 lines and read
   an older `cell.inp` (line 3 now takes two values, line 6 takes masses *and*
   charges). Documented in `docs/source/runscsnaps.rst`; that repo has its own

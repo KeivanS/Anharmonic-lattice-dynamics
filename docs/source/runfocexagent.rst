@@ -82,10 +82,10 @@ The programs
      - ``git clone``, below
    * - FOCEX, ``read_outcar.x``
      - the fit; reading the forces from the OUTCARs
-     - this repository, ``make``
+     - this repository, ``make focex``
    * - SC-SNAPS (``sc_snaps.x``)
      - the snapshots (from_scratch only)
-     - its own repository, ``make``
+     - this repository, ``make sc_snaps``
    * - gnuplot
      - the plots (PDF)
      - ``brew install gnuplot``, ``apt install gnuplot``, or a module
@@ -102,15 +102,12 @@ and GCC first, e.g. ``module load gcc python``).
 .. code-block:: bash
 
    cd ~
-   # 1. this repository (FOCEX, its utilities, the agent) and SC-SNAPS
+   # 1. this repository: FOCEX, its utilities, SC-SNAPS, the agent
    git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
-   git clone https://github.com/KeivanS/SC_SNAPS.git
-   mkdir -p ~/BIN ~/ALADYN/bin
-   # FOCEX -> ~/ALADYN/bin/focex-8.19.x (3 min), its utilities (read_outcar.x, ...) -> ~/ALADYN/bin
-   # (the top-level make builds THERMACOND and SCOP8 as well; they need MPI)
-   (cd Anharmonic-lattice-dynamics/FOCEX && make)
-   (cd Anharmonic-lattice-dynamics/FOCEX/utility && make)
-   (cd SC_SNAPS && make)                                     # -> ~/BIN/sc_snaps.x
+   cd Anharmonic-lattice-dynamics
+   make focex sc_snaps     # FOCEX, read_outcar.x, ..., sc_snaps.x -> ~/ALADYN/bin (3 min)
+                           # plain "make" also builds THERMACOND (needs MPI) and ANFOMOD
+   cd ~
 
    # 2. VASP-Flow; the agent imports it from ~/VASP-Flow
    #    (another place: export VASP_FLOW_DIR=/that/place)
@@ -512,7 +509,7 @@ VASP-Flow (its manual lists all of them); the common ones are below.
      - newest ``~/ALADYN/bin/focex-*.x``
      - the FOCEX binary
    * - ``SC_SNAPS_X``
-     - ``~/BIN/sc_snaps.x``
+     - ``~/ALADYN/bin/sc_snaps.x``
      - SC-SNAPS
    * - ``READ_OUTCAR_X``
      - ``~/ALADYN/bin/read_outcar.x``

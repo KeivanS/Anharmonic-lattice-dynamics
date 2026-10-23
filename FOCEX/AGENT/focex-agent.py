@@ -191,11 +191,17 @@ def parse_instructions(path):
     pdir = os.path.expanduser(keyword(rest, 'PROJECT_DIR') or vagent.slugify(fx['project']))
     fx['project_dir'] = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(path)), pdir))
     fx['species'] = (keyword(rest, 'SPECIES') or '').split()
-    fx['sc_snaps_x'] = os.path.expanduser(keyword(rest, 'SC_SNAPS_X') or '~/BIN/sc_snaps.x')
+    fx['sc_snaps_x'] = os.path.expanduser(keyword(rest, 'SC_SNAPS_X') or first_file(
+        '~/ALADYN/bin/sc_snaps.x', '~/BIN/sc_snaps.x'))
     fx['read_outcar_x'] = os.path.expanduser(keyword(rest, 'READ_OUTCAR_X') or '~/ALADYN/bin/read_outcar.x')
     fx['profile'] = keyword(rest, 'PROFILE')
     fx['blocks'] = blocks
     return inst, fx
+
+
+def first_file(*paths):
+    """The first of paths that exists (the first one if none does)."""
+    return next((p for p in paths if os.path.isfile(os.path.expanduser(p))), paths[0])
 
 
 def newest_focex():

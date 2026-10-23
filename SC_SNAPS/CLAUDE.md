@@ -7,6 +7,11 @@ Flask web GUI). Feeds **FOCEX** in the ALATDYN suite
 `CLAUDE.md`, and the user-facing manual for *this* code lives there as
 `docs/source/runscsnaps.rst`.
 
+**Where to edit (2026-10-23):** this code is the `SC_SNAPS/` folder of
+Anharmonic-lattice-dynamics, a git subtree of `github.com/KeivanS/SC_SNAPS`. Edit it there and
+publish with `git subtree push --prefix=SC_SNAPS sc_snaps main` from that repository; a change
+made directly in SC_SNAPS comes back with `git subtree pull --prefix=SC_SNAPS sc_snaps main`.
+
 ## Ground rule
 
 Verify against the source and an actual run. The input files are read
