@@ -87,7 +87,7 @@ conventional cubic cell, :math:`a = 5.7022565` Å) and 36 snapshots.
    # after compiling (see the Installation chapter)
    mkdir -p ~/runs/Ge && cd ~/runs/Ge
    cp <path-to-repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
-   <path-to-your-binary>          # e.g.  ~/BIN/v16
+   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-8.19.x
 
 On a single modern core the run takes a few minutes. It should end with
 
@@ -846,7 +846,7 @@ input files in one directory, ``cd`` into it and run the binary.
    ls
    # default.params  dielectric.params  kpbs.params  latdyn.params
    # structure.params  POSCAR1  FORCEDISP1
-   ~/BIN/v16 | tee focex.out
+   ~/ALADYN/bin/focex-8.19.x | tee focex.out
 
 The run is serial and memory-bound: the largest array is the fit matrix, of
 size (number of force components + constraints) × (number of independent FCs).

@@ -1,6 +1,6 @@
 # focex-agent instruction file: copy it next to your POSCAR and edit it for your material.
 #
-#   source ~/vaspenv/bin/activate
+#   source ~/dftphonon-env/bin/activate
 #   python ~/PROJECTS/Anharmonic-lattice-dynamics/FOCEX/AGENT/focex-agent.py --profile rivanna
 #   cd <PROJECT_DIR> && sbatch run_workflow.sh          # bash run_workflow.sh without SLURM
 #
@@ -43,7 +43,7 @@ MPI: 40                     # MPI ranks for VASP
 # LASSO_RATIO: 2            # equations/unknowns below this -> extra LASSO run (enforce_inv = 2)
 
 # ── programs (defaults shown) ──
-# FOCEX_X: ~/BIN/v8.18      # default: the newest ~/BIN/v*
+# FOCEX_X: ~/ALADYN/bin/focex-8.19.x   # default: the newest ~/ALADYN/bin/focex-*.x
 # SC_SNAPS_X: ~/BIN/sc_snaps.x
 # READ_OUTCAR_X: ~/ALADYN/bin/read_outcar.x
 

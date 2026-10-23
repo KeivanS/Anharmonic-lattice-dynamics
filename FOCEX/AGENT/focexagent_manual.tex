@@ -172,18 +172,19 @@ cd ~
 git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
 git clone https://github.com/KeivanS/SC_SNAPS.git
 mkdir -p ~/BIN ~/ALADYN/bin
-# FOCEX -> ~/BIN/v8.18 (3 min); read_outcar.x -> ~/ALADYN/bin; sc_snaps.x -> ~/BIN
+# FOCEX -> ~/ALADYN/bin/focex-8.19.x (3 min), its utilities (read_outcar.x, ...) -> ~/ALADYN/bin
+# (the top-level make builds THERMACOND and SCOP8 as well; they need MPI)
 (cd Anharmonic-lattice-dynamics/FOCEX && make)
 (cd Anharmonic-lattice-dynamics/FOCEX/utility && make)
-(cd SC_SNAPS && make)
+(cd SC_SNAPS && make)                                     # -> ~/BIN/sc_snaps.x
 
 # 2. VASP-Flow; the agent imports it from ~/VASP-Flow
 #    (another place: export VASP_FLOW_DIR=/that/place)
 git clone https://github.com/KeivanS/VASP-Flow.git
 
-# 3. a Python environment with the packages the agent needs
-python3 -m venv ~/vaspenv
-source ~/vaspenv/bin/activate
+# 3. one Python environment for VASP-Flow and the FOCEX agent
+python3 -m venv ~/dftphonon-env
+source ~/dftphonon-env/bin/activate
 pip install numpy spglib pymatgen matplotlib
 
 # 4. optional: the commands focex-agent and focex-diagnose (symlinks in ~/ALADYN/bin)
@@ -225,7 +226,7 @@ With a SLURM profile, \cmd{run_workflow.sh} begins with the \cmd{#SBATCH} lines 
 
 \subsection{Check the set-up}
 \begin{lstlisting}[language=bash]
-source ~/vaspenv/bin/activate
+source ~/dftphonon-env/bin/activate
 python ~/VASP-Flow/check_setup.py local     # a workstation;  "slurm" on a cluster
 \end{lstlisting}
 It checks Python and its packages, the POTCAR library, VASP and MPI (and on a cluster the
@@ -233,9 +234,11 @@ profile), and prints for every problem the command that fixes it. \textbf{Ready.
 means you can start.
 
 \subsection{When is the Python environment needed?}
-Whenever \emph{you} start \cmd{focex-agent.py} or \cmd{diagnose.py}: they import numpy, spglib,
-pymatgen and VASP-Flow. Either activate it first (\cmd{source ~/vaspenv/bin/activate}, then
-\cmd{python ...}) or call its interpreter directly (\cmd{~/vaspenv/bin/python ...}).
+It is the same environment as in VASP-Flow's manual: one, \cmd{~/dftphonon-env}, serves both (DFT with
+VASP-Flow, phonons with the FOCEX agent). It is needed whenever \emph{you} start \cmd{focex-agent.py} or
+\cmd{diagnose.py}: they import numpy, spglib,
+pymatgen and VASP-Flow. Either activate it first (\cmd{source ~/dftphonon-env/bin/activate}, then
+\cmd{python ...}) or call its interpreter directly (\cmd{~/dftphonon-env/bin/python ...}).
 The scripts the agent writes (\cmd{run_workflow.sh}, \cmd{resubmit_failed.sh},
 \cmd{diagnosis/fix_it.sh}) contain the full path of the interpreter you used, so the batch jobs
 need no activation. The plots need only gnuplot; without it the agent writes the plot scripts and
@@ -266,7 +269,7 @@ A=~/Anharmonic-lattice-dynamics/FOCEX/AGENT
 cp $A/focex-agent-instructions.txt .
 nano focex-agent-instructions.txt  # Project, RANKS, FUNCTIONAL, MPI
 
-source ~/vaspenv/bin/activate
+source ~/dftphonon-env/bin/activate
 python $A/focex-agent.py --profile rivanna
 cd ZnO
 sbatch run_workflow.sh             # without a profile: nohup bash run_workflow.sh &
@@ -460,7 +463,7 @@ FOCEX\_MESH & fine & k-mesh of latdyn.params: coarse, fine, a density, or 3 inte
 KPATH & 0 & 0: automatic band path; 1: give a \cmd{kpbs_params} block \\
 BS\_NKPTS & 40 & points per segment of the band path \\
 \multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{programs}}} \\
-FOCEX\_X & newest \cmd{~/BIN/v*} & the FOCEX binary \\
+FOCEX\_X & newest \cmd{~/ALADYN/bin/} \cmd{focex-*.x} & the FOCEX binary \\
 SC\_SNAPS\_X & \cmd{~/BIN/sc_snaps.x} & SC-SNAPS \\
 READ\_OUTCAR\_X & \cmd{~/ALADYN/bin/} \cmd{read_outcar.x} & reads OUTCARs \\
 \bottomrule
@@ -621,6 +624,6 @@ symmetry of the lattice, then redo from the snapshots.}
 THERMACOND reads \cmd{lat_fc.dat}, \cmd{fc2.dat} and \cmd{fc3.dat} from \cmd{05_focex}, so fit
 at least the cubic force constants (\cmd{RANKS: 1 1 1 0 0 0 0 0}). The agent does not run it: in
 \cmd{05_focex} set lines 8--13 of \cmd{latdyn.params} (see the THERMACOND manual) and run
-\cmd{kap8} there.
+\cmd{tcond-2.0.x} there.
 
 \end{document}

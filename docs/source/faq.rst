@@ -157,6 +157,6 @@ that ``sc_snaps.x`` is built from the `SC_SNAPS repository
 
 **``make`` fails on the last line with "No such file or directory".**
 
-The Makefile moves the executable to a directory that must already exist:
-``~/BIN`` for FOCEX, the ``DESTDIR`` of ``make.inc`` for the utility programs.
-Create it with ``mkdir -p`` and re-run ``make``.
+The Makefile moves the executable to a directory that must already exist: the
+``DESTDIR`` of ``make.inc`` (``~/ALADYN/bin``) for the utility programs. FOCEX and
+THERMACOND create theirs. Create it with ``mkdir -p`` and re-run ``make``.

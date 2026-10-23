@@ -23,14 +23,12 @@ FOCEX needs nothing but a Fortran compiler (gfortran or Intel):
 
 ```bash
 cd Anharmonic-lattice-dynamics/FOCEX
-mkdir -p ~/BIN          # the Makefile moves the executable here
-make
+make                    # -> ~/ALADYN/bin/focex-8.19.x
 ```
 
 Edit the `FF` and `FLAGS` variables at the top of the `Makefile` to change the
-compiler or its options, `exe` to change the name of the executable (currently
-`v16`, following the version number `ver`), and the `mv` line to install
-somewhere other than `~/BIN`.
+compiler or its options; the executable is `focex-<ver>.x` (version `ver`, now 8.19),
+installed in `DESTDIR` (default `~/ALADYN/bin`; `make DESTDIR=...` for another place).
 
 The helper programs that convert DFT output (`read_outcar.x`, `read_qe.x`,
 `poscar2xyz.x`) are built separately:

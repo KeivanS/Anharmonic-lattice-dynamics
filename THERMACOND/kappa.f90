@@ -11,7 +11,7 @@
 !! V3*delta does not depend on temperature and is computed once.  latdyn.params line 10:
 !! 0 = one file per irreducible k-point in V3DELTA/ (reused by a later run on the same mesh),
 !! 1 = kept in memory.
-!! Serial and parallel runs are the same program:  kap8   or   mpirun -np N kap8
+!! Serial and parallel runs are the same program:  tcond-2.0.x   or   mpirun -np N tcond-2.0.x
 !! Rank 0 works in the run folder; the other ranks work in .mpi_rank_NNN/ (removed at the end),
 !! so only rank 0's output files are kept.
  use ios
@@ -88,7 +88,7 @@
   open(ugrun,file='bs_grun.dat',status='unknown')
   open(ugrun+1,file='FBZ_grun.dat',status='unknown')
 
- write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' Program kap8 was launched at ',today(1:4)//'/'  &
+ write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' THERMACOND 2.0 launched at  ',today(1:4)//'/'  &
 &  //today(5:6)//'/'//today(7:8),now(1:2)//':'//now(3:4)//':'//now(5:10),zone
  write(ulog,*)' MPI processes: ',nprocs
  write(utimes,'(a,f12.4)')' At the start of the Program,        TIME IS ',cputim

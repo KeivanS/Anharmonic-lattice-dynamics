@@ -1,12 +1,18 @@
 # THERMACOND
-#   make            parallel build with mpif90 -> kap8            (run: kap8, or mpirun -np N kap8)
-#   make serial     serial build with gfortran and no MPI library -> kap8_serial
+#   make            parallel build with mpif90 -> $(DESTDIR)/tcond-$(ver).x
+#                   (run: tcond-2.0.x, or mpirun -np N tcond-2.0.x)
+#   make serial     serial build with gfortran and no MPI library -> $(DESTDIR)/tcond-$(ver)-serial.x
 #   make DEBUG=1    either of the above with -g -fbounds-check -fbacktrace instead of -O2
 #   make clean
 # Objects and .mod files go to obj_mpi/ or obj_serial/, not next to the sources.
 # macOS with Homebrew Open MPI: if mpif90 picks an older gfortran than the one Open MPI was
 # built with ("created by a different version of GNU Fortran"), set
 #   export OMPI_FC=/opt/homebrew/bin/gfortran   and   export SDKROOT=$(xcrun --show-sdk-path)
+
+ver = 2.0
+DESTDIR ?= ~/ALADYN/bin
+EXE = tcond-$(ver).x
+EXE_SERIAL = tcond-$(ver)-serial.x
 
 MPIFC ?= mpif90
 FC     = gfortran
@@ -22,12 +28,16 @@ SRC  = modules.f90 zhegv.f force_constants.f90 sub.f90 rest.f90 extratools.f90 s
        tetrahedron.f90 cg.f90 emissivity.f90
 OBJS = $(addsuffix .o,$(basename $(SRC)))
 
-kap8: $(addprefix obj_mpi/,$(OBJS) kappa.o)
+$(EXE): $(addprefix obj_mpi/,$(OBJS) kappa.o)
 	$(MPIFC) $(FLAGS) $^ -o $@
+	mkdir -p $(DESTDIR)
+	mv $@ $(DESTDIR)/
 
-serial: kap8_serial
-kap8_serial: $(addprefix obj_serial/,mpi_stub.o $(OBJS) kappa.o)
+serial: $(EXE_SERIAL)
+$(EXE_SERIAL): $(addprefix obj_serial/,mpi_stub.o $(OBJS) kappa.o)
 	$(FC) $(FLAGS) $^ -o $@
+	mkdir -p $(DESTDIR)
+	mv $@ $(DESTDIR)/
 
 # every source uses the modules of modules.f90; the main program uses all of them
 $(addprefix obj_mpi/,$(filter-out modules.o,$(OBJS))):    obj_mpi/modules.o
@@ -49,7 +59,7 @@ obj_serial/%.o: %.f
 	$(FC) $(FLAGS) -Jobj_serial -c $< -o $@
 
 clean:
-	rm -rf obj_mpi obj_serial kap8 kap8_serial
+	rm -rf obj_mpi obj_serial $(EXE) $(EXE_SERIAL)
 
 # source archive with today's date
 archive:

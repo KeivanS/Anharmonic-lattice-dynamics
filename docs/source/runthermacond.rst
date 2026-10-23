@@ -17,8 +17,8 @@ Building
 .. code-block:: bash
 
    cd THERMACOND
-   make            # parallel build with mpif90       -> kap8
-   make serial     # serial build, no MPI library      -> kap8_serial
+   make            # parallel build with mpif90  -> ~/ALADYN/bin/tcond-2.0.x
+   make serial     # serial build, no MPI library -> ~/ALADYN/bin/tcond-2.0-serial.x
    make DEBUG=1    # either of the above with -g -fbounds-check instead of -O2
 
 Objects and module files go to ``obj_mpi/`` or ``obj_serial/``. On macOS with
@@ -40,8 +40,8 @@ shared among the processes:
 
 .. code-block:: bash
 
-   kap8                    # one process (or kap8_serial)
-   mpirun -np 8 kap8       # eight processes
+   tcond-2.0.x                 # one process (or tcond-2.0-serial.x)
+   mpirun -np 8 tcond-2.0.x    # eight processes
 
 A serial run is the reference for a parallel one: both give the same output files. The
 results do not depend on the compiler or the optimisation level either (checked with GCC 12
@@ -197,7 +197,7 @@ Example
 
 With the FOCEX Ge example run in a folder (``FOCEX/example/Ge``), THERMACOND runs in the
 same folder: set lines 1, 6 and 8 of ``latdyn.params``, e.g. ``6 6 6``, ``300 300 1``
-and ``2``, then ``kap8``. On a 6x6x6 mesh (16 irreducible points) this takes about a minute
+and ``2``, then ``tcond-2.0.x``. On a 6x6x6 mesh (16 irreducible points) this takes about a minute
 and a half on one core (almost all of it V3*delta) and gives at 300 K kappa_P = 30.90 W/mK in
 ``kappa_wigner.dat`` (kappa_C = 0.017); rerunning with
 ``100 400 4`` on line 6 reuses ``V3DELTA/`` and takes a few seconds. Converged values need

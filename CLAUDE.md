@@ -14,12 +14,20 @@ the Makefiles drop `.o`/`.mod` files next to the sources.
 ## Building and running FOCEX
 
 ```bash
-cd FOCEX && mkdir -p ~/BIN && make       # ~3 min; produces ~/BIN/v8.18
+cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-8.19.x
 ```
 
+Executables (2026-10-23, user's rule): all in `~/ALADYN/bin` (`DESTDIR`; the top-level `make`
+passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-8.19.x` (8.18 and earlier: `~/BIN/v8.18`),
+THERMACOND `tcond-2.0.x` / `tcond-2.0-serial.x` (was `kap8` in its
+source folder). The top-level `make` builds ANFOMOD, FOCEX, FOCEX/utility, SCOP8, THERMACOND and
+links the Python tools; SCOP8 does not compile (`VA_math.f95:7416` calls `dotproduct(...)`, which
+does not exist -- geometry.f95 has only the `.dot.` operator; from 07f9f456, YuanLiang21120,
+2025-04-02); it is built last, so make builds the rest and then stops there (user: ignore SCOP8 for now).
+Old utility builds were kept in `~/ALADYN/bin/old_2026-10-23/`. Tag focex-8.19 approved 2026-10-23.
 `FOCEX/Makefile` does **not** include the top-level `make.inc`: it hardcodes
-`FF=gfortran`, `FLAGS=-O2 -fcheck=all`, names the binary `exe=v$(ver)` (`ver=8.18` -> `v8.18`), and
-`mv`s it to `~/BIN`, which it does not create. The utility programs are separate
+`FF=gfortran`, `FLAGS=-O2 -fcheck=all`, `exe=focex-$(ver).x`, `DESTDIR ?= ~/ALADYN/bin`. It has
+CRLF line endings. The utility programs are separate
 (`cd FOCEX/utility && make`, installs to `make.inc`'s `DESTDIR=~/ALADYN/bin`) —
 that builds `read_outcar.x`, `read_qe.x`, `poscar2xyz.x` and `poscar2focex.x`.
 `poscar2focex.x` (since 2026-10-22, standalone Fortran, no spglib): POSCAR -> structure.params,
@@ -83,7 +91,9 @@ both, rebuild both, Sphinx at zero warnings), `focex-agent-instructions.txt` (th
 `tests/` (argon, fake VASP). `FOCEX/focex-agent.py` is a forwarder for old run scripts. The script
 finds FOCEX/ (templates, utility/) as the parent of its folder (realpath, so symlinks work);
 `make python-tools` (part of the top-level `make`) links them as `focex-agent`, `focex-diagnose` in DESTDIR.
-Run it with `~/vaspenv/bin/python` (needs numpy, spglib, pymatgen; Homebrew python3 has none).
+Run it with `~/dftphonon-env/bin/python` (numpy, spglib, pymatgen; Homebrew python3 has none). That one
+environment serves VASP-Flow too (made 2026-10-23 with the 50 packages of the old `~/vaspenv`, which the
+ZnO/GaN/BAs run scripts still use and which is kept until the user removes it).
 
 - Command line (2026-10-23, user's spec): `focex-agent.py [--instr FILE] [--coord FILE]
   [--profile NAME] [--force]` sets up; defaults `focex-agent-instructions.txt` (not
@@ -143,11 +153,11 @@ Run it with `~/vaspenv/bin/python` (needs numpy, spglib, pymatgen; Homebrew pyth
 
 Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (2025).
 
-- Build: `cd THERMACOND && make` (mpif90 -> kap8) or `make serial` (gfortran +
-  `mpi_stub.f90` -> kap8_serial); objects in obj_mpi/ obj_serial/; `DEBUG=1` for -g
+- Build: `cd THERMACOND && make` (mpif90 -> ~/ALADYN/bin/tcond-2.0.x) or `make serial` (gfortran +
+  `mpi_stub.f90` -> tcond-2.0-serial.x); objects in obj_mpi/ obj_serial/; `DEBUG=1` for -g
   -fbounds-check (the old default, ~20x slower). On this Mac mpif90 needs
   `OMPI_FC=/opt/homebrew/bin/gfortran SDKROOT=$(xcrun --show-sdk-path)`.
-- Run: `kap8` (serial) or `mpirun -np N kap8`; same code. Ranks > 0 work in `.mpi_rank_NNN/`
+- Run: `tcond-2.0.x` (serial) or `mpirun -np N tcond-2.0.x`; same code. Ranks > 0 work in `.mpi_rank_NNN/`
   (symlinked inputs, removed at the end) so only rank 0's files survive. Since 2026-10-22
   (degenerate averaging, below) Ge 6^3 job 2 and 4^3 job 3 give byte-identical kappa_vs_T.dat for
   1 and 3 ranks and for GCC 12.2 -O2, GCC 15.3 -O2 and -O0. Before that the result depended on the

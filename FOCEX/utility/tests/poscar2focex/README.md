@@ -6,7 +6,7 @@ follows. The scripts are Python only because pymatgen is the reference; the prog
 needs no library.
 
 ```bash
-./run_tests.sh ~/vaspenv/bin/python ~/ALADYN/bin/poscar2focex.x
+./run_tests.sh ~/dftphonon-env/bin/python ~/ALADYN/bin/poscar2focex.x
 ```
 
 - `make_structures.py DIR` -- 26 structures, one or more per Setyawan-Curtarolo lattice:

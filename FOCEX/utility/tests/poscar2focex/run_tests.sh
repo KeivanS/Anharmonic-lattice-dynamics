@@ -1,5 +1,5 @@
 #!/bin/bash
-# Tests of poscar2focex.x against pymatgen (needs python3 with numpy, pymatgen; e.g. ~/vaspenv/bin/python)
+# Tests of poscar2focex.x against pymatgen (needs python3 with numpy, pymatgen; e.g. ~/dftphonon-env/bin/python)
 #   ./run_tests.sh [python] [poscar2focex.x]
 # Works in a temporary folder; prints one line per structure and ALL OK / ALL INVARIANT at the end.
 PY=${1:-python3}

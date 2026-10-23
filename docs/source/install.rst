@@ -61,18 +61,16 @@ FOCEX
 
 .. code-block:: bash
 
-   mkdir -p ~/BIN            # see the note below
    cd FOCEX
-   make
+   make                      # -> ~/ALADYN/bin/focex-8.19.x
 
 This compiles the sources listed in ``FOCEX/Makefile`` and produces a single
 executable. Two details of that Makefile are worth knowing:
 
-* the name of the executable is set by the ``exe`` variable near the top
-  (currently ``v16``, following the version number ``ver`` of the code), and
-* the executable is moved to ``~/BIN``, **not** to the ``DESTDIR`` of
-  ``make.inc``. Create that directory first, or change the ``mv`` line to
-  install somewhere else.
+* the name of the executable is ``focex-<ver>.x``, with the version number ``ver`` set
+  near the top (currently 8.19; 8.18 and earlier were installed as ``~/BIN/v<ver>``), and
+* it is moved to ``DESTDIR``, ``~/ALADYN/bin`` by default (``make DESTDIR=...`` for another
+  place; the top-level ``make`` passes the ``DESTDIR`` of ``make.inc``).
 
 ``FOCEX/Makefile`` also has its own ``FF`` and ``FLAGS`` variables. The default
 
@@ -193,11 +191,10 @@ THERMACOND
 ^^^^^^^^^^
 
 * Run ``make`` in the ``THERMACOND`` directory. THERMACOND needs a ``gfortran``
-  compiler and MPI. After a successful compilation, a binary named after the
-  version (e.g. ``kap8`` for version 8) is created in that directory; it takes
-  no input from the terminal and is invoked simply as ``./kap8``.
-* To compute the collision matrices in parallel, the bash script ``splitjob.sh``
-  distributes the k-mesh over many cores.
+  compiler and MPI (``make serial``: no MPI). The binary is named after the version,
+  ``tcond-2.0.x`` (serial: ``tcond-2.0-serial.x``), and installed in ``~/ALADYN/bin``;
+  before version 2.0 it was ``kap8``, left in the source folder. It takes no input from the
+  terminal: ``tcond-2.0.x``, or ``mpirun -np N tcond-2.0.x`` (:doc:`runthermacond`).
 
 Checking the installation
 -------------------------

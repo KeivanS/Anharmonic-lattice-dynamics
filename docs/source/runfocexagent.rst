@@ -106,18 +106,19 @@ and GCC first, e.g. ``module load gcc python``).
    git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
    git clone https://github.com/KeivanS/SC_SNAPS.git
    mkdir -p ~/BIN ~/ALADYN/bin
-   # FOCEX -> ~/BIN/v8.18 (3 min); read_outcar.x -> ~/ALADYN/bin; sc_snaps.x -> ~/BIN
+   # FOCEX -> ~/ALADYN/bin/focex-8.19.x (3 min), its utilities (read_outcar.x, ...) -> ~/ALADYN/bin
+   # (the top-level make builds THERMACOND and SCOP8 as well; they need MPI)
    (cd Anharmonic-lattice-dynamics/FOCEX && make)
    (cd Anharmonic-lattice-dynamics/FOCEX/utility && make)
-   (cd SC_SNAPS && make)
+   (cd SC_SNAPS && make)                                     # -> ~/BIN/sc_snaps.x
 
    # 2. VASP-Flow; the agent imports it from ~/VASP-Flow
    #    (another place: export VASP_FLOW_DIR=/that/place)
    git clone https://github.com/KeivanS/VASP-Flow.git
 
-   # 3. a Python environment with the packages the agent needs
-   python3 -m venv ~/vaspenv
-   source ~/vaspenv/bin/activate
+   # 3. one Python environment for VASP-Flow and the FOCEX agent
+   python3 -m venv ~/dftphonon-env
+   source ~/dftphonon-env/bin/activate
    pip install numpy spglib pymatgen matplotlib
 
    # 4. optional: the commands focex-agent and focex-diagnose (symlinks in ~/ALADYN/bin)
@@ -169,7 +170,7 @@ Check the set-up
 
 .. code-block:: bash
 
-   source ~/vaspenv/bin/activate
+   source ~/dftphonon-env/bin/activate
    python ~/VASP-Flow/check_setup.py local     # a workstation;  "slurm" on a cluster
 
 It checks Python and its packages, the POTCAR library, VASP and MPI (and on a cluster the
@@ -179,9 +180,11 @@ can start.
 When is the Python environment needed?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Whenever *you* start ``focex-agent.py`` or ``diagnose.py``: they import numpy, spglib, pymatgen and
-VASP-Flow. Either activate it first (``source ~/vaspenv/bin/activate``, then ``python ...``) or
-call its interpreter directly (``~/vaspenv/bin/python ...``). The scripts the agent writes
+It is the same environment as in VASP-Flow's manual: one, ``~/dftphonon-env``, serves both (DFT with
+VASP-Flow, phonons with the FOCEX agent). It is needed whenever *you* start ``focex-agent.py`` or
+``diagnose.py``: they import numpy, spglib, pymatgen and
+VASP-Flow. Either activate it first (``source ~/dftphonon-env/bin/activate``, then ``python ...``) or
+call its interpreter directly (``~/dftphonon-env/bin/python ...``). The scripts the agent writes
 (``run_workflow.sh``, ``resubmit_failed.sh``, ``diagnosis/fix_it.sh``) contain the full path of the
 interpreter you used, so the batch jobs need no activation. The plots need only gnuplot; without it
 the agent writes the plot scripts and you run ``makeplots.sh`` later, where gnuplot is.
@@ -212,7 +215,7 @@ The steps of a from_scratch calculation (:ref:`agent-extract` has those of extra
    cp $A/focex-agent-instructions.txt .
    nano focex-agent-instructions.txt  # Project, RANKS, FUNCTIONAL, MPI
 
-   source ~/vaspenv/bin/activate
+   source ~/dftphonon-env/bin/activate
    python $A/focex-agent.py --profile rivanna
    cd ZnO
    sbatch run_workflow.sh             # without a profile: nohup bash run_workflow.sh &
@@ -506,7 +509,7 @@ VASP-Flow (its manual lists all of them); the common ones are below.
      -
      -
    * - ``FOCEX_X``
-     - newest ``~/BIN/v*``
+     - newest ``~/ALADYN/bin/focex-*.x``
      - the FOCEX binary
    * - ``SC_SNAPS_X``
      - ``~/BIN/sc_snaps.x``
@@ -710,4 +713,4 @@ Thermal conductivity
 
 THERMACOND reads ``lat_fc.dat``, ``fc2.dat`` and ``fc3.dat`` from ``05_focex``, so fit at least the
 cubic force constants (``RANKS: 1 1 1 0 0 0 0 0``). The agent does not run it: in ``05_focex`` set
-lines 8--13 of ``latdyn.params`` (see :doc:`runthermacond`) and run ``kap8`` there.
+lines 8--13 of ``latdyn.params`` (see :doc:`runthermacond`) and run ``tcond-2.0.x`` there.

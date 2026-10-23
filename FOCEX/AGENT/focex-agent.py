@@ -198,8 +198,13 @@ def parse_instructions(path):
 
 
 def newest_focex():
-    c = sorted(glob.glob(os.path.expanduser('~/BIN/v[0-9]*')), key=os.path.getmtime)
-    return c[-1] if c else '~/BIN/v8.18'
+    """The newest ~/ALADYN/bin/focex-<version>.x (the Makefile's since 8.19), else the newest
+    ~/BIN/v<version> (where 8.18 and earlier were installed)."""
+    for pat in ('~/ALADYN/bin/focex-[0-9]*.x', '~/BIN/v[0-9]*'):
+        c = sorted(glob.glob(os.path.expanduser(pat)), key=os.path.getmtime)
+        if c:
+            return c[-1]
+    return '~/ALADYN/bin/focex-8.19.x'
 
 
 def vasp_inst(inst, fx, step, extra=()):

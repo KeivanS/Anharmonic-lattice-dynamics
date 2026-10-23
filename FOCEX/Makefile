@@ -57,21 +57,24 @@ M=`date "+%F-%k_%M"`
 # below contains seconds as well as minutes and everything else
 A=`date "+%F_%T"`
 B=`date "+%F"`
-ver=8.18
+ver=8.19
 backup=FCX_$(ver)_$(M)
 arch=focex_$(ver)_$(M)
-exe=v$(ver)
-# exe=fcx_$(ver).x
+exe=focex-$(ver).x
+# where the executables go (the top-level make passes its own)
+DESTDIR ?= ~/ALADYN/bin
 
 $(exe): $(SUBO) $(MAINO) 
 	$(FF) $(FLAGS)  -o $@  $^  
 	echo 'executable was made on' $A
-	mv $(exe)  ~/BIN
+	mkdir -p $(DESTDIR)
+	mv $(exe)  $(DESTDIR)
 
 ph.x: $(SUBO) $(PHO)
 	$(FF) $(FLAGS)  -o $@  $^  
 	echo 'executable was made on' $A
-	mv ph.x  ~/BIN
+	mkdir -p $(DESTDIR)
+	mv ph.x  $(DESTDIR)
 #
 # rules to make the "simple" object files from sources
 %.o: %.f90
