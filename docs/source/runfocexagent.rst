@@ -120,8 +120,13 @@ and GCC first, e.g. ``module load gcc python``).
    source ~/vaspenv/bin/activate
    pip install numpy spglib pymatgen matplotlib
 
+   # 4. optional: the commands focex-agent and focex-diagnose (symlinks in ~/ALADYN/bin)
+   (cd Anharmonic-lattice-dynamics && make python-tools)
+   export PATH=~/ALADYN/bin:$PATH     # put this line in ~/.bashrc
+
 The agent finds the programs at these places; a program installed elsewhere is named in the
-instruction file (``FOCEX_X``, ``SC_SNAPS_X``, ``READ_OUTCAR_X``, :ref:`agent-keywords`).
+instruction file (``FOCEX_X``, ``SC_SNAPS_X``, ``READ_OUTCAR_X``, :ref:`agent-keywords`). With step 4 and the environment active, ``focex-agent`` and ``focex-diagnose`` are
+short for ``python .../FOCEX/AGENT/focex-agent.py`` and ``python .../FOCEX/AGENT/diagnose.py``.
 
 Tell VASP-Flow where VASP, MPI and the POTCARs are
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

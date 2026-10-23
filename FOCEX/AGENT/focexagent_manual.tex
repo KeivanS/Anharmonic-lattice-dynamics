@@ -185,10 +185,15 @@ git clone https://github.com/KeivanS/VASP-Flow.git
 python3 -m venv ~/vaspenv
 source ~/vaspenv/bin/activate
 pip install numpy spglib pymatgen matplotlib
+
+# 4. optional: the commands focex-agent and focex-diagnose (symlinks in ~/ALADYN/bin)
+(cd Anharmonic-lattice-dynamics && make python-tools)
+export PATH=~/ALADYN/bin:$PATH     # put this line in ~/.bashrc
 \end{lstlisting}
 The agent finds the programs at these places; a program installed elsewhere is named in the
 instruction file (\cmd{FOCEX_X}, \cmd{SC_SNAPS_X}, \cmd{READ_OUTCAR_X},
-Section~\ref{sec:keywords}).
+Section~\ref{sec:keywords}). With step 4 and the environment active, \cmd{focex-agent} and \cmd{focex-diagnose} are
+short for \cmd{python .../FOCEX/AGENT/focex-agent.py} and \cmd{python .../FOCEX/AGENT/diagnose.py}.
 
 \subsection{Tell VASP-Flow where VASP, MPI and the POTCARs are}
 \textbf{The POTCAR library} is always given by an environment variable. Put it in your

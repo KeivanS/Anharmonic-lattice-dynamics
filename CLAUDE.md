@@ -81,7 +81,8 @@ plots, restartable (`state.json`, `report.log`). Everything is in `FOCEX/AGENT/`
 `diagnose.py`, `focexagent_manual.tex/.pdf` (same content as `docs/source/runfocexagent.rst`: change
 both, rebuild both, Sphinx at zero warnings), `focex-agent-instructions.txt` (the template),
 `tests/` (argon, fake VASP). `FOCEX/focex-agent.py` is a forwarder for old run scripts. The script
-finds FOCEX/ (templates, utility/) as the parent of its folder (realpath, so symlinks work).
+finds FOCEX/ (templates, utility/) as the parent of its folder (realpath, so symlinks work);
+`make python-tools` (part of the top-level `make`) links them as `focex-agent`, `focex-diagnose` in DESTDIR.
 Run it with `~/vaspenv/bin/python` (needs numpy, spglib, pymatgen; Homebrew python3 has none).
 
 - Command line (2026-10-23, user's spec): `focex-agent.py [--instr FILE] [--coord FILE]
