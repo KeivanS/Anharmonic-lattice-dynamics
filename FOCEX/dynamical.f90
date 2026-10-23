@@ -15,6 +15,8 @@
  implicit none
  integer i,j,k,uio,tau,taup,l,ll,narms,ier
  real(r15) vkms(3),vavg(3),qr(3),q2(3),sf,etot,free,cv,cp,entropy,eq_vol,tempk,cvte
+ real(r15) rotc(3,3),atldc(3,3,3,3),elasticc(6,6),atld_sym(3,3,3,3),asym_c
+ character(len=12) csys
  real(r15) deteps3,grune,boft,epsilon0(3,3),velocfbz(3),mat(3,3)
  complex(r15) dyn_coul(3,3),ddn(6,6,3)
  real(r15), allocatable :: aux(:),array(:) ,eivaux(:),velaux(:,:)
@@ -75,6 +77,18 @@
     call mechanical0(atld0,uio)
   endif
 
+! the elastic tensor in the crystal's conventional frame (symmetry axes along x,y,z: the fewest
+! independent constants); the frame-dependent quantities below (Zener ratio, sound speeds along
+! 100, 110, 111) are taken there. The Hill moduli do not depend on the frame.
+  call crystal_frame(rotc,csys)
+  call symmetrize_tensor4(atld0,atldc,asym_c)     ! average over the crystal's point group
+  write(ulog,*)'CRYSTAL FRAME: largest symmetry-forbidden part of the elastic tensor removed (GPa)=',asym_c
+  write(uio ,*)'CRYSTAL FRAME: largest symmetry-forbidden part of the elastic tensor removed (GPa)=',asym_c
+  atld_sym=atldc
+  call rotate_tensor4(rotc,atld_sym,atldc)
+  call convert_to_voigt(atldc,elasticc)
+  call report_crystal_frame(uio,rotc,csys,elasticc)
+
 ! bulk mod(cubic)=B=(C11+2*C12+P)/3 ; shear modulus: G=(C11-C12+3C44)/5  
 ! Young Modulus E=9BG/(3B+G) ; Poisson=(3B-2G)/(6B+2G)
 
@@ -125,7 +139,7 @@
   write(ulog,8)'Poisson ratio from -S12/S11 for single crystals   =',poisson
   write(uio ,8)'Poisson ratio from -S12/S11 for single crystals   =',poisson
 
-  anisotropy_ratio=2*elastic(4,4)/(elastic(1,1)-elastic(1,2))
+  anisotropy_ratio=2*elasticc(4,4)/(elasticc(1,1)-elasticc(1,2))   ! crystal frame
   write(ulog,8)'Anisotropy ratio from 2C44/(C11-C12)              =',anisotropy_ratio
   write(uio ,8)'Anisotropy ratio from 2C44/(C11-C12)              =',anisotropy_ratio
 
@@ -154,7 +168,7 @@
     q2(2)=nint((f+0.6)/2) 
     q2(3)=nint((f-0.1)/2) 
 
-    call sound_speeds(q2,atld0,vkms)
+    call sound_speeds(q2,atldc,vkms)     ! directions of the crystal frame
     vavg = vavg + vkms
  enddo
  vavg = vavg/3
@@ -3428,3 +3442,222 @@ end subroutine band_sort_bs
  enddo
 
  end subroutine step2smooth
+!===========================================================
+ subroutine crystal_frame(rot,csys)
+!! rot (rows: the new x, y, z in the present Cartesian frame) puts the crystal's symmetry axes
+!! along x, y, z -- the conventional crystallographic setting in which tensors (the elastic
+!! constants) have the fewest independent components:
+!!   cubic: 4-fold (or, for T/Th, 2-fold) axes on x,y,z; hexagonal, trigonal, tetragonal: the
+!!   6-, 3- or 4-fold axis on z, a 2-fold axis (else the shortest lattice vector) on x;
+!!   orthorhombic: the three 2-fold axes; monoclinic: the 2-fold axis on y; triclinic: unchanged.
+!! Improper operations count with their proper part -S (a mirror gives a 2-fold axis).
+ use atoms_force_constants, only : op_matrix,isgop,isgopcount
+ use lattice, only : r01,r02,r03
+ use geometry
+ use constants, only : r15,pi
+ implicit none
+ real(r15), intent(out) :: rot(3,3)
+ character(len=*), intent(out) :: csys
+ real(r15) s(3,3),ax(3,48),a(3),c1(3),c2(3),c3(3),x(3),y(3),z(3),tr,cs,dt,best
+ integer ordr(48),na,i,j,n,n2,n3,n4,n6,i1,i2,i3,iz,ix
+ logical found
+ na=0
+ do i=1,isgopcount
+    s=op_matrix(:,:,isgop(i))
+    dt=s(1,1)*(s(2,2)*s(3,3)-s(2,3)*s(3,2))-s(1,2)*(s(2,1)*s(3,3)-s(2,3)*s(3,1)) &
+ &    +s(1,3)*(s(2,1)*s(3,2)-s(2,2)*s(3,1))
+    if (dt.lt.0) s=-s
+    tr=s(1,1)+s(2,2)+s(3,3)
+    cs=max(-1d0,min(1d0,(tr-1)/2))
+    if (cs.gt.0.999d0) cycle                            ! identity
+    n=nint(2*pi/acos(cs))
+    do j=1,3 ; s(j,j)=s(j,j)-1 ; enddo                ! axis: null vector of S-1
+    c1=cross3(s(1,:),s(2,:)) ; c2=cross3(s(2,:),s(3,:)) ; c3=cross3(s(3,:),s(1,:))
+    a=c1
+    if (sum(c2**2).gt.sum(a**2)) a=c2
+    if (sum(c3**2).gt.sum(a**2)) a=c3
+    a=a/sqrt(sum(a**2))
+    found=.false.
+    do j=1,na                                         ! same axis already found
+       if (abs(dot_product(a,ax(:,j))).gt.0.999d0) then
+          ordr(j)=max(ordr(j),n) ; found=.true. ; exit
+       endif
+    enddo
+    if (.not.found) then
+       na=na+1 ; ax(:,na)=a ; ordr(na)=n
+    endif
+ enddo
+ n2=count(ordr(1:na).eq.2) ; n3=count(ordr(1:na).eq.3)
+ n4=count(ordr(1:na).eq.4) ; n6=count(ordr(1:na).eq.6)
+ iz=0 ; ix=0
+ if (n3.ge.4) then
+    csys='cubic'
+    n=4 ; if (n4.lt.3) n=2
+    do i=1,na
+       if (ordr(i).ne.n) cycle
+       if (iz.eq.0) then
+          iz=i
+       elseif (ix.eq.0 .and. abs(dot_product(ax(:,i),ax(:,iz))).lt.1d-3) then
+          ix=i
+       endif
+    enddo
+ elseif (n6.ge.1 .or. n3.eq.1 .or. n4.eq.1) then
+    csys='hexagonal'
+    if (n6.eq.0 .and. n3.eq.1) csys='trigonal'
+    if (n4.eq.1) csys='tetragonal'
+    do i=1,na
+       if (ordr(i).ge.3) iz=i
+    enddo
+    do i=1,na
+       if (ordr(i).eq.2 .and. abs(dot_product(ax(:,i),ax(:,iz))).lt.1d-3) then
+          ix=i ; exit
+       endif
+    enddo
+ elseif (n2.ge.3) then
+    csys='orthorhombic'
+    iz=1
+    do i=2,na
+       if (abs(dot_product(ax(:,i),ax(:,iz))).lt.1d-3) then
+          ix=i ; exit
+       endif
+    enddo
+ elseif (n2.eq.1) then
+    csys='monoclinic'
+ else
+    csys='triclinic'
+ endif
+ rot=0 ; rot(1,1)=1 ; rot(2,2)=1 ; rot(3,3)=1
+ if (csys.eq.'triclinic') return
+ if (csys.eq.'monoclinic') then                     ! unique 2-fold axis on y
+    y=ax(:,1)
+    call shortest_perp(y,z)
+    x=cross3(y,z)
+ else
+    z=ax(:,iz)
+    if (ix.gt.0) then
+       x=ax(:,ix)
+    else
+       call shortest_perp(z,x)
+    endif
+    x=x-dot_product(x,z)*z ; x=x/sqrt(sum(x**2))
+    y=cross3(z,x)
+ endif
+ rot(1,:)=x ; rot(2,:)=y ; rot(3,:)=z
+ contains
+ function cross3(u,v) result(w)
+ real(r15), intent(in) :: u(3),v(3)
+ real(r15) w(3)
+ w=[u(2)*v(3)-u(3)*v(2),u(3)*v(1)-u(1)*v(3),u(1)*v(2)-u(2)*v(1)]
+ end function cross3
+ subroutine shortest_perp(u,w)
+!! w: the shortest lattice vector (combinations -2..2 of r0i) perpendicular to u, normalized
+ real(r15), intent(in) :: u(3)
+ real(r15), intent(out) :: w(3)
+ real(r15) v(3)
+ best=huge(1d0) ; w=0
+ do i1=-2,2 ; do i2=-2,2 ; do i3=-2,2
+    v=i1*v2a(r01)+i2*v2a(r02)+i3*v2a(r03)
+    if (sum(v**2).lt.1d-8) cycle
+    if (abs(dot_product(v,u)).gt.1d-4*sqrt(sum(v**2))) cycle
+    if (sum(v**2).lt.best-1d-8) then
+       best=sum(v**2) ; w=v
+    endif
+ enddo ; enddo ; enddo
+ if (best.lt.huge(1d0)) then
+    w=w/sqrt(sum(w**2))
+ else                                              ! no lattice vector found: any perpendicular
+    w=cross3(u,[1d0,0d0,0d0])
+    if (sum(w**2).lt.1d-6) w=cross3(u,[0d0,1d0,0d0])
+    w=w/sqrt(sum(w**2))
+ endif
+ end subroutine shortest_perp
+ end subroutine crystal_frame
+!===========================================================
+ subroutine rotate_tensor4(r,a,b)
+!! b_ijkl = r_ia r_jb r_kc r_ld a_abcd (r rows: new axes in the old frame)
+ use constants, only : r15
+ implicit none
+ real(r15), intent(in) :: r(3,3),a(3,3,3,3)
+ real(r15), intent(out) :: b(3,3,3,3)
+ real(r15) t1(3,3,3,3),t2(3,3,3,3),t3(3,3,3,3)
+ integer i,j,k,l,m
+ t1=0 ; t2=0 ; t3=0 ; b=0
+ do i=1,3 ; do j=1,3 ; do k=1,3 ; do l=1,3 ; do m=1,3
+    t1(i,j,k,l)=t1(i,j,k,l)+r(i,m)*a(m,j,k,l)
+ enddo ; enddo ; enddo ; enddo ; enddo
+ do i=1,3 ; do j=1,3 ; do k=1,3 ; do l=1,3 ; do m=1,3
+    t2(i,j,k,l)=t2(i,j,k,l)+r(j,m)*t1(i,m,k,l)
+ enddo ; enddo ; enddo ; enddo ; enddo
+ do i=1,3 ; do j=1,3 ; do k=1,3 ; do l=1,3 ; do m=1,3
+    t3(i,j,k,l)=t3(i,j,k,l)+r(k,m)*t2(i,j,m,l)
+ enddo ; enddo ; enddo ; enddo ; enddo
+ do i=1,3 ; do j=1,3 ; do k=1,3 ; do l=1,3 ; do m=1,3
+    b(i,j,k,l)=b(i,j,k,l)+r(l,m)*t3(i,j,k,m)
+ enddo ; enddo ; enddo ; enddo ; enddo
+ end subroutine rotate_tensor4
+!===========================================================
+ subroutine report_crystal_frame(uio,rot,csys,cc)
+!! writes the rotation into the crystal frame, the rotated cell (reduced coordinates do not
+!! change) and the elastic constants there, with the number of distinct nonzero ones
+ use ios, only : ulog
+ use lattice, only : r01,r02,r03,r1conv,r2conv,r3conv
+ use atoms_force_constants, only : natom_prim_cell,atom0
+ use geometry
+ use constants, only : r15
+ implicit none
+ integer, intent(in) :: uio
+ real(r15), intent(in) :: rot(3,3),cc(6,6)
+ character(len=*), intent(in) :: csys
+ real(r15) cmax,vals(21),c
+ integer i,j,k,nv,u,iu
+ logical new
+ cmax=maxval(abs(cc)) ; nv=0
+ do i=1,6 ; do j=i,6
+    c=cc(i,j)
+    if (abs(c).lt.1d-3*cmax) cycle
+    new=.true.
+    do k=1,nv
+       if (abs(abs(c)-abs(vals(k))).lt.1d-3*cmax) new=.false.
+    enddo
+    if (new) then
+       nv=nv+1 ; vals(nv)=c
+    endif
+ enddo ; enddo
+ do iu=1,2
+    u=ulog ; if (iu.eq.2) u=uio
+    write(u,*)'CRYSTAL FRAME: ',trim(csys),'; rotation (rows: new x,y,z in the frame of structure.params)'
+    write(u,'(3(1x,f12.8))') (rot(i,:),i=1,3)
+    write(u,*)'CRYSTAL FRAME: primitive vectors (A) ; conventional vectors (A), both in this frame'
+    write(u,'(3(1x,f13.7),4x,3(1x,f13.7))') matmul(rot,v2a(r01)),matmul(rot,v2a(r1conv))
+    write(u,'(3(1x,f13.7),4x,3(1x,f13.7))') matmul(rot,v2a(r02)),matmul(rot,v2a(r2conv))
+    write(u,'(3(1x,f13.7),4x,3(1x,f13.7))') matmul(rot,v2a(r03)),matmul(rot,v2a(r3conv))
+    write(u,*)'CRYSTAL FRAME: Cartesian atom positions in it (reduced coordinates are unchanged)'
+    do i=1,natom_prim_cell
+       write(u,'(i4,1x,a,3(1x,f13.7))') i,atom0(i)%name,matmul(rot,v2a(atom0(i)%equilibrium_pos))
+    enddo
+    write(u,*)'CRYSTAL FRAME: elastic constants C_ij (GPa), entries below 1e-3 of the largest set to 0'
+    do i=1,6
+       write(u,'(6(1x,f10.3))') (merge(cc(i,j),0d0,abs(cc(i,j)).ge.1d-3*cmax),j=1,6)
+    enddo
+    write(u,*)'CRYSTAL FRAME: number of distinct nonzero elastic constants =',nv
+ enddo
+ end subroutine report_crystal_frame
+!===========================================================
+ subroutine symmetrize_tensor4(a,b,dev)
+!! b = average of S(a) over the crystal's point-group operations (Cartesian op_matrix of the
+!! space-group elements): the part of a allowed by symmetry; dev = max |a - b| removed
+ use atoms_force_constants, only : op_matrix,isgop,isgopcount
+ use constants, only : r15
+ implicit none
+ real(r15), intent(in) :: a(3,3,3,3)
+ real(r15), intent(out) :: b(3,3,3,3),dev
+ real(r15) t(3,3,3,3)
+ integer i
+ b=0
+ do i=1,isgopcount
+    call rotate_tensor4(op_matrix(:,:,isgop(i)),a,t)
+    b=b+t
+ enddo
+ b=b/isgopcount
+ dev=maxval(abs(a-b))
+ end subroutine symmetrize_tensor4

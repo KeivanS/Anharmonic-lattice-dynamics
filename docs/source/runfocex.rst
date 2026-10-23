@@ -976,7 +976,13 @@ Phonons and thermodynamics
     the elastic tensor (GPa, Voigt 6×6), the compliance tensor, the residual
     strain and internal displacements, then the Voigt/Reuss/Hill bulk and shear
     moduli, Young modulus, Poisson ratio, anisotropy ratio, sound velocities and
-    Debye temperature.
+    Debye temperature. ``CRYSTAL FRAME`` lines (since 23 October 2026): the crystal system
+    from FOCEX's symmetry operations, the rotation that puts its symmetry axes along x, y, z
+    (the setting with the fewest elastic constants), the cell in that frame (reduced
+    coordinates unchanged), and the elastic tensor there, averaged over the point group (the
+    symmetry-forbidden part removed is printed). The anisotropy ratio and the sound speeds
+    along 100, 110, 111 are evaluated in this frame; before, they used the axes of
+    ``structure.params``, so a cell in another orientation mislabelled the directions.
 
 ``thermo_QHA.dat``
     Quasi-harmonic thermodynamics versus temperature, one line per temperature:

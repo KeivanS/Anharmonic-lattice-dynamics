@@ -102,9 +102,12 @@ numpy, spglib, pymatgen; Homebrew python3 has none of them).
   7.6e-7 A off), Kabsch rotation into the FOCEX frame applied to POSCARi, FORCEDISPi (pos+force),
   eps/Z (R^T T R); tasks relax..collect marked provided. Verified on MgO-Safoura: NOBORN fit
   7.197 %, 35 unknowns, 647 1/cm, B 184.0, G 117.3 GPa = direct run in the original frame.
-- FOCEX's Zener ratio and mean sound speed / Debye T use tensor components as if the conventional
-  axes were x,y,z: MgO in the rhombohedral orientation 806 K vs 982 K in the FOCEX frame (B, G
-  invariant). Open: make vbar frame-invariant.
+- Crystal frame (2026-10-23, `crystal_frame`/`symmetrize_tensor4`/`report_crystal_frame` in
+  dynamical.f90): symmetry axes from op_matrix(isgop) put along x,y,z (cubic 4-/2-folds;
+  hex/trig/tetr high axis on z, 2-fold or shortest lattice vector on x; ortho three 2-folds;
+  mono 2-fold on y); C averaged over the point group then rotated; Zener ratio and the
+  100/110/111 sound speeds use it (they used structure.params axes: MgO rhombohedral orientation
+  labelled crystal [110] as "100"). Distinct constants: Ge/BZO/MgO 3, MoTe2 6 (5 + C66), GeSe 9.
 - Normal mode writes structure.params from the relaxed CONTCAR unsymmetrized (~1e-7): same risk as
   above (lost FC groups at 1.6e-8 non-orthogonality); not yet idealized.
 - Test it without VASP: point `VASP_STD` at a fake that writes OUTCAR/CONTCAR/EIGENVAL with
