@@ -1,200 +1,621 @@
-\documentclass[11pt]{article}
-\usepackage[margin=2.3cm]{geometry}
+\documentclass[11pt,a4paper]{scrartcl}
+\usepackage[margin=1in,top=1.1in]{geometry}
 \usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
 \usepackage{lmodern}
-\usepackage{longtable,booktabs,array}
-\usepackage{listings}
 \usepackage{xcolor}
-\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
-\lstset{basicstyle=\ttfamily\small,breaklines=true,columns=fullflexible,frame=single,
-        backgroundcolor=\color{gray!6},rulecolor=\color{gray!40}}
-\newcommand{\f}[1]{\texttt{#1}}
-\setlength{\parindent}{0pt}\setlength{\parskip}{5pt}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{colortbl}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric}
+\usepackage{scrlayer-scrpage}
+\usepackage[colorlinks=true,linkcolor=mainblue,urlcolor=accentblue,
+            citecolor=mainblue,pdfborder={0 0 0}]{hyperref}
 
-\title{FOCEX agent: from a POSCAR to phonons\\[2pt]\large \f{FOCEX/AGENT/focex-agent.py} -- user manual}
-\author{ALATDYN}
-\date{October 2026}
+% ============================================================
+%  Colours (the palette of the VASP-Flow manual)
+% ============================================================
+\definecolor{mainblue}   {RGB}{  0,  74, 153}
+\definecolor{accentblue} {RGB}{ 30, 120, 210}
+\definecolor{lightblue}  {RGB}{210, 228, 255}
+\definecolor{codebg}     {RGB}{245, 248, 252}
+\definecolor{codeframe}  {RGB}{ 30, 120, 210}
+\definecolor{notebg}     {RGB}{255, 250, 225}
+\definecolor{notebar}    {RGB}{200, 130,   0}
+\definecolor{tipbg}      {RGB}{228, 243, 255}
+\definecolor{tipbar}     {RGB}{ 30, 120, 210}
+\definecolor{dftgreen}   {RGB}{226, 242, 226}
+\definecolor{fxorange}   {RGB}{255, 236, 214}
+\definecolor{cmtgreen}   {RGB}{ 40, 130,  40}
+
+\setkomafont{section}      {\color{mainblue}\large\bfseries}
+\setkomafont{subsection}   {\color{mainblue}\normalsize\bfseries}
+\setkomafont{subsubsection}{\color{accentblue}\normalsize\bfseries}
+\setkomafont{descriptionlabel}{\color{mainblue}\bfseries\ttfamily}
+
+\pagestyle{scrheadings}
+\clearpairofpagestyles
+\ohead{\small\textcolor{mainblue!60!black}{FOCEX agent --- User Manual}}
+\ihead{\small\textcolor{mainblue!60!black}{\headmark}}
+\cfoot{\pagemark}
+\addtokomafont{pageheadfoot}{\normalfont\small}
+
+\lstset{
+  basicstyle=\ttfamily\small, breaklines=true, breakatwhitespace=true,
+  backgroundcolor=\color{codebg}, frame=leftline, framerule=3pt, rulecolor=\color{codeframe},
+  framesep=8pt, xleftmargin=14pt, commentstyle=\color{cmtgreen}\itshape, upquote=true,
+  columns=fullflexible, keepspaces=true, aboveskip=8pt, belowskip=4pt, morecomment=[l]{\#}}
+
+\newlength{\boxwidth}
+\newenvironment{notebox}{%
+  \par\vspace{6pt}\setlength{\tabcolsep}{5pt}%
+  \setlength{\boxwidth}{\dimexpr\linewidth - 4pt - 2\tabcolsep}%
+  \noindent\begin{tabular}{!{\color{notebar}\vrule width 4pt}>{\columncolor{notebg}}p{\boxwidth}}%
+  \rule{0pt}{11pt}\textbf{\textcolor{notebar}{Note.}}\enspace\ignorespaces}{%
+  \rule[-4pt]{0pt}{4pt}\end{tabular}\par\vspace{6pt}}
+\newenvironment{tipbox}{%
+  \par\vspace{6pt}\setlength{\tabcolsep}{5pt}%
+  \setlength{\boxwidth}{\dimexpr\linewidth - 4pt - 2\tabcolsep}%
+  \noindent\begin{tabular}{!{\color{tipbar}\vrule width 4pt}>{\columncolor{tipbg}}p{\boxwidth}}%
+  \rule{0pt}{11pt}\textbf{\textcolor{tipbar}{Example.}}\enspace\ignorespaces}{%
+  \rule[-4pt]{0pt}{4pt}\end{tabular}\par\vspace{6pt}}
+\setlength{\emergencystretch}{3em}
+\newcommand{\thead}{\rowcolor{lightblue}}
+\newcommand{\cmd}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\opt}[1]{\texttt{-{}-\detokenize{#1}}}
+
+\title{%
+  \vspace*{-10pt}{\color{mainblue}\rule{\linewidth}{2pt}}\\[8pt]%
+  \textbf{\Huge FOCEX agent}\\[4pt]\large User Manual\\[6pt]%
+  \normalsize Force constants and phonons from a crystal structure: VASP $\cdot$ SC-SNAPS $\cdot$
+  FOCEX $\cdot$ Diagnosis \& repair\\[6pt]{\color{mainblue}\rule{\linewidth}{0.5pt}}}
+\author{Keivan Esfarjani}
+\date{October 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
 
 \begin{document}
 \maketitle
 \tableofcontents
+\newpage
 
-\section{What it does}
-\f{FOCEX/AGENT/focex-agent.py} runs the FOCEX workflow in one of two ways:
-\begin{itemize}
-\item \textbf{full} (\f{-s POSCAR}): from the primitive cell of a crystal -- VASP relaxation and
-  SCF, Born charges (DFPT), SC-SNAPS snapshots, the supercell VASP runs, the force collection,
-  the five \f{*.params} files, FOCEX and the plots;
-\item \textbf{FOCEX only} (\f{DATA: <folder>} in the instructions): from existing
-  \f{POSCARi}/\f{FORCEDISPi} (and optionally Born charges) -- the \f{*.params} files, FOCEX and
-  the plots (Section~\ref{sec:data}).
-\end{itemize}
-Every step uses defaults that can be overridden, and every step is checked and written to
-\f{report.log}. The folder \f{FOCEX/AGENT} holds the script, this manual, an example input
-(\f{focex-agent.example.txt}) and an end-to-end test without VASP (\f{tests/}).
-\f{FOCEX/focex-agent.py} forwards to \f{AGENT/focex-agent.py}, so run scripts of older projects
-keep working.
+% ============================================================
+\section{What the FOCEX agent does}
+% ============================================================
+FOCEX obtains the force constants of a crystal (harmonic, cubic, quartic, \dots) by fitting them to
+the forces that density-functional theory (DFT) gives on the atoms of a supercell in which every
+atom has been displaced a little at random (a \emph{snapshot}). From the force constants it
+computes the phonon dispersion, density of states, group velocities, Gr\"uneisen parameters,
+elastic constants, sound speeds and the thermal expansion; THERMACOND then computes the lattice
+thermal conductivity from the same files.
 
-\section{Requirements}
-\begin{itemize}
-\item VASP-Flow (\url{https://github.com/KeivanS/VASP-Flow}) in \f{\textasciitilde/VASP-Flow}
-  (or \f{\$VASP\_FLOW\_DIR}): the agent imports its INCAR/KPOINTS generator, GGA+U and MAGMOM
-  rules, KPAR/NCORE rule, POTCAR builder, profiles and high-symmetry $k$-path. The POTCAR library
-  is \f{\$VASP\_POTCAR\_DIR}; the VASP binary \f{\$VASP\_STD} (or the profile).
-\item Python with numpy, spglib and pymatgen (VASP-Flow's environment, e.g.\
-  \f{\textasciitilde/vaspenv/bin/python}).
-\item \f{sc\_snaps.x} (SC-SNAPS), \f{read\_outcar.x} (\f{FOCEX/utility}), the FOCEX binary, and
-  gnuplot for the plots.
-\end{itemize}
-The agent sets \f{OMP\_NUM\_THREADS=1} for the VASP it starts: an OpenMP-threaded BLAS inside
-each MPI rank otherwise starts one thread per core in every rank (a 96-atom cell made no SCF step
-in 30 minutes on 8 ranks).
+Making those forces takes many steps: relax the crystal, orient the cell the way FOCEX expects,
+compute the Born charges of an insulator, choose a supercell, generate the snapshots, run one DFT
+calculation per snapshot, collect the forces, write the five input files of FOCEX and run it. Each
+step has its own input files and its own ways to fail. The FOCEX agent, \cmd{focex-agent.py}, does
+them all from one short \emph{instruction file}, checks the result of every step, writes what it
+did to \cmd{report.log}, and can be restarted at any time: finished steps are not repeated. When a
+run stops, \cmd{diagnose.py} finds out where and why, and writes a script that repairs it
+(Section~\ref{sec:diagnose}).
 
-\section{Running it}
-\begin{lstlisting}
-cp FOCEX/AGENT/focex-agent.example.txt instructions.txt   # Project and RANKS are required
-~/vaspenv/bin/python FOCEX/AGENT/focex-agent.py init -i instructions.txt -s POSCAR --profile rivanna
-cd <Project> && sbatch run_workflow.sh                   # bash run_workflow.sh on a workstation
+It works in one of two modes:
 
-# FOCEX only, on existing POSCAR1/FORCEDISP1: DATA: <folder> in instructions.txt
-~/vaspenv/bin/python FOCEX/AGENT/focex-agent.py init -i instructions.txt
-~/vaspenv/bin/python FOCEX/AGENT/focex-agent.py run <Project>
+\medskip
+\noindent\begin{tabularx}{\linewidth}{@{}>{\bfseries}p{0.17\linewidth}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\thead Mode & You give & The agent does \\ \midrule
+from\_scratch & a crystal structure (\cmd{POSCAR}) and the instruction file &
+  VASP relaxation, SCF and Born charges; SC-SNAPS snapshots; one VASP run per snapshot; FOCEX;
+  plots (Section~\ref{sec:scratch}) \\
+extract\_only & existing supercells and their forces (\cmd{POSCAR1}, \cmd{FORCEDISP1}, \dots)
+  and the instruction file & rotates the data into the FOCEX frame; FOCEX; plots
+  (Section~\ref{sec:extract}) \\
+\bottomrule
+\end{tabularx}
 
-~/vaspenv/bin/python FOCEX/AGENT/focex-agent.py run <Project> --only snaps    # redo one task
-~/vaspenv/bin/python FOCEX/AGENT/focex-agent.py run <Project> --retry-failed  # = resubmit_failed.sh
-~/vaspenv/bin/python FOCEX/AGENT/focex-agent.py plots <Project>               # remake the plots
+\begin{center}
+\begin{tikzpicture}[node distance=3mm and 3.2mm, every node/.style={font=\footnotesize},
+  b/.style={draw=mainblue, rounded corners, minimum height=8mm, align=center, inner sep=3pt},
+  d/.style={b, fill=dftgreen}, f/.style={b, fill=fxorange}, i/.style={b, fill=lightblue},
+  >={Stealth[length=2mm]}]
+  \node[i] (p) {POSCAR};
+  \node[d, right=of p] (r) {relax};
+  \node[d, right=of r] (s) {SCF\\+ DFPT};
+  \node[f, right=of s] (n) {snapshots\\(SC-SNAPS)};
+  \node[d, right=of n] (v) {VASP per\\snapshot};
+  \node[f, right=of v] (c) {collect\\FORCEDISP1};
+  \node[f, below=8mm of c] (x) {FOCEX};
+  \node[f, left=of x] (pl) {plots};
+  \node[i, left=10mm of pl] (data) {POSCAR1, FORCEDISP1\\(your data)};
+  \draw[->] (p)--(r); \draw[->] (r)--(s); \draw[->] (s)--(n); \draw[->] (n)--(v); \draw[->] (v)--(c);
+  \draw[->] (c)--(x); \draw[->] (x)--(pl);
+  \draw[->] (data.south) to[out=-20,in=-160] (x.south);
+  \node[above=1mm of s, text=mainblue] {\textbf{from\_scratch}};
+  \node[below=1mm of data, text=mainblue] {\textbf{extract\_only}};
+\end{tikzpicture}
+
+{\footnotesize green: VASP; orange: SC-SNAPS, FOCEX and their tools; blue: your input}
+\end{center}
+
+% ============================================================
+\section{What you need, and how to install it}\label{sec:install}
+% ============================================================
+You do not need to have used VASP-Flow before: the agent uses it as a library, to write the VASP
+input files and the batch scripts. This section has everything you need to set up.
+
+\subsection{The programs}
+\noindent\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.21\linewidth}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{0.3\linewidth}@{}}
+\thead What & Needed for & How to get it \\ \midrule
+VASP 5.4 or newer & every DFT step (from\_scratch only) & your licence; on a cluster usually
+  a module \\
+POTCAR library & VASP: the PAW potentials, one folder per element & comes with VASP \\
+MPI & running VASP in parallel (\cmd{mpirun} or \cmd{srun}) & system or cluster module \\
+Python $\geq$ 3.8 with numpy, spglib, pymatgen & the agent and \cmd{diagnose.py} & a virtual
+  environment, below \\
+VASP-Flow & writes the VASP inputs and batch scripts & \cmd{git clone}, below \\
+FOCEX, \cmd{read_outcar.x} & the fit; reading the forces from the OUTCARs & this repository,
+  \cmd{make} \\
+SC-SNAPS (\cmd{sc_snaps.x}) & the snapshots (from\_scratch only) & its own repository, \cmd{make} \\
+gnuplot & the plots (PDF) & \cmd{brew install gnuplot}, \cmd{apt install gnuplot}, or a module \\
+a Fortran compiler & building FOCEX and SC-SNAPS & \cmd{gfortran} (GCC) \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Install, once}
+The same commands on a workstation and on the login node of a cluster (there, load Python 3.8+
+and GCC first, e.g.\ \cmd{module load gcc python}).
+\begin{lstlisting}[language=bash]
+cd ~
+# 1. this repository (FOCEX, its utilities, the agent) and SC-SNAPS
+git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
+git clone https://github.com/KeivanS/SC_SNAPS.git
+mkdir -p ~/BIN ~/ALADYN/bin
+# FOCEX -> ~/BIN/v8.18 (3 min); read_outcar.x -> ~/ALADYN/bin; sc_snaps.x -> ~/BIN
+(cd Anharmonic-lattice-dynamics/FOCEX && make)
+(cd Anharmonic-lattice-dynamics/FOCEX/utility && make)
+(cd SC_SNAPS && make)
+
+# 2. VASP-Flow; the agent imports it from ~/VASP-Flow
+#    (another place: export VASP_FLOW_DIR=/that/place)
+git clone https://github.com/KeivanS/VASP-Flow.git
+
+# 3. a Python environment with the packages the agent needs
+python3 -m venv ~/vaspenv
+source ~/vaspenv/bin/activate
+pip install numpy spglib pymatgen matplotlib
 \end{lstlisting}
-\f{run\_workflow.sh} calls \f{focex-agent.py run <Project>}, which does the tasks below in
-order. A finished task is recorded in \f{state.json} and skipped, so after a time limit the same
-script is simply submitted again.
+The agent finds the programs at these places; a program installed elsewhere is named in the
+instruction file (\cmd{FOCEX_X}, \cmd{SC_SNAPS_X}, \cmd{READ_OUTCAR_X},
+Section~\ref{sec:keywords}).
 
-\begin{longtable}{>{\ttfamily}l p{0.78\linewidth}}
-\toprule
-task & what it does\\ \midrule
-relax & Niggli-reduced, oriented cell (\f{POSCAR.init}); VASP relaxation in \f{01\_relax},
-  restarted from CONTCAR up to three times if EDIFFG is not reached\\
-poscar0 & CONTCAR Niggli-reduced and oriented again: \f{POSCAR0}, the cell and Cartesian frame
-  of every later step\\
-scf & \f{02\_scf}: same INCAR (ISIF = 1, NSW = 0) and KPOINTS; reuses CHGCAR/WAVECAR when the
-  basis is unchanged; band gap from EIGENVAL\\
-dfpt & \f{02\_scf/dfpt}, only if there is a gap (\f{DFPT: auto}; \f{on}/\f{off}):
-  $\varepsilon_\infty$ and Born charges\\
-snaps & \f{03\_snaps}: \f{cell.inp}, \f{supercell.inp}, \f{snaps.inp}; SC-SNAPS; if the rms
-  displacement is not within 15\,\% of \f{DISP\_TARGET} the temperature is rescaled and SC-SNAPS
-  rerun (at most twice); the undistorted supercell is checked to be commensurate with POSCAR0\\
-supercells & \f{04\_supercells/snap\_NNN}: INCAR as the SCF plus ISYM = 0, Gamma mesh
-  (Section~\ref{sec:kmesh}), MAGMOM expanded to the supercell\\
-vasp\_snaps & the supercell runs, one after the other; failures are diagnosed in \f{report.log}
-  and \f{resubmit\_failed.sh} reruns them (an OUTCAR is never overwritten)\\
-collect & \f{read\_outcar.x} in every folder: \f{FORCEDISP1}; \f{POSCAR1} = \f{poscar\_000};
-  checks the net force and that the OUTCAR positions are those of the POSCAR\\
-focex & \f{05\_focex}: the five \f{*.params} files and FOCEX; with Born charges also a
-  \f{NOBORN} run; if equations/unknowns $<$ \f{LASSO\_RATIO} (2) also a \f{LASSO} run; the DOS
-  range is reset to 1.1$\times$ the highest frequency when needed. A FOCEX run counts as failed
-  if its exit code is not 0\\
-plots & \f{bvel.plt}, \f{all.plt}, \f{qha.plt} with their placeholders filled and
-  \f{makeplots.sh}, in every FOCEX folder\\
+\subsection{Tell VASP-Flow where VASP, MPI and the POTCARs are}
+\textbf{The POTCAR library} is always given by an environment variable. Put it in your
+\cmd{~/.bashrc} (or \cmd{~/.zshrc}) so that every job sees it:
+\begin{lstlisting}[language=bash]
+export VASP_POTCAR_DIR=/path/to/potpaw_PBE.54     # holds Zn/, O/, Ga/, ...
+\end{lstlisting}
+\textbf{VASP and MPI} come from a \emph{profile}, a small JSON file in \cmd{~/VASP-Flow/profiles/},
+chosen with \opt{profile} (or \cmd{PROFILE:} in the instruction file):
+
+\medskip
+\noindent\begin{tabularx}{\linewidth}{@{}>{\ttfamily}p{0.16\linewidth}X@{}}
+\thead \normalfont\bfseries profile & \textbf{use it for} \\ \midrule
+(none) & a workstation. VASP from the variables \cmd{VASP_STD} (default \cmd{~/BIN/vasp_std})
+  and \cmd{MPI_LAUNCH} (default \cmd{mpirun -np}), set in \cmd{~/.bashrc}; the number of ranks is
+  \cmd{MPI:} in the instruction file; \cmd{run_workflow.sh} is started with \cmd{bash} \\
+workstation & the same, with the paths written in \cmd{profiles/workstation.json} instead \\
+slurm & a template for a SLURM cluster: edit \cmd{profiles/slurm.json} (VASP command,
+  \cmd{modules} to load, partition, nodes, tasks per node, time, account) \\
+rivanna & the University of Virginia cluster Rivanna \\
+\textrm{\emph{your own}} & copy \cmd{slurm.json} to \cmd{mycluster.json}, edit it, and use
+  \opt{profile mycluster} \\
+\bottomrule
+\end{tabularx}
+
+\medskip
+With a SLURM profile, \cmd{run_workflow.sh} begins with the \cmd{#SBATCH} lines and the
+\cmd{module load} lines of the profile and is submitted with \cmd{sbatch}.
+
+\subsection{Check the set-up}
+\begin{lstlisting}[language=bash]
+source ~/vaspenv/bin/activate
+python ~/VASP-Flow/check_setup.py local     # a workstation;  "slurm" on a cluster
+\end{lstlisting}
+It checks Python and its packages, the POTCAR library, VASP and MPI (and on a cluster the
+profile), and prints for every problem the command that fixes it. \textbf{Ready.} at the end
+means you can start.
+
+\subsection{When is the Python environment needed?}
+Whenever \emph{you} start \cmd{focex-agent.py} or \cmd{diagnose.py}: they import numpy, spglib,
+pymatgen and VASP-Flow. Either activate it first (\cmd{source ~/vaspenv/bin/activate}, then
+\cmd{python ...}) or call its interpreter directly (\cmd{~/vaspenv/bin/python ...}).
+The scripts the agent writes (\cmd{run_workflow.sh}, \cmd{resubmit_failed.sh},
+\cmd{diagnosis/fix_it.sh}) contain the full path of the interpreter you used, so the batch jobs
+need no activation. The plots need only gnuplot; without it the agent writes the plot scripts and
+you run \cmd{makeplots.sh} later, where gnuplot is.
+
+% ============================================================
+\section{Quick start}\label{sec:quick}
+% ============================================================
+The steps of a from\_scratch calculation (Section~\ref{sec:extract} has those of extract\_only):
+\begin{enumerate}
+\item \textbf{Make a folder} for the material with its crystal structure, in VASP's POSCAR format,
+  named \cmd{POSCAR}. Any cell of the crystal will do -- primitive or not, any orientation: the
+  agent reduces and orients it.
+\item \textbf{Copy the instruction file} \cmd{FOCEX/AGENT/focex-agent-instructions.txt} into that
+  folder and edit it. Only two lines are required: \cmd{Project:} (a name) and \cmd{RANKS:} (which
+  force constants to fit, e.g.\ \cmd{1 1 1 0 0 0 0 0} for harmonic and cubic). Set also
+  \cmd{FUNCTIONAL:} and \cmd{MPI:} (the number of MPI ranks for VASP); every other line is
+  optional and shows its default.
+\item \textbf{Set up the project}: the agent makes the project folder (\cmd{PROJECT_DIR}, by
+  default named after \cmd{Project:}) with the relaxation inputs and \cmd{run_workflow.sh}. This
+  takes seconds and runs no VASP.
+\item \textbf{Start the workflow} from the project folder, and follow \cmd{report.log}.
+\item \textbf{If it stops}, run \cmd{diagnose.py} (Section~\ref{sec:diagnose}).
+\end{enumerate}
+\begin{lstlisting}[language=bash]
+cd ~/work/ZnO                      # holds POSCAR
+A=~/Anharmonic-lattice-dynamics/FOCEX/AGENT
+cp $A/focex-agent-instructions.txt .
+nano focex-agent-instructions.txt  # Project, RANKS, FUNCTIONAL, MPI
+
+source ~/vaspenv/bin/activate
+python $A/focex-agent.py --profile rivanna
+cd ZnO
+sbatch run_workflow.sh             # without a profile: nohup bash run_workflow.sh &
+tail -f report.log
+\end{lstlisting}
+The options of \cmd{focex-agent.py} are all optional:
+
+\medskip
+\noindent\begin{tabularx}{\linewidth}{@{}>{\ttfamily}p{0.22\linewidth}X@{}}
+\thead \normalfont\bfseries option & \textbf{meaning} \\ \midrule
+-{}-instr FILE & the instruction file, if it is not called \cmd{focex-agent-instructions.txt} \\
+-{}-coord FILE & the crystal structure, if it is not called \cmd{POSCAR} (from\_scratch) \\
+-{}-profile NAME & the VASP-Flow profile (previous section); default: \cmd{PROFILE:} of the
+  instruction file, else none \\
+-{}-force & set up again a project folder that exists already. Its record of finished tasks is
+  reset, so use it only to start over, after removing the old run folders \\
+\bottomrule
+\end{tabularx}
+
+\begin{notebox}
+\textbf{Threads.} You do not have to do anything about OpenMP threads: the agent runs VASP with one
+thread per MPI rank (\cmd{OMP_NUM_THREADS=1}). Without that, a BLAS library built with OpenMP
+starts one thread per core in every MPI rank and the cores are oversubscribed many times (a
+96-atom ZnO supercell made no SCF step in 30 minutes on 8 ranks). Only if your VASP is built for
+hybrid MPI\,+\,OpenMP runs and you want them, set \cmd{VASP_OMP_NUM_THREADS} to the number of
+threads per rank before you start the workflow.
+\end{notebox}
+
+% ============================================================
+\section{Mode from\_scratch: from a POSCAR to phonons}\label{sec:scratch}
+% ============================================================
+\cmd{run_workflow.sh} runs \cmd{focex-agent.py run <PROJECT_DIR>}, which does the ten tasks below
+in order. Each finished task is recorded in \cmd{state.json} and in \cmd{report.log}, with what was
+checked; a task that fails stops the workflow, and starting \cmd{run_workflow.sh} again continues
+from that task. A job that hits its time limit is simply submitted again.
+
+\begin{description}
+\item[relax] The structure you gave is reduced to its primitive cell (Niggli reduction) and rotated
+  into the orientation FOCEX and SC-SNAPS use (Section~\ref{sec:frame}); the result is
+  \cmd{POSCAR.init}. VASP relaxes the atoms and the cell shape and volume in \cmd{01_relax}. If the
+  forces are not yet below EDIFFG after NSW ionic steps, the relaxation continues from its last
+  structure (CONTCAR), up to three times.
+\item[poscar0] The relaxed cell is reduced and oriented again and written as \cmd{POSCAR0}: every
+  later step uses this cell and this Cartesian frame. The report gives its space group and lattice
+  parameters.
+\item[scf] A self-consistent calculation on POSCAR0 in \cmd{02_scf} (same INCAR, no ionic steps,
+  same k-mesh), which also gives the band gap. If the cell did not change in the previous task, it
+  starts from the charge density and wave functions of the relaxation.
+\item[dfpt] For an insulator (band gap above 0.05\,eV, \cmd{DFPT: auto}): density-functional
+  perturbation theory in \cmd{02_scf/dfpt} gives the high-frequency dielectric constant and the
+  Born effective charges of every atom (Section~\ref{sec:born}). \cmd{DFPT: on} forces it,
+  \cmd{off} skips it.
+\item[snaps] The supercell is chosen: the multiple of the conventional cell with the fewest atoms
+  whose faces are at least 10\,\AA\ apart (\cmd{SUPERCELL: SMALL}, at most 100 atoms; \cmd{LARGE}:
+  14\,\AA, at most 300 atoms); if none is that large, the one with the largest distance. SC-SNAPS
+  (\cmd{03_snaps}) then writes the undistorted supercell \cmd{poscar_000} and 50 snapshots, each
+  atom displaced as in a thermal ensemble of harmonic oscillators of frequency \cmd{AVG_FREQ} at
+  temperature \cmd{TEMPERATURE}. The temperature is adjusted (SC-SNAPS rerun at most twice) until
+  the rms displacement is within 15\,\% of \cmd{DISP_TARGET} (0.02\,\AA): large enough for clean
+  forces, small enough for the Taylor expansion of the energy. The undistorted supercell is
+  checked to be an exact multiple of POSCAR0 before any VASP job is run.
+\item[supercells] One folder per snapshot, \cmd{04_supercells/snap_NNN}, with its POSCAR, the SCF
+  INCAR without symmetry (\cmd{ISYM = 0}) and a k-mesh equivalent to the SCF one
+  (Section~\ref{sec:kmesh}); magnetic moments given per atom are carried over to the supercell.
+\item[vasp\_snaps] The VASP runs of the snapshots, one after the other. A run that fails does not
+  stop the others; the failed ones are listed in \cmd{report.log}, and \cmd{resubmit_failed.sh}
+  reruns only those. An existing OUTCAR is never overwritten (it is kept as \cmd{OUTCAR.1}, \dots).
+\item[collect] \cmd{read_outcar.x} reads the positions and forces of every run into
+  \cmd{04_supercells/FORCEDISP1}; \cmd{POSCAR1} is the undistorted supercell. The report gives the
+  largest net force on a supercell (should be $\approx 0$) and the largest difference between the
+  positions in OUTCAR and in POSCAR.
+\item[focex] The five input files of FOCEX are written in \cmd{05_focex} (\cmd{structure.params},
+  \cmd{latdyn.params}, \cmd{kpbs.params}, \cmd{dielectric.params}, \cmd{default.params}) and FOCEX
+  is run. With Born charges a second run without them is made in \cmd{05_focex/NOBORN}, for
+  comparison; with fewer than \cmd{LASSO_RATIO} (2) equations per unknown, a third run with LASSO,
+  which keeps only the force constants the data need, is made in \cmd{05_focex/LASSO}. The report
+  gives the fit error, the numbers of equations and unknowns, the lowest $\omega^2$ (a warning
+  below $-25$\,cm$^{-2}$: imaginary modes) and the highest frequency. If the DOS range of
+  \cmd{latdyn.params} does not fit the frequencies, FOCEX is run again with one that does.
+\item[plots] The gnuplot scripts \cmd{bvel.plt}, \cmd{all.plt}, \cmd{qha.plt} are filled in and run
+  in every FOCEX folder (Section~\ref{sec:results}); \cmd{makeplots.sh} remakes them.
+\end{description}
+
+\subsection{Defaults}
+\begin{itemize}
+\item \cmd{ACCURACY: Accurate}: ENCUT 600\,eV, EDIFF $10^{-7}$\,eV, EDIFFG $-0.001$\,eV/\AA,
+  PREC Accurate in every VASP step. \cmd{Normal}: 450\,eV, $10^{-6}$, $-0.003$, PREC Normal --
+  cheaper, but the residual forces of the relaxed structure are larger (0.01\,eV/\AA\ in a ZnO
+  test), which adds noise to the force constants. DFPT uses EDIFF $10^{-8}$.
+\item Relaxation and SCF k-mesh: VASP-Flow's \cmd{coarse} density (1000 k-points per reciprocal
+  atom), \cmd{fine} (6000) if every element is a metal.
+\item 50 snapshots. Each gives three equations per atom of the supercell: 20 snapshots of a
+  96-atom supercell give 5760 equations for the 264 unknowns of ZnO with ranks 1--3, so fewer
+  snapshots are often enough (\cmd{SNAPSHOTS}).
+\item \cmd{RANGE: 6 2 1 0 0 0 0}: neighbour shells kept for ranks 2, 3, 4, \dots;
+  \cmd{FC2RANGE: 0}: the harmonic force constants are kept over the whole supercell.
+\item FOCEX k-mesh \cmd{fine}; the band-structure path is found automatically.
+\end{itemize}
+
+\subsection{The FOCEX frame}\label{sec:frame}
+FOCEX and SC-SNAPS build the conventional cell from $a, b, c, \alpha, \beta, \gamma$ with $a$ along
+$x$ and $b$ in the $xy$ plane, and the supercells, forces and Born charges must be in that same
+Cartesian frame. The agent rotates the cell into it at the start, so everything VASP computes is
+already in the right frame. \cmd{structure.params} lists the conventional cell (line 1), the
+primitive vectors in its units (line 2) and the atoms in conventional coordinates.
+
+\subsection{The k-mesh of the supercells}\label{sec:kmesh}
+If the supercell is a diagonal multiple of the primitive cell, its mesh is the SCF mesh divided by
+the multiples, rounded up (6\,6\,4 with a $3\times3\times2$ supercell gives 2\,2\,2). Otherwise
+(every multiple of a centred conventional cell) it keeps the k-point spacing of the SCF mesh.
+\cmd{KPOINTS_snaps} sets it yourself (Section~\ref{sec:override}).
+
+% ============================================================
+\section{Mode extract\_only: FOCEX on existing data}\label{sec:extract}
+% ============================================================
+Use it when the supercell forces exist already -- from an earlier calculation, another code, or a
+colleague -- and you want FOCEX's force constants and phonons. No VASP and no SC-SNAPS are run.
+
+\paragraph{The data folder} (named in the instruction file with \cmd{DATA:}) holds
+\begin{itemize}
+\item \cmd{POSCAR1} and \cmd{FORCEDISP1}: a supercell and the positions and forces of its
+  snapshots, in FOCEX's format (what \cmd{read_outcar.x} or \cmd{read_qe.x} write); more pairs
+  \cmd{POSCAR2}/\cmd{FORCEDISP2}, \dots\ are all used. Any orientation.
+\item optionally \cmd{POSCAR}: the primitive cell, in the same orientation as the data; without it,
+  spglib finds the primitive cell of \cmd{POSCAR1}.
+\item optionally \cmd{dielectric.params}: the dielectric constant and the Born charges, in the
+  frame of the data, one $3\times3$ block per atom of that primitive cell. With more than one atom
+  of a species the primitive \cmd{POSCAR} is required, to fix the order of the atoms.
+\end{itemize}
+\cmd{SPECIES: Mg O} names the elements when the POSCARs have no element line.
+
+\paragraph{What the agent does.} At set-up it symmetrizes the lattice of the primitive cell (DFT
+lattice parameters given to 6--7 digits make FOCEX's symmetry analysis lose force constants),
+finds the rotation into the FOCEX frame, and rotates the supercells, the positions and forces in
+\cmd{FORCEDISPi}, the dielectric constant and the Born charges with it. The report gives the
+rotation and the size of the symmetrization. The workflow then has only the tasks focex and plots.
+\begin{lstlisting}[language=bash]
+cat > focex-agent-instructions.txt <<'EOF'
+Project: MgO
+MODE: extract_only
+DATA: ~/data/MgO_forces          # POSCAR1, FORCEDISP1, dielectric.params
+SPECIES: Mg O
+RANKS: 1 1 1 0 0 0 0 0
+EOF
+python ~/Anharmonic-lattice-dynamics/FOCEX/AGENT/focex-agent.py
+cd MgO && bash run_workflow.sh          # FOCEX takes minutes: no batch job needed
+\end{lstlisting}
+Checked on MgO data given in a rhombohedral orientation: the fit error (7.197\,\%), the 35
+unknowns, the frequencies and the elastic moduli are those of a FOCEX run in the original frame.
+
+% ============================================================
+\section{The instruction file: every keyword}\label{sec:keywords}
+% ============================================================
+One keyword per line, \cmd{KEYWORD: value}; \cmd{#} starts a comment. The VASP keywords are those
+of VASP-Flow (its manual lists all of them); the common ones are below.
+
+\begin{longtable}{@{}>{\ttfamily}p{0.2\linewidth}>{\raggedright\arraybackslash}p{0.21\linewidth}>{\raggedright\arraybackslash}p{0.51\linewidth}@{}}
+\thead \normalfont\bfseries keyword & \textbf{default} & \textbf{meaning} \\ \midrule \endhead
+\multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{project}}} \\
+Project & (required) & a name, used in titles and as the default folder \\
+PROJECT\_DIR & the Project name & where the calculations go; relative to the instruction file \\
+MODE & from\_scratch & or extract\_only \\
+DATA & -- & extract\_only: the data folder \\
+SPECIES & -- & extract\_only: element names, if the POSCARs have none \\
+PROFILE & none & the VASP-Flow profile, as \opt{profile} \\
+\multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{force constants}}} \\
+RANKS & (required) & 8 flags for ranks 1--8: \cmd{1 1 0 0 0 0 0 0} harmonic,
+  \cmd{1 1 1 0 0 0 0 0} + cubic, \cmd{1 1 1 1 0 0 0 0} + quartic \\
+RANGE & 6 2 1 0 0 0 0 & neighbour shells for ranks 2--8 \\
+FC2RANGE & 0 & 0: harmonic range = the supercell \\
+LASSO\_RATIO & 2 & below this many equations per unknown, an extra LASSO run \\
+\multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{VASP (VASP-Flow keywords)}}} \\
+FUNCTIONAL & R2SCAN & PBE, PBEsol, LDA, AM05, R2SCAN, HSE06, VV10 \\
+MPI & the profile's & MPI ranks for VASP \\
+ACCURACY & Accurate & or Normal (Section~\ref{sec:scratch}) \\
+ENCUT & by ACCURACY & plane-wave cutoff (eV) \\
+KMESH\_DENSITY & coarse or fine & k-mesh of the relaxation and SCF \\
+MAGMOM & -- & magnetic moments, e.g.\ \cmd{MAGMOM: Cr=3.0} \\
+GGA\_U & auto & Hubbard U from VASP-Flow's table: \cmd{auto} applies it to d/f elements when the
+  compound has O, S, Se, Te or a halogen; \cmd{ON} always; \cmd{OFF} never \\
+DFPT & auto & Born charges: auto (if there is a gap), on, off \\
+BORN\_TRANSPOSE & yes & Section~\ref{sec:born} \\
+\multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{snapshots}}} \\
+SUPERCELL & SMALL & SMALL, LARGE, or 9 integers (supercell vectors as rows, primitive units) \\
+SNAPSHOTS & 50 & number of snapshots \\
+TEMPERATURE & 30 & K (adjusted to DISP\_TARGET) \\
+AVG\_FREQ & 400 & cm$^{-1}$, the frequency of the oscillators of SC-SNAPS \\
+DISP\_TARGET & 0.02 & \AA, the rms displacement wanted \\
+\multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{FOCEX}}} \\
+FOCEX\_MESH & fine & k-mesh of latdyn.params: coarse, fine, a density, or 3 integers \\
+KPATH & 0 & 0: automatic band path; 1: give a \cmd{kpbs_params} block \\
+BS\_NKPTS & 40 & points per segment of the band path \\
+\multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{programs}}} \\
+FOCEX\_X & newest \cmd{~/BIN/v*} & the FOCEX binary \\
+SC\_SNAPS\_X & \cmd{~/BIN/sc_snaps.x} & SC-SNAPS \\
+READ\_OUTCAR\_X & \cmd{~/ALADYN/bin/} \cmd{read_outcar.x} & reads OUTCARs \\
 \bottomrule
 \end{longtable}
-For each FOCEX run the report gives the fit error, the numbers of equations and unknowns, the
-lowest $\omega^2$ (a warning below $-25$\,cm$^{-2}$) and the highest frequency (a warning above
-2500\,cm$^{-1}$).
 
-\section{Defaults}
+% ============================================================
+\section{Changing the files the agent writes}\label{sec:override}
+% ============================================================
+Every file the agent generates can be changed \emph{from the instruction file}, with a block named
+after the file: a line with its name, the contents, and a line with the name followed by
+\cmd{_END}.
 \begin{itemize}
-\item \f{ACCURACY: Accurate} -- ENCUT 600\,eV, EDIFF $10^{-7}$, EDIFFG $-0.001$, PREC = Accurate
-  in every step; \f{Normal} -- 450\,eV, $10^{-6}$, $-0.003$, PREC = Normal (cheaper, but the
-  undistorted 96-atom ZnO supercell then kept forces of $\sim$0.01\,eV/\AA). DFPT uses
-  EDIFF $10^{-8}$.
-\item Relaxation and SCF $k$-mesh: VASP-Flow \f{coarse} (1000 $k$-points per reciprocal atom),
-  \f{fine} (6000) if every element is a metal.
-\item \f{SUPERCELL: SMALL} -- the multiple of the conventional cell with the fewest atoms whose
-  smallest face distance is at least 10\,\AA, within 100 atoms (\f{LARGE}: 14\,\AA, 300 atoms).
-\item 50 snapshots (\f{SNAPSHOTS}), 30\,K, 400\,cm$^{-1}$, target rms displacement 0.02\,\AA.
-  The number of equations is $3N_{\rm atoms}$ per snapshot; 20 snapshots of 96 atoms give 5760
-  equations, against 264 unknowns for ZnO with ranks 1--3.
-\item \f{latdyn.params} mesh \f{fine}; \f{kpbs.params} from the automatic path.
-\item \f{RANKS} has no default; \f{RANGE: 6 2 1 0 0 0 0} shells for ranks 2--8; \f{FC2RANGE: 0}.
+\item \textbf{INCAR blocks are merged tag by tag}: the tags you give replace or add to those the
+  agent writes; the others stay. \cmd{INCAR} applies to every VASP step; \cmd{INCAR_relax},
+  \cmd{INCAR_scf}, \cmd{INCAR_dfpt}, \cmd{INCAR_snaps} to one.
+\item \textbf{Every other block replaces the whole file}, so it must be complete: \cmd{KPOINTS}
+  (relaxation and SCF), \cmd{KPOINTS_snaps}, \cmd{cell_inp}, \cmd{supercell_inp}, \cmd{snaps_inp}
+  (SC-SNAPS), \cmd{structure_params}, \cmd{latdyn_params}, \cmd{kpbs_params},
+  \cmd{dielectric_params}, \cmd{default_params} (FOCEX).
 \end{itemize}
-\f{structure.params}: line 1 $a\,b\,c\,\alpha\,\beta\,\gamma$ of the conventional cell, line 2 the
-primitive vectors in conventional units, line 3 \f{1.0 0}. POSCAR0 is rotated so that its
-conventional cell lies exactly where FOCEX and SC-SNAPS build it ($a$ along $x$, $b$ in the $xy$
-plane), so POSCAR1, FORCEDISP1 and the Born charges are all in that frame.
+Simple choices -- the supercell, the number of snapshots, the FOCEX k-mesh -- have their own
+keyword; use a block only for what has none.
 
-\section{Existing data (FOCEX only)}\label{sec:data}
-Give \f{DATA: <folder>} in the instructions (no \f{-s}). The folder holds \f{POSCAR1},
-\f{FORCEDISP1} (and \f{POSCAR2}, \f{FORCEDISP2}, \dots; all pairs are used) in any orientation,
-and optionally
+\paragraph{Example.} Wurtzite ZnO without Hubbard U (VASP-Flow would otherwise put its tabulated U
+on Zn, an oxide), \cmd{LASPH} in every VASP step, stricter electronic convergence only in the
+supercell runs, a $3\times3\times2$ supercell, 20 snapshots, a denser FOCEX mesh, and your own band
+path $\Gamma$--M--K--$\Gamma$--A, which replaces \cmd{kpbs.params}:
+\begin{lstlisting}
+Project: ZnO
+RANKS: 1 1 1 0 0 0 0 0
+FUNCTIONAL: PBEsol
+GGA_U: OFF
+MPI: 40
+SUPERCELL: 3 0 0  0 3 0  0 0 2       # rows: supercell vectors in primitive units
+SNAPSHOTS: 20
+FOCEX_MESH: 12 12 8
+KPATH: 1                              # the band path is given below
+
+INCAR                                 # every VASP step (merged tag by tag)
+  LASPH = .TRUE.
+INCAR_END
+INCAR_snaps                           # the supercell runs only
+  NELM = 200
+  ALGO = All
+INCAR_snaps_END
+kpbs_params                           # replaces kpbs.params (FOCEX's band path)
+1        # coordinates in units of the primitive reciprocal vectors
+60       # k-points per segment
+4        # number of segments
+G   0.000000 0.000000 0.000000
+M   0.500000 0.000000 0.000000
+K   0.333333 0.333333 0.000000
+G   0.000000 0.000000 0.000000
+A   0.000000 0.000000 0.500000
+kpbs_params_END
+\end{lstlisting}
+After the set-up you can read \cmd{01_relax/INCAR} before anything runs.
+
+% ============================================================
+\section{Born charges and the dielectric constant}\label{sec:born}
+% ============================================================
+In an insulator, the long-range Coulomb interaction between the displaced ions splits the
+longitudinal and transverse optical modes near $\Gamma$ (LO--TO splitting). FOCEX includes it
+with the Born effective charges $Z^*$ and the high-frequency dielectric constant
+$\varepsilon_\infty$; without them the optical branches near $\Gamma$ are wrong.
 \begin{itemize}
-\item \f{POSCAR}: the primitive cell in the frame of the data; otherwise spglib finds it from
-  \f{POSCAR1}, keeping its orientation;
-\item \f{dielectric.params}: $\varepsilon_\infty$ and the Born charges in the frame of the data,
-  one block per atom of that \f{POSCAR} (without a \f{POSCAR} only with one atom per species).
+\item from\_scratch: the agent computes them (task dfpt) when the SCF shows a band gap, writes them
+  to \cmd{dielectric.params}, and makes for comparison a FOCEX run without them in
+  \cmd{05_focex/NOBORN}. \cmd{DFPT: off} skips them; \cmd{on} computes them for any material.
+\item extract\_only: give them in \cmd{dielectric.params} in the data folder.
+\item your own values, in either mode: a \cmd{dielectric_params} block (it replaces the file).
 \end{itemize}
-\f{SPECIES: Mg O} names the species when the POSCARs have no element line. \f{init} symmetrizes
-the lattice of the primitive cell (spglib's idealized lattice parameters, same basis and atom
-order: lattice parameters given to 6--7 digits make FOCEX's symmetry analysis lose force-constant
-groups), rotates it into the FOCEX frame, rotates \f{POSCARi} and the positions and forces of
-\f{FORCEDISPi} with the same matrix and $\varepsilon$ and $Z$ as $R^{T}TR$, writes \f{POSCAR0}
-and \f{04\_supercells/}, and marks relax \dots collect as provided; \f{run} then does
-\f{focex} and \f{plots}. The report gives the rotation and the size of the symmetrization.
+\begin{notebox}
+VASP prints $Z^*_{ij}$ with $i$ the direction of the field and $j$ that of the displacement;
+FOCEX expects the transpose, which the agent writes. \cmd{BORN_TRANSPOSE: no} writes them as VASP
+prints them; you should not need it.
+\end{notebox}
 
-Checked on MgO data in a rhombohedral orientation: without Born charges the fit error (7.197\,\%),
-the 35 unknowns, the highest frequency (647\,cm$^{-1}$), the bulk and shear moduli equal those of
-a FOCEX run in the original frame.
-
-\section{Supercell $k$-mesh}\label{sec:kmesh}
-If the supercell matrix (rows, primitive units) is diagonal up to a permutation, the mesh is the
-primitive one divided by the multiples, rounded up (6\,10\,8 with 2$\times$2$\times$2 gives
-3\,5\,4). Otherwise -- every multiple of a centred conventional cell -- the supercell mesh keeps
-the $k$-point spacing of the primitive mesh and is in general not exactly commensurate.
-\f{KPOINTS\_snaps} sets it by hand.
-
-\section{Project folder}
-\begin{longtable}{>{\ttfamily}l p{0.62\linewidth}}
-\toprule
-instructions.txt & copy of the input (\f{init} appends the $k$-mesh density it chose)\\
-POSCAR.input, POSCAR.init & the structure given; reduced and oriented\\
-POSCAR0 & relaxed cell, frame of every later step\\
-state.json & finished tasks, supercell matrix, gap, $\varepsilon$, Born charges\\
-report.log & one entry per task: OK/FAILED, minutes, what was checked\\
-run\_workflow.sh & the batch script (VASP-Flow profile); \f{resubmit\_failed.sh}\\
-01\_relax, 02\_scf & VASP; \f{02\_scf/dfpt} the DFPT run\\
-03\_snaps & SC-SNAPS input and \f{poscar\_NNN}\\
-04\_supercells & \f{snap\_NNN/} one VASP run each; \f{FORCEDISP1}, \f{POSCAR1}\\
-05\_focex & the FOCEX run and plots; \f{NOBORN/}, \f{LASSO/} when made\\
+% ============================================================
+\section{The project folder and the results}\label{sec:results}
+% ============================================================
+\begin{longtable}{@{}>{\ttfamily}p{0.37\linewidth}>{\raggedright\arraybackslash}p{0.56\linewidth}@{}}
+\thead \normalfont\bfseries file or folder & \textbf{what it is} \\ \midrule \endhead
+focex-agent-instructions.txt & the copy of your instruction file that the runs read \\
+report.log & one entry per task: OK or FAILED, minutes, what was checked -- read this first \\
+state.json & the finished tasks and the numbers passed between them \\
+run\_workflow.sh & the job; \cmd{resubmit_failed.sh} reruns the failed supercell runs \\
+POSCAR.input, POSCAR.init, POSCAR0 & your structure; reduced and oriented; relaxed \\
+01\_relax, 02\_scf, 02\_scf/dfpt & VASP: relaxation, SCF, Born charges \\
+03\_snaps & SC-SNAPS input and the snapshots \cmd{poscar_NNN} \\
+04\_supercells & \cmd{snap_NNN/} (one VASP run each), \cmd{POSCAR1}, \cmd{FORCEDISP1} \\
+05\_focex & FOCEX: inputs, outputs, plots; \cmd{NOBORN/} and \cmd{LASSO/} when made \\
+diagnosis & written by \cmd{diagnose.py}: \cmd{report.txt}, \cmd{fix_it.sh}, backups \\
 \bottomrule
 \end{longtable}
-WAVECAR, CHG, CHGCAR, WFULL, TMPCAR and PROCAR are deleted after use; OUTCARs never.
+In \cmd{05_focex}: the force constants \cmd{fc2.dat}, \cmd{fc3.dat}, \dots\ with the cell in
+\cmd{lat_fc.dat}; the dispersion \cmd{bs_freq.dat}; the elastic constants and moduli
+\cmd{mech.dat}; thermodynamics and thermal expansion \cmd{thermo_QHA.dat}; and three PDFs:
+\cmd{<Project>.pdf} (the dispersion coloured by group velocity, and the group velocities against
+frequency), \cmd{all-<Project>.pdf} (Gr\"uneisen parameters, density of states, dispersion) and
+\cmd{qha.pdf} (thermal expansion, Gr\"uneisen parameter, bulk modulus, thermodynamic functions,
+free energy against volume). The FOCEX manual describes every output file. The large VASP files
+(WAVECAR, CHGCAR, CHG, \dots) are deleted when no longer needed; the OUTCARs never.
 
+% ============================================================
+\section{When a run stops: diagnose.py}\label{sec:diagnose}
+% ============================================================
+\begin{lstlisting}[language=bash]
+A=~/Anharmonic-lattice-dynamics/FOCEX/AGENT
+python $A/diagnose.py ~/work/ZnO/ZnO     # one or more project folders
+less ~/work/ZnO/ZnO/diagnosis/report.txt
+bash ~/work/ZnO/ZnO/diagnosis/fix_it.sh
+\end{lstlisting}
+\cmd{diagnose.py} itself changes nothing. It lists every task as done, FAILED, INTERRUPTED (the
+job was killed inside it) or not reached, or reports that the project is still running or not yet
+started. For a failed task it finds the cause from \cmd{report.log}, the OUTCARs, \cmd{vasp.out},
+\cmd{focex.out} and the SLURM logs, and writes \cmd{diagnosis/report.txt} (what failed, where, the
+evidence, what the fix will change) and \cmd{diagnosis/fix_it.sh}. VASP failures are recognised
+with the rules of VASP-Flow's diagnosis tool; FOCEX, SC-SNAPS and \cmd{read_outcar.x} stops by
+their messages.
+
+\medskip
+\noindent\begin{tabularx}{\linewidth}{@{}>{\ttfamily\raggedright\arraybackslash}p{0.2\linewidth}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\thead \normalfont\bfseries cause & \textbf{meaning} & \textbf{what fix\_it.sh does} \\ \midrule
+timeout & the job hit its time limit & walltime $\times 2$, resubmit \\
+scf\_nelm & SCF not converged in NELM steps & ALGO = All, NELM = 200 \\
+edddav & the Davidson eigensolver failed & ALGO = All \\
+zbrent & the relaxation's line search failed & IBRION = 1 \\
+relax\_unconv & relaxation not converged & resubmit (continues from CONTCAR) \\
+oom & out of memory & KPAR = 1 \\
+mpi\_init, not\_run, interrupted & MPI did not start; never ran; killed & resubmit \\
+ws\_outside & FOCEX \cmd{R+tp-t not inside!}: the supercell lacks the symmetry of the lattice &
+  held: choose another supercell, redo from the snapshots \\
+others & disk quota, symmetry, an unknown stop, \dots & held, with the error lines \\
+\bottomrule
+\end{tabularx}
+
+\medskip
+New INCAR tags go into the INCARs of the failed runs and into the matching block of the project's
+instruction file (\cmd{INCAR_snaps}, \dots), so that later runs use them too. Before it changes
+anything, \cmd{fix_it.sh} checks that nothing is running and that nothing changed since the
+diagnosis, and copies every file it edits to \cmd{diagnosis/backup_<date>/}; then it resubmits
+(\cmd{sbatch} with a SLURM profile, otherwise \cmd{bash} in the background). When the fix needs
+your judgement -- a cause it does not know, a fix that was already tried, a new supercell -- the
+script is \emph{held}: it prints what to do and stops, and \cmd{bash fix_it.sh --anyway} runs its
+suggested commands as they are. Run \cmd{diagnose.py} again when the resubmitted job has finished.
+
+\begin{tipbox}
+ZnO with a $4\times3\times2$ supercell: \emph{task focex, 05\_focex: ws\_outside -- an FC2 pair of
+a kept symmetry group lies outside the Wigner-Seitz cell of the supercell \dots; evidence:
+focex.out: "SET\_DYNMAT\_STD: R+tp-t not inside!"; HELD for review: use a supercell with the
+symmetry of the lattice, then redo from the snapshots.}
+\end{tipbox}
+
+% ============================================================
 \section{Thermal conductivity}
-THERMACOND reads \f{lat\_fc.dat}, \f{fc2.dat} and \f{fc3.dat} (and, if present,
-\f{structure.params}: since October 2026 the cell is also taken from \f{lat\_fc.dat}); give at
-least \f{RANKS: 1 1 1 0 0 0 0 0}. The agent does not run it: set lines 8--13 of
-\f{latdyn.params} in \f{05\_focex} and run \f{kap8} there.
-
-\section{Overriding any file}
-A block named after a file replaces it:
-\begin{lstlisting}
-structure_params
-... the whole file ...
-structure_params_END
-\end{lstlisting}
-\f{INCAR} (every step) and \f{INCAR\_relax}, \f{INCAR\_scf}, \f{INCAR\_dfpt}, \f{INCAR\_snaps} are
-merged tag by tag into the generated INCARs. The other blocks are written verbatim:
-\f{KPOINTS}, \f{KPOINTS\_snaps}, \f{cell\_inp}, \f{supercell\_inp}, \f{snaps\_inp},
-\f{structure\_params}, \f{latdyn\_params}, \f{kpbs\_params} (required with \f{KPATH: 1}),
-\f{dielectric\_params}, \f{default\_params}. \f{END\_<NAME>} is also accepted, in any case.
-
-\section{Born charges}
-VASP prints $Z^*_{ij}$ with $i$ the field and $j$ the displacement direction. FOCEX contracts the
-wave vector with the second index of \f{charge(i,j)} (\f{aux\_na.f90}), so the agent writes the
-transpose; \f{BORN\_TRANSPOSE: no} writes them as printed.
-
-\section{Testing without VASP}
-\f{tests/run\_test.sh} runs the full workflow on fcc argon with \f{tests/fake\_vasp.py} (a
-nearest-neighbour Lennard-Jones crystal) in place of VASP and compares FOCEX's phonons with the
-exact ones (\f{tests/exact\_phonons.py}): within 0.23\,cm$^{-1}$ (0.4\,\%), elastic constants
-within 0.8\,\%.
+% ============================================================
+THERMACOND reads \cmd{lat_fc.dat}, \cmd{fc2.dat} and \cmd{fc3.dat} from \cmd{05_focex}, so fit
+at least the cubic force constants (\cmd{RANKS: 1 1 1 0 0 0 0 0}). The agent does not run it: in
+\cmd{05_focex} set lines 8--13 of \cmd{latdyn.params} (see the THERMACOND manual) and run
+\cmd{kap8} there.
 
 \end{document}

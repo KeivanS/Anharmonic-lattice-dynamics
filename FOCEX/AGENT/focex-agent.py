@@ -1,36 +1,35 @@
 #!/usr/bin/env python3
-"""focex-agent.py (FOCEX/AGENT) -- from a primitive POSCAR to FOCEX phonons, with VASP and SC_SNAPS.
-Manual: FOCEX/AGENT/focexagent_manual.pdf
+"""focex-agent.py (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
+structure (MODE: from_scratch, VASP + SC_SNAPS + FOCEX) or from existing force-displacement data
+(MODE: extract_only, FOCEX only).  Manual: FOCEX/AGENT/focexagent_manual.pdf
 
-    focex-agent.py init [-i instructions.txt] [-s POSCAR] [--profile rivanna]
-    focex-agent.py init -i instructions.txt      # with DATA: <folder> -- FOCEX on existing data
-    focex-agent.py run  <project>              # every task, in order, restartable
-    focex-agent.py run  <project> --retry-failed
-    focex-agent.py run  <project> --only snaps  # one task
-    focex-agent.py plots <project>             # remake the plot scripts and plots
+    focex-agent.py [--instr FILE] [--coord FILE] [--profile NAME] [--force]
+        sets up the project folder (PROJECT_DIR in the instruction file) with run_workflow.sh;
+        FILE defaults: focex-agent-instructions.txt, POSCAR; NAME: a VASP-Flow profile
+        (workstation, rivanna, slurm = ~/VASP-Flow/profiles/<NAME>.json)
+    cd <PROJECT_DIR> && sbatch run_workflow.sh     (bash run_workflow.sh without SLURM)
 
-Tasks (each is recorded in <project>/report.log and skipped once done):
-  1 relax      Niggli-reduced, oriented cell; VASP relaxation (ACCURACY: Accurate|Normal)
-  2 poscar0    CONTCAR -> Niggli + orientation -> POSCAR0 (the frame of every later step)
-    scf        SCF on POSCAR0, same INCAR (ISIF=1, NSW=0) and KPOINTS
-    dfpt       epsilon_inf and Born charges, only if the SCF shows a gap (DFPT: auto|on|off)
-  3 snaps      SC_SNAPS: nearly cubic supercell (SUPERCELL: SMALL|LARGE|9 integers),
-               snapshots; the temperature is tuned to an rms displacement of DISP_TARGET
-  4 supercells one folder per snapshot (INCAR as the SCF + ISYM=0, commensurate KPOINTS)
-    vasp_snaps the supercell VASP runs, one after the other
-  5 collect    read_outcar.x -> FORCEDISP1, POSCAR1 = poscar_000; all runs checked
-  6 focex      the five *.params files, FOCEX (+ NOBORN and LASSO runs when needed)
-  7 plots      bvel.plt / all.plt / qha.plt filled in, makeplots.sh
+    focex-agent.py run  <PROJECT_DIR> [--only TASK] [--retry-failed]   what run_workflow.sh calls
+    focex-agent.py plots <PROJECT_DIR>                                  remake the plots
+    diagnose.py <PROJECT_DIR>         where and why a run stopped; writes diagnosis/fix_it.sh
 
-Existing data (no VASP, no SC_SNAPS): DATA: <folder> with POSCAR1, FORCEDISP1 (POSCAR2,
-FORCEDISP2, ...), optionally POSCAR (the primitive cell, same frame as the data; otherwise the
-primitive cell of POSCAR1 found by spglib) and dielectric.params (epsilon and the Born charges
-in the order of the atoms of that POSCAR). SPECIES: Mg O names the species when the POSCARs have
-no element line. Everything is rotated into the FOCEX frame (POSCARi lattice and positions,
-FORCEDISPi positions and forces, epsilon and Z as R^T T R); tasks relax ... collect are marked
-"provided" and run goes straight to focex and plots.
+Tasks (each is recorded in <PROJECT_DIR>/report.log and skipped once done):
+  relax      VASP relaxation of the reduced, oriented cell (ACCURACY: Accurate|Normal)
+  poscar0    CONTCAR -> Niggli reduction + orientation -> POSCAR0 (frame of every later step)
+  scf        SCF on POSCAR0, same INCAR (ISIF=1, NSW=0) and KPOINTS
+  dfpt       epsilon_inf and Born charges, only if the SCF shows a gap (DFPT: auto|on|off)
+  snaps      SC_SNAPS: supercell (SUPERCELL: SMALL|LARGE|9 integers) and snapshots; the
+             temperature is tuned to an rms displacement of DISP_TARGET
+  supercells one folder per snapshot (INCAR as the SCF + ISYM=0, commensurate KPOINTS)
+  vasp_snaps the supercell VASP runs, one after the other
+  collect    read_outcar.x -> FORCEDISP1, POSCAR1 = poscar_000; all runs checked
+  focex      the five *.params files, FOCEX (+ NOBORN and LASSO runs when needed)
+  plots      bvel.plt / all.plt / qha.plt filled in, makeplots.sh
+MODE: extract_only (DATA: <folder> with POSCAR1, FORCEDISP1, [POSCAR2, FORCEDISP2, ...],
+optionally POSCAR = primitive cell and dielectric.params, all in the frame of the data) rotates
+the data into the FOCEX frame and does focex and plots only.
 
-Every generated input can be replaced by a block in the instructions file, named after the
+Every generated input can be replaced by a block in the instruction file, named after the
 file:  INCAR ... INCAR_END  (also INCAR_relax, INCAR_scf, INCAR_dfpt, INCAR_snaps),
 KPOINTS, KPOINTS_snaps, cell_inp, supercell_inp, snaps_inp, structure_params,
 latdyn_params, kpbs_params, dielectric_params, default_params  (END_<NAME> also accepted,
@@ -59,7 +58,7 @@ os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 os.environ.setdefault('OMP_NUM_THREADS', os.environ.get('VASP_OMP_NUM_THREADS', '1'))
 import numpy as np
 
-AGENT = os.path.dirname(os.path.abspath(__file__))          # FOCEX/AGENT: this script, its manual
+AGENT = os.path.dirname(os.path.realpath(__file__))          # FOCEX/AGENT (realpath: works through a symlink)
 HERE = os.path.dirname(AGENT)                                # the FOCEX folder: templates, utility/
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
 
@@ -90,6 +89,9 @@ METALS = set('''Li Be Na Mg Al K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Rb Sr Y Zr N
 BLOCKS = ('incar', 'incar_relax', 'incar_scf', 'incar_dfpt', 'incar_snaps', 'kpoints',
           'kpoints_snaps', 'cell_inp', 'supercell_inp', 'snaps_inp', 'structure_params',
           'latdyn_params', 'kpbs_params', 'dielectric_params', 'default_params')
+INSTR = 'focex-agent-instructions.txt'    # default instruction file; its copy in the project folder
+OLD_INSTR = 'instructions.txt'            # name of that copy before 2026-10-23
+MODES = ('from_scratch', 'extract_only')
 TASKS = ('relax', 'poscar0', 'scf', 'dfpt', 'snaps', 'supercells', 'vasp_snaps', 'collect',
          'focex', 'plots')
 
@@ -129,6 +131,8 @@ def has_tag(lines, tag):
 
 
 def parse_instructions(path):
+    if not os.path.isfile(path):
+        sys.exit(f'instruction file {path} not found (default name {INSTR}; another name: --instr FILE)')
     raw = open(path).read()
     blocks, rest = split_blocks(raw)
     with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False) as fh:
@@ -174,6 +178,17 @@ def parse_instructions(path):
     fx['born_transpose'] = (keyword(rest, 'BORN_TRANSPOSE') or 'yes').lower() in ('yes', 'true', '1')
     fx['focex_x'] = os.path.expanduser(keyword(rest, 'FOCEX_X') or newest_focex())
     fx['data'] = os.path.expanduser(keyword(rest, 'DATA') or '')
+    mode = (keyword(rest, 'MODE') or ('extract_only' if fx['data'] else 'from_scratch')).lower()
+    if mode not in MODES:
+        sys.exit(f'MODE must be from_scratch or extract_only, not {mode!r}')
+    if mode == 'extract_only' and not fx['data']:
+        sys.exit('MODE: extract_only needs DATA: <folder with POSCAR1 and FORCEDISP1>')
+    if mode == 'from_scratch' and fx['data']:
+        sys.exit('DATA is read only with MODE: extract_only')
+    fx['mode'] = mode
+    # where the calculations go; relative to the folder of the instruction file
+    pdir = os.path.expanduser(keyword(rest, 'PROJECT_DIR') or vagent.slugify(fx['project']))
+    fx['project_dir'] = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(path)), pdir))
     fx['species'] = (keyword(rest, 'SPECIES') or '').split()
     fx['sc_snaps_x'] = os.path.expanduser(keyword(rest, 'SC_SNAPS_X') or '~/BIN/sc_snaps.x')
     fx['read_outcar_x'] = os.path.expanduser(keyword(rest, 'READ_OUTCAR_X') or '~/ALADYN/bin/read_outcar.x')
@@ -550,8 +565,13 @@ class Agent:
         self.rep = Report(self.proj)
         st = os.path.join(self.proj, 'state.json')
         self.state = json.load(open(st)) if os.path.isfile(st) else {}
-        self.inst, self.fx = parse_instructions(os.path.join(self.proj, 'instructions.txt'))
+        self.inst, self.fx = parse_instructions(self.instr_file())
         self.profile = vagent.load_profile(self.fx['profile'] or self.state.get('profile') or '')
+
+    def instr_file(self):
+        f = os.path.join(self.proj, INSTR)
+        return f if os.path.isfile(f) or not os.path.isfile(os.path.join(self.proj, OLD_INSTR)) \
+            else os.path.join(self.proj, OLD_INSTR)
 
     def save(self):
         write(os.path.join(self.proj, 'state.json'), json.dumps(self.state, indent=1, default=str))
@@ -858,6 +878,16 @@ class Agent:
                 f'{os.path.basename(d)}: {m}' for d, m in failed) + '\n  fix INCAR_snaps if needed, then ./resubmit_failed.sh'
         return True, f'all {len(dirs)} converged ({ran} run now)'
 
+    def write_workflow(self, poscar):
+        """run_workflow.sh: the batch preamble of the profile (or none), then 'focex-agent.py run'."""
+        g = self.gen(poscar, 'relax')
+        write(self.d('run_workflow.sh'), '#!/bin/bash\n' + g._run_sh_preamble('focex_agent') +
+              f'cd "{self.proj}"\n"{sys.executable}" "{os.path.abspath(__file__)}" run "{self.proj}"\n', 0o755)
+
+    def next_step(self):
+        sub = 'sbatch' if self.profile.get('slurm') else 'bash'
+        self.rep(f'next:  cd {self.proj} && {sub} run_workflow.sh')
+
     def write_resubmit(self, failed):
         g = self.gen(self.d('POSCAR.init'), 'relax')
         body = (g._run_sh_preamble('focex_retry') +
@@ -1140,6 +1170,8 @@ class Agent:
             if not ok:
                 self.state['failed'] = t
                 self.save()
+                self.rep(f'stopped at task {t}; to find out why and get a fix script:  '
+                         f'"{sys.executable}" "{os.path.join(AGENT, "diagnose.py")}" "{self.proj}"')
                 return False
             done[t] = now()
             self.state.pop('failed', None)
@@ -1149,26 +1181,28 @@ class Agent:
 
 # ── init ──────────────────────────────────────────────────────────────────────
 def init(args):
-    inst, fx = parse_instructions(args.instructions)
-    proj = os.path.abspath(vagent.slugify(fx['project']))
+    inst, fx = parse_instructions(args.instr)
+    proj = fx['project_dir']
     if os.path.exists(os.path.join(proj, 'state.json')) and not args.force:
         sys.exit(f'{proj} exists; use --force to start it again')
+    if fx['mode'] == 'from_scratch' and not os.path.isfile(args.coord):
+        sys.exit(f'coordinate file {args.coord} not found (default name POSCAR; another name: --coord FILE)')
     os.makedirs(proj, exist_ok=True)
-    shutil.copy(args.instructions, os.path.join(proj, 'instructions.txt'))
-    if fx['data']:
+    shutil.copy(args.instr, os.path.join(proj, INSTR))
+    if fx['mode'] == 'extract_only':
         return init_data(args, fx, proj)
-    shutil.copy(args.structure, os.path.join(proj, 'POSCAR.input'))
-    p = read_vasp_cell(args.structure)
+    shutil.copy(args.coord, os.path.join(proj, 'POSCAR.input'))
+    p = read_vasp_cell(args.coord)
     c = canonical_cell(p)
     write_poscar(os.path.join(proj, 'POSCAR.init'), f"{fx['project']} (Niggli-reduced, FOCEX frame)",
                  c['V'], p['species'], p['counts'], c['F'])
-    state = {'profile': args.profile or fx['profile'] or '', 'created': now()}
+    state = {'profile': args.profile or fx['profile'] or '', 'created': now(), 'mode': 'from_scratch'}
     write(os.path.join(proj, 'state.json'), json.dumps(state, indent=1))
     metal = all(s.split('_')[0] in METALS for s in p['species'])
     # relax and SCF share the mesh: coarse (1000 kpra), fine for metals/intermetallics
     dens = 'fine' if metal else 'coarse'
-    with open(os.path.join(proj, 'instructions.txt'), 'a') as fh:
-        if not re.search(r'^\s*(RELAX_)?KMESH(_DENSITY)?\s*:', open(args.instructions).read(), re.M | re.I):
+    with open(os.path.join(proj, INSTR), 'a') as fh:
+        if not re.search(r'^\s*(RELAX_)?KMESH(_DENSITY)?\s*:', open(args.instr).read(), re.M | re.I):
             fh.write(f'\n# added by focex-agent init: relax and SCF k-mesh ({"metal" if metal else "not a metal"})\n'
                      f'RELAX_KMESH_DENSITY: {dens}\nKMESH_DENSITY: {dens}\n')
     a = Agent(proj)
@@ -1184,12 +1218,10 @@ def init(args):
         if not os.path.isfile(fx[x]):
             rep(f'WARNING: {x.upper()} = {fx[x]} not found')
     a.write_relax()
-    g = a.gen(os.path.join(proj, 'POSCAR.init'), 'relax')
-    write(os.path.join(proj, 'run_workflow.sh'), '#!/bin/bash\n' + g._run_sh_preamble('focex_agent') +
-          f'cd "{proj}"\n{sys.executable} "{os.path.abspath(__file__)}" run "{proj}"\n', 0o755)
+    a.write_workflow(os.path.join(proj, 'POSCAR.init'))
     a.write_resubmit([])
-    rep(f'wrote {proj}: POSCAR.init, 01_relax/, run_workflow.sh  ->  cd {os.path.basename(proj)} && '
-        + ('sbatch' if a.profile.get('slurm') else 'bash') + ' run_workflow.sh')
+    a.rep(f'wrote {proj}: POSCAR.init, 01_relax/, run_workflow.sh')
+    a.next_step()
 
 
 def init_data(args, fx, proj):
@@ -1229,7 +1261,7 @@ def init_data(args, fx, proj):
         write_poscar(os.path.join(top, f'POSCAR{i}'), f'POSCAR{i} of {src}, rotated into the FOCEX frame',
                      q['A'] @ R, q['species'], q['counts'], q['F'])
         rotate_forcedisp(os.path.join(src, f'FORCEDISP{i}'), os.path.join(top, f'FORCEDISP{i}'), R)
-    state = {'profile': args.profile or fx['profile'] or '', 'created': now(), 'npairs': n,
+    state = {'profile': args.profile or fx['profile'] or '', 'created': now(), 'mode': 'extract_only', 'npairs': n,
              'data': os.path.abspath(src), 'rotation': R.tolist(), 'sg': c['sg']}
     diel = os.path.join(src, 'dielectric.params')
     if os.path.isfile(diel) and not fx['blocks'].get('dielectric_params'):
@@ -1259,30 +1291,35 @@ def init_data(args, fx, proj):
           + ('none' if np.allclose(R, np.eye(3), atol=1e-9) else np.array2string(R, precision=6).replace('\n', ''))
           + f'; lattice symmetrized by {dev:.1e} A'
           + ('; Born charges and epsilon from dielectric.params' if state.get('Z') else ''))
-    a.rep(f"then:  {sys.executable} {os.path.abspath(__file__)} run {proj}   (tasks focex, plots)")
+    a.write_workflow(os.path.join(proj, 'POSCAR0'))
+    a.rep(f'wrote {proj}: POSCAR0, 04_supercells/ (the rotated data), run_workflow.sh (tasks focex, plots)')
+    a.next_step()
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sp = ap.add_subparsers(dest='cmd', required=True)
-    a = sp.add_parser('init')
-    a.add_argument('-i', '--instructions', default='instructions.txt')
-    a.add_argument('-s', '--structure', default='POSCAR')
-    a.add_argument('--profile', default=None, help='VASP-Flow profile (workstation, rivanna, slurm)')
-    a.add_argument('--force', action='store_true')
-    r = sp.add_parser('run')
-    r.add_argument('project')
-    r.add_argument('--only', choices=TASKS)
-    r.add_argument('--retry-failed', action='store_true')
-    q = sp.add_parser('plots')
-    q.add_argument('project')
-    args = ap.parse_args()
-    if args.cmd == 'init':
-        init(args)
-    elif args.cmd == 'run':
-        sys.exit(0 if Agent(args.project).run(args.only, args.retry_failed) else 1)
-    else:
+    cmd = sys.argv[1] if len(sys.argv) > 1 else ''
+    if cmd in ('run', 'plots'):
+        ap = argparse.ArgumentParser(prog=f'focex-agent.py {cmd}')
+        ap.add_argument('project', help='the project folder (PROJECT_DIR)')
+        if cmd == 'run':
+            ap.add_argument('--only', choices=TASKS, help='do this one task again')
+            ap.add_argument('--retry-failed', action='store_true', help='rerun the failed supercell VASP runs')
+        args = ap.parse_args(sys.argv[2:])
+        if cmd == 'run':
+            sys.exit(0 if Agent(args.project).run(args.only, args.retry_failed) else 1)
         sys.exit(0 if Agent(args.project).run('plots') else 1)
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('--instr', default=INSTR, help=f'instruction file (default {INSTR})')
+    ap.add_argument('--coord', default='POSCAR', help='crystal structure, VASP format (default POSCAR; '
+                    'MODE: from_scratch only)')
+    ap.add_argument('--profile', default=None, help='VASP-Flow profile: workstation, rivanna, slurm, or the '
+                    'name of your own ~/VASP-Flow/profiles/<name>.json (default: PROFILE in the instruction '
+                    'file, else no batch system)')
+    ap.add_argument('--force', action='store_true', help='set up an existing project folder again')
+    ap.add_argument('-i', '--instructions', dest='instr', help=argparse.SUPPRESS)   # names before 2026-10-23
+    ap.add_argument('-s', '--structure', dest='coord', help=argparse.SUPPRESS)
+    argv = sys.argv[2:] if cmd in ('init', 'setup') else sys.argv[1:]
+    init(ap.parse_args(argv))
 
 
 if __name__ == '__main__':

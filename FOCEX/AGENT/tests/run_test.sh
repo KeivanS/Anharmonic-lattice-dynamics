@@ -24,7 +24,7 @@ A = (M @ P) @ q.T
 open('POSCAR', 'w').write('Ar fcc (nearest-neighbour LJ), skewed and rotated\n1.0\n' +
     ''.join('  %.12f %.12f %.12f\n' % tuple(v) for v in A) + 'Ar\n1\nDirect\n  0.1 0.2 0.3\n')
 EOF
-cat > instructions.txt <<EOF
+cat > focex-agent-instructions.txt <<EOF
 Project: ArLJ
 RANKS: 1 1 1 0 0 0 0 0
 RANGE: 6 2 0 0 0 0 0
@@ -36,7 +36,7 @@ SC_SNAPS_X: $SC_SNAPS_X
 READ_OUTCAR_X: $READ_OUTCAR_X
 EOF
 export VASP_STD="$W/fake_vasp" MPI_NP=1
-"$PY" "$HERE/../focex-agent.py" init -i instructions.txt -s POSCAR --profile workstation --force
+"$PY" "$HERE/../focex-agent.py" --profile workstation --force   # focex-agent-instructions.txt, POSCAR
 printf '   TITEL  = PAW_PBE Ar 07Sep2000 (dummy for the fake-VASP test)\n   ENMAX  =  266.000; ENMIN  =  199.500 eV\n   ZVAL   =    8.000    mass and valenz\n' > ArLJ/POTCAR
 "$PY" "$HERE/../focex-agent.py" run "$W/ArLJ" || echo "focex-agent run returned $? (see $W/ArLJ/report.log)"
 grep -E "=== .* -- (OK|FAILED)" ArLJ/report.log | sed 's/^\[[^]]*\] //' | cut -c1-160

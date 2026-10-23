@@ -7,6 +7,17 @@ For installation and usage instructions, please read our [documentation](https:/
 
 If you have any queries and want to know more about our code, please visit [our forum](https://matsci.org/c/aladyn/57) hosted at the MATSCI Community Discourse.
 
+### The FOCEX agent: from a crystal structure to phonons
+
+[`FOCEX/AGENT/focex-agent.py`](FOCEX/AGENT) runs the whole FOCEX workflow from one short instruction file:
+
+- **from_scratch**: from a POSCAR, it runs the VASP relaxation, SCF and Born charges; the SC-SNAPS snapshots; one VASP run per snapshot; the force collection; and FOCEX. It then plots the dispersion, density of states, Grüneisen parameters, elastic constants and thermal expansion.
+- **extract_only**: from existing supercell forces (`POSCAR1`, `FORCEDISP1`), it rotates the data into the FOCEX frame and runs FOCEX and the plots.
+
+Every step is checked and logged, and the workflow can be restarted at any point; it runs on a workstation or on a SLURM cluster. When a run stops, `FOCEX/AGENT/diagnose.py` finds where and why, and writes a script that repairs and resubmits it.
+
+The agent uses [VASP-Flow](https://github.com/KeivanS/VASP-Flow) for the VASP inputs and batch scripts; no prior experience with it is needed. The manual is [`FOCEX/AGENT/focexagent_manual.pdf`](FOCEX/AGENT/focexagent_manual.pdf); the same text is on [Read the Docs](https://aladyn.readthedocs.io/en/latest/runfocexagent.html). It covers installation, the two modes, every keyword, and the diagnosis.
+
 ## For Developers
 
 ### Code contribution

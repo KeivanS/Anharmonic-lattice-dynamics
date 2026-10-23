@@ -8,3 +8,4 @@ docs/build
 FOCEX/Makefile.old
 FOCEX/FOCEX.tws
 .DS_Store
+__pycache__/

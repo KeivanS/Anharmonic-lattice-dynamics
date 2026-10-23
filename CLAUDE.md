@@ -78,11 +78,29 @@ outputs differ for no reason.
 
 POSCAR -> VASP relax/SCF/DFPT -> SC_SNAPS -> supercell VASP runs -> FORCEDISP1 -> FOCEX ->
 plots, restartable (`state.json`, `report.log`). Everything is in `FOCEX/AGENT/`: the script,
-`focexagent_manual.tex/.pdf` (same content as `docs/source/runfocexagent.rst`; keep both in step),
-`focex-agent.example.txt`, `tests/` (argon, fake VASP). `FOCEX/focex-agent.py` is a forwarder
-for old run scripts. The script finds FOCEX/ (templates, utility/) as the parent of its folder. Run it with `~/vaspenv/bin/python` (needs
-numpy, spglib, pymatgen; Homebrew python3 has none of them).
+`diagnose.py`, `focexagent_manual.tex/.pdf` (same content as `docs/source/runfocexagent.rst`: change
+both, rebuild both, Sphinx at zero warnings), `focex-agent-instructions.txt` (the template),
+`tests/` (argon, fake VASP). `FOCEX/focex-agent.py` is a forwarder for old run scripts. The script
+finds FOCEX/ (templates, utility/) as the parent of its folder (realpath, so symlinks work).
+Run it with `~/vaspenv/bin/python` (needs numpy, spglib, pymatgen; Homebrew python3 has none).
 
+- Command line (2026-10-23, user's spec): `focex-agent.py [--instr FILE] [--coord FILE]
+  [--profile NAME] [--force]` sets up; defaults `focex-agent-instructions.txt` (not
+  instructions.txt: VASP-Flow uses that name) and `POSCAR`. Old `init -i/-s` still accepted.
+  `PROJECT_DIR:` (relative to the instruction file; default the Project name) is where the run
+  goes; the user then submits `run_workflow.sh` from there (both modes). `run`/`plots` subcommands
+  are what the scripts call. The project's copy is `focex-agent-instructions.txt` (old projects:
+  `instructions.txt`, still read).
+- Modes (user's labels): `MODE: from_scratch | extract_only` (extract_only needs `DATA:`; DATA
+  without MODE implies extract_only).
+- `diagnose.py <PROJECT_DIR>...`: read-only; task status (done/FAILED/INTERRUPTED/not reached,
+  running via squeue or ps, not started); VASP causes from VASP-Flow's `vasp_diagnose.py`
+  (`error_lines`, `match_pattern`, `CAUSE_TEXT`, split out of its `classify` 2026-10-23; VASP-Flow
+  diagnosis on 40 materials identical before/after), FOCEX stops by message (`FOCEX_PAT`).
+  Writes diagnosis/report.txt + fix_it.sh (guard: nothing running, state.json/report.log
+  unchanged; backup; INCAR tags into the failed runs' INCARs and the instruction block;
+  resubmit). Held for review: unknown cause, fix already in the INCAR, new supercell. Tested:
+  ZnO copy (ws_outside, held), argon with two broken snapshots (fixed and finished).
 - Imports VASP-Flow (`~/VASP-Flow` or `$VASP_FLOW_DIR`): `InstructionParser` for the VASP
   keywords, `VASPInputGenerator` for INCAR/KPOINTS/MAGMOM/GGA+U/KPAR-NCORE/k-path/DFPT,
   `vasp-agent.py` for POTCAR and profiles. Static INCARs are made from VASP-Flow's

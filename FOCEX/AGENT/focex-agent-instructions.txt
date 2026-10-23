@@ -1,11 +1,18 @@
-# focex-agent instructions -- example (copy to instructions.txt and edit)
+# focex-agent instruction file: copy it next to your POSCAR and edit it for your material.
 #
-#   ~/vaspenv/bin/python FOCEX/focex-agent.py init -i instructions.txt -s POSCAR --profile rivanna
-#   cd <Project> && sbatch run_workflow.sh          # or: bash run_workflow.sh on a workstation
+#   source ~/vaspenv/bin/activate
+#   python ~/PROJECTS/Anharmonic-lattice-dynamics/FOCEX/AGENT/focex-agent.py --profile rivanna
+#   cd <PROJECT_DIR> && sbatch run_workflow.sh          # bash run_workflow.sh without SLURM
 #
-# Only Project and RANKS are required; everything else has a default.
+# Only Project and RANKS are required; every other line shows its default and can be left out.
+# Lines starting with # are comments.
 
 Project: AgCrP2S6
+# PROJECT_DIR: AgCrP2S6     # folder of the calculations, relative to this file (default: the Project name)
+# MODE: from_scratch        # from_scratch: POSCAR -> VASP -> snapshots -> FOCEX
+#                           # extract_only: FOCEX on existing POSCAR1/FORCEDISP1, needs DATA
+# DATA: ../MgO_data         # extract_only: folder with POSCAR1, FORCEDISP1 [, POSCAR, dielectric.params]
+# SPECIES: Mg O             # extract_only: element names, if the POSCARs have no element line
 
 # ── force constants (REQUIRED: the ranks; the ranges default to 6 2 1 0 0 0 0) ──
 RANKS: 1 1 0 0 0 0 0 0      # harmonic; 1 1 1 0 ... adds cubic, 1 1 1 1 ... cubic and quartic
@@ -15,11 +22,11 @@ RANGE: 6 2 1 0 0 0 0        # neighbour shells for ranks 2..8, the same for ever
 # ── DFT (VASP-Flow keywords: FUNCTIONAL, MAGMOM, GGA_U, MPI, ENCUT, KMESH_DENSITY ...) ──
 FUNCTIONAL: PBEsol
 MAGMOM: Cr=3.0
-MPI: 40
+MPI: 40                     # MPI ranks for VASP
 # ACCURACY: Accurate        # Accurate: ENCUT 600, EDIFF 1E-7, EDIFFG -0.001, PREC Accurate
 #                           # Normal:   ENCUT 450, EDIFF 1E-6, EDIFFG -0.003, PREC Normal
-# DFPT: auto                # auto = only if the SCF shows a gap | on | off
-# BORN_TRANSPOSE: yes       # VASP prints Z*(field, displacement); FOCEX reads Z(displacement, field)
+# DFPT: auto                # Born charges and epsilon: auto = only if the SCF shows a gap | on | off
+# PROFILE: rivanna          # VASP-Flow profile, same as --profile
 
 # ── snapshots (SC_SNAPS) ──
 # SUPERCELL: SMALL          # SMALL: >= 10 A, <= 100 atoms;  LARGE: >= 14 A, <= 300 atoms;
@@ -42,7 +49,7 @@ MPI: 40
 
 # ── any generated file can be replaced or amended by a block named after it ──
 # INCAR blocks are merged tag by tag (INCAR = every step; INCAR_relax, INCAR_scf,
-# INCAR_dfpt, INCAR_snaps = one step); the others are written verbatim:
+# INCAR_dfpt, INCAR_snaps = one step); the others replace the whole file:
 # KPOINTS, KPOINTS_snaps, cell_inp, supercell_inp, snaps_inp, structure_params,
 # latdyn_params, kpbs_params, dielectric_params, default_params.
 INCAR_snaps
