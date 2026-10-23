@@ -735,9 +735,14 @@ conductivity :math:`\kappa_C`. The conductivity THERMACOND reports is thus made 
 
 .. note::
 
-   :math:`\kappa_C` uses :math:`\Gamma_s = 1/\tau_s` with the lifetimes of the RTA; the factor
-   :math:`2\pi` between that rate and the angular linewidth of the Lorentzian in
-   Eq. :eq:`kappa_wigner` has not been verified yet. It affects :math:`\kappa_C` only.
+   **Units of the linewidth.** :math:`\Gamma_s` in Eq. :eq:`kappa_wigner` is the full width at
+   half maximum in angular frequency, :math:`\Gamma_s = 2\Sigma''_s = 1/\tau_s`, with
+   :math:`\omega` in rad/s; the half width is :math:`\Sigma'' = 1/(2\tau)`. In cycles (THz) the
+   same widths are :math:`\Gamma/2\pi = 1/(2\pi\tau)` and :math:`\Sigma''/2\pi = 1/(4\pi\tau)`.
+   THERMACOND takes :math:`\tau_s` from the RTA, so that the :math:`s = s'` terms of
+   Eq. :eq:`kappa_wigner`, :math:`C_s v_s^2/\Gamma_s`, are exactly the RTA conductivity
+   (checked: Ge, :math:`\kappa_P/\kappa_{RTA} = 1.01` on an 8x8x8 mesh, the difference coming
+   from degenerate modes). :math:`\kappa_C` has not yet been compared with an independent code.
 
 
 .. [Ref] G. Leibfried and W. Ludwig, in Solid State Physics, edited by F. Seitz and D. Turnbull (Academic, New York, 1961), Vol. 12.

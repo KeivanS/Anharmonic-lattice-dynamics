@@ -198,8 +198,11 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
     Mauri 2019): velocity operator (dD)_ss'/(w_s+w_s') + atom-position-gauge term
     i(w_s^2-w_s'^2)<tau>. kappa_P (degenerate pairs, trace form) is basis-independent and
     isotropic for Ge; Ge kappa_P/RTA = 1.13, 1.03, 1.01 on 4^3, 6^3, 8^3. Gamma_s = 1/tau taken
-    as in calculate_RTA_distributionfunction; its 2pi convention vs the angular W of the
-    Lorentzian (matters for kappa_C only) is not verified.
+    as in calculate_RTA_distributionfunction: the FWHM in angular units (= 2 Sigma''), omega in
+    rad/s -- verified 2026-10-23: the s=s' terms give C v^2/Gamma = RTA (kappa_P/RTA 1.01, Ge 8^3),
+    and at X (Ge 8^3, 300 K) RTA 1/tau vs job-1 2 Im Sigma = 0.69/0.22/0.75 per mode (Lorentzian
+    eta = 10 vs tetrahedra; no uniform 2 or 2pi). kappa_C not yet compared with Simoncelli or an
+    independent code (user: later).
   - distribution_F.dat: F per IBZ point and mode, RTA and final, every T.
   - IBZ: get_weights builds stars modulo G (one star had been split over several "IBZ" points:
     Ge fcc 4^3 11 -> 8, 6^3 26 -> 16) and takes as representative the WS-folded member with the
