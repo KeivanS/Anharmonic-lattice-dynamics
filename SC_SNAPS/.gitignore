@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Fortran build products
+*.mod
+*.o
+sc_snaps.x
+
+# sc_snaps.x run output
+poscar_[0-9]*
+snapshots.xyz
+log.dat
+freqs.dat
+modes.dat
+SC.xyz
+
+# macOS
+.DS_Store
