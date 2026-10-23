@@ -94,7 +94,11 @@ numpy, spglib, pymatgen; Homebrew python3 has none of them).
   Verified: Ge example gives byte-identical fc2/fc3/mech.dat to a plain FOCEX run.
 - Supercells are multiples of the conventional cell. A skewed HNF supercell (Ge, 60 atoms)
   made FOCEX stop in `set_dynmat_std` with `R+tp-t not inside!` (default FC2 range reaches
-  outside the supercell's WS cell) -- a FOCEX issue still open.
+  outside the supercell's WS cell) -- a FOCEX issue still open. Same stop on ZnO 4x3x2 (2026-10-23):
+  setup_FC2_in_supercell keeps a group if one member is inside the WS cell, set_dynmat_std stops
+  if any member is outside; a supercell without the lattice's symmetry splits groups (the 8.3 A
+  group: +-2a1 inside, +-2a2 outside). The agent had picked 4x3x2 over 3x3x2 by 8e-13 A in face
+  distance; choose_supercell now rounds it to 1e-4 A and then takes the fewest atoms.
 - Born charges are transposed from VASP's (field, displacement) to FOCEX's
   `charge(displacement, field)` (`aux_na.f90` contracts q with the 2nd index). The VASP
   convention is from memory, not checked against VASP docs: `BORN_TRANSPOSE` switches it.

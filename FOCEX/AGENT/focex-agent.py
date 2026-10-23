@@ -409,7 +409,8 @@ def choose_supercell(c, nprim, kind):
             continue
         L = np.diag(m) @ c['C']
         d = face_distance(L)
-        key = (d < D - 1e-6, n if d >= D - 1e-6 else -d, -d, max(m) - min(m))
+        dr = round(d, 4)               # equal distances must tie (ZnO 4x3x2 beat 3x3x2 by 8e-13 A)
+        key = (d < D - 1e-6, n if d >= D - 1e-6 else -dr, -dr, n, max(m) - min(m))
         if best is None or key < best[0]:
             best = (key, m, d, L)
     if best is None:
