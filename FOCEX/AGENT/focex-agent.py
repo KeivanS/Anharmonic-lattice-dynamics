@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""focex-agent.py (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
+"""focex-agent.py 1.0 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
 structure (MODE: from_scratch, VASP + SC_SNAPS + FOCEX) or from existing force-displacement data
 (MODE: extract_only, FOCEX only).  Manual: FOCEX/AGENT/focexagent_manual.pdf
 
@@ -58,6 +58,7 @@ os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 os.environ.setdefault('OMP_NUM_THREADS', os.environ.get('VASP_OMP_NUM_THREADS', '1'))
 import numpy as np
 
+__version__ = '1.0'
 AGENT = os.path.dirname(os.path.realpath(__file__))          # FOCEX/AGENT (realpath: works through a symlink)
 HERE = os.path.dirname(AGENT)                                # the FOCEX folder: templates, utility/
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
@@ -1321,6 +1322,7 @@ def main():
                     'name of your own ~/VASP-Flow/profiles/<name>.json (default: PROFILE in the instruction '
                     'file, else no batch system)')
     ap.add_argument('--force', action='store_true', help='set up an existing project folder again')
+    ap.add_argument('--version', action='version', version=f'focex-agent {__version__}')
     ap.add_argument('-i', '--instructions', dest='instr', help=argparse.SUPPRESS)   # names before 2026-10-23
     ap.add_argument('-s', '--structure', dest='coord', help=argparse.SUPPRESS)
     argv = sys.argv[2:] if cmd in ('init', 'setup') else sys.argv[1:]

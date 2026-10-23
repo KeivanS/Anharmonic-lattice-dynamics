@@ -3,7 +3,7 @@
 FOCEX agent: from a crystal structure to phonons
 ================================================
 
-The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
+Version 1.0 (2026-10-23, with FOCEX 8.19). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
 instruction file and ``diagnose.py`` are in ``FOCEX/AGENT``.
 
 What the FOCEX agent does
@@ -714,3 +714,11 @@ Thermal conductivity
 THERMACOND reads ``lat_fc.dat``, ``fc2.dat`` and ``fc3.dat`` from ``05_focex``, so fit at least the
 cubic force constants (``RANKS: 1 1 1 0 0 0 0 0``). The agent does not run it: in ``05_focex`` set
 lines 8--13 of ``latdyn.params`` (see :doc:`runthermacond`) and run ``tcond-2.0.x`` there.
+
+Version history
+---------------
+
+1.0
+   2026-10-23, with FOCEX 8.19: modes from_scratch and extract_only; instruction file
+   ``focex-agent-instructions.txt``, ``--instr``, ``--coord``, ``PROJECT_DIR``; ``diagnose.py``;
+   this manual.

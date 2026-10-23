@@ -24,7 +24,9 @@ source folder). The top-level `make` builds ANFOMOD, FOCEX, FOCEX/utility, SCOP8
 links the Python tools; SCOP8 does not compile (`VA_math.f95:7416` calls `dotproduct(...)`, which
 does not exist -- geometry.f95 has only the `.dot.` operator; from 07f9f456, YuanLiang21120,
 2025-04-02); it is built last, so make builds the rest and then stops there (user: ignore SCOP8 for now).
-Old utility builds were kept in `~/ALADYN/bin/old_2026-10-23/`. Tag focex-8.19 approved 2026-10-23.
+Old utility builds were kept in `~/ALADYN/bin/old_2026-10-23/`. Tags (2026-10-23, approved): focex-8.19; the agent is
+versioned separately, focex-agent-1.0 (`__version__` in focex-agent.py and diagnose.py, manual title and
+its Version history section); VASP-Flow v2.6 (at ef92326) and v2.7.
 `FOCEX/Makefile` does **not** include the top-level `make.inc`: it hardcodes
 `FF=gfortran`, `FLAGS=-O2 -fcheck=all`, `exe=focex-$(ver).x`, `DESTDIR ?= ~/ALADYN/bin`. It has
 CRLF line endings. The utility programs are separate

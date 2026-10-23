@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""diagnose.py -- where and why a focex-agent project stopped, and a script that fixes it.
+"""diagnose.py 1.0 -- where and why a focex-agent project stopped, and a script that fixes it.
 
     diagnose.py <PROJECT_DIR> [<PROJECT_DIR> ...]
 
@@ -40,6 +40,7 @@ import subprocess
 import sys
 
 sys.dont_write_bytecode = True
+__version__ = '1.0'
 AGENT = os.path.dirname(os.path.realpath(__file__))
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
 TASKS = ('relax', 'poscar0', 'scf', 'dfpt', 'snaps', 'supercells', 'vasp_snaps', 'collect',
@@ -523,6 +524,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0], epilog=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('projects', nargs='+', help='project folders (PROJECT_DIR of the instruction file)')
+    ap.add_argument('--version', action='version', version=f'diagnose.py {__version__}')
     args = ap.parse_args()
     for p in args.projects:
         pr = Project(p)
