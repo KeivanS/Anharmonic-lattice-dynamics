@@ -584,28 +584,161 @@ where the heat capacity per mode is:
    c_{k \lambda}(T) = k_B \frac{x_{k \lambda}^2}{\sinh^2 x_{k \lambda}}, \quad x_{k \lambda} = \frac{\hbar \omega_{\lambda}(k)}{2 k_B T}.
 
 
-Phonon Boltzmann Transport Equation
------------------------------------
-The lattice thermal conductivity is calculated by using the phonon Boltzmann transport equation (BTE). In steady state, the linear phonon Boltzmann transport
-equations: 
+Lattice thermal conductivity (THERMACOND)
+-----------------------------------------
+
+THERMACOND computes the lattice thermal conductivity from the harmonic and cubic force
+constants of FOCEX by solving the linearized phonon Boltzmann transport equation (BTE) over the
+irreducible wedge of the Brillouin zone, with the energy-conserving delta functions integrated by
+the tetrahedron method [Sadeghi2025]_. A phonon state :math:`k = (\lambda, \mathbf k)` is a
+branch :math:`\lambda` at wave vector :math:`\mathbf k`, with frequency :math:`\omega_k`, group
+velocity :math:`\mathbf v_k` and equilibrium (Bose-Einstein) occupation :math:`n^0_k`.
+
+**The linearized BTE.** In a small temperature gradient the occupation is
+:math:`n_k = n^0_k + n^1_k`, and in the steady state the drift balances the collisions:
+
+.. math::
+   :label: lbte
+
+   -\mathbf v_k \cdot \nabla T \, \frac{\partial n^0_k}{\partial T}
+   = -\frac{\partial n^1_k}{\partial t}\bigg|_{coll} = \sum_{k'} C_{kk'} \, n^1_{k'} .
+
+Writing :math:`n^1_k = n^0_k (n^0_k + 1)\, \psi_k`, the collision term is
+
+.. math::
+   :label: collision
+
+   \sum_{k'} C_{kk'} n^1_{k'} = \sum_{k'k''} \Big[ P^{k''}_{kk'} (\psi_k + \psi_{k'} - \psi_{k''})
+   + \tfrac{1}{2} P^{k'k''}_k (\psi_k - \psi_{k'} - \psi_{k''}) \Big]
+   + \sum_{k'} P^{k'}_k (\psi_k - \psi_{k'}) ,
+
+with the rates of the coalescence and decay three-phonon processes and of the mass-disorder
+(isotope) scattering given by Fermi's golden rule,
 
 .. math::
 
-       -\mathbf{v_{k}}.\nabla T\frac{\partial n_{k }^{0} }{\partial T} =-\frac{\partial n_{k}^{1}}{\partial t}\bigg|_{coll}=\sum_{{k}'}C_{k{k}'}n_{{k}'}^{1}
+   \begin{aligned}
+   P^{k''}_{kk'} &= 2\pi\, n^0_k\, n^0_{k'} (n^0_{k''} + 1)\, |V_3(-k,-k',k'')|^2\,
+                    \delta(\omega_k + \omega_{k'} - \omega_{k''}) ,\\
+   P^{k'k''}_k   &= 2\pi\, n^0_k (n^0_{k'} + 1)(n^0_{k''} + 1)\, |V_3(-k,k',k'')|^2\,
+                    \delta(\omega_k - \omega_{k'} - \omega_{k''}) ,\\
+   P^{k'}_k      &= \frac{\pi}{2}\, \omega_k \omega_{k'}\, n^0_k (n^0_{k'} + 1)
+                    \Big( \sum_\tau g_\tau |\mathbf e^*_{\tau k} \cdot \mathbf e_{\tau k'}|^2 \Big)\,
+                    \delta(\omega_k - \omega_{k'}) ,
+   \end{aligned}
 
-where :math:`\mathbf{v}_{k}` is the phonon velocity, and a phonon state :math:`k=(\lambda,\mathbf{k})` comprises both a phonon mode index :math:`\lambda` and a wave vector :math:`\mathbf{k}`.
+where :math:`V_3` is the three-phonon matrix element built from the cubic force constants and
+the eigenvectors, and :math:`g_\tau = \sum_i f_{\tau,i} (1 - M_{\tau,i}/M_{\tau,avg})^2` the mass
+variance of the isotopes of atom :math:`\tau`. (THERMACOND 2.0 does not include the isotope term
+yet: the conductivity jobs stop if it is requested on line 11 of ``latdyn.params``.)
 
-
-Iterative
-^^^^^^^^^
-Direct
-^^^^^^
+**Relaxation-time approximation (RTA).** If every mode but :math:`k` is kept at equilibrium
+(:math:`\psi_{k'} = \psi_{k''} = 0`), the collision matrix is diagonal,
+:math:`\partial n^1_k / \partial t|_{coll} = Q_k \psi_k` with
 
 .. math::
-          \begin{aligned}
-          \mathbf{F}_{{k}^{*}} = \sum_{{k}'^{*}} M_{k^{*}{k}'^{*}} \mathbf{F}^{0}_{{k}'^{*}} \\
-                    M_{k^{*}{k}'^{*}}=\sum_{{k}''} C_{k^{*}{k}''}\mathcal{S}_{{k}''{k}'^{*}}
-           \end{aligned}
+
+   Q_k = \sum_{k'k''} \Big( P^{k''}_{kk'} + \tfrac{1}{2} P^{k'k''}_k \Big) + \sum_{k'} P^{k'}_k ,
+   \qquad \tau_k = \frac{n^0_k (n^0_k + 1)}{Q_k} ,
+
+and the conductivity is
+
+.. math::
+   :label: kappa_rta
+
+   \kappa^{\alpha\beta}_{RTA} = \frac{1}{\Omega N_k} \sum_k C_k \, v^\alpha_k v^\beta_k \, \tau_k ,
+   \qquad C_k = \hbar\omega_k \frac{\partial n^0_k}{\partial T} ,
+
+with :math:`\Omega` the volume of the primitive cell and :math:`N_k` the number of k-points.
+The RTA treats the momentum-conserving normal processes as resistive and so usually
+underestimates :math:`\kappa`; it is accurate when Umklapp and impurity scattering dominate.
+
+**Full solution.** With :math:`\psi_k = \sum_\alpha F_{k\alpha}\, \partial T/\partial x_\alpha`,
+Eq. :eq:`lbte` becomes a linear system for the distribution :math:`\mathbf F_k`. Only the
+irreducible points :math:`k^*` are kept: a vector at :math:`k = \mathcal S\, k^*` is obtained by
+the point-group operation :math:`\mathcal S`, :math:`\mathbf v_k = \mathcal S \mathbf v_{k^*}`,
+:math:`\mathbf F_k = \mathcal S \mathbf F_{k^*}`, so that
+
+.. math::
+   :label: bte_ibz
+
+   F^\alpha_{k^*} = F^{0\alpha}_{k^*} + \frac{1}{Q_{k^*}} \sum_{k'k''} \Big[
+   P^{k''}_{k^*k'} \big( \mathcal S^{\alpha\beta}_{k''} F^\beta_{k''^*} - \mathcal S^{\alpha\beta}_{k'} F^\beta_{k'^*} \big)
+   + \tfrac{1}{2} P^{k'k''}_{k^*} \big( \mathcal S^{\alpha\beta}_{k'} F^\beta_{k'^*} + \mathcal S^{\alpha\beta}_{k''} F^\beta_{k''^*} \big) \Big]
+   + \frac{1}{Q_{k^*}} \sum_{k'} P^{k'}_{k^*}\, \mathcal S^{\alpha\beta}_{k'} F^\beta_{k'^*} ,
+   \qquad
+   F^{0\alpha}_{k^*} = \frac{\hbar\omega_{k^*} n^0_{k^*} (n^0_{k^*} + 1)\, v^\alpha_{k^*}}{k_B T^2 Q_{k^*}} ,
+
+and
+
+.. math::
+   :label: kappa_full
+
+   \kappa^{\alpha\beta} = \frac{1}{N_k \Omega} \sum_{k^*, \mathcal S} \hbar\omega_{k^*}\, n^0_{k^*} (n^0_{k^*} + 1)\,
+   \mathcal S^{\alpha\alpha'} v^{\alpha'}_{k^*} \, \mathcal S^{\beta\beta'} F^{\beta'}_{k^*} .
+
+:math:`\mathbf F^0` alone gives back the RTA. THERMACOND solves Eq. :eq:`bte_ibz` in two ways
+(``latdyn.params`` line 8, :doc:`runthermacond`):
+
+* **iterative** (job 3) [Omini1995]_ [Broido2007]_: starting from :math:`\mathbf F^0`, the
+  right-hand side is evaluated and substituted again until the conductivity changes by less than
+  a tolerance. It needs no stored collision matrix, but its convergence is not guaranteed in
+  general [Fugallo2013]_ and it needs dense meshes;
+* **direct** (job 2): the collision matrix projected onto the irreducible wedge,
+  :math:`M_{k^*k'^*} = \sum_{k''} C_{k^*k''} \mathcal S_{k''k'^*}`, a square matrix of the number
+  of irreducible points times the number of modes, gives
+  :math:`\mathbf v_{k^*} \partial n^0_{k^*}/\partial T = \sum_{k'^*} M_{k^*k'^*} \mathbf F_{k'^*}`,
+  solved by singular value decomposition or conjugate gradients.
+
+**Degenerate modes.** Eigenvectors of degenerate modes are defined only up to a rotation within
+their degenerate set, so a result that depends on one velocity per mode is not unique there.
+THERMACOND averages :math:`|V_3|^2` and the scattering rates over each degenerate set, so that all
+partners of a set have the same lifetime, and takes the conductivity of the set from the trace
+over the set of the velocity matrix (the form of :math:`\kappa_P` below), which does not depend on
+the choice of eigenvectors.
+
+**Three contributions to** :math:`\kappa`. Simoncelli, Marzari and Mauri [Simoncelli2019]_ derived
+from the Wigner phase-space distribution a conductivity that, besides the particle-like
+propagation of phonons, contains the wave-like tunnelling between pairs of modes at the same
+wave vector. In the RTA it reads
+
+.. math::
+   :label: kappa_wigner
+
+   \kappa^{\alpha\beta} = \frac{1}{\Omega N_k} \sum_{\mathbf k} \sum_{s,s'}
+   \frac{\omega_s + \omega_{s'}}{4} \left( \frac{C_s}{\omega_s} + \frac{C_{s'}}{\omega_{s'}} \right)
+   \mathrm{Re}\big( V^\alpha_{ss'} V^\beta_{s's} \big)\,
+   \frac{\tfrac{1}{2}(\Gamma_s + \Gamma_{s'})}{(\omega_s - \omega_{s'})^2 + \tfrac{1}{4}(\Gamma_s + \Gamma_{s'})^2} ,
+
+with :math:`s, s'` the branches at :math:`\mathbf k`, :math:`\Gamma_s = 1/\tau_s` the linewidths
+and :math:`V_{ss'} = \langle e_s | \partial D / \partial \mathbf k | e_{s'} \rangle / (\omega_s + \omega_{s'})`
+the velocity operator, whose diagonal elements are the group velocities. The terms with
+:math:`s = s'` (and pairs of degenerate modes) give the populations conductivity
+:math:`\kappa_P`, equal to the RTA of Eq. :eq:`kappa_rta`; the others give the coherences
+conductivity :math:`\kappa_C`. The conductivity THERMACOND reports is thus made of three parts:
+
+.. math::
+
+   \kappa = \underbrace{\kappa_P}_{\text{RTA}}
+          + \underbrace{(\kappa_{full} - \kappa_{RTA})}_{\text{beyond the RTA}}
+          + \underbrace{\kappa_C}_{\text{coherences}} ,
+
+* :math:`\kappa_P`, the particle-like conductivity in the RTA (column "RTA" of
+  ``kappa_vs_T.dat`` and :math:`\kappa_P` of ``kappa_wigner.dat``);
+* the correction of the full solution of the BTE, iterative or direct, over the RTA: the
+  collective response to momentum-conserving normal processes, large when they dominate
+  (``kappa_vs_T.dat`` gives :math:`\kappa_P` plus this correction);
+* :math:`\kappa_C`, the wave-like part inherited from the Wigner formulation (``kappa_wigner.dat``),
+  evaluated with the RTA linewidths. It is negligible in simple crystals with well-separated
+  branches and becomes important in complex, strongly anharmonic or low-conductivity materials,
+  where the linewidths are comparable to the spacing of the branches.
+
+.. note::
+
+   :math:`\kappa_C` uses :math:`\Gamma_s = 1/\tau_s` with the lifetimes of the RTA; the factor
+   :math:`2\pi` between that rate and the angular linewidth of the Lorentzian in
+   Eq. :eq:`kappa_wigner` has not been verified yet. It affects :math:`\kappa_C` only.
+
 
 .. [Ref] G. Leibfried and W. Ludwig, in Solid State Physics, edited by F. Seitz and D. Turnbull (Academic, New York, 1961), Vol. 12.
 
@@ -614,3 +747,13 @@ Direct
 .. [Esfarjani2018] Ohno, K., Esfarjani, K., Kawazoe, Y., 2018. Computational materials science: From Ab Initio to Monte Carlo methods. 2nd ed., Springer Series in Solid-State Sciences, Berlin Heidelberg.
 
 .. [Wallace1998] Wallace, D.C., 1998. Thermodynamics of Crystals. Dover Publications, New York.
+
+.. [Sadeghi2025] S. Nayeb Sadeghi, S. Lee and K. Esfarjani, THERMACOND, a code to compute lattice thermal conductivity from harmonic and anharmonic force constants, npj Comput. Mater. 11, 303 (2025). `doi:10.1038/s41524-025-01673-8 <https://doi.org/10.1038/s41524-025-01673-8>`__
+
+.. [Simoncelli2019] M. Simoncelli, N. Marzari and F. Mauri, Unified theory of thermal transport in crystals and glasses, Nat. Phys. 15, 809 (2019).
+
+.. [Omini1995] M. Omini and A. Sparavigna, An iterative approach to the phonon Boltzmann equation in the theory of thermal conductivity, Physica B 212, 101 (1995).
+
+.. [Broido2007] D. A. Broido, M. Malorny, G. Birner, N. Mingo and D. A. Stewart, Intrinsic lattice thermal conductivity of semiconductors from first principles, Appl. Phys. Lett. 91, 231922 (2007).
+
+.. [Fugallo2013] G. Fugallo, M. Lazzeri, L. Paulatto and F. Mauri, Ab initio variational approach for evaluating lattice thermal conductivity, Phys. Rev. B 88, 045430 (2013).
