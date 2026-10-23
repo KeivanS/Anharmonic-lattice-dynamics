@@ -92,7 +92,7 @@ be imaginary. See "Checking the quality of the fit" in :doc:`runfocex`.
 The acoustic sum rule is not satisfied. Set ``itrans = 1`` and if needed ``irot = 1; ihuang = 1`` in
 ``structure.params`` and, if the violations persist, ``enforce_inv = 1``, which
 fits under the invariances instead of adding them to the least-squares system,
-so they hold exactly. See :ref:`focex-enforce-inv`.
+so they hold exactly. See :ref:`enforce_inv <focex-enforce-inv>`.
 
 **When should I use** ``enforce_inv = 2`` **(LASSO)?**
 
@@ -103,7 +103,7 @@ fit absorbing noise. On a deliberately underdetermined MoTe2 test it kept 88 of
 880 free parameters and gave physical phonons where the plain SVD gave
 frequencies of ±15000 cm\ :sup:`-1`. On a well-determined case it keeps almost
 everything and matches the SVD, so it costs little to try. The weight of the
-:math:`L_1` term is chosen for you by cross-validation. See :ref:`focex-lasso`.
+:math:`L_1` term is chosen for you by cross-validation. See :ref:`LASSO <focex-lasso>`.
 
 **The fit residual got worse when I turned on** ``enforce_inv = 2`` **.**
 

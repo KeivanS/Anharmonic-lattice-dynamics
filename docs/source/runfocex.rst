@@ -531,60 +531,11 @@ the fit is solved and takes the values 0, 1 or 2.
   * ``ihuang`` — Huang : makes sure elastic tensor is symetric ; needed for low-symmetry crystals.
   * ``enforce_inv`` — how the fit is solved: ``0`` SVD of the stacked system (default),
     ``1`` fit inside the kernel of the invariances (exact), ``2`` the same with LASSO; see
-    :ref:`focex-enforce-inv` at the end of this section.
-
-**6. Temperature weighting** — ``itemp tempk``. With ``itemp = 0`` every
-snapshot has the same weight (``tempk`` is then unused but must be present).
-With ``itemp = 1`` snapshots are weighted by the Boltzmann factor
-:math:`e^{-E/k_B T}` at ``tempk`` (K), using the energies read from
-``FORCEDISPi``. Use ``0`` unless you know you want the weighting.
-
-**7. Data files and verbosity** — ``fdfiles verbose``. ``fdfiles`` is the number
-of supercell shapes, i.e. of ``POSCARi``/``FORCEDISPi`` *pairs*
-(``i = 1 … fdfiles``); it must be a single digit. ``verbose`` is a Fortran
-logical (``.true.``/``.false.``); ``.true.`` writes the fit matrices to
-``amatrx.dat`` and adds per-snapshot dumps to the log — very large files, use it
-only for debugging.
-
-**8–10. Atom types** — the number of distinct elements, then their masses (uma)
-and names, in the *same order as the atom counts in* ``POSCARi``.
-
-**11. Atoms in the primitive cell** — the *total* number of atoms in the
-primitive cell (not per type).
-
-**12.** ``fc2range`` — how the range of the harmonic FCs is chosen:
-
-  * ``0`` — automatic: the range is the largest sphere that fits in the
-    Wigner-Seitz cell of the biggest supercell provided, and the shell counts on
-    line 13 are overwritten accordingly. This is the safe default.
-  * ``1`` — use the shell counts of line 13; any shell reaching beyond the
-    supercell is still discarded, with a warning in the log.
-
-**13–19. Neighbor shells** — one line per rank (2 … 8), each containing
-``natom_prim_cell`` integers: how many neighbor shells around each atom of the
-primitive cell are included for that rank. ``0`` means "no FC of this rank on
-this atom". Ranks whose flag on line 4 is ``0`` are ignored, but their line must
-still be present. The radius of each shell is listed in the log file and in
-``pairs.dat``, so you can convert shells to Å after a first run.
-
-**20…** — one line per atom of the primitive cell: ``index type x y z``, where
-the index must run 1, 2, 3 … in order, ``type`` refers to lines 8–10, and
-``x y z`` are reduced coordinates in units of the **conventional** cell
-vectors if ``convcoord = 0`` (line 3, the default), or of the **primitive**
-vectors otherwise.
-
-.. tip::
-
-   Convergence with respect to range is the main physical approximation in
-   FOCEX. Increase the number of harmonic shells until the phonon dispersion
-   stops changing, and check that the cubic/quartic shells you request are
-   really sampled by your supercell — one shell for rank 4 and two or three for
-   rank 3 is a common, economical starting point.
+    the explanation just below.
 
 .. _focex-enforce-inv:
 
-Choosing ``enforce_inv``
-""""""""""""""""""""""""
+**Choosing enforce_inv**
 
 ``enforce_inv`` decides how the invariance relations are imposed and how the
 force constants are solved for. The three settings solve genuinely different
@@ -635,8 +586,7 @@ range, or switch some of ``irot``/``ihuang`` off.
 
 .. _focex-lasso:
 
-``enforce_inv = 2``: selecting the force constants by LASSO
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+**enforce_inv = 2: selecting the force constants by LASSO**
 
 With ``enforce_inv = 2`` the reduced problem is solved by minimising
 
@@ -704,6 +654,54 @@ selected value appears in the log as ``LASSO: selected mu``.
    The sparsity is in the free parameters, not in the force constants
    themselves: the retained parameters are combinations :math:`x = K y`, so the
    printed ``fcN.dat`` files are not themselves sparse.
+
+**6. Temperature weighting** — ``itemp tempk``. With ``itemp = 0`` every
+snapshot has the same weight (``tempk`` is then unused but must be present).
+With ``itemp = 1`` snapshots are weighted by the Boltzmann factor
+:math:`e^{-E/k_B T}` at ``tempk`` (K), using the energies read from
+``FORCEDISPi``. Use ``0`` unless you know you want the weighting.
+
+**7. Data files and verbosity** — ``fdfiles verbose``. ``fdfiles`` is the number
+of supercell shapes, i.e. of ``POSCARi``/``FORCEDISPi`` *pairs*
+(``i = 1 … fdfiles``); it must be a single digit. ``verbose`` is a Fortran
+logical (``.true.``/``.false.``); ``.true.`` writes the fit matrices to
+``amatrx.dat`` and adds per-snapshot dumps to the log — very large files, use it
+only for debugging.
+
+**8–10. Atom types** — the number of distinct elements, then their masses (uma)
+and names, in the *same order as the atom counts in* ``POSCARi``.
+
+**11. Atoms in the primitive cell** — the *total* number of atoms in the
+primitive cell (not per type).
+
+**12.** ``fc2range`` — how the range of the harmonic FCs is chosen:
+
+  * ``0`` — automatic: the range is the largest sphere that fits in the
+    Wigner-Seitz cell of the biggest supercell provided, and the shell counts on
+    line 13 are overwritten accordingly. This is the safe default.
+  * ``1`` — use the shell counts of line 13; any shell reaching beyond the
+    supercell is still discarded, with a warning in the log.
+
+**13–19. Neighbor shells** — one line per rank (2 … 8), each containing
+``natom_prim_cell`` integers: how many neighbor shells around each atom of the
+primitive cell are included for that rank. ``0`` means "no FC of this rank on
+this atom". Ranks whose flag on line 4 is ``0`` are ignored, but their line must
+still be present. The radius of each shell is listed in the log file and in
+``pairs.dat``, so you can convert shells to Å after a first run.
+
+**20…** — one line per atom of the primitive cell: ``index type x y z``, where
+the index must run 1, 2, 3 … in order, ``type`` refers to lines 8–10, and
+``x y z`` are reduced coordinates in units of the **conventional** cell
+vectors if ``convcoord = 0`` (line 3, the default), or of the **primitive**
+vectors otherwise.
+
+.. tip::
+
+   Convergence with respect to range is the main physical approximation in
+   FOCEX. Increase the number of harmonic shells until the phonon dispersion
+   stops changing, and check that the cubic/quartic shells you request are
+   really sampled by your supercell — one shell for rank 4 and two or three for
+   rank 3 is a common, economical starting point.
 
 ``dielectric.params``
 ^^^^^^^^^^^^^^^^^^^^^
@@ -1031,7 +1029,7 @@ Diagnostics
     :math:`\mu` with the mean cross-validation error and its standard error,
     preceded by per-fold diagnostics giving the iteration count and the number
     of non-zero parameters along the path. Plot column 3 against column 2 to see
-    the error curve and where it turns over. See :ref:`focex-lasso`.
+    the error curve and where it turns over. See :ref:`LASSO <focex-lasso>`.
 
 ``times.dat``
     Wall/CPU time after each stage of the run — the place to look when a run
