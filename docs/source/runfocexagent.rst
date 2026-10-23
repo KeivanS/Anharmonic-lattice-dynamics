@@ -199,9 +199,14 @@ The steps of a from_scratch calculation (:ref:`agent-extract` has those of extra
    constants to fit, e.g. ``1 1 1 0 0 0 0 0`` for harmonic and cubic). Set also ``FUNCTIONAL:``
    and ``MPI:`` (the number of MPI ranks for VASP); every other line is optional and shows its
    default.
-#. **Set up the project**: the agent makes the project folder (``PROJECT_DIR``, by default named
-   after ``Project:``) with the relaxation inputs and ``run_workflow.sh``. This takes seconds and
-   runs no VASP.
+
+   **Where the calculations go** is also set in this file, by ``PROJECT_DIR:``: a path relative to
+   the folder of the instruction file (``PROJECT_DIR: runs/ZnO_PBEsol``) or absolute
+   (``PROJECT_DIR: /scratch/me/ZnO``, ``~`` allowed). Without it the project folder is a folder
+   named after ``Project:`` next to the instruction file. The agent creates it, with any missing
+   parent folders; if it holds a project already, the agent stops unless ``--force`` is given.
+#. **Set up the project**: the agent creates the project folder with the relaxation inputs and
+   ``run_workflow.sh``, and prints the command to start it. This takes seconds and runs no VASP.
 #. **Start the workflow** from the project folder, and follow ``report.log``.
 #. **If it stops**, run ``diagnose.py`` (:ref:`agent-diagnose`).
 
@@ -275,14 +280,15 @@ from that task. A job that hits its time limit is simply submitted again.
    theory in ``02_scf/dfpt`` gives the high-frequency dielectric constant and the Born effective
    charges of every atom (:ref:`agent-born`). ``DFPT: on`` forces it, ``off`` skips it.
 ``snaps``
-   The supercell is chosen: the multiple of the conventional cell with the fewest atoms whose
-   faces are at least 10 Å apart (``SUPERCELL: SMALL``, at most 100 atoms; ``LARGE``: 14 Å, at most
-   300 atoms); if none is that large, the one with the largest distance. SC-SNAPS (``03_snaps``)
+   The supercell is chosen (:ref:`agent-supercell`). SC-SNAPS (``03_snaps``)
    then writes the undistorted supercell ``poscar_000`` and 50 snapshots, each atom displaced as in
    a thermal ensemble of harmonic oscillators of frequency ``AVG_FREQ`` at temperature
-   ``TEMPERATURE``. The temperature is adjusted (SC-SNAPS rerun at most twice) until the rms
-   displacement is within 15 % of ``DISP_TARGET`` (0.02 Å): large enough for clean forces, small
-   enough for the Taylor expansion of the energy. The undistorted supercell is checked to be an
+   ``TEMPERATURE``. **A temperature you give is used as it is**, e.g. to sample the
+   displacements of that temperature for effective phonons; the report gives the resulting rms
+   displacement. Only when ``TEMPERATURE`` is not given, the default 30 K is adjusted (SC-SNAPS
+   rerun at most twice) until the rms displacement is within 15 % of ``DISP_TARGET`` (0.02 Å):
+   large enough for clean forces, small enough for the Taylor expansion of the energy. The
+   undistorted supercell is checked to be an
    exact multiple of POSCAR0 before any VASP job is run.
 ``supercells``
    One folder per snapshot, ``04_supercells/snap_NNN``, with its POSCAR, the SCF INCAR without
@@ -325,6 +331,31 @@ Defaults
 - ``RANGE: 6 2 1 0 0 0 0``: neighbour shells kept for ranks 2, 3, 4, ...; ``FC2RANGE: 0``: the
   harmonic force constants are kept over the whole supercell.
 - FOCEX k-mesh ``fine``; the band-structure path is found automatically.
+
+.. _agent-supercell:
+
+The supercell
+~~~~~~~~~~~~~
+
+``SUPERCELL:`` takes one of three forms:
+
+- ``SMALL`` (the default): the multiple m1×m2×m3 of the conventional cell with the fewest atoms
+  whose faces are at least 10 Å apart, at most 100 atoms;
+- ``LARGE``: the same with 14 Å and at most 300 atoms. In both, if no such multiple is small
+  enough, the one with the largest face distance; it keeps the symmetry of the lattice;
+- **the supercell matrix itself**: nine integers, the three rows of the matrix that the agent
+  writes to SC-SNAPS's ``supercell.inp``. The first three integers n11 n12 n13 give the first
+  supercell vector as a combination of the primitive vectors of POSCAR0,
+  R\ :sub:`S1` = n11 R\ :sub:`01` + n12 R\ :sub:`02` + n13 R\ :sub:`03`; the next three give
+  R\ :sub:`S2` and the last three R\ :sub:`S3` in the same way (the agent's ``cell.inp`` has
+  ``convcoord = 1``, primitive units). For example
+  ``SUPERCELL: 2 0 0  0 2 0  0 0 2`` is 2×2×2 primitive cells, and for an fcc crystal
+  ``SUPERCELL: -1 1 1  1 -1 1  1 1 -1`` is its conventional cube (4 primitive cells). The
+  determinant must be positive.
+
+The report gives the matrix and the number of atoms (for SMALL and LARGE also the face distance). Prefer supercells that keep the symmetry of the lattice: with a supercell that does not (for
+example 4×3×2 of a hexagonal cell), FOCEX can stop with ``R+tp-t not inside!``
+(:ref:`agent-diagnose`).
 
 .. _agent-frame:
 
@@ -412,7 +443,8 @@ VASP-Flow (its manual lists all of them); the common ones are below.
      - a name, used in titles and as the default folder
    * - ``PROJECT_DIR``
      - the Project name
-     - where the calculations go; relative to the instruction file
+     - folder of the calculations, relative to the instruction file or absolute; created by the
+       agent
    * - ``MODE``
      - from_scratch
      - or extract_only
@@ -477,19 +509,20 @@ VASP-Flow (its manual lists all of them); the common ones are below.
      -
    * - ``SUPERCELL``
      - SMALL
-     - SMALL, LARGE, or 9 integers (supercell vectors as rows, primitive units)
+     - SMALL, LARGE, or the 9 integers of the supercell matrix, as in ``supercell.inp`` (rows,
+       primitive units; :ref:`agent-supercell`)
    * - ``SNAPSHOTS``
      - 50
      - number of snapshots
    * - ``TEMPERATURE``
      - 30
-     - K (adjusted to DISP_TARGET)
+     - K; given: used as is; not given: 30 K adjusted to DISP_TARGET
    * - ``AVG_FREQ``
      - 400
      - cm⁻¹, the frequency of the oscillators of SC-SNAPS
    * - ``DISP_TARGET``
      - 0.02
-     - Å, the rms displacement wanted
+     - Å, the rms displacement wanted (only without TEMPERATURE)
    * - **FOCEX**
      -
      -

@@ -34,7 +34,10 @@ How it works
 
 #. The primitive cell is read and replicated to fill the supercell.
 #. A model dynamical matrix is built from a simple harmonic pair interaction
-   between neighbors within twice the shortest bond length, and diagonalised.
+   between neighbors within twice the shortest bond length (central springs whose stiffness falls
+   as 1/r\ :sup:`4`), summed over all periodic images of each pair in the supercell, and
+   diagonalised. (Before 23 October 2026 only the nearest image was kept, which left small
+   supercells with spurious zero-frequency modes and huge displacements.)
    The resulting frequencies are then rescaled so that their mean square equals
    the "average frequency" you specify — the model only has to give a
    *reasonable* set of eigenvectors and a *realistic spread* of frequencies.

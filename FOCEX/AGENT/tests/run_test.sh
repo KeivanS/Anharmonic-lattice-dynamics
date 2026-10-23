@@ -9,7 +9,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 PY=${PY:-$HOME/dftphonon-env/bin/python}
 W=${1:-$(mktemp -d)}
 FOCEX_X=${FOCEX_X:-$(ls -t "$HOME"/ALADYN/bin/focex-[0-9]*.x "$HOME"/BIN/v[0-9]* 2>/dev/null | head -1)}
-SC_SNAPS_X=${SC_SNAPS_X:-$HOME/BIN/sc_snaps.x}
+SC_SNAPS_X=${SC_SNAPS_X:-$(ls "$HOME"/ALADYN/bin/sc_snaps.x "$HOME"/BIN/sc_snaps.x 2>/dev/null | head -1)}
 READ_OUTCAR_X=${READ_OUTCAR_X:-$HOME/ALADYN/bin/read_outcar.x}
 mkdir -p "$W"; cd "$W"
 printf '#!/bin/bash\nexec %s -I %s "$@"\n' "$PY" "$HERE/fake_vasp.py" > fake_vasp; chmod +x fake_vasp

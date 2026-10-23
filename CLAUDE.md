@@ -105,6 +105,16 @@ ZnO/GaN/BAs run scripts still use and which is kept until the user removes it).
   goes; the user then submits `run_workflow.sh` from there (both modes). `run`/`plots` subcommands
   are what the scripts call. The project's copy is `focex-agent-instructions.txt` (old projects:
   `instructions.txt`, still read).
+- Snapshot temperature (user's rule, 2026-10-23): a `TEMPERATURE:` given is used as is (effective
+  phonons at that T); only without it is the default 30 K retuned to `DISP_TARGET` (Ar: 50 K kept,
+  rms 0.0138 A). `SUPERCELL:` 9 integers = supercell.inp rows, RS_i = sum_j n_ij R0_j (primitive).
+- SC_SNAPS (2026-10-23, user's diagnosis): its spring model (central springs, stiffness ~1/r^4, rcut =
+  2 x NN) kept only the nearest periodic image of each pair, so a 4-atom fcc cube had 3 of 12 NN
+  springs, 6 zero modes, displacements ~1e6 A and `***` in poscar_NNN. get_normal_modes now sums all
+  images within rcut: 3 zero modes, X: 6 TA + 3 LA, LA/TA 1.252 equal in the 4-atom and 32-atom
+  cubes. Ordinary supercells change too (Ar 2x2x2 up to 1.05 THz: 2nd-neighbour images at L/2 tie):
+  only the sampling of the displacements, not FOCEX's force constants. Guard kept: modes below 1e-3 x
+  max are not sampled (warning); the agent stops on `***` in a snapshot.
 - Modes (user's labels): `MODE: from_scratch | extract_only` (extract_only needs `DATA:`; DATA
   without MODE implies extract_only).
 - `diagnose.py <PROJECT_DIR>...`: read-only; task status (done/FAILED/INTERRUPTED/not reached,

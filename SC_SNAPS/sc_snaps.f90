@@ -76,7 +76,8 @@ use pairpot
 implicit none
 integer i,i0,j,s,s2,k, mode,nmodes
 real(8), allocatable:: phi(:),ksi(:),normal_modes(:,:),freq_thz(:),disp(:,:),vel(:,:),gaussian(:),dgaussian(:)
-real(8) tempk,wavgcm,zero(3)
+real(8) tempk,wavgcm,zero(3),fmin
+integer nzero
 integer, allocatable:: seed(:)
 character(3) csn
 
@@ -93,6 +94,16 @@ character(3) csn
 
    allocate(freq_thz(nmodes),normal_modes(nmodes,nmodes))
    call get_normal_modes(natom_sc,pos_sc,mass_sc,normal_modes,freq_thz,wavgcm)
+! modes 1-3 are the translations; any further zero-frequency mode (a floppy spring network, e.g.
+! rcut too short) would get an infinite 1/omega amplitude: modes below fmin are not sampled
+   fmin=1d-3*maxval(freq_thz(4:nmodes))
+   nzero=count(freq_thz(4:nmodes).lt.fmin)
+   if (nzero.gt.0) then
+      write(*,*)' WARNING: ',nzero,' zero-frequency modes besides the 3 translations are not sampled;', &
+ &              ' a larger supercell avoids it'
+      write(ulog,*)' WARNING: ',nzero,' zero-frequency modes besides the 3 translations are not sampled', &
+ &              ' (frequency below ',fmin,' THz)'
+   endif
 !  nrand = nmodes*nmodes  ! don't exclude acoustic (translational) modes
    nrand = nmodes*nsnap  ! don't exclude acoustic (translational) modes
 
@@ -160,6 +171,7 @@ character(3) csn
            do i=1,natom_sc
            do j=1,3
            do mode=4,nmodes
+              if (freq_thz(mode).lt.fmin) cycle
               disp(j,i)=disp(j,i)+normal_modes(3*(i-1)+j,mode)  &
         &      /freq_thz(mode)*sqrt(tempk/mass_sc(i))* gaussian(nmodes*(s-1)+mode)
               vel(j,i) = vel(j,i)+normal_modes(3*(i-1)+j,mode)  &
@@ -503,8 +515,8 @@ real(8), intent(in ):: ps(3,natom),mas(natom),wavgcm
 real(8), intent(out):: freq(3*natom),modes(3*natom,3*natom)
 real(8) fc(3*natom,3*natom),eival(3*natom)
 ! complex(8) eivec(3*natom,3*natom),cfc(3*natom,3*natom)
-real(8) x,y,z,rij,rr(3),rp(3),rcut,cnst,sumw2,wscale,v1,v2
-integer i,j,al,be,del,it_num,rot_num,it_max
+real(8) x,y,z,rij,rr(3),rp(3),rp0(3),rcut,cnst,sumw2,wscale,v1,v2
+integer i,j,al,be,del,it_num,rot_num,it_max,n1,n2,n3,m1,m2,m3
 
 !! construct the force constant matrix defined by rij_a*rij_be/rij^6 for in eV/Ang^2
 !! only a couple of neighbors defined by rcut
@@ -515,35 +527,49 @@ integer i,j,al,be,del,it_num,rot_num,it_max
  rcut=req*2.0 !2.7 !0.9 * vol0**0.333
  write(ulog,*)'RCUT=',rcut
 
+! periodic BCs: the force constant between atoms i and j of the supercell is the sum over all
+! images j+T (T a supercell translation) within rcut.  Keeping only the nearest image misses the
+! equivalent images of a small supercell (fcc conventional cube: 3 of the 12 nearest-neighbour
+! springs) and gave spurious zero modes.  Images of i itself cancel in the sum rule (ASR below).
+m1=int(rcut*sqrt(dot_product(gsc1,gsc1)))+1   ! 1/|gsc_i| = distance between faces of the supercell
+m2=int(rcut*sqrt(dot_product(gsc2,gsc2)))+1
+m3=int(rcut*sqrt(dot_product(gsc3,gsc3)))+1
 fc=0
 do i=1,natom
 do j=i+1,natom
 
    rr=ps(:,i)-ps(:,j)
-
-! impose periodic BCs
    x=dot_product(gsc1,rr)
    y=dot_product(gsc2,rr)
    z=dot_product(gsc3,rr)
    x=x-nint(x) ! makes -0.5<x<0.5
    y=y-nint(y) ! makes -0.5<x<0.5
    z=z-nint(z) ! makes -0.5<x<0.5
-   rp=x*rsc1+y*rsc2+z*rsc3 ! this has the shortest distance between i&j
-   rij=sqrt(dot_product(rp,rp))
+   rp0=x*rsc1+y*rsc2+z*rsc3 ! the nearest image of j
 
-   if(rij.lt.rcut) then
-     rij0=rij
-     v2=(d2v(rij)-d1v(rij)/rij)
-     v1=(d1v(rij)/rij)
-     write(*,19)i,j,rij,v1,v2
-     do al=1,3
-     do be=1,3
-        fc(3*(i-1)+al,3*(j-1)+be)=-rp(al)*rp(be)/rij/rij*v2 + del(al,be)*v1
-        fc(3*(j-1)+be,3*(i-1)+al)=fc(3*(i-1)+al,3*(j-1)+be)
-     enddo
-     write(*,9) fc(3*(i-1)+al,3*(j-1)+1),fc(3*(i-1)+al,3*(j-1)+2),fc(3*(i-1)+al,3*(j-1)+3)
-     enddo
-   endif
+   do n1=-m1,m1
+   do n2=-m2,m2
+   do n3=-m3,m3
+      rp=rp0+n1*rsc1+n2*rsc2+n3*rsc3
+      rij=sqrt(dot_product(rp,rp))
+      if(rij.ge.rcut) cycle
+      rij0=rij
+      v2=(d2v(rij)-d1v(rij)/rij)
+      v1=(d1v(rij)/rij)
+      write(*,19)i,j,rij,v1,v2
+      do al=1,3
+      do be=1,3
+         fc(3*(i-1)+al,3*(j-1)+be)=fc(3*(i-1)+al,3*(j-1)+be)-rp(al)*rp(be)/rij/rij*v2 + del(al,be)*v1
+      enddo
+      enddo
+   enddo
+   enddo
+   enddo
+   do al=1,3
+   do be=1,3
+      fc(3*(j-1)+be,3*(i-1)+al)=fc(3*(i-1)+al,3*(j-1)+be)
+   enddo
+   enddo
 
 enddo
 enddo

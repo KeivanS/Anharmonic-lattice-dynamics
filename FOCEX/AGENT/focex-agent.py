@@ -18,8 +18,8 @@ Tasks (each is recorded in <PROJECT_DIR>/report.log and skipped once done):
   poscar0    CONTCAR -> Niggli reduction + orientation -> POSCAR0 (frame of every later step)
   scf        SCF on POSCAR0, same INCAR (ISIF=1, NSW=0) and KPOINTS
   dfpt       epsilon_inf and Born charges, only if the SCF shows a gap (DFPT: auto|on|off)
-  snaps      SC_SNAPS: supercell (SUPERCELL: SMALL|LARGE|9 integers) and snapshots; the
-             temperature is tuned to an rms displacement of DISP_TARGET
+  snaps      SC_SNAPS: supercell (SUPERCELL: SMALL|LARGE|9 integers, RS_i = sum_j n_ij R0_j) and
+             snapshots at TEMPERATURE; if none is given, 30 K tuned to an rms of DISP_TARGET
   supercells one folder per snapshot (INCAR as the SCF + ISYM=0, commensurate KPOINTS)
   vasp_snaps the supercell VASP runs, one after the other
   collect    read_outcar.x -> FORCEDISP1, POSCAR1 = poscar_000; all runs checked
@@ -158,6 +158,9 @@ def parse_instructions(path):
     else:
         sys.exit('SUPERCELL must be SMALL, LARGE or 9 integers (rows, primitive units)')
     fx['nsnap'] = int(keyword(rest, 'SNAPSHOTS', 50))
+    # a TEMPERATURE given is kept (e.g. effective phonons at that T); only the default 30 K is
+    # retuned so that the rms displacement is DISP_TARGET
+    fx['temperature_given'] = keyword(rest, 'TEMPERATURE') is not None
     fx['temperature'] = float(keyword(rest, 'TEMPERATURE', 30))
     fx['avg_freq'] = float(keyword(rest, 'AVG_FREQ', 400))
     fx['disp_target'] = float(keyword(rest, 'DISP_TARGET', 0.02))
@@ -736,6 +739,9 @@ class Agent:
               or '\n'.join(' '.join(str(x) for x in r) for r in S) + '   # rows: supercell vectors, primitive units\n')
         T = self.fx['temperature']
         lines = []
+        if info is None:
+            lines.append(f"supercell from SUPERCELL (rows, primitive units): {S.tolist()}, "
+                         f"{int(round(np.linalg.det(S))) * n} atoms")
         if info:
             lines.append(f"supercell {self.fx['supercell'].upper()}: {'x'.join(map(str, info['m']))} conventional, "
                          f"{info['n']} primitive cells, {info['natoms']} atoms, "
@@ -751,12 +757,24 @@ class Agent:
             r = subprocess.run(self.fx['sc_snaps_x'], cwd=d, capture_output=True, text=True)
             if not os.path.isfile(os.path.join(d, 'poscar_000')):
                 return False, f"sc_snaps.x produced no poscar_000: {(r.stdout + r.stderr)[-400:]}"
+            warn = [l.strip() for l in r.stdout.splitlines() if 'WARNING' in l]
+            if warn and warn[0] not in lines:
+                lines.append(warn[0])
+            bad = [os.path.basename(f) for f in snap_files(d) if '*' in open(f).read()]
+            if bad:
+                return False, (f"sc_snaps.x wrote overflowing positions (***) in {', '.join(bad[:3])}: "
+                               'displacements too large for its format (zero-frequency modes in its model; SC-SNAPS before '
+                               '2026-10-23 missed periodic images in small supercells)')
             st = self.disp_stats(d)
             lines.append(f"T = {T:g} K: <u> = {' '.join('%+.4f' % x for x in st['mean'])} A, "
                          f"sigma = {' '.join('%.4f' % x for x in st['std'])} A (x y z), rms {st['rms']:.4f} A, "
                          f"mean |u| = {st['norm']:.4f} A; per element sigma: "
                          + ', '.join(f'{k} {v:.4f}' for k, v in st['elem'].items()))
-            if b.get('snaps_inp') or abs(st['rms'] / self.fx['disp_target'] - 1) < 0.15:
+            if b.get('snaps_inp') or self.fx['temperature_given']:
+                lines.append('  temperature ' + ('of the snaps_inp block' if b.get('snaps_inp') else
+                             'given in TEMPERATURE') + ' kept (no retuning to DISP_TARGET)')
+                break
+            if abs(st['rms'] / self.fx['disp_target'] - 1) < 0.15:
                 break
             T = T * (self.fx['disp_target'] / st['rms']) ** 2
             lines.append(f'  rms differs from DISP_TARGET {self.fx["disp_target"]} A: rerun at T = {T:.1f} K')

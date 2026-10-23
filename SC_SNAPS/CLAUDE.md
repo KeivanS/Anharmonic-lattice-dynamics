@@ -81,6 +81,15 @@ VASP-4 layout with no element-name line).
   GUI's converter default points at `poscar2xyz.py`). Now `cp -f` under the
   right name.
 
+## Fixed 2026-10-23
+
+- `get_normal_modes` kept only the nearest periodic image of each pair (minimum image via `nint`);
+  a 4-atom fcc conventional cube then had 3 of its 12 nearest-neighbour springs, 6 zero modes and
+  displacements ~1e6 A (`***` in poscar_NNN). It now sums every image within rcut (self-images
+  cancel in the ASR): 3 zero modes; LA/TA at X 1.252 in both the 4-atom and the 32-atom cube.
+  Ordinary supercells change too (2x2x2 Ar up to 1.05 THz: images at half the box tie).
+  Modes below 1e-3 x the highest frequency are not sampled (warning) as a guard.
+
 ## Still open
 
 - `README.md`'s `cell.inp` example uses `4.247  9` (primitive-unit coordinates)

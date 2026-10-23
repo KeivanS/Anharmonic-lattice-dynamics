@@ -322,6 +322,8 @@ def other_finding(pr, t, msg):
              ('read_outcar.x not found', 'program', 'read_outcar.x is missing',
               'build it (cd FOCEX/utility && make) or set READ_OUTCAR_X'),
              ('produced no poscar_000', 'sc_snaps', 'SC-SNAPS made no snapshots', 'read the SC-SNAPS output quoted above'),
+             ('overflowing positions', 'sc_snaps', 'SC-SNAPS displacements overflowed its output format',
+              'use SC-SNAPS from 2026-10-23 or later (sums the periodic images) or a larger SUPERCELL'),
              ('NOT commensurate', 'frame', 'the SC-SNAPS supercell does not fit POSCAR0', 'check cell.inp/supercell.inp blocks'),
              ('not on a POSCAR0 site', 'frame', 'an atom of the undistorted supercell is not on a POSCAR0 site',
               'check cell.inp/supercell.inp blocks'),

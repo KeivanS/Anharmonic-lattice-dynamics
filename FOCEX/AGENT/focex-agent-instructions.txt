@@ -8,7 +8,8 @@
 # Lines starting with # are comments.
 
 Project: AgCrP2S6
-# PROJECT_DIR: AgCrP2S6     # folder of the calculations, relative to this file (default: the Project name)
+# PROJECT_DIR: AgCrP2S6     # folder of the calculations, made by the agent: relative to this file or
+#                           # absolute (default: the Project name, next to this file)
 # MODE: from_scratch        # from_scratch: POSCAR -> VASP -> snapshots -> FOCEX
 #                           # extract_only: FOCEX on existing POSCAR1/FORCEDISP1, needs DATA
 # DATA: ../MgO_data         # extract_only: folder with POSCAR1, FORCEDISP1 [, POSCAR, dielectric.params]
@@ -30,11 +31,14 @@ MPI: 40                     # MPI ranks for VASP
 
 # ── snapshots (SC_SNAPS) ──
 # SUPERCELL: SMALL          # SMALL: >= 10 A, <= 100 atoms;  LARGE: >= 14 A, <= 300 atoms;
-#                           # or 9 integers (rows, primitive units)
+#                           # or the supercell matrix, 9 integers as in supercell.inp: the first 3 give
+#                           # RS1 = n11 R01 + n12 R02 + n13 R03 (R0i: primitive vectors of POSCAR0), the
+#                           # next 3 RS2, the last 3 RS3; e.g.  SUPERCELL: 2 0 0  0 2 0  0 0 2
 # SNAPSHOTS: 50
-# TEMPERATURE: 30           # K, retuned so that the rms displacement is DISP_TARGET
+# TEMPERATURE: 30           # K; if given, used as is (e.g. effective phonons at that T); if not
+#                           # given, 30 K is retuned so that the rms displacement is DISP_TARGET
 # AVG_FREQ: 400             # 1/cm
-# DISP_TARGET: 0.02         # A
+# DISP_TARGET: 0.02         # A, only used when TEMPERATURE is not given
 
 # ── FOCEX ──
 # FOCEX_MESH: fine          # latdyn.params mesh: coarse | fine | kpra | n1 n2 n3
