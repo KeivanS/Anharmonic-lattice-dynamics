@@ -662,11 +662,17 @@ the point-group operation :math:`\mathcal S`, :math:`\mathbf v_k = \mathcal S \m
 .. math::
    :label: bte_ibz
 
-   F^\alpha_{k^*} = F^{0\alpha}_{k^*} + \frac{1}{Q_{k^*}} \sum_{k'k''} \Big[
-   P^{k''}_{k^*k'} \big( \mathcal S^{\alpha\beta}_{k''} F^\beta_{k''^*} - \mathcal S^{\alpha\beta}_{k'} F^\beta_{k'^*} \big)
-   + \tfrac{1}{2} P^{k'k''}_{k^*} \big( \mathcal S^{\alpha\beta}_{k'} F^\beta_{k'^*} + \mathcal S^{\alpha\beta}_{k''} F^\beta_{k''^*} \big) \Big]
-   + \frac{1}{Q_{k^*}} \sum_{k'} P^{k'}_{k^*}\, \mathcal S^{\alpha\beta}_{k'} F^\beta_{k'^*} ,
-   \qquad
+   \begin{aligned}
+   F^\alpha_{k^*} = F^{0\alpha}_{k^*} &+ \frac{1}{Q_{k^*}} \sum_{k'k''} \Big[
+     P^{k''}_{k^*k'} \big( \mathcal S^{\alpha\beta}_{k''} F^\beta_{k''^*} - \mathcal S^{\alpha\beta}_{k'} F^\beta_{k'^*} \big)
+     + \tfrac{1}{2} P^{k'k''}_{k^*} \big( \mathcal S^{\alpha\beta}_{k'} F^\beta_{k'^*} + \mathcal S^{\alpha\beta}_{k''} F^\beta_{k''^*} \big) \Big] \\
+     &+ \frac{1}{Q_{k^*}} \sum_{k'} P^{k'}_{k^*}\, \mathcal S^{\alpha\beta}_{k'} F^\beta_{k'^*} ,
+   \end{aligned}
+
+with the RTA solution
+
+.. math::
+
    F^{0\alpha}_{k^*} = \frac{\hbar\omega_{k^*} n^0_{k^*} (n^0_{k^*} + 1)\, v^\alpha_{k^*}}{k_B T^2 Q_{k^*}} ,
 
 and
@@ -694,8 +700,8 @@ and
 their degenerate set, so a result that depends on one velocity per mode is not unique there.
 THERMACOND averages :math:`|V_3|^2` and the scattering rates over each degenerate set, so that all
 partners of a set have the same lifetime, and takes the conductivity of the set from the trace
-over the set of the velocity matrix (the form of :math:`\kappa_P` below), which does not depend on
-the choice of eigenvectors.
+over the set of the velocity matrix (the trace form of the RTA term of Eq. :eq:`kappa_wigner`
+below), which does not depend on the choice of eigenvectors.
 
 **Three contributions to** :math:`\kappa`. Simoncelli, Marzari and Mauri [Simoncelli2019]_ derived
 from the Wigner phase-space distribution a conductivity that, besides the particle-like
@@ -713,21 +719,26 @@ wave vector. In the RTA it reads
 with :math:`s, s'` the branches at :math:`\mathbf k`, :math:`\Gamma_s = 1/\tau_s` the linewidths
 and :math:`V_{ss'} = \langle e_s | \partial D / \partial \mathbf k | e_{s'} \rangle / (\omega_s + \omega_{s'})`
 the velocity operator, whose diagonal elements are the group velocities. The terms with
-:math:`s = s'` (and pairs of degenerate modes) give the populations conductivity
-:math:`\kappa_P`, equal to the RTA of Eq. :eq:`kappa_rta`; the others give the coherences
-conductivity :math:`\kappa_C`. The conductivity THERMACOND reports is thus made of three parts:
+:math:`s = s'` (and pairs of degenerate modes) give the RTA conductivity :math:`\kappa_{RTA}` of
+Eq. :eq:`kappa_rta` (Simoncelli et al. call it the populations conductivity, :math:`\kappa_P`);
+the others give the coherences conductivity :math:`\kappa_C`. The conductivity THERMACOND reports
+is thus made of three parts:
 
 .. math::
+   :label: kappa_three
 
-   \kappa = \underbrace{\kappa_P}_{\text{RTA}}
+   \kappa = \underbrace{\kappa_{RTA}}_{\text{RTA}}
           + \underbrace{(\kappa_{full} - \kappa_{RTA})}_{\text{beyond the RTA}}
           + \underbrace{\kappa_C}_{\text{coherences}} ,
 
-* :math:`\kappa_P`, the particle-like conductivity in the RTA (column "RTA" of
-  ``kappa_vs_T.dat`` and :math:`\kappa_P` of ``kappa_wigner.dat``);
-* the correction of the full solution of the BTE, iterative or direct, over the RTA: the
-  collective response to momentum-conserving normal processes, large when they dominate
-  (``kappa_vs_T.dat`` gives :math:`\kappa_P` plus this correction);
+with :math:`\kappa_{full}` the full solution of Eq. :eq:`kappa_full`:
+
+* :math:`\kappa_{RTA}`, the particle-like conductivity in the RTA (column "RTA" of
+  ``kappa_vs_T.dat`` and column ``kappa_P`` of ``kappa_wigner.dat``);
+* :math:`\kappa_{full} - \kappa_{RTA}`, the correction of the full solution of the BTE, iterative
+  or direct, over the RTA: the collective response to momentum-conserving normal processes, large
+  when they dominate (``kappa_vs_T.dat`` gives :math:`\kappa_{full}`, i.e. :math:`\kappa_{RTA}`
+  plus this correction);
 * :math:`\kappa_C`, the wave-like part inherited from the Wigner formulation (``kappa_wigner.dat``),
   evaluated with the RTA linewidths. It is negligible in simple crystals with well-separated
   branches and becomes important in complex, strongly anharmonic or low-conductivity materials,
@@ -741,8 +752,9 @@ conductivity :math:`\kappa_C`. The conductivity THERMACOND reports is thus made 
    same widths are :math:`\Gamma/2\pi = 1/(2\pi\tau)` and :math:`\Sigma''/2\pi = 1/(4\pi\tau)`.
    THERMACOND takes :math:`\tau_s` from the RTA, so that the :math:`s = s'` terms of
    Eq. :eq:`kappa_wigner`, :math:`C_s v_s^2/\Gamma_s`, are exactly the RTA conductivity
-   (checked: Ge, :math:`\kappa_P/\kappa_{RTA} = 1.01` on an 8x8x8 mesh, the difference coming
-   from degenerate modes). :math:`\kappa_C` has not yet been compared with an independent code.
+   (checked: Ge, the trace form against the per-mode sum of Eq. :eq:`kappa_rta`, ratio 1.01 on
+   an 8x8x8 mesh, the difference coming from degenerate modes, where the per-mode sum depends on
+   the eigenvectors). :math:`\kappa_C` has not yet been compared with an independent code.
 
 
 .. [Ref] G. Leibfried and W. Ludwig, in Solid State Physics, edited by F. Seitz and D. Turnbull (Academic, New York, 1961), Vol. 12.
