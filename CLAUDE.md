@@ -26,7 +26,7 @@ FOCEX/utility), sc_snaps, thermacond, anfomod; single targets of those names, `t
 not exist, geometry.f95 has only the `.dot.` operator; from 07f9f456, YuanLiang21120, 2025-04-02;
 user: ignore SCOP8 for now). Verified in a scratch copy: make all exit 0, make clean exit 0.
 Old utility builds were kept in `~/ALADYN/bin/old_2026-10-23/`. Tags (2026-10-23, approved): focex-8.19; the agent is
-versioned separately, focex-agent-1.0 (`__version__` in focex-agent.py and diagnose.py, manual title and
+versioned separately, focex-agent-1.0, focex-agent-1.1 (thermacond task; `__version__` in focex-agent.py and diagnose.py, manual title and
 its Version history section); VASP-Flow v2.6 (at ef92326) and v2.7.
 `FOCEX/Makefile` does **not** include the top-level `make.inc`: it hardcodes
 `FF=gfortran`, `FLAGS=-O2 -fcheck=all`, `exe=focex-$(ver).x`, `DESTDIR ?= ~/ALADYN/bin`. It has

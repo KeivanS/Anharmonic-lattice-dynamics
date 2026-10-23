@@ -3,7 +3,7 @@
 FOCEX agent: from a crystal structure to phonons
 ================================================
 
-Version 1.0 (2026-10-23, with FOCEX 8.19). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
+Version 1.1 (2026-10-23, with FOCEX 8.19). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
 instruction file and ``diagnose.py`` are in ``FOCEX/AGENT``.
 
 What the FOCEX agent does
@@ -813,6 +813,11 @@ again: the finished tasks are skipped.
 
 Version history
 ---------------
+
+1.1
+   2026-10-23: task ``thermacond``, switched on by ``THERMACOND_JOB`` (latdyn.params line 8), with
+   ``THERMACOND_MESH``, ``THERMACOND_T``, ``THERMACOND_SOLVER``; a given ``TEMPERATURE`` is kept;
+   ``SUPERCELL`` matrix and ``PROJECT_DIR`` documented; SC-SNAPS periodic images fixed.
 
 1.0
    2026-10-23, with FOCEX 8.19: modes from_scratch and extract_only; instruction file

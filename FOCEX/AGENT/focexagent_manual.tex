@@ -75,7 +75,7 @@
   \normalsize Force constants and phonons from a crystal structure: VASP $\cdot$ SC-SNAPS $\cdot$
   FOCEX $\cdot$ Diagnosis \& repair\\[6pt]{\color{mainblue}\rule{\linewidth}{0.5pt}}}
 \author{Keivan Esfarjani}
-\date{v1.0 $\cdot$ October 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
+\date{v1.1 $\cdot$ October 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
 
 \begin{document}
 \maketitle
@@ -703,6 +703,10 @@ by adding \cmd{THERMACOND_JOB} to its \cmd{focex-agent-instructions.txt} and sub
 \section{Version history}
 % ============================================================
 \begin{description}
+\item[1.1] 2026-10-23: task \cmd{thermacond}, switched on by \cmd{THERMACOND_JOB} (latdyn.params
+  line 8), with \cmd{THERMACOND_MESH}, \cmd{THERMACOND_T}, \cmd{THERMACOND_SOLVER}; a given
+  \cmd{TEMPERATURE} is kept; \cmd{SUPERCELL} matrix and \cmd{PROJECT_DIR} documented; SC-SNAPS
+  periodic images fixed.
 \item[1.0] 2026-10-23, with FOCEX 8.19: modes from\_scratch and extract\_only; instruction file
   \cmd{focex-agent-instructions.txt}, \opt{instr}, \opt{coord}, \cmd{PROJECT_DIR};
   \cmd{diagnose.py}; this manual.

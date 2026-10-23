@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""focex-agent.py 1.0 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
+"""focex-agent.py 1.1 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
 structure (MODE: from_scratch, VASP + SC_SNAPS + FOCEX) or from existing force-displacement data
 (MODE: extract_only, FOCEX only).  Manual: FOCEX/AGENT/focexagent_manual.pdf
 
@@ -59,7 +59,7 @@ os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 os.environ.setdefault('OMP_NUM_THREADS', os.environ.get('VASP_OMP_NUM_THREADS', '1'))
 import numpy as np
 
-__version__ = '1.0'
+__version__ = '1.1'
 AGENT = os.path.dirname(os.path.realpath(__file__))          # FOCEX/AGENT (realpath: works through a symlink)
 HERE = os.path.dirname(AGENT)                                # the FOCEX folder: templates, utility/
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
