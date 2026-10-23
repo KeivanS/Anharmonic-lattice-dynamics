@@ -3,7 +3,7 @@
 FOCEX agent: from a POSCAR to phonons
 =====================================
 
-``FOCEX/focex-agent.py`` runs the FOCEX workflow in one of two ways:
+``FOCEX/AGENT/focex-agent.py`` runs the FOCEX workflow in one of two ways:
 
 * **full** (``-s POSCAR``): from the primitive cell of a crystal -- VASP relaxation and SCF,
   Born charges, SC-SNAPS snapshots, the supercell VASP runs, the force collection, the five
@@ -32,17 +32,17 @@ Running it
 
 .. code-block:: bash
 
-   cp FOCEX/focex-agent.example.txt instructions.txt      # edit: Project and RANKS are required
-   ~/vaspenv/bin/python FOCEX/focex-agent.py init -i instructions.txt -s POSCAR --profile rivanna
+   cp FOCEX/AGENT/focex-agent.example.txt instructions.txt      # edit: Project and RANKS are required
+   ~/vaspenv/bin/python FOCEX/AGENT/focex-agent.py init -i instructions.txt -s POSCAR --profile rivanna
    cd <Project> && sbatch run_workflow.sh                  # bash run_workflow.sh on a workstation
 
    # FOCEX only, on existing POSCAR1/FORCEDISP1 (no VASP, no SC-SNAPS): DATA: <folder> in instructions.txt
-   ~/vaspenv/bin/python FOCEX/focex-agent.py init -i instructions.txt
-   ~/vaspenv/bin/python FOCEX/focex-agent.py run <Project>
+   ~/vaspenv/bin/python FOCEX/AGENT/focex-agent.py init -i instructions.txt
+   ~/vaspenv/bin/python FOCEX/AGENT/focex-agent.py run <Project>
 
-   ~/vaspenv/bin/python FOCEX/focex-agent.py run <Project> --only snaps     # redo one task
-   ~/vaspenv/bin/python FOCEX/focex-agent.py run <Project> --retry-failed   # = resubmit_failed.sh
-   ~/vaspenv/bin/python FOCEX/focex-agent.py plots <Project>                # remake the plots
+   ~/vaspenv/bin/python FOCEX/AGENT/focex-agent.py run <Project> --only snaps     # redo one task
+   ~/vaspenv/bin/python FOCEX/AGENT/focex-agent.py run <Project> --retry-failed   # = resubmit_failed.sh
+   ~/vaspenv/bin/python FOCEX/AGENT/focex-agent.py plots <Project>                # remake the plots
 
 ``run_workflow.sh`` calls ``focex-agent.py run <Project>``, which does the tasks below in order.
 A finished task is recorded in ``state.json`` and skipped, so after a time limit the same script

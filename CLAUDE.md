@@ -74,11 +74,13 @@ Runs are reproducible as of 2026-08-07. Before the `finitedif_vel` fix they were
 not, and any phonon-level comparison was meaningless — check that first if
 outputs differ for no reason.
 
-## focex-agent.py (FOCEX/, since 2026-10-21)
+## focex-agent.py (FOCEX/AGENT/, since 2026-10-21; moved there 2026-10-23)
 
 POSCAR -> VASP relax/SCF/DFPT -> SC_SNAPS -> supercell VASP runs -> FORCEDISP1 -> FOCEX ->
-plots, restartable (`state.json`, `report.log`). Manual: `docs/source/runfocexagent.rst`;
-example input: `FOCEX/focex-agent.example.txt`. Run it with `~/vaspenv/bin/python` (needs
+plots, restartable (`state.json`, `report.log`). Everything is in `FOCEX/AGENT/`: the script,
+`focexagent_manual.tex/.pdf` (same content as `docs/source/runfocexagent.rst`; keep both in step),
+`focex-agent.example.txt`, `tests/` (argon, fake VASP). `FOCEX/focex-agent.py` is a forwarder
+for old run scripts. The script finds FOCEX/ (templates, utility/) as the parent of its folder. Run it with `~/vaspenv/bin/python` (needs
 numpy, spglib, pymatgen; Homebrew python3 has none of them).
 
 - Imports VASP-Flow (`~/VASP-Flow` or `$VASP_FLOW_DIR`): `InstructionParser` for the VASP

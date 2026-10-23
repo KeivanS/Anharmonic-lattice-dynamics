@@ -36,9 +36,9 @@ SC_SNAPS_X: $SC_SNAPS_X
 READ_OUTCAR_X: $READ_OUTCAR_X
 EOF
 export VASP_STD="$W/fake_vasp" MPI_NP=1
-"$PY" "$HERE/../../focex-agent.py" init -i instructions.txt -s POSCAR --profile workstation --force
+"$PY" "$HERE/../focex-agent.py" init -i instructions.txt -s POSCAR --profile workstation --force
 printf '   TITEL  = PAW_PBE Ar 07Sep2000 (dummy for the fake-VASP test)\n   ENMAX  =  266.000; ENMIN  =  199.500 eV\n   ZVAL   =    8.000    mass and valenz\n' > ArLJ/POTCAR
-"$PY" "$HERE/../../focex-agent.py" run "$W/ArLJ" || echo "focex-agent run returned $? (see $W/ArLJ/report.log)"
+"$PY" "$HERE/../focex-agent.py" run "$W/ArLJ" || echo "focex-agent run returned $? (see $W/ArLJ/report.log)"
 grep -E "=== .* -- (OK|FAILED)" ArLJ/report.log | sed 's/^\[[^]]*\] //' | cut -c1-160
 "$PY" -I "$HERE/exact_phonons.py" ArLJ/05_focex/bs_freq.dat
 echo "test folder: $W"
