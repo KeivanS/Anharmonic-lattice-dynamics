@@ -1,7 +1,7 @@
  ! In the following 3 subroutines, only the treatment of FC2s has changed: instead
  ! of using all map(2)%ngr, we only use the groups for which keep(counteri(2,g,ti))=1
  ! and map(2)%ngr should be replaced by map(2)%nindepfc !! REALLY ??
- subroutine set_translational_inv_constraints
+ subroutine set_translational_inv_constraints_old
 !! outputs atransl, transl_constraints part of amatrix
 !! used for svd and also check the violation of translational invariance constraints
 !! once the FC2s are calculated
@@ -292,9 +292,9 @@
 8 format(a,266(1x,f7.3))
 11 format(a,1(1x,i3),66(2x,f7.3))
 
- end subroutine set_translational_inv_constraints
+ end subroutine set_translational_inv_constraints_old
 !===========================================================================
- subroutine set_rotational_inv_constraints
+ subroutine set_rotational_inv_constraints_old
 !! outputs arot, brot, rot_constraints
 !! used for svd and also check the violation of rotational invariance constraints
 !! once the FC2s are calculated
@@ -424,6 +424,7 @@
           if ( map(rnk)%gr(g)%iat(1,t) .ne. i0 .or. map(rnk)%gr(g)%ixyz(1,t) .ne. al ) cycle
           j  = map(rnk)%gr(g)%iat(2,t) ;       be = map(rnk)%gr(g)%ixyz(2,t)
           do ti=1,map(rnk)%ntind(g)
+             if (map(2)%keep(counteri(2,g,ti)) .ne. 1) cycle  ! 2026-10-23: dropped term, no column
              ired = res+ current(2,g,ti)
              if (ired.gt.nindepfc .or. ired.lt.1) then
                write(ulog,*)'rnk=2:ired=',ired,'> nindepfc=',nindepfc
@@ -447,6 +448,7 @@
           if ( map(rnk)%gr(g)%iat(1,t) .ne. i0 .or. map(rnk)%gr(g)%ixyz(1,t) .ne. al ) cycle
           j  = map(rnk)%gr(g)%iat(2,t) ;       be = map(rnk)%gr(g)%ixyz(2,t)
           do ti=1,map(rnk)%ntind(g)
+             if (map(2)%keep(counteri(2,g,ti)) .ne. 1) cycle  ! 2026-10-23: dropped term, no column
              ired = res+ current(2,g,ti) 
 !!!
 !!!  CHECK TO SEE WHETHER  RES IS NEEDED HERE
@@ -484,16 +486,15 @@
 
 
       do g=1,map(rnk-1)%ngr  ! ineq. terms and identify neighbors
-           if(g.gt.1) then
-              if (map(2)%keep(g-1).eq.1) cnt3=cnt3+map(rnk)%ntind(g-1)
-           endif
+! 2026-10-23: the column of a rank-1 term is current(1,g,ti); the offset summed here before used the
+! sizes and keep flags of the RANK-2 groups
 !! K1 new change made on 9/21/23 ----------------
 !       if(g.gt.1) cnt3 = cnt3 + map(rnk-1)%ntind(g-1)  ! this is wrong it should be rnk not rnk-1 !
         do t=1,map(rnk-1)%nt(g)
            if ( map(rnk-1)%gr(g)%iat(1,t) .ne.i0 ) cycle
            be = map(rnk-1)%gr(g)%ixyz(1,t)
            do ti=1,map(rnk-1)%ntind(g)
-              ired = cnt3+ti    ! this is the corresponding index of i in ared
+              ired = current(rnk-1,g,ti)    ! this is the corresponding index of i in ared
             if (ired.gt.nindepfc .or. ired.lt.1) then
                write(ulog,*)'rnk=2 ired=',ired,'> nindepfc=',nindepfc
                stop
@@ -587,11 +588,13 @@
       cnt3 = 0
       if(include_fc(2) .eq. 1 ) then !.or. include_fc(2) .eq. 2) then
       do g=1,map(rnk-1)%ngr  ! ineq. terms and identify neighbors
-        if(g.gt.1) cnt3 = cnt3 + map(rnk-1)%ntind(g-1)
+! 2026-10-23: column res1+current(2,g,ti), dropped terms skipped; res1+cnt3+ti counted the dropped
+! groups and shifted the columns of every later group
         do t=1,map(rnk-1)%nt(g)
            if ( map(rnk-1)%gr(g)%iat(1,t) .ne.i0 .or. map(rnk-1)%gr(g)%iat(2,t) .ne.j ) cycle
            do ti=1,map(rnk-1)%ntind(g)
-              ired = res1+cnt3+ti    ! this is the corresponding index of i in ared
+              if (map(2)%keep(counteri(2,g,ti)) .ne. 1) cycle
+              ired = res1+current(2,g,ti)    ! this is the corresponding index of i in ared
             if (ired.gt.nindepfc .or. ired.lt.1) then
                write(ulog,*)'rnk=3 ired=',ired,'> nindepfc=',nindepfc
                stop
@@ -808,7 +811,7 @@
 15 format(a,5(1x,i3),66(2x,f7.3))
 17 format(a,7(1x,i3),66(2x,f7.3))
 
- end subroutine set_rotational_inv_constraints
+ end subroutine set_rotational_inv_constraints_old
 !======================================================================================
  subroutine set_huang_inv_constraints
 !! The constraint is: sum_Rtautau' phi(tau,al,r+tau'be)(r+tau'-tau)_ga (r+tau'-tau)_de

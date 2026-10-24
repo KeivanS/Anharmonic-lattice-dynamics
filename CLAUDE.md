@@ -276,6 +276,39 @@ include_fc=1 ranks; ios.f90 ~136 "fix this to be also able to read only some fil
 rest". To check: RHS subtraction in read_snaps_set_aforce; the invariance rows. Discuss the design
 with the user before coding.
 
+## Invariance rows: one loop over ranks (2026-10-23, invariance_ranks.f90; default)
+
+`set_translational_inv_constraints` / `set_rotational_inv_constraints` (module invariance_ranks)
+build the rows of every included rank (up to 8) in one pass over the group terms (row key = prefix
+atoms + directions [+ nu]; one column function, offset + current(), skipping dropped FC2 terms).
+The rank-by-rank routines are kept as `set_*_inv_constraints_old` (setup_amatrix.f90), selected by
+`FOCEX_INVARIANCE=old`; `FOCEX_INVARIANCE_COMPARE=1` builds both, writes inv_rows_old/new.dat and
+inv_fcs.dat, fits with the chosen one. include_fc=2 is not handled yet (marked: RHS b).
+- Bug in the old rotational routine, fixed 2026-10-23 (user's diagnosis: the cnt3 offsets must
+  use current()): rank-3 rows, FC2 part used res1+cnt3+ti with cnt3 counting dropped FC2 groups
+  (fc2range=0 drops groups outside the supercell WS cell; groups are ordered by first atom, so
+  this hits crystals with >= 2 inequivalent atoms when rank 3 is fitted): now keep check +
+  res1+current(2,g,ti). Rank-2 rows: FC2 part had no keep check (a dropped term went to the
+  column of the previous kept one); FC1 part summed rank-2 group sizes/keep flags: now
+  current(1,g,ti).
+- Verified after the fix, old vs new rows (compare mode): exact model below, 6 lattices + trigonal
+  in the standard frame: same rotational row space, residuals 1e-16, exact fits. BZO with FC3
+  (2 shells): same row space, fit 25.986 % (e0) / 25.151 % (e1) for both (before the fix the old
+  rows differed: rank 42 each, 47 stacked). DFT regression (Ge, BZO, MoTe2, GeSe, MgO, e1): new =
+  before to all digits, old-fixed within 0.1 1/cm. Translational: new contains old (old skipped
+  a2<a1 etc.: MoTe2 33->43, GeSe 123->220, MgO 6->7 independent rows), fits unchanged. Argon agent
+  test: max |w - exact| 0.236 1/cm.
+- Exact test (pair potential A(rc^2-r^2)^2: FCs of ranks 1-4 exact; 7 crystal systems, Bravais
+  cell doubled with 2 species, Huang off because the model is stressed): new rows hold on the exact
+  FCs to round-off and the constrained fit reproduces the forces to 1e-11 eV/A; the old rotational
+  rows before the fix: residual 3e-2..2e-1, constrained force error up to 0.6 eV/A.
+- FOCEX with the "keep the DFT frame" structure.params (line 1 `1 1 1 90 90 90`, Cartesian line 2)
+  fails when a symmetry operation is not an integer matrix in that cube basis: doubled trigonal
+  cell (C2/m, 2-fold off the axes): unconstrained exact data fit to 4e-6 only, FC4 wrong (5.5 vs
+  0); the same data in FOCEX's standard frame (agent extract_only) fit exactly. Cause not located
+  (probably op matrices assumed integer in the conventional basis). Until fixed, use the standard
+  frame (poscar2focex.x / the agent) for such crystals.
+
 ## How the force constants are solved for (enforce_inv)
 
 `structure.params` line 5, 4th value:
@@ -320,6 +353,12 @@ with the user before coding.
   (gamma (1+e)/(1 +- 3 gamma e), over V not V0). Harmonic-only fits keep P_agne = NkT/V (user's
   term for a harmonic thermal expansion) with F_agne = -NkT ln(V/V0) in F, so it does expand
   (BZO 300 K dV/V 0.43 -> 0.56 %). temp_free.dat columns 10-15: F0,P0,F_agne,P_agne,F_ph,P_ph.
+- Born tensors of equivalent atoms must sit on the right site (dielectric.params blocks follow
+  the structure.params atom order). ~/PROJECTS/MATERIALS/BZO had the three O tensors cyclically
+  permuted (O at (1/2,0,1/2) given -4.85 on xx; its Zr-O bond is along y): with born_flag=2 the fit
+  was 25.4 %, imaginary Gamma modes (-131 1/cm), cubic degeneracy broken; with them on the bond
+  directions 3.46 % (born_flag=0: 2.89 %; free linear fit of the same forces: 3.2 %). FOCEX does
+  not check Z* against the site symmetry.
 - `conductance.dat` is written but its band loop is `do j=1,-1`, so it is all
   zeros.
 - `structure.params` line 3 is `scal [convcoord]`. It is read as text, so the

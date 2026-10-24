@@ -55,6 +55,7 @@ use linalgb
 use tetrahedron
 use eigen !, only : ndyn,eigenval,eigenvec,allocate_eig,eigenval_bs,eigenvec_bs,allocate_eig
 use constants, only : r15,ee,pi,eps0,cnst
+use invariance_ranks, only : set_translational_inv_constraints, set_rotational_inv_constraints
 
 implicit none
 integer i,j,g,ti,rank,iunit,uio,nkernel,imax,n_hom,nt(maxrank),ntind(maxrank),tau,taup,nat,ncs(3),al,be,ia,jb
@@ -71,6 +72,8 @@ real tim
 real(r15) gmax,ene,grad,pos(3,64) ,ewald_force(3,64),deteps3, etaewa,xx,asr
 complex(r15) d2ew(3,3), d3ew(3,3,3), d0(3,3),sum
 real(r15) q(3)
+character(len=16) invmode, invcmp
+real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
 
  call date_and_time(date=today,time=now,zone=zone)
  call cpu_time(tim)
@@ -271,17 +274,48 @@ real(r15) q(3)
 
     call estimate_inv_constraints
 
-    call set_translational_inv_constraints
-    write(ulog,*)'Number of translational invariance constraints is=',transl_constraints
-
-    call cpu_time(tim)
-    write(utimes,'(a,f12.4)')' TIME after set_translational_inv_constraints IS ',tim
-
-    call set_rotational_inv_constraints
-    write(ulog,*)'Number of rotational invariance constraints is=',rot_constraints
-
-    call cpu_time(tim)
-    write(utimes,'(a,f12.4)')' TIME after set_rotational_inv_constraints    IS ',tim
+! Translational and rotational rows of all ranks from one loop (invariance_ranks.f90, default).
+! FOCEX_INVARIANCE=old: the rank-by-rank routines set_*_inv_constraints_old (setup_amatrix.f90).
+! FOCEX_INVARIANCE_COMPARE=1 builds both, writes them to inv_rows_old.dat and inv_rows_new.dat
+! (and the final FCs to inv_fcs.dat), and fits with the one chosen.
+    call get_environment_variable('FOCEX_INVARIANCE', invmode)
+    call get_environment_variable('FOCEX_INVARIANCE_COMPARE', invcmp)
+    if (invmode .ne. 'old') invmode = 'new'
+    write(ulog,*)'Invariance rows: ', trim(invmode), '; compare: ', trim(invcmp)
+    if (invmode .eq. 'old' .or. invcmp .eq. '1') then
+       call set_translational_inv_constraints_old
+       write(ulog,*)'Number of translational invariance constraints (old) is=',transl_constraints
+       call cpu_time(tim)
+       write(utimes,'(a,f12.4)')' TIME after set_translational_inv_constraints_old IS ',tim
+       call set_rotational_inv_constraints_old
+       write(ulog,*)'Number of rotational invariance constraints (old) is=',rot_constraints
+       call cpu_time(tim)
+       write(utimes,'(a,f12.4)')' TIME after set_rotational_inv_constraints_old    IS ',tim
+    endif
+    if (invcmp .eq. '1') then
+       call write_inv_rows('inv_rows_old.dat')
+       allocate(atr_old(transl_constraints,nindepfc), arot_old(rot_constraints,nindepfc))
+       atr_old = atransl ; arot_old = arot
+    endif
+    if (invmode .eq. 'new' .or. invcmp .eq. '1') then
+       call set_translational_inv_constraints
+       write(ulog,*)'Number of translational invariance constraints is=',transl_constraints
+       call cpu_time(tim)
+       write(utimes,'(a,f12.4)')' TIME after set_translational_inv_constraints IS ',tim
+       call set_rotational_inv_constraints
+       write(ulog,*)'Number of rotational invariance constraints is=',rot_constraints
+       call cpu_time(tim)
+       write(utimes,'(a,f12.4)')' TIME after set_rotational_inv_constraints    IS ',tim
+       if (invcmp .eq. '1') call write_inv_rows('inv_rows_new.dat')
+    endif
+    if (invcmp .eq. '1' .and. invmode .eq. 'old') then      ! fit with the old rows
+       deallocate(atransl, btransl, arot, brot)
+       transl_constraints = size(atr_old,1) ; rot_constraints = size(arot_old,1)
+       allocate(atransl(transl_constraints,nindepfc), btransl(transl_constraints), &
+&               arot(rot_constraints,nindepfc), brot(rot_constraints))
+       atransl = atr_old ; arot = arot_old ; btransl = 0 ; brot = 0
+    endif
+    if (allocated(atr_old)) deallocate(atr_old, arot_old)
 
     call set_huang_inv_constraints
     write(ulog,*)'Number of Huang    invariance constraints is=',huang_constraints
@@ -510,6 +544,12 @@ real(r15) q(3)
 
    write(ulog,*)'map(ntotind)=',map(:)%ntotind
 
+   if (invcmp .eq. '1') then
+      open(98, file='inv_fcs.dat', status='unknown')
+      write(98,*) dim_ac
+      write(98,'(es24.16)') fcs
+      close(98)
+   endif
    call write_independent_fcs(dim_ac,sigma,sd,ulog)
 
    call write_output_fcs
@@ -1095,6 +1135,21 @@ enddo
 
  end subroutine make_grids
 
+!==========================================================
+ subroutine write_inv_rows(fname)
+!! the translational and rotational rows (atransl, arot) to fname, for FOCEX_INVARIANCE_COMPARE
+ character(*), intent(in) :: fname
+ integer i
+ open(97, file=fname, status='unknown')
+ write(97,*) 'translational', transl_constraints, nindepfc
+ do i = 1, transl_constraints
+    write(97,'(*(es24.16))') atransl(i,:)
+ enddo
+ write(97,*) 'rotational', rot_constraints, nindepfc
+ do i = 1, rot_constraints
+    write(97,'(*(es24.16))') arot(i,:)
+ enddo
+ close(97)
+ end subroutine write_inv_rows
+
 end program FOCEX
-
-

@@ -21,6 +21,7 @@ SUBF90 = \
   svd_ridge.f90 \
   lasso.f90 \
   constrained_fit.f90 \
+  invariance_ranks.f90 \
   extratools.f90 \
   others.f90 \
   setup_amatrix.f90 \
