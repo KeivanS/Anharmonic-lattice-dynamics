@@ -47,7 +47,7 @@ FOCEX and THERMACOND set their own compiler options in their Makefiles. Then
 .. code-block:: bash
 
    make                    # = make all: everything below except SCOP8
-   make focex              # FOCEX (focex-8.19.x) and its utilities (read_outcar.x, ...)
+   make focex              # FOCEX (focex-9.0.x) and its utilities (read_outcar.x, ...)
    make sc_snaps           # SC-SNAPS (sc_snaps.x, poscar2xyz.py)
    make thermacond         # THERMACOND with MPI (tcond-2.0.x); thermacond-serial: without
    make anfomod            # ANFOMOD
@@ -74,13 +74,13 @@ FOCEX
 .. code-block:: bash
 
    cd FOCEX
-   make                      # -> ~/ALADYN/bin/focex-8.19.x
+   make                      # -> ~/ALADYN/bin/focex-9.0.x
 
 This compiles the sources listed in ``FOCEX/Makefile`` and produces a single
 executable. Two details of that Makefile are worth knowing:
 
 * the name of the executable is ``focex-<ver>.x``, with the version number ``ver`` set
-  near the top (currently 8.19; 8.18 and earlier were installed as ``~/BIN/v<ver>``), and
+  near the top (currently 9.0; 8.18 and earlier were installed as ``~/BIN/v<ver>``), and
 * it is moved to ``DESTDIR``, ``~/ALADYN/bin`` by default (``make DESTDIR=...`` for another
   place; the top-level ``make`` passes the ``DESTDIR`` of ``make.inc``).
 

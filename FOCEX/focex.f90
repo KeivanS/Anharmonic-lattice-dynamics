@@ -134,6 +134,8 @@ real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
 ! outputs: atom0%equilb_pos,shells%no_of_neighbors , rij, neighbors(:)%tau and n and maxshell
 ! maxshell is the actual # of shells within rcut(2). It is not nsmax; maxshell < maxneighbors
 
+   call check_born_symmetry   ! Z*, eps vs the space group (stops if broken, born_flag /= 0)
+
  write(ulog,*)' After set_neighbors: maxshells=',maxshells,' while maxneighbors=',maxneighbors
  write(ulog,*)' ************************* Writing the neighborlist ************************** '
 

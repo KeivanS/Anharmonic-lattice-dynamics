@@ -242,7 +242,7 @@ def newest_focex():
         c = sorted(glob.glob(os.path.expanduser(pat)), key=os.path.getmtime)
         if c:
             return c[-1]
-    return '~/ALADYN/bin/focex-8.19.x'
+    return '~/ALADYN/bin/focex-9.0.x'
 
 
 def vasp_inst(inst, fx, step, extra=()):

@@ -357,6 +357,234 @@
 
  end subroutine read_dielectric
 !==========================================================
+ subroutine check_born_symmetry
+!! Born charges and dielectric tensor against the space group (2026-10-23, user's request):
+!! for every operation {R|t} and atom k with R x_k + t = x_k' + lattice vector, the tensors must
+!! obey Z(k') = R Z(k) R^T (this includes the site symmetry, k'=k) and eps = R eps R^T. Both
+!! indices of charge(:,:) are Cartesian, so the test does not depend on their order.
+!! Deviation relative to max|Z| (resp. max|eps|): > 5e-2 stops, > 1e-4 gives a warning. Tensors on
+!! the wrong atoms give O(1) (BZO: 0.50); DFT tensors that are not symmetrized give ~1e-2 (GeSe:
+!! equivalent Ge with Z_yy 2.598 and 2.630, 1.0e-2), which only warns.
+!! On a stop, every reassignment of the Z* blocks among atoms of the same species is tried; if one
+!! obeys the symmetry, the reordered file is written to dielectric.params.symmetric and the
+!! equivalent atom order of structure.params is printed (nothing is changed in the run).
+!! Called after symmetry_init, only if born_flag /= 0.
+ use ios, only : ulog
+ use born, only : epsil, born_flag
+ use lattice, only : cart_to_prim
+ use atoms_force_constants, only : atom0, natom_prim_cell, op_matrix, isgop, isgopcount, sgfract
+ use geometry, only : v2a
+ use constants, only : r15
+ implicit none
+ integer isg, k, kp, kbad, kpbad, opbad, n, i, j, nperm, nfit
+ integer, allocatable :: img(:,:), perm(:), best(:), idx(:)
+ real(r15) r(3,3), d(3), zmax, emax, devmax, edevmax, dev, bestdev
+ real(r15), parameter :: tol_stop = 5d-2, tol_warn = 1d-4, tol_pos = 1d-4
+ integer, parameter :: maxperm = 1000000
+ logical more
+
+ if (born_flag .eq. 0) return
+ n = natom_prim_cell
+ allocate(img(n,isgopcount), perm(n), best(n), idx(n))
+! img(k,isg): the atom k is taken to by operation isg
+ do isg = 1, isgopcount
+    r = op_matrix(:,:,isgop(isg))
+    do k = 1, n
+       img(k,isg) = 0
+       do kp = 1, n
+          if (atom0(kp)%at_type .ne. atom0(k)%at_type) cycle
+          d = matmul(cart_to_prim, matmul(r, v2a(atom0(k)%equilibrium_pos)) + sgfract(:,isg) &
+&                                  - v2a(atom0(kp)%equilibrium_pos))
+          if (maxval(abs(d - nint(d))) .lt. tol_pos) then
+             img(k,isg) = kp ; exit
+          endif
+       enddo
+       if (img(k,isg) .eq. 0) then
+          write(ulog,*)'CHECK_BORN_SYMMETRY: no image of atom ',k,' under op ',isg
+          error stop 'CHECK_BORN_SYMMETRY: atom not mapped by a space-group operation'
+       endif
+    enddo
+ enddo
+ zmax = 0
+ do k = 1, n
+    zmax = max(zmax, maxval(abs(atom0(k)%charge)))
+ enddo
+ if (zmax .eq. 0) zmax = 1
+ emax = maxval(abs(epsil))
+ edevmax = 0
+ do isg = 1, isgopcount
+    r = op_matrix(:,:,isgop(isg))
+    edevmax = max(edevmax, maxval(abs(matmul(matmul(r, epsil), transpose(r)) - epsil)) / emax)
+ enddo
+ do k = 1, n
+    perm(k) = k
+ enddo
+ devmax = deviation(perm, .true.)
+ write(ulog,'(a,2es10.2)')' CHECK_BORN_SYMMETRY: max deviation of Z*, eps from the space group =', &
+&     devmax, edevmax
+ if (devmax .gt. tol_warn) then
+    r = op_matrix(:,:,isgop(opbad))
+    write(ulog,'(a,i3,a,i3,a,i3)')' worst: atom ',kpbad,' as image of atom ',kbad,' under op ',opbad
+    write(ulog,*)' given Z* of atom ',kpbad,' (rows):'
+    write(ulog,'(3f10.4)') transpose(atom0(kpbad)%charge)
+    write(ulog,*)' R Z*(atom ',kbad,') R^T (rows):'
+    write(ulog,'(3f10.4)') transpose(matmul(matmul(r, atom0(kbad)%charge), transpose(r)))
+ endif
+ if (devmax .gt. tol_stop .or. edevmax .gt. tol_stop) then
+    write(*,'(a,2es10.2)')' CHECK_BORN_SYMMETRY: Z*, eps deviate from the crystal symmetry by', &
+&        devmax, edevmax
+    write(*,*)' dielectric.params: one block per atom in the order of structure.params, in the'
+    write(*,*)' frame of structure.params (a along x, b in the xy plane); the log has the worst atom'
+    if (edevmax .le. tol_stop) call search_order
+    error stop 'CHECK_BORN_SYMMETRY: Born charges or dielectric tensor break the crystal symmetry'
+ elseif (devmax .gt. tol_warn .or. edevmax .gt. tol_warn) then
+    write(*,'(a,2es10.2)')' WARNING: Z*, eps deviate from the crystal symmetry by ',devmax,edevmax
+    write(ulog,'(a,2es10.2)')' WARNING: Z*, eps deviate from the crystal symmetry by ',devmax,edevmax
+ endif
+ deallocate(img, perm, best, idx)
+
+ contains
+!----------------------------------------
+ function deviation(p, track) result(dm)
+!! max over ops and atoms of |Z(p(k')) - R Z(p(k)) R^T| / zmax, atom k carrying block p(k)
+ integer, intent(in) :: p(:)
+ logical, intent(in) :: track
+ real(r15) dm, dv, rr(3,3)
+ integer is, kk
+ dm = 0
+ do is = 1, isgopcount
+    rr = op_matrix(:,:,isgop(is))
+    do kk = 1, n
+       dv = maxval(abs(atom0(p(img(kk,is)))%charge &
+&                    - matmul(matmul(rr, atom0(p(kk))%charge), transpose(rr)))) / zmax
+       if (dv .gt. dm) then
+          dm = dv
+          if (track) then
+             kbad = kk ; kpbad = img(kk,is) ; opbad = is
+          endif
+       endif
+    enddo
+ enddo
+ end function deviation
+!----------------------------------------
+ subroutine search_order
+!! all reassignments of the blocks within each species (odometer of lexicographic permutations)
+ real(r15) x
+ nperm = 1
+ do k = 1, n
+    j = count(atom0(1:k)%at_type .eq. atom0(k)%at_type)     ! factorial of the species counts
+    nperm = nperm * j
+    if (nperm .gt. maxperm) then
+       write(*,*)' too many reorderings to try (> ',maxperm,'): fix dielectric.params by hand'
+       return
+    endif
+ enddo
+ do k = 1, n
+    perm(k) = k
+ enddo
+ bestdev = huge(1d0) ; nfit = 0
+ more = .true.
+ do while (more)
+    x = deviation(perm, .false.)
+    if (x .lt. tol_warn) nfit = nfit + 1
+    if (x .lt. bestdev) then
+       bestdev = x ; best = perm
+    endif
+    more = next_assignment(perm)
+ enddo
+ write(ulog,'(a,i8,a,es10.2,a,i6)')' CHECK_BORN_SYMMETRY: tried ',nperm,' block orders; best ', &
+&     bestdev,'; orders obeying the symmetry: ',nfit
+ if (bestdev .ge. tol_warn) then
+    write(*,*)' no reordering of the Z* blocks within a species obeys the symmetry: the tensors'
+    write(*,*)' themselves (values, frame or transposition) are wrong'
+    return
+ endif
+ write(*,'(a,30i4)')' the symmetry is obeyed with the blocks of dielectric.params in the order', best
+ write(*,*)' (atom k gets the block now in position best(k)); written to dielectric.params.symmetric'
+ do k = 1, n               ! idx: structure.params order that fits the present dielectric.params
+    idx(best(k)) = k
+ enddo
+ write(*,'(a,30i4)')' equivalently, keep dielectric.params and list the atoms of structure.params as', idx
+ write(ulog,*)' CHECK_BORN_SYMMETRY: block order ',best,'; or atom order ',idx
+ if (nfit .gt. 1) write(*,*)' (',nfit,' orders obey the symmetry; they give the same physics)'
+ call write_reordered(best)
+ end subroutine search_order
+!----------------------------------------
+ logical function next_assignment(p)
+!! next permutation of the blocks among atoms of the same species: lexicographic next
+!! permutation of each species' positions, odometer over species; false after the last one
+ integer, intent(inout) :: p(:)
+ integer t, m, sp(n), q(n), a, b, tmp
+ next_assignment = .false.
+ do t = maxval(atom0(1:n)%at_type), 1, -1
+    m = 0
+    do k = 1, n
+       if (atom0(k)%at_type .eq. t) then
+          m = m + 1 ; sp(m) = k ; q(m) = p(k)
+       endif
+    enddo
+    if (m .lt. 2) cycle
+    a = m - 1                                   ! lexicographic next permutation of q(1:m)
+    do while (a .ge. 1)
+       if (q(a) .lt. q(a+1)) exit
+       a = a - 1
+    enddo
+    if (a .ge. 1) then
+       b = m
+       do while (q(b) .le. q(a))
+          b = b - 1
+       enddo
+       tmp = q(a) ; q(a) = q(b) ; q(b) = tmp
+       q(a+1:m) = q(m:a+1:-1)
+       p(sp(1:m)) = q(1:m)
+       next_assignment = .true.
+       return
+    endif
+    q(1:m) = q(m:1:-1)                          ! wrap this species to its first order, carry on
+    p(sp(1:m)) = q(1:m)
+ enddo
+ end function next_assignment
+!----------------------------------------
+ subroutine write_reordered(p)
+!! dielectric.params with the Z* blocks (lines 5.., 3 per atom) in the order p; other lines kept
+ integer, intent(in) :: p(:)
+ character(len=400) line
+ character(len=400), allocatable :: lines(:)
+ integer u, nl, ios_, ll
+ open(newunit=u, file='dielectric.params', status='old')
+ nl = 0
+ do
+    read(u,'(a)',iostat=ios_) line
+    if (ios_ .ne. 0) exit
+    nl = nl + 1
+ enddo
+ allocate(lines(nl))
+ rewind(u)
+ do ll = 1, nl
+    read(u,'(a)') lines(ll)
+ enddo
+ close(u)
+ if (nl .lt. 4 + 3*n) then
+    write(*,*)' dielectric.params has fewer lines than expected; reordered file not written'
+    return
+ endif
+ open(newunit=u, file='dielectric.params.symmetric', status='replace')
+ do ll = 1, 4
+    write(u,'(a)') trim(lines(ll))
+ enddo
+ do k = 1, n
+    do ll = 1, 3
+       write(u,'(a)') trim(lines(4 + 3*(p(k)-1) + ll))
+    enddo
+ enddo
+ do ll = 5 + 3*n, nl
+    write(u,'(a)') trim(lines(ll))
+ enddo
+ close(u)
+ end subroutine write_reordered
+
+ end subroutine check_born_symmetry
+!==========================================================
  subroutine read_latdyn
 !! reads information on kpoint mesh within the full BZ, their shift, temp range, whether classical or quantum
  use ios

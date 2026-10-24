@@ -87,7 +87,7 @@ conventional cubic cell, :math:`a = 5.7022565` Å) and 36 snapshots.
    # after compiling (see the Installation chapter)
    mkdir -p ~/runs/Ge && cd ~/runs/Ge
    cp <path-to-repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
-   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-8.19.x
+   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.0.x
 
 On a single modern core the run takes a few minutes. It should end with
 
@@ -737,6 +737,16 @@ which the atoms are declared in ``structure.params``. The acoustic sum rule is
 imposed on the charges automatically (the excess is spread equally over the
 atoms), and the ASR-corrected values are echoed to the log.
 
+Since 9.0 FOCEX checks the tensors against the space group: for every operation
+:math:`\{R|t\}` taking atom :math:`k` to atom :math:`k'`,
+:math:`Z^*(k') = R\,Z^*(k)\,R^T` (including the site symmetry, :math:`k'=k`) and
+:math:`\epsilon = R\,\epsilon\,R^T`. A deviation above 5 % of the largest element
+stops the run; then FOCEX tries every reassignment of the blocks among atoms of
+the same species, and if one obeys the symmetry it prints that order (and the
+equivalent atom order for ``structure.params``) and writes
+``dielectric.params.symmetric``. Smaller deviations (DFT tensors not quite
+symmetric) only give a warning.
+
 ``latdyn.params``
 ^^^^^^^^^^^^^^^^^
 
@@ -845,7 +855,7 @@ input files in one directory, ``cd`` into it and run the binary.
    ls
    # default.params  dielectric.params  kpbs.params  latdyn.params
    # structure.params  POSCAR1  FORCEDISP1
-   ~/ALADYN/bin/focex-8.19.x | tee focex.out
+   ~/ALADYN/bin/focex-9.0.x | tee focex.out
 
 The run is serial and memory-bound: the largest array is the fit matrix, of
 size (number of force components + constraints) × (number of independent FCs).
@@ -1191,6 +1201,14 @@ Run stops with an array-bound or allocation error in ``setup_maps``
     ``default.params`` is too small for the range you requested. Replace the
     ``0`` on the relevant line by an explicit, larger value.
 
+``CHECK_BORN_SYMMETRY: Born charges or dielectric tensor break the crystal symmetry``
+    The Born tensors are on the wrong atoms, or in another frame than
+    ``structure.params``. If a reordering fixes it, it is printed and written to
+    ``dielectric.params.symmetric``; the log gives the worst atom and the
+    tensor its symmetry requires. Example: BZO with the three O tensors
+    cyclically permuted gave a 25 % fit error and imaginary modes at
+    :math:`\Gamma`; in the right order 3.5 %.
+
 Imaginary (negative) acoustic frequencies near :math:`\Gamma`
     Almost always a violated acoustic sum rule: set ``itrans = 1`` and, if
     necessary, ``enforce_inv = 1`` on line 5 of ``structure.params``.
@@ -1209,3 +1227,12 @@ Copy ``lat_fc.dat`` together with ``fc1.dat``, ``fc2.dat``, ``fc3.dat`` (and
 ``fc4.dat`` if you fitted it) into their run directory; see
 :doc:`runthermacond` and :doc:`runscop8` for the additional input each of them
 needs.
+
+Version history
+---------------
+
+9.0 (2026-10-23)
+    Translational and rotational invariance rows of all ranks built in one loop
+    (the old rank-by-rank routines, with a column-index bug for dropped FC2
+    groups now fixed, remain available with ``FOCEX_INVARIANCE=old``); Born
+    charges and dielectric tensor checked against the crystal symmetry.

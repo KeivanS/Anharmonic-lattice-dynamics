@@ -14,11 +14,13 @@ the Makefiles drop `.o`/`.mod` files next to the sources.
 ## Building and running FOCEX
 
 ```bash
-cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-8.19.x
+cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-9.0.x
 ```
 
 Executables (2026-10-23, user's rule): all in `~/ALADYN/bin` (`DESTDIR`; the top-level `make`
-passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-8.19.x` (8.18 and earlier: `~/BIN/v8.18`),
+passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-9.0.x` (9.0 since 2026-10-23, user: invariance
+rows for all ranks + the Born check; 9.1 is reserved for reading some FC ranks and fitting the rest;
+8.18 and earlier: `~/BIN/v8.18`),
 THERMACOND `tcond-2.0.x` / `tcond-2.0-serial.x` (was `kap8` in its
 source folder). Top-level `make` (= `make all`, user's spec 2026-10-23): python-tools, focex (FOCEX +
 FOCEX/utility), sc_snaps, thermacond, anfomod; single targets of those names, `thermacond-serial`,
@@ -357,8 +359,15 @@ inv_fcs.dat, fits with the chosen one. include_fc=2 is not handled yet (marked: 
   the structure.params atom order). ~/PROJECTS/MATERIALS/BZO had the three O tensors cyclically
   permuted (O at (1/2,0,1/2) given -4.85 on xx; its Zr-O bond is along y): with born_flag=2 the fit
   was 25.4 %, imaginary Gamma modes (-131 1/cm), cubic degeneracy broken; with them on the bond
-  directions 3.46 % (born_flag=0: 2.89 %; free linear fit of the same forces: 3.2 %). FOCEX does
-  not check Z* against the site symmetry.
+  directions 3.46 % (born_flag=0: 2.89 %; free linear fit of the same forces: 3.2 %). Since 9.0
+  `check_born_symmetry` (ios.f90, after set_neighbor_list) tests Z(k') = R Z(k) R^T for every
+  space-group op (site symmetry included) and eps = R eps R^T: > 5e-2 relative stops, and every
+  reassignment of the blocks within a species is tried (BZO: block order 1 2 4 5 3, or atom order
+  1 2 5 3 4 in structure.params -- the user's fix -- written to dielectric.params.symmetric);
+  > 1e-4 warns (GeSe, TEST_GeSe: equivalent Ge with Z_yy 2.598 / 2.630, 1.0e-2). RbBr 1e-17.
+- OPEN (BZO, 2026-10-23): with the correct Z and born_flag=2 the zone-boundary spectrum differs
+  from born_flag=0 (R: top 916 vs 768 1/cm, above the Gamma LO 610) -- the NA term added back to
+  the dynamical matrix may not equal the Ewald force subtracted from the data.
 - `conductance.dat` is written but its band loop is `do j=1,-1`, so it is all
   zeros.
 - `structure.params` line 3 is `scal [convcoord]`. It is read as text, so the
