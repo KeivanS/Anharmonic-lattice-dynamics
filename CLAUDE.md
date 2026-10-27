@@ -539,6 +539,10 @@ As of 2026-10-15 **this directory is the git clone** (`main`, tracking
 `~/Documents/Documents - MAE-/GitHub/` is no longer the working copy.
 Current focus is the **FOCEX** folder.
 
-`git` over HTTPS to GitHub works **only with the Bash sandbox disabled**;
-`WebFetch` and sandboxed `curl` cannot reach github.com at all. Other hosts
-(readthedocs.io, PyPI) are fine.
+`origin` is **SSH** since 2026-10-27 (`git@github.com:KeivanS/Anharmonic-lattice-dynamics.git`):
+`~/.ssh/id_ed25519` is in the agent and authenticates as KeivanS, so `git fetch`/`git push` need
+no password and work **with the Bash sandbox on**. Over HTTPS they do not: the `osxkeychain`
+helper has no github.com entry (no `.netrc`, no `GH_TOKEN` either), so a push only got
+`could not read Username`, and HTTPS needed the sandbox disabled even to connect. The SC_SNAPS
+clone at `~/PROJECTS/SC_SNAPS` is still on an HTTPS remote. `WebFetch` and sandboxed `curl`
+cannot reach github.com at all. Other hosts (readthedocs.io, PyPI) are fine.
