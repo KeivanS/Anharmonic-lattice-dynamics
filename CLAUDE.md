@@ -513,6 +513,10 @@ old e1 path: it counts |x| > margin.
 pip install -r docs/requirements.txt && cd docs && make html
 ```
 
+`docs/source/focexagent_guide.rst` (2026-10-27, user): short focex-agent guide with example inputs,
+installation at its end; it and the full agent manual (runfocexagent.rst) come last, before the FAQ
+(the agent was added after ALATDYN). Keep its keywords in step with the template and the full manual.
+
 `docs/source/runfocex.rst` is the FOCEX manual — inputs line by line, output
 columns, troubleshooting keyed to the code's actual error strings. Keep the
 build at zero warnings.

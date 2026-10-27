@@ -55,7 +55,7 @@ THERMACOND_JOB: 0           # 0: no THERMACOND (FOCEX already gives bands, DOS, 
 # THERMACOND_SOLVER: 0       # job 2: 0 conjugate gradient, 1 SVD
 
 # ── programs (defaults shown) ──
-# FOCEX_X: ~/ALADYN/bin/focex-8.19.x   # default: the newest ~/ALADYN/bin/focex-*.x
+# FOCEX_X: ~/ALADYN/bin/focex-9.0.x    # default: the newest ~/ALADYN/bin/focex-*.x
 # SC_SNAPS_X: ~/ALADYN/bin/sc_snaps.x   # (else ~/BIN/sc_snaps.x)
 # READ_OUTCAR_X: ~/ALADYN/bin/read_outcar.x
 # THERMACOND_X: ~/ALADYN/bin/tcond-2.0.x   # default: the newest ~/ALADYN/bin/tcond-*.x (MPI build)

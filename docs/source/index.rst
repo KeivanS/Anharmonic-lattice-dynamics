@@ -15,9 +15,10 @@ Anharmonic-LATtice-DYNamics (ALATDYN)
    install
    runscsnaps
    runfocex
-   runfocexagent
    runthermacond
    runscop8
+   focexagent_guide
+   runfocexagent
    faq
 
 .. note::
