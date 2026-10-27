@@ -75,7 +75,7 @@
   \normalsize Force constants and phonons from a crystal structure: VASP $\cdot$ SC-SNAPS $\cdot$
   FOCEX $\cdot$ Diagnosis \& repair\\[6pt]{\color{mainblue}\rule{\linewidth}{0.5pt}}}
 \author{Keivan Esfarjani}
-\date{v1.1 $\cdot$ October 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
+\date{v1.2 $\cdot$ October 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
 
 \begin{document}
 \maketitle
@@ -345,7 +345,11 @@ from that task. A job that hits its time limit is simply submitted again.
 \item[collect] \cmd{read_outcar.x} reads the positions and forces of every run into
   \cmd{04_supercells/FORCEDISP1}; \cmd{POSCAR1} is the undistorted supercell. The report gives the
   largest net force on a supercell (should be $\approx 0$) and the largest difference between the
-  positions in OUTCAR and in POSCAR.
+  positions in OUTCAR and in POSCAR. The undistorted supercell (\cmd{snap_000}, run with
+  \cmd{ISIF = 2}; the other snapshots use \cmd{ISIF = 1}, which gives only the trace) also gives the
+  stress of the reference structure: \cmd{stress.params} (GPa, tensile positive, i.e.\ minus the
+  \cmd{in kB} line of OUTCAR divided by 10) is written and copied to the FOCEX folders, where it
+  enters the Huang rows and the elastic constants.
 \item[focex] The five input files of FOCEX are written in \cmd{05_focex} (\cmd{structure.params},
   \cmd{latdyn.params}, \cmd{kpbs.params}, \cmd{dielectric.params}, \cmd{default.params}) and FOCEX
   is run. With Born charges a second run without them is made in \cmd{05_focex/NOBORN}, for
@@ -703,6 +707,10 @@ by adding \cmd{THERMACOND_JOB} to its \cmd{focex-agent-instructions.txt} and sub
 \section{Version history}
 % ============================================================
 \begin{description}
+\item[1.2] 2026-10-27, with FOCEX 9.0: the undistorted supercell \cmd{snap_000} is run with
+  \cmd{ISIF = 2}, and \cmd{collect} writes its stress, minus the \cmd{in kB} line of OUTCAR divided
+  by 10, as \cmd{stress.params} (GPa, tensile positive) for FOCEX (Huang rows and elastic
+  constants); the test VASP stand-in prints the stress.
 \item[1.1] 2026-10-23: task \cmd{thermacond}, switched on by \cmd{THERMACOND_JOB} (latdyn.params
   line 8), with \cmd{THERMACOND_MESH}, \cmd{THERMACOND_T}, \cmd{THERMACOND_SOLVER}; a given
   \cmd{TEMPERATURE} is kept; \cmd{SUPERCELL} matrix and \cmd{PROJECT_DIR} documented; SC-SNAPS

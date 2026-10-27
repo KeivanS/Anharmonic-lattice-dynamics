@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""focex-agent.py 1.1 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
+"""focex-agent.py 1.2 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
 structure (MODE: from_scratch, VASP + SC_SNAPS + FOCEX) or from existing force-displacement data
 (MODE: extract_only, FOCEX only).  Manual: FOCEX/AGENT/focexagent_manual.pdf
 
@@ -59,7 +59,7 @@ os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 os.environ.setdefault('OMP_NUM_THREADS', os.environ.get('VASP_OMP_NUM_THREADS', '1'))
 import numpy as np
 
-__version__ = '1.1'
+__version__ = '1.2'
 AGENT = os.path.dirname(os.path.realpath(__file__))          # FOCEX/AGENT (realpath: works through a symlink)
 HERE = os.path.dirname(AGENT)                                # the FOCEX folder: templates, utility/
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
@@ -496,6 +496,27 @@ def sc_kmesh(S, V, Nprim):
 
 
 # ── VASP output checks ────────────────────────────────────────────────────────
+def outcar_stress(outcar):
+    """Stress of the last ionic step of a VASP OUTCAR in FOCEX's convention (stress.params): GPa,
+    sigma = dE/(V d eps), tensile > 0. VASP prints -dE/(V d eps) in kB, positive when the cell wants to
+    expand (vasp.at wiki, ISIF), components XX YY ZZ XY YZ ZX, taken as printed. Returns (sigma, pstress
+    in kB from the 'Pullay stress' line); sigma None without a full tensor (ISIF < 2: trace only)."""
+    if not os.path.isfile(outcar):
+        return None, 0.0
+    t = open(outcar, errors='replace').read()
+    m = re.search(r'ISIF\s*=\s*(\d+)', t)
+    kb = re.findall(r'^\s*in kB' + r'\s+([-\d.Ee+*]+)' * 6, t, re.M)
+    pul = re.findall(r'Pullay stress\s*=\s*([-\d.Ee+]+)', t)
+    p = float(pul[-1]) if pul else 0.0
+    if not m or int(m.group(1)) < 2 or not kb:
+        return None, p
+    try:
+        xx, yy, zz, xy, yz, zx = (float(x) for x in kb[-1])
+    except ValueError:
+        return None, p
+    return -np.array([[xx, xy, zx], [xy, yy, yz], [zx, yz, zz]]) / 10.0, p
+
+
 def outcar_status(d, kind):
     """(ok, message) for the OUTCAR in d; kind: relax | static | dfpt."""
     f = os.path.join(d, 'OUTCAR')
@@ -891,7 +912,9 @@ class Agent:
         if not has_tag(incar_lines(self.fx['blocks'].get('incar_snaps')), 'LORBIT'):
             incar = set_tags(incar, {'LORBIT': None, 'EDIFFG': None, 'ISTART': 0, 'ICHARG': 2})
         for f in snaps:
-            write(os.path.join(top, 'snap_' + f.rsplit('_', 1)[1], 'INCAR'), incar)
+            i = f.rsplit('_', 1)[1]
+            # the undistorted supercell gives the stress of the reference: full tensor (ISIF=1 is the trace only)
+            write(os.path.join(top, 'snap_' + i, 'INCAR'), set_tags(incar, {'ISIF': 2}) if i == '000' else incar)
         return True, (f'{len(snaps)} folders; KPOINTS {mesh} from the primitive {Np}; '
                       f'{sum(base["counts"])} atoms' + (f'; KPAR {inst_k["relax_kpar"]} NCORE {inst_k["relax_ncore"]}'
                                                        if inst_k else ''))
@@ -979,6 +1002,16 @@ class Agent:
         shutil.copy(self.d('03_snaps', 'poscar_000'), os.path.join(top, 'POSCAR1'))
         msg = (f'FORCEDISP1 from {len(dirs)} OUTCARs; POSCAR1 = poscar_000; max |sum F| = {worst_sum:.2e} eV/A; '
                f'max |r_OUTCAR - r_POSCAR| = {worst_pos:.1e} A')
+        sig, pstress = outcar_stress(os.path.join(top, 'snap_000', 'OUTCAR'))
+        if sig is None:
+            msg += '; no full stress tensor in snap_000/OUTCAR (ISIF < 2): stress.params not written'
+        else:
+            write(os.path.join(top, 'stress.params'),
+                  ''.join(' '.join(f'{x:12.6f}' for x in r) + '\n' for r in sig) +
+                  '# stress of the undistorted supercell (snap_000/OUTCAR), GPa, tensile > 0 (= -VASP in kB/10)\n')
+            msg += f'; stress.params from snap_000: diagonal {np.diag(sig).round(3).tolist()} GPa'
+            if pstress != 0:
+                msg += f' -- WARNING: PSTRESS = {pstress:g} kB in snap_000, check stress.params'
         if worst_sum > 0.05 or worst_pos > 1e-3:
             msg += ' -- WARNING: check these'
         return True, msg
@@ -1066,6 +1099,8 @@ class Agent:
         for i in range(1, self.state.get('npairs', 1) + 1):
             for f in (f'POSCAR{i}', f'FORCEDISP{i}'):
                 shutil.copy(self.d('04_supercells', f), d)
+        if os.path.isfile(self.d('04_supercells', 'stress.params')):
+            shutil.copy(self.d('04_supercells', 'stress.params'), d)
         write(os.path.join(d, 'structure.params'), self.structure_params(line5))
         write(os.path.join(d, 'latdyn.params'), self.latdyn_params())
         write(os.path.join(d, 'kpbs.params'), self.kpbs_params())

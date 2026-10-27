@@ -58,10 +58,11 @@ def read_poscar(path):
 
 
 def energy_forces(A, X):
-    """Total energy and forces (eV, eV/A) of the periodic crystal (cell rows A, positions X)."""
+    """Total energy, forces (eV, eV/A) and stress dE/(V d eps) (eV/A^3, tensile > 0) of the
+    periodic crystal (cell rows A, positions X)."""
     n = len(X)
     inv = np.linalg.inv(A)
-    E, F = 0.0, np.zeros_like(X)
+    E, F, S = 0.0, np.zeros_like(X), np.zeros((3, 3))
     # images needed to cover R_C
     h = [int(math.ceil(R_C * np.linalg.norm(inv[:, i]))) + 1 for i in range(3)]
     shifts = [np.array([a, b, c]) @ A for a in range(-h[0], h[0] + 1)
@@ -77,7 +78,8 @@ def energy_forces(A, X):
                 v, dv = pair(r)
                 E += 0.5 * v
                 F[i] += dv * d / r          # force on i from j: -dV/dr_i = dV/dr * d/r
-    return E, F
+                S += 0.5 * dv * np.outer(d, d) / r
+    return E, F, S / abs(np.linalg.det(A))
 
 
 def main():
@@ -93,7 +95,8 @@ def main():
     relax = nsw > 0 and ibrion in (1, 2, 3)
     dfpt = tags.get('LEPSILON', '').startswith('.T') or tags.get('IBRION', '') in ('7', '8')
     L, A, species, counts, X = read_poscar('POSCAR')
-    E, F = energy_forces(A, X)
+    E, F, S = energy_forces(A, X)
+    isif = int(float(tags.get('ISIF', '2') or 2))
     out = [' vasp.fake (focex-agent test: nearest-neighbour Lennard-Jones)',
            f'   number of dos      NEDOS =    301   number of ions     NIONS = {len(X):6d}',
            ' ------------------------ aborting loop because EDIFF is reached ----------------------------',
@@ -102,6 +105,12 @@ def main():
            ' -----------------------------------------------------------------------------------']
     out += [' %12.5f %12.5f %12.5f    %14.6f %14.6f %14.6f' % (*x, *f) for x, f in zip(X, F)]
     out += [' -----------------------------------------------------------------------------------']
+    if isif >= 2:   # VASP prints -dE/(V d eps) in kB (positive: the cell wants to expand), XX YY ZZ XY YZ ZX
+        kb = -S * 1602.1766208
+        out += [f'   ISIF   =      {isif}    stress and relaxation',
+                '  Direction    XX          YY          ZZ          XY          YZ          ZX',
+                '  in kB  ' + ''.join(f'{x:12.5f}' for x in (kb[0, 0], kb[1, 1], kb[2, 2], kb[0, 1], kb[1, 2], kb[2, 0])),
+                f'  external pressure = {np.trace(kb) / 3:11.2f} kB  Pullay stress =        0.00 kB']
     if dfpt:
         out += [' MACROSCOPIC STATIC DIELECTRIC TENSOR (including local field effects in DFT)',
                 ' ------------------------------------------------------',

@@ -845,8 +845,11 @@ small, raise the corresponding line for that rank.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The stress of the reference structure, 3 lines of 3 numbers in GPa,
-:math:`\sigma = (1/V)\, \partial E/\partial \eta` (tensile positive; check
-the sign convention of your DFT code). It enters the Huang rows, which for a stressed reference read
+:math:`\sigma = (1/V)\, \partial E/\partial \eta` (tensile positive). VASP prints
+:math:`-\sigma` in kbar (positive when the cell wants to expand; ``in kB`` line of OUTCAR, order
+XX YY ZZ XY YZ ZX, full tensor only with ``ISIF`` :math:`\ge` 2), so the file holds minus those values
+divided by 10; ``focex-agent`` writes it this way. It enters the elastic constants (:doc:`theory`,
+elastic constants) and the Huang rows, which for a stressed reference read
 :math:`S_{\alpha\beta\gamma\delta} - S_{\gamma\delta\alpha\beta} =
 -2\Omega(\delta_{\alpha\beta}\sigma_{\gamma\delta} -
 \delta_{\gamma\delta}\sigma_{\alpha\beta})`, with :math:`\Omega` the volume of

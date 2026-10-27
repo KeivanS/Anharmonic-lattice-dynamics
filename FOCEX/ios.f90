@@ -850,7 +850,7 @@
  use constants, only : pi
  use constants, only : r15
  implicit none
- integer i !,n(3)
+ integer i,j !,n(3)
  real(r15) a(3)
 
 ! check mapping and assign label and address to each atom in the supercell
@@ -858,6 +858,17 @@
  call check_input_poscar_consistency_new
 
 ! call write_out(6,' cart_to_prim ',cart_to_prim)
+! index of each supercell atom (n,tau) in the atompos list; 0 if beyond the shells of atompos
+ do i=1,natom_super_cell
+    atom_sc(i)%cell%atomposindx = 0
+    do j=1,natoms
+       if (iatomcell0(j).eq.atom_sc(i)%cell%tau .and. all(iatomcell(:,j).eq.atom_sc(i)%cell%n)) then
+          atom_sc(i)%cell%atomposindx = j
+          exit
+       endif
+    enddo
+ enddo
+
  write(ulog,*)' ASSIGNMENTS WERE DONE FOR ATOMS IN THE SUPER CELL '
 ! write(ulog,*)'i_sc,type(i),tau(i)      n(i)    ,                r_cart(i)              r_red(i) '
   do i=1,natom_super_cell

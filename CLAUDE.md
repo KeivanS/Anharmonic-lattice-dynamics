@@ -29,7 +29,7 @@ not exist, geometry.f95 has only the `.dot.` operator; from 07f9f456, YuanLiang2
 user: ignore SCOP8 for now). Verified in a scratch copy: make all exit 0, make clean exit 0.
 Old utility builds were kept in `~/ALADYN/bin/old_2026-10-23/`. Tags (2026-10-23, approved): focex-8.19; the agent is
 versioned separately, focex-agent-1.0, focex-agent-1.1 (thermacond task; `__version__` in focex-agent.py and diagnose.py, manual title and
-its Version history section); VASP-Flow v2.6 (at ef92326) and v2.7.
+its Version history section); 1.2 (2026-10-27, snap_000 ISIF=2 -> stress.params; no tag); VASP-Flow v2.6 (at ef92326) and v2.7.
 `FOCEX/Makefile` does **not** include the top-level `make.inc`: it hardcodes
 `FF=gfortran`, `FLAGS=-O2 -fcheck=all`, `exe=focex-$(ver).x`, `DESTDIR ?= ~/ALADYN/bin`. It has
 CRLF line endings. The utility programs are separate
@@ -114,6 +114,11 @@ ZnO/GaN/BAs run scripts still use and which is kept until the user removes it).
   MPI build) with the profile's MPI command; report: <= 7 temperatures, kappa_RTA, full, kappa_C,
   warning if full < 0.99 RTA (open direct-solver issue). diagnose.py: TC_PAT. Tested on argon (6^3,
   RTA isotropic, ~1/T; job 0 skipped; missing binary held).
+- Reference stress (2026-10-27): snap_000 (undistorted supercell) runs with ISIF=2 (others ISIF=1 =
+  trace only, vasp.at wiki); collect writes 04_supercells/stress.params = -(OUTCAR "in kB", XX YY ZZ
+  XY YZ ZX)/10 GPa (user: VASP positive = cell wants to expand; wiki agrees; PSTRESS not subtracted,
+  report warns if nonzero), copied to every FOCEX folder. fake_vasp.py prints the LJ virial stress
+  (= -dE/dV to 6 digits). Argon test: stress 0, fit 0.51 %, max |w - exact| 0.2 1/cm.
 - Snapshot temperature (user's rule, 2026-10-23): a `TEMPERATURE:` given is used as is (effective
   phonons at that T); only without it is the default 30 K retuned to `DISP_TARGET` (Ar: 50 K kept,
   rms 0.0138 A). `SUPERCELL:` 9 integers = supercell.inp rows, RS_i = sum_j n_ij R0_j (primitive).
@@ -453,8 +458,11 @@ old e1 path: it counts |x| > margin.
   correction doubled). Verified: Ge, BZO unchanged; Ge with stress.params -1 GPa: C11 +1, C44 +0.5,
   C12 same, Huang unaffected; deviatoric (0.5,0,-0.5) flags Huang by 1.0 GPa. With enforce_inv=0
   BZO/MoTe2 trip the rotational check at 1e-5, GeSe 1.6e-3 (and ASR 3e-4).
-  supercell_*.xyz: column atom_sc(i)%cell%atomposindx is never assigned (uninitialized; differs
-  run to run). theory.rst Eq. 8: 1/2 chi (user).
+  Bravais lattices (mechanical0) take the same stress correction and Huang check (Ar -1 GPa: C11 +1,
+  C44 +0.5). Helpers read_stress_params, check_huang_stress (others.f90 has its own check_huang).
+  supercell_*.xyz: atom_sc(i)%cell%atomposindx (only written there) is assigned since 2026-10-27 in
+  identify_atoms_in_supercell (index in atompos, 0 beyond its shells; verified: atompos(idx) = r_sc
+  + constant shift for every atom of Ge, GeSe). theory.rst Eq. 8: 1/2 chi (user).
 - `structure.params` line 3 is `scal [convcoord]`. It is read as text, so the
   old one-value form (`5.70 # scale`) still works and means `convcoord=0`.
   `convcoord=0`: atom positions are in units of the conventional vectors

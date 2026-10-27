@@ -1840,6 +1840,66 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 5 format(a,i5, 99(1x,f10.4))
  end subroutine get_phi_zeta_Xi
 !============================================================
+ subroutine read_stress_params(uio,s,ex)
+!! stress of the reference structure from stress.params (3 lines of 3, GPa, s = dE/(V d eps),
+!! tensile > 0; the file of the Huang rows), symmetrized; s=0 and ex=.false. without the file
+ use ios, only : ulog, write_out
+ use constants, only : r15
+ use linalgb, only : symmetrize2
+ implicit none
+ integer, intent(in) :: uio
+ real(r15), intent(out) :: s(3,3)
+ logical, intent(out) :: ex
+ integer i
+ s=0
+ inquire(file='stress.params',exist=ex)
+ if(.not.ex) return
+ open(357,file='stress.params',status='old')
+ do i=1,3
+    read(357,*) s(i,:)
+ enddo
+ close(357)
+ call write_out(uio ,' stress.params: stress of the reference structure (GPa) ',s)
+ call write_out(ulog,' stress.params: stress of the reference structure (GPa) ',s)
+ call symmetrize2(3,s)
+ end subroutine read_stress_params
+!============================================================
+ subroutine check_huang_stress(uio,s)
+!! Huang conditions, generalized to a stressed reference (FOCEX/notes/generalized_huang.tex; the same
+!! relation as the Huang rows of set_huang_inv_constraints): [ab,gl]-[gl,ab] = d_ab s_gl - d_gl s_ab,
+!! [ab,gl] = -1/(2V) sum phi_ab x_g x_l = atld_raw(a,g,b,l) (GPa); s the reference stress (GPa)
+ use ios, only : ulog
+ use constants, only : r15
+ use mech, only : atld_raw
+ implicit none
+ integer, intent(in) :: uio
+ real(r15), intent(in) :: s(3,3)
+ integer al,be,ga,de,delta_k
+ real(r15) junk,hmax,hdev,amax
+ hmax=0; hdev=0; amax=maxval(abs(atld_raw))
+ do al=1,3
+ do be=1,3
+ do ga=1,3
+ do de=1,3
+    junk=atld_raw(al,ga,be,de)-atld_raw(ga,al,de,be)
+    hmax=max(hmax,abs(junk))
+    junk=junk-(delta_k(al,be)*s(ga,de)-delta_k(ga,de)*s(al,be))
+    hdev=max(hdev,abs(junk))
+ enddo
+ enddo
+ enddo
+ enddo
+ write(ulog,4)'Huang: max|[ab,gl]-[gl,ab]|, max|[ab,gl]-[gl,ab]-(d_ab s_gl-d_gl s_ab)|, max|[ab,gl]| (GPa)=', &
+ &            hmax,hdev,amax
+ write(uio ,4)'Huang: max|[ab,gl]-[gl,ab]|, max|[ab,gl]-[gl,ab]-(d_ab s_gl-d_gl s_ab)|, max|[ab,gl]| (GPa)=', &
+ &            hmax,hdev,amax
+ if(hdev.gt.1d-3*amax) then
+    call warn3(   6,'Huang conditions (with the reference stress) violated by (GPa)',hdev)
+    call warn3(ulog,'Huang conditions (with the reference stress) violated by (GPa)',hdev)
+ endif
+4 format(a,99(1x,g11.4))
+ end subroutine check_huang_stress
+!============================================================
  subroutine mechanical0(atld0,uio)
 !! calculates elastic constants, only in the cubic case, from sound velocities atlong 110
 !! also calculates the standard term -0.5*phi_ik R_jl R_jl (translationally invariant formulation)
@@ -1851,12 +1911,14 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  use atoms_force_constants
  use svd_stuff
  use constants
- use mech, only : elastic,compliance,rho_SI
+ use mech, only : elastic,compliance,rho_SI,atld_raw
  implicit none
  integer, intent(in) :: uio
  real(r15), intent(out) :: atld0(3,3,3,3) 
  integer tau,taup,al,be,ga,de,i,j,t,g,ti,ired,voigt,la,nl,nc,nu,g1,g2,mu,nq,s,n1,n2,ndn,ier
- real(r15)  rij(3),junk,c11,c12,c44,constr(3,3,3) &
+ integer delta_k
+ logical ex
+ real(r15)  rij(3),junk,c11,c12,c44,constr(3,3,3),sref(3,3) &
          ,c1(6,6),c2(6,6),c3(6,6),q(3)   &
  &       ,ct(3,3,3,3),halfsum,halfdif  &
  &       ,vg(3,3*natom_prim_cell),eivl(3*natom_prim_cell),eivl0(3*natom_prim_cell)
@@ -1959,8 +2021,23 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  enddo
  enddo
  atld0=atld0/volume_r0*ee*1d30*1d-9
+ atld_raw=atld0
  write(*,*)' MECHANICAL0: symmetrizing atld0'
  call symmetrize4(3,atld0) 
+! stressed reference (stress.params; pi0=0 in a Bravais lattice, so sigma_res = sigma_ref):
+! C = Sym(A)/V - Sym(d_ag s_bd), and the Huang conditions with that stress
+ call read_stress_params(uio,sref,ex)
+ do al=1,3
+ do be=1,3
+ do ga=1,3
+ do de=1,3
+    atld0(al,be,ga,de)=atld0(al,be,ga,de) - (delta_k(al,ga)*sref(be,de) + delta_k(be,ga)*sref(al,de)  &
+ &                                         + delta_k(al,de)*sref(be,ga) + delta_k(be,de)*sref(al,ga))/4
+ enddo
+ enddo
+ enddo
+ enddo
+ call check_huang_stress(uio,sref)
 
  do la =1,3
     call write_out(uio,' CONSTR=\sum_R,tau,taup phi_ij * R_ij (eV/Ang) = 0',constr(:,:,la))
@@ -1990,7 +2067,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  implicit none
  integer, intent(in) :: uio !,ndn 
  integer tau,taup,al,be,ga,de,i,j,t,g,ti,ired,voigt,la,nl,nc,nu,s,nq,delta_k,cnt2
- real(r15)  rij(3),junk,res(3,3) ,mat2(3,3),fsum(3),rotmax,sdft(3,3),hmax,hdev,amax
+ real(r15)  rij(3),junk,res(3,3) ,mat2(3,3),fsum(3),rotmax,sdft(3,3)
  logical ex
 
  write(  * ,*)' ********** ENTERING RESIDUALS *************, ndyn=',ndyn
@@ -2057,16 +2134,10 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 ! sum_tau pi0 tau depends on which image of each atom is in the primitive cell when pi0 /= 0, and
 ! is zero for a Bravais lattice under any stress. The stress of the reference structure from the
 ! DFT calculation, if given in stress.params (3x3, GPa, sigma=dE/(V d eps): tensile > 0), replaces it.
- inquire(file='stress.params',exist=ex)
+ call read_stress_params(uio,sdft,ex)
  if(ex) then
-    open(357,file='stress.params',status='old')
-    read(357,*) ((sdft(al,be),be=1,3),al=1,3)
-    close(357)
     call write_out(uio ,' FC1 estimate sum_tau pi0 tau/V (GPa), replaced by stress.params ', &
  &                 sigma0/volume_r0*1d30*ee*1d-9)
-    call write_out(uio ,' stress.params: stress of the reference structure (GPa) ',sdft)
-    call write_out(ulog,' stress.params: stress of the reference structure (GPa) ',sdft)
-    call symmetrize2(3,sdft)
     sigma0 = sdft*volume_r0/(1d30*ee*1d-9)   ! in eV
  else
     write(uio,*)'RESIDUALS: no stress.params; reference stress = sum_tau pi0 tau/V (FC1 only)'
@@ -2088,31 +2159,8 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  call write_out(uio,' sigma(eta=0) after symmetrization (GPa) ',sigma0)
  call write_out(uio,' sigma(eta  ) = sigma0-Pi Gamma Qiu(GPA) ',sigmav)
 
-! Huang conditions, generalized to a stressed reference (FOCEX/notes/generalized_huang.tex; the same
-! relation as the Huang rows of set_huang_inv_constraints): [ab,gl]-[gl,ab] = d_ab s_gl - d_gl s_ab,
-! [ab,gl] = -1/(2V) sum phi_ab x_g x_l = atld_raw(a,g,b,l); s from stress.params, else 0 as in the fit
- if(.not.ex) sdft=0
- hmax=0; hdev=0; amax=maxval(abs(atld_raw))
- do al=1,3
- do be=1,3
- do ga=1,3
- do de=1,3
-    junk=atld_raw(al,ga,be,de)-atld_raw(ga,al,de,be)
-    hmax=max(hmax,abs(junk))
-    junk=junk-(delta_k(al,be)*sdft(ga,de)-delta_k(ga,de)*sdft(al,be))
-    hdev=max(hdev,abs(junk))
- enddo
- enddo
- enddo
- enddo
- write(ulog,4)'RESIDUALS: Huang: max|[ab,gl]-[gl,ab]|, max|[ab,gl]-[gl,ab]-(d_ab s_gl-d_gl s_ab)|, max|[ab,gl]| (GPa)=', &
- &            hmax,hdev,amax
- write(uio ,4)'Huang: max|[ab,gl]-[gl,ab]|, max|[ab,gl]-[gl,ab]-(d_ab s_gl-d_gl s_ab)|, max|[ab,gl]| (GPa)=', &
- &            hmax,hdev,amax
- if(hdev.gt.1d-3*amax) then
-    call warn3(   6,'Huang conditions (with the reference stress) violated by (GPa)',hdev)
-    call warn3(ulog,'Huang conditions (with the reference stress) violated by (GPa)',hdev)
- endif
+! Huang conditions with the reference stress of stress.params (0 without it, as in the fit)
+ call check_huang_stress(uio,sdft)
  call write_out(uio,' Qiu(1:ndyn,1:6)=d^2F/d u0_tau d eta (GPa) ',qiuv)
 
 ! rotational invariance of rank 2 (theory.rst): sum_{R taup} fc2(0 tau al;R taup be)(R+taup)_ga eps(be,ga,nu)

@@ -3,7 +3,7 @@
 FOCEX agent: from a crystal structure to phonons
 ================================================
 
-Version 1.1 (2026-10-23, with FOCEX 8.19). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
+Version 1.2 (2026-10-27, with FOCEX 9.0). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
 instruction file and ``diagnose.py`` are in ``FOCEX/AGENT``.
 
 What the FOCEX agent does
@@ -302,7 +302,11 @@ from that task. A job that hits its time limit is simply submitted again.
    ``read_outcar.x`` reads the positions and forces of every run into
    ``04_supercells/FORCEDISP1``; ``POSCAR1`` is the undistorted supercell. The report gives the
    largest net force on a supercell (should be ≈ 0) and the largest difference between the
-   positions in OUTCAR and in POSCAR.
+   positions in OUTCAR and in POSCAR. The undistorted supercell (``snap_000``, run with
+   ``ISIF = 2``; the other snapshots use ``ISIF = 1``, which gives only the trace) also gives the
+   stress of the reference structure: ``stress.params`` (GPa, tensile positive, i.e. minus the
+   ``in kB`` line of OUTCAR divided by 10) is written and copied to the FOCEX folders, where it
+   enters the Huang rows and the elastic constants (:ref:`focex-stress-params`).
 ``focex``
    The five input files of FOCEX are written in ``05_focex`` (``structure.params``,
    ``latdyn.params``, ``kpbs.params``, ``dielectric.params``, ``default.params``) and FOCEX is run.
@@ -813,6 +817,12 @@ again: the finished tasks are skipped.
 
 Version history
 ---------------
+
+1.2
+   2026-10-27, with FOCEX 9.0: the undistorted supercell ``snap_000`` is run with ``ISIF = 2``, and
+   ``collect`` writes its stress, minus the ``in kB`` line of OUTCAR divided by 10, as
+   ``stress.params`` (GPa, tensile positive) for FOCEX (Huang rows and elastic constants); the test
+   VASP stand-in prints the stress.
 
 1.1
    2026-10-23: task ``thermacond``, switched on by ``THERMACOND_JOB`` (latdyn.params line 8), with
