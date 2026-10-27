@@ -152,6 +152,7 @@
  real(r15) hbulkmod,hyoungmod,hshearmod
  real(r15), allocatable :: phi(:,:),xi(:,:,:),qiu(:,:,:),zeta(:,:,:),teta(:,:,:),gama(:,:),y0(:),pi0(:),gam(:,:)
  real(r15), allocatable :: qiuv(:,:),u0v(:)
+ real(r15) atld_raw(3,3,3,3)  ! -1/2 sum phi x x before symmetrization (GPa), for the Huang check
 
  contains
 

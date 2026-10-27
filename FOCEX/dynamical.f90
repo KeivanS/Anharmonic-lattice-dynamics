@@ -1766,10 +1766,12 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  enddo
 
 ! the antisymmetric part of qiu in its last 2 indices is fixed by the residual forces (rotational
-! invariance); it is checked in residuals, where pi0 is known
+! invariance); it is checked in residuals (from teta), where pi0 is known. Only the symmetric part
+! couples to the (Cauchy) strain: qiu is symmetrized here, before xi, the residual stress and QGQ
  do s=1,ndyn
     matr=qiu(s,:,:)
     write(ulog,*)'GET_PHI_ZETA: s, max |Qiu(s,:,:)-Qiu(s,:,:)^T|=',s,maxval(abs(matr-transpose(matr)))
+    qiu(s,:,:)=(matr+transpose(matr))/2
  enddo
 
 2 format(a,2i5,9(1x,f10.4))
@@ -1800,7 +1802,8 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 
 ! this part calculates xi(tau,ga;al,be) = du(tau,ga)/d eta_al,be = - Gam.qiu  
 ! should be symmetric under al <-> be since Qiu already symmetrized
-! sum_tau qiu(tau ga;al,be) = 0 follows from translational and rotational invariance
+! sum_tau qiu(tau ga;al,be) = 0 follows from translational and rotational invariance (checked on the
+! symmetric part)
  xi=0; constr=0
  do al=1,3
  do be=1,3
@@ -1822,6 +1825,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  endif
 
  atld0   = atld0   /volume_r0*ee*1d30*1d-9
+ atld_raw=atld0
  write(*,*)' GET_PHI_ZETA: symmetrizing atld0'
  call symmetrize4(3,atld0) 
  bulkmod = bulkmod /volume_r0*ee*1d30*1d-9
@@ -1986,7 +1990,8 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  implicit none
  integer, intent(in) :: uio !,ndn 
  integer tau,taup,al,be,ga,de,i,j,t,g,ti,ired,voigt,la,nl,nc,nu,s,nq,delta_k,cnt2
- real(r15)  rij(3),junk,res(3,3) ,mat2(3,3),fsum(3),rotmax
+ real(r15)  rij(3),junk,res(3,3) ,mat2(3,3),fsum(3),rotmax,sdft(3,3),hmax,hdev,amax
+ logical ex
 
  write(  * ,*)' ********** ENTERING RESIDUALS *************, ndyn=',ndyn
  write(uio,*)' ********** ENTERING RESIDUALS *************, ndyn=',ndyn
@@ -2049,6 +2054,23 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  call write_out(ulog,' sigma(eta=0) before symmetrization (eV) ',sigma0)
 ! should be symmetric according to rotational invariance
  call symmetrize2(3,sigma0)   ! equivalent to enforcing rotational invariance on pi0
+! sum_tau pi0 tau depends on which image of each atom is in the primitive cell when pi0 /= 0, and
+! is zero for a Bravais lattice under any stress. The stress of the reference structure from the
+! DFT calculation, if given in stress.params (3x3, GPa, sigma=dE/(V d eps): tensile > 0), replaces it.
+ inquire(file='stress.params',exist=ex)
+ if(ex) then
+    open(357,file='stress.params',status='old')
+    read(357,*) ((sdft(al,be),be=1,3),al=1,3)
+    close(357)
+    call write_out(uio ,' FC1 estimate sum_tau pi0 tau/V (GPa), replaced by stress.params ', &
+ &                 sigma0/volume_r0*1d30*ee*1d-9)
+    call write_out(uio ,' stress.params: stress of the reference structure (GPa) ',sdft)
+    call write_out(ulog,' stress.params: stress of the reference structure (GPa) ',sdft)
+    call symmetrize2(3,sdft)
+    sigma0 = sdft*volume_r0/(1d30*ee*1d-9)   ! in eV
+ else
+    write(uio,*)'RESIDUALS: no stress.params; reference stress = sum_tau pi0 tau/V (FC1 only)'
+ endif
 
  qiuv=0
  do al=1,3
@@ -2065,6 +2087,32 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  sigmav = sigmav/volume_r0*1d30*ee*1d-9 
  call write_out(uio,' sigma(eta=0) after symmetrization (GPa) ',sigma0)
  call write_out(uio,' sigma(eta  ) = sigma0-Pi Gamma Qiu(GPA) ',sigmav)
+
+! Huang conditions, generalized to a stressed reference (FOCEX/notes/generalized_huang.tex; the same
+! relation as the Huang rows of set_huang_inv_constraints): [ab,gl]-[gl,ab] = d_ab s_gl - d_gl s_ab,
+! [ab,gl] = -1/(2V) sum phi_ab x_g x_l = atld_raw(a,g,b,l); s from stress.params, else 0 as in the fit
+ if(.not.ex) sdft=0
+ hmax=0; hdev=0; amax=maxval(abs(atld_raw))
+ do al=1,3
+ do be=1,3
+ do ga=1,3
+ do de=1,3
+    junk=atld_raw(al,ga,be,de)-atld_raw(ga,al,de,be)
+    hmax=max(hmax,abs(junk))
+    junk=junk-(delta_k(al,be)*sdft(ga,de)-delta_k(ga,de)*sdft(al,be))
+    hdev=max(hdev,abs(junk))
+ enddo
+ enddo
+ enddo
+ enddo
+ write(ulog,4)'RESIDUALS: Huang: max|[ab,gl]-[gl,ab]|, max|[ab,gl]-[gl,ab]-(d_ab s_gl-d_gl s_ab)|, max|[ab,gl]| (GPa)=', &
+ &            hmax,hdev,amax
+ write(uio ,4)'Huang: max|[ab,gl]-[gl,ab]|, max|[ab,gl]-[gl,ab]-(d_ab s_gl-d_gl s_ab)|, max|[ab,gl]| (GPa)=', &
+ &            hmax,hdev,amax
+ if(hdev.gt.1d-3*amax) then
+    call warn3(   6,'Huang conditions (with the reference stress) violated by (GPa)',hdev)
+    call warn3(ulog,'Huang conditions (with the reference stress) violated by (GPa)',hdev)
+ endif
  call write_out(uio,' Qiu(1:ndyn,1:6)=d^2F/d u0_tau d eta (GPa) ',qiuv)
 
 ! rotational invariance of rank 2 (theory.rst): sum_{R taup} fc2(0 tau al;R taup be)(R+taup)_ga eps(be,ga,nu)
@@ -2133,7 +2181,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  implicit none
  integer, intent(in) :: uio !,ndn 
  integer tau,taup,al,be,ga,de,i,j,t,g,ti,ired,la,nl,nc,nu,s,nq,delta_k,ier
- real(r15) c1(6,6),c2(6,6),c3(6,6),cq(6,6) ,atld2(3,3,3,3),atld3(3,3,3,3),qgq(3,3,3,3)
+ real(r15) c1(6,6),c2(6,6),c3(6,6),cq(6,6) ,atld2(3,3,3,3),atld3(3,3,3,3),qgq(3,3,3,3),sres(3,3)
 
 
  call convert_to_voigt(atld0,c1)
@@ -2174,11 +2222,17 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  call convert_to_voigt(qgq,cq)
  call write_out (uio,' Elastic Tensor correction QGQ in voigt ',cq)
 
+! elastic constants of a stressed reference (Lagrangian strain): C = Sym(A - QGQ)/V - Sym(d_ag s_bd),
+! s = relaxed residual stress sigmav; Sym = average over a<->b and g<->d (all 4 terms, as symmetrize4)
+ sres(1,1)=sigmav(1); sres(2,2)=sigmav(2); sres(3,3)=sigmav(3)
+ sres(2,3)=sigmav(4); sres(1,3)=sigmav(5); sres(1,2)=sigmav(6)
+ sres(3,2)=sres(2,3); sres(3,1)=sres(1,3); sres(2,1)=sres(1,2)
  do al=1,3
  do be=1,3
  do ga=1,3
  do de=1,3
-    atld0(al,be,ga,de)=atld0(al,be,ga,de) - (sigma0(al,ga)*delta_k(be,de)+ sigma0(be,de)*delta_k(al,ga))/2
+    atld0(al,be,ga,de)=atld0(al,be,ga,de) - (delta_k(al,ga)*sres(be,de) + delta_k(be,ga)*sres(al,de)  &
+ &                                         + delta_k(al,de)*sres(be,ga) + delta_k(be,de)*sres(al,ga))/4
  enddo
  enddo
  enddo

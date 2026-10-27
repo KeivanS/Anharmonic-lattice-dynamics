@@ -484,7 +484,49 @@ where :math:`S` is the static displacement, containing an extra term :math:`u^0`
 
 Note that as a second derivative, :math:`C` must be symmetric under swapping of the order of differentiation :math:`\alpha\beta \leftrightarrow \gamma\delta`. Due to the symmetry of the Cauchy strain tensor :math:`\epsilon` itself, the elastic tensor :math:`C` will also be invariant with respect to swaps of :math:`\alpha \leftrightarrow \beta` and :math:`\gamma \leftrightarrow \delta` separately.
 
-...
+FOCEX evaluates :math:`C` from the harmonic force constants as follows (sums over repeated
+indices implied; :math:`\Delta = R'+\tau'-\tau`; :math:`V_0` the volume of the primitive cell):
+
+.. math::
+   \phi_{\tau\tau'}^{\alpha\alpha'} = \sum_{R'} \Phi_{0\tau,R'\tau'}^{\alpha\alpha'} , \qquad
+   Q_{\tau\alpha;\alpha'\beta'} = \sum_{R'\tau'} \Phi_{0\tau,R'\tau'}^{\alpha\alpha'}\, \Delta^{\beta'} , \qquad
+   A_{\alpha\beta,\alpha'\beta'} = -\frac{1}{2} \sum_{\tau} \sum_{R'\tau'} \Phi_{0\tau,R'\tau'}^{\alpha\alpha'}\, \Delta^{\beta} \Delta^{\beta'} .
+
+:math:`Q` is used symmetrized in its strain indices :math:`\alpha'\beta'`. The atoms relax within
+the cell as :math:`u^0(\eta) = -\Gamma\, (\Pi + Q\, \eta)`, with :math:`\Gamma` the inverse of
+:math:`\phi` once the displacement of atom 1 is fixed. The residual stress of the reference
+structure after this relaxation is
+
+.. math::
+   \sigma_{res} = \sigma_{ref} - \frac{1}{V_0}\, \Pi\, \Gamma\, Q ,
+
+where :math:`\sigma_{ref}` is read from the file ``stress.params`` if it exists (the stress of the
+reference structure from the DFT calculation; 3 lines of 3 numbers in GPa, tensile positive, see
+:ref:`focex-stress-params`), and is otherwise estimated from the residual forces alone as
+:math:`\sum_\tau \Pi_\tau^\alpha \tau^\beta / V_0` (zero for a Bravais lattice whatever the
+stress). The elastic tensor is
+
+.. math::
+   C_{\alpha\beta,\gamma\delta} = \frac{1}{V_0}\, {\rm Sym} \big( A - Q\, \Gamma\, Q \big)_{\alpha\beta,\gamma\delta}
+   - {\rm Sym} \big( \delta_{\alpha\gamma}\, \sigma_{res,\beta\delta} \big) ,
+
+where Sym averages over :math:`\alpha \leftrightarrow \beta` and :math:`\gamma \leftrightarrow \delta`.
+:math:`Q\Gamma Q` is the correction for the atomic relaxation, and the last term is the correction for the
+stress of the reference: for a stressed reference, :math:`C` is the elastic tensor with respect to the
+Lagrangian strain. The relaxed shape of the cell is :math:`\epsilon_{eq} = -C^{-1}\, \sigma_{res}`.
+
+The log and ``mech.dat`` report the following checks of the force constants used. Each prints the
+size of the violation, and a warning if it exceeds the tolerance:
+
+* the ASR, :math:`\sum_{\tau'} \phi_{\tau\tau'} = 0`, :math:`\sum_\tau \Pi_\tau = 0` and
+  :math:`\sum_\tau Q_{\tau\alpha;\beta\gamma} = 0`;
+* the rotational invariance of rank 2, :math:`Q_{\tau\alpha;\beta\gamma} - Q_{\tau\alpha;\gamma\beta}
+  = \Pi_\tau^\gamma \delta_{\alpha\beta} - \Pi_\tau^\beta \delta_{\alpha\gamma}` (before :math:`Q` is
+  symmetrized);
+* the Huang conditions for a stressed reference, :math:`[\alpha\beta,\gamma\lambda] - [\gamma\lambda,\alpha\beta]
+  = \delta_{\alpha\beta}\, \sigma_{\gamma\lambda} - \delta_{\gamma\lambda}\, \sigma_{\alpha\beta}`, with the
+  brackets :math:`[\alpha\beta,\gamma\lambda] = A_{\alpha\gamma,\beta\lambda}/V_0` and :math:`\sigma` from
+  ``stress.params`` (zero without the file).
 
 Finally, the isotropic and uniaxial elastic constants are denoted respectively by the bulk and Young moduli :math:`B` and :math:`Y`.
 
@@ -505,7 +547,23 @@ where :math:`S` is the inverse of :math:`C` when written as a :math:`6 \times 6`
 .. math::
    \frac{C_{11} + 2C_{12}}{3}.
 
-...
+**Shear Modulus**
+
+The Voigt and Reuss averages of the shear modulus over orientations, and the Hill values (the means
+of the Voigt and Reuss ones), are
+
+.. math::
+   G_{Voigt} &= \frac{(C_{11}+C_{22}+C_{33}) - (C_{12}+C_{23}+C_{31}) + 3\,(C_{44}+C_{55}+C_{66})}{15} , \\
+   G_{Reuss} &= \frac{15}{4\,(S_{11}+S_{22}+S_{33}) - 4\,(S_{12}+S_{23}+S_{31}) + 3\,(S_{44}+S_{55}+S_{66})} , \\
+   G_{Hill} &= \frac{G_{Voigt}+G_{Reuss}}{2} , \qquad B_{Hill} = \frac{B_{Voigt}+B_{Reuss}}{2} .
+
+For cubic crystals :math:`G_{Voigt} = (C_{11}-C_{12}+3C_{44})/5`. FOCEX reports the three values of
+:math:`B` and :math:`G`, and :math:`1/S_{44}, 1/S_{55}, 1/S_{66}`.
+
+**Young Modulus**
+
+The Young modulus along :math:`x` is :math:`Y = (\partial \sigma_1 / \partial \epsilon_1)_{\sigma_{j \ne 1} = 0} = 1/S_{11}`.
+FOCEX reports the isotropic value from the Hill moduli, :math:`Y_{\mathrm{iso}} = 9 B_{Hill} G_{Hill} / (3B_{Hill} + G_{Hill})`.
 
 **Poisson Ratio**
 
@@ -517,7 +575,9 @@ For a uniaxial deformation along the x-axis, the Poisson ratio is defined as:
 For isotropic materials, the value is typically reported as:
 
 .. math::
-   \nu_{\mathrm{iso}} = \frac{1.5B - \mu_{\mathrm{iso}}}{3B + \mu_{\mathrm{iso}}}.
+   \nu_{\mathrm{iso}} = \frac{1.5B - \mu_{\mathrm{iso}}}{3B + \mu_{\mathrm{iso}}},
+
+with :math:`B = B_{Hill}` and :math:`\mu_{\mathrm{iso}} = G_{Hill}` in FOCEX.
 
 
 
