@@ -10,7 +10,7 @@
  use born, only : born_flag
  use constants, only : r15
  implicit none
- integer i,counter,tau ,rnk,ios_cc
+ integer i,counter,tau ,rnk,ios_cc,n_cc
  real(r15) scal,force_error
  character fdf*1,r4*7,invr*4,incl*8,it*2,zone*5,now*10,today*8,bornflg*3
  character, intent(in):: fn1*(*)
@@ -122,7 +122,16 @@
  read(uparams,*) (mas(i),i=1,natom_type)  ! in the same order as in POTCAR
  read(uparams,*) (atname(i),i=1,natom_type)  ! in the same order as in POTCAR
  read(uparams,*) natom_prim_cell        ! # of atoms in primitive cell
- read(uparams,*) fc2range  ! if zero, take the default range from largest supercell
+ read(uparams,'(a)') line3  ! fc2range [fc3flag ... fc8flag]; absent flags = 1 (nshells, as before)
+ do n_cc = 7, 1, -1
+    fcflag = 1
+    read(line3,*,iostat=ios_cc) fc2range, fcflag(3:n_cc+1)
+    if(ios_cc.eq.0) exit
+ enddo
+ if(ios_cc.ne.0) then
+    write(*,*)'READ_STRUCTURE: line 12 must start with fc2range: ',trim(line3)
+    stop
+ endif
  allocate(nshells(8,natom_prim_cell))
  nshells(1,1:natom_prim_cell)=1
  read(uparams,*) nshells(2,1:natom_prim_cell)
@@ -197,9 +206,10 @@
  if (ihuang.ne.0) invr(3:3)='h'
  if (enforce_inv.eq.1) invr(4:4)='E'
  if (enforce_inv.eq.2) invr(4:4)='L'   ! L1 / LASSO
- if (enforce_inv.lt.0 .or. enforce_inv.gt.2) then
+ if (enforce_inv.eq.3) invr(4:4)='R'   ! LASSO + least-squares refit
+ if (enforce_inv.lt.0 .or. enforce_inv.gt.3) then
     write(*,*)'READ_STRUCTURE: enforce_inv must be 0 (SVD on the stacked system),'
-    write(*,*)' 1 (constrained fit in the kernel) or 2 (LASSO); read ',enforce_inv
+    write(*,*)' 1 (constrained fit in the kernel), 2 (LASSO) or 3 (LASSO + refit); read ',enforce_inv
     stop
  endif
  open(ulog  ,file=fn1//fdf//it//bornflg//'_'//r4//'_'//invr//'.dat'   ,status='unknown')
@@ -222,6 +232,7 @@
  write(ulog,*) 'maxgroups    =',maxgroups
  write(ulog,*)' ---------------------------------------------------------'
  write(ulog,*) fc2range,'  if 0 default range consistent with the largest supercell is chosen for FC2 '
+ write(ulog,*) fcflag(3:8),'  fc3flag..fc8flag: 0 = FC2-range rule for 2-body and aligned clusters, else nshells'
  write(ulog,*) 'itemp,tempk  =',itemp,tempk
  write(ulog,*) 'Whether and How many (not default) shells to include for ranks 2,3,4,5,6,7,8  '
  write(ulog,*) 'rank,incl    = 1',include_fc(1)
@@ -881,7 +892,8 @@
  integer i,j,k,counter,ier,nt(3),n1,isave,itry
  real(r15) a(3),invn(3,3)
  type(vector) shift0,vec
- logical matched,all_matched,typed
+ logical matched,all_matched,typed,typed_failed
+ integer t,k0
 
 ! first describe r_i in terms of r0_i, and make sure the lin comb is integer
  write(ulog,*)' ----------------------------------------------------------'
@@ -919,8 +931,11 @@
 
 ! First try (typed): every POSCAR atom must also sit on a site of the species its counts line
 ! gives it -- this picks the right origin when the positions alone cannot (MgO: both rocksalt
-! sublattices fit). If that fails, second try as before: species from the positions only, with
-! a warning (MoTe2 test: counts line 64 128 in the Mo Te order of structure.params, atoms Te-first).
+! sublattices fit). If that fails, the second try (species from the positions only) is made just to
+! report which atoms are which species; the run then stops (user's rule, 2026-10-24: a failed
+! consistency check stops). MoTe2 test POSCAR: counts 64 128 (Mo Te, the order of structure.params)
+! but the atoms were 128 Te then 64 Mo.
+ typed_failed = .false.
  typeloop: do itry=1,2
  typed = itry.eq.1
 ! write(*,*)'# ier,i0,j0,k_sc; vec,vred='
@@ -976,12 +991,7 @@
     endif
  enddo checkloop
  if (all_matched) exit typeloop
- if (typed) then
-    write(ulog,*)'WARNING: the POSCAR atoms do not sit on sites of the species given by its counts line'
-    write(ulog,*)'         (in the order of structure.params); species are taken from the positions'
-    write(*   ,*)'WARNING: the POSCAR atoms do not sit on sites of the species given by its counts line'
-    write(*   ,*)'         (in the order of structure.params); species are taken from the positions'
- endif
+ if (typed) typed_failed = .true.
  enddo typeloop
 
 ! shift = r_primcell(i)-r_supercell(1) of direct coordinates a
@@ -1049,6 +1059,31 @@
             stop
          endif
        enddo SC2
+
+! the atoms fit the primitive cell only with species other than the counts line gives: report, stop
+ if (typed_failed) then
+    do i = 1, 2
+       if (i.eq.1) k0 = ulog
+       if (i.eq.2) k0 = 6
+       write(k0,*)'ERROR: the POSCAR atoms do not sit on sites of the species given by its counts line'
+       write(k0,*)'       (counts in the species order of structure.params):'
+       write(k0,'(a,20(1x,a,i6))')'        counts line  :',(trim(atom0(minloc(abs(atom0(:)%at_type-t),1))%name), &
+&            natom(t), t=1,natom_type)
+       write(k0,*)'       species of the atoms from their positions (atom ranges):'
+       j = 1
+       do k = 2, natom_super_cell + 1
+          if (k .gt. natom_super_cell) then
+             write(k0,'(9x,i6,a,i6,2x,a)') j,' -',k-1,trim(atom_sc(j)%name)
+          elseif (atom_sc(k)%at_type .ne. atom_sc(j)%at_type) then
+             write(k0,'(9x,i6,a,i6,2x,a)') j,' -',k-1,trim(atom_sc(j)%name)
+             j = k
+          endif
+       enddo
+       write(k0,*)'       Reorder the atoms of POSCARi and of every FORCEDISPi block so that the species'
+       write(k0,*)'       follow the order of structure.params, with the counts line to match.'
+    enddo
+    error stop 'POSCAR species order does not match its counts line (see above)'
+ endif
 
  write(ulog,*)'*******************************************************'
  write(ulog,*)'SINCE THE PROGRAM WAS NOT STOPPED, MAPPING-CHECK PASSED!'
@@ -2775,7 +2810,7 @@ stop
  end subroutine write_supercell
 !============================================================
  subroutine write_invariance_violations(ulog,n,fcs)
- use svd_stuff, only : atransl,arot,brot,ahuang, amat,bmat,transl_constraints, &
+ use svd_stuff, only : atransl,arot,brot,ahuang,bhuang, amat,bmat,transl_constraints, &
  &  rot_constraints,huang_constraints,inv_constraints,dim_al,itrans,irot,ihuang
  use ios, only : umatrx
  use constants, only : r15
@@ -2804,7 +2839,7 @@ stop
    write(ulog,3)'******* Violation of Huang invariance relations: enforced? ',ihuang
    write(ulog,*)' if not=15, it means there were some that were exactly zero and removed'
    do i=1,huang_constraints
-      write(ulog,*)i,dot_product(ahuang(i,:),fcs(:))
+      write(ulog,*)i,dot_product(ahuang(i,:),fcs(:))-bhuang(i),bhuang(i)
    enddo
 
 ! not used since amat is overwritten after the SVD

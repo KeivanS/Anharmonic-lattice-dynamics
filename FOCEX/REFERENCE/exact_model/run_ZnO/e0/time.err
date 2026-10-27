@@ -1,0 +1,166 @@
+At line 65 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 95 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 65 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 95 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 65 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 95 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 65 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 95 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+     2603.54 real      2596.51 user         2.60 sys
+          2130788352  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              300008  page reclaims
+                   4  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                 283  voluntary context switches
+              193800  involuntary context switches
+      29027796044897  instructions retired
+       8008882263192  cycles elapsed
+          2276414720  peak memory footprint

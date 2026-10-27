@@ -35,6 +35,31 @@
 !
 ! K. Esfarjani, 2026
 !===============================================================================
+ subroutine particular_solution(m,n,c,d,svdcut,xp,resid)
+!! Minimum-norm solution xp of the invariance rows C xp = d (C: m x n), by SVD with the
+!! cut svdcut used for the kernel; xp is orthogonal to the kernel, so the solutions of
+!! C x = d are x = xp + K y. Needed when some rows have a right-hand side: the Huang rows
+!! of a stressed reference (stress.params). resid = max|C xp - d| (a check that the rows
+!! are consistent).
+ use constants, only : r15
+ implicit none
+ integer, intent(in) :: m,n
+ real(r15), intent(in) :: c(m,n),d(m),svdcut
+ real(r15), intent(out):: xp(n),resid
+ real(r15), allocatable :: u(:,:),v(:,:),w(:),dd(:)
+ integer j,mm
+ mm = max(m,n)                ! svdcmp on a square-or-tall copy: zero rows added if m < n
+ allocate(u(mm,n),v(n,n),w(n),dd(mm))
+ u = 0 ; u(1:m,:) = c ; dd = 0 ; dd(1:m) = d
+ call svdcmp(u,mm,n,w,v)
+ xp = 0
+ do j=1,n
+    if (abs(w(j)) .gt. svdcut*maxval(abs(w))) xp = xp + v(:,j)*dot_product(u(:,j),dd)/w(j)
+ enddo
+ resid = maxval(abs(matmul(c,xp)-d))
+ deallocate(u,v,w,dd)
+ end subroutine particular_solution
+!===============================================================================
  subroutine fit_kernel_basis(nrow,ncol,nker,a,b,kernel,svdcut,x,error,ermax,sig,fnsvd)
 !! Constrained least squares. Minimises ||A x - b|| over the x that satisfy the
 !! invariance relations exactly, by fitting the nker free parameters y of
@@ -76,7 +101,68 @@
 
  end subroutine fit_kernel_basis
 !===============================================================================
- subroutine lasso_kernel_basis(nrow,ncol,nker,a,b,kernel,nfold,nlam,epsratio, &
+ subroutine lasso_kernel_basis(nrow,ncol,nker,a,b,kernel,x0,nfold,nlam,epsratio,refit, &
+ &                             x,mu_opt,nnz,uio)
+!! LASSO on the force constants x themselves with the invariances exact
+!! (x in x0 + range(kernel); x0 = particular solution, 0 unless some invariance rows have a
+!! right-hand side, see particular_solution), then a constrained least-squares refit on the selected
+!! terms if refit (enforce_inv=3); the L1 weight by nfold cross-validation of the
+!! model returned (lasso_constrained.f90). nnz = number of force constants selected.
+!! The refit removes the LASSO shrinkage; use it when the forces are accurate. With
+!! noisy forces or too few snapshots it fits the selected terms to the noise:
+!! enforce_inv=2 (no refit) is then the safer choice.
+!! FOCEX_LASSO=old selects the previous method, LASSO on the kernel coefficients y
+!! (lasso_kernel_basis_old): on the exact cubic model that one returned 98/80/376
+!! non-zero FC2/FC3/FC4 for 11/20/43 true ones, and FC4 wrong.
+ use constants, only : r15
+ use ios, only : ulog
+ use lasso_constrained, only : classo_cv
+ use svd_stuff, only : svdcut
+ implicit none
+ integer, intent(in) :: nrow,ncol,nker,nfold,nlam,uio
+ real(r15), intent(in) :: a(nrow,ncol),b(nrow),kernel(ncol,nker),x0(ncol),epsratio
+ logical, intent(in)   :: refit
+ real(r15), intent(out):: x(ncol),mu_opt
+ integer, intent(out)  :: nnz
+ character(len=16) envv
+ integer info
+
+ call get_environment_variable('FOCEX_LASSO',envv)
+ if(trim(envv).eq.'old') then
+    write(ulog,*)'LASSO_KERNEL_BASIS: FOCEX_LASSO=old, LASSO on the kernel coefficients'
+    write(*   ,*)'LASSO_KERNEL_BASIS: FOCEX_LASSO=old, LASSO on the kernel coefficients'
+    if(refit) write(*,*)'WARNING: FOCEX_LASSO=old has no refit; enforce_inv=3 acts as 2'
+! L1 on the kernel coefficients y of x = x0 + K y
+    call lasso_kernel_basis_old(nrow,ncol,nker,a,b-matmul(a,x0),kernel,nfold,nlam,epsratio, &
+ &       x,mu_opt,nnz,uio)
+    x = x + x0
+    return
+ endif
+ write(ulog,*)'LASSO_KERNEL_BASIS: constrained LASSO on the force constants + refit'
+ if(nker.le.0) then
+    write(ulog,*)'LASSO_KERNEL_BASIS: kernel is empty; nothing to fit'
+    x=x0 ; nnz=0 ; mu_opt=0
+    return
+ endif
+ call classo_cv(nrow,ncol,nker,a,b,kernel,x0,svdcut,nfold,nlam,epsratio,1d-10,300,refit, &
+ &    x,mu_opt,nnz,info,uio)
+ write(ulog,'(a,i6,a,i6,a,es12.4,a,i2)')'LASSO: force constants selected=',nnz,' of ',ncol, &
+ &    '  lam=',mu_opt,'  info=',info
+ write(*   ,'(a,i6,a,i6,a,i2)')'LASSO: force constants selected=',nnz,' of ',ncol,'  info=',info
+ if(info.eq.2) then
+    write(ulog,*)'WARNING: LASSO: the interior point did not converge at some lam (see above)'
+    write(*   ,*)'WARNING: LASSO: the interior point did not converge at some lam (see above)'
+ elseif(info.eq.3) then
+    write(ulog,*)'WARNING: LASSO: the CV minimum is at the smallest lam of the grid (epsratio too large?)'
+    write(*   ,*)'WARNING: LASSO: the CV minimum is at the smallest lam of the grid (epsratio too large?)'
+ elseif(info.eq.1) then
+    write(ulog,*)'WARNING: LASSO: W K is rank deficient'
+    write(*   ,*)'WARNING: LASSO: W K is rank deficient'
+ endif
+
+ end subroutine lasso_kernel_basis
+!===============================================================================
+ subroutine lasso_kernel_basis_old(nrow,ncol,nker,a,b,kernel,nfold,nlam,epsratio, &
  &                             x,mu_opt,nnz,uio)
 !! Same as fit_kernel_basis but the reduced problem is solved by LASSO instead
 !! of by SVD, so that the free parameters the data does not support are set to
@@ -113,5 +199,5 @@
  write(ulog,*)'LASSO_KERNEL_BASIS: non-zero free parameters=',nnz,' of ',nker
  deallocate(ared,y)
 
- end subroutine lasso_kernel_basis
+ end subroutine lasso_kernel_basis_old
 !===============================================================================

@@ -1,0 +1,20 @@
+run_CaF2/e2n: columns 1499, 1499 (map), ranks [1, 2, 3, 4]
+  map rank 1: 0 groups, 0 terms: max |sum mat x_exact - exact| 0.00e+00 (max |FC| 0), wrong 0 
+  map rank 2: 23 groups, 2085 terms: max |sum mat x_exact - exact| 1.63e-13 (max |FC| 30.1), wrong 0 
+  map rank 3: 127 groups, 77808 terms: max |sum mat x_exact - exact| 6.22e-15 (max |FC| 3.34), wrong 0 
+  map rank 4: 1349 groups, 4172541 terms: max |sum mat x_exact - exact| 4.44e-16 (max |FC| 15.8), wrong 0 
+  completeness: model clusters checked per rank {1: 0, 2: 128, 3: 316, 4: 612} missing from the groups {1: 0, 2: 0, 3: 0, 4: 0} atoms outside atompos 0
+  translational rows    457: max |row.x_exact - b| 2.36e-13, relative to max row scale 3.73e-15, max |b| 0
+  rotational    rows   3370: max |row.x_exact - b| 3.13e-13, relative to max row scale 3.61e-15, max |b| 0
+  Huang         rows     15: max |row.x_exact - b| 2.40e-15, relative to max row scale 2.89e-01, max |b| 0
+  force rows 864: max |A x_exact - F| 5.79e-14 eV/A (max |F| 3.010), rms 1.42e-14
+  fit fc2_irr.dat: 23 terms, max |FOCEX - exact| 9.1e-06 (max |FC| 30.1, rel 3e-07)
+  fit fc3_irr.dat: 127 terms, max |FOCEX - exact| 1.88e-05 (max |FC| 3.34, rel 5.6e-06)
+  fit fc4_irr.dat: 1349 terms, max |FOCEX - exact| 0.00135 (max |FC| 15.8, rel 8.5e-05)
+  fit fc2.dat: 1329 terms, max |FOCEX - exact| 9.1e-06
+  fit fc3.dat: 36558 terms, max |FOCEX - exact| 1.88e-05
+  fit fc4.dat: 2296401 terms, max |FOCEX - exact| 0.00135
+  support fc1: exact non-zero 0 of 0; selected by FOCEX 0; exact non-zero not selected 0; max err on exact zeros 0, on non-zeros 0
+  support fc2: exact non-zero 18 of 23; selected by FOCEX 18; exact non-zero not selected 0; max err on exact zeros 1.36e-08, on non-zeros 9.1e-06
+  support fc3: exact non-zero 61 of 127; selected by FOCEX 61; exact non-zero not selected 0; max err on exact zeros 1.35e-06, on non-zeros 1.88e-05
+  support fc4: exact non-zero 190 of 1349; selected by FOCEX 207; exact non-zero not selected 0; max err on exact zeros 0.000142, on non-zeros 0.00135

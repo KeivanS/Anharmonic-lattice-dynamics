@@ -448,23 +448,26 @@
    if (itrans .ne. 0) dim_hom= dim_hom+ transl_constraints
    if (irot   .ne. 0) dim_hom= dim_hom+    rot_constraints
    if (ihuang .ne. 0) dim_hom= dim_hom+  huang_constraints
-   allocate(ahom(dim_hom,dim_ac))
-   ahom = 0d0
+   allocate(ahom(dim_hom,dim_ac),bhom(dim_hom))
+   ahom = 0d0 ; bhom = 0d0
    write(ulog,*)' size(ahom) nlines,ncolumn=(dim(a1d))=',dim_hom,dim_ac
    n_constr = 1
    if (itrans .ne. 0) then
       ahom(n_constr:n_constr-1+transl_constraints,1:nindepfc) =  &
 &                    atransl(1:transl_constraints,1:nindepfc)
+      bhom(n_constr:n_constr-1+transl_constraints) = btransl(1:transl_constraints)
       n_constr = n_constr + transl_constraints
    endif
    if (irot .ne. 0) then
       ahom(n_constr:n_constr-1+   rot_constraints,1:nindepfc) =  &
 &                          arot(1:rot_constraints,1:nindepfc)
+      bhom(n_constr:n_constr-1+rot_constraints) = brot(1:rot_constraints)
       n_constr = n_constr + rot_constraints
    endif
    if (ihuang .ne. 0) then
       ahom(n_constr:n_constr-1+ huang_constraints,1:nindepfc) =  &
 &                      ahuang(1:huang_constraints,1:nindepfc)
+      bhom(n_constr:n_constr-1+huang_constraints) = bhuang(1:huang_constraints)
       n_constr = n_constr + huang_constraints
    endif
    n_constr=n_constr-1

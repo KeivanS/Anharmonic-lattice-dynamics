@@ -1,0 +1,15 @@
+run_CaF2: forces  analytic vs -dE/dx (FD): max diff 2.64e-08, max |F| 2.704 eV/A
+run_CaF2: FC2     analytic vs -dF/dx (FD): max diff 2.65e-08, max |FC2| 31.037 eV/A^2, asymmetry 8.4e-15
+run_CaF2: FC2 at the reference, 60 random terms: model.fc vs differences of the Hessian: max diff 2.84e-14, max |FC| 30.141
+run_CaF2: FC3 at the reference, 60 random terms: model.fc vs differences of the Hessian: max diff 6.54e-14, max |FC| 1.207
+run_CaF2: FC4 at the reference, 60 random terms: model.fc vs differences of the Hessian: max diff 8.88e-12, max |FC| 0.434
+run_ZnO: forces  analytic vs -dE/dx (FD): max diff 9.88e-09, max |F| 1.880 eV/A
+run_ZnO: FC2     analytic vs -dF/dx (FD): max diff 2.05e-08, max |FC2| 18.346 eV/A^2, asymmetry 3.6e-15
+run_ZnO: FC2 at the reference, 60 random terms: model.fc vs differences of the Hessian: max diff 3.55e-15, max |FC| 17.635
+run_ZnO: FC3 at the reference, 60 random terms: model.fc vs differences of the Hessian: max diff 5.87e-14, max |FC| 1.666
+run_ZnO: FC4 at the reference, 60 random terms: model.fc vs differences of the Hessian: max diff 4.44e-12, max |FC| 0.448
+run_HfO2: forces  analytic vs -dE/dx (FD): max diff 5.88e-09, max |F| 0.704 eV/A
+run_HfO2: FC2     analytic vs -dF/dx (FD): max diff 1.44e-08, max |FC2| 7.948 eV/A^2, asymmetry 2.4e-15
+run_HfO2: FC2 at the reference, 60 random terms: model.fc vs differences of the Hessian: max diff 1.33e-15, max |FC| 7.329
+run_HfO2: FC3 at the reference, 60 random terms: model.fc vs differences of the Hessian: max diff 2.93e-14, max |FC| 1.963
+run_HfO2: FC4 at the reference, 60 random terms: model.fc vs differences of the Hessian: max diff 2.22e-12, max |FC| 0.272

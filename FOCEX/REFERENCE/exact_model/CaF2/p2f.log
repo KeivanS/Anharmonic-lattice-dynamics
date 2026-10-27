@@ -1,0 +1,8 @@
+POSCAR: CaF2 fluorite (model)
+  3 atoms; 48 lattice operations, 48 crystal operations
+  crystal system cubic, Setyawan-Curtarolo lattice FCC (FCC)
+  input cell        :    3.86264    3.86264    3.86264 A     60.000   60.000   60.000
+  Niggli cell       :    3.86264    3.86264    3.86264 A     60.000   60.000   60.000
+  primitive (S-C)   :    3.86264    3.86264    3.86264 A     60.000   60.000   60.000
+  conventional (S-C):    5.46260    5.46260    5.46260 A     90.000   90.000   90.000
+  wrote structure.params, POSCAR_focex (build the DFT supercells from it) and kpbs.params

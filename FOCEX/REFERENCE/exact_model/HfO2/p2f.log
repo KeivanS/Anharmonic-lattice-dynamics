@@ -1,0 +1,8 @@
+POSCAR: HfO2 monoclinic P21/c (model)
+  12 atoms; 4 lattice operations, 4 crystal operations
+  crystal system monoclinic, Setyawan-Curtarolo lattice MCL (MCL)
+  input cell        :    5.11560    5.17220    5.29480 A     90.000   99.180   90.000
+  Niggli cell       :    5.11560    5.17220    5.29480 A     90.000   99.180   90.000
+  primitive (S-C)   :    5.17220    5.11560    5.29480 A     80.820   90.000   90.000
+  conventional (S-C):    5.17220    5.11560    5.29480 A     80.820   90.000   90.000
+  wrote structure.params, POSCAR_focex (build the DFT supercells from it) and kpbs.params

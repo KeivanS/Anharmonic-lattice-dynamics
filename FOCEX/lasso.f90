@@ -41,10 +41,20 @@
 ! It is kept below as split_bregman, but the default solver is coordinate
 ! descent: see the comment on lasso_cd for why.
 !
+! 2026-10-24: the solver is now the exact LARS-lasso path (lasso_lars.f90, Efron et al.
+! 2004). Coordinate descent (lasso_cd) hit its 5000-sweep cap without converging at most
+! mu of the grid in every FOCEX test (Ge, BZO, GeSe, MoTe2, exact model), including the
+! selected mu, and there was no convergence test; scikit-learn's and MATLAB's coordinate
+! descent fail the same way on correlated columns. LARS was validated standalone against
+! MATLAB lasso and scikit-learn (LARS and CD) on five generated problems (scratchpad
+! lassodev/cvtest): optimal at every mu, same CV curves and selected mu. lasso_cd and
+! split_bregman are kept but no longer called.
+!
 ! K. Esfarjani / after compressive-sensing.f90, 2026
 !===============================================================================
  subroutine lasso_extract(nrow,ncol,amat,bmat,nhom,nfold,nlam,epsratio, &
  &                        x,mu_opt,nnz,uio)
+ use lasso_lars, only : lars_path_gram_f
 !! Solves the same stacked system that enforce_inv=0 hands to the SVD, by
 !! L1-regularised least squares, choosing the L1 weight by cross-validation.
 !! amat(1:nhom,:) are the homogeneous invariance rows and amat(nhom+1:nrow,:)
@@ -63,10 +73,10 @@
 
  real(r15), allocatable :: g(:,:),gh(:,:),gf(:,:,:),ctot(:),cf(:,:),bb(:)
  real(r15), allocatable :: colnorm(:),xs(:),gtr(:,:),ctr(:),lam(:),chol(:,:)
- real(r15), allocatable :: cverr(:,:),cvmean(:),cvsd(:),gx(:)
+ real(r15), allocatable :: cverr(:,:),cvmean(:),cvsd(:),gx(:),wgrid(:,:)
  integer, allocatable :: fold(:)
- integer i,j,k,ifold,nact,nvalid,ier,ibest,ibest1se,nit
- real(r15) mumax,rss,best,se1,dum,lan
+ integer i,j,k,ifold,nact,nvalid,ier,ibest,ibest1se,nit,nbp,linfo,msteps
+ real(r15) mumax,rss,best,se1,dum,lan,kkt
 
  nfrc=nrow-nhom
  write(ulog,*)'==================== LASSO_EXTRACT ===================='
@@ -134,22 +144,20 @@
 
 ! ---- 5. cross-validation ----------------------------------------------------
  allocate(cverr(nlam,nfold),cvmean(nlam),cvsd(nlam))
- allocate(gtr(ncol,ncol),ctr(ncol),xs(ncol),chol(ncol,ncol),gx(ncol))
+ allocate(gtr(ncol,ncol),ctr(ncol),xs(ncol),chol(ncol,ncol),gx(ncol),wgrid(ncol,nlam))
+ msteps=20*ncol
  cverr=0
  foldloop: do ifold=1,nfold
     gtr = g    - gf(:,:,ifold)
     ctr = ctot - cf(:,ifold)
-! one factorisation serves the whole mu path for this fold
-    call chol_factor(ncol,gtr,lan,chol,ier)
-    if(ier.ne.0) then
-       write(ulog,*)'LASSO: Cholesky failed on fold ',ifold,' at column ',ier
-       stop
-    endif
-    xs = 0
+! exact LASSO solutions at every mu of the grid, from one LARS path
+    call lars_path_gram_f(ncol,gtr,ctr,nlam,lam,msteps,wgrid,nbp,linfo)
+    write(ulog,'(a,i3,a,i7,a,i2)')' LASSO (LARS): fold',ifold,' breakpoints',nbp,' info',linfo
+    if(linfo.ne.0) write(*,*)'WARNING: LASSO path of fold ',ifold,' stopped early, info=',linfo
     nvalid = count(fold.eq.ifold)
-    do i=1,nlam        ! warm start down the path
-       call lasso_cd(ncol,gtr,ctr,lam(i),xs,nit)
-       if(ifold.eq.1) write(uio,5)'#train i,mu,nit,nnz,train rss=',i,lam(i),nit, &
+    do i=1,nlam
+       xs = wgrid(:,i)
+       if(ifold.eq.1) write(uio,5)'#train i,mu,nbp,nnz,train rss=',i,lam(i),nbp, &
      &      count(xs.ne.0d0), dot_product(xs,matmul(gtr,xs))-2*dot_product(ctr,xs)
 ! validation residual from the held-out Gram alone:
 !   ||A_f x - b_f||^2 = x^T G_f x - 2 c_f^T x + b_f^T b_f
@@ -198,18 +206,27 @@
 ! the CV minimum keeps more and fits far better. Both are reported above so the
 ! sparser model can be chosen deliberately if that is what is wanted.
  mu_opt=lam(ibest)
-
-! ---- 6. refit on all rows at the selected mu --------------------------------
- call chol_factor(ncol,g,lan,chol,ier)
- if(ier.ne.0) then
-    write(ulog,*)'LASSO: Cholesky failed on the full system at column ',ier
-    stop
+ if(ibest.eq.nlam) then
+    write(ulog,*)'WARNING: LASSO: the CV minimum is at the smallest mu of the grid (epsratio too large?)'
+    write(*   ,*)'WARNING: LASSO: the CV minimum is at the smallest mu of the grid (epsratio too large?)'
  endif
- xs=0
- do i=1,nlam
-    call lasso_cd(ncol,g,ctot,lam(i),xs,nit)
-    if(lam(i).le.mu_opt) exit
+
+! ---- 6. refit on all rows at the selected mu (LARS path down to mu_opt) -----
+ call lars_path_gram_f(ncol,g,ctot,ibest,lam(1:ibest),msteps,wgrid(:,1:ibest),nbp,linfo)
+ xs = wgrid(:,ibest)
+ write(ulog,'(a,i7,a,i2)')' LASSO (LARS): full data, breakpoints',nbp,' info',linfo
+ if(linfo.ne.0) write(*,*)'WARNING: LASSO path on all data stopped early, info=',linfo
+! optimality (KKT) check: grad = c - G x; |grad_j| <= mu, = mu sign(x_j) where x_j /= 0
+ gx = ctot - matmul(g,xs) ; kkt = 0
+ do j=1,ncol
+    if(xs(j).ne.0d0) then
+       kkt = max(kkt, abs(gx(j)-mu_opt*sign(1d0,xs(j))))
+    else
+       kkt = max(kkt, abs(gx(j))-mu_opt)
+    endif
  enddo
+ write(ulog,3)'LASSO: KKT violation of the solution / mu =',kkt/mu_opt
+ write(*   ,3)'LASSO: KKT violation of the solution / mu =',kkt/mu_opt
 
 ! ---- 7. undo the column scaling --------------------------------------------
  do j=1,ncol
@@ -221,7 +238,7 @@
  write(*   ,*)'LASSO: non-zero force constants=',nnz,' out of ',ncol
  write(ulog,3)'LASSO: selected mu=',mu_opt
 
- deallocate(g,gh,gf,ctot,cf,bb,colnorm,xs,gtr,ctr,lam,cverr,cvmean,cvsd,fold,chol,gx)
+ deallocate(g,gh,gf,ctot,cf,bb,colnorm,xs,gtr,ctr,lam,cverr,cvmean,cvsd,fold,chol,gx,wgrid)
 
 3 format(a,99(1x,g13.6))
 4 format(i5,3(2x,g14.7))

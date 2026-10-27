@@ -311,6 +311,46 @@ inv_fcs.dat, fits with the chosen one. include_fc=2 is not handled yet (marked: 
   (probably op matrices assumed integer in the conventional basis). Until fixed, use the standard
   frame (poscar2focex.x / the agent) for such crystals.
 
+## Range of FC3..FC8: fc3flag..fc8flag (2026-10-24, user's design; fc34_range.f90, fc34_maps.f90)
+
+structure.params line 12 = `fc2range [fc3flag ... fc8flag]`; absent flags = 1 = nshells only, as before
+(maps.dat byte-identical to HEAD on BZO, MoTe2, MgO, Ge, GeSe). fcflag(rank)=0: a cluster is kept iff
+every pair of it is a kept FC2 pair (its FC2 group has a member inside the supercell WS cell, the
+test of setup_FC2_in_supercell / exclude_beyond_sc; table pair_keep built in setup_maps from
+map(2) before rank 3) AND (all pairs within nshells(rank), or 2 distinct atoms, or collinear).
+Filtered in the enumeration, so map(rank>=3) holds only kept groups (complete orbits) and needs no
+keep/current (user asked; told). User (2026-10-26): keep the original routines unchanged; the new
+version has its own names: setup_maps_fc34, size_force_constants_fc34, collect_force_constants_fc34
+(fc34_maps.f90, copies + the rule); focex.f90 calls setup_maps_fc34 iff some fcflag(3:8)=0.
+others.f90 = HEAD except bhom (Exact-model full test below). write_clusters -> clusters<rank>.dat (edges,
+nd, type, group, tau; fcflag=0 route only). Checked: 2-body FC3 distances = kept FC2 distances
+exactly (BZO, MoTe2, Ge, GeSe). Size (ranks 3,4 indep): BZO 77,25 -> 534,1722;
+Ge 95,2 -> 329,862; GeSe 654,18 -> 4434,11083; MoTe2 76,7 -> 169,590; setup_maps BZO 14 s -> 8 min.
+Exact-model test of the maps (2026-10-26, scratch exact/: model.py gen.py check.py): degree-4
+polynomial potential (pairs to rc, triplets/quadruplets with all pairs < Rm; term lists fixed at the
+reference, so FCs of ranks 1-4 exact at any amplitude, 0.03 A), forces on the materials' own
+supercells; check.py compares every fcN_irr.dat term and 2000 fcN.dat terms per rank with the exact
+FC (polynomial fit on a 5^m grid) and evaluates inv_rows_*.dat (FOCEX_INVARIANCE_COMPARE=1) on
+them. fcflag=0, FC2 range inside the WS cell (fc2range=1; with fc2range=0 a 2-body cluster and its
+image are both unknowns and only their sum is fixed): Ge, BZO, GeSe (rot rows off) fit 0.000 %,
+all FCs = exact to the 7 written digits. Pre-existing failures found (original route too):
+- rank-1 rotational rows (sum_i Phi_i x X_i = 0 over the primitive cell) are violated when the
+  atoms feel forces at the reference (GeSe, MoTe2 Te z): only those 2 of 9957 rows fail on the
+  exact FCs, the rest hold to 1e-9; fit 29 % (fc34) / 40.6 % (original route). Fixed 2026-10-26:
+  rows dropped (user); see Exact-model full test.
+- MoTe2 FC2 group of the in-plane Mo-Mo pair (3.499 A): maps.dat sets d2U/dy1dx13 =
+  d2U/dx1dy13 (symmetric xy block); the exact model, invariant under all 24 ops of P6_3/mmc
+  (spglib) to 2e-6, has xy=-13.0, yx=-5.37. Translational rows fail on the exact FCs; fit 2.8 %
+  on the original route, 1.9 % fc34, rot rows off. FOCEX finds the 24 ops; error in the term
+  analysis. Cause found 2026-10-26 on wurtzite (yz=zy): Exact-model full test, fix 1; MoTe2 not
+  rechecked with an exact model since. (MoTe2 test input also: b=1.7320508 -> ops orthogonal to 6.5e-9 only;
+  POSCAR1 cell differs from structure.params by 7.5e-4 A.)
+- MgO (rhombohedral frame): HEAD with no flags and nshells(3)=6 6 also stops "Error in
+  force_constants: zero equation"; with fcflag=0 rank 3 has groups with 385 independent terms.
+  structure.params vs POSCAR1 consistent (cell 4e-6 A, sites 8e-5 A, species right), symmetry
+  ops orthogonal to 4e-16. Cause not located. (Largest-pivot xrowop2, in the code since 2026-10-26, removed the stop
+  but not the wrong groups.)
+
 ## How the force constants are solved for (enforce_inv)
 
 `structure.params` line 5, 4th value:
@@ -322,15 +362,45 @@ inv_fcs.dat, fits with the chosen one. include_fc=2 is not handled yet (marked: 
   Until 2026-08-07 this instead projected the unconstrained solution onto the
   kernel, which is **not** a constrained fit and gave ~3400 % residual on MoTe2
   where the constrained fit gives 35 %. Results predating `83b709b` differ.
-- **2** — same, but the reduced problem is solved by LASSO (`lasso.f90`), with
-  the L1 weight chosen by 5-fold cross-validation on held-out force rows. Worth
-  it only when the model is underdetermined: on MoTe2 with 880 free parameters
-  and 1152 equations it keeps 88 and stays physical while the SVD produces
-  ±15000 cm⁻¹ phonons; on well-determined GeSe it keeps 789 of 795 and matches
-  the SVD. Sparsity is in the free parameters `y`, not in `x = K y`.
+- **1** with a stressed reference: x = x_p + K y (Huang rows with b /= 0, `particular_solution`).
+- **2** — constrained LASSO on the irreducible FCs themselves (`lasso_constrained.f90`, called from
+  `lasso_kernel_basis` in constrained_fit.f90): min 1/2N||Ax-b||^2 + lam sum w_j|x_j| (w = column
+  rms), invariances exact, interior point; support |w x| > 1e-8 max; lam by 5-fold CV. **3** = 2 +
+  least-squares refit on the support under the invariances. Old LASSO on the kernel coefficients:
+  FOCEX_LASSO=old. History: memory lasso-work-log, FOCEX/notes/constrained_lasso.tex. The MoTe2/GeSe
+  numbers once given here (88 kept, 789 of 795) were the old LASSO.
 
 `svd_set` declares its matrix `intent(inout)` and `svdcmp` returns U in it, so
 **it destroys the matrix you pass**. Give it a copy.
+
+## Exact-model full test (2026-10-26/27; FOCEX/REFERENCE/exact_model, README.md there)
+
+Model (user's plan): E = L.s + 1/2 s^T H s in squared distances (pair K, anharmonic pair, 3-body
+area^2, 4-body opposite edges -- the face-normal product has no 4-atom part), stressed reference;
+CaF2 (96 atoms), wurtzite ZnO (72), monoclinic HfO2 (96), 100 SC_SNAPS snapshots each, 1499/1927/7977
+unknowns. verify.py checks map terms, completeness, invariance rows, force rows, fits and the support
+by FOCEX's rule (the written x is never exactly sparse: non-zero counts cannot show a dropped FC).
+All pass; e0/e1/e3 exact to the 7 written digits; e2 loses no FC, FC4 off <= 4e-4 (shrinkage).
+Code changes it brought:
+1. force_constant_symmetries.f90: unique_force_constant was called with iatom as input and output;
+   when the canonical form reordered the atoms, the next direction combinations of the same
+   operation used the wrong atoms, imposing Phi(i a, j b) = Phi(i b, j a) (wurtzite FC2 yz=zy;
+   MoTe2 xy=yx same mechanism). Output now in iatomu.
+2. xrowop2: partial pivoting (largest element of the column); same echelon form in exact arithmetic.
+3. Rank-1 rotational rows (FC1 torque) dropped (user): image-dependent when FC1 /= 0.
+4. Stressed Huang: S_abcd - S_cdab = -2 Omega (d_ab sig_cd - d_cd sig_ab); optional stress.params
+   (3x3 GPa, sig = (1/V) dE/deta, tensile > 0, absent = 0, echoed in the log); rows with b /= 0 ->
+   x = x_p + K y (e1) and z = z0 + Q t (LASSO); bhom in others.f90.
+5. LASSO (lasso_constrained.f90): lam grid extended by 2 decades while the CV minimum is at its end,
+   to 1e-8 lam_max (old floor 1e-4 lost 76 true FCs on ZnO e3); tie tolerance 1e-10 -> 1e-13 <b^2>;
+   refit particular solution by pivoted QR (NR svdcmp did not converge in 18/242 calls). Each
+   extension recomputes the CV (~2.3x cost; reusing the done lam not implemented).
+6. Test dumps: FOCEX_DUMP_MAP=1 -> map_dump.bin; FOCEX_DUMP_AMAT=k -> amat_dump.bin (ahom, bhom,
+   force rows of the first k snapshots).
+DFT regression (Ge, BZO, MoTe2, GeSe, e1-e3; table in the README): Ge, BZO e1 = HEAD; MoTe2 e1
+35.269 -> 32.194 %, GeSe 6.111 -> 5.755 % (changes 1-3, not separated); Ge e2 0.083 -> 0.036 %;
+the rest identical. The log label "non-zeros ... after projection" (focex.f90) is left over from the
+old e1 path: it counts |x| > margin.
 
 ## Things that bite
 
@@ -370,6 +440,21 @@ inv_fcs.dat, fits with the chosen one. include_fc=2 is not handled yet (marked: 
   the dynamical matrix may not equal the Ewald force subtracted from the data.
 - `conductance.dat` is written but its band loop is `do j=1,-1`, so it is all
   zeros.
+- Elastic constants (dynamical.f90, 2026-10-27; formulas in theory.rst "Elastic constants"):
+  checks with WARNING banner + size (tol 1e-5): ASR of phi and pi0, sum_tau Q = 0, rank-2 rotational
+  Q(tau a;b,g)-Q(tau a;g,b) = pi0_g d_ab - pi0_b d_ag (from teta, before Q is symmetrized), and
+  generalized Huang [ab,gl]-[gl,ab] = d_ab s_gl - d_gl s_ab with s from stress.params (else 0, as in
+  the Huang rows; tol 1e-3 max|bracket|). No torque test (sum_tau pi0 x tau depends on which images
+  form the cell when pi0 /= 0; the rank-1 rotational fit rows were dropped for the same reason).
+  Q is symmetrized in its strain indices before xi, sigmav, QGQ (C itself unchanged: symmetrize4
+  already did it). stress.params (GPa, tensile > 0, same file as the Huang rows) replaces the FC1
+  estimate sum_tau pi0 tau/V of the reference stress; sigma_res = sigma_ref - pi0 G Q/V;
+  C = Sym(A-QGQ)/V - Sym(d_ag sigma_res_bd), all 4 terms (was sigma0 unrelaxed, 2 of 4 terms: shear
+  correction doubled). Verified: Ge, BZO unchanged; Ge with stress.params -1 GPa: C11 +1, C44 +0.5,
+  C12 same, Huang unaffected; deviatoric (0.5,0,-0.5) flags Huang by 1.0 GPa. With enforce_inv=0
+  BZO/MoTe2 trip the rotational check at 1e-5, GeSe 1.6e-3 (and ASR 3e-4).
+  supercell_*.xyz: column atom_sc(i)%cell%atomposindx is never assigned (uninitialized; differs
+  run to run). theory.rst Eq. 8: 1/2 chi (user).
 - `structure.params` line 3 is `scal [convcoord]`. It is read as text, so the
   old one-value form (`5.70 # scale`) still works and means `convcoord=0`.
   `convcoord=0`: atom positions are in units of the conventional vectors

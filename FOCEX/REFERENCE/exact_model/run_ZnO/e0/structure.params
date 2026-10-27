@@ -1,0 +1,23 @@
+   3.2496000000    3.2496000000    5.2042000000   90.0000000000   90.0000000000  120.0000000000  # a b c alpha beta gamma of the conventional cell
+1 0 0 0 1 0 0 0 1  # primitive vectors R01 R02 R03 in units of the conventional vectors
+1.0 0              # scale for line 1; 0 = coordinates in units of the conventional vectors
+1 1 1 1 0 0 0 0   # ranks 1-4 (exact-model test)
+1 1 1 0            # transl, rot, Huang (stress.params), enforce_inv
+0 300              # default, check: itemp (0 = no Boltzmann weighting), tempk (K)
+1 .false.          # default, check: number of POSCARi/FORCEDISPi pairs, verbosity
+2                  # number of atom types
+65.4090 15.9994  # mass of each atom type (amu)
+Zn O  # name of each atom type
+4                  # number of atoms in the primitive cell
+1                  # fc2range=1: FC2 shells from the next line
+9 9 9 9   # rank-2 shells: r < rL=4.72
+5 5 5 5   # rank-3 shells: r < Ra=3.5
+5 5 5 5   # rank-4 shells: r < Ra=3.5
+0 0 0 0  # default, check: shells for rank 5
+0 0 0 0  # default, check: shells for rank 6
+0 0 0 0  # default, check: shells for rank 7
+0 0 0 0  # default, check: shells for rank 8
+1 1    0.0000000000    0.0000000000    0.0000000000  # atom number, atom type, coordinates in units of CONVENTIONAL vectors
+2 1    0.3333333333    0.6666666667    0.5000000000
+3 2    0.0000000000    0.0000000000    0.3819000000
+4 2    0.3333333333    0.6666666667    0.8819000000

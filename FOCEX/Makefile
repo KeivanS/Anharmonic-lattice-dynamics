@@ -11,6 +11,7 @@ FLAGS =-O2 -fcheck=all #-fimplicit-none  -fbacktrace -Wimplicit-interface -Wimpl
 
 SUBF90 = \
   fc_modules.f90 \
+  fc34_range.f90 \
   kpoints.f90 \
   fourier_stuff.f90 \
   ewald_born.f90 \
@@ -19,11 +20,14 @@ SUBF90 = \
   aux_na.f90 \
   ios.f90 \
   svd_ridge.f90 \
+  lasso_lars.f90 \
+  lasso_constrained.f90 \
   lasso.f90 \
   constrained_fit.f90 \
   invariance_ranks.f90 \
   extratools.f90 \
   others.f90 \
+  fc34_maps.f90 \
   setup_amatrix.f90 \
   force_constant_symmetries.f90 \
   dynamical.f90 \

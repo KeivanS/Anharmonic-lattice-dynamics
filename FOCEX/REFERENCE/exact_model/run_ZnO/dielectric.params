@@ -1,0 +1,16 @@
+0    # Born charges off: the model has no Coulomb term
+1 0 0   # dielectric matrix
+0 1 0
+0 0 1
+0 0 0   # Born charge of atom 1
+0 0 0
+0 0 0
+0 0 0   # Born charge of atom 2
+0 0 0
+0 0 0
+0 0 0   # Born charge of atom 3
+0 0 0
+0 0 0
+0 0 0   # Born charge of atom 4
+0 0 0
+0 0 0

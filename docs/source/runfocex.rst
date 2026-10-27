@@ -464,7 +464,7 @@ the options of the fit.
    72.64                          #  9  mass of each type (uma)
    Ge                             # 10  name of each type
    2                              # 11  number of atoms in the primitive cell
-   0                              # 12  fc2range (0=default covers all the largest supercell)
+   0                              # 12  fc2range (0=default covers all the largest supercell) [fc3flag ... fc8flag]
    11 11                          # 13  neighbor shells for rank 2, ONE PER ATOM of the prim. cell(if fc2range>0)
    3 3                            # 14  neighbor shells for rank 3
    0 0                            # 15  neighbor shells for rank 4
@@ -521,16 +521,20 @@ line 2.
 
 **5. Invariance flags** — ``itrans irot ihuang enforce_inv``. The first three
 are ``1`` to switch the constraint on, ``0`` off; ``enforce_inv`` selects how
-the fit is solved and takes the values 0, 1 or 2.
+the fit is solved and takes the values 0 to 3.
 
   * ``itrans`` — translational invariance (acoustic sum rule). Keep it on;
     without it the acoustic branches will not go to zero at :math:`\Gamma`.
   * ``irot`` — rotational invariance. Relates rank :math:`n` to rank
-    :math:`n+1`; useful when several ranks are fitted together.
-  * ``ihuang`` — Huang : makes sure elastic tensor is symetric ; needed for low-symmetry crystals.
+    :math:`n+1`; useful when several ranks are fitted together. There are no
+    rank-1 rows: the torque of FC1 changes when an atom is replaced by its
+    lattice image, so it is not an invariance of a crystal.
+  * ``ihuang`` — Huang: makes sure the elastic tensor is symmetric; needed for
+    low-symmetry crystals. For a stressed reference structure, give its stress
+    in ``stress.params`` (see :ref:`below <focex-stress-params>`).
   * ``enforce_inv`` — how the fit is solved: ``0`` SVD of the stacked system (default),
-    ``1`` fit inside the kernel of the invariances (exact), ``2`` the same with LASSO; see
-    the explanation just below.
+    ``1`` fit inside the kernel of the invariances (exact), ``2`` the same with LASSO,
+    ``3`` LASSO followed by a refit; see the explanation just below.
 
 .. _focex-enforce-inv:
 
@@ -557,13 +561,17 @@ problems.
    * - ``2``
      - As ``1``, but the reduced problem is solved by LASSO, which also decides
        which force constants the data actually supports. See below.
+   * - ``3``
+     - As ``2``, followed by a least-squares refit of the selected force
+       constants under the same invariances. Use it when the forces are accurate.
 
-**How ``1`` works.** The invariance relations are homogeneous, so the force
-constants that satisfy them all form a linear subspace. If ``K`` is an
-orthonormal basis of that subspace — the kernel of the constraint matrix — then
-writing :math:`x = K y` satisfies every invariance identically, whatever
-:math:`y` is. FOCEX then fits the free parameters :math:`y`, and recovers all
-the force constants from :math:`x = K y`. ``K`` is the elimination of the
+**How ``1`` works.** The invariance relations are linear, so the force
+constants that satisfy them all form an affine subspace. If ``K`` is an
+orthonormal basis of the kernel of the constraint matrix and :math:`x_p` is one
+solution of the relations, then writing :math:`x = x_p + K y` satisfies every
+invariance identically, whatever :math:`y` is. :math:`x_p = 0` unless the
+reference structure is stressed (Huang rows with a right-hand side). FOCEX then fits the free parameters :math:`y`, and recovers all
+the force constants from :math:`x = x_p + K y`. ``K`` is the elimination of the
 dependent force constants written in a well-conditioned basis, so no separate
 back-substitution step is needed.
 
@@ -585,74 +593,47 @@ range, or switch some of ``irot``/``ihuang`` off.
 
 .. _focex-lasso:
 
-**enforce_inv = 2: selecting the force constants by LASSO**
+**enforce_inv = 2 and 3: selecting the force constants by LASSO**
 
-With ``enforce_inv = 2`` the reduced problem is solved by minimising
+FOCEX minimises
 
 .. math::
-   \frac{1}{2}\, \| A x - b \|^2 \;+\; \mu \sum_j n_j \, |x_j|
+   \frac{1}{2N}\, \| A x - b \|^2 \;+\; \lambda \sum_j w_j \, |x_j|
+   \qquad \text{with all invariance relations exact},
 
-instead of by SVD. The second term is an :math:`L_1` penalty, with :math:`n_j`
-the norm of column :math:`j` so that the penalty does not depend on the units of
-each rank — ranks 2, 3 and 4 carry different powers of Ångström.
+over the irreducible force constants :math:`x` themselves, so the :math:`L_1`
+term makes the force constants sparse. :math:`w_j` is the rms of column
+:math:`j` of :math:`A`, so the penalty does not depend on the units of each
+rank. The selected terms are those with :math:`|w_j x_j|` above
+:math:`10^{-8}` of the largest.
 
-**What it is for.** An :math:`L_1` penalty drives parameters to *exactly* zero
-rather than merely making them small. When you request many neighbour shells or
-high ranks, the number of candidate force constants grows quickly and most of
-them are not determined by the data. Least squares then distributes small,
-noise-driven values over all of them, which fits the snapshots you have and
-predicts everything else badly. The :math:`L_1` term instead keeps only the
-force constants the data supports.
+* ``2`` returns the LASSO solution. Its values are shrunk towards zero.
+* ``3`` refits the selected terms by least squares under the same invariances,
+  which removes the shrinkage.
 
-**When it helps, and when it does not.** It matters when the model is
-underdetermined — a long range, high ranks, or few snapshots. It is close to
-harmless otherwise. Two measured examples:
+**Choosing** :math:`\lambda`. FOCEX takes it by five-fold cross-validation on
+the force rows: for each :math:`\lambda` it fits on four fifths of the rows and
+measures the error on the fifth. The grid has 40 values, from the smallest
+:math:`\lambda` that zeroes every term down to :math:`10^{-4}` of it. While
+the minimum lies at the end of the grid, the grid is extended by two decades at
+a time, down to :math:`10^{-8}` (the log says ``grid extended``). The scan is
+written to ``lasso.dat``; the log reports ``LASSO: force constants selected=``.
 
-.. list-table::
-   :header-rows: 1
-   :widths: 34 16 16 34
+**Test on exact data.** On a model whose force constants of ranks 1–4 are known
+exactly (CaF\ :sub:`2`, wurtzite ZnO; 100 snapshots, 1499 and 1927 unknowns;
+``FOCEX/REFERENCE/exact_model``):
 
-   * - Case
-     - free params
-     - equations
-     - result
-   * - MoTe2, FC2 to 25 shells, FC3 to 10, **2 snapshots**
-     - 880
-     - 1152
-     - SVD uses all 880 and gives phonons from −15030 to 14820 cm\ :sup:`-1`;
-       LASSO keeps **88** and gives −242 to 268 cm\ :sup:`-1`
-   * - GeSe, **well determined**
-     - 795
-     - 2880
-     - LASSO keeps **789 of 795** and reproduces the SVD phonons to 0.4 cm\ :sup:`-1`
+* ``3`` selected exactly the true non-zero terms and reproduced the force
+  constants to the 7 written digits.
+* ``2`` lost no true term, but kept 17 (CaF\ :sub:`2`) and 40 (ZnO) zero ones
+  and was off by up to 4 × 10\ :sup:`-4` relative in FC4.
 
-In the first case the SVD has the *better* residual on the data it was fitted to
-— 13.9 % against 36.8 % — and phonons three orders of magnitude beyond anything
-physical. That is what overfitting looks like, and it is why the residual on the
-training data is not a useful measure of a fit.
-
-**You do not choose** :math:`\mu`. FOCEX selects it by five-fold
-cross-validation: the force rows are split into five groups, and for each
-candidate :math:`\mu` the model is fitted on four groups and its error measured
-on the fifth, each group being held out once. The :math:`\mu` that minimises the
-error on data the fit never saw is the one used. Forty values of :math:`\mu` are
-scanned, from the smallest value that zeroes every coefficient down by four
-orders of magnitude. The whole scan is written to ``lasso.dat``, and the
-selected value appears in the log as ``LASSO: selected mu``.
+With noisy forces the selection has not been tested this way.
 
 .. tip::
 
-   Check ``LASSO: non-zero free parameters`` in the log. If it is close to the
-   total, the data already determines your model and ``enforce_inv = 0`` or
-   ``1`` will do the same job more cheaply. If it is a small fraction, the
-   :math:`L_1` term is doing real work and the SVD result should be treated with
-   suspicion.
-
-.. note::
-
-   The sparsity is in the free parameters, not in the force constants
-   themselves: the retained parameters are combinations :math:`x = K y`, so the
-   printed ``fcN.dat`` files are not themselves sparse.
+   If nearly all force constants are selected, the data already determines
+   your model, and ``enforce_inv = 0`` or ``1`` does the same job more cheaply.
 
 **6. Temperature weighting** — ``itemp tempk``. With ``itemp = 0`` every
 snapshot has the same weight (``tempk`` is then unused but must be present).
@@ -680,6 +661,21 @@ primitive cell (not per type).
     line 13 are overwritten accordingly. This is the safe default.
   * ``1`` — use the shell counts of line 13; any shell reaching beyond the
     supercell is still discarded, with a warning in the log.
+
+  Up to six optional integers may follow: ``fc3flag … fc8flag``. Missing flags
+  count as nonzero.
+
+  * Nonzero: a cluster of that rank is kept if all its pairs are within the
+    shells of lines 14–19, as before.
+  * ``0``: a cluster is kept if every pair in it is a kept FC2 pair, and one of
+    these holds:
+
+    - all its pairs are within the shells of lines 14–19;
+    - it has only 2 distinct atoms (Φ_iij, Φ_iiij, Φ_iijj);
+    - its distinct atoms lie on one line.
+
+    The two-body and collinear terms then reach as far as FC2. The number of
+    unknowns grows a lot; see ``clusters<rank>.dat``.
 
 **13–19. Neighbor shells** — one line per rank (2 … 8), each containing
 ``natom_prim_cell`` integers: how many neighbor shells around each atom of the
@@ -842,6 +838,21 @@ The four meaningful knobs are:
 The ``maxterms``/``maxgroups`` entries are upper bounds on the number of terms
 and groups stored per rank. If a run stops complaining that one of these is too
 small, raise the corresponding line for that rank.
+
+.. _focex-stress-params:
+
+``stress.params`` (optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The stress of the reference structure, 3 lines of 3 numbers in GPa,
+:math:`\sigma = (1/V)\, \partial E/\partial \eta` (tensile positive; check
+the sign convention of your DFT code). It enters the Huang rows, which for a stressed reference read
+:math:`S_{\alpha\beta\gamma\delta} - S_{\gamma\delta\alpha\beta} =
+-2\Omega(\delta_{\alpha\beta}\sigma_{\gamma\delta} -
+\delta_{\gamma\delta}\sigma_{\alpha\beta})`, with :math:`\Omega` the volume of
+the primitive cell. Without the file the stress is taken as zero. The log
+prints the stress used either way. Give it when the reference is not relaxed
+and ``ihuang = 1``.
 
 Running FOCEX
 -------------
@@ -1033,12 +1044,13 @@ Diagnostics
     percent deviation``. With ``enforce_inv = 1`` the matrix is the reduced one,
     so there are as many singular values as there are free parameters.
 
-``lasso.dat`` (``enforce_inv = 2`` only)
-    The cross-validation scan used to pick :math:`\mu`: one line per value of
-    :math:`\mu` with the mean cross-validation error and its standard error,
-    preceded by per-fold diagnostics giving the iteration count and the number
-    of non-zero parameters along the path. Plot column 3 against column 2 to see
-    the error curve and where it turns over. See :ref:`LASSO <focex-lasso>`.
+``lasso.dat`` (``enforce_inv = 2, 3``)
+    The cross-validation scan used to pick :math:`\lambda`: one line per value
+    (``k``, :math:`\lambda/\lambda_{max}`, CV error of the LASSO, CV error of
+    the refit, standard error, then the number selected with all rows),
+    preceded by per-fold iteration counts. The last line gives the selected
+    ``k``. Plot column 4 (column 3 for ``enforce_inv = 2``) against column 2 to
+    see where the error turns over. See :ref:`LASSO <focex-lasso>`.
 
 ``times.dat``
     Wall/CPU time after each stage of the run — the place to look when a run

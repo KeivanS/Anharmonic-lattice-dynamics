@@ -55,7 +55,7 @@ use linalgb
 use tetrahedron
 use eigen !, only : ndyn,eigenval,eigenvec,allocate_eig,eigenval_bs,eigenvec_bs,allocate_eig
 use constants, only : r15,ee,pi,eps0,cnst
-use invariance_ranks, only : set_translational_inv_constraints, set_rotational_inv_constraints
+use invariance_ranks, only : set_translational_inv_constraints, set_rotational_inv_constraints, write_map_dump
 
 implicit none
 integer i,j,g,ti,rank,iunit,uio,nkernel,imax,n_hom,nt(maxrank),ntind(maxrank),tau,taup,nat,ncs(3),al,be,ia,jb
@@ -74,6 +74,8 @@ complex(r15) d2ew(3,3), d3ew(3,3,3), d0(3,3),sum
 real(r15) q(3)
 character(len=16) invmode, invcmp
 real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
+real(r15), allocatable :: xpart(:), bshift(:)
+real(r15) presid
 
  call date_and_time(date=today,time=now,zone=zone)
  call cpu_time(tim)
@@ -168,7 +170,11 @@ real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
 ! outputs: map structure including for rank, the groups of indep FCs and the full FCs
 ! maxterms, nshells, ngroups, nterms, estimate of inv_constraints, nindepfc
 
-   call setup_maps
+   if(any(fcflag(3:8).eq.0)) then   ! fcflag=0 range rule: copies in fc34_maps.f90
+      call setup_maps_fc34
+   else
+      call setup_maps
+   endif
 
    close(umap)
 
@@ -256,6 +262,11 @@ real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
       map(2)%gr(g)%mat(:,ti) = map(2)%gr(g)%mat(:,ti)*map(2)%keep(counteri(2,g,ti))
    enddo
    enddo
+   call get_environment_variable('FOCEX_DUMP_MAP', invcmp)
+   if (invcmp .eq. '1') then
+      call write_map_dump('map_dump.bin')
+      write(ulog,*)'FOCEX_DUMP_MAP: map arrays written to map_dump.bin'
+   endif
 !
 !@@@@@@@@@@@@@@  read supercell force-displacements and setup the matrices @@@@@@@@@@@@@@@@
 !
@@ -336,6 +347,23 @@ real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
 ! output is the homogeneous part of Amatr: ahom(inv_constraints,dim_ac)
     call homogeneous_constraints_overlap(inv_constraints) 
 
+! FOCEX_DUMP_AMAT=k: invariance rows (ahom, bhom) and the force rows of the first k snapshots
+! (aforce, bforce) to amat_dump.bin at full precision, for tests against known force constants.
+! Stream: 6 int32 (rows of ahom, transl, rot, Huang rows, force rows written, columns), then
+! ahom, bhom, aforce(1:nf,:), bforce(1:nf) as float64, matrices column-major.
+    call get_environment_variable('FOCEX_DUMP_AMAT', invcmp)
+    if (len_trim(invcmp) .gt. 0) then
+       read(invcmp,*) i
+       j = min(force_constraints, i*3*natom_super_cell)
+       open(351,file='amat_dump.bin',access='stream',form='unformatted',status='replace')
+       write(351) int(inv_constraints,4), int(merge(transl_constraints,0,itrans.ne.0),4), &
+&            int(merge(rot_constraints,0,irot.ne.0),4), int(merge(huang_constraints,0,ihuang.ne.0),4), &
+&            int(j,4), int(dim_ac,4)
+       write(351) ahom, bhom, aforce(1:j,:), bforce(1:j)
+       close(351)
+       write(ulog,*)'FOCEX_DUMP_AMAT: wrote amat_dump.bin: ',inv_constraints,' invariance rows, ',j,' force rows'
+    endif
+
     write(ulog,*)'dim_al,dim_ac set to ',dim_al,dim_ac
 
 ! check if any include_fc=2, then read atompos and call setup_maps and read fcs
@@ -397,6 +425,14 @@ real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
       write(ulog,*)' Kernel of A, of dim ',n_hom,'x',dim_ac,' is of dimension ',nkernel
       write(ulog,*)' The number of eliminated components is ',dim_ac-nkernel
 !     deallocate(a_hom)
+! rows with a right-hand side (Huang rows of a stressed reference): x = xpart + K y
+      allocate(xpart(dim_ac)) ; xpart = 0
+      if (any(bhom .ne. 0)) then
+         call particular_solution(n_hom,dim_ac,ahom,bhom,svdcut,xpart,presid)
+         write(ulog,*)'MAIN: invariance rows with a right-hand side: x = xpart + K y; max|C xpart - d|=',presid
+         write(*   ,*)'MAIN: invariance rows with a right-hand side: x = xpart + K y; max|C xpart - d|=',presid
+         if (itemp.eq.1) write(*,*)'WARNING: itemp=1 projects on the kernel and ignores the stress of stress.params'
+      endif
 
    endif
 
@@ -421,7 +457,7 @@ real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
 
    else
 
-      if(enforce_inv.eq.1 .or. enforce_inv.eq.2) then
+      if(enforce_inv.ge.1) then
 ! Fit the force-displacement equations alone, then project on the kernel of
 ! a_hom so that the invariances hold exactly. enforce_inv=1 fits by SVD,
 ! enforce_inv=2 by LASSO, which additionally selects which force constants the
@@ -429,29 +465,33 @@ real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
          write(ulog,*)'MAIN: fitting the force matrix only; enforce_inv,itemp=',enforce_inv,itemp
          write(ulog,*)'MAIN: size of the homogeneous part is ',n_hom
 
-       if(enforce_inv.eq.2) then
+       if(enforce_inv.ge.2) then
 ! ---- L1-regularised (LASSO) fit of the force-displacement equations ----------
 ! Only the force rows enter the fit: the invariance relations are imposed
 ! afterwards by the projection, so the L1 term acts on the data alone and the
 ! sparsity criterion is not swamped by the constraint block.
          open(ulasso,file='lasso.dat',status='unknown')
-         write(ulog,*)'MAIN: enforce_inv=2, compressing the force fit by LASSO'
-         write(*   ,*)'MAIN: enforce_inv=2, compressing the force fit by LASSO'
+         write(ulog,*)'MAIN: enforce_inv=',enforce_inv,', compressing the force fit by LASSO (3: + refit)'
+         write(*   ,*)'MAIN: enforce_inv=',enforce_inv,', compressing the force fit by LASSO (3: + refit)'
          call lasso_kernel_basis(force_constraints,dim_ac,nkernel,aforce,bforce, &
-      &       kernelbasis(1:dim_ac,1:nkernel),lasso_nfold,lasso_nlambda,         &
-      &       lasso_epsratio,fcs,lasso_mu,nnzero,ulasso)
+      &       kernelbasis(1:dim_ac,1:nkernel),xpart,lasso_nfold,lasso_nlambda,   &
+      &       lasso_epsratio,enforce_inv.eq.3,fcs,lasso_mu,nnzero,ulasso)
          close(ulasso)
          sigma=0    ! LASSO returns no singular-value error estimate
-         write(ulog,'(a,i6,a,i6)')'LASSO: non-zero free parameters=',nnzero,' of ',nkernel
-         write(*   ,'(a,i6,a,i6)')'LASSO: non-zero free parameters=',nnzero,' of ',nkernel
+         write(ulog,'(a,i6,a,i6)')'LASSO: selected terms (FCs; kernel coefficients if FOCEX_LASSO=old)=',nnzero
+         write(*   ,'(a,i6,a,i6)')'LASSO: selected terms (FCs; kernel coefficients if FOCEX_LASSO=old)=',nnzero
        else
 !         call solve_svd(dim_al-n_hom,dim_ac,amat(n_hom+1:dim_al,1:dim_ac), &
 !&             bmat(n_hom+1:dim_al),svdcut,bfrc,sigma,uio)
 !        call svd_set(dim_al-n_hom,dim_ac,amat(n_hom+1:dim_al,1:dim_ac),  &
 !&            bmat(n_hom+1:dim_al),xout,sigma,svdcut,error,ermax,sig,'svd-elim.dat')
 ! ---- constrained least squares inside the kernel basis ----------------------
-         call fit_kernel_basis(force_constraints,dim_ac,nkernel,aforce,bforce,  &
+         allocate(bshift(force_constraints))
+         bshift = bforce - matmul(aforce,xpart)
+         call fit_kernel_basis(force_constraints,dim_ac,nkernel,aforce,bshift,  &
       &       kernelbasis(1:dim_ac,1:nkernel),svdcut,fcs,error,ermax,sig,'svd-kernel.dat')
+         fcs = fcs + xpart
+         deallocate(bshift)
        endif
 
 !--------------------- OLD enforce_inv=1 TREATMENT, KEPT ----------------------
@@ -492,7 +532,7 @@ real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
          call write_out(ulog,'Constrained solution, invariances exact by construction',fcs)
          write(ulog,*)'MAIN: Invariance violations of the constrained solution'
          do i=1,n_hom
-            write(ulog,*)i,dot_product(ahom(i,:),fcs(:))
+            write(ulog,*)i,dot_product(ahom(i,:),fcs(:))-bhom(i)
          enddo
 
 ! How much the projection costs, reported for both enforce_inv=1 and 2 so the
@@ -500,7 +540,7 @@ real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
          call fit_residual(force_constraints,dim_ac,aforce,bforce,fcs,error,ermax,sig)
          write(ulog,'(a,f9.3,a)')'Percent error AFTER kernel projection =',sig,' %'
          write(*   ,'(a,f9.3,a)')'Percent error AFTER kernel projection =',sig,' %'
-         if(enforce_inv.eq.2) then
+         if(enforce_inv.ge.2) then
 ! The projection is a dense linear map, so exact zeros do not survive it in
 ! general. Report what is left above the margin used for writing the FCs, so the
 ! effect of the projection on the sparsity is visible rather than assumed.
@@ -512,7 +552,7 @@ real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
       &          count(abs(fcs).gt.margin)
          endif
 
-         deallocate(kernelbasis,aforce,bforce,xout)
+         deallocate(kernelbasis,aforce,bforce,xout,xpart)
 
       else
 
@@ -520,7 +560,7 @@ real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
          if (allocated(bmat)) deallocate (bmat)
          dim_al=inv_constraints+force_constraints
          allocate(amat(dim_al,dim_ac),bmat(dim_al))
-         amat(1:inv_constraints,:) = ahom ; bmat(1:inv_constraints) = 0
+         amat(1:inv_constraints,:) = ahom ; bmat(1:inv_constraints) = bhom
          amat(1+inv_constraints:dim_al,:) = aforce ; bmat(1+inv_constraints:dim_al) = bforce
          deallocate (aforce,bforce)
 

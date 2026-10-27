@@ -755,7 +755,7 @@
      &   iatomtermindep(maxrank,maxterms)    ,ixyztermindep(maxrank,maxterms), &
      &   iatomtermall  (maxrank,maxterms)    ,ixyztermall  (maxrank,maxterms), &
      &   iatomtermzero (maxrank,maxtermszero),ixyztermzero (maxrank,maxtermszero)
-      integer i,j,k,m,n,iatom(nrank),ncmp,ixyz(nrank),   &
+      integer i,j,k,m,n,iatom(nrank),iatomu(nrank),ncmp,ixyz(nrank),   &
      &   iatomterm(maxrank,maxterms),ixyzterm(maxrank,maxterms),jterm,   &
      &     icell(3),iv(3),isg,msave,nn,  &
      &     irank,k2,neqs,ifactorial,msave2,j2,   &
@@ -876,11 +876,16 @@
              stop
           endif
 ! get unique denominator
-          call unique_force_constant(nrank,iatom,ixyz4,iatom,ixyz)
+! canonical form in iatomu: iatom must stay the image atoms in the order of ixyz4 for the next
+! direction combinations of this operation. It was overwritten here (same array in and out), so when
+! the canonical form reordered the atoms, the later combinations paired the directions with the
+! wrong atoms: Phi_ab = Phi_ba imposed (wurtzite FC2 yz = zy, MoTe2 xy = yx; exact-model test,
+! 2026-10-26)
+          call unique_force_constant(nrank,iatom,ixyz4,iatomu,ixyz)
 ! look for variable
           iloop: do i=1,ntermall
             do k=1,nrank
-              if(iatomterm(k,i).ne.iatom(k).or.ixyzterm(k,i).ne.ixyz(k))  exit
+              if(iatomterm(k,i).ne.iatomu(k).or.ixyzterm(k,i).ne.ixyz(k))  exit
 ! foundit: add in amp
               if(k.eq.nrank)then
                 eqs(neqs,i)=eqs(neqs,i)-amp
@@ -896,7 +901,7 @@
                 deallocate(ipermute,eqs,eqs2)
                 return
               endif
-              iatomterm(1:nrank,ntermall)=iatom(1:nrank)
+              iatomterm(1:nrank,ntermall)=iatomu(1:nrank)
               ixyzterm(1:nrank,ntermall)=ixyz(1:nrank)
               eqs(neqs,ntermall)=eqs(neqs,ntermall)-amp
             endif
@@ -1725,20 +1730,28 @@
 !
       integer nnrow,nncol
       real(r15) zna(nnrow,nncol),zntemp
-      integer nrow,ncol,nout,j,k,l,ncmp
+      integer nrow,ncol,nout,j,k,l,ncmp,kmax
 !
 !	TRANSFORM MATRIX BY ROWS
+! Pivot = the largest element of the column (partial pivoting; 2026-10-26). It used to be the first
+! one above the zero tolerance: dividing by pivots ~ tolerance compounds, and the wurtzite FC4
+! groups of three Zn atoms (exact-model test) came out with coefficients ~9e22 and 83 and 147
+! "independent" terms. The reduced row-echelon form, hence which terms are independent, is the
+! same in exact arithmetic.
       nout=0
    do j=1,nrow
 5     if(j+nout.gt.ncol)return
-!	PUT NON-ZERO ELEMENTS ON DIAGONAL
-      if(ncmp(zna(j,j+nout)).ne.0)goto 4
-      do  k=j+1,nrow
-      if(ncmp(zna(k,j+nout)).ne.0)goto 3
+      kmax=j
+      do k=j+1,nrow
+        if(abs(zna(k,j+nout)).gt.abs(zna(kmax,j+nout))) kmax=k
       enddo
 !	IF COLUMN HAS ALL ZEROES, GO TO NEXT COLUMN
-      nout=nout+1
-      goto 5
+      if(ncmp(zna(kmax,j+nout)).eq.0)then
+        nout=nout+1
+        goto 5
+      endif
+      if(kmax.eq.j)goto 4
+      k=kmax
 !	INTERCHANGE ROWS
 3     do l=1,ncol
       zntemp=zna(j,l)

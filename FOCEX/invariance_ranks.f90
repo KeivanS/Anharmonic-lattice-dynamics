@@ -23,7 +23,7 @@
  use constants, only : r15
  implicit none
  private
- public set_translational_inv_constraints, set_rotational_inv_constraints
+ public set_translational_inv_constraints, set_rotational_inv_constraints, write_map_dump
 
  integer, allocatable :: ckey(:,:), ccol(:)
  real(r15), allocatable :: cval(:)
@@ -82,7 +82,11 @@
     call gather_rows(arow, ntr, 'translational', rnk)
     endif
 !------------------------------------ rotational, rank rnk: the rank-rnk part ...
-    if (do_rot) then
+! No rank-1 rows: the torque of FC1 over the primitive cell, sum_i Phi_i x X_i, is not an
+! invariance of a crystal (moving atom i by a lattice vector L changes it by Phi_i x L). On exact
+! model FCs with FC1 /= 0 these were the only rotational rows violated; dropped 2026-10-26 (user).
+! FC1 still enters the rank-2 rows below.
+    if (do_rot .and. rnk .ge. 2) then
     call start_contributions
     do g = 1, map(rnk)%ngr
     do t = 1, map(rnk)%nt(g)
@@ -236,6 +240,31 @@
     if (include_fc(r) .eq. 1) column_of = column_of + map(r)%nkeptind
  enddo
  end function column_of
+!---------------------------------------------------------------------------
+ subroutine write_map_dump(fn)
+!! the map arrays at full precision, for tests against known force constants (FOCEX_DUMP_MAP=1).
+!! Stream file: per included rank: int32 rank, ngr; per group: int32 nt, ntind, columns(ntind)
+!! (column_of, 0 = not a column), iat(rank,nt), ixyz(rank,nt); float64 mat(nt,ntind)
+!! (column-major). A term t of group g is sum_ti mat(t,ti) * x(column(ti)).
+ use svd_stuff
+ use params
+ implicit none
+ character(*), intent(in) :: fn
+ integer rnk, g, ti
+ open(352, file=fn, access='stream', form='unformatted', status='replace')
+ do rnk = 1, maxrank
+    if (include_fc(rnk) .ne. 1) cycle
+    write(352) int(rnk,4), int(map(rnk)%ngr,4)
+    do g = 1, map(rnk)%ngr
+       write(352) int(map(rnk)%nt(g),4), int(map(rnk)%ntind(g),4), &
+&           (int(column_of(rnk,g,ti),4), ti=1,map(rnk)%ntind(g))
+       write(352) int(map(rnk)%gr(g)%iat(1:rnk,1:map(rnk)%nt(g)),4), &
+&           int(map(rnk)%gr(g)%ixyz(1:rnk,1:map(rnk)%nt(g)),4)
+       write(352) real(map(rnk)%gr(g)%mat(1:map(rnk)%nt(g),1:map(rnk)%ntind(g)),8)
+    enddo
+ enddo
+ close(352)
+ end subroutine write_map_dump
 !---------------------------------------------------------------------------
  subroutine check_columns
 !! the columns of column_of must fill 1..nindepfc

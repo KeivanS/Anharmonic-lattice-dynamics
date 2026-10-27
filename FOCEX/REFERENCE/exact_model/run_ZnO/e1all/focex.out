@@ -1,0 +1,2481 @@
+latticeparameters is=       3.24960       3.24960       5.20420      90.00000      90.00000     120.00000
+ primitive lattice is=
+       1.00000       0.00000       0.00000
+       0.00000       1.00000       0.00000
+       0.00000       0.00000       1.00000
+# of different atom types is=        2
+# of each type in primcel is=        2        2
+# mass of different types is=      65.40900      15.99940
+  Born_flag  =           0  Born charges are not subtracted
+ READ_PARAMS: opening latdyn.params
+ READ_PARAMS: kmesh=            8           8           8
+READ_PARAMS: shift, normal =     0.0000    0.0000    0.0000    1.0000    0.0000    0.0000
+ READ_PARAMS: wmesh, wmax =          300   1500.0000000000000     
+ READ_PARAMS: width=    10.000000000000000     
+ READ_PARAMS: just read verbose  F
+ READ_PARAMS: tmin,tmax=   0.0000000000000000        900.00000000000000     
+ conv_to_cart has conventional vectors on its columns=
+ prim_to_cart has primitive vectors on its columns
+ cart_to_conv has conventional reciprocal vectors on its lines (no 2pi)
+ cart_to_prim has primitive reciprocal vectors on its lines (no 2pi) 
+  primitive lattice (lines) is=
+       3.24960       0.00000       0.00000
+      -1.62480       2.81424       0.00000
+       0.00000       0.00000       5.20420
+  reciprocal lattice (lines, no 2pi) is=
+       0.30773       0.17767       0.00000
+       0.00000       0.35534       0.00000
+       0.00000       0.00000       0.19215
+  COORDINATES read successfully 
+ gmax,vol,junk,radius,diameter=   10.408400000000000        856.67664519889581        9.4972065252920039                2           5
+ 26SHORTEST_SHELL: diameter**3-1=d3=         124
+ 26SHORTEST_SHELL: counted=         124
+ 26SHORTEST_SHELL2: j, area=           4   82.306276199886227     
+ CALVOL: Volume is zero! check your basis vectors!
+r1,r2,r3=  -9.7488       0.0000       0.0000       4.8744      -8.4427       0.0000      -4.8744       8.4427       0.0000    
+ CALVOL: Volume is zero! check your basis vectors!
+r1,r2,r3=  -9.7488       0.0000       0.0000       4.8744      -8.4427       0.0000      -4.8744      -8.4427       0.0000    
+ CALVOL: Volume is zero! check your basis vectors!
+r1,r2,r3=  -9.7488       0.0000       0.0000       4.8744      -8.4427       0.0000       4.8744       8.4427       0.0000    
+ 26SHORTEST_SHELL3: j, volume=           8   856.67664519889581     
+26SHORTEST_SHELL: final smallest vector1=(     -9.7488      0.0000      0.0000)(
+26SHORTEST_SHELL: final smallest vector2=(      4.8744     -8.4427      0.0000)(
+26SHORTEST_SHELL: final smallest vector3=(      0.0000      0.0000     10.4084)(
+ 26SHORTEST_SHELL: final smallest volume=   856.67664519889581     
+ Entering fc_init; maxatoms is=     7921
+ Number of atoms in primitive cell is=        4
+ FC_INIT: maxneighbors= is=      100
+  cartesian atomic positions is=
+       0.00000      -0.00000       0.00000      -0.00000
+       0.00000       1.87616       0.00000       1.87616
+       0.00000       2.60210       1.98748       4.58958
+Atompos After unitcell Zn       1       1     0.0000     0.0000     0.0000    65.4090
+Atompos After unitcell Zn       1       2    -0.0000     1.8762     2.6021    65.4090
+Atompos After unitcell O        2       3     0.0000     0.0000     1.9875    15.9994
+Atompos After unitcell O        2       4    -0.0000     1.8762     4.5896    15.9994
+ after lattpgcount loop
+ Entered FC_INIT with    maxshells is=        6
+ Entered FC_INIT with maxneighbors is=      100
+ SET_ATOMPOS: shortest distance with atom1 within primcell is a0=   1.9874839800000001     
+ FC_INIT: last shell #           6  corresponding to rcut=   21.715685843089737     
+ FC_INIT: generated natoms=         3388  atoms in the neighborhood of primcell
+  maxatoms, natoms=        7921        3388
+ gmax,vol,junk,radius,diameter=   5.2042000000000002        47.593146955494213        3.6238973825532810                2           5
+ 26SHORTEST_SHELL: diameter**3-1=d3=         124
+ 26SHORTEST_SHELL: counted=         124
+ 26SHORTEST_SHELL2: j, area=           3   9.1451417999873588     
+ CALVOL: Volume is zero! check your basis vectors!
+r1,r2,r3=  -1.6248      -2.8142       0.0000      -3.2496       0.0000       0.0000       1.6248      -2.8142       0.0000    
+ CALVOL: Volume is zero! check your basis vectors!
+r1,r2,r3=  -1.6248      -2.8142       0.0000      -3.2496       0.0000       0.0000      -1.6248       2.8142       0.0000    
+ CALVOL: Volume is zero! check your basis vectors!
+r1,r2,r3=  -1.6248      -2.8142       0.0000      -3.2496       0.0000       0.0000       3.2496       0.0000       0.0000    
+ CALVOL: Volume is zero! check your basis vectors!
+r1,r2,r3=  -1.6248      -2.8142       0.0000      -3.2496       0.0000       0.0000       1.6248       2.8142       0.0000    
+ 26SHORTEST_SHELL3: j, volume=           8   47.593146955494213     
+26SHORTEST_SHELL: final smallest vector1=(     -1.6248     -2.8142      0.0000)(
+26SHORTEST_SHELL: final smallest vector2=(     -3.2496      0.0000      0.0000)(
+26SHORTEST_SHELL: final smallest vector3=(      0.0000      0.0000      5.2042)(
+ 26SHORTEST_SHELL: final smallest volume=   47.593146955494213     
+ gmax,vol,junk,radius,diameter=   10.408400000000000        856.67664519889581        9.4972065252920039                2           5
+ 26SHORTEST_SHELL: diameter**3-1=d3=         124
+ 26SHORTEST_SHELL: counted=         124
+ 26SHORTEST_SHELL2: j, area=           4   82.306276199886227     
+ CALVOL: Volume is zero! check your basis vectors!
+r1,r2,r3=  -9.7488       0.0000       0.0000       4.8744      -8.4427       0.0000      -4.8744       8.4427       0.0000    
+ CALVOL: Volume is zero! check your basis vectors!
+r1,r2,r3=  -9.7488       0.0000       0.0000       4.8744      -8.4427       0.0000      -4.8744      -8.4427       0.0000    
+ CALVOL: Volume is zero! check your basis vectors!
+r1,r2,r3=  -9.7488       0.0000       0.0000       4.8744      -8.4427       0.0000       4.8744       8.4427       0.0000    
+ 26SHORTEST_SHELL3: j, volume=           8   856.67664519889581     
+26SHORTEST_SHELL: final smallest vector1=(     -9.7488      0.0000      0.0000)(
+26SHORTEST_SHELL: final smallest vector2=(      4.8744     -8.4427      0.0000)(
+26SHORTEST_SHELL: final smallest vector3=(      0.0000      0.0000     10.4084)(
+ 26SHORTEST_SHELL: final smallest volume=   856.67664519889581     
+* New vector     1   0 0 0         0.00000       0.00000       0.00000       0.00000       0.00000       0.00000
+* New vector     2  -1-1-1         4.87440       2.81424      -5.20420       2.00000       1.00000      -1.00000
+* New vector     3  -1-1 0         4.87440       2.81424       0.00000       2.00000       1.00000       0.00000
+* New vector     4  -1-1 1         4.87440       2.81424       5.20420       2.00000       1.00000       1.00000
+* New vector     5  -1 0-1         1.62480       2.81424      -5.20420       1.00000       1.00000      -1.00000
+* New vector     6  -1 0 0         1.62480       2.81424       0.00000       1.00000       1.00000       0.00000
+* New vector     7  -1 0 1         1.62480       2.81424       5.20420       1.00000       1.00000       1.00000
+* New vector     8  -1 1-1        -1.62480       2.81424      -5.20420       0.00000       1.00000      -1.00000
+* New vector     9  -1 1 0        -1.62480       2.81424       0.00000       0.00000       1.00000       0.00000
+* New vector    10  -1 1 1        -1.62480       2.81424       5.20420       0.00000       1.00000       1.00000
+* New vector    11   0-1-1         3.24960      -0.00000      -5.20420       1.00000       0.00000      -1.00000
+* New vector    12   0-1 0         3.24960       0.00000       0.00000       1.00000       0.00000       0.00000
+* New vector    13   0-1 1         3.24960       0.00000       5.20420       1.00000       0.00000       1.00000
+* New vector    14   0 0-1        -0.00000       0.00000      -5.20420       0.00000       0.00000      -1.00000
+* New vector    15   0 0 1         0.00000       0.00000       5.20420       0.00000       0.00000       1.00000
+* New vector    16   0 1-1        -3.24960       0.00000      -5.20420      -1.00000       0.00000      -1.00000
+* New vector    17   0 1 0        -3.24960       0.00000       0.00000      -1.00000       0.00000       0.00000
+* New vector    18   0 1 1        -3.24960       0.00000       5.20420      -1.00000       0.00000       1.00000
+* New vector    19   1-1-1         1.62480      -2.81424      -5.20420      -0.00000      -1.00000      -1.00000
+* New vector    20   1-1 0         1.62480      -2.81424       0.00000      -0.00000      -1.00000       0.00000
+* New vector    21   1-1 1         1.62480      -2.81424       5.20420      -0.00000      -1.00000       1.00000
+* New vector    22   1 0-1        -1.62480      -2.81424      -5.20420      -1.00000      -1.00000      -1.00000
+* New vector    23   1 0 0        -1.62480      -2.81424       0.00000      -1.00000      -1.00000       0.00000
+* New vector    24   1 0 1        -1.62480      -2.81424       5.20420      -1.00000      -1.00000       1.00000
+* New vector    25   1 1-1        -4.87440      -2.81424      -5.20420      -2.00000      -1.00000      -1.00000
+* New vector    26   1 1 0        -4.87440      -2.81424       0.00000      -2.00000      -1.00000       0.00000
+* New vector    27   1 1 1        -4.87440      -2.81424       5.20420      -2.00000      -1.00000       1.00000
+* New vector    28  -2 1-1         0.00000       5.62847      -5.20420       1.00000       2.00000      -1.00000
+* New vector    29  -2 1 0         0.00000       5.62847       0.00000       1.00000       2.00000       0.00000
+* New vector    30  -2 1 1         0.00000       5.62847       5.20420       1.00000       2.00000       1.00000
+* New vector    31  -1 2-1        -4.87440       2.81424      -5.20420      -1.00000       1.00000      -1.00000
+* New vector    32  -1 2 0        -4.87440       2.81424       0.00000      -1.00000       1.00000       0.00000
+* New vector    33  -1 2 1        -4.87440       2.81424       5.20420      -1.00000       1.00000       1.00000
+* New vector    34   1-2-1         4.87440      -2.81424      -5.20420       1.00000      -1.00000      -1.00000
+* New vector    35   1-2 0         4.87440      -2.81424       0.00000       1.00000      -1.00000       0.00000
+* New vector    36   1-2 1         4.87440      -2.81424       5.20420       1.00000      -1.00000       1.00000
+* New vector    37   2-1-1         0.00000      -5.62847      -5.20420      -1.00000      -2.00000      -1.00000
+* New vector    38   2-1 0         0.00000      -5.62847       0.00000      -1.00000      -2.00000       0.00000
+* New vector    39   2-1 1         0.00000      -5.62847       5.20420      -1.00000      -2.00000       1.00000
+           1 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           2 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+           3 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+           4 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+           5 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           6 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           7 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           8 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           9 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          10 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          11 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          12 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          13 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          14 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          15 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          16 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          17 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          18 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          19 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          20 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          21 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          22 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          23 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          24 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          25 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          26 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          27 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          28 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          29 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          30 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          31 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          32 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          33 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          34 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          35 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          36 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          37 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          38 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          39 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+  sum of the weights=om/om0=   18.000000000000004     
+ gmax,vol,junk,radius,diameter=   2.2326432351479784        5.2118893015071635        1.7337880616022869                2           5
+ 26SHORTEST_SHELL: diameter**3-1=d3=         124
+ 26SHORTEST_SHELL: counted=         124
+ 26SHORTEST_SHELL2: j, area=           4   2.6955365226654768     
+ 26SHORTEST_SHELL3: j, volume=           5   5.2118893015071626     
+26SHORTEST_SHELL: final smallest vector1=(      0.0000      0.0000     -1.2073)(
+26SHORTEST_SHELL: final smallest vector2=(      0.0000     -2.2326      0.0000)(
+26SHORTEST_SHELL: final smallest vector3=(     -1.9335     -1.1163      0.0000)(
+ 26SHORTEST_SHELL: final smallest volume=   5.2118893015071626     
+ gmax,vol,junk,radius,diameter=  0.74421441171599290       0.28954940563928688       0.66157032613855604                2           5
+ 26SHORTEST_SHELL: diameter**3-1=d3=         124
+ 26SHORTEST_SHELL: counted=         124
+ 26SHORTEST_SHELL2: j, area=           4  0.44925608711091275     
+ CALVOL: Volume is zero! check your basis vectors!
+r1,r2,r3=   0.0000       0.0000     -0.60366       0.0000     -0.74421      0.71501E-16   0.0000      0.74421     -0.71501E-16
+ 26SHORTEST_SHELL3: j, volume=           6  0.28954940563928683     
+26SHORTEST_SHELL: final smallest vector1=(      0.0000      0.0000     -0.6037)(
+26SHORTEST_SHELL: final smallest vector2=(      0.0000     -0.7442      0.0000)(
+26SHORTEST_SHELL: final smallest vector3=(     -0.6445     -0.3721      0.0000)(
+ 26SHORTEST_SHELL: final smallest volume=  0.28954940563928683     
+* New vector     1   0 0 0         0.00000       0.00000       0.00000       0.00000       0.00000       0.00000
+* New vector     2  -1-1-1         0.64451       1.11632       0.60366       0.33333       0.33333       0.50000
+* New vector     3  -1-1 0        -0.00000       0.74421       0.60366       0.00000       0.33333       0.50000
+* New vector     4  -1-1 1        -0.64451       0.37211       0.60366      -0.33333       0.33333       0.50000
+* New vector     5  -1 0-1         0.64451       0.37211       0.60366       0.33333      -0.00000       0.50000
+* New vector     6  -1 0 0         0.00000      -0.00000       0.60366       0.00000       0.00000       0.50000
+* New vector     7  -1 0 1        -0.64451      -0.37211       0.60366      -0.33333       0.00000       0.50000
+* New vector     8  -1 1-1         0.64451      -0.37211       0.60366       0.33333      -0.33333       0.50000
+* New vector     9  -1 1 0         0.00000      -0.74421       0.60366       0.00000      -0.33333       0.50000
+* New vector    10  -1 1 1        -0.64451      -1.11632       0.60366      -0.33333      -0.33333       0.50000
+* New vector    11   0-1-1         0.64451       1.11632      -0.00000       0.33333       0.33333      -0.00000
+* New vector    12   0-1 0         0.00000       0.74421      -0.00000       0.00000       0.33333      -0.00000
+* New vector    13   0-1 1        -0.64451       0.37211       0.00000      -0.33333       0.33333       0.00000
+* New vector    14   0 0-1         0.64451       0.37211      -0.00000       0.33333      -0.00000      -0.00000
+* New vector    15   0 0 1        -0.64451      -0.37211       0.00000      -0.33333       0.00000       0.00000
+* New vector    16   0 1-1         0.64451      -0.37211      -0.00000       0.33333      -0.33333      -0.00000
+* New vector    17   0 1 0         0.00000      -0.74421       0.00000       0.00000      -0.33333       0.00000
+* New vector    18   0 1 1        -0.64451      -1.11632       0.00000      -0.33333      -0.33333       0.00000
+* New vector    19   1-1-1         0.64451       1.11632      -0.60366       0.33333       0.33333      -0.50000
+* New vector    20   1-1 0         0.00000       0.74421      -0.60366       0.00000       0.33333      -0.50000
+* New vector    21   1-1 1        -0.64451       0.37211      -0.60366      -0.33333       0.33333      -0.50000
+* New vector    22   1 0-1         0.64451       0.37211      -0.60366       0.33333      -0.00000      -0.50000
+* New vector    23   1 0 0         0.00000       0.00000      -0.60366       0.00000       0.00000      -0.50000
+* New vector    24   1 0 1        -0.64451      -0.37211      -0.60366      -0.33333       0.00000      -0.50000
+* New vector    25   1 1-1         0.64451      -0.37211      -0.60366       0.33333      -0.33333      -0.50000
+* New vector    26   1 1 0         0.00000      -0.74421      -0.60366       0.00000      -0.33333      -0.50000
+* New vector    27   1 1 1        -0.64451      -1.11632      -0.60366      -0.33333      -0.33333      -0.50000
+* New vector    28  -1-2 1        -0.64451       1.11632       0.60366      -0.33333       0.66667       0.50000
+* New vector    29  -1-1 2        -1.28902       0.00000       0.60366      -0.66667       0.33333       0.50000
+* New vector    30  -1 1-2         1.28902      -0.00000       0.60366       0.66667      -0.33333       0.50000
+* New vector    31  -1 2-1         0.64451      -1.11632       0.60366       0.33333      -0.66667       0.50000
+* New vector    32   0-2 1        -0.64451       1.11632      -0.00000      -0.33333       0.66667      -0.00000
+* New vector    33   0-1 2        -1.28902       0.00000       0.00000      -0.66667       0.33333       0.00000
+* New vector    34   0 1-2         1.28902      -0.00000      -0.00000       0.66667      -0.33333      -0.00000
+* New vector    35   0 2-1         0.64451      -1.11632       0.00000       0.33333      -0.66667       0.00000
+* New vector    36   1-2 1        -0.64451       1.11632      -0.60366      -0.33333       0.66667      -0.50000
+* New vector    37   1-1 2        -1.28902       0.00000      -0.60366      -0.66667       0.33333      -0.50000
+* New vector    38   1 1-2         1.28902      -0.00000      -0.60366       0.66667      -0.33333      -0.50000
+* New vector    39   1 2-1         0.64451      -1.11632      -0.60366       0.33333      -0.66667      -0.50000
+           1 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           2 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+           3 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           4 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           5 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           6 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           7 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           8 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           9 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          10 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          11 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          12 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          13 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          14 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          15 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          16 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          17 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          18 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          19 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          20 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          21 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          22 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          23 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          24 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          25 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          26 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          27 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          28 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          29 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          30 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          31 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          32 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          33 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          34 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          35 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          36 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          37 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          38 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          39 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+  sum of the weights=om/om0=   18.000000000000000     
+shell#, nb#, j, dij=    1   2   3        1.974
+shell#, nb#, j, dij=    1   3   4        1.974
+shell#, nb#, j, dij=    3   2   7        3.208
+shell#, nb#, j, dij=    3   3   8        3.208
+shell#, nb#, j, dij=    3   4   9        3.208
+shell#, nb#, j, dij=    3   5  10        3.208
+shell#, nb#, j, dij=    3   6  11        3.208
+shell#, nb#, j, dij=    5   2  14        3.250
+shell#, nb#, j, dij=    5   3  15        3.250
+shell#, nb#, j, dij=    5   4  16        3.250
+shell#, nb#, j, dij=    5   5  17        3.250
+shell#, nb#, j, dij=    5   6  18        3.250
+shell#, nb#, j, dij=    6   2  20        3.802
+shell#, nb#, j, dij=    6   3  21        3.802
+shell#, nb#, j, dij=    7   2  23        3.809
+shell#, nb#, j, dij=    7   3  24        3.809
+shell#, nb#, j, dij=    7   4  25        3.809
+shell#, nb#, j, dij=    7   5  26        3.809
+shell#, nb#, j, dij=    7   6  27        3.809
+shell#, nb#, j, dij=    8   2  29        4.566
+shell#, nb#, j, dij=    8   3  30        4.566
+shell#, nb#, j, dij=    8   4  31        4.566
+shell#, nb#, j, dij=    8   5  32        4.566
+shell#, nb#, j, dij=    8   6  33        4.566
+shell#, nb#, j, dij=    9   2  35        4.572
+shell#, nb#, j, dij=    9   3  36        4.572
+shell#, nb#, j, dij=    9   4  37        4.572
+shell#, nb#, j, dij=    9   5  38        4.572
+shell#, nb#, j, dij=    9   6  39        4.572
+shell#, nb#, j, dij=   10   2  41        4.958
+shell#, nb#, j, dij=   10   3  42        4.958
+shell#, nb#, j, dij=   11   2  44        5.002
+shell#, nb#, j, dij=   11   3  45        5.002
+shell#, nb#, j, dij=   11   4  46        5.002
+shell#, nb#, j, dij=   11   5  47        5.002
+shell#, nb#, j, dij=   11   6  48        5.002
+shell#, nb#, j, dij=   12   2  50        5.204
+shell#, nb#, j, dij=   13   2  52        5.605
+shell#, nb#, j, dij=   13   3  53        5.605
+shell#, nb#, j, dij=   13   4  54        5.605
+shell#, nb#, j, dij=   13   5  55        5.605
+shell#, nb#, j, dij=   13   6  56        5.605
+shell#, nb#, j, dij=   13   7  57        5.605
+shell#, nb#, j, dij=   13   8  58        5.605
+shell#, nb#, j, dij=   13   9  59        5.605
+shell#, nb#, j, dij=   13  10  60        5.605
+shell#, nb#, j, dij=   13  11  61        5.605
+shell#, nb#, j, dij=   13  12  62        5.605
+shell#, nb#, j, dij=   14   2  64        5.628
+shell#, nb#, j, dij=   14   3  65        5.628
+shell#, nb#, j, dij=   14   4  66        5.628
+shell#, nb#, j, dij=   14   5  67        5.628
+shell#, nb#, j, dij=   14   6  68        5.628
+shell#, nb#, j, dij=   15   2  70        5.928
+shell#, nb#, j, dij=   15   3  71        5.928
+shell#, nb#, j, dij=   16   2  73        5.969
+shell#, nb#, j, dij=   16   3  74        5.969
+shell#, nb#, j, dij=   16   4  75        5.969
+shell#, nb#, j, dij=   16   5  76        5.969
+shell#, nb#, j, dij=   16   6  77        5.969
+shell#, nb#, j, dij=   17   2  79        6.114
+shell#, nb#, j, dij=   17   3  80        6.114
+shell#, nb#, j, dij=   18   2  82        6.135
+shell#, nb#, j, dij=   18   3  83        6.135
+shell#, nb#, j, dij=   18   4  84        6.135
+shell#, nb#, j, dij=   18   5  85        6.135
+shell#, nb#, j, dij=   18   6  86        6.135
+shell#, nb#, j, dij=   18   7  87        6.135
+shell#, nb#, j, dij=   18   8  88        6.135
+shell#, nb#, j, dij=   18   9  89        6.135
+ allocating atom0(           1 )%shells(:) to size          100
+ i0,shel_count,mxshell=           1         100         100
+shell#, nb#, j, dij=    1   2   3        1.974
+shell#, nb#, j, dij=    1   3   4        1.974
+shell#, nb#, j, dij=    3   2   7        3.208
+shell#, nb#, j, dij=    3   3   8        3.208
+shell#, nb#, j, dij=    3   4   9        3.208
+shell#, nb#, j, dij=    3   5  10        3.208
+shell#, nb#, j, dij=    3   6  11        3.208
+shell#, nb#, j, dij=    5   2  14        3.250
+shell#, nb#, j, dij=    5   3  15        3.250
+shell#, nb#, j, dij=    5   4  16        3.250
+shell#, nb#, j, dij=    5   5  17        3.250
+shell#, nb#, j, dij=    5   6  18        3.250
+shell#, nb#, j, dij=    6   2  20        3.802
+shell#, nb#, j, dij=    6   3  21        3.802
+shell#, nb#, j, dij=    7   2  23        3.809
+shell#, nb#, j, dij=    7   3  24        3.809
+shell#, nb#, j, dij=    7   4  25        3.809
+shell#, nb#, j, dij=    7   5  26        3.809
+shell#, nb#, j, dij=    7   6  27        3.809
+shell#, nb#, j, dij=    8   2  29        4.566
+shell#, nb#, j, dij=    8   3  30        4.566
+shell#, nb#, j, dij=    8   4  31        4.566
+shell#, nb#, j, dij=    8   5  32        4.566
+shell#, nb#, j, dij=    8   6  33        4.566
+shell#, nb#, j, dij=    9   2  35        4.572
+shell#, nb#, j, dij=    9   3  36        4.572
+shell#, nb#, j, dij=    9   4  37        4.572
+shell#, nb#, j, dij=    9   5  38        4.572
+shell#, nb#, j, dij=    9   6  39        4.572
+shell#, nb#, j, dij=   10   2  41        4.958
+shell#, nb#, j, dij=   10   3  42        4.958
+shell#, nb#, j, dij=   11   2  44        5.002
+shell#, nb#, j, dij=   11   3  45        5.002
+shell#, nb#, j, dij=   11   4  46        5.002
+shell#, nb#, j, dij=   11   5  47        5.002
+shell#, nb#, j, dij=   11   6  48        5.002
+shell#, nb#, j, dij=   12   2  50        5.204
+shell#, nb#, j, dij=   13   2  52        5.605
+shell#, nb#, j, dij=   13   3  53        5.605
+shell#, nb#, j, dij=   13   4  54        5.605
+shell#, nb#, j, dij=   13   5  55        5.605
+shell#, nb#, j, dij=   13   6  56        5.605
+shell#, nb#, j, dij=   13   7  57        5.605
+shell#, nb#, j, dij=   13   8  58        5.605
+shell#, nb#, j, dij=   13   9  59        5.605
+shell#, nb#, j, dij=   13  10  60        5.605
+shell#, nb#, j, dij=   13  11  61        5.605
+shell#, nb#, j, dij=   13  12  62        5.605
+shell#, nb#, j, dij=   14   2  64        5.628
+shell#, nb#, j, dij=   14   3  65        5.628
+shell#, nb#, j, dij=   14   4  66        5.628
+shell#, nb#, j, dij=   14   5  67        5.628
+shell#, nb#, j, dij=   14   6  68        5.628
+shell#, nb#, j, dij=   15   2  70        5.928
+shell#, nb#, j, dij=   15   3  71        5.928
+shell#, nb#, j, dij=   16   2  73        5.969
+shell#, nb#, j, dij=   16   3  74        5.969
+shell#, nb#, j, dij=   16   4  75        5.969
+shell#, nb#, j, dij=   16   5  76        5.969
+shell#, nb#, j, dij=   16   6  77        5.969
+shell#, nb#, j, dij=   17   2  79        6.114
+shell#, nb#, j, dij=   17   3  80        6.114
+shell#, nb#, j, dij=   18   2  82        6.135
+shell#, nb#, j, dij=   18   3  83        6.135
+shell#, nb#, j, dij=   18   4  84        6.135
+shell#, nb#, j, dij=   18   5  85        6.135
+shell#, nb#, j, dij=   18   6  86        6.135
+shell#, nb#, j, dij=   18   7  87        6.135
+shell#, nb#, j, dij=   18   8  88        6.135
+shell#, nb#, j, dij=   18   9  89        6.135
+ allocating atom0(           2 )%shells(:) to size          100
+ i0,shel_count,mxshell=           2         100         100
+shell#, nb#, j, dij=    1   2   3        1.974
+shell#, nb#, j, dij=    1   3   4        1.974
+shell#, nb#, j, dij=    3   2   7        3.208
+shell#, nb#, j, dij=    3   3   8        3.208
+shell#, nb#, j, dij=    3   4   9        3.208
+shell#, nb#, j, dij=    3   5  10        3.208
+shell#, nb#, j, dij=    3   6  11        3.208
+shell#, nb#, j, dij=    5   2  14        3.250
+shell#, nb#, j, dij=    5   3  15        3.250
+shell#, nb#, j, dij=    5   4  16        3.250
+shell#, nb#, j, dij=    5   5  17        3.250
+shell#, nb#, j, dij=    5   6  18        3.250
+shell#, nb#, j, dij=    6   2  20        3.802
+shell#, nb#, j, dij=    6   3  21        3.802
+shell#, nb#, j, dij=    7   2  23        3.809
+shell#, nb#, j, dij=    7   3  24        3.809
+shell#, nb#, j, dij=    7   4  25        3.809
+shell#, nb#, j, dij=    7   5  26        3.809
+shell#, nb#, j, dij=    7   6  27        3.809
+shell#, nb#, j, dij=    8   2  29        4.566
+shell#, nb#, j, dij=    8   3  30        4.566
+shell#, nb#, j, dij=    8   4  31        4.566
+shell#, nb#, j, dij=    8   5  32        4.566
+shell#, nb#, j, dij=    8   6  33        4.566
+shell#, nb#, j, dij=    9   2  35        4.572
+shell#, nb#, j, dij=    9   3  36        4.572
+shell#, nb#, j, dij=    9   4  37        4.572
+shell#, nb#, j, dij=    9   5  38        4.572
+shell#, nb#, j, dij=    9   6  39        4.572
+shell#, nb#, j, dij=   10   2  41        4.958
+shell#, nb#, j, dij=   10   3  42        4.958
+shell#, nb#, j, dij=   11   2  44        5.002
+shell#, nb#, j, dij=   11   3  45        5.002
+shell#, nb#, j, dij=   11   4  46        5.002
+shell#, nb#, j, dij=   11   5  47        5.002
+shell#, nb#, j, dij=   11   6  48        5.002
+shell#, nb#, j, dij=   12   2  50        5.204
+shell#, nb#, j, dij=   13   2  52        5.605
+shell#, nb#, j, dij=   13   3  53        5.605
+shell#, nb#, j, dij=   13   4  54        5.605
+shell#, nb#, j, dij=   13   5  55        5.605
+shell#, nb#, j, dij=   13   6  56        5.605
+shell#, nb#, j, dij=   13   7  57        5.605
+shell#, nb#, j, dij=   13   8  58        5.605
+shell#, nb#, j, dij=   13   9  59        5.605
+shell#, nb#, j, dij=   13  10  60        5.605
+shell#, nb#, j, dij=   13  11  61        5.605
+shell#, nb#, j, dij=   13  12  62        5.605
+shell#, nb#, j, dij=   14   2  64        5.628
+shell#, nb#, j, dij=   14   3  65        5.628
+shell#, nb#, j, dij=   14   4  66        5.628
+shell#, nb#, j, dij=   14   5  67        5.628
+shell#, nb#, j, dij=   14   6  68        5.628
+shell#, nb#, j, dij=   15   2  70        5.928
+shell#, nb#, j, dij=   15   3  71        5.928
+shell#, nb#, j, dij=   16   2  73        5.969
+shell#, nb#, j, dij=   16   3  74        5.969
+shell#, nb#, j, dij=   16   4  75        5.969
+shell#, nb#, j, dij=   16   5  76        5.969
+shell#, nb#, j, dij=   16   6  77        5.969
+shell#, nb#, j, dij=   17   2  79        6.114
+shell#, nb#, j, dij=   17   3  80        6.114
+shell#, nb#, j, dij=   18   2  82        6.135
+shell#, nb#, j, dij=   18   3  83        6.135
+shell#, nb#, j, dij=   18   4  84        6.135
+shell#, nb#, j, dij=   18   5  85        6.135
+shell#, nb#, j, dij=   18   6  86        6.135
+shell#, nb#, j, dij=   18   7  87        6.135
+shell#, nb#, j, dij=   18   8  88        6.135
+shell#, nb#, j, dij=   18   9  89        6.135
+ allocating atom0(           3 )%shells(:) to size          100
+ i0,shel_count,mxshell=           3         100         100
+shell#, nb#, j, dij=    1   2   3        1.974
+shell#, nb#, j, dij=    1   3   4        1.974
+shell#, nb#, j, dij=    3   2   7        3.208
+shell#, nb#, j, dij=    3   3   8        3.208
+shell#, nb#, j, dij=    3   4   9        3.208
+shell#, nb#, j, dij=    3   5  10        3.208
+shell#, nb#, j, dij=    3   6  11        3.208
+shell#, nb#, j, dij=    5   2  14        3.250
+shell#, nb#, j, dij=    5   3  15        3.250
+shell#, nb#, j, dij=    5   4  16        3.250
+shell#, nb#, j, dij=    5   5  17        3.250
+shell#, nb#, j, dij=    5   6  18        3.250
+shell#, nb#, j, dij=    6   2  20        3.802
+shell#, nb#, j, dij=    6   3  21        3.802
+shell#, nb#, j, dij=    7   2  23        3.809
+shell#, nb#, j, dij=    7   3  24        3.809
+shell#, nb#, j, dij=    7   4  25        3.809
+shell#, nb#, j, dij=    7   5  26        3.809
+shell#, nb#, j, dij=    7   6  27        3.809
+shell#, nb#, j, dij=    8   2  29        4.566
+shell#, nb#, j, dij=    8   3  30        4.566
+shell#, nb#, j, dij=    8   4  31        4.566
+shell#, nb#, j, dij=    8   5  32        4.566
+shell#, nb#, j, dij=    8   6  33        4.566
+shell#, nb#, j, dij=    9   2  35        4.572
+shell#, nb#, j, dij=    9   3  36        4.572
+shell#, nb#, j, dij=    9   4  37        4.572
+shell#, nb#, j, dij=    9   5  38        4.572
+shell#, nb#, j, dij=    9   6  39        4.572
+shell#, nb#, j, dij=   10   2  41        4.958
+shell#, nb#, j, dij=   10   3  42        4.958
+shell#, nb#, j, dij=   11   2  44        5.002
+shell#, nb#, j, dij=   11   3  45        5.002
+shell#, nb#, j, dij=   11   4  46        5.002
+shell#, nb#, j, dij=   11   5  47        5.002
+shell#, nb#, j, dij=   11   6  48        5.002
+shell#, nb#, j, dij=   12   2  50        5.204
+shell#, nb#, j, dij=   13   2  52        5.605
+shell#, nb#, j, dij=   13   3  53        5.605
+shell#, nb#, j, dij=   13   4  54        5.605
+shell#, nb#, j, dij=   13   5  55        5.605
+shell#, nb#, j, dij=   13   6  56        5.605
+shell#, nb#, j, dij=   13   7  57        5.605
+shell#, nb#, j, dij=   13   8  58        5.605
+shell#, nb#, j, dij=   13   9  59        5.605
+shell#, nb#, j, dij=   13  10  60        5.605
+shell#, nb#, j, dij=   13  11  61        5.605
+shell#, nb#, j, dij=   13  12  62        5.605
+shell#, nb#, j, dij=   14   2  64        5.628
+shell#, nb#, j, dij=   14   3  65        5.628
+shell#, nb#, j, dij=   14   4  66        5.628
+shell#, nb#, j, dij=   14   5  67        5.628
+shell#, nb#, j, dij=   14   6  68        5.628
+shell#, nb#, j, dij=   15   2  70        5.928
+shell#, nb#, j, dij=   15   3  71        5.928
+shell#, nb#, j, dij=   16   2  73        5.969
+shell#, nb#, j, dij=   16   3  74        5.969
+shell#, nb#, j, dij=   16   4  75        5.969
+shell#, nb#, j, dij=   16   5  76        5.969
+shell#, nb#, j, dij=   16   6  77        5.969
+shell#, nb#, j, dij=   17   2  79        6.114
+shell#, nb#, j, dij=   17   3  80        6.114
+shell#, nb#, j, dij=   18   2  82        6.135
+shell#, nb#, j, dij=   18   3  83        6.135
+shell#, nb#, j, dij=   18   4  84        6.135
+shell#, nb#, j, dij=   18   5  85        6.135
+shell#, nb#, j, dij=   18   6  86        6.135
+shell#, nb#, j, dij=   18   7  87        6.135
+shell#, nb#, j, dij=   18   8  88        6.135
+shell#, nb#, j, dij=   18   9  89        6.135
+ allocating atom0(           4 )%shells(:) to size          100
+ i0,shel_count,mxshell=           4         100         100
+ mx=          60
+  size  of shells=         100
+  size  of shells=         100
+  size  of shells=         100
+  size  of shells=         100
+           1 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           2 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+           3 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+           4 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+           5 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           6 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           7 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           8 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           9 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          10 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          11 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          12 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          13 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          14 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          15 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          16 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          17 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          18 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          19 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          20 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          21 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          22 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          23 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          24 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          25 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          26 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          27 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          28 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          29 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          30 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          31 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          32 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          33 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          34 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          35 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          36 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          37 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+          38 'th grid point has weight;1/weight=  0.33333333333333331        3.0000000000000000     
+          39 'th grid point has weight;1/weight=  0.16666666666666666        6.0000000000000000     
+  sum of the weights=om/om0=   18.000000000000004     
+ Entering setup_maps routine with read nshells as:
+ ***** FOR rank =     1
+SIZE_FORCE_CONSTANTS: rank,ngroups,ntermszero=       1       2       8
+EXACT SIZES: rank,ngroups,max nterm,max ntindep,ntermszero=    1    2    2    1    8
+  INPUTS OF COLLECT_FORCE_CONSTANTS 
+  nrank=           1
+  iatom,nshell(iatom)=           1           1
+  iatom,nshell(iatom)=           2           1
+  iatom,nshell(iatom)=           3           1
+  iatom,nshell(iatom)=           4           1
+  mxtrm,mxtrmindp,maxtermszero,maxgroups=          64          16           9           3
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     1     1
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     1     1
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     4     1     1
+OUTPUT OF FORCE_CONSTANTS: ntermsindep=     1
+OUTPUT OF FORCE_CONSTANTS: nterms     =     2
+OUTPUT OF FORCE_CONSTANTS: ntermszero =     4
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     2     4     1     1
+OUTPUT OF FORCE_CONSTANTS: ntermsindep=     1
+OUTPUT OF FORCE_CONSTANTS: nterms     =     2
+OUTPUT OF FORCE_CONSTANTS: ntermszero =     4
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     1     2
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     1     2
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     4     1     2
+OUTPUT OF FORCE_CONSTANTS: ntermsindep=     1     1
+OUTPUT OF FORCE_CONSTANTS: nterms     =     2     2
+OUTPUT OF FORCE_CONSTANTS: ntermszero =     8
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     4     4     1     2
+OUTPUT OF FORCE_CONSTANTS: ntermsindep=     1     1
+OUTPUT OF FORCE_CONSTANTS: nterms     =     2     2
+OUTPUT OF FORCE_CONSTANTS: ntermszero =     8
+ ***** FOR rank =     2
+ Warning3: in fcs: maxterms too small          64
+ Warning3: in fcs: maxterms too small         128
+SIZE_FORCE_CONSTANTS: rank,ngroups,ntermszero=       2      46     224
+EXACT SIZES: rank,ngroups,max nterm,max ntindep,ntermszero=    2   46  192    4  224
+  INPUTS OF COLLECT_FORCE_CONSTANTS 
+  nrank=           2
+  iatom,nshell(iatom)=           1           9
+  iatom,nshell(iatom)=           2           9
+  iatom,nshell(iatom)=           3           9
+  iatom,nshell(iatom)=           4           9
+  mxtrm,mxtrmindp,maxtermszero,maxgroups=         256          16         225          47
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2     1
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     2     2
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     2     2
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2     3
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     2     4
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     2     5
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     2     6
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2     7
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     2     8
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     2     8
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     2     8
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2     9
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     2    10
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     2    11
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     2    12
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2    13
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     2    14
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     2    15
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     2    16
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2    17
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     2    18
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     2    19
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2    20
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     2    21
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     2    22
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     2    23
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2    24
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     2    25
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     2    26
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     2    27
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2    28
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     2    29
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     2    30
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     2    31
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2    32
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     2    33
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     2    33
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     2    33
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     2    34
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     2    35
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     2    35
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     2    36
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     2    37
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     7     2    38
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     2    39
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     2    40
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     2    41
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     2    42
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     2    43
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     2    44
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     7     2    45
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     2    46
+ ***** FOR rank =     3
+ Warning3: in fcs: maxterms too small          64
+ Warning: in fcs: maxterms too small         128
+ Warning: in fcs: maxterms too small         256
+ Warning3: in fcs: maxterms too small         512
+ Warning: in force_constants: maxtermszero too small
+SIZE_FORCE_CONSTANTS: rank,ngroups,ntermszero=       3     154    3314
+EXACT SIZES: rank,ngroups,max nterm,max ntindep,ntermszero=    3  154  768    6 3314
+  INPUTS OF COLLECT_FORCE_CONSTANTS 
+  nrank=           3
+  iatom,nshell(iatom)=           1           5
+  iatom,nshell(iatom)=           2           5
+  iatom,nshell(iatom)=           3           5
+  iatom,nshell(iatom)=           4           5
+  mxtrm,mxtrmindp,maxtermszero,maxgroups=        1024          16        3315         155
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3     1
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3     2
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3     3
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3     3
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3     4
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3     5
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3     6
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     3     7
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     3     8
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3     9
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    10
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    11
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    12
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     3    12
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     3    13
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    13
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    14
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    15
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    16
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     3    17
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     3    18
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    19
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    20
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    21
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    22
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     3    23
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     3    24
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    25
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    26
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    27
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    28
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     3    29
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     3    30
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    31
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    32
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    33
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    34
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     3    34
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     3    35
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    35
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    36
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    37
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     3    38
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    39
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     3    40
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     3    41
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     3    42
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    43
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    44
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    45
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     3    46
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    47
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     3    48
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    49
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    50
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    51
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     3    52
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    53
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     3    54
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     3    55
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     3    56
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    57
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    58
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    59
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     3    60
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    61
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     3    62
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    63
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    64
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    65
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     3    66
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    67
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     3    67
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    67
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    68
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    69
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     3    70
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    71
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     3    72
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     3    73
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     3    74
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    75
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    76
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    77
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     3    78
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    79
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     3    80
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    81
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    82
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    83
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     3    84
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    85
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     3    86
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    87
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    88
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    89
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     3    90
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    91
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     3    92
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3    93
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    94
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    95
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     3    96
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3    97
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     3    98
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     3    99
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     3   100
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3   101
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3   102
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3   103
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3   104
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3   105
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3   106
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3   107
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3   108
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3   109
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3   110
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3   111
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     3   112
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     3   113
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     3   113
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     3   113
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     3   114
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     3   115
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     3   116
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     3   116
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     3   117
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     3   118
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     3   119
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    19     3   120
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    21     3   121
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     3   122
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     3   123
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     3   124
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     3   125
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    19     3   126
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    21     3   127
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     3   128
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     3   129
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     3   130
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     3   131
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    19     3   132
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    21     3   133
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     3   134
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     3   135
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     3   136
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     7     3   137
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     3   138
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    25     3   139
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     3   140
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     3   141
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     3   142
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     7     3   143
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     3   144
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    21     3   145
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     3   146
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     3   147
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     3   148
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     3   149
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     3   150
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     3   151
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     3   152
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     3   153
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     3   154
+ ***** FOR rank =     4
+ Warning3: in fcs: maxterms too small          64
+ Warning: in fcs: maxterms too small         128
+ Warning: in fcs: maxterms too small         256
+ Warning3: in fcs: maxterms too small         512
+ Warning: in force_constants: maxtermszero too small
+ Warning: in force_constants: maxtermszero too small
+ Warning3: in fcs: maxterms too small        1024
+ Warning3: in fcs: maxterms too small        2048
+ Warning: in force_constants: maxtermszero too small
+ Warning3: in fcs: maxterms too small        4096
+ Warning: in force_constants: maxtermszero too small
+SIZE_FORCE_CONSTANTS: rank,ngroups,ntermszero=       4     561   59696
+EXACT SIZES: rank,ngroups,max nterm,max ntindep,ntermszero=    4  561 7424   1259696
+  INPUTS OF COLLECT_FORCE_CONSTANTS 
+  nrank=           4
+  iatom,nshell(iatom)=           1           5
+  iatom,nshell(iatom)=           2           5
+  iatom,nshell(iatom)=           3           5
+  iatom,nshell(iatom)=           4           5
+  mxtrm,mxtrmindp,maxtermszero,maxgroups=        8192          16       59697         562
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4     1
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4     2
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4     3
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4     4
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4     4
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4     5
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4     6
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4     7
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4     8
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4     9
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4    10
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4    11
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4    12
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4    13
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4    14
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4    15
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4    16
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4    16
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4    17
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4    18
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4    18
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4    19
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4    20
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4    21
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4    22
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4    23
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4    24
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4    25
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4    26
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4    27
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4    28
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4    29
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4    30
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4    31
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4    32
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4    33
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4    34
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4    35
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4    36
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4    37
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4    38
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4    39
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4    40
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4    41
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4    42
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4    43
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4    44
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4    45
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4    46
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4    46
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4    47
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4    48
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4    48
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4    49
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4    50
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4    51
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4    52
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4    53
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4    54
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4    55
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4    56
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4    57
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4    58
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4    59
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4    60
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4    61
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4    62
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4    63
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4    64
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4    65
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4    66
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4    67
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4    68
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4    69
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4    70
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4    71
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4    72
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4    73
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4    74
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4    75
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4    76
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4    77
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4    78
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4    79
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4    80
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4    81
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4    82
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4    83
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4    84
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4    85
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4    86
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4    87
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4    88
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4    89
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4    90
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4    91
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4    92
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4    93
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4    94
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4    95
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4    96
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4    97
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4    98
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4    99
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   100
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   101
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   102
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   103
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   104
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   105
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   106
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   107
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   108
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   108
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   109
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   109
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   110
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   111
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   112
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   113
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   114
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   115
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4   116
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4   117
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   118
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   119
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   120
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   121
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   122
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   123
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   124
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   125
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   126
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   127
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4   128
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4   129
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   130
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   131
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   132
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   133
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   134
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   135
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   136
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   137
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   138
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   139
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4   140
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4   141
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   142
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   143
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   144
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   145
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   146
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   147
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   148
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   149
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   150
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   151
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   152
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   153
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   154
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   155
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   156
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   157
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   158
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   159
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   160
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4   161
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4   162
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   163
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   164
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   165
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   166
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   167
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   168
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   169
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   170
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   171
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   172
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   173
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   174
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   175
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   176
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   177
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   178
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   179
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   180
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   181
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4   182
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4   183
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   184
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   185
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   186
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   187
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   188
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   189
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   190
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   191
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   192
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   193
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   194
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   195
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   196
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   197
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   198
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   199
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   200
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   201
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   202
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4   203
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4   204
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   205
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   206
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   207
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   208
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   209
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   210
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   211
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   212
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   213
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   214
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   215
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   216
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   217
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   218
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   219
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   220
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   221
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   222
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   223
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   224
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   225
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   226
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   227
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   228
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   229
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   230
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   231
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   232
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   233
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   234
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   235
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   236
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   237
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   238
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   238
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   239
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   239
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   240
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   241
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   242
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   243
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   244
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   245
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   246
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   247
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   248
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   249
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   250
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   251
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   252
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   253
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   254
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   255
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   256
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   257
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   258
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   259
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    61     4   260
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   261
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   262
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   263
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   264
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   265
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   266
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   267
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   268
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   269
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   270
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   271
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4   272
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4   273
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    61     4   274
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   275
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   276
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   277
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   278
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   279
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   280
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   281
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   282
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   283
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   284
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   285
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   286
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   286
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   287
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   288
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   289
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   290
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   291
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   292
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   293
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   294
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   295
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   296
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   297
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   298
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   299
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   300
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   301
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   302
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   303
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   304
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   305
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   306
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4   307
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   308
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   309
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   310
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   311
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   312
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   313
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   314
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   315
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   316
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   317
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   317
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   318
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   319
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   320
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   321
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   322
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   323
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   323
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   323
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   324
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   325
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   326
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   327
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   328
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   329
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4   330
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4   331
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    61     4   332
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   333
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   334
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   335
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   336
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   337
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   338
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   339
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   340
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   341
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   342
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   343
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   344
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   345
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   346
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   347
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   348
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   349
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   350
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   351
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   352
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   353
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   354
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   355
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   356
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   357
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   358
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   359
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   360
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   361
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   362
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   363
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   364
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   365
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   366
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   367
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   368
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   369
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   370
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   371
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   372
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   373
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4   374
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   375
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   376
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   377
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   378
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   379
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   380
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   381
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   382
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4   383
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4   384
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    61     4   385
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   386
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   387
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   388
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   389
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   390
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   391
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   392
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   393
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   394
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4   395
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4   396
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    61     4   397
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   398
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   399
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   400
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   401
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   402
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   403
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   404
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   405
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   406
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   407
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   407
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   408
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   409
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   410
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   411
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   412
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   413
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    55     4   414
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    57     4   415
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    61     4   416
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    63     4   417
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   418
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   419
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   420
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   421
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   422
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   423
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   424
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   425
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   426
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   426
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   427
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   428
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   429
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   430
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    19     4   431
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    21     4   432
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   433
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   434
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    73     4   435
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    75     4   436
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   437
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   438
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4   439
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     4   440
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     7     4   441
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     4   442
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    25     4   443
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    27     4   444
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    79     4   444
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    81     4   444
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   445
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   446
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   447
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   448
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   448
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   449
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   450
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   451
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   452
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    55     4   453
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    57     4   454
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    63     4   455
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   456
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   457
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   458
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   459
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   460
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    55     4   461
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    57     4   462
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    63     4   463
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   464
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   465
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   466
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   467
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   468
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    55     4   469
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    57     4   470
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    63     4   471
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   472
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   473
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   474
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   475
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    19     4   476
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    21     4   477
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   478
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    73     4   479
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    75     4   480
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   481
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   482
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   483
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   484
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    19     4   485
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    21     4   486
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   487
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    73     4   488
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    75     4   489
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   490
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   491
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   492
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   493
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    19     4   494
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    21     4   495
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   496
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    55     4   497
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    57     4   498
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    63     4   499
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    73     4   500
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    75     4   501
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   502
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   503
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   504
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   505
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    19     4   506
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    21     4   507
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   508
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    55     4   509
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    57     4   510
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    63     4   511
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    73     4   512
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    75     4   513
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   514
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   515
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   516
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   517
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    19     4   518
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    21     4   519
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   520
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    73     4   521
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    75     4   522
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   523
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   524
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   525
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   526
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    21     4   527
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   528
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   529
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   530
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   531
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   532
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    19     4   533
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    21     4   534
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   535
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    73     4   536
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    75     4   537
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   538
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   539
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   540
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   541
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    19     4   542
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    21     4   543
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   544
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    73     4   545
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    75     4   546
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   547
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   548
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   549
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     7     4   550
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   551
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    25     4   552
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   553
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    79     4   554
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   554
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     1     4   555
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     3     4   556
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     7     4   557
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3     9     4   558
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    21     4   559
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    27     4   560
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    75     4   561
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     3    81     4   561
+ SETUP_MAPS: Exited the main rank loop , and going to write by calling ustring
+ exiting setup_maps routine
+g,ti,counter,keep,current=   1   1   1   1   1
+g,ti,counter,keep,current=   2   1   2   1   2
+g,ti,counter,keep,current=   3   1   3   1   3
+g,ti,counter,keep,current=   3   2   4   1   4
+g,ti,counter,keep,current=   4   1   5   1   5
+g,ti,counter,keep,current=   5   1   6   1   6
+g,ti,counter,keep,current=   6   1   7   1   7
+g,ti,counter,keep,current=   7   1   8   1   8
+g,ti,counter,keep,current=   8   1   9   1   9
+g,ti,counter,keep,current=   9   1  10   1  10
+g,ti,counter,keep,current=   9   2  11   1  11
+g,ti,counter,keep,current=   9   3  12   1  12
+g,ti,counter,keep,current=   9   4  13   1  13
+g,ti,counter,keep,current=  10   1  14   1  14
+g,ti,counter,keep,current=  10   2  15   1  15
+g,ti,counter,keep,current=  11   1  16   1  16
+g,ti,counter,keep,current=  11   2  17   1  17
+g,ti,counter,keep,current=  12   1  18   1  18
+g,ti,counter,keep,current=  13   1  19   1  19
+g,ti,counter,keep,current=  13   2  20   1  20
+g,ti,counter,keep,current=  14   1  21   1  21
+g,ti,counter,keep,current=  15   1  22   1  22
+g,ti,counter,keep,current=  16   1  23   1  23
+g,ti,counter,keep,current=  17   1  24   1  24
+g,ti,counter,keep,current=  17   2  25   1  25
+g,ti,counter,keep,current=  17   3  26   1  26
+g,ti,counter,keep,current=  18   1  27   1  27
+g,ti,counter,keep,current=  18   2  28   1  28
+g,ti,counter,keep,current=  19   1  29   1  29
+g,ti,counter,keep,current=  20   1  30   1  30
+g,ti,counter,keep,current=  20   2  31   1  31
+g,ti,counter,keep,current=  20   3  32   1  32
+g,ti,counter,keep,current=  20   4  33   1  33
+g,ti,counter,keep,current=  21   1  34   1  34
+g,ti,counter,keep,current=  21   2  35   1  35
+g,ti,counter,keep,current=  22   1  36   1  36
+g,ti,counter,keep,current=  22   2  37   1  37
+g,ti,counter,keep,current=  23   1  38   1  38
+g,ti,counter,keep,current=  24   1  39   1  39
+g,ti,counter,keep,current=  24   2  40   1  40
+g,ti,counter,keep,current=  25   1  41   1  41
+g,ti,counter,keep,current=  26   1  42   1  42
+g,ti,counter,keep,current=  27   1  43   1  43
+g,ti,counter,keep,current=  28   1  44   1  44
+g,ti,counter,keep,current=  28   2  45   1  45
+g,ti,counter,keep,current=  29   1  46   1  46
+g,ti,counter,keep,current=  30   1  47   1  47
+g,ti,counter,keep,current=  31   1  48   1  48
+g,ti,counter,keep,current=  32   1  49   1  49
+g,ti,counter,keep,current=  33   1  50   1  50
+g,ti,counter,keep,current=  34   1  51   1  51
+g,ti,counter,keep,current=  35   1  52   1  52
+g,ti,counter,keep,current=  36   1  53   1  53
+g,ti,counter,keep,current=  36   2  54   1  54
+g,ti,counter,keep,current=  37   1  55   1  55
+g,ti,counter,keep,current=  38   1  56   1  56
+g,ti,counter,keep,current=  39   1  57   1  57
+g,ti,counter,keep,current=  40   1  58   1  58
+g,ti,counter,keep,current=  40   2  59   1  59
+g,ti,counter,keep,current=  40   3  60   1  60
+g,ti,counter,keep,current=  41   1  61   1  61
+g,ti,counter,keep,current=  41   2  62   1  62
+g,ti,counter,keep,current=  42   1  63   1  63
+g,ti,counter,keep,current=  43   1  64   1  64
+g,ti,counter,keep,current=  43   2  65   1  65
+g,ti,counter,keep,current=  44   1  66   1  66
+g,ti,counter,keep,current=  45   1  67   1  67
+g,ti,counter,keep,current=  46   1  68   1  68
+ all_matched was true for i0=isave=           1
+THE shift vector is=       0.00000       0.00000       0.00000
+It maps atom 1 in SC to primitive atom whose number is=        1
+ calling write_correspondance
+  opening FORCEDISP file
+  reached the end of FORCEDISP file which had          100  configurations 
+  Allocation of energy, dsp and frc arrays DONE!
+  Re Opening FORCEDISP file
+ j=t,nlines,engy=           1           1         216   120.60201951087900     
+ j=t,nlines,engy=           2           2         216   120.91357475119500     
+ j=t,nlines,engy=           3           3         216   120.62045683019200     
+ j=t,nlines,engy=           4           4         216   120.92262513306299     
+ j=t,nlines,engy=           5           5         216   120.71580067155401     
+ j=t,nlines,engy=           6           6         216   120.71562517477300     
+ j=t,nlines,engy=           7           7         216   120.61082097216000     
+ j=t,nlines,engy=           8           8         216   120.64643363920300     
+ j=t,nlines,engy=           9           9         216   121.26775403705300     
+ j=t,nlines,engy=          10          10         216   120.59917319101000     
+ j=t,nlines,engy=          11          11         216   120.56712793835000     
+ j=t,nlines,engy=          12          12         216   121.00118182723800     
+ j=t,nlines,engy=          13          13         216   120.86142345799200     
+ j=t,nlines,engy=          14          14         216   120.73061260864500     
+ j=t,nlines,engy=          15          15         216   120.95775229136100     
+ j=t,nlines,engy=          16          16         216   120.68318501433700     
+ j=t,nlines,engy=          17          17         216   120.91110782063900     
+ j=t,nlines,engy=          18          18         216   120.55906294554700     
+ j=t,nlines,engy=          19          19         216   120.57871480192800     
+ j=t,nlines,engy=          20          20         216   120.69296443486900     
+ j=t,nlines,engy=          21          21         216   120.69939813260901     
+ j=t,nlines,engy=          22          22         216   120.76347328723701     
+ j=t,nlines,engy=          23          23         216   120.95000218347900     
+ j=t,nlines,engy=          24          24         216   120.96517682706100     
+ j=t,nlines,engy=          25          25         216   120.93758595887300     
+ j=t,nlines,engy=          26          26         216   120.31577650823500     
+ j=t,nlines,engy=          27          27         216   120.77474507637000     
+ j=t,nlines,engy=          28          28         216   120.95357232200099     
+ j=t,nlines,engy=          29          29         216   120.75161679177300     
+ j=t,nlines,engy=          30          30         216   120.83501451458601     
+ j=t,nlines,engy=          31          31         216   121.02285321783199     
+ j=t,nlines,engy=          32          32         216   120.52506457433300     
+ j=t,nlines,engy=          33          33         216   121.32379759796601     
+ j=t,nlines,engy=          34          34         216   120.94419644342901     
+ j=t,nlines,engy=          35          35         216   120.99004011761799     
+ j=t,nlines,engy=          36          36         216   120.61183458148500     
+ j=t,nlines,engy=          37          37         216   120.94157951124799     
+ j=t,nlines,engy=          38          38         216   120.71091211576800     
+ j=t,nlines,engy=          39          39         216   120.78898164403201     
+ j=t,nlines,engy=          40          40         216   120.81174802395900     
+ j=t,nlines,engy=          41          41         216   121.14696159301199     
+ j=t,nlines,engy=          42          42         216   120.76082869094201     
+ j=t,nlines,engy=          43          43         216   120.81563171086300     
+ j=t,nlines,engy=          44          44         216   120.46817876584799     
+ j=t,nlines,engy=          45          45         216   120.96167016603600     
+ j=t,nlines,engy=          46          46         216   120.75286468472000     
+ j=t,nlines,engy=          47          47         216   120.48756519897000     
+ j=t,nlines,engy=          48          48         216   120.37890934205301     
+ j=t,nlines,engy=          49          49         216   120.86570417748800     
+ j=t,nlines,engy=          50          50         216   120.94662786178900     
+ j=t,nlines,engy=          51          51         216   120.86239348228700     
+ j=t,nlines,engy=          52          52         216   120.65252677730500     
+ j=t,nlines,engy=          53          53         216   121.07770602934499     
+ j=t,nlines,engy=          54          54         216   120.65805910928400     
+ j=t,nlines,engy=          55          55         216   120.68109286945700     
+ j=t,nlines,engy=          56          56         216   121.03235106702600     
+ j=t,nlines,engy=          57          57         216   120.59019442910400     
+ j=t,nlines,engy=          58          58         216   120.70042039085600     
+ j=t,nlines,engy=          59          59         216   121.24800694131901     
+ j=t,nlines,engy=          60          60         216   120.79989052898600     
+ j=t,nlines,engy=          61          61         216   120.85517667550501     
+ j=t,nlines,engy=          62          62         216   120.91352564623401     
+ j=t,nlines,engy=          63          63         216   120.54114118494699     
+ j=t,nlines,engy=          64          64         216   121.05330104881000     
+ j=t,nlines,engy=          65          65         216   121.03811969250800     
+ j=t,nlines,engy=          66          66         216   120.82578338214699     
+ j=t,nlines,engy=          67          67         216   121.22317414927200     
+ j=t,nlines,engy=          68          68         216   120.52972138045500     
+ j=t,nlines,engy=          69          69         216   120.92913902398200     
+ j=t,nlines,engy=          70          70         216   120.95134874079100     
+ j=t,nlines,engy=          71          71         216   120.88911495461400     
+ j=t,nlines,engy=          72          72         216   121.01844301921500     
+ j=t,nlines,engy=          73          73         216   120.72178437308899     
+ j=t,nlines,engy=          74          74         216   121.21460180091201     
+ j=t,nlines,engy=          75          75         216   120.88195759834601     
+ j=t,nlines,engy=          76          76         216   120.98921246618600     
+ j=t,nlines,engy=          77          77         216   120.63395133700899     
+ j=t,nlines,engy=          78          78         216   120.79076439148400     
+ j=t,nlines,engy=          79          79         216   121.03758183028300     
+ j=t,nlines,engy=          80          80         216   121.10184275821200     
+ j=t,nlines,engy=          81          81         216   120.63336186645800     
+ j=t,nlines,engy=          82          82         216   120.53360209919200     
+ j=t,nlines,engy=          83          83         216   121.19296384685400     
+ j=t,nlines,engy=          84          84         216   120.41129036991001     
+ j=t,nlines,engy=          85          85         216   121.04379164674199     
+ j=t,nlines,engy=          86          86         216   120.90354034713000     
+ j=t,nlines,engy=          87          87         216   120.76265857832701     
+ j=t,nlines,engy=          88          88         216   120.96700230160600     
+ j=t,nlines,engy=          89          89         216   120.54979517449399     
+ j=t,nlines,engy=          90          90         216   121.09320476058900     
+ j=t,nlines,engy=          91          91         216   121.28303611839399     
+ j=t,nlines,engy=          92          92         216   121.03543465015800     
+ j=t,nlines,engy=          93          93         216   120.75888875315800     
+ j=t,nlines,engy=          94          94         216   121.13967173797100     
+ j=t,nlines,engy=          95          95         216   121.00156633638700     
+ j=t,nlines,engy=          96          96         216   121.59210611122100     
+ j=t,nlines,engy=          97          97         216   120.80886471996700     
+ j=t,nlines,engy=          98          98         216   120.76868687021600     
+ j=t,nlines,engy=          99          99         216   121.00350410154600     
+ j=t,nlines,engy=         100         100         216   120.61923429502500     
+Energy assigned   0.1590E-01  0.3321E-01  0.1693E-01  0.3371E-01  0.2222E-01  0.2221E-01  0.1639E-01  0.1837E-01  0.5289E-01  0.1574E-01  0.1396E-01  0.3808E-01  0.3031E-01  0.2305E-01  0.3567E-01  0.2041E-01  0.3307E-01  0.1352E-01  0.1461E-01  0.2095E-01  0.2131E-01  0.2487E-01  0.3523E-01  0.3608E-01  0.3454E-01   0.000      0.2550E-01  0.3543E-01  0.2421E-01  0.2885E-01  0.3928E-01  0.1163E-01  0.5600E-01  0.3491E-01  0.3746E-01  0.1645E-01  0.3477E-01  0.2195E-01  0.2629E-01  0.2755E-01  0.4618E-01  0.2473E-01  0.2777E-01  0.8467E-02  0.3588E-01  0.2428E-01  0.9544E-02  0.3507E-02  0.3055E-01  0.3505E-01  0.3037E-01  0.1871E-01  0.4233E-01  0.1902E-01  0.2030E-01  0.3981E-01  0.1525E-01  0.2137E-01  0.5179E-01  0.2690E-01  0.2997E-01  0.3321E-01  0.1252E-01  0.4097E-01  0.4013E-01  0.2833E-01  0.5041E-01  0.1189E-01  0.3408E-01  0.3531E-01  0.3185E-01  0.3904E-01  0.2256E-01  0.4993E-01  0.3145E-01  0.3741E-01  0.1768E-01  0.2639E-01  0.4010E-01  0.4367E-01  0.1764E-01  0.1210E-01  0.4873E-01  0.5306E-02  0.4045E-01  0.3265E-01  0.2483E-01  0.3618E-01  0.1300E-01  0.4319E-01  0.5374E-01  0.3998E-01  0.2462E-01  0.4577E-01  0.3810E-01  0.7091E-01  0.2739E-01  0.2516E-01  0.3821E-01  0.1686E-01
+ Calling calculate_and_write_displacements
+ ncfg,step=         100          99
+ ncfg,step=         100          99
+ exiting read_force_position_data 
+ entering set_force_displacements routine,nindepfc=        1927
+ exiting set_force_displacements routine
+  allocating           15  lines and         1927  columns
+ MAIN: position of the first non-zero elt of bmat=       11936
+ GET_KERNEL: calculating the kernel space of the matrix amat
+ MAIN: invariance rows with a right-hand side: x = xpart + K y; max|C xpart - d|=   1.2976726616697909E-010
+Relative residual ||F_dft-F_fit||/||F_dft|| =    0.000 %
+Percent error AFTER kernel projection =    0.000 %
+  The largest atom number found in atompos was          395
+  FOR RANK=           1  format=31
+  FOR RANK=           2  format=32
+  FOR RANK=           3  format=33
+  FOR RANK=           4  format=34
+ EXTENDED G-vector#           1  is not in GGRID!
+ EXTENDED G-vector#           2  is not in GGRID!
+ EXTENDED G-vector#           3  is not in GGRID!
+ EXTENDED G-vector#           4  is not in GGRID!
+ EXTENDED G-vector#           5  is not in GGRID!
+ EXTENDED G-vector#           6  is not in GGRID!
+ EXTENDED G-vector#           7  is not in GGRID!
+ EXTENDED G-vector#           8  is not in GGRID!
+ EXTENDED G-vector#           9  is not in GGRID!
+ EXTENDED G-vector#          10  is not in GGRID!
+ EXTENDED G-vector#          11  is not in GGRID!
+ EXTENDED G-vector#          12  is not in GGRID!
+ EXTENDED G-vector#          13  is not in GGRID!
+ EXTENDED G-vector#          14  is not in GGRID!
+ EXTENDED G-vector#          15  is not in GGRID!
+ EXTENDED G-vector#          16  is not in GGRID!
+ EXTENDED G-vector#          17  is not in GGRID!
+ EXTENDED G-vector#          18  is not in GGRID!
+ EXTENDED G-vector#          19  is not in GGRID!
+ EXTENDED G-vector#          20  is not in GGRID!
+ EXTENDED G-vector#          21  is not in GGRID!
+ EXTENDED G-vector#          25  is not in GGRID!
+ EXTENDED G-vector#          26  is not in GGRID!
+ EXTENDED G-vector#          27  is not in GGRID!
+ EXTENDED G-vector#          28  is not in GGRID!
+ EXTENDED G-vector#          29  is not in GGRID!
+ EXTENDED G-vector#          30  is not in GGRID!
+ EXTENDED G-vector#          31  is not in GGRID!
+ EXTENDED G-vector#          32  is not in GGRID!
+ EXTENDED G-vector#          33  is not in GGRID!
+ EXTENDED G-vector#          34  is not in GGRID!
+ EXTENDED G-vector#          35  is not in GGRID!
+ EXTENDED G-vector#          36  is not in GGRID!
+ EXTENDED G-vector#          37  is not in GGRID!
+ EXTENDED G-vector#          38  is not in GGRID!
+ EXTENDED G-vector#          39  is not in GGRID!
+ EXTENDED G-vector#          40  is not in GGRID!
+ EXTENDED G-vector#          41  is not in GGRID!
+ EXTENDED G-vector#          42  is not in GGRID!
+ EXTENDED G-vector#          43  is not in GGRID!
+ EXTENDED G-vector#          44  is not in GGRID!
+ EXTENDED G-vector#          45  is not in GGRID!
+           1 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           2 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           3 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           4 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           5 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           6 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           7 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           8 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           9 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          10 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          11 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          12 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          13 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          14 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          15 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          16 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          17 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          18 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          19 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          20 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          21 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          22 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          23 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          24 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          25 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          26 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          27 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          28 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          29 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          30 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          31 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          32 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          33 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          34 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          35 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          36 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          37 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          38 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          39 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          40 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          41 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          42 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          43 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          44 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          45 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+  sum of the weights=om/om0=   45.000000000000000     
+ FC terms found in grid:        2532
+ FC terms MISSING from grid:           0
+ check_herm_sym_R PASSED! phi was hermitian!
+  Largest imaginary part of phi_bare(should be ZERO!)=   0.0000000000000000     
+ Entering set_band_structure 
+ entering MAKE_KP_BS
+ reading            1
+ reading           40
+ reading nkp_bs=          440
+    1 "G  "    0.0000    0.0000    0.0000
+    2 "M  "    0.5000    0.0000    0.0000
+    3 "K  "    0.3333    0.3333    0.0000
+    4 "G  "    0.0000    0.0000    0.0000
+    5 "A  "    0.0000    0.0000    0.5000
+    6 "L  "    0.5000    0.0000    0.5000
+    7 "H  "    0.3333    0.3333    0.5000
+    8 "A  "    0.0000    0.0000    0.5000
+    9 "L  "    0.5000    0.0000    0.5000
+   10 "M  "    0.5000    0.0000    0.0000
+   11 "K  "    0.3333    0.3333    0.0000
+   12 "H  "    0.3333    0.3333    0.5000
+  Kpoints for band structure generated from kpbs.params
+  MAKE_KP_BS: Done! with          440  points
+  calling get_freqs
+ get_freq k=    0.0002   0.0004   0.0001
+ get_freq k=    0.0250   0.0147   0.0001
+ get_freq k=    0.0498   0.0291   0.0001
+ get_freq k=    0.0746   0.0434   0.0001
+ get_freq k=    0.0994   0.0577   0.0001
+ get_freq k=    0.1242   0.0720   0.0001
+ get_freq k=    0.1490   0.0863   0.0001
+ get_freq k=    0.1738   0.1006   0.0001
+ get_freq k=    0.1986   0.1149   0.0001
+ get_freq k=    0.2233   0.1292   0.0001
+ get_freq k=    0.2481   0.1436   0.0001
+ get_freq k=    0.2729   0.1579   0.0001
+ get_freq k=    0.2977   0.1722   0.0001
+ get_freq k=    0.3225   0.1865   0.0001
+ get_freq k=    0.3473   0.2008   0.0001
+ get_freq k=    0.3721   0.2151   0.0001
+ get_freq k=    0.3969   0.2294   0.0001
+ get_freq k=    0.4217   0.2437   0.0001
+ get_freq k=    0.4464   0.2580   0.0001
+ get_freq k=    0.4712   0.2724   0.0001
+ get_freq k=    0.4960   0.2867   0.0001
+ get_freq k=    0.5208   0.3010   0.0001
+ get_freq k=    0.5456   0.3153   0.0001
+ get_freq k=    0.5704   0.3296   0.0001
+ get_freq k=    0.5952   0.3439   0.0001
+ get_freq k=    0.6200   0.3582   0.0001
+ get_freq k=    0.6448   0.3725   0.0001
+ get_freq k=    0.6695   0.3869   0.0001
+ get_freq k=    0.6943   0.4012   0.0001
+ get_freq k=    0.7191   0.4155   0.0001
+ get_freq k=    0.7439   0.4298   0.0001
+ get_freq k=    0.7687   0.4441   0.0001
+ get_freq k=    0.7935   0.4584   0.0001
+ get_freq k=    0.8183   0.4727   0.0001
+ get_freq k=    0.8431   0.4870   0.0001
+ get_freq k=    0.8679   0.5013   0.0001
+ get_freq k=    0.8926   0.5157   0.0001
+ get_freq k=    0.9174   0.5300   0.0001
+ get_freq k=    0.9422   0.5443   0.0001
+ get_freq k=    0.9670   0.5586   0.0001
+ get_freq k=    0.9670   0.5586   0.0001
+ get_freq k=    0.9587   0.5729   0.0001
+ get_freq k=    0.9505   0.5872   0.0001
+ get_freq k=    0.9422   0.6015   0.0001
+ get_freq k=    0.9340   0.6158   0.0001
+ get_freq k=    0.9257   0.6302   0.0001
+ get_freq k=    0.9174   0.6445   0.0001
+ get_freq k=    0.9092   0.6588   0.0001
+ get_freq k=    0.9009   0.6731   0.0001
+ get_freq k=    0.8926   0.6874   0.0001
+ get_freq k=    0.8844   0.7017   0.0001
+ get_freq k=    0.8761   0.7160   0.0001
+ get_freq k=    0.8679   0.7303   0.0001
+ get_freq k=    0.8596   0.7447   0.0001
+ get_freq k=    0.8513   0.7590   0.0001
+ get_freq k=    0.8431   0.7733   0.0001
+ get_freq k=    0.8348   0.7876   0.0001
+ get_freq k=    0.8265   0.8019   0.0001
+ get_freq k=    0.8183   0.8162   0.0001
+ get_freq k=    0.8100   0.8305   0.0001
+ get_freq k=    0.8018   0.8448   0.0001
+ get_freq k=    0.7935   0.8591   0.0001
+ get_freq k=    0.7852   0.8735   0.0001
+ get_freq k=    0.7770   0.8878   0.0001
+ get_freq k=    0.7687   0.9021   0.0001
+ get_freq k=    0.7604   0.9164   0.0001
+ get_freq k=    0.7522   0.9307   0.0001
+ get_freq k=    0.7439   0.9450   0.0001
+ get_freq k=    0.7356   0.9593   0.0001
+ get_freq k=    0.7274   0.9736   0.0001
+ get_freq k=    0.7191   0.9880   0.0001
+ get_freq k=    0.7109   1.0023   0.0001
+ get_freq k=    0.7026   1.0166   0.0001
+ get_freq k=    0.6943   1.0309   0.0001
+ get_freq k=    0.6861   1.0452   0.0001
+ get_freq k=    0.6778   1.0595   0.0001
+ get_freq k=    0.6695   1.0738   0.0001
+ get_freq k=    0.6613   1.0881   0.0001
+ get_freq k=    0.6530   1.1024   0.0001
+ get_freq k=    0.6448   1.1168   0.0001
+ get_freq k=    0.6448   1.1168   0.0001
+ get_freq k=    0.6282   1.0881   0.0001
+ get_freq k=    0.6117   1.0595   0.0001
+ get_freq k=    0.5952   1.0309   0.0001
+ get_freq k=    0.5787   1.0023   0.0001
+ get_freq k=    0.5621   0.9736   0.0001
+ get_freq k=    0.5456   0.9450   0.0001
+ get_freq k=    0.5291   0.9164   0.0001
+ get_freq k=    0.5125   0.8878   0.0001
+ get_freq k=    0.4960   0.8591   0.0001
+ get_freq k=    0.4795   0.8305   0.0001
+ get_freq k=    0.4630   0.8019   0.0001
+ get_freq k=    0.4464   0.7733   0.0001
+ get_freq k=    0.4299   0.7447   0.0001
+ get_freq k=    0.4134   0.7160   0.0001
+ get_freq k=    0.3969   0.6874   0.0001
+ get_freq k=    0.3803   0.6588   0.0001
+ get_freq k=    0.3638   0.6302   0.0001
+ get_freq k=    0.3473   0.6015   0.0001
+ get_freq k=    0.3308   0.5729   0.0001
+ get_freq k=    0.3142   0.5443   0.0001
+ get_freq k=    0.2977   0.5157   0.0001
+ get_freq k=    0.2812   0.4870   0.0001
+ get_freq k=    0.2647   0.4584   0.0001
+ get_freq k=    0.2481   0.4298   0.0001
+ get_freq k=    0.2316   0.4012   0.0001
+ get_freq k=    0.2151   0.3725   0.0001
+ get_freq k=    0.1986   0.3439   0.0001
+ get_freq k=    0.1820   0.3153   0.0001
+ get_freq k=    0.1655   0.2867   0.0001
+ get_freq k=    0.1490   0.2580   0.0001
+ get_freq k=    0.1325   0.2294   0.0001
+ get_freq k=    0.1159   0.2008   0.0001
+ get_freq k=    0.0994   0.1722   0.0001
+ get_freq k=    0.0829   0.1436   0.0001
+ get_freq k=    0.0664   0.1149   0.0001
+ get_freq k=    0.0498   0.0863   0.0001
+ get_freq k=    0.0333   0.0577   0.0001
+ get_freq k=    0.0168   0.0291   0.0001
+ get_freq k=    0.0002   0.0004   0.0001
+ get_freq k=    0.0002   0.0004   0.0001
+ get_freq k=    0.0002   0.0004   0.0156
+ get_freq k=    0.0002   0.0004   0.0311
+ get_freq k=    0.0002   0.0004   0.0466
+ get_freq k=    0.0002   0.0004   0.0621
+ get_freq k=    0.0002   0.0004   0.0775
+ get_freq k=    0.0002   0.0004   0.0930
+ get_freq k=    0.0002   0.0004   0.1085
+ get_freq k=    0.0002   0.0004   0.1240
+ get_freq k=    0.0002   0.0004   0.1394
+ get_freq k=    0.0002   0.0004   0.1549
+ get_freq k=    0.0002   0.0004   0.1704
+ get_freq k=    0.0002   0.0004   0.1859
+ get_freq k=    0.0002   0.0004   0.2014
+ get_freq k=    0.0002   0.0004   0.2168
+ get_freq k=    0.0002   0.0004   0.2323
+ get_freq k=    0.0002   0.0004   0.2478
+ get_freq k=    0.0002   0.0004   0.2633
+ get_freq k=    0.0002   0.0004   0.2788
+ get_freq k=    0.0002   0.0004   0.2942
+ get_freq k=    0.0002   0.0004   0.3097
+ get_freq k=    0.0002   0.0004   0.3252
+ get_freq k=    0.0002   0.0004   0.3407
+ get_freq k=    0.0002   0.0004   0.3561
+ get_freq k=    0.0002   0.0004   0.3716
+ get_freq k=    0.0002   0.0004   0.3871
+ get_freq k=    0.0002   0.0004   0.4026
+ get_freq k=    0.0002   0.0004   0.4181
+ get_freq k=    0.0002   0.0004   0.4335
+ get_freq k=    0.0002   0.0004   0.4490
+ get_freq k=    0.0002   0.0004   0.4645
+ get_freq k=    0.0002   0.0004   0.4800
+ get_freq k=    0.0002   0.0004   0.4955
+ get_freq k=    0.0002   0.0004   0.5109
+ get_freq k=    0.0002   0.0004   0.5264
+ get_freq k=    0.0002   0.0004   0.5419
+ get_freq k=    0.0002   0.0004   0.5574
+ get_freq k=    0.0002   0.0004   0.5728
+ get_freq k=    0.0002   0.0004   0.5883
+ get_freq k=    0.0002   0.0004   0.6038
+ get_freq k=    0.0002   0.0004   0.6038
+ get_freq k=    0.0250   0.0147   0.6038
+ get_freq k=    0.0498   0.0291   0.6038
+ get_freq k=    0.0746   0.0434   0.6038
+ get_freq k=    0.0994   0.0577   0.6038
+ get_freq k=    0.1242   0.0720   0.6038
+ get_freq k=    0.1490   0.0863   0.6038
+ get_freq k=    0.1738   0.1006   0.6038
+ get_freq k=    0.1986   0.1149   0.6038
+ get_freq k=    0.2233   0.1292   0.6038
+ get_freq k=    0.2481   0.1436   0.6038
+ get_freq k=    0.2729   0.1579   0.6038
+ get_freq k=    0.2977   0.1722   0.6038
+ get_freq k=    0.3225   0.1865   0.6038
+ get_freq k=    0.3473   0.2008   0.6038
+ get_freq k=    0.3721   0.2151   0.6038
+ get_freq k=    0.3969   0.2294   0.6038
+ get_freq k=    0.4217   0.2437   0.6038
+ get_freq k=    0.4464   0.2580   0.6038
+ get_freq k=    0.4712   0.2724   0.6038
+ get_freq k=    0.4960   0.2867   0.6038
+ get_freq k=    0.5208   0.3010   0.6038
+ get_freq k=    0.5456   0.3153   0.6038
+ get_freq k=    0.5704   0.3296   0.6038
+ get_freq k=    0.5952   0.3439   0.6038
+ get_freq k=    0.6200   0.3582   0.6038
+ get_freq k=    0.6448   0.3725   0.6038
+ get_freq k=    0.6695   0.3869   0.6038
+ get_freq k=    0.6943   0.4012   0.6038
+ get_freq k=    0.7191   0.4155   0.6038
+ get_freq k=    0.7439   0.4298   0.6038
+ get_freq k=    0.7687   0.4441   0.6038
+ get_freq k=    0.7935   0.4584   0.6038
+ get_freq k=    0.8183   0.4727   0.6038
+ get_freq k=    0.8431   0.4870   0.6038
+ get_freq k=    0.8679   0.5013   0.6038
+ get_freq k=    0.8926   0.5157   0.6038
+ get_freq k=    0.9174   0.5300   0.6038
+ get_freq k=    0.9422   0.5443   0.6038
+ get_freq k=    0.9670   0.5586   0.6038
+ get_freq k=    0.9670   0.5586   0.6038
+ get_freq k=    0.9587   0.5729   0.6038
+ get_freq k=    0.9505   0.5872   0.6038
+ get_freq k=    0.9422   0.6015   0.6038
+ get_freq k=    0.9340   0.6158   0.6038
+ get_freq k=    0.9257   0.6302   0.6038
+ get_freq k=    0.9174   0.6445   0.6038
+ get_freq k=    0.9092   0.6588   0.6038
+ get_freq k=    0.9009   0.6731   0.6038
+ get_freq k=    0.8926   0.6874   0.6038
+ get_freq k=    0.8844   0.7017   0.6038
+ get_freq k=    0.8761   0.7160   0.6038
+ get_freq k=    0.8679   0.7303   0.6038
+ get_freq k=    0.8596   0.7447   0.6038
+ get_freq k=    0.8513   0.7590   0.6038
+ get_freq k=    0.8431   0.7733   0.6038
+ get_freq k=    0.8348   0.7876   0.6038
+ get_freq k=    0.8265   0.8019   0.6038
+ get_freq k=    0.8183   0.8162   0.6038
+ get_freq k=    0.8100   0.8305   0.6038
+ get_freq k=    0.8018   0.8448   0.6038
+ get_freq k=    0.7935   0.8591   0.6038
+ get_freq k=    0.7852   0.8735   0.6038
+ get_freq k=    0.7770   0.8878   0.6038
+ get_freq k=    0.7687   0.9021   0.6038
+ get_freq k=    0.7604   0.9164   0.6038
+ get_freq k=    0.7522   0.9307   0.6038
+ get_freq k=    0.7439   0.9450   0.6038
+ get_freq k=    0.7356   0.9593   0.6038
+ get_freq k=    0.7274   0.9736   0.6038
+ get_freq k=    0.7191   0.9880   0.6038
+ get_freq k=    0.7109   1.0023   0.6038
+ get_freq k=    0.7026   1.0166   0.6038
+ get_freq k=    0.6943   1.0309   0.6038
+ get_freq k=    0.6861   1.0452   0.6038
+ get_freq k=    0.6778   1.0595   0.6038
+ get_freq k=    0.6695   1.0738   0.6038
+ get_freq k=    0.6613   1.0881   0.6038
+ get_freq k=    0.6530   1.1024   0.6038
+ get_freq k=    0.6448   1.1168   0.6038
+ get_freq k=    0.6448   1.1168   0.6038
+ get_freq k=    0.6282   1.0881   0.6038
+ get_freq k=    0.6117   1.0595   0.6038
+ get_freq k=    0.5952   1.0309   0.6038
+ get_freq k=    0.5787   1.0023   0.6038
+ get_freq k=    0.5621   0.9736   0.6038
+ get_freq k=    0.5456   0.9450   0.6038
+ get_freq k=    0.5291   0.9164   0.6038
+ get_freq k=    0.5125   0.8878   0.6038
+ get_freq k=    0.4960   0.8591   0.6038
+ get_freq k=    0.4795   0.8305   0.6038
+ get_freq k=    0.4630   0.8019   0.6038
+ get_freq k=    0.4464   0.7733   0.6038
+ get_freq k=    0.4299   0.7447   0.6038
+ get_freq k=    0.4134   0.7160   0.6038
+ get_freq k=    0.3969   0.6874   0.6038
+ get_freq k=    0.3803   0.6588   0.6038
+ get_freq k=    0.3638   0.6302   0.6038
+ get_freq k=    0.3473   0.6015   0.6038
+ get_freq k=    0.3308   0.5729   0.6038
+ get_freq k=    0.3142   0.5443   0.6038
+ get_freq k=    0.2977   0.5157   0.6038
+ get_freq k=    0.2812   0.4870   0.6038
+ get_freq k=    0.2647   0.4584   0.6038
+ get_freq k=    0.2481   0.4298   0.6038
+ get_freq k=    0.2316   0.4012   0.6038
+ get_freq k=    0.2151   0.3725   0.6038
+ get_freq k=    0.1986   0.3439   0.6038
+ get_freq k=    0.1820   0.3153   0.6038
+ get_freq k=    0.1655   0.2867   0.6038
+ get_freq k=    0.1490   0.2580   0.6038
+ get_freq k=    0.1325   0.2294   0.6038
+ get_freq k=    0.1159   0.2008   0.6038
+ get_freq k=    0.0994   0.1722   0.6038
+ get_freq k=    0.0829   0.1436   0.6038
+ get_freq k=    0.0664   0.1149   0.6038
+ get_freq k=    0.0498   0.0863   0.6038
+ get_freq k=    0.0333   0.0577   0.6038
+ get_freq k=    0.0168   0.0291   0.6038
+ get_freq k=    0.0002   0.0004   0.6038
+ get_freq k=    0.0002   0.0004   0.6038
+ get_freq k=    0.0250   0.0147   0.6038
+ get_freq k=    0.0498   0.0291   0.6038
+ get_freq k=    0.0746   0.0434   0.6038
+ get_freq k=    0.0994   0.0577   0.6038
+ get_freq k=    0.1242   0.0720   0.6038
+ get_freq k=    0.1490   0.0863   0.6038
+ get_freq k=    0.1738   0.1006   0.6038
+ get_freq k=    0.1986   0.1149   0.6038
+ get_freq k=    0.2233   0.1292   0.6038
+ get_freq k=    0.2481   0.1436   0.6038
+ get_freq k=    0.2729   0.1579   0.6038
+ get_freq k=    0.2977   0.1722   0.6038
+ get_freq k=    0.3225   0.1865   0.6038
+ get_freq k=    0.3473   0.2008   0.6038
+ get_freq k=    0.3721   0.2151   0.6038
+ get_freq k=    0.3969   0.2294   0.6038
+ get_freq k=    0.4217   0.2437   0.6038
+ get_freq k=    0.4464   0.2580   0.6038
+ get_freq k=    0.4712   0.2724   0.6038
+ get_freq k=    0.4960   0.2867   0.6038
+ get_freq k=    0.5208   0.3010   0.6038
+ get_freq k=    0.5456   0.3153   0.6038
+ get_freq k=    0.5704   0.3296   0.6038
+ get_freq k=    0.5952   0.3439   0.6038
+ get_freq k=    0.6200   0.3582   0.6038
+ get_freq k=    0.6448   0.3725   0.6038
+ get_freq k=    0.6695   0.3869   0.6038
+ get_freq k=    0.6943   0.4012   0.6038
+ get_freq k=    0.7191   0.4155   0.6038
+ get_freq k=    0.7439   0.4298   0.6038
+ get_freq k=    0.7687   0.4441   0.6038
+ get_freq k=    0.7935   0.4584   0.6038
+ get_freq k=    0.8183   0.4727   0.6038
+ get_freq k=    0.8431   0.4870   0.6038
+ get_freq k=    0.8679   0.5013   0.6038
+ get_freq k=    0.8926   0.5157   0.6038
+ get_freq k=    0.9174   0.5300   0.6038
+ get_freq k=    0.9422   0.5443   0.6038
+ get_freq k=    0.9670   0.5586   0.6038
+ get_freq k=    0.9670   0.5586   0.6038
+ get_freq k=    0.9670   0.5586   0.5883
+ get_freq k=    0.9670   0.5586   0.5728
+ get_freq k=    0.9670   0.5586   0.5574
+ get_freq k=    0.9670   0.5586   0.5419
+ get_freq k=    0.9670   0.5586   0.5264
+ get_freq k=    0.9670   0.5586   0.5109
+ get_freq k=    0.9670   0.5586   0.4955
+ get_freq k=    0.9670   0.5586   0.4800
+ get_freq k=    0.9670   0.5586   0.4645
+ get_freq k=    0.9670   0.5586   0.4490
+ get_freq k=    0.9670   0.5586   0.4335
+ get_freq k=    0.9670   0.5586   0.4181
+ get_freq k=    0.9670   0.5586   0.4026
+ get_freq k=    0.9670   0.5586   0.3871
+ get_freq k=    0.9670   0.5586   0.3716
+ get_freq k=    0.9670   0.5586   0.3561
+ get_freq k=    0.9670   0.5586   0.3407
+ get_freq k=    0.9670   0.5586   0.3252
+ get_freq k=    0.9670   0.5586   0.3097
+ get_freq k=    0.9670   0.5586   0.2942
+ get_freq k=    0.9670   0.5586   0.2788
+ get_freq k=    0.9670   0.5586   0.2633
+ get_freq k=    0.9670   0.5586   0.2478
+ get_freq k=    0.9670   0.5586   0.2323
+ get_freq k=    0.9670   0.5586   0.2168
+ get_freq k=    0.9670   0.5586   0.2014
+ get_freq k=    0.9670   0.5586   0.1859
+ get_freq k=    0.9670   0.5586   0.1704
+ get_freq k=    0.9670   0.5586   0.1549
+ get_freq k=    0.9670   0.5586   0.1394
+ get_freq k=    0.9670   0.5586   0.1240
+ get_freq k=    0.9670   0.5586   0.1085
+ get_freq k=    0.9670   0.5586   0.0930
+ get_freq k=    0.9670   0.5586   0.0775
+ get_freq k=    0.9670   0.5586   0.0621
+ get_freq k=    0.9670   0.5586   0.0466
+ get_freq k=    0.9670   0.5586   0.0311
+ get_freq k=    0.9670   0.5586   0.0156
+ get_freq k=    0.9670   0.5586   0.0001
+ get_freq k=    0.9670   0.5586   0.0001
+ get_freq k=    0.9587   0.5729   0.0001
+ get_freq k=    0.9505   0.5872   0.0001
+ get_freq k=    0.9422   0.6015   0.0001
+ get_freq k=    0.9340   0.6158   0.0001
+ get_freq k=    0.9257   0.6302   0.0001
+ get_freq k=    0.9174   0.6445   0.0001
+ get_freq k=    0.9092   0.6588   0.0001
+ get_freq k=    0.9009   0.6731   0.0001
+ get_freq k=    0.8926   0.6874   0.0001
+ get_freq k=    0.8844   0.7017   0.0001
+ get_freq k=    0.8761   0.7160   0.0001
+ get_freq k=    0.8679   0.7303   0.0001
+ get_freq k=    0.8596   0.7447   0.0001
+ get_freq k=    0.8513   0.7590   0.0001
+ get_freq k=    0.8431   0.7733   0.0001
+ get_freq k=    0.8348   0.7876   0.0001
+ get_freq k=    0.8265   0.8019   0.0001
+ get_freq k=    0.8183   0.8162   0.0001
+ get_freq k=    0.8100   0.8305   0.0001
+ get_freq k=    0.8018   0.8448   0.0001
+ get_freq k=    0.7935   0.8591   0.0001
+ get_freq k=    0.7852   0.8735   0.0001
+ get_freq k=    0.7770   0.8878   0.0001
+ get_freq k=    0.7687   0.9021   0.0001
+ get_freq k=    0.7604   0.9164   0.0001
+ get_freq k=    0.7522   0.9307   0.0001
+ get_freq k=    0.7439   0.9450   0.0001
+ get_freq k=    0.7356   0.9593   0.0001
+ get_freq k=    0.7274   0.9736   0.0001
+ get_freq k=    0.7191   0.9880   0.0001
+ get_freq k=    0.7109   1.0023   0.0001
+ get_freq k=    0.7026   1.0166   0.0001
+ get_freq k=    0.6943   1.0309   0.0001
+ get_freq k=    0.6861   1.0452   0.0001
+ get_freq k=    0.6778   1.0595   0.0001
+ get_freq k=    0.6695   1.0738   0.0001
+ get_freq k=    0.6613   1.0881   0.0001
+ get_freq k=    0.6530   1.1024   0.0001
+ get_freq k=    0.6448   1.1168   0.0001
+ get_freq k=    0.6448   1.1168   0.0001
+ get_freq k=    0.6448   1.1168   0.0156
+ get_freq k=    0.6448   1.1168   0.0311
+ get_freq k=    0.6448   1.1168   0.0466
+ get_freq k=    0.6448   1.1168   0.0621
+ get_freq k=    0.6448   1.1168   0.0775
+ get_freq k=    0.6448   1.1168   0.0930
+ get_freq k=    0.6448   1.1168   0.1085
+ get_freq k=    0.6448   1.1168   0.1240
+ get_freq k=    0.6448   1.1168   0.1394
+ get_freq k=    0.6448   1.1168   0.1549
+ get_freq k=    0.6448   1.1168   0.1704
+ get_freq k=    0.6448   1.1168   0.1859
+ get_freq k=    0.6448   1.1168   0.2014
+ get_freq k=    0.6448   1.1168   0.2168
+ get_freq k=    0.6448   1.1168   0.2323
+ get_freq k=    0.6448   1.1168   0.2478
+ get_freq k=    0.6448   1.1168   0.2633
+ get_freq k=    0.6448   1.1168   0.2788
+ get_freq k=    0.6448   1.1168   0.2942
+ get_freq k=    0.6448   1.1168   0.3097
+ get_freq k=    0.6448   1.1168   0.3252
+ get_freq k=    0.6448   1.1168   0.3407
+ get_freq k=    0.6448   1.1168   0.3561
+ get_freq k=    0.6448   1.1168   0.3716
+ get_freq k=    0.6448   1.1168   0.3871
+ get_freq k=    0.6448   1.1168   0.4026
+ get_freq k=    0.6448   1.1168   0.4181
+ get_freq k=    0.6448   1.1168   0.4335
+ get_freq k=    0.6448   1.1168   0.4490
+ get_freq k=    0.6448   1.1168   0.4645
+ get_freq k=    0.6448   1.1168   0.4800
+ get_freq k=    0.6448   1.1168   0.4955
+ get_freq k=    0.6448   1.1168   0.5109
+ get_freq k=    0.6448   1.1168   0.5264
+ get_freq k=    0.6448   1.1168   0.5419
+ get_freq k=    0.6448   1.1168   0.5574
+ get_freq k=    0.6448   1.1168   0.5728
+ get_freq k=    0.6448   1.1168   0.5883
+ get_freq k=    0.6448   1.1168   0.6038
+ Projection Band Sorting for band structures!
+  ********** ENTERING get_phi_zeta_x *************
+  GET_PHI_ZETA: symmetrizing atld0
+ SYMMETRIZE2: max|M-M^T|=  0.28269202724266052     
+ SYMMETRIZE2: max|M-M^T|=  0.28269202844421670     
+ SYMMETRIZE2: max|M-M^T|=   9.1677814881512916     
+ SYMMETRIZE2: max|M-M^T|=   9.5490908106288259     
+ SYMMETRIZE4: i,j,max|M4-M4^T|=           1           3  0.19065466123873875     
+ SYMMETRIZE2: max|M-M^T|=   9.1677814881514905     
+ SYMMETRIZE2: max|M-M^T|=   9.5490908106289965     
+ SYMMETRIZE4: i,j,max|M4-M4^T|=           2           3  0.19065466123873875     
+  ********** ENTERING cubic elastic *************
+  ********** ENTERING RESIDUALS *************, ndyn=          12
+  symmetrizing QGQ
+ SYMMETRIZE2: max|M-M^T|=  0.10944627399837348     
+ SYMMETRIZE2: max|M-M^T|=  0.11186448928431769     
+ SYMMETRIZE4: i,j,max|M4-M4^T|=           1           3  0.11065538164134558     
+ SYMMETRIZE2: max|M-M^T|=  0.10944627399837614     
+ SYMMETRIZE2: max|M-M^T|=  0.11186448928431858     
+ SYMMETRIZE4: i,j,max|M4-M4^T|=           2           3  0.11065538164134736     
+  calling gruneisen
+  entering get_weights
+  w2,k2,mapinv,mapibz allocated
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      1      1      1      1     0.00000   0.00000   0.00000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      2      2      2      2     0.00000   0.00000   0.12500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      3      3      3      3     0.00000   0.00000   0.25000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      4      4      4      4     0.00000   0.00000   0.37500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      5      5      5      5     0.00000   0.00000   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      6      9      6      6     0.00000   0.12500   0.00000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      7     10      7      7     0.00000   0.12500   0.12500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      8     11      8      8     0.00000   0.12500   0.25000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      9     12      6      9     0.00000   0.12500   0.37500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     10     13      7     10     0.00000   0.12500   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     11     17      8     11     0.00000   0.25000   0.00000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     12     18      6     12     0.00000   0.25000   0.12500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     13     19      7     13     0.00000   0.25000   0.25000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     14     20     14     14     0.00000   0.25000   0.37500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     15     21     15     15     0.00000   0.25000   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     16     25     16     16     0.00000   0.37500   0.00000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     17     26      8     17     0.00000   0.37500   0.12500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     18     27      6     18     0.00000   0.37500   0.25000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     19     28      7     19     0.00000   0.37500   0.37500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     20     29     14     20     0.00000   0.37500   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     21     33     15     21     0.00000   0.50000   0.00000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     22     34     22     22     0.00000   0.50000   0.12500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     23     35     23     23     0.00000   0.50000   0.25000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     24     36     24     24     0.00000   0.50000   0.37500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     25     37     16     25     0.00000   0.50000   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     26     73      8     26     0.12500   0.12500   0.00000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     27     74      6     27     0.12500   0.12500   0.12500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     28     75      7     28     0.12500   0.12500   0.25000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     29     76     14     29     0.12500   0.12500   0.37500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     30     77     30     30     0.12500   0.12500   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     31     81     31     31     0.12500   0.25000   0.00000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     32     82     32     32     0.12500   0.25000   0.12500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     33     83     15     33     0.12500   0.25000   0.25000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     34     84     22     34     0.12500   0.25000   0.37500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     35     85     23     35     0.12500   0.25000   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     36     89     24     36     0.12500   0.37500   0.00000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     37     90     16     37     0.12500   0.37500   0.12500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     38     91     38     38     0.12500   0.37500   0.25000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     39     92     39     39     0.12500   0.37500   0.37500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     40     93     40     40     0.12500   0.37500   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     41    145     41     41     0.25000   0.25000   0.00000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     42    146     42     42     0.25000   0.25000   0.12500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     43    147     43     43     0.25000   0.25000   0.25000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     44    148     44     44     0.25000   0.25000   0.37500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     45    149     45     45     0.25000   0.25000   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     46    153     46     46     0.25000   0.37500   0.00000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     47    154     47     47     0.25000   0.37500   0.12500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     48    155     48     48     0.25000   0.37500   0.25000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     49    156     49     49     0.25000   0.37500   0.37500
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     50    157     50     50     0.25000   0.37500   0.50000
+ exited iloop with NIBZ=          50  and allocating now WIBZ and KIBZ 
+  calling get_freq in IBZ with nibz=          50
+ get_freq k=    0.0002   0.0004   0.0001
+ get_freq k=    0.0002   0.0004   0.1511
+ get_freq k=    0.0002   0.0004   0.3020
+ get_freq k=    0.0002   0.0004   0.4529
+ get_freq k=    0.0002   0.0004   0.6038
+ get_freq k=    0.0002   0.2795   0.0001
+ get_freq k=    0.0002   0.2795   0.1511
+ get_freq k=    0.0002   0.2795   0.3020
+ get_freq k=    0.0002   0.2795   0.4529
+ get_freq k=    0.0002   0.2795   0.6038
+ get_freq k=    0.0002   0.5586   0.0001
+ get_freq k=    0.0002   0.5586   0.1511
+ get_freq k=    0.0002   0.5586   0.3020
+ get_freq k=    0.0002   0.5586   0.4529
+ get_freq k=    0.0002   0.5586   0.6038
+ get_freq k=    0.0002   0.8377   0.0001
+ get_freq k=    0.0002   0.8377   0.1511
+ get_freq k=    0.0002   0.8377   0.3020
+ get_freq k=    0.0002   0.8377   0.4529
+ get_freq k=    0.0002   0.8377   0.6038
+ get_freq k=    0.0002   1.1168   0.0001
+ get_freq k=    0.0002   1.1168   0.1511
+ get_freq k=    0.0002   1.1168   0.3020
+ get_freq k=    0.0002   1.1168   0.4529
+ get_freq k=    0.0002   1.1168   0.6038
+ get_freq k=    0.2419   0.4191   0.0001
+ get_freq k=    0.2419   0.4191   0.1511
+ get_freq k=    0.2419   0.4191   0.3020
+ get_freq k=    0.2419   0.4191   0.4529
+ get_freq k=    0.2419   0.4191   0.6038
+ get_freq k=    0.2419   0.6981   0.0001
+ get_freq k=    0.2419   0.6981   0.1511
+ get_freq k=    0.2419   0.6981   0.3020
+ get_freq k=    0.2419   0.6981   0.4529
+ get_freq k=    0.2419   0.6981   0.6038
+ get_freq k=    0.2419   0.9772   0.0001
+ get_freq k=    0.2419   0.9772   0.1511
+ get_freq k=    0.2419   0.9772   0.3020
+ get_freq k=    0.2419   0.9772   0.4529
+ get_freq k=    0.2419   0.9772   0.6038
+ get_freq k=    0.4836   0.8377   0.0001
+ get_freq k=    0.4836   0.8377   0.1511
+ get_freq k=    0.4836   0.8377   0.3020
+ get_freq k=    0.4836   0.8377   0.4529
+ get_freq k=    0.4836   0.8377   0.6038
+ get_freq k=    0.4836   1.1168   0.0001
+ get_freq k=    0.4836   1.1168   0.1511
+ get_freq k=    0.4836   1.1168   0.3020
+ get_freq k=    0.4836   1.1168   0.4529
+ get_freq k=    0.4836   1.1168   0.6038
+ DIELECTRIC:q=0 imag(eivec) is=
+       0.00000       0.00001      -0.14990      -0.00001       0.70408       0.00001       0.31347       0.00000       0.00000      -0.00000      -0.06541       0.00000
+       0.00000       0.00010       0.00001      -0.19525      -0.00000      -0.24015       0.00001      -0.00000       0.00000      -0.04435       0.00000      -0.00000
+      -0.00000       0.00000       0.00000      -0.00000      -0.00000      -0.00000      -0.00000       0.00000      -0.00000      -0.00000       0.00000      -0.00000
+       0.00000       0.00001      -0.14990       0.00001      -0.70408       0.00001       0.31347      -0.00000       0.00000       0.00000       0.06541      -0.00000
+       0.00000       0.00010       0.00001       0.19525       0.00000      -0.24015       0.00001      -0.00000       0.00000       0.04435      -0.00000       0.00000
+      -0.00000       0.00000       0.00000      -0.00000       0.00000       0.00000      -0.00000      -0.00000       0.00000       0.00000      -0.00000       0.00000
+       0.00000       0.00001      -0.07414       0.00000      -0.06541      -0.00002      -0.63382       0.00000       0.00000      -0.00003      -0.70408       0.00000
+       0.00000       0.00005       0.00001       0.01814       0.00000       0.48556      -0.00002      -0.00000       0.00000      -0.47745       0.00002      -0.00000
+       0.00000      -0.00000      -0.00000       0.00000      -0.00000      -0.00000      -0.00000       0.00000      -0.00000      -0.00000       0.00000      -0.00000
+       0.00000       0.00001      -0.07414      -0.00000       0.06541      -0.00002      -0.63382      -0.00000       0.00000       0.00003       0.70408      -0.00000
+       0.00000       0.00005       0.00001      -0.01814      -0.00000       0.48556      -0.00002       0.00000      -0.00000       0.47745      -0.00002       0.00000
+       0.00000       0.00000       0.00000       0.00000       0.00000       0.00000       0.00000       0.00000       0.00000       0.00000       0.00000       0.00000
+ vol0,cvt2,boft=   47.436221017767842        0.0000000000000000        308.95521044610092     
+imin,T,strain,Approximate pmin,eq_free=   21    2.000        0.000       0.1148        6.691    
+ vol0,cvt2,boft=   47.436220570174868        0.0000000000000000        308.95487634499295     
+imin,T,strain,Approximate pmin,eq_free=   21    4.000        0.000       0.1148        6.691    
+ vol0,cvt2,boft=   47.436220120909852        0.0000000000000000        308.92295475829923     
+imin,T,strain,Approximate pmin,eq_free=   21    6.000        0.000       0.1148        6.691    
+ vol0,cvt2,boft=   47.436220120909852       -1.2296798301836276E-009   308.76838426927338     
+imin,T,strain,Approximate pmin,eq_free=   21    8.000        0.000       0.1148        6.691    
+ vol0,cvt2,boft=   47.436220120909852       -2.0987755755541571E-009   308.49470858323275     
+imin,T,strain,Approximate pmin,eq_free=   21    10.00        0.000       0.1148        6.691    
+ vol0,cvt2,boft=   47.436220120909852       -2.9057478923011359E-009   308.18520433798494     
+imin,T,strain,Approximate pmin,eq_free=   21    12.00        0.000       0.1148        6.691    
+ vol0,cvt2,boft=   47.436220120909852       -3.8085225766743798E-009   307.91442178173901     
+imin,T,strain,Approximate pmin,eq_free=   21    14.00        0.000       0.1148        6.690    
+ vol0,cvt2,boft=   47.436220120909852       -4.9225866785573835E-009   307.73250805931252     
+imin,T,strain,Approximate pmin,eq_free=   21    16.00        0.000       0.1148        6.690    
+ vol0,cvt2,boft=   47.436220120909852       -6.3515493235281424E-009   307.65133972697771     
+imin,T,strain,Approximate pmin,eq_free=   21    18.00        0.000       0.1148        6.690    
+ vol0,cvt2,boft=   47.436220120909852       -8.1954689701291272E-009   307.65060814172955     
+imin,T,strain,Approximate pmin,eq_free=   21    20.00        0.000       0.1148        6.690    
+ vol0,cvt2,boft=   47.436220120909852       -1.0554185424605966E-008   307.70009437916138     
+imin,T,strain,Approximate pmin,eq_free=   21    22.00        0.000       0.1148        6.690    
+ vol0,cvt2,boft=   47.436220120909852       -1.3529751152763225E-008   307.77426517129641     
+imin,T,strain,Approximate pmin,eq_free=   21    24.00        0.000       0.1148        6.690    
+ vol0,cvt2,boft=   47.436220120909852       -1.7227635002319957E-008   307.85606236852487     
+imin,T,strain,Approximate pmin,eq_free=   21    26.00        0.000       0.1148        6.690    
+ vol0,cvt2,boft=   47.436220120909852       -2.1756065881379475E-008   307.93583128288617     
+imin,T,strain,Approximate pmin,eq_free=   21    28.00        0.000       0.1148        6.689    
+ vol0,cvt2,boft=   47.436220120909852       -2.7223615184368555E-008   308.00908643815626     
+imin,T,strain,Approximate pmin,eq_free=   21    30.00        0.000       0.1148        6.689    
+ vol0,cvt2,boft=   47.436220120909852       -3.3735669993650852E-008   308.07443828318191     
+imin,T,strain,Approximate pmin,eq_free=   21    32.00        0.000       0.1148        6.689    
+ vol0,cvt2,boft=   47.436220120909852       -4.1390593651837463E-008   308.13207889374104     
+imin,T,strain,Approximate pmin,eq_free=   21    34.00        0.000       0.1148        6.689    
+ vol0,cvt2,boft=   47.436220120909852       -5.0276240562727480E-008   308.18284930687867     
+imin,T,strain,Approximate pmin,eq_free=   21    36.00        0.000       0.1148        6.688    
+ vol0,cvt2,boft=   47.436220120909852       -6.0467246946369504E-008   308.22774753113640     
+imin,T,strain,Approximate pmin,eq_free=   21    38.00        0.000       0.1148        6.688    
+ vol0,cvt2,boft=   47.436220120909852       -7.2023280237032422E-008   308.26770937413170     
+imin,T,strain,Approximate pmin,eq_free=   21    40.00        0.000       0.1148        6.688    
+ vol0,cvt2,boft=   47.436220120909852       -1.0713496814387626E-007   308.35090703121250     
+imin,T,strain,Approximate pmin,eq_free=   21    45.00        0.000       0.1148        6.687    
+ vol0,cvt2,boft=   47.436220120909852       -1.5128353847204679E-007   308.41674761763943     
+imin,T,strain,Approximate pmin,eq_free=   21    50.00        0.000       0.1148        6.685    
+ vol0,cvt2,boft=   47.436220120909852       -2.0423922511003668E-007   308.47041881881603     
+imin,T,strain,Approximate pmin,eq_free=   21    55.00        0.000       0.1148        6.683    
+ vol0,cvt2,boft=   47.436220120909852       -2.6541967364882939E-007   308.51506386494145     
+imin,T,strain,Approximate pmin,eq_free=   21    60.00        0.000       0.1148        6.681    
+ vol0,cvt2,boft=   47.436220120909852       -3.3403807710654997E-007   308.55273863329205     
+imin,T,strain,Approximate pmin,eq_free=   21    65.00        0.000       0.1148        6.677    
+ vol0,cvt2,boft=   47.436220120909852       -4.0921925499949803E-007   308.58489208166554     
+imin,T,strain,Approximate pmin,eq_free=   21    70.00        0.000       0.1148        6.673    
+ vol0,cvt2,boft=   47.436220120909852       -4.9007872115591767E-007   308.61260617462835     
+imin,T,strain,Approximate pmin,eq_free=   21    75.00        0.000       0.1149        6.668    
+ vol0,cvt2,boft=   47.436220120909852       -5.7577056860602658E-007   308.63672044550520     
+imin,T,strain,Approximate pmin,eq_free=   21    80.00        0.000       0.1149        6.662    
+ vol0,cvt2,boft=   47.436220120909852       -6.6551276649039942E-007   308.65790119414618     
+imin,T,strain,Approximate pmin,eq_free=   21    85.00        0.000       0.1149        6.654    
+ vol0,cvt2,boft=   47.436220120909852       -7.5859764692524465E-007   308.67668356611409     
+imin,T,strain,Approximate pmin,eq_free=   21    90.00        0.000       0.1149        6.646    
+ vol0,cvt2,boft=   47.436220120909852       -8.5439346133820450E-007   308.69349977173601     
+imin,T,strain,Approximate pmin,eq_free=   21    95.00        0.000       0.1149        6.636    
+ vol0,cvt2,boft=   47.436220120909852       -9.5234101898822307E-007   308.70869967741135     
+imin,T,strain,Approximate pmin,eq_free=   21    100.0        0.000       0.1149        6.624    
+ vol0,cvt2,boft=   47.436220120909852       -1.0519479534829674E-006   308.72256673399369     
+imin,T,strain,Approximate pmin,eq_free=   21    105.0        0.000       0.1149        6.611    
+ vol0,cvt2,boft=   47.436220120909852       -1.1527821330242267E-006   308.73533070809333     
+imin,T,strain,Approximate pmin,eq_free=   21    110.0        0.000       0.1149        6.597    
+ vol0,cvt2,boft=   47.436220120909852       -1.2544650557541011E-006   308.74717800535961     
+imin,T,strain,Approximate pmin,eq_free=   21    115.0        0.000       0.1149        6.581    
+ vol0,cvt2,boft=   47.436220120909852       -1.3566656550075459E-006   308.75826007123578     
+imin,T,strain,Approximate pmin,eq_free=   21    120.0        0.000       0.1149        6.563    
+ vol0,cvt2,boft=   47.436220120909852       -1.4590946942609761E-006   308.76870021460070     
+imin,T,strain,Approximate pmin,eq_free=   21    125.0        0.000       0.1149        6.544    
+ vol0,cvt2,boft=   47.436220120909852       -1.5614997959545462E-006   308.77859912789688     
+imin,T,strain,Approximate pmin,eq_free=   21    130.0        0.000       0.1149        6.522    
+ vol0,cvt2,boft=   47.436220120909852       -1.6636610785132263E-006   308.78803933258558     
+imin,T,strain,Approximate pmin,eq_free=   21    135.0        0.000       0.1149        6.500    
+ vol0,cvt2,boft=   47.436220120909852       -1.7653873448589661E-006   308.79708874450318     
+imin,T,strain,Approximate pmin,eq_free=   21    140.0        0.000       0.1150        6.475    
+ vol0,cvt2,boft=   47.436220120909852       -1.8665127557663749E-006   308.80580352406793     
+imin,T,strain,Approximate pmin,eq_free=   21    145.0        0.000       0.1150        6.449    
+ vol0,cvt2,boft=   47.436220120909852       -1.9668939222953578E-006   308.81423034964990     
+imin,T,strain,Approximate pmin,eq_free=   21    150.0        0.000       0.1150        6.421    
+ vol0,cvt2,boft=   47.436220120909852       -2.9099695964529550E-006   308.88888982552771     
+imin,T,strain,Approximate pmin,eq_free=   21    200.0        0.000       0.1151        6.040    
+ vol0,cvt2,boft=   47.436220120909852       -3.7181734124760447E-006   308.95562791011668     
+imin,T,strain,Approximate pmin,eq_free=   20    250.0      -0.2500E-02   0.1153        5.476    
+ vol0,cvt2,boft=   47.436220120909852       -4.3945660840912412E-006   309.01990052856831     
+imin,T,strain,Approximate pmin,eq_free=   20    300.0      -0.2500E-02   0.1156        4.738    
+ vol0,cvt2,boft=   47.436220120909852       -4.9590173582814148E-006   309.08348691964164     
+imin,T,strain,Approximate pmin,eq_free=   20    350.0      -0.2500E-02   0.1158        3.841    
+ vol0,cvt2,boft=   47.436220120909852       -5.4326067366006202E-006   309.14703440364468     
+imin,T,strain,Approximate pmin,eq_free=   20    400.0      -0.2500E-02   0.1161        2.799    
+ vol0,cvt2,boft=   47.436220120909852       -5.8333446582126134E-006   309.21077663844750     
+imin,T,strain,Approximate pmin,eq_free=   20    450.0      -0.2500E-02   0.1163        1.624    
+ vol0,cvt2,boft=   47.436220120909852       -6.1756176917455717E-006   309.27478591585725     
+imin,T,strain,Approximate pmin,eq_free=   20    500.0      -0.2500E-02   0.1166       0.3274    
+ vol0,cvt2,boft=   47.436220120909852       -6.4706641439869126E-006   309.33907057736252     
+imin,T,strain,Approximate pmin,eq_free=   20    550.0      -0.2500E-02   0.1169       -1.082    
+ vol0,cvt2,boft=   47.436220120909852       -6.7272250561078993E-006   309.40361459833036     
+imin,T,strain,Approximate pmin,eq_free=   20    600.0      -0.2500E-02   0.1172       -2.595    
+ vol0,cvt2,boft=   47.436220120909852       -6.9521239059471104E-006   309.46839406504779     
+imin,T,strain,Approximate pmin,eq_free=   20    650.0      -0.2500E-02   0.1175       -4.204    
+ vol0,cvt2,boft=   47.436220120909852       -7.1507260562091761E-006   309.53338400096271     
+imin,T,strain,Approximate pmin,eq_free=   20    700.0      -0.2500E-02   0.1178       -5.903    
+ vol0,cvt2,boft=   47.436220120909852       -7.3272876178574663E-006   309.59856104954412     
+imin,T,strain,Approximate pmin,eq_free=   20    750.0      -0.2500E-02   0.1181       -7.687    
+ vol0,cvt2,boft=   47.436220120909852       -7.4852163308512796E-006   309.66390436090654     
+imin,T,strain,Approximate pmin,eq_free=   20    800.0      -0.2500E-02   0.1184       -9.550    
+ vol0,cvt2,boft=   47.436220120909852       -7.6272660955206357E-006   309.72939571176346     
+imin,T,strain,Approximate pmin,eq_free=   20    850.0      -0.2500E-02   0.1188       -11.49    
+ vol0,cvt2,boft=   47.436220120909852       -7.7556824997371265E-006   309.79501931787144     
+imin,T,strain,Approximate pmin,eq_free=   20    900.0      -0.2500E-02   0.1191       -13.50    

@@ -1,0 +1,22 @@
+run_ZnO/e0: columns 1927, 1927 (map), ranks [1, 2, 3, 4]
+  map rank 1: 2 groups, 4 terms: max |sum mat x_exact - exact| 8.44e-15 (max |FC| 0.0317), wrong 0 
+  map rank 2: 46 groups, 2418 terms: max |sum mat x_exact - exact| 3.41e-10 (max |FC| 17.6), wrong 0 
+  map rank 3: 154 groups, 34988 terms: max |sum mat x_exact - exact| 8.11e-10 (max |FC| 3.01), wrong 0 
+  map rank 4: 561 groups, 746854 terms: max |sum mat x_exact - exact| 8.87e-11 (max |FC| 12.2), wrong 0 
+  completeness: model clusters checked per rank {1: 0, 2: 152, 3: 272, 4: 440} missing from the groups {1: 0, 2: 0, 3: 0, 4: 0} atoms outside atompos 0
+  translational rows   2276: max |row.x_exact - b| 5.50e-10, relative to max row scale 1.56e-11, max |b| 0
+  rotational    rows   9645: max |row.x_exact - b| 2.74e-09, relative to max row scale 1.87e-11, max |b| 0
+  Huang         rows     15: max |row.x_exact - b| 7.21e-09, relative to max row scale 3.18e-11, max |b| 0.227
+  force rows 648: max |A x_exact - F| 7.39e-11 eV/A (max |F| 1.880), rms 2.18e-11
+  fit fc1_irr.dat: 2 terms, max |FOCEX - exact| 2.64e-09 (max |FC| 0.0317, rel 8.3e-08)
+  fit fc2_irr.dat: 68 terms, max |FOCEX - exact| 1.56e-06 (max |FC| 17.6, rel 8.9e-08)
+  fit fc3_irr.dat: 292 terms, max |FOCEX - exact| 4.93e-07 (max |FC| 3.01, rel 1.6e-07)
+  fit fc4_irr.dat: 1565 terms, max |FOCEX - exact| 1.16e-08 (max |FC| 12.2, rel 9.5e-10)
+  fit fc1.dat: 4 terms, max |FOCEX - exact| 2.64e-09
+  fit fc2.dat: 1506 terms, max |FOCEX - exact| 1.56e-06
+  fit fc3.dat: 26368 terms, max |FOCEX - exact| 4.93e-07
+  fit fc4.dat: 208494 terms, max |FOCEX - exact| 1e-08
+  support fc1: exact non-zero 2 of 2; selected by FOCEX 2; exact non-zero not selected 0; max err on exact zeros 0, on non-zeros 2.64e-09
+  support fc2: exact non-zero 47 of 68; selected by FOCEX 47; exact non-zero not selected 0; max err on exact zeros 1.25e-11, on non-zeros 1.56e-06
+  support fc3: exact non-zero 229 of 292; selected by FOCEX 229; exact non-zero not selected 0; max err on exact zeros 3.97e-10, on non-zeros 4.93e-07
+  support fc4: exact non-zero 553 of 1565; selected by FOCEX 553; exact non-zero not selected 0; max err on exact zeros 1.16e-08, on non-zeros 1e-08

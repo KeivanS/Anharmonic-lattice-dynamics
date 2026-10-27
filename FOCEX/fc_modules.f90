@@ -926,6 +926,7 @@ end module ios
  use geometry
  implicit none
  integer natom_super_cell,nmax, fc2range
+ integer :: fcflag(8) = 1  ! fcflag(3:8), structure.params line 12 after fc2range; 0 = rule of fc34_range
 
 !-------------------------
  type cell_id         ! id of atoms: position within cell, and cell coordinates
@@ -2284,7 +2285,7 @@ end function fold_ws
  real(r15), allocatable:: ampterm_2(:),fcs_2(:),grun_fc(:)
  real(r15), allocatable:: ampterm_3(:),fcs_3(:)
  real(r15), allocatable:: ampterm_4(:),fcs_4(:)
- real(r15), allocatable:: amat(:,:),bmat(:),sigma(:),fcs(:),ahom(:,:),kernelbasis(:,:)
+ real(r15), allocatable:: amat(:,:),bmat(:),sigma(:),fcs(:),ahom(:,:),bhom(:),kernelbasis(:,:)
  real(r15), allocatable:: a11ia12(:,:),fc1(:)
  real(r15), allocatable:: atransl(:,:),btransl(:),arot(:,:),brot(:),ahuang(:,:),bhuang(:), &
  &                      aforce(:,:),bforce(:),energies(:) !,afrc(:,:),bfrc(:),engy(:)

@@ -1,0 +1,8 @@
+POSCAR: ZnO wurtzite (model)
+  4 atoms; 24 lattice operations, 12 crystal operations
+  crystal system hexagonal, Setyawan-Curtarolo lattice HEX (HEX)
+  input cell        :    3.24960    3.24960    5.20420 A     90.000   90.000  120.000
+  Niggli cell       :    3.24960    3.24960    5.20420 A     90.000   90.000  120.000
+  primitive (S-C)   :    3.24960    3.24960    5.20420 A     90.000   90.000  120.000
+  conventional (S-C):    3.24960    3.24960    5.20420 A     90.000   90.000  120.000
+  wrote structure.params, POSCAR_focex (build the DFT supercells from it) and kpbs.params

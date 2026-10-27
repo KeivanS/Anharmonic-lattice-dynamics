@@ -338,7 +338,10 @@
 
  res = 0 ; res1 = 0
  rnk = 1  !********************************************
- if ( include_fc(rnk) .ne. 0 ) then  ! sum of the torques is zero
+! The torque of FC1 over the primitive cell is not an invariance of a crystal: moving one atom by
+! a lattice vector L changes it by Phi_i x L. On exact model FCs with FC1 /= 0 these were the only
+! rotational rows violated (GeSe, wurtzite); dropped 2026-10-26 (user). The rank-2 rows keep FC1.
+ if ( .false. ) then  ! sum of the torques is zero
 !   mx=nterms(rnk)
 !   write(ulog,*)' allocated size of igroup arrays, mx=nterms(rnk) is=',rnk,mx
 ! constraint is : sum_i0 phi1_{i0,al} .cross. X_{i0,be} = 0
@@ -814,21 +817,46 @@
  end subroutine set_rotational_inv_constraints_old
 !======================================================================================
  subroutine set_huang_inv_constraints
-!! The constraint is: sum_Rtautau' phi(tau,al,r+tau'be)(r+tau'-tau)_ga (r+tau'-tau)_de
-!! is invariant under(al,be) <-> (ga,de)
+!! The constraint is: S(al,be,ga,de) - S(ga,de,al,be) = -2 Omega (d_al,be sig_ga,de - d_ga,de sig_al,be),
+!! S(al,be,ga,de) = sum_Rtautau' phi(tau,al,r+tau'be)(r+tau'-tau)_ga (r+tau'-tau)_de, Omega the
+!! volume of the primitive cell, sig = (1/V) dE/d(strain) the stress of the reference structure
+!! (tensile > 0), read from stress.params (3 lines, GPa); without that file sig = 0 and S is
+!! invariant under (al,be) <-> (ga,de) as before. Holds with FC1 /= 0 too: checked on exact model
+!! FC2 to 2e-13 (wurtzite, monoclinic HfO2, 2026-10-26).
  use params
  use atoms_force_constants
  use svd_stuff
  use ios
+ use lattice, only : volume_r0
  use constants, only : r15
 ! use geometry
 ! use force_constants_module
  implicit none
  integer i,j,al,be,ga,de,t,ti,mterm,cnt,cnt2,g,rnk,voigt,vab,vcd,counter,ired,res,dim_h
- real(r15) huang,rr(3),term
+ real(r15) huang,rr(3),term,sig(3,3),dl(3,3)
  real(r15), allocatable:: ared1d(:),zero(:)
+ logical ex
 
  huang_constraints=15  ! this is only for rank 2
+
+! stress of the reference structure, GPa -> eV/A^3
+ sig = 0
+ inquire(file='stress.params', exist=ex)
+ if (ex) then
+    open(9,file='stress.params',status='old')
+    do i=1,3
+       read(9,*) sig(i,:)
+    enddo
+    close(9)
+    write(ulog,*)' HUANG: stress of the reference (GPa) read from stress.params:'
+ else
+    write(ulog,*)' HUANG: no stress.params, the reference is taken as stress free (GPa):'
+ endif
+ do i=1,3
+    write(ulog,'(3f14.6)') sig(i,:)
+ enddo
+ sig = sig/160.21766208d0
+ dl = 0 ; dl(1,1) = 1 ; dl(2,2) = 1 ; dl(3,3) = 1
 
    rnk = 2;
 !  res = sum(map(1)%ntind(:))
@@ -882,7 +910,7 @@
       endif
       ahuang(counter,:) = ared1d(:)
       if(verbose) write(umatrx,7) ared1d(res+1:res+map(2)%nkeptind) 
-      bhuang(counter)=0d0
+      bhuang(counter) = -2*volume_r0*(dl(al,be)*sig(ga,de) - dl(ga,de)*sig(al,be))
    enddo
    enddo
    enddo
