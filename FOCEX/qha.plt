@@ -35,6 +35,8 @@ unset multiplot
 reset
 
 set yrange [-30:20]
+set xlabel 'Strain (%)'
+set ylabel 'Free Energy (KJ/mol)'
 set key top center
 plot 'temp_free.dat' u (100*$2):3 w l title 'F(V)' ,\
      'temp_free.dat' u (100*$2):4 w l title 'P(V)'  ,\
