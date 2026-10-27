@@ -56,13 +56,14 @@ also implies :math:`V(u) = V(u+c)` and :math:`F(u) = F(u+c)` (which is easier to
 where :math:`u(t)` are the dynamical variables, and :math:`c` is a constant arbitrary
 shift vector (may be incommensurate with :math:`R`).
 
-This implies the well-known "acoustic sum rule" (ASR) generalized to higher order FCs:
+This implies the well-known "acoustic sum rule" (ASR) generalized to higher order FCs
+[Leibfried-Ludwig]_:
 
 .. math::
     0 &= \sum_{\tau} \, \Pi_{0 \tau}^{ \alpha} \,\,\, \forall (\alpha) \,\, => {\rm Total \,~force \,~on\,~unit\,~cell = 0}  \\
     0 &= \sum_{R_1,\tau_1} \, \Phi_{0\tau,R_1 \tau_1}^{\alpha\beta} \,\,\, \forall (\alpha\beta,\tau) \\
-    0 &= \sum_{R_2,\tau_2} \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\alpha\beta\gamma} \,\,\, \forall(\alpha\beta\gamma,R_1,\tau_1) \\
-    0 &= \sum_{R_3,\tau_3} \, \chi_{0\tau,R_1\tau_1,R_2\tau_2,R_3\tau_3}^{\alpha\beta\gamma\delta} \,\,\,  \forall(\alpha\beta\gamma\delta,R_1R_2,\tau_1\tau_2)
+    0 &= \sum_{R_2,\tau_2} \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\alpha\beta\gamma} \,\,\, \forall(\alpha\beta\gamma,\tau,R_1\tau_1) \\
+    0 &= \sum_{R_3,\tau_3} \, \chi_{0\tau,R_1\tau_1,R_2\tau_2,R_3\tau_3}^{\alpha\beta\gamma\delta} \,\,\,  \forall(\alpha\beta\gamma\delta,\tau,R_1\tau_1,R_2\tau_2)
 
 so that diagonal terms in these tensors can be defined in terms of their
 off-diagonal elements, for arbitrary cartesian components.
@@ -71,26 +72,26 @@ off-diagonal elements, for arbitrary cartesian components.
 
 Likewise if the system is rotated arbitrarily, the total
 energy and forces should not change. This leads to the following
-relations [Ref]_:
+relations [Leibfried-Ludwig]_:
 
 .. math::
     0 &= \sum_{\tau} \,  \Pi_{0 \tau}^{ \alpha}\, \tau^{\beta}\, \epsilon^{\alpha\beta\nu}, \,\,\, \forall ( \nu) \,\, ({\rm Torque \,on\,unit\,cell}=0) \\
     0 &=  \sum_{R_1,\tau_1} \, \Phi_{0\tau,R_1 \tau_1}^{\alpha\beta}\, (R_1\tau_1)^{\gamma}\, \epsilon^{\beta\gamma\nu}
      + \Pi_{0 \tau}^{ \beta }\, \epsilon^{\beta \alpha \nu}  \,\,\, \forall (\alpha\nu,\tau) \\
-    0 &= \sum_{R_2,\tau_2} \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\alpha\beta\gamma} \, (R_2\tau_2)^{\delta} \, \epsilon^{\gamma\delta\nu} + \Phi_{0\tau,R_1\tau_1}^{\gamma\beta}\, \epsilon^{\gamma\alpha\nu}  + \Phi_{0\tau,R_1\tau_1}{\alpha\gamma}\, \epsilon^{\gamma\beta\nu} \,\,\, \forall(\alpha\nu,R_1,\tau\tau_1) \\
+    0 &= \sum_{R_2,\tau_2} \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\alpha\beta\gamma} \, (R_2\tau_2)^{\delta} \, \epsilon^{\gamma\delta\nu} + \Phi_{0\tau,R_1\tau_1}^{\gamma\beta}\, \epsilon^{\gamma\alpha\nu}  + \Phi_{0\tau,R_1\tau_1}^{\alpha\gamma}\, \epsilon^{\gamma\beta\nu} \,\,\, \forall(\alpha\beta\nu,\tau,R_1\tau_1) \\
     0 &= \sum_{R_3\tau_3}\, \chi_{0\tau,R_1\tau_1,R_2\tau_2,R_3\tau_3}^{\alpha\beta\gamma\delta}\,
     (R_3\tau_3)^{\mu}\, \epsilon^{\delta\mu\nu}
     + \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\delta\beta\gamma} \,\epsilon^{\delta\alpha\nu} +
      \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\alpha\delta\gamma} \,\epsilon^{\delta\beta\nu}   \\
     & \quad + \, \Psi_{0\tau,R_1\tau_1,R_2\tau_2}^{\alpha\beta\delta} \,\epsilon^{\delta\gamma\nu}
-    \,\, \, \forall(\alpha\nu,R_1R_2,\tau\tau_1\tau_2)
+    \,\, \, \forall(\alpha\beta\gamma\nu,\tau,R_1\tau_1,R_2\tau_2)
 
-Here :math:`\epsilon^{\alpha\beta\gamma}` is the anti-symmetric Levy-Civita symbol, and
+Here :math:`\epsilon^{\alpha\beta\gamma}` is the anti-symmetric Levi-Civita symbol, and
 :math:`(R\tau)^{\alpha}` refers to the cartesian component :math:`\alpha` of the reference position
 vector of the atom :math:`\tau` in unit cell defined by :math:`R`. Moreover, an implicit
 summation over repeated cartesian indices is implied.
 
-As we see, rotational invariance relates the second to the
+As we see, rotational invariance relates the first to the second order terms, the second to the
 third order terms, and the third to the fourth order terms, implying that
 if the expansion of the potential energy is truncated after the fourth order
 terms, we need to start with the fourth order terms, and application of
@@ -144,7 +145,8 @@ results in disagreement with experiments.
 
 Variational approach using Bogoliubov's inequality
 --------------------------------------------------
-Bogoliubov's inequality
+The self-consistent phonon theory implemented in SCOP8, and the equations of this section, are
+described in [Esfarjani-Liang2022]_. It is based on Bogoliubov's inequality
 
 .. math::
     F\le F_{trial}= F_0 +\langle V-V_0 \rangle_0
@@ -301,15 +303,15 @@ enforce it using real space Taylor series methods. Nevertheless, during
 the self-consistent calculation, it is unnecessary to enforce it if the
 initial input data already adheres to the acoustic sum rule (for the
 sake of simplicity, it will be referred as ASR henceforth), which can be
-found in [Esfarjani2018]_ since
+found in [Leibfried-Ludwig]_ since
 it originates from translational invariance. The trial force constants
-:math:`K_{ij}` can be expressed as:
+:math:`K_{ij}` can be expressed as [Esfarjani-Liang2022]_:
 
 .. math::
     :label: trialFC
 
     K_{i,j}^{\alpha,\beta} \approx\;\; \Phi_{i,j}^{\alpha,\beta} + \sum_{k}\Psi_{i,j,k}^{\alpha,\beta,\gamma}(S_k^\gamma- S_i^\gamma)+
-       \frac{1}{4}\sum_{k,l}X_{i,j,k,l}^{\alpha,\beta,\gamma,\delta} [(S_k-S_i)^\gamma(S_l-S_i)^\delta + \langle y_k^\gamma y_l^\delta \rangle]
+       \frac{1}{2}\sum_{k,l}X_{i,j,k,l}^{\alpha,\beta,\gamma,\delta} [(S_k-S_i)^\gamma(S_l-S_i)^\delta + \langle y_k^\gamma y_l^\delta \rangle]
        \label{eq:trialFC}
 
 which needs to preserve the ASR across the whole iterative procedures of
@@ -461,7 +463,7 @@ Elastic constants
 -----------------
 
 
-It is possible to extract the elastic constants from the knowledge of the force constants [Wallace1998]_. Below, we outline a simpler method and provide the final formulas.
+It is possible to extract the elastic constants from the knowledge of the force constants [Wallace1998]_. Below, we outline a simpler method and provide the final formulas [Esfarjani2025]_.
 
 Under a uniform applied strain, denoted by :math:`\eta_{\alpha\beta} = \partial u_{\alpha} / \partial r_{\beta}`, a point :math:`x` of the medium is moved to :math:`x'_{\alpha} = x_{\alpha} + \eta_{\alpha\beta} x_{\beta}`, and the total energy of the harmonic crystal is increased, by definition of the elastic constants, by:
 
@@ -496,9 +498,9 @@ The isothermal bulk modulus is defined as:
 The isotropic compression condition translates into :math:`\sigma_{xx} = \sigma_{yy} = \sigma_{zz} = -P`, :math:`\sigma_{\alpha\beta} = 0` for :math:`\alpha \ne \beta`. Since the volume change is given by :math:`\Delta V / V = \epsilon_{xx} + \epsilon_{yy} + \epsilon_{zz} = \mathrm{Tr}(\epsilon)`, one can express :math:`B` in terms of the elastic or compliance tensor elements as:
 
 .. math::
-   B = \frac{\mathrm{Tr}(\sigma)/3}{\mathrm{Tr}(\epsilon)} = \frac{1}{9} \sum_{i,j=1,2,3} C_{ij} = \frac{1}{\sum_{i,j=1,2,3} S_{ij}},
+   B = \frac{\mathrm{Tr}(\sigma)/3}{\mathrm{Tr}(\epsilon)} = \frac{1}{\sum_{i,j=1,2,3} S_{ij}} = B_{Reuss},
 
-where :math:`S` is the inverse of :math:`C` when written as a :math:`6 \times 6` matrix in the Voigt notation, and is called the *compliance tensor*. For crystals of cubic symmetry, it simplifies to:
+where :math:`S` is the inverse of :math:`C` when written as a :math:`6 \times 6` matrix in the Voigt notation, and is called the *compliance tensor*. This is the definition of the Reuss value; the Voigt value is :math:`B_{Voigt} = \frac{1}{9} \sum_{i,j=1,2,3} C_{ij}`. The two are not equal in general. For crystals of cubic symmetry they are, and simplify to:
 
 .. math::
    \frac{C_{11} + 2C_{12}}{3}.
@@ -751,17 +753,16 @@ with :math:`\kappa_{full}` the full solution of Eq. :eq:`kappa_full`:
    :math:`\omega` in rad/s; the half width is :math:`\Sigma'' = 1/(2\tau)`. In cycles (THz) the
    same widths are :math:`\Gamma/2\pi = 1/(2\pi\tau)` and :math:`\Sigma''/2\pi = 1/(4\pi\tau)`.
    THERMACOND takes :math:`\tau_s` from the RTA, so that the :math:`s = s'` terms of
-   Eq. :eq:`kappa_wigner`, :math:`C_s v_s^2/\Gamma_s`, are exactly the RTA conductivity
-   (checked: Ge, the trace form against the per-mode sum of Eq. :eq:`kappa_rta`, ratio 1.01 on
-   an 8x8x8 mesh, the difference coming from degenerate modes, where the per-mode sum depends on
-   the eigenvectors). :math:`\kappa_C` has not yet been compared with an independent code.
+   Eq. :eq:`kappa_wigner`, :math:`C_s v_s^2/\Gamma_s`, are exactly the RTA conductivity.
 
 
-.. [Ref] G. Leibfried and W. Ludwig, in Solid State Physics, edited by F. Seitz and D. Turnbull (Academic, New York, 1961), Vol. 12.
+.. [Leibfried-Ludwig] G. Leibfried and W. Ludwig, Theory of anharmonic effects in crystals, in Solid State Physics, edited by F. Seitz and D. Turnbull (Academic, New York, 1961), Vol. 12, p. 275. `doi:10.1016/S0081-1947(08)60656-6 <https://doi.org/10.1016/S0081-1947(08)60656-6>`__
 
 .. [Broyden] Broyden, C.G., 1965. A class of methods for solving nonlinear simultaneous equations. Mathematics of Computation 19, 577. 
 
-.. [Esfarjani2018] Ohno, K., Esfarjani, K., Kawazoe, Y., 2018. Computational materials science: From Ab Initio to Monte Carlo methods. 2nd ed., Springer Series in Solid-State Sciences, Berlin Heidelberg.
+.. [Esfarjani-Liang2022] K. Esfarjani and Y. Liang, Equilibrium and non-equilibrium lattice dynamics of anharmonic systems, Entropy 24, 1585 (2022). `doi:10.3390/e24111585 <https://doi.org/10.3390/e24111585>`__
+
+.. [Esfarjani2025] K. Esfarjani, H. Stokes, S. Nayeb Sadeghi, Y. Liang, B. Timalsina, H. Meng, J. Shiomi, B. Liao and R. Sun, ALATDYN: A set of Anharmonic LATtice DYNamics codes to compute thermodynamic and thermal transport properties of crystalline solids, Comput. Phys. Commun. 312, 109575 (2025). `doi:10.1016/j.cpc.2025.109575 <https://doi.org/10.1016/j.cpc.2025.109575>`__
 
 .. [Wallace1998] Wallace, D.C., 1998. Thermodynamics of Crystals. Dover Publications, New York.
 

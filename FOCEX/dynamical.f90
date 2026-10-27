@@ -1710,33 +1710,40 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  enddo
 
 
+! qiu(tau al;ga,la) = Q_{tau al;ga la} = sum_{R taup} fc2(0 tau al;R taup ga) (R+taup-tau)_la
  qiu=0
  do la=1,3
     do al=1,3
     do ga=1,3
     do tau=1,natom_prim_cell
-       junk=0;sumt=0;sump=0
        do taup=1,natom_prim_cell
           nl=al+3*(tau-1) ; nc=ga+3*(taup-1)    ! dynmat dimensions
-! eta and zeta sums should be the same if ASR exact, otherwise zeta satisfies it exactly!
           qiu(nl,ga,la)=qiu(nl,ga,la)+zeta(nl,nc,la)
-          sump=sump+phi(nl,nc)
-          sumt=sumt+teta(nl,nc,la)
-          junk=junk+zeta(nl,nc,la) 
        enddo
-       if(abs(junk).gt.1d-9 .and. has_inversion ) then
-          write(ulog,4)'SUM_TAU ZETA ne 0!! al,be,ga,taup=',al,ga,la,taup,junk 
-       endif
-       if(abs(sump).gt.1d-5) then
-          write(ulog,3)'ASR violated in phi: tau,al,be=',taup,al,ga,sump 
-       endif
-       if(abs(sumt-junk).gt.1d-5) then
-          write(ulog,4)'sum_taup(eta-zeta) ne 0 !! tau,al,be,la=',taup,al,ga,la,sumt-junk 
-       endif
     enddo
     enddo
     enddo
  enddo
+
+! ASR: sum_taup phi(tau al,taup ga) = sum_{R taup} fc2(0 tau al;R taup ga) = 0
+ sump=0
+ do al=1,3
+ do ga=1,3
+ do tau=1,natom_prim_cell
+    junk=0
+    do taup=1,natom_prim_cell
+       junk=junk+phi(al+3*(tau-1),ga+3*(taup-1))
+    enddo
+    if(abs(junk).gt.1d-5) write(ulog,6)'ASR violated in phi: tau,al,ga,sum_taup phi (eV/Ang^2)=',tau,al,ga,junk
+    sump=max(sump,abs(junk))
+ enddo
+ enddo
+ enddo
+ write(ulog,*)'GET_PHI_ZETA: max |sum_taup phi(tau,taup)| (ASR, eV/Ang^2)=',sump
+ if(sump.gt.1d-5) then
+    call warn3(   6,'ASR violated: max |sum_taup phi(tau,taup)| (eV/Ang^2)=',sump)
+    call warn3(ulog,'ASR violated: max |sum_taup phi(tau,taup)| (eV/Ang^2)=',sump)
+ endif
 
 ! check if phi is symmetric
  junk=maxval((phi-transpose(phi))*(phi-transpose(phi)))
@@ -1758,22 +1765,17 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
     endif
  enddo
 
-! check if Qiu is symmetric wr to its last 2 indices if defined with eta
-! qiu should be symmetric if ASR exact; its symmetric part comes in residual stress 
+! the antisymmetric part of qiu in its last 2 indices is fixed by the residual forces (rotational
+! invariance); it is checked in residuals, where pi0 is known
  do s=1,ndyn
     matr=qiu(s,:,:)
-    sump= maxval(abs(matr-transpose(matr)))
-    if( sump .gt. 1d-4 ) then
-       write(ulog,*)'Qiu(s,:,:) not symmetric for s,max(abs(dif))=',s,sump
-       call warn2(ulog,'QIU not symmetric ') 
- !     call symmetrize2(3,matr)   !! to be checked again!!
- !     qiu(s,:,:)=matr
-    endif
+    write(ulog,*)'GET_PHI_ZETA: s, max |Qiu(s,:,:)-Qiu(s,:,:)^T|=',s,maxval(abs(matr-transpose(matr)))
  enddo
 
 2 format(a,2i5,9(1x,f10.4))
 3 format(a,3i5,9(1x,f10.4))
 4 format(a,4i5,9(1x,f10.4))
+6 format(a,3i5,9(1x,g11.4))
 
 ! to get gama, invert phi: gam.phi=1a ---------------------------------------
   gam=phi  ! force constants and the images sum_R K(tau,R+taup)
@@ -1798,24 +1800,26 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 
 ! this part calculates xi(tau,ga;al,be) = du(tau,ga)/d eta_al,be = - Gam.qiu  
 ! should be symmetric under al <-> be since Qiu already symmetrized
- xi=0
+! sum_tau qiu(tau ga;al,be) = 0 follows from translational and rotational invariance
+ xi=0; constr=0
  do al=1,3
  do be=1,3
- do ga=1,3 
-    constr=0
+ do ga=1,3
     do tau=1,natom_prim_cell
        s=3*(tau-1)+ga
        xi(s,al,be)= -dot_product(gam(s,:),qiu(:,al,be))
        constr(al,be,ga)=constr(al,be,ga)+qiu(s,al,be)
     enddo
-    if(maxval(abs(constr)).gt.1d-5) then
-       call warn2(ulog,' SUM RULE ASR FOR QIU sum_tau(qiu) non zero!')
-       call write_out(6   ,' sum_tau(qiu) non zero! ',constr)
-       call write_out(ulog,' sum_tau(qiu) non zero! ',constr)
-    endif
+    if(abs(constr(al,be,ga)).gt.1d-5) write(ulog,6)'sum_tau Qiu(tau ga;al,be) ne 0: al,be,ga,sum (eV/Ang)=', &
+ &                                     al,be,ga,constr(al,be,ga)
  enddo
  enddo
  enddo
+ write(ulog,*)'GET_PHI_ZETA: max |sum_tau Qiu(tau,:;:,:)| (eV/Ang)=',maxval(abs(constr))
+ if(maxval(abs(constr)).gt.1d-5) then
+    call warn3(   6,'ASR/rotational invariance violated: max |sum_tau Qiu| (eV/Ang)=',maxval(abs(constr)))
+    call warn3(ulog,'ASR/rotational invariance violated: max |sum_tau Qiu| (eV/Ang)=',maxval(abs(constr)))
+ endif
 
  atld0   = atld0   /volume_r0*ee*1d30*1d-9
  write(*,*)' GET_PHI_ZETA: symmetrizing atld0'
@@ -1982,7 +1986,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  implicit none
  integer, intent(in) :: uio !,ndn 
  integer tau,taup,al,be,ga,de,i,j,t,g,ti,ired,voigt,la,nl,nc,nu,s,nq,delta_k,cnt2
- real(r15)  rij(3),junk,res(3,3) ,mat2(3,3) 
+ real(r15)  rij(3),junk,res(3,3) ,mat2(3,3),fsum(3),rotmax
 
  write(  * ,*)' ********** ENTERING RESIDUALS *************, ndyn=',ndyn
  write(uio,*)' ********** ENTERING RESIDUALS *************, ndyn=',ndyn
@@ -2009,7 +2013,18 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
     write(uio,3)'Residual -force(eV/Ang): tau,pi0(tau,:)=',tau,(pi0(3*(tau-1)+al),al=1,3)
  enddo
 
+! ASR of rank 1: total force on the primitive cell sum_tau pi0(tau,al) = 0
+ do al=1,3
+    fsum(al)=sum(pi0(al:ndyn:3))
+ enddo
+ write(ulog,4)'RESIDUALS: sum_tau pi0(tau,:) (ASR, eV/Ang)=',fsum
+ if(maxval(abs(fsum)).gt.1d-5) then
+    call warn4(   6,'ASR violated: sum_tau pi0(tau,:) (eV/Ang)=',fsum)
+    call warn4(ulog,'ASR violated: sum_tau pi0(tau,:) (eV/Ang)=',fsum)
+ endif
+
 3 format(a,i4,99(1x,f11.5))
+4 format(a,99(1x,g11.4))
 
  y0=0 ! y0 = -Gama*pi correction to equilibrium positions at eta=0----------------------
  do tau=2,natom_prim_cell
@@ -2052,9 +2067,11 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  call write_out(uio,' sigma(eta  ) = sigma0-Pi Gamma Qiu(GPA) ',sigmav)
  call write_out(uio,' Qiu(1:ndyn,1:6)=d^2F/d u0_tau d eta (GPa) ',qiuv)
 
+! rotational invariance of rank 2 (theory.rst): sum_{R taup} fc2(0 tau al;R taup be)(R+taup)_ga eps(be,ga,nu)
+! + pi0(tau,be) eps(be,al,nu) = 0, i.e. Qiu(tau al;be,ga)-Qiu(tau al;ga,be) + pi0(tau,be) delta(al,ga)
+! - pi0(tau,ga) delta(al,be) = 0  (teta and qiu sums differ by tau*sum_taup phi = 0 by ASR)
 ! enforces mat2(a,b)-mat2(b,a)=res(a,b)-res(b,a); consider mat=mat2-res ; symmetrize mat then mat2=sym(mat)+res
-! check below
- s=0
+ s=0; rotmax=0
  do al=1,3
     do tau=1,natom_prim_cell
        do be=1,3
@@ -2065,13 +2082,19 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
           enddo
           junk=junk + (pi0(3*(tau-1)+be)*delta_k(al,ga)-pi0(3*(tau-1)+ga)*delta_k(al,be))
           if(abs(junk).gt.1d-5) then
-             write(ulog,'(a,4i4,f10.5)')'GET_PHI_XI: rot invce violation in theta:tau,al,be,ga,rot=',tau,al,be,ga,junk
+             write(ulog,'(a,4i4,g12.4)')'RESIDUALS: rot invce violation in theta:tau,al,be,ga,rot (eV/Ang)=',tau,al,be,ga,junk
              s=1
           endif
+          rotmax=max(rotmax,abs(junk))
        enddo
        enddo
     enddo
  enddo
+ write(ulog,4)'RESIDUALS: max rotational invariance violation of Qiu and pi0 (eV/Ang)=',rotmax
+ if(s.ne.0) then
+    call warn3(   6,'rotational invariance violated: max |Q(ab)-Q(ba)+pi0 terms| (eV/Ang)=',rotmax)
+    call warn3(ulog,'rotational invariance violated: max |Q(ab)-Q(ba)+pi0 terms| (eV/Ang)=',rotmax)
+ endif
 
 ! if(s.ne.0) then 
 !   write(*,*)' symmetrizing now teta '
