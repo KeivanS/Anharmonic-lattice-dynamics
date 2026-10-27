@@ -159,8 +159,7 @@ kept because ``focex-agent.py`` uses its functions.
    The snapshot generator ``sc_snaps.x`` is built from the ``SC_SNAPS`` folder, not here:
    ``make sc_snaps`` in the top folder (or the top-level ``make``) installs it in
    ``~/ALADYN/bin``; see :doc:`runscsnaps`. The folder is identical to the separate
-   repository `github.com/KeivanS/SC_SNAPS <https://github.com/KeivanS/SC_SNAPS>`__. The
-   old copy in ``FOCEX/utility`` was several versions behind and was removed.
+   repository `github.com/KeivanS/SC_SNAPS <https://github.com/KeivanS/SC_SNAPS>`__.
 
 .. _scop8-install:
 

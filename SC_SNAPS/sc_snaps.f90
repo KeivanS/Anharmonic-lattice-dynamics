@@ -77,8 +77,9 @@ implicit none
 integer i,i0,j,s,s2,k, mode,nmodes
 real(8), allocatable:: phi(:),ksi(:),normal_modes(:,:),freq_thz(:),disp(:,:),vel(:,:),gaussian(:),dgaussian(:)
 real(8) tempk,wavgcm,zero(3),fmin
-integer nzero
+integer nzero,it
 integer, allocatable:: seed(:)
+real(8) msd(3,10),msds  ! mean-square displacements (A^2): per type and x,y,z; per snapshot
 character(3) csn
 
    open(ulog,file='log.dat')
@@ -132,6 +133,8 @@ character(3) csn
    enddo
 !  close(50)
 
+   msd=0
+   write(ulog,*)'Mean-square displacement <|u|^2> (A^2) of each snapshot, averaged over its atoms'
    open(usnap,file='snapshots.xyz')
 ! writing first (unmoved) snapshot
    s=0
@@ -182,6 +185,13 @@ character(3) csn
            disp=1e10*sqrt(1.38e-23/1.66e-27)/1e12/6.28318531*disp  !=0.14528*disp in Ang
            vel =1e10*sqrt(1.38e-23/1.66e-27)/1e12/6.28318531*vel*100   !=14.528*disp in m/s
 
+           msds=sum(disp**2)/natom_sc
+           write(ulog,'(a,i4,a,f10.6,a,f9.5)')' snapshot ',s,'  MSD=',msds,'  rms |u|=',sqrt(msds)
+           do i=1,natom_sc
+              it=findloc(atname,atname_sc(i),1)
+              msd(:,it)=msd(:,it)+disp(:,i)**2
+           enddo
+
 
 !          write(60,*)'# snap ',s
            do i=1,natom_sc  ! atoms are ordered per type 
@@ -193,6 +203,26 @@ character(3) csn
          enddo snaploop
 
    deallocate(ksi,phi,gaussian,seed,disp,vel)
+
+! averages over all snapshots and the atoms of each type (atoms per type: n_sc*natom0)
+   if (nsnap.gt.0) then
+      do it=1,ntype
+         msd(:,it)=msd(:,it)/(nsnap*n_sc*natom0(it))
+      enddo
+      do k=1,2
+         i=6; if (k.eq.2) i=ulog
+         write(i,'(a,f7.1,a,i4,a)')' Mean-square displacement (A^2) at T=',tempk,' K, average of ', &
+ &            nsnap,' snapshots:'
+         write(i,'(a)')'  type    <ux^2>     <uy^2>     <uz^2>    <|u|^2>   rms |u| (A)'
+         do it=1,ntype
+            write(i,'(2x,a2,2x,4(1x,f10.6),2x,f9.5)') atname(it),msd(:,it),sum(msd(:,it)), &
+ &               sqrt(sum(msd(:,it)))
+         enddo
+         write(i,'(2x,a3,1x,4(1x,f10.6),2x,f9.5)') 'all',matmul(msd(:,1:ntype),n_sc*natom0(1:ntype))/natom_sc, &
+ &            sum(matmul(msd(:,1:ntype),n_sc*natom0(1:ntype)))/natom_sc, &
+ &            sqrt(sum(matmul(msd(:,1:ntype),n_sc*natom0(1:ntype)))/natom_sc)
+      enddo
+   endif
 
    close(usnap)
    close(ulog)

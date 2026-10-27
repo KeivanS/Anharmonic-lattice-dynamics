@@ -90,6 +90,13 @@ VASP-4 layout with no element-name line).
   Ordinary supercells change too (2x2x2 Ar up to 1.05 THz: images at half the box tie).
   Modes below 1e-3 x the highest frequency are not sampled (warning) as a guard.
 
+## Added 2026-10-27
+
+- MSD output (user): log.dat gets the MSD <|u|^2> and rms |u| of each snapshot; at the end, screen
+  and log.dat get <ux^2> <uy^2> <uz^2> <|u|^2> (A^2) and rms |u| averaged over the snapshots, per
+  atom type and for all atoms. Checked against the poscar_NNN files (minimum image to poscar_000):
+  same to all printed digits.
+
 ## Still open
 
 - `README.md`'s `cell.inp` example uses `4.247  9` (primitive-unit coordinates)

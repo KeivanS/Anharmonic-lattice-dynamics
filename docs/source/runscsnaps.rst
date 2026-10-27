@@ -67,56 +67,12 @@ Installation
    cd SC_SNAPS
    make venv             # one-time: Python packages for the GUI
 
-``make sc_snaps`` (also part of the top-level ``make``) compiles ``sc_snaps.f90`` with
-``gfortran -O2`` and puts ``sc_snaps.x`` and ``poscar2xyz.py`` in ``~/ALADYN/bin``, with
-the other ALATDYN programs. Inside ``SC_SNAPS`` (or a clone of the separate repository),
-``make compile`` does the same into ``$(BINDIR)``, default ``~/BIN``; override it with
-``make compile BINDIR=/somewhere/else``.
+``make sc_snaps`` (also part of the top-level ``make``) builds ``sc_snaps.x`` and puts it, with
+``poscar2xyz.py``, in ``~/ALADYN/bin``. ``make venv`` is needed only for the GUI: it makes a local
+``.venv`` with Flask, NumPy, Matplotlib and SciPy, which the GUI then uses by itself.
 
-``make venv`` creates a local virtual environment ``.venv`` with
-``--system-site-packages`` — so a NumPy or Matplotlib you already have is reused
-and only the missing packages are downloaded — and installs the rest into it.
-The Makefile then uses ``.venv/bin/python`` automatically; nothing needs to be
-activated.
-
-.. note::
-
-   The virtual environment is not optional on a Python marked *externally
-   managed* (PEP 668), which is the case for Homebrew's Python and for most
-   Linux distribution packages. There, ``pip install flask`` is refused with
-   ``error: externally-managed-environment`` and the GUI stops at
-   ``ModuleNotFoundError: No module named 'flask'``. If your Python is not
-   externally managed you can skip ``make venv`` and simply
-   ``pip install flask numpy matplotlib scipy``.
-
-For the graphical interface you need:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 25 75
-
-   * - Requirement
-     - Notes
-   * - Python ≥ 3.8
-     -
-   * - Flask
-     - ``pip install flask`` — required to start the GUI at all.
-   * - NumPy, Matplotlib, SciPy
-     - Only for the analysis plots. Without them the GUI still runs, but the
-       plot panels return "Missing library". SciPy is used for the Gaussian
-       fits in the component and velocity histograms.
-   * - `Jmol <https://jmol.sourceforge.net/>`_
-     - Optional structure viewer. Any viewer that accepts a file argument
-       (VESTA, OVITO, …) works — just point the GUI at it.
-
-.. warning::
-
-   SC-SNAPS's own Makefile uses plain ``-O2`` and is fine. But if you compile
-   ``sc_snaps.f90`` by hand with ``-fcheck=all`` — the flags ALATDYN's
-   ``make.inc`` sets, so this bites anyone reusing them — the program aborts at
-   run time with ``Recursive call to nonrecursive procedure 'findif'``: the
-   finite-difference helper calls itself through ``d1v``/``d2v``, which
-   ``-fcheck=recursion`` flags. Add ``-frecursive`` if you need the checks.
+The GUI needs Python 3.8 or newer; a structure viewer such as `Jmol <https://jmol.sourceforge.net/>`_,
+VESTA or OVITO is optional.
 
 Input files
 -----------
@@ -204,8 +160,8 @@ the overall size of the displacements together with the temperature.
 **Temperature** — the sampling temperature. Choose it at or somewhat above the
 temperature at which you intend to use the force constants: large enough that
 the anharmonic terms show in the forces, small enough that the truncated Taylor
-expansion still applies. Check the amplitude of displacements in the histogram.
-0.01-0.02 Ang is a reasonable value
+expansion still applies. Check the amplitude of displacements in the histogram, or in the
+mean-square displacements printed at the end of the run. 0.01-0.02 Ang is a reasonable value
 
 **Number of snapshots** — 20–50 usually suffices; the practical ceiling is 999.
 See the sizing rule in :doc:`runfocex`.
@@ -228,7 +184,10 @@ Output files
        charge and velocity — for visualisation and for the GUI's histograms.
    * - ``log.dat``
      - Cells and reciprocal cells, generated supercell coordinates, shortest
-       bond length, cutoff, and the model frequencies.
+       bond length, cutoff, and the model frequencies; the mean-square displacement
+       of each snapshot, and at the end (also on the screen) its average over the
+       snapshots per atom type: ``<ux^2> <uy^2> <uz^2> <|u|^2>`` (Å\ :sup:`2`) and the rms
+       ``|u|`` (Å).
    * - ``freqs.dat``, ``modes.dat``
      - The eigenvalues and eigenvectors of the model dynamical matrix.
 
