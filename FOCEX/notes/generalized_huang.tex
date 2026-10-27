@@ -1,0 +1,478 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,booktabs,xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black]{hyperref}
+\newcommand{\al}{\alpha}\newcommand{\be}{\beta}\newcommand{\ga}{\gamma}\newcommand{\de}{\delta}
+\newcommand{\la}{\lambda}\newcommand{\ep}{\varepsilon}\newcommand{\si}{\sigma}\newcommand{\Ga}{\Gamma}
+% Tr M = trace of the 3x3 matrix M; Det M = determinant of the 3x3 matrix M; Id = 3x3 unit matrix
+\newcommand{\Tr}{\operatorname{Tr}}
+\newcommand{\Det}{\operatorname{Det}}
+\newcommand{\Id}{\mathbb{1}}
+\newcommand{\Wt}{W^{(3)}}\newcommand{\Wf}{W^{(4)}}
+\title{Stress, elastic constants and the equation of state\\ from the FOCEX force constants}
+\author{FOCEX notes (draft for checking)}
+\date{23 October 2026; Part II added 27 October 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Part I gives the Huang conditions on the harmonic force constants (FCs) of a reference structure
+under stress, as now imposed in FOCEX. Part II derives, from FC1--FC4, the bulk modulus $B_0$, its
+pressure derivative $B_0'$ and the third-order elastic constants, for any number of atoms per cell and
+any symmetry. It then gives the route to the finite-temperature equation of state: $V(T)$, $\alpha(T)$,
+$C_P(T)$, $B_T(T)$. It also corrects the $B_0'$ formula of the ALATDYN paper and of FOCEX's
+\texttt{cubic\_elastic}.
+\end{abstract}
+
+\section{Notation (as in the ALATDYN paper)}
+\begin{itemize}
+\item Atom $\tau$ of the cell at lattice vector $R$ sits at $X_{R\tau}=R+\tau$. Atom labels are $i=(R\tau)$,
+  $N$ is the number of cells and $V_0$ the volume of the primitive cell. Greek letters are Cartesian
+  indices, summed when repeated.
+\item $\Tr M$ and $\Det M$ are the trace and the determinant of a $3\times3$ matrix $M$; $\Id$ is the unit matrix.
+\item The potential energy is expanded in the displacements $u_{i\al}$:
+\begin{equation}
+V^{LD}=E_0+\sum_i\Pi_iu_i+\frac1{2!}\sum_{ij}\Phi_{ij}u_iu_j+\frac1{3!}\sum_{ijk}\Psi_{ijk}u_iu_ju_k
++\frac1{4!}\sum_{ijkl}\chi_{ijkl}u_iu_ju_ku_l .
+\label{eq:VLD}
+\end{equation}
+  All FCs obey the acoustic sum rule (ASR) in each index, e.g.\ $\sum_k\Psi_{ijk}=0$.
+\item A homogeneous deformation is described by the displacement gradient
+  $\eta_{\al\be}=\partial u_\al/\partial r_\be$ and the internal displacements $u^0_\tau$. These are
+  \emph{independent} variables. The atoms move by
+\begin{equation}
+S_{R\tau\al}=\eta_{\al\be}(R+\tau)_\be+u^0_{\tau\al}.
+\label{eq:S}
+\end{equation}
+\item Any deformation is a rotation times a symmetric stretch (polar decomposition), and the energy
+  does not depend on the rotation. In Part II we therefore take $\eta$ symmetric. It then equals the
+  Cauchy strain $\ep$, and has 6 components. In Part I, $\eta$ is general.
+\end{itemize}
+The harmonic coefficients are those of the paper:
+\begin{align}
+\phi_{\tau\tau'}&=\frac1N\sum_{RR'}\Phi_{R\tau,R'\tau'},\qquad
+\Ga=\phi^{+}\ \ (\text{pseudo-inverse; the 3 translations removed}),\nonumber\\
+Q_{\tau\al;\al'\be'}&=\frac1N\sum_{RR'\tau'}\Phi^{\al\al'}_{R\tau,R'\tau'}\,(R'+\tau'-R-\tau)_{\be'},\label{eq:AQphi}\\
+A_{\al\be,\al'\be'}&=-\frac12\sum_{\tau}\sum_{R'\tau'}\Phi^{\al\al'}_{0\tau,R'\tau'}\,d_\be d_{\be'},
+\qquad d=R'+\tau'-\tau .\nonumber
+\end{align}
+In $A_{\al\be,\al'\be'}$, $\al,\al'$ label displacements and $\be,\be'$ coordinates.
+
+\paragraph{Absolute versus relative sums.} The paper also writes $A$ and $Q$ with absolute positions,
+e.g.\ $A=\frac1N\sum\Phi(R+\tau)(R'+\tau')$. For a finite sum the two forms agree by the ASR. But for
+the infinite crystal the absolute sums are only conditionally convergent, and their value depends on
+the image convention (Sec.~\ref{sec:stress}). We use the relative forms of Eq.~\eqref{eq:AQphi} throughout.
+That these give the true second derivatives of the energy of a homogeneously deformed crystal is the
+assumption behind Eq.~\eqref{eq:id}. The numerical check of Sec.~\ref{sec:huang} tests it.
+
+\section{Energy of a homogeneous deformation}
+Inserting Eq.~\eqref{eq:S} into Eq.~\eqref{eq:VLD} gives the energy per cell as a polynomial in
+$q=(\eta,u^0)$, because $S$ is linear in $q$:
+\begin{equation}
+W(\eta,u^0)=W_0+W_1(q)+\tfrac12W_2(q,q)+\tfrac16\Wt(q,q,q)+\tfrac1{24}\Wf(q,q,q,q).
+\label{eq:W}
+\end{equation}
+$W_n$ is FC$n$ contracted with $n$ copies of $S(q)$, per cell, evaluated with relative vectors. In
+particular $W_2(q,q)=q^{\mathsf T}Hq$, with
+\begin{equation}
+H=\begin{pmatrix}A&Q^{\mathsf T}\\ Q&\phi\end{pmatrix}.
+\end{equation}
+The linear term has no relative form. From the FCs alone it would be $\Xi:\eta+\Pi\cdot u^0$, which is
+image-dependent and vanishes for $\Pi=0$ even when the crystal is stressed (Sec.~\ref{sec:stress}). We
+therefore take $W_1=V_0\si:\eta+\Pi\cdot u^0$, with $\si$ the input stress of the reference. $\Wt$ and $\Wf$
+are computed in Sec.~\ref{sec:W3}.
+
+\paragraph{The elastic energy is obtained in two steps.} The internal displacements adjust to the strain.
+So we first minimise over $u^0$ at fixed $\eta$, and only then differentiate with respect to $\eta$:
+\begin{equation}
+W_{\rm rel}(\eta)=\min_{u^0}W(\eta,u^0).
+\label{eq:Wrel}
+\end{equation}
+We assume $\Pi=0$, i.e.\ the atoms are at rest in the reference. If not, relax them first, $u^0=-\Ga\Pi$,
+and re-expand the FCs there, Eq.~\eqref{eq:reexp}. To second order, $\partial W/\partial u^0=Q\eta+\phi u^0=0$ gives
+\begin{equation}
+u^0_1(\eta)=-\Ga Q\eta ,\qquad
+C=\frac1{V_0}\,\frac{\partial^2W_{\rm rel}}{\partial\eta\,\partial\eta}=\frac1{V_0}\,\mathrm{Sym}\big(A-Q^{\mathsf T}\Ga Q\big),
+\label{eq:C}
+\end{equation}
+the elastic tensor of the paper. ``Sym'' symmetrises over $\al\leftrightarrow\be$ within each pair,
+because $\eta$ is symmetric.
+
+\part*{I. Huang conditions for a stressed reference}
+
+\section{Rotational invariance and the stress}
+Here $\eta$ is general. A rigid rotation costs no energy, so $E$ depends on the deformation only through
+the Lagrangian strain $\ep^L_{\al\ga}=\tfrac12(\eta_{\al\ga}+\eta_{\ga\al}+\eta_{\theta\al}\eta_{\theta\ga})$. Define the
+stress of the reference $\si=V^{-1}\partial E/\partial\ep^L$ and $c=V^{-1}\partial^2E/\partial\ep^L\partial\ep^L$
+(symmetric in each pair and under exchanging the pairs). Then
+\[
+\frac EV=\frac{E_0}V+\si_{\al\ga}\ep^L_{\al\ga}+\tfrac12c_{\al\ga\be\la}\ep^L_{\al\ga}\ep^L_{\be\la}+\dots
+\]
+The part of second order in $\eta$ contains, besides $\tfrac12c\,\eta\eta$, the term
+$\tfrac12\si_{\ga\la}\eta_{\theta\ga}\eta_{\theta\la}$ from the quadratic part of $\ep^L$. Compare it with $W_{\rm rel}$
+to second order, $\tfrac12(A-Q^{\mathsf T}\Ga Q)\eta\eta$ for general $\eta$. The coefficient of $\eta_{\al\ga}\eta_{\be\la}$ gives
+\begin{equation}
+\frac1{V_0}\big(A_{\al\ga,\be\la}-(Q^{\mathsf T}\Ga Q)_{\al\ga,\be\la}\big)=c_{\al\ga\be\la}+\de_{\al\be}\,\si_{\ga\la}.
+\label{eq:id}
+\end{equation}
+The rank-2 rotational invariance (Leibfried--Ludwig) reads, with $e_{\be\ga\nu}$ the Levi-Civita symbol,
+\[
+\sum_{R'\tau'}\Phi^{\al\be}_{0\tau,R'\tau'}X_{R'\tau',\ga}\,e_{\be\ga\nu}+\Pi_{\tau\be}\,e_{\be\al\nu}=0 .
+\]
+For $\Pi=0$ it makes $Q_{\tau\theta;\be\la}$ symmetric in $(\be,\la)$. So $Q^{\mathsf T}\Ga Q$ is symmetric
+under $\al\leftrightarrow\ga$ and under $\be\leftrightarrow\la$, separately.
+
+\section{Generalised Huang conditions}\label{sec:huang}
+Exchange $\al\leftrightarrow\ga$ and $\be\leftrightarrow\la$ in Eq.~\eqref{eq:id}. $c$ and $Q^{\mathsf T}\Ga Q$ do not
+change, and $A_{\al\ga,\be\la}$ becomes $A_{\ga\al,\la\be}$. Subtracting the two equations:
+\begin{equation}
+\boxed{\;A_{\al\ga,\be\la}-A_{\ga\al,\la\be}=V_0\big(\de_{\al\be}\,\si_{\ga\la}-\de_{\ga\la}\,\si_{\al\be}\big)\;}
+\label{eq:ghuang}
+\end{equation}
+\begin{itemize}
+\item For $\si=0$ these are Huang's conditions \cite{BornHuang}.
+\item For a hydrostatic stress, $\si=-P\Id$, the right-hand side is
+  $-P(\de_{\al\be}\de_{\ga\la}-\de_{\ga\la}\de_{\al\be})=0$. So FC2 determines the deviatoric stress
+  through Eq.~\eqref{eq:ghuang}, but not the pressure.
+\item With Voigt pairs there are 15 conditions, as for $\si=0$.
+\item The derivation assumes $\Pi=0$. The exact-model test below finds the relation satisfied also with
+  $\Pi\neq0$; we have not derived why.
+\end{itemize}
+
+\paragraph{Verification.} We used the exact FC2 of a pair potential $V(r)=A(r_c^2-r^2)^2+B(r_c^2-r^2)^3$,
+with the exact stress $\si_{\al\be}=\frac1{2V_0}\sum_{\tau,j}V'(r)\,d_\al d_\be/r$. The crystals were the seven
+crystal systems, plus diamond and hcp ($\Pi=0$). Eq.~\eqref{eq:ghuang} holds to $3\times10^{-13}$ (model
+units) in all nine cases, with $|\si|$ up to 529. The exact-model test of FOCEX
+(\texttt{FOCEX/REFERENCE/exact\_model}) adds wurtzite ZnO and monoclinic HfO$_2$, which have
+$\Pi\neq0$: the right-hand side of the FOCEX row below is up to 0.23 and 0.43 eV, and the relation
+holds to $2\times10^{-13}$ eV.
+
+\paragraph{In FOCEX} (since 2026-10-26). For Voigt pairs $(\al\be)$, $(\ga\de)$ the Huang row is
+\[
+\sum_\tau\sum_{R'\tau'}\Big[\Phi^{\al\be}_{0\tau,R'\tau'}d_\ga d_\de-\Phi^{\ga\de}_{0\tau,R'\tau'}d_\al d_\be\Big]
+=-2V_0\big(\de_{\al\be}\si_{\ga\de}-\de_{\ga\de}\si_{\al\be}\big).
+\]
+$\si$ is read from the optional file \texttt{stress.params} (3$\times$3 in GPa, tensile positive; zero if
+the file is absent). Because of the right-hand side, the constrained fit is $x=x_p+Ky$. \emph{Still to be
+checked: the sign convention of the stress printed by VASP.}
+
+\section{The stress is an input}\label{sec:stress}
+The paper's residual stress is $V_0\si=\mathrm{Sym}(\Xi-\Pi\Ga Q)$, with $\Xi_{\al\be}=\sum_\tau\Pi_{\tau\al}\tau_\be$.
+When $\Pi\neq0$ it depends on which periodic image of each atom is taken as $\tau$:
+\begin{itemize}
+\item replacing $\tau$ by $\tau+R$ changes $\Xi$ by $\Pi_\tau R$;
+\item $Q$ does not change, because its relative form in Eq.~\eqref{eq:AQphi} sums over all $R$.
+\end{itemize}
+When $\Pi=0$ the formula gives zero, whatever the stress. FC2 fixes only the deviatoric stress
+(Sec.~\ref{sec:huang}). So the stress, and hence the linear term $V_0\si:\eta$ of $W$, is an \emph{input}:
+the DFT stress of the reference, the number in \texttt{stress.params}. The rank-1 rotational rows were
+dropped for the same reason: they too depend on the image choice when $\Pi\neq0$.
+
+\part*{II. Equation of state}
+
+\section{The relaxed energy to fourth order}\label{sec:W3}
+\subsection{Expansion of \texorpdfstring{$W_{\rm rel}$}{W\_rel}}
+Write the relaxed internal displacements as $u^0(\eta)=u^0_1(\eta)+u^0_2(\eta,\eta)+\dots$, and let
+$p(\eta)=(\eta,u^0_1(\eta))$ be the linearly relaxed deformation. Then
+\begin{equation}
+W_{\rm rel}(\eta)=W_0+V_0\si:\eta+\tfrac12V_0\,C(\eta,\eta)+\tfrac16\Wt_{\rm rel}(\eta,\eta,\eta)
++\tfrac1{24}\Wf_{\rm rel}(\eta,\eta,\eta,\eta),
+\label{eq:Wrelexp}
+\end{equation}
+with
+\begin{align}
+\Wt_{\rm rel}(\eta,\eta,\eta)&=\Wt(p,p,p),\label{eq:W3rel}\\
+\Wf_{\rm rel}(\eta,\eta,\eta,\eta)&=\Wf(p,p,p,p)-3\,w^{\mathsf T}\Ga\,w,\qquad
+w_{\tau\al}=\Wt(p,p,e_{\tau\al}).\label{eq:W4rel}
+\end{align}
+Here $e_{\tau\al}$ is the unit displacement of atom $\tau$ (all cells) in direction $\al$.
+
+\paragraph{Derivation.} Put $u^0=u^0_1+\delta$ in Eq.~\eqref{eq:W}, with $\delta=O(\eta^2)$.
+\begin{itemize}
+\item At $\delta=0$ the force on the atoms is
+  $-\partial W/\partial u^0=-(Q\eta+\phi u^0_1)-\tfrac12w+O(\eta^3)=-\tfrac12w+O(\eta^3)$,
+  because $u^0_1$ cancels the first-order force.
+\item The terms in $\delta$ are therefore $\tfrac12w\cdot\delta+\tfrac12\delta^{\mathsf T}\phi\,\delta+O(\eta^5)$.
+  Minimising gives $\delta=u^0_2=-\tfrac12\Ga w$ and the energy $-\tfrac18w^{\mathsf T}\Ga w$, of order $\eta^4$.
+\item So the cubic term of $W_{\rm rel}$ needs only $u^0_1$ (the ``$2n+1$'' rule). The quartic term
+  needs $u^0_2$, through $-\tfrac18w^{\mathsf T}\Ga w=\tfrac1{24}(-3w^{\mathsf T}\Ga w)$.
+\end{itemize}
+$\Ga$ excludes the translations. That is consistent, because $\sum_\tau w_\tau=0$: the internal forces of the
+crystal sum to zero, and all cells are equivalent.
+
+\subsection{How to compute \texorpdfstring{$\Wt$}{W3} and \texorpdfstring{$\Wf$}{W4}}
+\begin{itemize}
+\item \textbf{The Hessian at a deformed point.} At $q=\la p$, the FC2 of the crystal is
+  (Eq.~\eqref{eq:reexp})
+  \[
+  \Phi_{ij}(\la p)=\Phi_{ij}+\la\sum_k\Psi_{ijk}S_k+\tfrac{\la^2}2\sum_{kl}\chi_{ijkl}S_kS_l,\qquad S=S(p).
+  \]
+  By the ASR, $S_k$ can be replaced by $S_k-S_i$, and $S_kS_l$ by $(S_k-S_i)(S_l-S_i)$.
+\item \textbf{No deformed vectors are needed.} Consider a further deformation $\eta'$ of the displaced crystal, written in the reference
+  coordinates, $S'=\eta'X$. Its relative vectors are $\eta'd$, whatever $\la$. So the Hessian of $W$ at
+  $\la p$ is $H[\Phi(\la p)]$, the blocks of Eq.~\eqref{eq:AQphi} built with $\Phi(\la p)$ and the
+  \emph{reference} vectors $d$.
+\item \textbf{The result.} Since $\frac{d}{d\la}\,p^{\mathsf T}\nabla^2W(\la p)\,p=\Wt(p,p,p)$ and similarly at second order,
+\begin{equation}
+\Wt(p,p,p)=p^{\mathsf T}H[\Psi S]\,p,\qquad \Wf(p,p,p,p)=p^{\mathsf T}H[\chi SS]\,p .
+\label{eq:Wcompute}
+\end{equation}
+  Here $H[\Delta\Phi]$ means the blocks evaluated with $\Delta\Phi$ in place of $\Phi$.
+  Numerical check: differences of $C$ at $\pm\la$.
+\item \textbf{The vector $w$} of Eq.~\eqref{eq:W4rel} is $w_\tau=\sum_{jk}\Psi_{\tau jk}(S_j-S_\tau)(S_k-S_\tau)$, with $\tau$ in
+  cell 0 and $j,k$ over all atoms.
+\item \textbf{Images.} Choosing another image of an atom, $\tau\to\tau+R$, changes $u^0_1$ by $-\eta R$ and leaves $S$
+  unchanged. So the results do not depend on that choice.
+\end{itemize}
+
+\section{Bulk modulus and its pressure derivative at \texorpdfstring{$T=0$}{T=0}}
+\subsection{Definitions}
+$B=-V\,dP/dV$ and $B'=dB/dP$. With $P=-E'(V)$ we have $dB/dV=E''+VE'''$ and $dP/dV=-E''$, so
+\begin{equation}
+B'=-1-V\,\frac{E'''}{E''}.
+\label{eq:Bpdef}
+\end{equation}
+Check: the Murnaghan equation $P=(B_0/B')[(V_0/V)^{B'}-1]$ gives $V_0E'''/E''=-(1+B')$.
+
+\subsection{Expansion of the enthalpy}
+Under a pressure $P$ the crystal minimises the enthalpy per cell, $G(\eta)=W_{\rm rel}(\eta)+P\,V(\eta)$, over
+the 6 strains. The internal coordinates are already relaxed in $W_{\rm rel}$. For a symmetric stretch the
+volume is exactly
+\begin{equation}
+\frac{V(\eta)}{V_0}=\Det(\Id+\eta)
+=1+\Tr\eta+\tfrac12\big[(\Tr\eta)^2-\Tr(\eta^2)\big]+\Det\eta ,
+\label{eq:V}
+\end{equation}
+the characteristic-polynomial identity of a $3\times3$ matrix. We write it as
+\[
+V=V_0+v\cdot\eta+\tfrac12V_2(\eta,\eta)+\tfrac16V_3(\eta,\eta,\eta),
+\]
+with $v_{\al\be}=V_0\de_{\al\be}$, $V_2(\eta,\eta)=V_0[(\Tr\eta)^2-\Tr(\eta^2)]$ and $V_3(\eta,\eta,\eta)=6V_0\Det\eta$.
+
+Let the reference be in equilibrium at a hydrostatic pressure $P_0$: $\Pi=0$ and $\si=-P_0\Id$, so
+$V_0\si:\eta=-P_0\,v\cdot\eta$. Put $P=P_0+p$ and $\eta=\eta_1p+\eta_2p^2+\dots$ into $\partial G/\partial\eta=0$. Order by order in $p$:
+\begin{align}
+O(p):\quad &\tilde H\eta_1+v=0, &&\tilde H=V_0C+P_0V_2,\\
+O(p^2):\quad &\tilde H\eta_2+\tfrac12\tilde W^{(3)}(\eta_1,\eta_1)+V_2\eta_1=0,
+&&\tilde W^{(3)}=\Wt_{\rm rel}+P_0V_3 .
+\end{align}
+$\eta_1=-\tilde H^{-1}v$ is the strain per unit pressure. For $P_0=0$ it is $\eta_1=-S\Id$, with $S=C^{-1}$
+the compliance: the cell shape relaxes, as it must in an anisotropic crystal. The volume is
+$V=V_0(1+ap+bp^2)$, with
+\[
+V_0a=v\cdot\eta_1,\qquad V_0b=v\cdot\eta_2+\tfrac12V_2(\eta_1,\eta_1).
+\]
+
+\paragraph{Only $\eta_1$ is needed.} Since $v^{\mathsf T}=-\eta_1^{\mathsf T}\tilde H$, the $O(p^2)$ equation gives
+$v\cdot\eta_2=\tfrac12\tilde W^{(3)}(\eta_1,\eta_1,\eta_1)+V_2(\eta_1,\eta_1)$. From $B=-V\,dp/dV$ at $p=0$,
+$B=-1/a$ and $B'=2bB^2-1$. Therefore
+\begin{equation}
+\boxed{\;B=\frac{V_0}{v^{\mathsf T}\tilde H^{-1}v},\qquad
+B'=\frac{B^2}{V_0}\Big[\tilde W^{(3)}(\eta_1,\eta_1,\eta_1)+3V_2(\eta_1,\eta_1)\Big]-1\;}
+\label{eq:Bp}
+\end{equation}
+where $\tilde W^{(3)}(\eta_1,\eta_1,\eta_1)=\Wt(p_1,p_1,p_1)+6P_0V_0\Det\eta_1$ and $p_1=(\eta_1,-\Ga Q\eta_1)$.
+\begin{itemize}
+\item For $P_0=0$, $B=1/\sum_{i,j\le3}S_{ij}$, the Reuss value FOCEX reports.
+\item The cell-shape and internal relaxations enter only through $\eta_1$ and $p_1$. Nothing else in the
+  formula depends on the crystal system.
+\item The second-order relaxations $\eta_2$ and $u^0_2$ do not appear. $\Wf$ does not enter $B'$; it enters $B''$.
+\end{itemize}
+
+\paragraph{Check: cubic crystal with $u^0_1=0$.} Take $P_0=0$. Then $\eta_1=-\Id/(3B)$, and
+\[
+3V_2(\eta_1,\eta_1)=3V_0\Big[\frac1{B^2}-\frac1{3B^2}\Big]=\frac{2V_0}{B^2}.
+\]
+Let $f(\ep)$ be the energy per cell under $\eta=\ep\Id$. Then $\Wt(p_1,p_1,p_1)=f'''\,(-\tfrac1{3B})^3$, and
+Eq.~\eqref{eq:Bp} gives
+\begin{equation}
+B_0'=1-\frac{f'''}{27V_0B_0},\qquad f''=9V_0B_0 .
+\label{eq:cubic}
+\end{equation}
+The same follows from Eq.~\eqref{eq:Bpdef} with $V=V_0(1+\ep)^3$ and the chain rule. The ``1'' comes from
+$V(\ep)$ being cubic in $\ep$.
+
+\section{Third-order elastic constants}
+Define the third-order elastic constants (with respect to the stretch $\eta$) as the coefficients of the
+cubic term of the relaxed energy, fully symmetric:
+\begin{equation}
+\Wt_{\rm rel}(\eta,\eta,\eta)=V_0\,C_{\al\be\ga\de\mu\nu}\,\eta_{\al\be}\eta_{\ga\de}\eta_{\mu\nu}.
+\end{equation}
+Write $\eta=\eta_{\al\be}e^{(\al\be)}$, with $e^{(\al\be)}_{\ga\de}=\tfrac12(\de_{\al\ga}\de_{\be\de}+\de_{\al\de}\de_{\be\ga})$, and use
+Eq.~\eqref{eq:W3rel}. Since $\Wt$ is trilinear and $p$ linear in $\eta$,
+\begin{equation}
+C_{\al\be\ga\de\mu\nu}=\frac1{V_0}\,\Wt\big(p^{(\al\be)},p^{(\ga\de)},p^{(\mu\nu)}\big),\qquad
+p^{(\al\be)}=\big(e^{(\al\be)},\,-\Ga Q\,e^{(\al\be)}\big).
+\label{eq:C3}
+\end{equation}
+\begin{itemize}
+\item $C_{\al\be\ga\de\mu\nu}$ is symmetric within each pair and under any permutation of the pairs:
+  at most 56 independent components (triclinic).
+\item To compute it, use Eq.~\eqref{eq:Wcompute} with three arguments,
+  $\Wt(p,p',p'')=p'^{\mathsf T}H[\Psi S(p)]\,p''$.
+\item $B_0'$ needs only one contraction: $\Wt(p_1,p_1,p_1)=V_0C_{\al\be\ga\de\mu\nu}\,\eta_{1,\al\be}\,\eta_{1,\ga\de}\,\eta_{1,\mu\nu}$.
+\end{itemize}
+
+\paragraph{Lagrangian (Brugger) constants.} Tabulated third-order constants are usually defined with
+respect to the Lagrangian strain, $\ep^L=\eta+\tfrac12\eta^2$ for a symmetric stretch. Insert $\ep^L$ into
+$V_0\big[\si:\ep^L+\tfrac12c(\ep^L,\ep^L)+\tfrac16c^{(3)}(\ep^L,\ep^L,\ep^L)\big]$. The terms of third
+order in $\eta$ are $V_0[\tfrac16c^{(3)}(\eta,\eta,\eta)+\tfrac12c(\eta,\eta^2)]$; the stress term has none. Comparing
+with $\tfrac16\Wt_{\rm rel}$ gives the identity of cubic forms
+\begin{equation}
+c^{(3)}(\eta,\eta,\eta)=\frac1{V_0}\Wt_{\rm rel}(\eta,\eta,\eta)-3\,c(\eta,\eta^2).
+\end{equation}
+The components follow by polarisation. $c$ is the second-order constant of Eq.~\eqref{eq:id}; the
+quadratic terms give $C(\eta,\eta)=c(\eta,\eta)+\si:\eta^2$, so $c=C$ for a stress-free reference.
+
+\subsection{The \texorpdfstring{$B_0'$}{B0'} formula in the paper and in FOCEX}
+The paper (section ``Thermodynamic properties within the QHA'') writes
+\[
+B_0'=V_0\frac{E'''}{E''}=\frac1{27V_0B}\,\frac{d^3E_0}{d\ep^3},\qquad
+\frac{d^3E_0}{d\ep^3}=\frac1{6N}\sum\Psi X_1X_2X_3\quad(u^0=0).
+\]
+Four corrections:
+\begin{enumerate}
+\item The sign is wrong and the 1 is missing: compare Eq.~\eqref{eq:Bpdef} and Eq.~\eqref{eq:cubic}.
+\item With the $1/3!$ of Eq.~\eqref{eq:VLD}, the cubic term of the energy is
+  $\frac{\ep^3}{6}\cdot\frac1N\sum\Psi X_1X_2X_3$. So $d^3E/d\ep^3=\frac1N\sum\Psi X_1X_2X_3$, and the $1/6$ is too
+  much. (The code has no $1/6$.)
+\item The sum over absolute positions is not well defined. Use the ASR in two indices, with
+  $X_1=(X_1-X_3)+X_3$ and $X_2=(X_2-X_3)+X_3$. A finite sum becomes $\sum_3X_3\cdot M_3$, with
+  $M_3=\sum_{12}\Psi_{123}(X_1-X_3)(X_2-X_3)$, proportional to the second-order force that the uniform strain
+  puts on atom 3.
+  \begin{itemize}
+  \item In an infinite crystal this sum depends on the image convention: $\tau\to\tau+R$ changes it by $R\cdot M_\tau$.
+  \item In a Bravais lattice $M=0$ by inversion symmetry, so the sum vanishes, and the cubic energy is not captured at all.
+  \item \texttt{cubic\_elastic} takes positions relative to atom 1 of the cell. With one atom per cell the
+    first factor is then 0, so it returns exactly 0. For Ge (2 atoms) it prints $B_0'=133$.
+  \end{itemize}
+  The correct expression is Eq.~\eqref{eq:Bp}, or Eq.~\eqref{eq:cubic} with $f'''$ from Eq.~\eqref{eq:Wcompute}.
+\item The paper writes $B(V)=B(V_0)(1+B_0'\,\Delta V/V_0)$. From $dB/dV=(dB/dP)(dP/dV)=-B_0'B/V$, the correct
+  form is $B(V)=B(V_0)(1-B_0'\,\Delta V/V_0)$. The comment in dynamical.f90 has the minus sign.
+\end{enumerate}
+In FOCEX (as of 2026-10-27) the $B_0'$ of \texttt{cubic\_elastic} is only printed. The QHA overwrites it
+with $(1+6\ga)/3$, with $\ga$ from Agne's $x=v_T/v_L$, and uses $B=B_0[1-\eta(4+3\ga)]$ for the bulk modulus
+along the QHA.
+
+\section{Finite temperature}
+\subsection{The free energy}
+The Helmholtz free energy per cell is the static energy plus the vibrational free energy:
+\begin{equation}
+F(\eta,T)=E_0(\eta)+F_{\rm vib}(\eta,T),\qquad E_0(\eta)\equiv W_{\rm rel}(\eta)\ \ \text{(Eq.~\eqref{eq:Wrelexp})}.
+\label{eq:F}
+\end{equation}
+At temperature $T$ and pressure $P$, the strain $\eta(T,P)$ minimises $F+PV(\eta)$ over the 6 strains. Then:
+\begin{itemize}
+\item $\alpha=\partial\ln V/\partial T|_P$;
+\item the isothermal elastic tensor is $C_T=V^{-1}\partial^2F/\partial\eta\partial\eta$ at the minimum, and $B_T$ follows
+  from Eq.~\eqref{eq:Bp} with $C_T$ in place of $C$;
+\item $C_V=-T\,\partial^2F/\partial T^2$, $C_P=C_V+TV\alpha^2B_T$, and $B_S=B_TC_P/C_V$.
+\end{itemize}
+For a cubic crystal $\eta=\ep\Id$, and $F$ is a function of $V$ alone. Both terms of $F$ contribute to the pressure
+and to the bulk modulus:
+\[
+P=-\frac{dE_0}{dV}-\frac{\partial F_{\rm vib}}{\partial V}\equiv P_{\rm st}+P_{\rm vib},\qquad
+B_T=V\frac{d^2E_0}{dV^2}+V\frac{\partial^2F_{\rm vib}}{\partial V^2}\equiv B_{\rm st}+B_{\rm vib}.
+\]
+In a non-cubic crystal the thermal expansion is anisotropic, and the strain at $T$ is not on the $T=0$
+pressure path. The minimisation has to be done over the 6 strains.
+
+\subsection{Force constants at a strained configuration}
+$F_{\rm vib}$ needs the phonons at strain $\eta$. Taylor's theorem applied to Eq.~\eqref{eq:VLD}, about the
+displaced positions $X+S(p)$, gives the FCs there, exactly within the order of the expansion:
+\begin{equation}
+\begin{aligned}
+\Pi(p)&=\Pi+\Phi S+\tfrac12\Psi SS+\tfrac16\chi SSS, &\qquad \Phi(p)&=\Phi+\Psi S+\tfrac12\chi SS,\\
+\Psi(p)&=\Psi+\chi S, & \chi(p)&=\chi .
+\end{aligned}
+\label{eq:reexp}
+\end{equation}
+At the relaxed $p$, $\Pi(p)=0$. So the phonons at any strain need no new DFT data, only FC2--FC4 of the
+reference. With FC3 only, $\Phi(p)$ is linear in $\eta$.
+
+\subsection{Quasi-harmonic approximation}
+$F_{\rm vib}=k_BT\sum_{k\la}\ln\big[2\sinh(\hbar\omega_{k\la}/2k_BT)\big]$, with $\omega$ from $\Phi(p)$. For the cubic
+case, let $\ga_{k\la}=-d\ln\omega_{k\la}/d\ln V$, $\epsilon_{k\la}=\hbar\omega(n+\tfrac12)$ the mode energy,
+$c_{k\la}=\partial\epsilon/\partial T$ its heat capacity, and $q_{k\la}=d\ln\ga_{k\la}/d\ln V$. Then
+\begin{equation}
+P_{\rm vib}=\frac1V\sum_{k\la}\ga\,\epsilon ,\qquad
+B_{\rm vib}=\frac1V\sum_{k\la}\Big[\ga\,\epsilon\,(1+\ga-q)-T\ga^2c\Big].
+\label{eq:Bvib}
+\end{equation}
+\emph{Derivation.} $\epsilon=\hbar\omega\,(n(x)+\tfrac12)$ with $x=\hbar\omega/k_BT$. Differentiating, $\omega\,\partial\epsilon/\partial\omega=\epsilon-Tc$.
+Then differentiate $P_{\rm vib}$, using $d\omega/dV=-\ga\omega/V$ and $d\ga/dV=q\ga/V$.
+\begin{itemize}
+\item To first order, $P_{\rm st}+P_{\rm vib}=0$ gives $\Delta V/V_0=\sum\ga\epsilon/(V_0B_0)$, and
+  $\alpha=\sum\ga c/(V_0B_0)$. With the thermal Gr\"uneisen parameter $\ga_{\rm th}=\alpha VB_T/C_V$,
+  $B_S=B_T(1+\alpha\ga_{\rm th}T)$.
+\item $B_{\rm st}(V)=B_0(1-B_0'\Delta V/V_0)$ to first order, with $B_0'$ from Eq.~\eqref{eq:Bp}.
+\item $q$ needs the second derivative of $\omega^2$ along the deformation (non-degenerate modes):
+  \[
+  \frac{d^2\omega^2_\la}{d\la^2}=e_\la^\dagger D''e_\la+2\sum_{\mu\neq\la}\frac{|e_\mu^\dagger D'e_\la|^2}{\omega_\la^2-\omega_\mu^2}.
+  \]
+  $D''$ comes from $d^2\Phi/d\la^2=2\Psi S_2+\chi S_1S_1$, where $S_2$ is the second-order relaxation
+  ($\eta_2$, $u^0_2$). Without FC4, some value of $q$ has to be assumed, and its effect tested.
+\item FOCEX's present $B=B_0[1-\eta(4+3\ga)]$ is a single expression in place of both $B_{\rm st}$ and $B_{\rm vib}$.
+\end{itemize}
+
+\subsection{With FC4: temperature-renormalised force constants}
+The quartic term changes the effective FC2 at \emph{any} temperature, zero-point included, even at
+fixed strain:
+\begin{equation}
+K(p,T)=\Phi(p)+\tfrac12\chi\,G,\qquad G_{ij}=\langle y_iy_j\rangle_K .
+\label{eq:K}
+\end{equation}
+This is the paper's $K=\Phi+\Psi S+\tfrac12\chi(SS+\langle yy\rangle)$, with $\Phi(p)$ from Eq.~\eqref{eq:reexp}. The
+variational (self-consistent phonon) free energy, with $V^{LD}$ expanded to fourth order about $X+S(p)$, is
+\begin{equation}
+F_{\rm vib}=F_h[K]+\big\langle V^{LD}-E_0-\tfrac12Kyy\big\rangle_K=F_h[K]-\tfrac18\sum\chi\,G\,G .
+\label{eq:FSCP}
+\end{equation}
+$F_h[K]$ is the harmonic free energy of the frequencies of $K$. The second equality uses $\langle y\rangle=0$
+and $\langle yyyy\rangle=3GG$ (Wick): $\tfrac12\Phi G+\tfrac18\chi GG-\tfrac12KG=-\tfrac18\chi GG$.
+\begin{itemize}
+\item One pass ($G$ from $\Phi(p)$) is the first-order correction. Iterating to self-consistency is SCOP8's method.
+\item The second-order cubic term, $\propto\Psi^2$, is not in Eq.~\eqref{eq:FSCP}. Classically
+  $\langle V_3^2\rangle\propto\Psi^2G^3$ and $G\propto T$, so this term, $\sim-\langle V_3^2\rangle/2k_BT$, scales as
+  $T^2$, like the quartic term $\chi GG$. It is of the same order and should be added for consistency.
+\end{itemize}
+
+\paragraph{$C$ computed with $K(T)$ is not $C_T$.} The paper suggests the elastic constants at $T$ from
+$A$, $Q$, $\phi$ with $\Phi\to K(T)$. That is the curvature of the energy at fixed $K$. The isothermal tensor
+is the curvature of $F$, in which the phonon frequencies and populations change with the strain. In the
+QHA limit ($\chi=0$), $C[K]$ is the static $C$ at the expanded volume, i.e.\ $B_{\rm st}$, and $B_{\rm vib}$ of
+Eq.~\eqref{eq:Bvib} is missing.
+
+\subsection{Procedure}
+\begin{enumerate}
+\item \textbf{Static part.} From $\si$ (input), FC2, FC3 and FC4: $C$, $\eta_1$, $p_1$, $B_0$, $B_0'$
+  (Eq.~\eqref{eq:Bp}), and $E_0(\eta)$ to fourth order (Eq.~\eqref{eq:Wrelexp}).
+\item \textbf{Vibrational part.} At trial strains $\eta$, $\Phi(p)$ from Eq.~\eqref{eq:reexp}, then $F_{\rm vib}$:
+  QHA, or Eq.~\eqref{eq:FSCP} with FC4.
+\item \textbf{Equilibrium.} Minimise $F+PV$ over $\eta$ at each $T$.
+  \begin{itemize}
+  \item Cubic: one variable; fit $F(V)$ on 5--9 volumes.
+  \item Otherwise: Newton steps in the 6 strains, with $\partial F_{\rm vib}/\partial\eta$ from the tensor Gr\"uneisen
+    parameters $-\partial\ln\omega/\partial\eta_{\al\be}$ (FC3), or numerically.
+  \end{itemize}
+\item \textbf{Output.} $V(T)$, $\alpha(T)$, $C_T$ and $B_T(T)$ from the curvature at the minimum, $C_V$, $C_P$, $B_S$.
+\item \textbf{Checks.} Eq.~\eqref{eq:Bvib} against the numerical curvature (QHA, cubic); $B_0'$ of Eq.~\eqref{eq:Bp}
+  against $dB/dP$ along the $T=0$ path.
+\end{enumerate}
+
+\paragraph{Test before coding.} On the exact model (\texttt{FOCEX/REFERENCE/exact\_model}) the energy is
+known exactly at any configuration.
+\begin{itemize}
+\item Relax cell and atoms numerically at a few pressures.
+\item Compare $B$, $dB/dP$ and $C_{\al\be\ga\de\mu\nu}$ with Eqs.~\eqref{eq:Bp} and \eqref{eq:C3}.
+\item Use CaF$_2$ ($u^0_1=0$ by symmetry), wurtzite ZnO (free internal parameter) and HfO$_2$ (low symmetry).
+\item The model's reference is stressed. Test at the reference pressure ($P_0\neq0$; the CaF$_2$ stress is
+  hydrostatic), or about a relaxed state found first.
+\end{itemize}
+
+\begin{thebibliography}{9}
+\bibitem{BornHuang} M. Born and K. Huang, \emph{Dynamical Theory of Crystal Lattices}
+  (Oxford University Press, 1954), Ch.~V, \S\S 26--27.
+\bibitem{Wallace} D. C. Wallace, \emph{Thermodynamics of Crystals} (Wiley, 1972; Dover, 1998).
+\end{thebibliography}
+\end{document}
