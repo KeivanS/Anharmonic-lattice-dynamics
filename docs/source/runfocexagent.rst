@@ -260,6 +260,15 @@ order. Each finished task is recorded in ``state.json`` and in ``report.log``, w
 checked; a task that fails stops the workflow, and starting ``run_workflow.sh`` again continues
 from that task. A job that hits its time limit is simply submitted again.
 
+The supercell tasks are checked again before they are skipped:
+
+- **A removed or incomplete ``04_supercells/snap_NNN`` folder** is written again, and the
+  ``supercells`` task and every task after it are redone. Only the folders without a converged
+  OUTCAR run VASP.
+- **To leave snapshots out on purpose**, move their folders to ``04_supercells/unused/``. They
+  are then not recreated, and ``FORCEDISP1`` is collected again from the others.
+- **A ``snap_NNN`` folder with no ``03_snaps/poscar_NNN``** stops the workflow.
+
 ``relax``
    The structure you gave is reduced to its primitive cell (Niggli reduction) and rotated into
    the orientation FOCEX and SC-SNAPS use (:ref:`agent-frame`); the result is ``POSCAR.init``.
@@ -330,7 +339,9 @@ Defaults
   the relaxed structure are larger (0.01 eV/Å in a ZnO test), which adds noise to the force
   constants. DFPT uses EDIFF 10⁻⁸.
 - Relaxation and SCF k-mesh: VASP-Flow's ``coarse`` density (1000 k-points per reciprocal atom),
-  ``fine`` (6000) if every element is a metal.
+  ``fine`` (6000) if every element is a metal. Each subdivision is rounded to the nearest integer;
+  VASP-Flow itself rounds to even numbers (multiples of 6 in plane for hexagonal cells), the agent
+  does not. The FOCEX mesh (``FOCEX_MESH``) is made the same way.
 - 50 snapshots. Each gives three equations per atom of the supercell: 20 snapshots of a 96-atom
   supercell give 5760 equations for the 264 unknowns of ZnO with ranks 1--3, so fewer snapshots are
   often enough (``SNAPSHOTS``).

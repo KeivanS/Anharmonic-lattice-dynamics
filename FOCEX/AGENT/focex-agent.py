@@ -6,7 +6,7 @@ structure (MODE: from_scratch, VASP + SC_SNAPS + FOCEX) or from existing force-d
     focex-agent.py [--instr FILE] [--coord FILE] [--profile NAME] [--force]
         sets up the project folder (PROJECT_DIR in the instruction file) with run_workflow.sh;
         FILE defaults: focex-agent-instructions.txt, POSCAR; NAME: a VASP-Flow profile
-        (workstation, rivanna, slurm = ~/VASP-Flow/profiles/<NAME>.json)
+        (workstation, slurm, or your own = ~/VASP-Flow/profiles/<NAME>.json)
     cd <PROJECT_DIR> && sbatch run_workflow.sh     (bash run_workflow.sh without SLURM)
 
     focex-agent.py run  <PROJECT_DIR> [--only TASK] [--retry-failed]   what run_workflow.sh calls
@@ -483,6 +483,22 @@ def choose_supercell(c, nprim, kind):
     return S, info
 
 
+def kmesh_from_kpra(g, kpra):
+    """Gamma mesh for kpra k-points per reciprocal atom, as VASP-Flow's _kpoints_from_kpra but with
+    N_i = s |b_i*| rounded to the nearest integer (minimum 1): no even or multiple-of-6 rounding
+    (user, 2026-10-27). Bound to every generator the agent makes (Agent.gen), so it gives the relax/SCF
+    KPOINTS and the FOCEX mesh; an explicit KMESH, a KPOINTS block or FOCEX_MESH n1 n2 n3 still win."""
+    try:
+        A = read_vasp_cell(g.poscar)['A']
+        b = np.linalg.norm(2 * np.pi * np.linalg.inv(A).T, axis=1)
+    except Exception:
+        return (6, 6, 6)
+    flat = bool(g.instructions.get('is_2d', False))
+    bb = b[:2] if flat else b
+    s = (max(1.0, kpra / g._kpra_atoms()) / float(np.prod(bb))) ** (1.0 / len(bb))
+    return tuple(max(1, int(math.floor(s * x + 0.5))) for x in bb) + ((1,) if flat else ())
+
+
 def sc_kmesh(S, V, Nprim):
     """Commensurate Gamma mesh for supercell S (rows, prim units): N/n_i for a diagonal S,
     otherwise the same k-spacing as the primitive mesh."""
@@ -644,7 +660,9 @@ class Agent:
         return os.path.join(self.proj, *a)
 
     def gen(self, poscar, step, extra=()):
-        return VASPInputGenerator(poscar, vasp_inst(self.inst, self.fx, step, extra), profile=self.profile)
+        g = VASPInputGenerator(poscar, vasp_inst(self.inst, self.fx, step, extra), profile=self.profile)
+        g._kpoints_from_kpra = lambda kpra: kmesh_from_kpra(g, kpra)      # no parity rounding
+        return g
 
     def vasp(self, d, gen):
         """Run VASP in d; an existing OUTCAR is kept as OUTCAR.1, OUTCAR.2, ... (never overwritten)."""
@@ -875,17 +893,56 @@ class Agent:
                       f"(rows, primitive units), {len(p0['X'])} atoms all on POSCAR0 sites")
 
     # ---- task 4: supercell folders ------------------------------------------
+    SNAP_INPUTS = ('POSCAR', 'INCAR', 'KPOINTS', 'POTCAR')
+
+    def snap_check(self):
+        """(expected, missing, extra) snapshot ids (e.g. '007'). Expected: every 03_snaps/poscar_NNN except
+        those whose folder was set aside in 04_supercells/unused/ (a deliberate limit, as limit_to_20.sh
+        did); missing: expected without a complete 04_supercells/snap_NNN (POSCAR, INCAR, KPOINTS, POTCAR);
+        extra: snap_NNN folders that are not expected."""
+        top = self.d('04_supercells')
+        ids = [f.rsplit('_', 1)[1] for f in snap_files(self.d('03_snaps'))]
+        aside = {os.path.basename(d)[5:] for d in glob.glob(os.path.join(top, 'unused', 'snap_*'))}
+        expected = [i for i in ids if i not in aside]
+        have = {os.path.basename(d)[5:] for d in glob.glob(os.path.join(top, 'snap_*')) if os.path.isdir(d)}
+        missing = [i for i in expected
+                   if not all(os.path.exists(os.path.join(top, 'snap_' + i, f)) for f in self.SNAP_INPUTS)]
+        extra = sorted(have - set(expected))
+        return expected, missing, extra
+
+    def snap_dirs(self):
+        """The expected snapshot folders, or (None, message) if some are missing or unexpected ones exist."""
+        expected, missing, extra = self.snap_check()
+        if missing or extra:
+            msg = []
+            if missing:
+                msg.append(f'{len(missing)} snapshot folder(s) missing or incomplete in 04_supercells: '
+                           f'{" ".join("snap_" + i for i in missing[:10])}{" ..." if len(missing) > 10 else ""}'
+                           ' (the supercells task recreates them)')
+            if extra:
+                msg.append(f'folder(s) without a snapshot in 03_snaps: {" ".join("snap_" + i for i in extra)} '
+                           '(remove them, or move them to 04_supercells/unused/)')
+            return None, '; '.join(msg)
+        return [self.d('04_supercells', 'snap_' + i) for i in expected], ''
+
     def t_supercells(self):
         src, top = self.d('03_snaps'), self.d('04_supercells')
         os.makedirs(top, exist_ok=True)
-        snaps = snap_files(src)
+        expected, missing, extra = self.snap_check()
+        if extra:
+            return False, f'folder(s) without a snapshot in 03_snaps: {" ".join("snap_" + i for i in extra)}'
+        snaps = [os.path.join(src, 'poscar_' + i) for i in expected]
         S = np.array(self.state['S'])
         V = read_vasp_cell(self.d('POSCAR0'))['A']
         kind, Np = VASPInputGenerator._parse_kpoints_text(open(self.d('02_scf', 'KPOINTS')).read())
         if kind != 'mesh' and not self.fx['blocks'].get('kpoints_snaps'):
             return False, '02_scf/KPOINTS is not an automatic mesh: give a KPOINTS_snaps block'
         mesh = sc_kmesh(S, V, Np)
-        nk = max(1, (int(np.prod(mesh)) + 1) // 2)              # ISYM=0, time reversal only
+        # ISYM=0, time reversal only: k and -k are one point, except the points with k = -k (2 per
+        # even mesh direction of a Gamma mesh); VASP 5.4.4 IBZKPT counts on Si for 1,2,3,4,5 and mixed
+        # meshes agree (2x2x2: 8, not (8+1)//2 = 4)
+        ntrim = int(np.prod([2 if m_ % 2 == 0 else 1 for m_ in mesh]))
+        nk = max(1, (int(np.prod(mesh)) + ntrim) // 2)
         base = read_vasp_cell(snaps[0])
         np_ = self.inst.get('mpi_np') or 1
         extra = ['IBRION = -1', 'NSW = 0', 'ISIF = 1', 'ISYM = 0', 'LWAVE = .FALSE.', 'LCHARG = .FALSE.']
@@ -915,7 +972,10 @@ class Agent:
             i = f.rsplit('_', 1)[1]
             # the undistorted supercell gives the stress of the reference: full tensor (ISIF=1 is the trace only)
             write(os.path.join(top, 'snap_' + i, 'INCAR'), set_tags(incar, {'ISIF': 2}) if i == '000' else incar)
-        return True, (f'{len(snaps)} folders; KPOINTS {mesh} from the primitive {Np}; '
+        made = (f' ({len(missing)} missing or incomplete, written now)' if 0 < len(missing) < len(snaps) else '')
+        aside = len(snap_files(src)) - len(snaps)
+        return True, (f'{len(snaps)} folders{made}' + (f', {aside} set aside in unused/' if aside else '') +
+                      f'; KPOINTS {mesh} from the primitive {Np}; '
                       f'{sum(base["counts"])} atoms' + (f'; KPAR {inst_k["relax_kpar"]} NCORE {inst_k["relax_ncore"]}'
                                                        if inst_k else ''))
 
@@ -935,7 +995,9 @@ class Agent:
         g.instructions['magmom'] = {'kind': 'list', 'values': vals, 'raw': 'expanded to the supercell'}
 
     def t_vasp_snaps(self, retry=False):
-        dirs = sorted(glob.glob(self.d('04_supercells', 'snap_*')))
+        dirs, why = self.snap_dirs()
+        if dirs is None:
+            return False, why
         g = self.gen(os.path.join(dirs[0], 'POSCAR'), 'snaps')
         failed, ran = [], 0
         for d in dirs:
@@ -979,7 +1041,9 @@ class Agent:
     # ---- task 5: collect -----------------------------------------------------
     def t_collect(self):
         top = self.d('04_supercells')
-        dirs = sorted(glob.glob(os.path.join(top, 'snap_*')))
+        dirs, why = self.snap_dirs()
+        if dirs is None:
+            return False, why
         bad = [os.path.basename(d) for d in dirs if not outcar_status(d, 'static')[0]]
         if bad:
             return False, 'not converged: ' + ' '.join(bad)
@@ -1320,10 +1384,39 @@ class Agent:
         return f'; THERMACOND failed (exit code {rc}); thermacond.out: ' + ' / '.join(tail)
 
     # ---- driver --------------------------------------------------------------
+    def output_gone(self, t):
+        """Why the output of a task marked done is no longer there ('' if it is). Checked for the
+        supercell tasks, whose folders users remove or set aside; tasks provided by DATA are not checked."""
+        if str(self.state.get('done', {}).get(t, '')).startswith('provided'):
+            return ''
+        if t in ('supercells', 'vasp_snaps', 'collect'):
+            dirs, why = self.snap_dirs()
+            if dirs is None:
+                return why
+            if t == 'vasp_snaps':
+                bad = [os.path.basename(d) for d in dirs if not outcar_status(d, 'static')[0]]
+                if bad:
+                    return f'no converged OUTCAR in {len(bad)} folder(s): {" ".join(bad[:10])}'
+            if t == 'collect':
+                f = self.d('04_supercells', 'FORCEDISP1')
+                n = open(f).read().count('POSITION') if os.path.isfile(f) else 0
+                if n != len(dirs):
+                    return f'FORCEDISP1 has {n} snapshots, 04_supercells {len(dirs)}'
+        return ''
+
     def run(self, only=None, retry=False):
         todo = [only] if only else TASKS
         for t in todo:
             done = self.state.setdefault('done', {})
+            if t in done and not only:
+                why = self.output_gone(t)
+                if why:
+                    # this task and every later one depend on the output that changed: do them again
+                    redo = TASKS[TASKS.index(t):]
+                    self.rep(f'=== {t} -- marked done, but {why}: redoing {", ".join(x for x in redo if x in done)}')
+                    for x in redo:
+                        done.pop(x, None)
+                    self.save()
             if t in done and not only and not (retry and t in ('vasp_snaps',)):
                 continue
             self.rep(f'=== {t} -- started')
@@ -1476,7 +1569,7 @@ def main():
     ap.add_argument('--instr', default=INSTR, help=f'instruction file (default {INSTR})')
     ap.add_argument('--coord', default='POSCAR', help='crystal structure, VASP format (default POSCAR; '
                     'MODE: from_scratch only)')
-    ap.add_argument('--profile', default=None, help='VASP-Flow profile: workstation, rivanna, slurm, or the '
+    ap.add_argument('--profile', default=None, help='VASP-Flow profile: workstation, slurm, or the '
                     'name of your own ~/VASP-Flow/profiles/<name>.json (default: PROFILE in the instruction '
                     'file, else no batch system)')
     ap.add_argument('--force', action='store_true', help='set up an existing project folder again')

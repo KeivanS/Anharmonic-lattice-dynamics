@@ -1,0 +1,48 @@
+run_ZnO D=0.0: equilibrium max|grad| 3.2e-13, V/V_ref 0.949461, strain [-0.01798, -0.01798, -0.01546, 0.0, 0.0, -0.0]
+  truth  dp=0.641 GPa: B = 288.001539 GPa, B' = -0.157427  (max|grad| 4e-13)
+  truth  dp=0.320 GPa: B = 288.001539 GPa, B' = -0.157427  (max|grad| 7e-13)
+  truth  dp=0.160 GPa: B = 288.001539 GPa, B' = -0.157427  (max|grad| 3e-13)
+  formula (strain 2e-03): B = 288.001539 GPa, B' = -0.157427
+  formula (strain 1e-03): B = 288.001539 GPa, B' = -0.157427
+  formula (strain 5e-04): B = 288.001539 GPa, B' = -0.157427
+  formula with u_1 = 0 in W3: B' = -0.076548;  |u_1| max 2.65e-01 A per eV/A^3
+run_ZnO D=-0.002: equilibrium max|grad| 1.6e-13, V/V_ref 0.950907, strain [-0.01743, -0.01743, -0.01506, 0.0, 0.0, -0.0]
+  truth  dp=0.641 GPa: B = 305.234228 GPa, B' = 0.935536  (max|grad| 4e-13)
+  truth  dp=0.320 GPa: B = 305.234228 GPa, B' = 0.935536  (max|grad| 2e-13)
+  truth  dp=0.160 GPa: B = 305.234228 GPa, B' = 0.935536  (max|grad| 4e-13)
+  formula (strain 2e-03): B = 305.234228 GPa, B' = 0.935555
+  formula (strain 1e-03): B = 305.234228 GPa, B' = 0.935541
+  formula (strain 5e-04): B = 305.234228 GPa, B' = 0.935536
+  formula with u_1 = 0 in W3: B' = 1.045218;  |u_1| max 2.44e-01 A per eV/A^3
+run_ZnO D=-0.005: equilibrium max|grad| 4.2e-13, V/V_ref 0.952799, strain [-0.01672, -0.01672, -0.01452, -0.0, 0.0, -0.0]
+  truth  dp=0.641 GPa: B = 329.338507 GPa, B' = 2.369946  (max|grad| 3e-13)
+  truth  dp=0.320 GPa: B = 329.338506 GPa, B' = 2.369946  (max|grad| 2e-13)
+  truth  dp=0.160 GPa: B = 329.338506 GPa, B' = 2.369946  (max|grad| 2e-13)
+  formula (strain 2e-03): B = 329.338506 GPa, B' = 2.369990
+  formula (strain 1e-03): B = 329.338506 GPa, B' = 2.369957
+  formula (strain 5e-04): B = 329.338506 GPa, B' = 2.369949
+  formula with u_1 = 0 in W3: B' = 2.526772;  |u_1| max 2.18e-01 A per eV/A^3
+run_CaF2 D=0.0: equilibrium max|grad| 4.3e-12, V/V_ref 0.975653, strain [-0.00818, -0.00818, -0.00818, 0.0, 0.0, 0.0]
+  truth  dp=0.641 GPa: B = 587.376250 GPa, B' = -0.000000  (max|grad| 4e-13)
+  truth  dp=0.320 GPa: B = 587.376250 GPa, B' = -0.000000  (max|grad| 9e-13)
+  truth  dp=0.160 GPa: B = 587.376250 GPa, B' = -0.000000  (max|grad| 4e-13)
+  formula (strain 2e-03): B = 587.376250 GPa, B' = -0.000000
+  formula (strain 1e-03): B = 587.376250 GPa, B' = 0.000000
+  formula (strain 5e-04): B = 587.376250 GPa, B' = 0.000002
+  formula with u_1 = 0 in W3: B' = -0.000000;  |u_1| max 2.51e-12 A per eV/A^3
+run_CaF2 D=-0.002: equilibrium max|grad| 1.1e-12, V/V_ref 0.976083, strain [-0.00804, -0.00804, -0.00804, 0.0, 0.0, 0.0]
+  truth  dp=0.641 GPa: B = 608.665616 GPa, B' = 1.427442  (max|grad| 6e-13)
+  truth  dp=0.320 GPa: B = 608.665616 GPa, B' = 1.427442  (max|grad| 2e-12)
+  truth  dp=0.160 GPa: B = 608.665616 GPa, B' = 1.427442  (max|grad| 3e-12)
+  formula (strain 2e-03): B = 608.665616 GPa, B' = 1.427464
+  formula (strain 1e-03): B = 608.665616 GPa, B' = 1.427448
+  formula (strain 5e-04): B = 608.665616 GPa, B' = 1.427442
+  formula with u_1 = 0 in W3: B' = 1.427448;  |u_1| max 2.41e-12 A per eV/A^3
+run_CaF2 D=-0.005: equilibrium max|grad| 1.2e-12, V/V_ref 0.976675, strain [-0.00784, -0.00784, -0.00784, 0.0, 0.0, 0.0]
+  truth  dp=0.641 GPa: B = 639.282015 GPa, B' = 3.399760  (max|grad| 1e-12)
+  truth  dp=0.320 GPa: B = 639.282015 GPa, B' = 3.399760  (max|grad| 2e-13)
+  truth  dp=0.160 GPa: B = 639.282015 GPa, B' = 3.399760  (max|grad| 6e-13)
+  formula (strain 2e-03): B = 639.282015 GPa, B' = 3.399811
+  formula (strain 1e-03): B = 639.282015 GPa, B' = 3.399773
+  formula (strain 5e-04): B = 639.282015 GPa, B' = 3.399762
+  formula with u_1 = 0 in W3: B' = 3.399773;  |u_1| max 2.09e-12 A per eV/A^3

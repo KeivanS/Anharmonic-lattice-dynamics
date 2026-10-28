@@ -460,14 +460,54 @@ Eq.~\eqref{eq:Bvib} is missing.
   against $dB/dP$ along the $T=0$ path.
 \end{enumerate}
 
-\paragraph{Test before coding.} On the exact model (\texttt{FOCEX/REFERENCE/exact\_model}) the energy is
-known exactly at any configuration.
+\section{Test of the \texorpdfstring{$B'$}{B'} formula on an exact model (27 October 2026)}
+\paragraph{Model.} The pair and 3-body (area$^2$) terms of the exact model, \texttt{model3.py}, with
+the 4-body term off. Its energy is quadratic in the squared distances $s$. Under a uniform strain $\ep$,
+$s=s_0(1+\ep)^2$, so $E(\ep)=a+b(1+\ep)^2+c(1+\ep)^4$; here this gives $B'=-0.16$ (ZnO) and 0 (CaF$_2$). To
+obtain larger, more realistic values, we added a pair term $D(s-s_0)^3$.
+
+\paragraph{Exact energy of the deformed crystal.} The energy depends only on the pair vectors
+$d=X_j-X_i+R$. Deforming the positions and the image vectors $R$ together gives the exact energy of the
+homogeneously deformed periodic crystal.
+
+\paragraph{Procedure.}
 \begin{itemize}
-\item Relax cell and atoms numerically at a few pressures.
-\item Compare $B$, $dB/dP$ and $C_{\al\be\ga\de\mu\nu}$ with Eqs.~\eqref{eq:Bp} and \eqref{eq:C3}.
-\item Use CaF$_2$ ($u^0_1=0$ by symmetry), wurtzite ZnO (free internal parameter) and HfO$_2$ (low symmetry).
-\item The model's reference is stressed. Test at the reference pressure ($P_0\neq0$; the CaF$_2$ stress is
-  hydrostatic), or about a relaxed state found first.
+\item Each crystal is first relaxed (6 strains and all atoms, Newton steps, $|\nabla|\simeq10^{-12}$) to its
+  zero-pressure equilibrium, so that $P_0=0$ and $\Pi=0$.
+\item \emph{Truth:} $V(p)$ from full relaxations at $p=0,\pm\delta,\pm2\delta$, with $\delta=0.64$, 0.32 and 0.16~GPa.
+  Fitting $\ln V(p)$ by a quartic gives $B$ and $dB/dP$.
+\item \emph{Formula:} Eq.~\eqref{eq:Bp}, with $C$ from the exact Hessian (Schur complement over $u^0$),
+  $\eta_1$, $u^0_1$, and $\Wt(p_1,p_1,p_1)$ from 5-point differences of the energy along $p_1$.
+\end{itemize}
+Results (``formula'' at a difference strain of $5\times10^{-4}$; the truth is the same for all three $\delta$; the last
+column is the formula with $u^0_1=0$ in $\Wt$):
+\begin{center}
+\begin{tabular}{llrrrrr}
+\toprule
+& & \multicolumn{2}{c}{$B$ (GPa)} & \multicolumn{3}{c}{$B'$}\\
+\cmidrule(lr){3-4}\cmidrule(lr){5-7}
+crystal & $D$ & truth & formula & truth & formula & $u^0_1=0$\\
+\midrule
+ZnO  & 0      & 288.001539 & 288.001539 & $-0.157427$ & $-0.157427$ & $-0.0765$\\
+ZnO  & $-0.002$ & 305.234228 & 305.234228 & 0.935536 & 0.935536 & 1.0452\\
+ZnO  & $-0.005$ & 329.338506 & 329.338506 & 2.369946 & 2.369949 & 2.5268\\
+CaF$_2$ & 0      & 587.376250 & 587.376250 & 0.000000 & 0.000000 & 0.000000\\
+CaF$_2$ & $-0.002$ & 608.665616 & 608.665616 & 1.427442 & 1.427442 & 1.427448\\
+CaF$_2$ & $-0.005$ & 639.282015 & 639.282015 & 3.399760 & 3.399762 & 3.399773\\
+\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}
+\item $D$ is in eV/\AA$^6$.
+\item For $D\neq0$ the energy is of degree 6, and the formula's difference error falls as the square of the
+  strain step: ZnO, $D=-0.005$: $4.4\times10^{-5}$, $1.1\times10^{-5}$, $2.7\times10^{-6}$ at $2\times10^{-3}$,
+  $10^{-3}$, $5\times10^{-4}$. For $D=0$ it is exact.
+\item In wurtzite ZnO the internal relaxation changes $B'$ by 0.08--0.16, and the cell shape relaxes ($\eta_1$
+  anisotropic). In CaF$_2$, $u^0_1=0$ by symmetry ($|u^0_1|\sim10^{-12}$).
+\item For $D=0$, the paper's and the code's expressions, evaluated with the exact $f'''$, give 0.18 and $-1.08$
+  (ZnO) and 0.167 and $-1.0$ (CaF$_2$).
+\item Not yet tested: $\Wt$ from the FC3 lattice sums, Eq.~\eqref{eq:Wcompute}, which is what FOCEX would
+  compute. Scripts and output: \texttt{FOCEX/REFERENCE/exact\_model/bprime/}.
 \end{itemize}
 
 \begin{thebibliography}{9}

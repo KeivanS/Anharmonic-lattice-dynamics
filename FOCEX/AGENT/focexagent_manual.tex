@@ -309,6 +309,16 @@ in order. Each finished task is recorded in \cmd{state.json} and in \cmd{report.
 checked; a task that fails stops the workflow, and starting \cmd{run_workflow.sh} again continues
 from that task. A job that hits its time limit is simply submitted again.
 
+The supercell tasks are checked again before they are skipped:
+\begin{itemize}
+\item \textbf{A removed or incomplete \cmd{04_supercells/snap_NNN} folder} is written again, and the
+  \cmd{supercells} task and every task after it are redone. Only the folders without a converged
+  OUTCAR run VASP.
+\item \textbf{To leave snapshots out on purpose}, move their folders to \cmd{04_supercells/unused/}.
+  They are then not recreated, and \cmd{FORCEDISP1} is collected again from the others.
+\item \textbf{A \cmd{snap_NNN} folder with no \cmd{03_snaps/poscar_NNN}} stops the workflow.
+\end{itemize}
+
 \begin{description}
 \item[relax] The structure you gave is reduced to its primitive cell (Niggli reduction) and rotated
   into the orientation FOCEX and SC-SNAPS use (Section~\ref{sec:frame}); the result is
@@ -370,7 +380,9 @@ from that task. A job that hits its time limit is simply submitted again.
   cheaper, but the residual forces of the relaxed structure are larger (0.01\,eV/\AA\ in a ZnO
   test), which adds noise to the force constants. DFPT uses EDIFF $10^{-8}$.
 \item Relaxation and SCF k-mesh: VASP-Flow's \cmd{coarse} density (1000 k-points per reciprocal
-  atom), \cmd{fine} (6000) if every element is a metal.
+  atom), \cmd{fine} (6000) if every element is a metal. Each subdivision is rounded to the nearest
+  integer; VASP-Flow itself rounds to even numbers (multiples of 6 in plane for hexagonal cells), the
+  agent does not. The FOCEX mesh (\cmd{FOCEX_MESH}) is made the same way.
 \item 50 snapshots. Each gives three equations per atom of the supercell: 20 snapshots of a
   96-atom supercell give 5760 equations for the 264 unknowns of ZnO with ranks 1--3, so fewer
   snapshots are often enough (\cmd{SNAPSHOTS}).
