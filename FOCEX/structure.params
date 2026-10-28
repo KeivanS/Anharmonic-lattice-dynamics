@@ -9,7 +9,7 @@
 95.94  127.6  mass of atoms of different type
 Mo  Te       names of atoms of different type
 6     number of atoms in the primitive cell 
-1     flag for setting the range of FCs (if=0 take the default defined by the supercell size;1 for user's choice))
+1 1 1 1 1 1 1     fc2range (0: FC2 range set by the supercell; 1: line 13), fc3flag..fc8flag (1: shells of lines 14-19; 0: FC2-range rule)
 7 7 12 12 12 12 neighbor shells for harmonic FCs for atoms 1-6 in the primitive cell
 3 3 5 5 5 5     neighbor shells for cubic    FCs for atoms 1-6 in the primitive cell
 1 1 1 1 1 1     neighbor shells for quartic  FCs for atoms 1-6 in the primitive cell

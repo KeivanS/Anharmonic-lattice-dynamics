@@ -20,15 +20,6 @@ example input files. It is also published on its own, identical, at
 `github.com/KeivanS/SC_SNAPS <https://github.com/KeivanS/SC_SNAPS>`_ (the folder is a git
 subtree of that repository), for those who want only the snapshot generator.
 
-.. note::
-
-   Older versions of ALATDYN bundled a copy of the generator alone in
-   ``FOCEX/utility``. It has been removed, because it had fallen several
-   versions behind and its input format no longer matched: in the current
-   version, line 3 of ``cell.inp`` carries **two** numbers (scale factor *and*
-   the ``convcoord`` flag) and line 6 carries masses **and** charges. Input
-   files written for that bundled copy will not work unchanged.
-
 How it works
 ^^^^^^^^^^^^
 
@@ -202,12 +193,6 @@ columns.
    .. code-block:: bash
 
       cp poscar_000 POSCAR1
-
-   The files follow the current VASP format, with a line of element names
-   between the third lattice vector and the atom counts, and FOCEX has read that
-   layout since version 8.18. Older versions accepted only the VASP-4 layout and
-   needed the element-name line removed with ``sed '6d' poscar_000 > POSCAR1``;
-   that still works, so scripts written for it need no change.
 
    The ``poscar_0nn`` files themselves are fed to VASP unchanged.
 

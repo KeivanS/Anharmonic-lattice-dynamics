@@ -154,10 +154,9 @@ Tell VASP-Flow where VASP, MPI and the POTCARs are
    * - ``slurm``
      - a template for a SLURM cluster: edit ``profiles/slurm.json`` (VASP command, ``modules`` to
        load, partition, nodes, tasks per node, time, account)
-   * - ``rivanna``
-     - the University of Virginia cluster Rivanna
-   * - *your own*
-     - copy ``slurm.json`` to ``mycluster.json``, edit it, and use ``--profile mycluster``
+   * - *your own* (``mycluster`` below)
+     - your cluster: copy ``slurm.json`` to ``mycluster.json``, edit it, and use
+       ``--profile mycluster``
 
 With a SLURM profile, ``run_workflow.sh`` begins with the ``#SBATCH`` lines and the
 ``module load`` lines of the profile and is submitted with ``sbatch``.
@@ -218,7 +217,7 @@ The steps of a from_scratch calculation (:ref:`agent-extract` has those of extra
    nano focex-agent-instructions.txt  # Project, RANKS, FUNCTIONAL, MPI
 
    source ~/dftphonon-env/bin/activate
-   python $A/focex-agent.py --profile rivanna
+   python $A/focex-agent.py --profile mycluster   # your profile (above)
    cd ZnO
    sbatch run_workflow.sh             # without a profile: nohup bash run_workflow.sh &
    tail -f report.log

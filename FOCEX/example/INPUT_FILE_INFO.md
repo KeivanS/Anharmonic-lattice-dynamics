@@ -1,7 +1,7 @@
 # FOCEX examples
 
 Each subfolder is a complete, self-contained FOCEX run: it holds every input
-file needed, plus the output of a previous run for comparison.
+file needed, plus the output of a run for comparison (`reference_output/`).
 
 The full description of every input and output file is in the manual,
 [Running FOCEX](https://aladyn.readthedocs.io/en/latest/runfocex.html)
@@ -18,7 +18,7 @@ are thermally displaced. Ranks 1, 2 and 3 are fitted.
 ```bash
 mkdir -p ~/runs/Ge && cd ~/runs/Ge
 cp <repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
-~/BIN/v16                 # or whatever you named the FOCEX binary
+~/ALADYN/bin/focex-9.0.x
 ```
 
 The run is serial and takes a few minutes on one core. Expected results:
@@ -41,7 +41,7 @@ The run is serial and takes a few minutes on one core. Expected results:
 | `dielectric.params` | Born-charge flag, dielectric tensor, Born effective charges (all zero here: Ge is non-polar) |
 | `latdyn.params` | k-mesh, DOS mesh and broadening, temperature range for the thermodynamics |
 | `kpbs.params` | k-point path for the phonon band structure |
-| `default.params` | numerical thresholds and array limits; a `0` on a line means "use the built-in default" |
+| `default.params` | four numerical thresholds; a `0` on a line means "use the built-in default" |
 | `POSCAR1` | equilibrium positions of the supercell, old (VASP-4) POSCAR format — **no element-name line** |
 | `FORCEDISP1` | the 36 snapshots: positions/displacements, forces and total energy |
 
@@ -62,7 +62,4 @@ codes need it), `bs_freq.dat` and `bands.dat` (phonon dispersion), `ibz_dos.dat`
 (quasi-harmonic thermodynamics) and the `log*.dat` file, which records
 everything the code decided and should be read after every run.
 
-> **Note.** The output files stored in `Ge/` were produced by an older version
-> of the code. Their numbers, and the column layout of the `fc*.dat` files,
-> differ slightly from what the current version writes. Use a fresh run as the
-> reference.
+The output of a run with the current code is stored in `Ge/reference_output/` for comparison.

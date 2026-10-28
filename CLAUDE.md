@@ -71,8 +71,11 @@ snapshots, ranks 1–3). Reproduces:
 | C11, C12, C44 | 121.1, 68.0, 47.4 GPa |
 | Bulk modulus (Hill), Debye T | 85.7 GPa, 313.6 K |
 
-The `fc*.dat`, `log*.dat`, `svd-all.dat` etc. **stored** in that folder are from
-an older version — different column layout. Don't use them as reference.
+`FOCEX/example/Ge/reference_output/` (2026-10-27) holds the outputs of focex-9.0 built from
+ccba45b (fc*.dat, lat_fc.dat, mech.dat, bs_freq.dat, ibz_dos.dat, thermo_QHA.dat, log); they
+match the table. structure.params line 12 there is `0 1 1 1 1 1 1` (outputs identical to `0`).
+User's rule for the manual: show the working path only, no history or failure lists; fix the
+code/scripts instead (collection scripts in FOCEX/utility now start FORCEDISP1 afresh).
 
 ## Regression testing FOCEX
 
@@ -415,7 +418,8 @@ old e1 path: it counts |x| > margin.
   identical freqs.dat/modes.dat, any flags work. Rebuilt copies in `~/BIN` and `~/ALADYN/bin`.
 - The parameter files are read positionally by list-directed `read`. A missing
   line or a missing value silently swallows the next record and crashes later
-  with a confusing message. `default.params` must have 36 lines; line 2 of
+  with a confusing message. `default.params` has 4 lines (the 32 maxterms/maxtermzero/maxtermsindep/maxgroups lines were
+  removed 2026-10-27: setup_maps sizes its arrays itself; an old 36-line file still works); line 2 of
   `latdyn.params` must carry **six** numbers (shift *and* normal).
 - `bands.dat` columns 6+ are ω², not ω (`bandgen.plt` applies `521.1*sqrt()`).
 - Group velocities (bs_freq.dat, bands.dat, ibz_bands.dat) are Hellmann-Feynman since 2026-10-22:

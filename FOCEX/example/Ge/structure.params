@@ -9,7 +9,7 @@
 72.64              # mass of each atom type (uma)
 Ge                 # name of each atom type
 2                  # total number of atoms in the primitive cell
-0                  # fc2range: 0 = default FC2 range dictated by the supercell, 1 = use line 13
+0 1 1 1 1 1 1      # fc2range (0: FC2 range set by the supercell, 1: line 13); fc3flag..fc8flag (1: shells of lines 14-19)
 11 11              # number of shells for harmonic (rank 2) FCs, one per atom of the prim. cell
 3 3                # number of shells for cubic (rank 3) FCs
 0 0                # number of shells for quartic (rank 4) FCs

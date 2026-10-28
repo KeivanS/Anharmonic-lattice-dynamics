@@ -1,7 +1,7 @@
 # focex-agent instruction file: copy it next to your POSCAR and edit it for your material.
 #
 #   source ~/dftphonon-env/bin/activate
-#   python ~/PROJECTS/Anharmonic-lattice-dynamics/FOCEX/AGENT/focex-agent.py --profile rivanna
+#   python ~/PROJECTS/Anharmonic-lattice-dynamics/FOCEX/AGENT/focex-agent.py --profile mycluster
 #   cd <PROJECT_DIR> && sbatch run_workflow.sh          # bash run_workflow.sh without SLURM
 #
 # Only Project and RANKS are required; every other line shows its default and can be left out.
@@ -27,7 +27,7 @@ MPI: 40                     # MPI ranks for VASP
 # ACCURACY: Accurate        # Accurate: ENCUT 600, EDIFF 1E-7, EDIFFG -0.001, PREC Accurate
 #                           # Normal:   ENCUT 450, EDIFF 1E-6, EDIFFG -0.003, PREC Normal
 # DFPT: auto                # Born charges and epsilon: auto = only if the SCF shows a gap | on | off
-# PROFILE: rivanna          # VASP-Flow profile, same as --profile
+# PROFILE: mycluster        # VASP-Flow profile, same as --profile
 
 # ── snapshots (SC_SNAPS) ──
 # SUPERCELL: SMALL          # SMALL: >= 10 A, <= 100 atoms;  LARGE: >= 14 A, <= 300 atoms;

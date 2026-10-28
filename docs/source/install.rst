@@ -201,8 +201,7 @@ THERMACOND
 
 * Run ``make`` in the ``THERMACOND`` directory. THERMACOND needs a ``gfortran``
   compiler and MPI (``make serial``: no MPI). The binary is named after the version,
-  ``tcond-2.0.x`` (serial: ``tcond-2.0-serial.x``), and installed in ``~/ALADYN/bin``;
-  before version 2.0 it was ``kap8``, left in the source folder. It takes no input from the
+  ``tcond-2.0.x`` (serial: ``tcond-2.0-serial.x``), and installed in ``~/ALADYN/bin``. It takes no input from the
   terminal: ``tcond-2.0.x``, or ``mpirun -np N tcond-2.0.x`` (:doc:`runthermacond`).
 
 Checking the installation

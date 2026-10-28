@@ -212,9 +212,8 @@ chosen with \opt{profile} (or \cmd{PROFILE:} in the instruction file):
 workstation & the same, with the paths written in \cmd{profiles/workstation.json} instead \\
 slurm & a template for a SLURM cluster: edit \cmd{profiles/slurm.json} (VASP command,
   \cmd{modules} to load, partition, nodes, tasks per node, time, account) \\
-rivanna & the University of Virginia cluster Rivanna \\
-\textrm{\emph{your own}} & copy \cmd{slurm.json} to \cmd{mycluster.json}, edit it, and use
-  \opt{profile mycluster} \\
+\textrm{\emph{your own}} & your cluster: copy \cmd{slurm.json} to \cmd{mycluster.json}, edit it,
+  and use \opt{profile mycluster} \\
 \bottomrule
 \end{tabularx}
 
@@ -274,7 +273,7 @@ cp $A/focex-agent-instructions.txt .
 nano focex-agent-instructions.txt  # Project, RANKS, FUNCTIONAL, MPI
 
 source ~/dftphonon-env/bin/activate
-python $A/focex-agent.py --profile rivanna
+python $A/focex-agent.py --profile mycluster   # your profile (above)
 cd ZnO
 sbatch run_workflow.sh             # without a profile: nohup bash run_workflow.sh &
 tail -f report.log

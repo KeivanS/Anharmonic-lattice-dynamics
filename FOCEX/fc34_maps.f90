@@ -19,7 +19,7 @@
  implicit none
  character lineout*80,frmt*90
  integer i0,j,i,n,m,mxzero,mx,mxi,l,rnk,ichkloop,mxnt,mxnti   &
- &      ,ntermszero,nd,ntindp,ierz,iert,ieri,ierg,mzero(maxrank),mxgrps
+ &      ,ntermszero,nd,ntindp,ierz,iert,ieri,ierg,mxgrps
  integer, allocatable:: iatmtermzero(:,:),ixyztermzero(:,:)
 ! type arraysize
 !    integer rnk
@@ -27,7 +27,6 @@
 
  write(*,*) 'Entering setup_maps routine with read nshells as:'
  call write_out(ulog,' #include_FCs ',include_fc)
- call write_out(ulog,' #   maxterms ',maxterms)
  call write_out(ulog,' #r=1 nshells ',nshells(1,:))
  call write_out(ulog,' #r=2 nshells ',nshells(2,:))
  call write_out(ulog,' #r=3 nshells ',nshells(3,:))
@@ -38,10 +37,6 @@
  call write_out(ulog,' #r=8 nshells ',nshells(8,:))
  write(ulog,*)'# trans,rot,huang,enforce_inv=',itrans,irot,ihuang,enforce_inv
 
-!! K1 2/12/23
-!   mzero(1:4) = maxtermzero(1:4)
-    mzero = maxtermzero  ! 3/20/24
-!! K1 2/12/23
 
  nd = sum(include_fc)
  if (nd.gt.4) then

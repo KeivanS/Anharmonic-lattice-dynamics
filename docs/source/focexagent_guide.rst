@@ -62,9 +62,14 @@ Set up (seconds, no VASP), then start the workflow:
 .. code-block:: bash
 
    source ~/dftphonon-env/bin/activate
-   python ~/Anharmonic-lattice-dynamics/FOCEX/AGENT/focex-agent.py --profile rivanna
+   python ~/Anharmonic-lattice-dynamics/FOCEX/AGENT/focex-agent.py --profile mycluster
    cd Si && sbatch run_workflow.sh        # workstation, no profile: nohup bash run_workflow.sh &
    tail -f report.log
+
+``mycluster`` stands for the profile of your own cluster: copy
+``~/VASP-Flow/profiles/slurm.json`` to ``mycluster.json`` in the same folder and set in it the
+VASP command, the modules to load, partition, account, nodes, tasks per node and time. On a
+workstation leave ``--profile`` out.
 
 Other keywords often used:
 
@@ -142,8 +147,8 @@ inputs and batch scripts.
    ~/dftphonon-env/bin/pip install numpy spglib pymatgen matplotlib
    export VASP_POTCAR_DIR=/path/to/potpaw_PBE.54             # put it in ~/.bashrc
 
-VASP and MPI come from a VASP-Flow profile (``--profile``: ``workstation``, ``slurm``,
-``rivanna``, or your own copy in ``~/VASP-Flow/profiles``); without one, ``VASP_STD`` and
+VASP and MPI come from a VASP-Flow profile (``--profile``: ``workstation``, ``slurm``, or your
+own, as ``mycluster`` above, in ``~/VASP-Flow/profiles``); without one, ``VASP_STD`` and
 ``MPI_LAUNCH`` are used. ``python ~/VASP-Flow/check_setup.py local`` (``slurm`` on a cluster)
 checks the installation and prints the command that fixes each problem. Details:
 :ref:`focex-agent`.

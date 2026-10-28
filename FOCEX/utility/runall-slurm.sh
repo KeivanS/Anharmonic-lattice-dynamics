@@ -90,7 +90,7 @@ cat >$JOB2 <<EOF
 #SBATCH -t 0:10:0
 
 # collect the force-positions from every snapshot into a single FORCEDISP1 file to be read by FOCEX
-cat */pos-forc.dat >> FORCEDISP1    
+cat [0-9][0-9][0-9]/pos-forc.dat > FORCEDISP1
 EOF
 
 sbatch -d afterok:$JOBID $JOB2

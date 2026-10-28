@@ -112,12 +112,9 @@ The reference results for this example are:
    Bulk modulus (Hill, GPa)                 85.7
    Debye temperature (K)                    313.6
 
-.. warning::
-
-   The files shipped *next to* the example inputs (``fc2.dat``, ``log*.dat``,
-   ``svd-all.dat``, …) were produced by an older version of the code; their
-   numbers and, for the FC files, their column layout differ slightly from what
-   the current version writes. Trust a fresh run rather than the stored output.
+The output of this run is in ``FOCEX/example/Ge/reference_output`` (``fc*.dat``, ``lat_fc.dat``,
+``mech.dat``, ``bs_freq.dat``, ``ibz_dos.dat``, ``thermo_QHA.dat`` and the log file), for
+comparison with your own run.
 
 .. _focex-dftdata:
 
@@ -138,8 +135,8 @@ commands:
    sc_snaps.x                        # 1. snapshots: reads cell.inp, supercell.inp, snaps.inp
    cp poscar_000 POSCAR1             #    the undisplaced supercell
 
-   rm -f FORCEDISP1                  # 2. DFT runs + collection
-   ./runall.sh                       #    edit the VASP command inside it first
+   ./runall.sh                       # 2. DFT runs + collection into FORCEDISP1
+                                     #    (edit the VASP command inside it first)
 
 What remains is to write the five ``*.params`` files (:ref:`focex-inputs`) and
 run FOCEX in the same directory. The two steps are described one at a time
@@ -183,13 +180,6 @@ sampled velocities; VASP ignores them.
    ``cd FOCEX/utility && make`` does not. The three input files, the sampling and the
    interface are documented in full in :doc:`runscsnaps` — start there.
 
-   Older versions of ALATDYN bundled a copy of ``sc_snaps.f90`` in
-   ``FOCEX/utility``. It has been removed: it had fallen several versions behind
-   and read an incompatible ``cell.inp`` — line 3 now takes **two** values
-   (scale factor and ``convcoord``) and line 6 takes masses **and** charges. If
-   you have input files written for that old copy, they need updating before the
-   current SC-SNAPS will read them.
-
 ``POSCAR1`` comes straight out of this step — it is ``poscar_000``, the
 undisplaced supercell, copied under the name FOCEX expects:
 
@@ -197,11 +187,7 @@ undisplaced supercell, copied under the name FOCEX expects:
 
    cp poscar_000 POSCAR1
 
-No editing is needed: since version 8.18 FOCEX accepts both the modern VASP-5
-layout that ``sc_snaps.x`` writes, with a line of element names before the atom
-counts, and the older VASP-4 one without it (see :ref:`focex-poscar`). Earlier
-versions read only the VASP-4 layout and required that line to be deleted with
-``sed '6d'``; doing so still works.
+FOCEX reads it as it is (:ref:`focex-poscar`).
 
 The ``poscar_0nn`` snapshots themselves go to the DFT code unchanged.
 
@@ -217,10 +203,10 @@ The ``poscar_0nn`` snapshots themselves go to the DFT code unchanged.
 Step 2 — run the DFT code and collect the forces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Run **one single-point SCF calculation per snapshot** — no relaxation. Accurate
-forces matter: use a well-converged k-mesh and plane-wave cutoff and tight
-electronic convergence, because the force constants are obtained by
-differentiating these forces.
+Run **one single-point SCF calculation per snapshot** (VASP: ``IBRION = -1``, ``NSW = 0``) on
+the ``poscar_0nn`` files as they are, atom order included. Accurate forces matter: use a
+well-converged k-mesh and plane-wave cutoff and tight electronic convergence, because the force
+constants are obtained by differentiating these forces.
 
 Two converters turn a DFT output into the block format FOCEX reads. Both take
 no command-line arguments and both write a file called ``pos-forc.dat`` in the
@@ -239,9 +225,9 @@ in eV/Å), converting units as needed:
      - A Quantum Espresso (PWSCF) output whose **filename it reads from
        standard input**: ``echo pw.out | read_qe.x``.
 
-``FORCEDISP1`` is then nothing more than every snapshot's ``pos-forc.dat``,
-concatenated. Four scripts in ``FOCEX/utility`` do the looping for you — pick
-the one that matches your situation:
+``FORCEDISP1`` is every snapshot's ``pos-forc.dat``, concatenated. Four scripts in
+``FOCEX/utility`` do the looping for you and write ``FORCEDISP1`` in the directory they are run
+from (anew each time) — pick the one that matches your situation:
 
 .. list-table::
    :header-rows: 1
@@ -251,8 +237,8 @@ the one that matches your situation:
      - Use it when
    * - ``runall.sh``
      - You run VASP yourself, serially, on one machine. It loops over
-       ``poscar_*``, copies each to ``POSCAR``, runs VASP, converts, and appends
-       to ``FORCEDISP1``. Edit the ``mpirun`` line for your setup.
+       ``poscar_*``, copies each to ``POSCAR``, runs VASP and converts the result. Edit the
+       ``mpirun`` line for your setup.
    * - ``runall-slurm.sh``
      - You are on a Slurm cluster. This one covers **steps 1 and 2 together**:
        it runs ``sc_snaps.x``, submits a job array with one snapshot per task
@@ -262,51 +248,23 @@ the one that matches your situation:
        ``INCAR``, ``KPOINTS`` and ``POTCAR`` in place.
    * - ``xtract.sh``
      - The DFT runs are already done and the outputs sit in one directory as
-       ``OUTCAR1``, ``OUTCAR2``, … It deletes ``FORCEDISP1``, then converts and
-       appends each in turn.
+       ``OUTCAR1``, ``OUTCAR2``, …
    * - ``process_dft.sh <dir>``
      - The DFT runs are already done and each output is an ``OUTCAR`` in its own
-       subdirectory. It finds every ``OUTCAR`` beneath ``<dir>``, converts it in
-       place, and appends to ``FORCEDISP1`` in the directory you launched from.
+       subdirectory below ``<dir>``.
 
 All four invoke ``read_outcar.x`` by name, so the ``DESTDIR`` you installed the
 utilities into (``~/ALADYN/bin`` by default) must be on your ``PATH``.
 
-.. note::
+For Quantum Espresso, with each snapshot's output ``pw.out`` in its own ``snap_*`` directory:
 
-   There is no ready-made script for Quantum Espresso. Despite its usage
-   message, ``process_dft.sh`` only ever searches for ``OUTCAR`` and only calls
-   ``read_outcar.x``. For QE, loop yourself:
+.. code-block:: bash
 
-   .. code-block:: bash
-
-      rm -f FORCEDISP1
-      for d in snap_*/ ; do
-        ( cd "$d" && echo pw.out | read_qe.x )
-        cat "$d"/pos-forc.dat >> FORCEDISP1
-      done
-
-.. warning:: Four things that go wrong here
-
-   * **Use a single-point calculation.** ``read_outcar.x`` writes one block for
-     *every ionic step* it finds in the ``OUTCAR``. Leave a relaxation switched
-     on (``NSW > 0``) and a single run silently becomes many "snapshots", all
-     referred to the wrong equilibrium positions. Set ``IBRION = -1``,
-     ``NSW = 0``.
-   * **Re-running appends.** Only ``xtract.sh`` removes ``FORCEDISP1`` before it
-     starts; ``runall.sh``, ``process_dft.sh`` and the Slurm collection job all
-     append to whatever is already there, so a second attempt silently doubles
-     the file. Run ``rm -f FORCEDISP1`` before you restart. (Conversely,
-     ``xtract.sh`` prints a harmless ``rm: FORCEDISP1: No such file or
-     directory`` on a fresh directory.)
-   * **The converters use fixed filenames.** ``read_outcar.x`` reads
-     ``./OUTCAR`` and writes ``./pos-forc.dat``, and neither name can be
-     changed on the command line. That is why the scripts copy the file or
-     ``cd`` into its directory instead of passing a path.
-   * **Keep the atom order.** Within each block the atoms must appear in the
-     same order as in ``POSCAR1``. They do if the ``poscar_0nn`` files produced
-     by ``sc_snaps.x`` were used throughout and the DFT code was not allowed to
-     re-sort them.
+   rm -f FORCEDISP1
+   for d in snap_*/ ; do
+     ( cd "$d" && echo pw.out | read_qe.x )
+     cat "$d"/pos-forc.dat >> FORCEDISP1
+   done
 
 .. note::
 
@@ -464,7 +422,7 @@ the options of the fit.
    72.64                          #  9  mass of each type (uma)
    Ge                             # 10  name of each type
    2                              # 11  number of atoms in the primitive cell
-   0                              # 12  fc2range (0=default covers all the largest supercell) [fc3flag ... fc8flag]
+   0 1 1 1 1 1 1                  # 12  fc2range, fc3flag fc4flag ... fc8flag
    11 11                          # 13  neighbor shells for rank 2, ONE PER ATOM of the prim. cell(if fc2range>0)
    3 3                            # 14  neighbor shells for rank 3
    0 0                            # 15  neighbor shells for rank 4
@@ -583,14 +541,6 @@ remain. If that number is very small, the invariances are over-determining your
 model, and the fit will be poor no matter how good the data — increase the
 range, or switch some of ``irot``/``ihuang`` off.
 
-.. note::
-
-   Before version 8.17, ``enforce_inv = 1`` solved the unconstrained problem and
-   then orthogonally projected the answer onto the kernel. That is not the same
-   as fitting under the constraint and could be far worse. Numbers produced with
-   ``enforce_inv = 1`` by an earlier version should be regenerated.
-   ``enforce_inv = 0`` is unaffected.
-
 .. _focex-lasso:
 
 **enforce_inv = 2 and 3: selecting the force constants by LASSO**
@@ -654,7 +604,7 @@ and names, in the *same order as the atom counts in* ``POSCARi``.
 **11. Atoms in the primitive cell** — the *total* number of atoms in the
 primitive cell (not per type).
 
-**12.** ``fc2range`` — how the range of the harmonic FCs is chosen:
+**12.** ``fc2range fc3flag … fc8flag``. ``fc2range`` — how the range of the harmonic FCs is chosen:
 
   * ``0`` — automatic: the range is the largest sphere that fits in the
     Wigner-Seitz cell of the biggest supercell provided, and the shell counts on
@@ -662,12 +612,11 @@ primitive cell (not per type).
   * ``1`` — use the shell counts of line 13; any shell reaching beyond the
     supercell is still discarded, with a warning in the log.
 
-  Up to six optional integers may follow: ``fc3flag … fc8flag``. Missing flags
-  count as nonzero.
+  ``fc3flag fc4flag … fc8flag`` (optional, one per rank 3 … 8; a missing flag means ``1``) —
+  how the range of the anharmonic FCs of that rank is chosen:
 
-  * Nonzero: a cluster of that rank is kept if all its pairs are within the
-    shells of lines 14–19, as before.
-  * ``0``: a cluster is kept if every pair in it is a kept FC2 pair, and one of
+  * ``1`` — a cluster is kept if all its pairs are within the shells of lines 14–19.
+  * ``0`` — a cluster is kept if every pair in it is a kept FC2 pair, and one of
     these holds:
 
     - all its pairs are within the shells of lines 14–19;
@@ -676,6 +625,9 @@ primitive cell (not per type).
 
     The two-body and collinear terms then reach as far as FC2. The number of
     unknowns grows a lot; see ``clusters<rank>.dat``.
+
+  Example: ``0 0 1 1 1 1 1`` takes the FC2 range from the supercell and lets the two-body and
+  collinear FC3 reach as far, while FC4 … FC8 follow their shells.
 
 **13–19. Neighbor shells** — one line per rank (2 … 8), each containing
 ``natom_prim_cell`` integers: how many neighbor shells around each atom of the
@@ -726,7 +678,8 @@ only the first line matters.
   non-analytical term is added back when the dynamical matrix is built. This is
   the recommended setting for polar materials.
 * ``born_flag = 3, 4, 6, 7, 8, 9`` — variants of the subtraction scheme intended
-  for development and testing; the log file states which one is active.
+  for development and testing; the log file states which one is active. They are not
+  recommended and are not guaranteed to work correctly.
 
 There must be exactly ``natom_prim_cell`` Born-charge blocks, in the order in
 which the atoms are declared in ``structure.params``. The acoustic sum rule is
@@ -805,23 +758,17 @@ next. The label is a short string used for the tick marks in ``KTICS.BS`` file u
 ``default.params``
 ^^^^^^^^^^^^^^^^^^
 
-Numerical thresholds and array-size limits. **A zero on any line means "use the
-built-in default"**, which is what the comment on that line states — so in
-practice you copy this file unchanged and never touch it. It has 36 lines, in
-this order: tolerance, force error, neighbor-cell cutoff, margin, then
-``maxterms(1:8)``, ``maxtermzero(1:8)``, ``maxtermsindep(1:8)`` and
-``maxgroups(1:8)``.
+Four numerical thresholds, one per line. **A zero means "use the built-in default"**, given in
+the comment on that line — so in practice you copy this file unchanged.
 
 .. code-block:: text
 
-   0      tolerance for equating to zero (2d-3)      # if 0 take the default value
+   0      tolerance for equating to zero (1d-4)   # if 0 take the default value
    0      force error value for inversion/regularization (1d-5)
-   0      cutoff for how many cells away (6 cells) to include when making neighborlists
+   0      cutoff for how many cells away (6 cells)
    0      margin for eliminating small force constants (1d-6)
-   0      maxterms(1)=40
-   ...
 
-The four meaningful knobs are:
+They are:
 
 * **tolerance** (default :math:`10^{-4}` Å) — two coordinates closer than this
   are considered equal when identifying symmetry-equivalent atoms. Increase it
@@ -834,10 +781,6 @@ The four meaningful knobs are:
   sets the size of the internal ``atompos`` list.
 * **margin** (default :math:`10^{-6}`) — FCs smaller than this are not written
   to the ``fcN.dat`` files.
-
-The ``maxterms``/``maxgroups`` entries are upper bounds on the number of terms
-and groups stored per rank. If a run stops complaining that one of these is too
-small, raise the corresponding line for that rank.
 
 .. _focex-stress-params:
 
@@ -1168,10 +1111,9 @@ Troubleshooting
     the DFT data. Otherwise check lines 1–3 and the supercell itself.
 
 ``End of file`` while reading ``default.params`` or ``latdyn.params``
-    The file has fewer lines than the version of the code expects. Copy the
-    template from the ``FOCEX`` directory rather than reusing an old one:
-    ``default.params`` must have 36 lines, and line 2 of ``latdyn.params`` must
-    contain six numbers (shift **and** normal).
+    The file has fewer lines than expected. Start from the template in the ``FOCEX``
+    directory: ``default.params`` has 4 lines, and line 2 of ``latdyn.params`` contains six
+    numbers (shift **and** normal).
 
 ``Bad real number in item 4 of list input`` (``latdyn.params``)
     Line 2 contains only the three shift components; append the three components
@@ -1210,11 +1152,6 @@ Troubleshooting
     integers. The offending line is echoed below the message. Either the counts
     are missing or misspelled, or ``natom_type`` in ``structure.params`` does not
     match the number of species in the supercell. See :ref:`focex-poscar`.
-
-Run stops with an array-bound or allocation error in ``setup_maps``
-    One of the ``maxterms``/``maxgroups``/``maxtermsindep`` limits in
-    ``default.params`` is too small for the range you requested. Replace the
-    ``0`` on the relevant line by an explicit, larger value.
 
 ``CHECK_BORN_SYMMETRY: Born charges or dielectric tensor break the crystal symmetry``
     The Born tensors are on the wrong atoms, or in another frame than

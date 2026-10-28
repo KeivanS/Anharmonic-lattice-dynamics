@@ -2267,8 +2267,7 @@ end function fold_ws
  integer maxrank,itrans,irot,ihuang,enforce_inv
  integer, allocatable :: nlines(:),tind2(:)
  parameter(maxrank=8)
- integer nterms(maxrank),maxterms(maxrank),maxtermsindep(maxrank),ngroups(maxrank), &
-&        maxtermzero(maxrank),maxgroups(maxrank),ngrnk(maxrank)
+ integer nterms(maxrank),ngroups(maxrank),ngrnk(maxrank)
  integer, allocatable :: nterm(:),ntermsindep(:)
  integer, allocatable :: iatmtermindp(:,:,:),ixyztermindp(:,:,:)
  integer, allocatable :: iatmtrm(:,:,:),ixyztrm(:,:,:)

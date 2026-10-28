@@ -29,70 +29,6 @@
    if(icutoff.eq.0) icutoff = 6     ! default multiple of bond length; defines maxatoms
    read(uparams,*) margin    ! cutoff for neighborshells
    if(margin.eq.0) margin = 1d-6     ! default margin to eliminate FCs
-   read(uparams,*) maxterms(1)
-   if(maxterms(1).eq.0) maxterms(1)=40 !100
-   read(uparams,*) maxterms(2)
-   if(maxterms(2).eq.0) maxterms(2)=4000 !500
-   read(uparams,*) maxterms(3)
-   if(maxterms(3).eq.0) maxterms(3)=5000 !1800
-   read(uparams,*) maxterms(4)
-   if(maxterms(4).eq.0) maxterms(4)=3000 !2000
-   read(uparams,*) maxterms(5)
-   if(maxterms(5).eq.0) maxterms(5)=3  
-   read(uparams,*) maxterms(6)
-   if(maxterms(6).eq.0) maxterms(6)=3 
-   read(uparams,*) maxterms(7)
-   if(maxterms(7).eq.0) maxterms(7)=3 
-   read(uparams,*) maxterms(8)
-   if(maxterms(8).eq.0) maxterms(8)=3 
-   read(uparams,*) maxtermzero(1)
-   if(maxtermzero(1).eq.0) maxtermzero(1)=20 !500
-   read(uparams,*) maxtermzero(2)
-   if(maxtermzero(2).eq.0) maxtermzero(2)=2000 !2000
-   read(uparams,*) maxtermzero(3)
-   if(maxtermzero(3).eq.0) maxtermzero(3)=5000!5000
-   read(uparams,*) maxtermzero(4)
-   if(maxtermzero(4).eq.0) maxtermzero(4)=3000 !8000
-   read(uparams,*) maxtermzero(5)
-   if(maxtermzero(5).eq.0) maxtermzero(5)=1
-   read(uparams,*) maxtermzero(6)
-   if(maxtermzero(6).eq.0) maxtermzero(6)=1
-   read(uparams,*) maxtermzero(7)
-   if(maxtermzero(7).eq.0) maxtermzero(7)=1
-   read(uparams,*) maxtermzero(8)
-   if(maxtermzero(8).eq.0) maxtermzero(8)=1
-   read(uparams,*) maxtermsindep(1)
-   if(maxtermsindep(1).eq.0) maxtermsindep(1)=10
-   read(uparams,*) maxtermsindep(2)
-   if(maxtermsindep(2).eq.0) maxtermsindep(2)=250
-   read(uparams,*) maxtermsindep(3)
-   if(maxtermsindep(3).eq.0) maxtermsindep(3)=150
-   read(uparams,*) maxtermsindep(4)
-   if(maxtermsindep(4).eq.0) maxtermsindep(4)=300
-   read(uparams,*) maxtermsindep(5)
-   if(maxtermsindep(5).eq.0) maxtermsindep(5)=1
-   read(uparams,*) maxtermsindep(6)
-   if(maxtermsindep(6).eq.0) maxtermsindep(6)=1
-   read(uparams,*) maxtermsindep(7)
-   if(maxtermsindep(7).eq.0) maxtermsindep(7)=1
-   read(uparams,*) maxtermsindep(8)
-   if(maxtermsindep(8).eq.0) maxtermsindep(8)=1
-   read(uparams,*) maxgroups(1)
-   if(maxgroups(1).eq.0) maxgroups(1)=10
-   read(uparams,*) maxgroups(2)
-   if(maxgroups(2).eq.0) maxgroups(2)=200
-   read(uparams,*) maxgroups(3)
-   if(maxgroups(3).eq.0) maxgroups(3)=150
-   read(uparams,*) maxgroups(4)
-   if(maxgroups(4).eq.0) maxgroups(4)=300
-   read(uparams,*) maxgroups(5)
-   if(maxgroups(5).eq.0) maxgroups(5)=1
-   read(uparams,*) maxgroups(6)
-   if(maxgroups(6).eq.0) maxgroups(6)=1
-   read(uparams,*) maxgroups(7)
-   if(maxgroups(7).eq.0) maxgroups(7)=1
-   read(uparams,*) maxgroups(8)
-   if(maxgroups(8).eq.0) maxgroups(8)=1
  close(uparams)
 
  open(uparams,file='structure.params',status='old')
@@ -226,10 +162,6 @@
  write(ulog,*) svdcut   ,'   cutoff for smallest eigenvalue w to be included for inversion'
  write(ulog,*) tolerance,'   tolerance(Ang) for equating two variables '
  write(ulog,*) rcutoff  ,'   cutoff multiple of dist/atom for neighbors of primitive cell '
- write(ulog,*) 'maxterms     =',maxterms
- write(ulog,*) 'maxtermzero  =',maxtermzero
- write(ulog,*) 'maxtermsindep=',maxtermsindep
- write(ulog,*) 'maxgroups    =',maxgroups
  write(ulog,*)' ---------------------------------------------------------'
  write(ulog,*) fc2range,'  if 0 default range consistent with the largest supercell is chosen for FC2 '
  write(ulog,*) fcflag(3:8),'  fc3flag..fc8flag: 0 = FC2-range rule for 2-body and aligned clusters, else nshells'

@@ -62,10 +62,9 @@ why SC-SNAPS generates them (:doc:`runscsnaps`).
 
 **Which SC-SNAPS should I use?**
 
-The ``SC_SNAPS`` folder of ALATDYN, which is identical to the separate repository
-`github.com/KeivanS/SC_SNAPS <https://github.com/KeivanS/SC_SNAPS>`_. The old copy in
-``FOCEX/utility`` (removed) read an older ``cell.inp``, so old input files need editing;
-see :doc:`runscsnaps`.
+The ``SC_SNAPS`` folder of ALATDYN (``make sc_snaps``), which is identical to the separate
+repository `github.com/KeivanS/SC_SNAPS <https://github.com/KeivanS/SC_SNAPS>`_; see
+:doc:`runscsnaps`.
 
 **Do I need the Born effective charges?**
 
@@ -125,10 +124,9 @@ such as HSE will also improve accuracy of :math:`\epsilon^\infty` .
 **FOCEX stops immediately with an end-of-file or "bad real number" message.**
 
 One of the parameter files has the wrong number of lines or values. These files
-are read positionally: ``default.params`` must have 36 lines and line 2 of
+are read positionally: ``default.params`` has 4 lines and line 2 of
 ``latdyn.params`` must contain six numbers (mesh shift *and* surface normal).
-Copy the templates from the ``FOCEX`` directory rather than reusing files from
-an older version of the code.
+Start from the templates in the ``FOCEX`` directory.
 
 **Which output files do the other ALATDYN codes need?**
 
@@ -144,15 +142,6 @@ decoding is given in :ref:`focex-logname`.
 
 Compilation
 -----------
-
-**``sc_snaps.x`` compiles but stops with "Recursive call to nonrecursive
-procedure 'findif'".**
-
-It was built with ``-fcheck=all``, which turns on ``-fcheck=recursion``, and the
-finite-difference helper genuinely recurses. Build it with plain ``-O2``, as
-SC-SNAPS's own Makefile does, or keep the checks and add ``-frecursive``. Note
-that ``sc_snaps.x`` is built from the ``SC_SNAPS`` folder (``make sc_snaps``), not from
-``FOCEX/utility``; see :doc:`runscsnaps`.
 
 **``make`` fails on the last line with "No such file or directory".**
 
