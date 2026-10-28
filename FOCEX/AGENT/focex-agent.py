@@ -76,7 +76,7 @@ p2f = _load(os.path.join(HERE, 'utility', 'poscar2focex.py'), 'poscar2focex')
 sys.path.insert(0, os.path.join(VASPFLOW, 'modules'))
 try:
     from instruction_parser import InstructionParser, InstructionError
-    from vasp_input_generator import VASPInputGenerator, potcar_dir_for
+    from vasp_input_generator import VASPInputGenerator, potcar_dir_for, slurm_account
     vagent = _load(os.path.join(VASPFLOW, 'vasp-agent.py'), 'vasp_agent')
 except Exception as e:                                        # pragma: no cover
     sys.exit(f'focex-agent needs VASP-Flow at {VASPFLOW} (set VASP_FLOW_DIR): {e}')
@@ -1444,6 +1444,12 @@ def init(args):
         sys.exit(f'{proj} exists; use --force to start it again')
     if fx['mode'] == 'from_scratch' and not os.path.isfile(args.coord):
         sys.exit(f'coordinate file {args.coord} not found (default name POSCAR; another name: --coord FILE)')
+    prof = vagent.load_profile(args.profile or fx['profile'] or '')
+    if prof.get('slurm'):
+        try:
+            slurm_account(inst, prof)            # a SLURM run needs an account (profile or ACCOUNT:)
+        except InstructionError as e:
+            sys.exit(f'ERROR: {e}')
     os.makedirs(proj, exist_ok=True)
     shutil.copy(args.instr, os.path.join(proj, INSTR))
     if fx['mode'] == 'extract_only':

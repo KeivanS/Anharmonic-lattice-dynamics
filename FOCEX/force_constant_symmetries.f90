@@ -807,7 +807,6 @@
       sgloop: do isg=1,isgopcount
         neqs=neqs+1
         if(neqs.gt.maxterms)then
-          write(6,*)'Warning: in force_constants: maxterms too small'
           iert=iert+1
           deallocate(ipermute,eqs,eqs2)
           return
@@ -896,7 +895,6 @@
             if(i.eq.ntermall)then
               ntermall=ntermall+1
               if(ntermall.gt.maxterms)then
-           write(6,*) 'Warning2: in force_constants: maxterms too small',maxterms
                 iert=iert+1
                 deallocate(ipermute,eqs,eqs2)
                 return
@@ -981,7 +979,6 @@
           ntermsindep=ntermsindep+1
           if(ntermsindep.gt.maxtermsindep)then
 !! can extend the size of iatomtermindep and ixyztermindep arrays
-            write(6,*) 'Warning: in force_constants: maxtermsindep too small'
             ieri=ieri+1
             deallocate(ipermute,eqs,eqs2)
             return  !stop
@@ -1041,7 +1038,6 @@
 ! new term: add it
           m=m+1
           if(m.eq.maxterms)then
-            write(6,*)'Warning: in fcs: maxterms too small',maxterms
             iert=iert+1
             deallocate(ipermute,eqs,eqs2)
             return
@@ -1078,7 +1074,6 @@
 ! new term: add it
             m=m+1
             if(m.eq.maxterms)then
-              write(6,*)'Warning3: in fcs: maxterms too small',maxterms
               iert=iert+1
               deallocate(ipermute,eqs,eqs2)
               return

@@ -117,6 +117,10 @@ ZnO/GaN/BAs run scripts still use and which is kept until the user removes it).
   MPI build) with the profile's MPI command; report: <= 7 temperatures, kappa_RTA, full, kappa_C,
   warning if full < 0.99 RTA (open direct-solver issue). diagnose.py: TC_PAT. Tested on argon (6^3,
   RTA isotropic, ~1/T; job 0 skipped; missing binary held).
+- SLURM account (2026-10-27, user): the account is set once in the user's cluster profile
+  (copy of VASP-Flow's profiles/slurm.json; rivanna.json removed from VASP-Flow); ACCOUNT: in the
+  instruction file overrides it; neither -> init stops before making the project (slurm_account in
+  VASP-Flow). Docs/templates use `--profile mycluster` as the placeholder, no site names.
 - Reference stress (2026-10-27): snap_000 (undistorted supercell) runs with ISIF=2 (others ISIF=1 =
   trace only, vasp.at wiki); collect writes 04_supercells/stress.params = -(OUTCAR "in kB", XX YY ZZ
   XY YZ ZX)/10 GPa (user: VASP positive = cell wants to expand; wiki agrees; PSTRESS not subtracted,
@@ -507,6 +511,10 @@ old e1 path: it counts |x| > margin.
   assignment on |<e(k-1)|e(k)>|^2 after aligning degenerate subspaces (polar decomposition),
   5 x mean level spacing window as before. The old greedy version left unconnected bands at
   their initial index: GeSe had a copied row at 179 of 180 k-points. Ge/BZO/MoTe2 unchanged.
+- Array sizes: no user-set limits (default.params has 4 lines); size_force_constants grows its own
+  work arrays (start 64/16/64, doubling). The "maxterms too small" retry messages of force_constants
+  are no longer printed (2026-10-27); the final work sizes are in the log (SIZE_FORCE_CONSTANTS:
+  work bounds). A real mismatch still stops: "SETUP_MAPS: sizing disagreement".
 - `setup_maps`: `collect_force_constants` counts a candidate group before dropping it when all
   its terms vanish, so its test is `ngroups.gt.maxgroups` with maxgroups = exact + 1 (the
   `.ge.` test stopped MgO rank 3 with "sizing disagreement").
