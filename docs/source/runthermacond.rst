@@ -43,10 +43,11 @@ shared among the processes:
    tcond-2.0.x                 # one process (or tcond-2.0-serial.x)
    mpirun -np 8 tcond-2.0.x    # eight processes
 
-A serial run is the reference for a parallel one: both give the same output files. The
-results do not depend on the compiler or the optimisation level either (checked with GCC 12
-and 15, ``-O2`` and ``-O0``). Build ``make serial`` with the same compiler as ``mpif90``
-(``make serial FC=...``) if the two are to be compared file by file.
+A serial run is the reference for a parallel one: built with the same compiler, both give the
+same output files (``make serial`` uses the compiler of ``mpif90``; ``make serial FC=...``
+chooses another). The thermal conductivities (RTA and full solution) do not depend on the
+compiler; the per-mode columns of ``kappa_vs_T.dat`` can, because the eigenvectors chosen within
+a set of degenerate modes do.
 Rank 0 writes all output in the run folder; the other processes work in
 ``.mpi_rank_NNN/``, which are removed at the end.
 

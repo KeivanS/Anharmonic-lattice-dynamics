@@ -1,7 +1,7 @@
 # THERMACOND
 #   make            parallel build with mpif90 -> $(DESTDIR)/tcond-$(ver).x
 #                   (run: tcond-2.0.x, or mpirun -np N tcond-2.0.x)
-#   make serial     serial build with gfortran and no MPI library -> $(DESTDIR)/tcond-$(ver)-serial.x
+#   make serial     serial build, no MPI library, same compiler as mpif90 -> $(DESTDIR)/tcond-$(ver)-serial.x
 #   make DEBUG=1    either of the above with -g -fbounds-check -fbacktrace instead of -O2
 #   make clean
 # Objects and .mod files go to obj_mpi/ or obj_serial/, not next to the sources.
@@ -15,7 +15,9 @@ EXE = tcond-$(ver).x
 EXE_SERIAL = tcond-$(ver)-serial.x
 
 MPIFC ?= mpif90
-FC     = gfortran
+# serial: the compiler mpif90 uses (Open MPI's --showme:command), so that serial and MPI builds give
+# the same numbers; gfortran if that does not answer.  make serial FC=... overrides it.
+FC    := $(or $(shell $(MPIFC) --showme:command 2>/dev/null | head -1),gfortran)
 ifeq ($(DEBUG),1)
   OPT = -g -fbounds-check -fbacktrace
 else

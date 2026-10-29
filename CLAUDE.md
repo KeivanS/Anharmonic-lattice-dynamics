@@ -193,7 +193,7 @@ ZnO/GaN/BAs run scripts still use and which is kept until the user removes it).
 
 Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (2025).
 
-- Build: `cd THERMACOND && make` (mpif90 -> ~/ALADYN/bin/tcond-2.0.x) or `make serial` (gfortran +
+- Build: `cd THERMACOND && make` (mpif90 -> ~/ALADYN/bin/tcond-2.0.x) or `make serial` (mpif90's compiler +
   `mpi_stub.f90` -> tcond-2.0-serial.x); objects in obj_mpi/ obj_serial/; `DEBUG=1` for -g
   -fbounds-check (the old default, ~20x slower). On this Mac mpif90 needs
   `OMPI_FC=/opt/homebrew/bin/gfortran SDKROOT=$(xcrun --show-sdk-path)`.
@@ -201,8 +201,13 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
   (symlinked inputs, removed at the end) so only rank 0's files survive. Since 2026-10-22
   (degenerate averaging, below) Ge 6^3 job 2 and 4^3 job 3 give byte-identical kappa_vs_T.dat for
   1 and 3 ranks and for GCC 12.2 -O2, GCC 15.3 -O2 and -O0. Before that the result depended on the
-  compiler (Ge 4^3 RTA 13.25 / 13.34 / 13.29 W/mK). `/usr/local/gfortran` (GCC 12) comes first on
-  this Mac's PATH, so plain `make serial` uses a different compiler from mpif90.
+  compiler (Ge 4^3 RTA 13.25 / 13.34 / 13.29 W/mK). Since the per-mode columns were added (item (c)
+  below) only the RTA and block columns (2-13) are compiler-independent: Ge 4^3 job 3, GCC 12.2 vs
+  16.2 (both -O2), per-mode iterative columns 14+ differ by up to 0.2 W/mK at 100 K (degenerate
+  eigenvectors); same compiler, serial = MPI byte for byte (2026-10-29). `/usr/local/gfortran` (GCC 12)
+  comes first on this Mac's PATH; mpif90 uses Homebrew GCC 16.2 via OMPI_FC. Since 2026-10-29 the
+  Makefile's serial FC = `mpif90 --showme:command` (gfortran if no answer), so with OMPI_FC and SDKROOT
+  exported both builds use GCC 16.2 (installed serial = MPI byte for byte, Ge 4^3 job 3).
 - Shares structure.params and latdyn.params with FOCEX (13-line latdyn, FOCEX reads 1-7;
   template FOCEX/latdyn.params). job (line 8): 0 bands/DOS, 1 +linewidths on the band
   path, 2 +V3*delta, RTA, direct (line 9: 0 CG, 1 SVD), 3 +V3*delta, RTA, iterative.
