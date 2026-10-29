@@ -893,6 +893,7 @@
     enddo
  enddo
  map(2)%nkeptind=sum(map(2)%keep(:))  ! number of independent FC2 terms kept
+ call log_fc2_outside_ws(rws26)
 
  write(ulog,*)'size of groups of FC2s:ngr, size(kept indep terms)=',map(2)%ngr,size(map(2)%keep)
  write(ulog,*)'number of kept FC2 independent terms=',map(2)%nkeptind, 'out of ',map(2)%ntotind
@@ -942,11 +943,53 @@
  enddo
 
  write(ulog,*)'Total # of independent terms kept, map2%ntotind =',sum(keep),map(2)%ntotind
+ call log_fc2_outside_ws(rws26)
 
 4 format(a,3i4,9f9.4)
 5 format(a,2i4,a,f9.4,a,3i5)
 
  end subroutine exclude_beyond_sc
+
+!==============================================
+ subroutine log_fc2_outside_ws(rws26)
+!! for every kept FC2 group, the number of its members whose pair vector lies outside the supercell's
+!! WS cell (possible when the supercell lacks some of the crystal's rotations: the group is kept
+!! because another member is inside, and every member is used at its own R); one log line per group
+ use ios
+ use atoms_force_constants
+ use geometry
+ use svd_stuff
+ use params
+ use constants, only : r15
+ implicit none
+ real(r15), intent(in) :: rws26(3,26)
+ integer g,ti,t,nout,ntot,ngrp,nb
+ real(r15) rij(3)
+ logical inside,kept
+
+ ntot=0; ngrp=0
+ do g=1,map(2)%ngr
+    kept=.false.
+    do ti=1,map(2)%ntind(g)
+       if (map(2)%keep(counteri(2,g,ti)).ne.0) kept=.true.
+    enddo
+    if (.not.kept) cycle
+    nout=0
+    do t=1,map(2)%nt(g)
+       rij=atompos(:,map(2)%gr(g)%iat(2,t))-atompos(:,map(2)%gr(g)%iat(1,t))
+       call check_inside_ws(rij,rws26,inside,nb)
+       if (.not.inside) nout=nout+1
+    enddo
+    if (nout.gt.0) then
+       write(ulog,5)' FC2 group ',g,' (r =',length(rij),' A): ',nout,' of ',map(2)%nt(g), &
+ &                  ' members outside the supercell WS cell (kept: others are inside)'
+       ntot=ntot+nout; ngrp=ngrp+1
+    endif
+ enddo
+ write(ulog,'(a,i6,a,i8,a)')' FC2 groups with members outside the supercell WS cell:',ngrp, &
+ &        ' (',ntot,' members); they are used at their own R'
+5 format(a,i5,a,f9.4,a,i6,a,i6,a)
+ end subroutine log_fc2_outside_ws
 !==============================================
  subroutine implement_temperature(m3,n,amat,bmat,nconfg,ene,nlines,tempk,mat,qmat)
 !! defines Boltzmann weights for each snapshot and sets instead of Ax=b the system A^T.W.A x=A^T.W. b

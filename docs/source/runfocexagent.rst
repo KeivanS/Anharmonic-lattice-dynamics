@@ -374,9 +374,7 @@ The supercell
   ``SUPERCELL: -1 1 1  1 -1 1  1 1 -1`` is its conventional cube (4 primitive cells). The
   determinant must be positive.
 
-The report gives the matrix and the number of atoms (for SMALL and LARGE also the face distance). Prefer supercells that keep the symmetry of the lattice: with a supercell that does not (for
-example 4×3×2 of a hexagonal cell), FOCEX can stop with ``R+tp-t not inside!``
-(:ref:`agent-diagnose`).
+The report gives the matrix and the number of atoms (for SMALL and LARGE also the face distance).
 
 .. _agent-frame:
 
@@ -756,9 +754,6 @@ messages.
    * - ``mpi_init``, ``not_run``, ``interrupted``
      - MPI did not start; never ran; killed
      - resubmit
-   * - ``ws_outside``
-     - FOCEX ``R+tp-t not inside!``: the supercell lacks the symmetry of the lattice
-     - held: choose another supercell, redo from the snapshots
    * - others
      - disk quota, symmetry, an unknown stop, ...
      - held, with the error lines
@@ -771,13 +766,6 @@ diagnosis, and copies every file it edits to ``diagnosis/backup_<date>/``; then 
 judgement -- a cause it does not know, a fix that was already tried, a new supercell -- the script
 is *held*: it prints what to do and stops, and ``bash fix_it.sh --anyway`` runs its suggested
 commands as they are. Run ``diagnose.py`` again when the resubmitted job has finished.
-
-.. tip::
-
-   ZnO with a 4×3×2 supercell: *task focex, 05_focex: ws_outside -- an FC2 pair of a kept
-   symmetry group lies outside the Wigner-Seitz cell of the supercell ...; evidence: focex.out:
-   "SET_DYNMAT_STD: R+tp-t not inside!"; HELD for review: use a supercell with the symmetry of the
-   lattice, then redo from the snapshots.*
 
 .. _agent-thermacond:
 

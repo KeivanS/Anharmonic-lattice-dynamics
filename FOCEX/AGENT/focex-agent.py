@@ -242,7 +242,7 @@ def newest_focex():
         c = sorted(glob.glob(os.path.expanduser(pat)), key=os.path.getmtime)
         if c:
             return c[-1]
-    return '~/ALADYN/bin/focex-9.0.x'
+    return '~/ALADYN/bin/focex-9.1.x'
 
 
 def vasp_inst(inst, fx, step, extra=()):
@@ -454,9 +454,7 @@ def face_distance(L):
 def choose_supercell(c, nprim, kind):
     """m1 x m2 x m3 multiple of the conventional cell: the fewest atoms whose smallest face
     distance is >= D (SMALL 10 A, LARGE 14 A), within the atom limit; otherwise the largest
-    face distance within the limit.  (Skewed Hermite-normal-form supercells of the same size
-    can put FC2 pairs outside the supercell's Wigner-Seitz cell, which stops FOCEX in
-    set_dynmat_std.)  Returns (S rows in primitive units, info)."""
+    face distance within the limit.  Returns (S rows in primitive units, info)."""
     D, nmax = SUPERCELL[kind]
     conv_in_prim = np.rint(np.linalg.inv(c['prim_in_conv'])).astype(int)   # rows: conv vectors
     nconv = int(round(abs(np.linalg.det(conv_in_prim)))) * nprim

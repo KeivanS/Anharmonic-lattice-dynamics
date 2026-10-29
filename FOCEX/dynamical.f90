@@ -17,6 +17,7 @@
  real(r15) vkms(3),vavg(3),qr(3),q2(3),sf,etot,free,cv,cp,entropy,eq_vol,tempk,cvte
  real(r15) rotc(3,3),atldc(3,3,3,3),elasticc(6,6),atld_sym(3,3,3,3),asym_c
  character(len=12) csys
+ character(len=8) vtest
  real(r15) deteps3,grune,boft,epsilon0(3,3),velocfbz(3),mat(3,3)
  complex(r15) dyn_coul(3,3),ddn(6,6,3)
  real(r15), allocatable :: aux(:),array(:) ,eivaux(:),velaux(:,:)
@@ -37,10 +38,11 @@
 
   call allocate_eig_bs(ndyn,nkp_bs,ndyn) !3rd index is for eivecs needed for gruneisen
 
-  open(330,file='veltest.dat')
+  call get_environment_variable('FOCEX_VELTEST',vtest)
+  if (vtest(1:1).eq.'1') open(330,file='veltest.dat')   ! finite-difference velocity check (get_frequencies)
 
   write(*,*)' calling get_freqs'
-  call get_frequencies(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,ndyn,eigenvec_bs,veloc_bs)
+  call get_frequencies(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,ndyn,eigenvec_bs,veloc_bs,1)
 
  call cpu_time(tim)
  write(utimes,'(a,f12.4)')' DYNAMICAL after get_frequencies (BS)   TIME  IS ',tim
@@ -205,7 +207,7 @@
   call get_weights(nkc,kpc,mapinv,mapibz)   ! generates kibz and weights
   call allocate_eig_ibz(ndyn,nibz) ;  allocate(dk_bs(nibz)) ; grunibz=0; dk_bs=0
   write(*,*)' calling get_freq in IBZ with nibz=', nibz 
-  call get_frequencies(nibz,kibz,dk_bs,ndyn,eivalibz,ndyn,eivecibz,velocibz)
+  call get_frequencies(nibz,kibz,dk_bs,ndyn,eivalibz,ndyn,eivecibz,velocibz,0)
 
   open(uband,file='ibz_bands.dat')
   call write_all_eigenvalues(nibz,kibz,dk_bs,ndyn,eivalibz,velocibz,uband)
@@ -383,8 +385,13 @@
 
  end subroutine set_band_structure
 !===========================================================
- subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,vg)
+ subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,vg,ipath)
 ! also outputs the group velocities from HF theorem (exact) in km/s
+! A Gamma point is taken as the limit q = 1e-6 along a direction (the non-analytic term has no value
+! at q = 0 itself; naq's angular average there would mix LO and TO): with ipath=1 (kp is the band path,
+! consecutive segments) the segment it belongs to (incoming if the previous point differs, else
+! outgoing), otherwise the fixed direction uinc. FOCEX_VELTEST=1 also writes the finite-difference
+! check of the velocities (veltest.dat).
  use params
  use constants
  use born
@@ -392,21 +399,39 @@
  use kpoints, only : dk_bs
 ! use fourier, only : nrgrid,rgrid,rws_weights,ggrid,nggrid 
  implicit none
- integer, intent(in) :: nkp,ndn,nv ! no of wanted eivecs
+ integer, intent(in) :: nkp,ndn,nv,ipath ! no of wanted eivecs
  real(r15), intent(in) :: kp(3,nkp),dk(nkp)
  real(r15), intent(out):: eival(ndn,nkp),vg(3,ndn,nkp)
  complex(r15), intent(out) :: eivec(ndn,ndn,nkp)
  integer i,j,l
- real(r15) eivl(ndn),vel(3,ndn)  !,sf,dsf(3),mysf
+ real(r15) eivl(ndn),vel(3,ndn),q(3),dir(3)  !,sf,dsf(3),mysf
  complex(r15) eivc(ndn,ndn)
+ character(len=8) veltest
+! a fixed direction whose components are mutually incommensurate (as in finitedif_vel): the shift
+! for the eigenvectors and velocities leaves no point on a symmetry plane or axis
+ real(r15), parameter :: uinc(3)= (/ 0.41421356237309505d0,  &
+ &                                   0.73205080756887729d0,  &
+ &                                   0.23606797749978970d0 /)
 
-! open files and write the group velocities
-
+ call get_environment_variable('FOCEX_VELTEST',veltest)
 
  kloop: do i=1,nkp
+    q=kp(:,i); dir=uinc
+    if (length(q).lt.1d-12) then
+       if (ipath.eq.1 .and. nkp.gt.1) then
+          dir=0
+          if (i.gt.1) dir=kp(:,i)-kp(:,i-1)
+          if (length(dir).lt.1d-12 .and. i.lt.nkp) dir=kp(:,i+1)-kp(:,i)
+          if (length(dir).lt.1d-12) dir=uinc
+       endif
+       dir=dir/length(dir)
+       q=1d-6*dir
+    endif
+    call freq_vel(q,dir,ndn,vg(:,:,i),eival(:,i),eivec(:,1:nv,i))
+    if (veltest(1:1).eq.'1') call finitedif_vel(kp(:,i),ndn,vel,eivl,eivc)
 !   if (born_flag .eq.2) then  ! for now use FD for velocities with ewald
 !      write(*,5)' Calling finitedif for k# ',i,kp(:,i)
-       call finitedif_vel(kp(:,i),ndn,vg(:,:,i),eival(:,i),eivec(:,1:nv,i))
+!      call finitedif_vel(kp(:,i),ndn,vg(:,:,i),eival(:,i),eivec(:,1:nv,i))
 !   else
 !      call get_freq(kp(:,i),ndn,vg(:,:,i),eival(:,i),eivec(:,1:nv,i) )
 !   endif 
@@ -491,6 +516,49 @@
  6 format(a,3(1x,f9.3),1x,g12.5,9(1x,f9.4))
 
   end subroutine finitedif_vel
+!=====================================================
+  subroutine freq_vel(qq,shdir,ndn,vgr,evl0,evc0)
+!! frequencies (omega^2, evl0) at qq itself; eigenvectors and Hellmann-Feynman group velocities at
+!! qq + 3e-4 |G| shdir/|shdir|, which separates degenerate bands so that both are unique.
+!! At the Gamma limit (|qq| < 1e-5, see get_frequencies) the rigid translations (eigenvector in the
+!! mass-weighted translation subspace) get omega^2 = 0 exactly: they are not vibrations (the value
+!! before is in the log).
+  use constants
+  use lattice, only : volume_g0
+  use geometry
+  use atoms_force_constants, only : natom_prim_cell, atom0
+  use ios, only : ulog
+  implicit none
+  integer, intent(in) :: ndn
+  real(r15),intent(in) :: qq(3),shdir(3)
+  real(r15),intent(out) :: vgr(3,ndn),evl0(ndn)
+  complex(r15),intent(out) :: evc0(ndn,ndn)
+  real(r15) qr(3),evlr(ndn),v2(3,ndn),proj,mtot
+  complex(r15) evct(ndn,ndn),s
+  integer l,al,tau
+
+  qr = qq + 3d-4*volume_g0**0.33333333*shdir/length(shdir)
+  call get_freq(qr,ndn,vgr,evlr,evc0)
+  call get_freq(qq,ndn,v2,evl0,evct)
+  if (length(qq).lt.1d-5) then
+     mtot=sum(atom0(1:natom_prim_cell)%mass)
+     do l=1,ndn
+        proj=0
+        do al=1,3
+           s=0
+           do tau=1,natom_prim_cell
+              s=s+sqrt(atom0(tau)%mass/mtot)*evct(al+3*(tau-1),l)
+           enddo
+           proj=proj+abs(s)**2
+        enddo
+        if (proj.gt.0.999d0) then
+           write(ulog,'(a,i4,a,g12.4,a)')' FREQ_VEL: Gamma, mode',l,' is a rigid translation, omega^2=', &
+ &               evl0(l),' set to 0'
+           evl0(l)=0
+        endif
+     enddo
+  endif
+  end subroutine freq_vel
 !===========================================================
  subroutine get_freq(kp,ndn,vg,eival,eivec)
 !! given a kpoint kp, it sets up the dynamical matrix and diagonalizes it
@@ -1038,15 +1106,8 @@
              rr = atompos(:,j) - atompos(:,taup) ! this is just R  used for standard phase; makes a G-periodic dynmat
              rs = atompos(:,j) - atompos(:,tau) ! this is R+taup-tau  used for soft phase
 
-! by construction they should be inside 
-             call check_inside_ws(rs,rws26,insid,nb) 
-             if(.not.insid) then 
-                write(ulog,4) 'WARNING: R not found in grid:t,tp,j,ired,R,R_red=', &
- &                  tau, taup, j, ired, rs, cart2red(rs,'r'),length(rs)
-                write(ulog,*) '  FC value would be:', fcs(ired) * map(2)%gr(g)%mat(t,ti)
-                write(*,*)' fourier_fc2fit_4D: R+taup-tau not inside!',cart2red(rs,'r')
-                stop
-             endif
+! a member of a kept group may lie outside the supercell's WS cell when the supercell lacks some of
+! the crystal's rotations; it is summed at its own R (counted once in the log, setup_FC2_in_supercell)
 !             call check_inside_ws(rr,rws26,insid,nb) 
 !             if(.not.insid) then 
 !                write(ulog,4) 'WARNING: R not found in grid:t,tp,j,ired,R,R_red=', &
@@ -1343,12 +1404,8 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
              rr = atompos(:,j) - atompos(:,taup) ! this is just R 
              rs = atompos(:,j) - atompos(:,tau ) ! this is R+taup-tau 
 
-             call check_inside_ws(rs,rws26,insid,nb) 
-! by constriction it should be inside 
-             if(.not.insid) then 
-                write(*,3)' SET_DYNMAT_STD: R+tp-t not inside!,t,tp,j,R',tau,taup,j,cart2red(rs,'r')
-                stop
-             endif
+! a member of a kept group may lie outside the supercell's WS cell when the supercell lacks some of
+! the crystal's rotations; it is summed at its own R (counted once in the log, setup_FC2_in_supercell)
          !   call check_inside_ws(rr,rws26,insid,nb) 
 ! by constriction it should be inside 
          !   if(.not.insid) then 
@@ -1626,7 +1683,11 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
         enddo gloop
      enddo
      
-     grn(la,ik) = -grn(la,ik)/6/eivl(la,ik)
+     if (eivl(la,ik).eq.0) then      ! rigid translation at k=0 (freq_vel): no Gruneisen parameter
+        grn(la,ik)=0
+     else
+        grn(la,ik) = -grn(la,ik)/6/eivl(la,ik)
+     endif
      if(abs(grn(la,ik)).gt.1d3) grn(la,ik)=0  ! substitute very large gama by zero
 
      if (aimag(grn(la,ik)) .gt. 5d-4) then
@@ -2465,6 +2526,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
       
        do k=1,nk
        do b=1,ndyn
+          if (eival(b,k).eq.0) cycle   ! rigid translation at k=0 (freq_vel): not a vibration
           x0=h_plank*mysqrt(abs(eival(b,k)))*cnst*100*c_light/(k_b*temprk)  
         if (x0.gt.0) then
 ! geff = -dln(omega)/dln(V) of the omega(V) used here, so that the pressure below is -dF/dV

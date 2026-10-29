@@ -14,12 +14,13 @@ the Makefiles drop `.o`/`.mod` files next to the sources.
 ## Building and running FOCEX
 
 ```bash
-cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-9.0.x
+cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-9.1.x
 ```
 
 Executables (2026-10-23, user's rule): all in `~/ALADYN/bin` (`DESTDIR`; the top-level `make`
-passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-9.0.x` (9.0 since 2026-10-23, user: invariance
-rows for all ranks + the Born check; 9.1 is reserved for reading some FC ranks and fitting the rest;
+passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-9.1.x` (9.1 since 2026-10-29, user: frequencies at the
+exact k, Gamma limit, no stop for split FC2 groups; 9.0 2026-10-23: invariance rows for all ranks + the
+Born check; reading some FC ranks and fitting the rest, once reserved as 9.1, gets the next number;
 8.18 and earlier: `~/BIN/v8.18`),
 THERMACOND `tcond-2.0.x` / `tcond-2.0-serial.x` (was `kap8` in its
 source folder). Top-level `make` (= `make all`, user's spec 2026-10-23): python-tools, focex (FOCEX +
@@ -161,13 +162,27 @@ ZnO/GaN/BAs run scripts still use and which is kept until the user removes it).
 - POSCAR0 is rotated so its spglib conventional cell is exactly FOCEX's/SC_SNAPS's frame
   from a,b,c,alpha,beta,gamma; `cell.inp` and `structure.params` share lines 1-2.
   Verified: Ge example gives byte-identical fc2/fc3/mech.dat to a plain FOCEX run.
-- Supercells are multiples of the conventional cell. A skewed HNF supercell (Ge, 60 atoms)
-  made FOCEX stop in `set_dynmat_std` with `R+tp-t not inside!` (default FC2 range reaches
-  outside the supercell's WS cell) -- a FOCEX issue still open. Same stop on ZnO 4x3x2 (2026-10-23):
-  setup_FC2_in_supercell keeps a group if one member is inside the WS cell, set_dynmat_std stops
-  if any member is outside; a supercell without the lattice's symmetry splits groups (the 8.3 A
-  group: +-2a1 inside, +-2a2 outside). The agent had picked 4x3x2 over 3x3x2 by 8e-13 A in face
-  distance; choose_supercell now rounds it to 1e-4 A and then takes the fewest atoms.
+- Supercells are multiples of the conventional cell. A supercell without the lattice's symmetry
+  splits FC2 groups (ZnO 4x3x2, 8.3 A group: +-2a1 inside the WS cell, +-2a2 outside);
+  setup_FC2_in_supercell keeps a group if one member is inside. Until 2026-10-29
+  set_dynamical_matrix_std / fourier_fc2fit_4D then stopped with `R+tp-t not inside!`; the stops
+  were removed (user) after an exact harmonic test (central springs to 6.1 A on ZnO, forces summed
+  over all images; scratch only): 4x3x2 with split groups gives every FC2 exact and all bands
+  within print rounding; the symmetric 3x3x2 (same shortest vector 9.75 A) fits the forces
+  exactly but its groups at 5.0-6.0 A lie wholly on the WS boundary, so only FC(d)+FC(d+L) is
+  fixed: FCs off by 0.1, bands by 11.8 1/cm, exact only at the commensurate k. Members outside
+  the WS cell are logged once (log_fc2_outside_ws, others.f90). The agent had picked 4x3x2 over
+  3x3x2 by 8e-13 A in face distance; choose_supercell rounds it to 1e-4 A and takes the fewest atoms.
+- Phonon frequencies (2026-10-29, user): freq_vel (dynamical.f90) gives omega at the exact k,
+  eigenvectors and HF velocities at k + 3e-4 |G| uinc (degeneracies); Gamma = limit q = 1e-6 along
+  the path segment (band path, get_frequencies ipath=1) or uinc (mesh); the 3 rigid translations
+  there are set to 0 (log FREQ_VEL), gruneisen gives them gamma 0, QHA skips them. finitedif_vel /
+  veltest.dat only with FOCEX_VELTEST=1. At exactly q=0 naq returns the angular average of the NA
+  term (BZO: 3 x 497.8 instead of 462,462,620), hence the limit. Regression vs d85e3d0 (Ge, BZO,
+  MoTe2, GeSe): fits identical; off Gamma omega changes by the removed shift (<= 1.25 1/cm, BZO);
+  thermo changes = the old Gamma acoustic modes (0.1-1 1/cm with gamma 5..-530) removed, GeSe
+  <gamma> 0.7856 -> 0.7683 (= old data without them, 0.7682); BZO's rest: one mode at the
+  |gamma| > 1e3 -> 0 cutoff. THERMACOND has its own get_frequencies (rest.f90), unshifted already.
 - Born charges are transposed from VASP's (field, displacement) to FOCEX's
   `charge(displacement, field)` (`aux_na.f90` contracts q with the 2nd index). The VASP
   convention is from memory, not checked against VASP docs: `BORN_TRANSPOSE` switches it.

@@ -412,9 +412,7 @@ The supercell tasks are checked again before they are skipped:
   crystal \cmd{SUPERCELL: -1 1 1  1 -1 1  1 1 -1} is its conventional cube (4 primitive cells).
   The determinant must be positive.
 \end{itemize}
-The report gives the matrix and the number of atoms (for SMALL and LARGE also the face distance). Prefer supercells that keep the symmetry of the lattice: with a supercell that does
-not (for example $4\times3\times2$ of a hexagonal cell), FOCEX can stop with
-\cmd{R+tp-t not inside!} (Section~\ref{sec:diagnose}).
+The report gives the matrix and the number of atoms (for SMALL and LARGE also the face distance).
 
 \subsection{The FOCEX frame}\label{sec:frame}
 FOCEX and SC-SNAPS build the conventional cell from $a, b, c, \alpha, \beta, \gamma$ with $a$ along
@@ -651,8 +649,6 @@ zbrent & the relaxation's line search failed & IBRION = 1 \\
 relax\_unconv & relaxation not converged & resubmit (continues from CONTCAR) \\
 oom & out of memory & KPAR = 1 \\
 mpi\_init, not\_run, interrupted & MPI did not start; never ran; killed & resubmit \\
-ws\_outside & FOCEX \cmd{R+tp-t not inside!}: the supercell lacks the symmetry of the lattice &
-  held: choose another supercell, redo from the snapshots \\
 others & disk quota, symmetry, an unknown stop, \dots & held, with the error lines \\
 \bottomrule
 \end{tabularx}
@@ -666,13 +662,6 @@ diagnosis, and copies every file it edits to \cmd{diagnosis/backup_<date>/}; the
 your judgement -- a cause it does not know, a fix that was already tried, a new supercell -- the
 script is \emph{held}: it prints what to do and stops, and \cmd{bash fix_it.sh --anyway} runs its
 suggested commands as they are. Run \cmd{diagnose.py} again when the resubmitted job has finished.
-
-\begin{tipbox}
-ZnO with a $4\times3\times2$ supercell: \emph{task focex, 05\_focex: ws\_outside -- an FC2 pair of
-a kept symmetry group lies outside the Wigner-Seitz cell of the supercell \dots; evidence:
-focex.out: "SET\_DYNMAT\_STD: R+tp-t not inside!"; HELD for review: use a supercell with the
-symmetry of the lattice, then redo from the snapshots.}
-\end{tipbox}
 
 % ============================================================
 \section{Thermal conductivity}\label{sec:thermacond}

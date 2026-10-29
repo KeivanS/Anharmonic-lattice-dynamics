@@ -87,7 +87,7 @@ conventional cubic cell, :math:`a = 5.7022565` Å) and 36 snapshots.
    # after compiling (see the Installation chapter)
    mkdir -p ~/runs/Ge && cd ~/runs/Ge
    cp <path-to-repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
-   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.0.x
+   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.1.x
 
 On a single modern core the run takes a few minutes. It should end with
 
@@ -812,7 +812,7 @@ input files in one directory, ``cd`` into it and run the binary.
    ls
    # default.params  dielectric.params  kpbs.params  latdyn.params
    # structure.params  POSCAR1  FORCEDISP1
-   ~/ALADYN/bin/focex-9.0.x | tee focex.out
+   ~/ALADYN/bin/focex-9.1.x | tee focex.out
 
 The run is serial and memory-bound: the largest array is the fit matrix, of
 size (number of force components + constraints) × (number of independent FCs).
@@ -910,8 +910,13 @@ Phonons and thermodynamics
     frequency (1/cm), velocity(3) (km/s), |velocity|``, one line per (k-point,
     band). Bands are connected from one k-point to the next by the largest total
     eigenvector overlap (degenerate eigenvectors first rotated to match the previous
-    point; no connection across more than 5 times the average level spacing). At
-    :math:`\Gamma` of a polar crystal the LO branches jump, as they should.
+    point; no connection across more than 5 times the average level spacing). The
+    frequencies are those at the k printed; the eigenvectors and velocities are taken a
+    small fixed step away (3e-4 of the reciprocal-cell size), which separates degenerate
+    bands. :math:`\Gamma` is the limit along the path segment it belongs to, so at
+    :math:`\Gamma` of a polar crystal the LO branches jump, as they should; the three
+    rigid translations there are exactly 0. ``FOCEX_VELTEST=1`` also writes
+    ``veltest.dat``, the finite-difference check of the velocities.
 
 ``bands.dat``
     The same data with all bands of a k-point on one line — convenient for
@@ -925,7 +930,8 @@ Phonons and thermodynamics
 
 ``ibz_bands.dat``
     Frequencies and velocities on the irreducible wedge of the ``latdyn.params``
-    mesh.
+    mesh. :math:`\Gamma` is the limit along a fixed general direction; its three
+    rigid translations are exactly 0 and are left out of the thermodynamics.
 
 ``ibz_dos.dat`` / ``fbz_dos.dat``
     Phonon density of states, from a Gaussian smearing over the irreducible
@@ -1182,6 +1188,12 @@ needs.
 
 Version history
 ---------------
+
+9.1 (2026-10-29)
+    Phonon frequencies at the k-points themselves (eigenvectors and velocities a small fixed
+    step away); :math:`\Gamma` as the limit along the band-path segment or a fixed direction,
+    its rigid translations exactly 0 and left out of the thermodynamics; an FC2 group with
+    members outside the supercell's Wigner-Seitz cell no longer stops the run.
 
 9.0 (2026-10-23)
     Translational and rotational invariance rows of all ranks built in one loop

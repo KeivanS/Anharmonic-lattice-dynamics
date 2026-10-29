@@ -65,10 +65,10 @@ except Exception as e:                                         # pragma: no cove
 # FOCEX / SC-SNAPS / read_outcar.x messages: (cause, regex, what it means, what to do)
 FOCEX_PAT = [
     ('ws_outside', r'R\+tp-t not inside|R\+taup-tau not inside',
-     'an FC2 pair of a kept symmetry group lies outside the Wigner-Seitz cell of the supercell: '
-     'the supercell does not have the symmetry of the lattice (e.g. 4x3x2 of a hexagonal cell)',
-     'use a supercell with the symmetry of the lattice (SUPERCELL: SMALL/LARGE pick one since '
-     '2026-10-23, or give 9 integers), then redo from the snapshots'),
+     'an FC2 pair of a kept symmetry group lies outside the Wigner-Seitz cell of the supercell; '
+     'FOCEX builds from 2026-10-29 on use such pairs at their own R and do not stop',
+     'rebuild FOCEX (make focex), then run the focex task again: focex-agent.py run <PROJECT_DIR> '
+     '--only focex'),
     ('sc_map', r'SC ATOM can not be mapped|NO SHIFT VECTOR COULD BE DEFINED|is not integer',
      'POSCAR1 does not fit the primitive cell of structure.params (frame, lattice or positions)',
      'check that POSCAR1 is a supercell of POSCAR0 in the same Cartesian frame'),
@@ -321,7 +321,7 @@ def focex_findings(pr, msg):
             hit = re.search(rx, text)
             if hit:
                 line = next((l.strip() for l in text.splitlines() if hit.group(0) in l), hit.group(0))
-                fix = [('reset', 'snaps'), ('resubmit', 'run_workflow.sh')] if cause == 'ws_outside' else []
+                fix = []
                 out.append(Finding('focex', where, cause, meaning, f'focex.out: "{line[:150]}"', held=True,
                                    todo=todo, fix=fix))
                 break
