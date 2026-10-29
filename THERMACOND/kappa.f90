@@ -382,6 +382,74 @@
  end subroutine write_v3
 
 !---------------------------------------------------------------
+ subroutine read_whole(f,txt,ex)
+!! the bytes of file f (ex = .false. if it does not exist)
+ character(len=*), intent(in) :: f
+ character(len=:), allocatable, intent(out) :: txt
+ logical, intent(out) :: ex
+ integer u,n
+ inquire(file=f,exist=ex,size=n)
+ if (.not.ex) then
+    allocate(character(len=0) :: txt)
+    return
+ endif
+ allocate(character(len=max(n,0)) :: txt)
+ open(newunit=u,file=f,form='unformatted',access='stream',status='old')
+ if (n.gt.0) read(u) txt
+ close(u)
+ end subroutine read_whole
+
+!---------------------------------------------------------------
+ subroutine check_v3_inputs()
+!! V3DELTA keeps copies (input_<name>) of the files V3*delta depends on. If any present file
+!! differs from its copy (or one exists and the other not), the k######.bin files were made
+!! with other force constants or another structure: they are removed and the copies renewed.
+ character(len=*), parameter :: inputs(5) = [character(len=17) :: 'lat_fc.dat','fc2.dat', &
+     'fc3.dat','structure.params','dielectric.params']
+ character(len=:), allocatable :: a,b
+ logical ea,eb,same,old
+ integer n,u,kk
+ same=.true.
+ do n=1,size(inputs)
+    call read_whole(trim(inputs(n)),a,ea)
+    call read_whole(trim(v3dir)//'input_'//trim(inputs(n)),b,eb)
+    if ((ea.neqv.eb) .or. (a.ne.b) .or. (len(a).ne.len(b))) same=.false.
+ enddo
+ if (same) then
+    write(ulog,*)' V3DELTA: made from the same lat_fc/fc2/fc3/structure/dielectric files; its points are reused if on this mesh'
+    return
+ endif
+ old=.false.
+ do kk=1,nibz
+    inquire(file=trim(v3file(kk)),exist=ea)
+    if (ea) then
+       old=.true.
+       open(newunit=u,file=trim(v3file(kk)),status='old')
+       close(u,status='delete')
+    endif
+ enddo
+ if (old) then
+    write(ulog,*)' V3DELTA: made from other lat_fc/fc2/fc3/structure/dielectric files: removed, recomputed'
+    write(*,*)' V3DELTA was made from other lat_fc/fc2/fc3/structure/dielectric files: recomputed'
+ endif
+ do n=1,size(inputs)
+    call read_whole(trim(inputs(n)),a,ea)
+    if (ea) then
+       open(newunit=u,file=trim(v3dir)//'input_'//trim(inputs(n)),form='unformatted', &
+            access='stream',status='replace')
+       write(u) a
+       close(u)
+    else
+       inquire(file=trim(v3dir)//'input_'//trim(inputs(n)),exist=eb)
+       if (eb) then
+          open(newunit=u,file=trim(v3dir)//'input_'//trim(inputs(n)),status='old')
+          close(u,status='delete')
+       endif
+    endif
+ enddo
+ end subroutine check_v3_inputs
+
+!---------------------------------------------------------------
  subroutine v3_delta_ibz()
 !! |V3|^2 * delta (tetrahedra), temperature independent: P1smpi (coalescence), P2smpi (decay)
  integer nv3o,nnew,nold
@@ -404,6 +472,7 @@
     call timing('V3*delta in memory')
  else                                                  ! one file per IBZ point, reused if present
     if (root) ierr = c_mkdir(trim(v3dir)//c_null_char, int(o'755',c_int))
+    if (root) call check_v3_inputs()
     call MPI_BARRIER(MPI_COMM_WORLD,ierr)
     allocate(v33s8(1,nkc,ndyn,ndyn,ndyn))
     allocate(P1smpi(1,nkc,ndyn,ndyn,ndyn),P2smpi(1,nkc,ndyn,ndyn,ndyn))

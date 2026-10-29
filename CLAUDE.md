@@ -207,7 +207,11 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
   template FOCEX/latdyn.params). job (line 8): 0 bands/DOS, 1 +linewidths on the band
   path, 2 +V3*delta, RTA, direct (line 9: 0 CG, 1 SVD), 3 +V3*delta, RTA, iterative.
   All nT temperatures in one run; V3*delta is T-independent: line 10 = 0 writes
-  V3DELTA/k######.bin per IBZ point (header nc, ndyn, nibz, k) and reuses it.
+  V3DELTA/k######.bin per IBZ point (header nc, ndyn, nibz, k) and reuses it. Since 2026-10-29
+  V3DELTA/input_* = copies of lat_fc/fc2/fc3/structure/dielectric; any byte differs -> k*.bin
+  removed, recomputed (check_v3_inputs, rank 0). Ge 4^3: job 3 after job 2 reads all 8 points,
+  kappa_vs_T.dat = fresh job 3 byte for byte (1 and 3 ranks); changed fc3 -> recomputed. Agent:
+  thermacond redone when 06_thermacond/latdyn.params != tc_latdyn() (THERMACOND_* changed).
 - kappa.f90 was rewritten 2026-10-21 (old 16-branch job control incl. split-job mode is
   in git history before that). The physics routines in sub.f90 are unchanged apart
   from guards that let calculate_w3_ibz_split_sq / calculate_FGR_mpi2 be called once per

@@ -1348,6 +1348,19 @@ class Agent:
         return r.returncode == 0, m
 
     # ---- task 8: THERMACOND ----------------------------------------------------
+    def tc_latdyn(self):
+        """latdyn.params of 06_thermacond: that of 05_focex with lines 1, 6, 8, 9 from THERMACOND_*"""
+        fx, job = self.fx, self.fx['tc_job']
+        L = open(self.d('05_focex', 'latdyn.params')).read().splitlines()
+        if fx['tc_mesh']:
+            L[0] = ' '.join(fx['tc_mesh']) + '        # 1 kmesh (THERMACOND_MESH)'
+        if fx['tc_T']:
+            L[5] = ' '.join(fx['tc_T']) + '        # 6 Tmin(K), Tmax(K), number of temperatures (THERMACOND_T)'
+        L[7] = f'{job}            # 8 THERMACOND job ({TC_JOB[job]})'
+        if fx['tc_solver'] is not None:
+            L[8] = f"{fx['tc_solver']}            # 9 THERMACOND direct solver: 0 conjugate gradient, 1 SVD"
+        return L
+
     def t_thermacond(self):
         """THERMACOND on the force constants of 05_focex, in 06_thermacond, when THERMACOND_JOB
         (latdyn.params line 8) is 1, 2 or 3."""
@@ -1364,17 +1377,12 @@ class Agent:
             return False, (f"THERMACOND binary not found at {fx['thermacond_x']} (make thermacond, or "
                            'set THERMACOND_X)')
         os.makedirs(d, exist_ok=True)
+        # the files are copied over those of an earlier run; V3DELTA/ stays: THERMACOND reuses it when
+        # lat_fc/fc2/fc3/structure/dielectric and the mesh are those it was made with
         for f in ('lat_fc.dat', 'fc2.dat', 'fc3.dat', 'structure.params', 'dielectric.params', 'kpbs.params'):
             if os.path.isfile(os.path.join(src, f)):
                 shutil.copy(os.path.join(src, f), d)
-        L = open(os.path.join(src, 'latdyn.params')).read().splitlines()
-        if fx['tc_mesh']:
-            L[0] = ' '.join(fx['tc_mesh']) + '        # 1 kmesh (THERMACOND_MESH)'
-        if fx['tc_T']:
-            L[5] = ' '.join(fx['tc_T']) + '        # 6 Tmin(K), Tmax(K), number of temperatures (THERMACOND_T)'
-        L[7] = f'{job}            # 8 THERMACOND job ({TC_JOB[job]})'
-        if fx['tc_solver'] is not None:
-            L[8] = f"{fx['tc_solver']}            # 9 THERMACOND direct solver: 0 conjugate gradient, 1 SVD"
+        L = self.tc_latdyn()
         write(os.path.join(d, 'latdyn.params'), '\n'.join(L) + '\n')
         cmd = self.gen(self.d('POSCAR0'), 'scf')._get_mpi_cmd(fx['thermacond_x'])
         t0 = time.time()
@@ -1420,8 +1428,9 @@ class Agent:
 
     # ---- driver --------------------------------------------------------------
     def output_gone(self, t):
-        """Why the output of a task marked done is no longer there ('' if it is). Checked for the
-        supercell tasks, whose folders users remove or set aside; tasks provided by DATA are not checked."""
+        """Why the output of a task marked done is no longer there or out of date ('' if it is fine).
+        Checked for the supercell tasks, whose folders users remove or set aside, and for thermacond,
+        whose settings users change; tasks provided by DATA are not checked."""
         if str(self.state.get('done', {}).get(t, '')).startswith('provided'):
             return ''
         if t in ('supercells', 'vasp_snaps', 'collect'):
@@ -1437,6 +1446,13 @@ class Agent:
                 n = open(f).read().count('POSITION') if os.path.isfile(f) else 0
                 if n != len(dirs):
                     return f'FORCEDISP1 has {n} snapshots, 04_supercells {len(dirs)}'
+        if t == 'thermacond' and self.fx['tc_job'] != 0:
+            f = self.d('06_thermacond', 'latdyn.params')
+            if not os.path.isfile(f):
+                return f'THERMACOND_JOB is {self.fx["tc_job"]} and THERMACOND has not run'
+            if os.path.isfile(self.d('05_focex', 'latdyn.params')) and \
+                    open(f).read().splitlines() != self.tc_latdyn():
+                return 'the THERMACOND settings (THERMACOND_JOB, _MESH, _T, _SOLVER) changed'
         return ''
 
     def run(self, only=None, retry=False):

@@ -103,9 +103,10 @@ Input files
     V3*delta (the three-phonon matrix elements times the tetrahedron weights) does not
     depend on temperature and is computed once. With line 10 = 0 it is written to
     ``V3DELTA/``, one file per irreducible k-point, and a later run on the same mesh
-    reads it back instead of recomputing it: a new temperature range then costs
-    seconds instead of the V3 time. Delete ``V3DELTA/`` after changing the force
-    constants.
+    reads it back instead of recomputing it: a new temperature range, or job 3 after
+    job 2, then costs seconds instead of the V3 time. ``V3DELTA/`` keeps copies of the
+    ``lat_fc.dat``, ``fc2.dat``, ``fc3.dat``, ``structure.params`` and ``dielectric.params``
+    it was made from; if any of them has changed, it is computed again.
 
     Isotope scattering uses the natural isotopic abundances of the elements named in
     ``structure.params`` (built-in table).

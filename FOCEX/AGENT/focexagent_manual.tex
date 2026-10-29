@@ -716,7 +716,10 @@ direct solver has an open issue: compare with job~3). The complete results are i
 \cmd{06_thermacond}: \cmd{kappa_vs_T.dat}, \cmd{kappa_wigner.dat}, \cmd{Qvalue.dat} (scattering
 rates) and the other files described in the THERMACOND manual. An existing project gets the task
 by adding \cmd{THERMACOND_JOB} to its \cmd{focex-agent-instructions.txt} and submitting
-\cmd{run_workflow.sh} again: the finished tasks are skipped.
+\cmd{run_workflow.sh} again: the finished tasks are skipped. Changing \cmd{THERMACOND_JOB},
+\cmd{_MESH}, \cmd{_T} or \cmd{_SOLVER} later and submitting again runs the task again; V3$\cdot\delta$
+is read back from \cmd{06_thermacond/V3DELTA} when the force constants and the mesh are the same
+(job 3 after job 2, new temperatures).
 
 % ============================================================
 \section{Version history}
