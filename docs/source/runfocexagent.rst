@@ -268,6 +268,10 @@ The supercell tasks are checked again before they are skipped:
 - **To leave snapshots out on purpose**, move their folders to ``04_supercells/unused/``. They
   are then not recreated, and ``FORCEDISP1`` is collected again from the others.
 - **A ``snap_NNN`` folder with no ``03_snaps/poscar_NNN``** stops the workflow.
+- **To add snapshots**, raise ``SNAPSHOTS`` in the project's ``focex-agent-instructions.txt`` and
+  start ``run_workflow.sh`` again. The extra snapshots are made at the same temperature and numbered
+  after the existing ones, which are kept; only the new ones run VASP, then FOCEX is run again on
+  all of them. A lower ``SNAPSHOTS`` removes nothing.
 
 ``relax``
    The structure you gave is reduced to its primitive cell (Niggli reduction) and rotated into
@@ -530,7 +534,7 @@ VASP-Flow (its manual lists all of them); the common ones are below.
        primitive units; :ref:`agent-supercell`)
    * - ``SNAPSHOTS``
      - 50
-     - number of snapshots
+     - number of snapshots; can be raised later (:ref:`agent-scratch`)
    * - ``TEMPERATURE``
      - 30
      - K; given: used as is; not given: 30 K adjusted to DISP_TARGET

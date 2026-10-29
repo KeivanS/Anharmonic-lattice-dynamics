@@ -850,6 +850,41 @@ class Agent:
         lines.append(msg)
         return ok, '\n  '.join(lines)
 
+    def add_snapshots(self):
+        """SNAPSHOTS raised after the snapshots were made: the extra ones are made by sc_snaps.x in
+        03_snaps/added_NNN-MMM (same cell.inp, supercell.inp, snaps.inp but the count) and copied to
+        03_snaps as poscar_NNN..MMM; the existing ones are kept. (ok, message), message '' if nothing to do."""
+        d = self.d('03_snaps')
+        have = len(snap_files(d)) - 1                       # poscar_000 is the undistorted cell
+        want = self.fx['nsnap']
+        if want < have:
+            return True, (f'SNAPSHOTS {want} < the {have} in 03_snaps: all kept '
+                          '(move folders to 04_supercells/unused/ to leave some out)')
+        if want == have:
+            return True, ''
+        if want > 999:
+            return False, 'SNAPSHOTS > 999: sc_snaps.x numbers the snapshots with 3 digits'
+        new = os.path.join(d, f'added_{have + 1:03d}-{want:03d}')
+        os.makedirs(new, exist_ok=True)
+        for f in ('cell.inp', 'supercell.inp'):
+            shutil.copy(os.path.join(d, f), new)
+        inp = open(os.path.join(d, 'snaps.inp')).read().splitlines()
+        inp[2] = f'{want - have}   # number of snapshots (added to the {have} in 03_snaps)'
+        write(os.path.join(new, 'snaps.inp'), '\n'.join(inp) + '\n')
+        for f in snap_files(new):
+            os.remove(f)
+        r = subprocess.run(self.fx['sc_snaps_x'], cwd=new, capture_output=True, text=True)
+        made = snap_files(new)[1:]
+        if len(made) != want - have:
+            return False, f'sc_snaps.x made {len(made)} snapshots in {new}, not {want - have}: {(r.stdout + r.stderr)[-400:]}'
+        if any('*' in open(f).read() for f in made):
+            return False, f'sc_snaps.x wrote overflowing positions (***) in {new}'
+        for k, f in enumerate(made):
+            shutil.copy(f, os.path.join(d, f'poscar_{have + 1 + k:03d}'))
+        T = inp[1].split()[0]
+        return True, (f'SNAPSHOTS {want} > the {have} in 03_snaps: {want - have} more made at T = {T} K '
+                      f'(poscar_{have + 1:03d}..{want:03d}, from {os.path.basename(new)}); the {have} kept')
+
     def cell_inp(self, c, p):
         latp, pc = c['latp'], c['prim_in_conv']
         masses = [p2f.MASS[s.split('_')[0]] for s in p['species']]
@@ -1408,6 +1443,14 @@ class Agent:
         todo = [only] if only else TASKS
         for t in todo:
             done = self.state.setdefault('done', {})
+            if t == 'snaps' and t in done and not only and not str(done[t]).startswith('provided'):
+                ok, msg = self.add_snapshots()
+                if msg:
+                    self.rep(f'=== snaps -- {msg}')
+                if not ok:
+                    self.state['failed'] = t
+                    self.save()
+                    return False
             if t in done and not only:
                 why = self.output_gone(t)
                 if why:

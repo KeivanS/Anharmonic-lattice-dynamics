@@ -136,6 +136,12 @@ ZnO/GaN/BAs run scripts still use and which is kept until the user removes it).
   cubes. Ordinary supercells change too (Ar 2x2x2 up to 1.05 THz: 2nd-neighbour images at L/2 tie):
   only the sampling of the displacements, not FOCEX's force constants. Guard kept: modes below 1e-3 x
   max are not sampled (warning); the agent stops on `***` in a snapshot.
+- More snapshots (2026-10-29, user): SNAPSHOTS raised after `snaps` is done -> `add_snapshots` runs
+  sc_snaps.x in 03_snaps/added_NNN-MMM (same cell/supercell/snaps.inp, count = difference; new
+  clock seed) and copies poscar_NNN..MMM; old ones untouched; supercells..plots redone through the
+  missing-folder check, only new folders run VASP. Lower SNAPSHOTS: nothing removed (report says use
+  unused/). Argon 20 -> 30: old poscars/OUTCARs byte-identical, 10 VASP runs, FORCEDISP1 31, rms
+  0.0203/0.0205 A, max |w - exact| 0.224 1/cm.
 - Modes (user's labels): `MODE: from_scratch | extract_only` (extract_only needs `DATA:`; DATA
   without MODE implies extract_only).
 - `diagnose.py <PROJECT_DIR>...`: read-only; task status (done/FAILED/INTERRUPTED/not reached,

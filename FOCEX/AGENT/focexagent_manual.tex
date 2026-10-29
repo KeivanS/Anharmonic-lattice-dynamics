@@ -317,6 +317,10 @@ The supercell tasks are checked again before they are skipped:
 \item \textbf{To leave snapshots out on purpose}, move their folders to \cmd{04_supercells/unused/}.
   They are then not recreated, and \cmd{FORCEDISP1} is collected again from the others.
 \item \textbf{A \cmd{snap_NNN} folder with no \cmd{03_snaps/poscar_NNN}} stops the workflow.
+\item \textbf{To add snapshots}, raise SNAPSHOTS in the project's \cmd{focex-agent-instructions.txt}
+  and start \cmd{run_workflow.sh} again. The extra snapshots are made at the same temperature and
+  numbered after the existing ones, which are kept; only the new ones run VASP, then FOCEX is run
+  again on all of them. A lower SNAPSHOTS removes nothing.
 \end{itemize}
 
 \begin{description}
@@ -499,7 +503,7 @@ BORN\_TRANSPOSE & yes & Section~\ref{sec:born} \\
 \multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{snapshots}}} \\
 SUPERCELL & SMALL & SMALL, LARGE, or the 9 integers of the supercell matrix, as in
   \cmd{supercell.inp} (rows, primitive units; Section~\ref{sec:supercell}) \\
-SNAPSHOTS & 50 & number of snapshots \\
+SNAPSHOTS & 50 & number of snapshots; can be raised later (Section~\ref{sec:scratch}) \\
 TEMPERATURE & 30 & K; given: used as is; not given: 30\,K adjusted to DISP\_TARGET \\
 AVG\_FREQ & 400 & cm$^{-1}$, the frequency of the oscillators of SC-SNAPS \\
 DISP\_TARGET & 0.02 & \AA, the rms displacement wanted (only without TEMPERATURE) \\
