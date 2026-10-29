@@ -570,10 +570,12 @@ As of 2026-10-15 **this directory is the git clone** (`main`, tracking
 `~/Documents/Documents - MAE-/GitHub/` is no longer the working copy.
 Current focus is the **FOCEX** folder.
 
-`origin` is **SSH** since 2026-10-27 (`git@github.com:KeivanS/Anharmonic-lattice-dynamics.git`):
-`~/.ssh/id_ed25519` is in the agent and authenticates as KeivanS, so `git fetch`/`git push` need
-no password and work **with the Bash sandbox on**. Over HTTPS they do not: the `osxkeychain`
-helper has no github.com entry (no `.netrc`, no `GH_TOKEN` either), so a push only got
-`could not read Username`, and HTTPS needed the sandbox disabled even to connect. The SC_SNAPS
-clone at `~/PROJECTS/SC_SNAPS` is still on an HTTPS remote. `WebFetch` and sandboxed `curl`
+`origin` is **HTTPS** (`https://github.com/KeivanS/Anharmonic-lattice-dynamics.git`; checked
+2026-10-29). Authentication: `gh` is logged in as KeivanS (token in the macOS keychain, git
+protocol https) and git's `osxkeychain` helper supplies it, so `git fetch`/`git push` need no
+password and worked with the Bash sandbox on (push of 6d8c541). SSH does not work here: no key in
+`~/.ssh` (the id_ed25519 of 2026-10-27 is gone), `ssh -T git@github.com` -> Permission denied; user
+chose HTTPS + gh token (no new key). The repo, VASP-Flow and SC_SNAPS are public: pulling needs no
+login anywhere, pushing from another machine needs its own `gh auth login`. The SC_SNAPS clone at
+`~/PROJECTS/SC_SNAPS` is on HTTPS too. `WebFetch` and sandboxed `curl`
 cannot reach github.com at all. Other hosts (readthedocs.io, PyPI) are fine.
