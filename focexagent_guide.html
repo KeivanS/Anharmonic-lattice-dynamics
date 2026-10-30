@@ -1,0 +1,264 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>9. FOCEX agent: user’s guide &mdash; ALADYN 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="10. FOCEX agent: from a crystal structure to phonons" href="runfocexagent.html" />
+    <link rel="prev" title="8. Running SCOP8" href="runscop8.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ALADYN
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">2. Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">3. Download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">4. Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscsnaps.html">5. Running SC-SNAPS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runfocex.html">6. Running FOCEX</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runthermacond.html">7. Running THERMACOND</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscop8.html">8. Running SCOP8</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">9. FOCEX agent: user’s guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#two-modes">9.1. Two modes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-1-from-a-poscar-from-scratch">9.2. Example 1: from a POSCAR (from_scratch)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-2-existing-forces-extract-only">9.3. Example 2: existing forces (extract_only)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#results">9.4. Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#when-a-run-stops">9.5. When a run stops</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">9.6. Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="runfocexagent.html">10. FOCEX agent: from a crystal structure to phonons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ALADYN</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">9. </span>FOCEX agent: user’s guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/focexagent_guide.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="focex-agent-user-s-guide">
+<span id="focex-agent-guide"></span><h1><span class="section-number">9. </span>FOCEX agent: user’s guide<a class="headerlink" href="#focex-agent-user-s-guide" title="Link to this heading"></a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">focex-agent.py</span></code> (<code class="docutils literal notranslate"><span class="pre">FOCEX/AGENT</span></code>, version 1.2) runs the whole chain from a crystal structure
+to force constants and phonons: VASP relaxation, SCF and Born charges, SC-SNAPS snapshots, one
+VASP run per snapshot, FOCEX, plots and, if asked, THERMACOND. It is driven by one short
+instruction file, checks every step, logs it in <code class="docutils literal notranslate"><span class="pre">report.log</span></code> and can be restarted at any time.
+It was added to the suite after ALATDYN; it is not needed to run FOCEX by hand. This page is the
+short version; <a class="reference internal" href="runfocexagent.html#focex-agent"><span class="std std-ref">FOCEX agent: from a crystal structure to phonons</span></a> is the full manual.</p>
+<section id="two-modes">
+<h2><span class="section-number">9.1. </span>Two modes<a class="headerlink" href="#two-modes" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 40.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">MODE:</span></code></p></th>
+<th class="head"><p>input</p></th>
+<th class="head"><p>runs</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">from_scratch</span></code> (default)</p></td>
+<td><p>a <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code> (any cell, any orientation)</p></td>
+<td><p>VASP, SC-SNAPS, FOCEX</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">extract_only</span></code></p></td>
+<td><p>a folder with <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code>, <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> (<code class="docutils literal notranslate"><span class="pre">DATA:</span></code>)</p></td>
+<td><p>FOCEX only</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="example-1-from-a-poscar-from-scratch">
+<h2><span class="section-number">9.2. </span>Example 1: from a POSCAR (from_scratch)<a class="headerlink" href="#example-1-from-a-poscar-from-scratch" title="Link to this heading"></a></h2>
+<p>A folder with two files. <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Si (diamond)
+1.0
+  0.0000  2.7155  2.7155
+  2.7155  0.0000  2.7155
+  2.7155  2.7155  0.0000
+Si
+2
+Direct
+  0.00 0.00 0.00
+  0.25 0.25 0.25
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">focex-agent-instructions.txt</span></code> (only <code class="docutils literal notranslate"><span class="pre">Project</span></code> and <code class="docutils literal notranslate"><span class="pre">RANKS</span></code> are required; the template
+<code class="docutils literal notranslate"><span class="pre">FOCEX/AGENT/focex-agent-instructions.txt</span></code> lists every keyword with its default):</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Project: Si
+RANKS: 1 1 1 0 0 0 0 0      # harmonic and cubic force constants
+FUNCTIONAL: PBEsol
+MPI: 16                     # MPI ranks for VASP
+THERMACOND_JOB: 3           # thermal conductivity after FOCEX (iterative solution)
+THERMACOND_MESH: 12 12 12
+</pre></div>
+</div>
+<p>Set up (seconds, no VASP), then start the workflow:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>~/dftphonon-env/bin/activate
+python<span class="w"> </span>~/Anharmonic-lattice-dynamics/FOCEX/AGENT/focex-agent.py<span class="w"> </span>--profile<span class="w"> </span>mycluster
+<span class="nb">cd</span><span class="w"> </span>Si<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sbatch<span class="w"> </span>run_workflow.sh<span class="w">        </span><span class="c1"># workstation, no profile: nohup bash run_workflow.sh &amp;</span>
+tail<span class="w"> </span>-f<span class="w"> </span>report.log
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">mycluster</span></code> stands for the profile of your own cluster: copy
+<code class="docutils literal notranslate"><span class="pre">~/VASP-Flow/profiles/slurm.json</span></code> to <code class="docutils literal notranslate"><span class="pre">mycluster.json</span></code> in the same folder and set in it the
+VASP command, the modules to load, partition, account, nodes, tasks per node and time. On a
+workstation leave <code class="docutils literal notranslate"><span class="pre">--profile</span></code> out.</p>
+<p>Other keywords often used:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>PROJECT_DIR: /scratch/me/Si   # where the calculations go (default: folder named after Project)
+RANGE: 6 2 1 0 0 0 0          # neighbour shells for ranks 2, 3, 4, ...
+SUPERCELL: LARGE              # SMALL (default, &gt;= 10 A), LARGE (&gt;= 14 A), or 9 integers
+SNAPSHOTS: 30                 # default 50
+MAGMOM: Cr=3.0
+DFPT: auto                    # Born charges: auto (if there is a gap) | on | off
+</pre></div>
+</div>
+<p>Any file the agent writes can be amended (INCAR, tag by tag) or replaced by a block named after it:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>INCAR_snaps
+  ALGO = Normal
+INCAR_snaps_END
+</pre></div>
+</div>
+</section>
+<section id="example-2-existing-forces-extract-only">
+<h2><span class="section-number">9.3. </span>Example 2: existing forces (extract_only)<a class="headerlink" href="#example-2-existing-forces-extract-only" title="Link to this heading"></a></h2>
+<p>The data folder holds <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> and <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> (as written by <code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code> or
+<code class="docutils literal notranslate"><span class="pre">read_qe.x</span></code>), optionally the primitive <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code> and <code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code>, in any orientation;
+the agent rotates everything into the FOCEX frame.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Project: MgO
+MODE: extract_only
+DATA: ~/data/MgO_forces        # POSCAR1, FORCEDISP1, dielectric.params
+SPECIES: Mg O                  # if the POSCARs have no element line
+RANKS: 1 1 1 0 0 0 0 0
+</pre></div>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>~/Anharmonic-lattice-dynamics/FOCEX/AGENT/focex-agent.py
+<span class="nb">cd</span><span class="w"> </span>MgO<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>bash<span class="w"> </span>run_workflow.sh<span class="w">        </span><span class="c1"># FOCEX only: minutes</span>
+</pre></div>
+</div>
+</section>
+<section id="results">
+<h2><span class="section-number">9.4. </span>Results<a class="headerlink" href="#results" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">report.log</span></code> (one line per task: OK or FAILED, what was checked), then in the project folder
+<code class="docutils literal notranslate"><span class="pre">01_relax</span></code>, <code class="docutils literal notranslate"><span class="pre">02_scf</span></code> (and <code class="docutils literal notranslate"><span class="pre">dfpt</span></code>), <code class="docutils literal notranslate"><span class="pre">03_snaps</span></code>, <code class="docutils literal notranslate"><span class="pre">04_supercells</span></code> (<code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">stress.params</span></code>: the stress of the undistorted supercell, used by FOCEX for the Huang rows and
+the elastic constants), <code class="docutils literal notranslate"><span class="pre">05_focex</span></code> (force constants <code class="docutils literal notranslate"><span class="pre">fc*.dat</span></code>, dispersion <code class="docutils literal notranslate"><span class="pre">bs_freq.dat</span></code>,
+<code class="docutils literal notranslate"><span class="pre">mech.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">thermo_QHA.dat</span></code> and PDF plots) and <code class="docutils literal notranslate"><span class="pre">06_thermacond</span></code> (<code class="docutils literal notranslate"><span class="pre">kappa_vs_T.dat</span></code>).</p>
+</section>
+<section id="when-a-run-stops">
+<h2><span class="section-number">9.5. </span>When a run stops<a class="headerlink" href="#when-a-run-stops" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>~/Anharmonic-lattice-dynamics/FOCEX/AGENT/diagnose.py<span class="w"> </span>Si
+</pre></div>
+</div>
+<p>It is read-only: it writes <code class="docutils literal notranslate"><span class="pre">Si/diagnosis/report.txt</span></code> (what failed and why) and, when it can,
+<code class="docutils literal notranslate"><span class="pre">fix_it.sh</span></code>, which changes the inputs and resubmits. Starting <code class="docutils literal notranslate"><span class="pre">run_workflow.sh</span></code> again also
+continues from the failed task; finished tasks are not repeated.</p>
+</section>
+<section id="installation">
+<h2><span class="section-number">9.6. </span>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<p>Needed: VASP and its POTCAR library (from_scratch only), MPI, Python 3.8 or newer, gfortran,
+gnuplot, and <a class="reference external" href="https://github.com/KeivanS/VASP-Flow">VASP-Flow</a>, which the agent uses for the VASP
+inputs and batch scripts.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
+<span class="o">(</span><span class="nb">cd</span><span class="w"> </span>Anharmonic-lattice-dynamics<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>focex<span class="w"> </span>sc_snaps<span class="o">)</span><span class="w">   </span><span class="c1"># -&gt; ~/ALADYN/bin</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/KeivanS/VASP-Flow.git<span class="w">        </span><span class="c1"># elsewhere: export VASP_FLOW_DIR=...</span>
+python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>~/dftphonon-env
+~/dftphonon-env/bin/pip<span class="w"> </span>install<span class="w"> </span>numpy<span class="w"> </span>spglib<span class="w"> </span>pymatgen<span class="w"> </span>matplotlib
+<span class="nb">export</span><span class="w"> </span><span class="nv">VASP_POTCAR_DIR</span><span class="o">=</span>/path/to/potpaw_PBE.54<span class="w">             </span><span class="c1"># put it in ~/.bashrc</span>
+</pre></div>
+</div>
+<p>VASP and MPI come from a VASP-Flow profile (<code class="docutils literal notranslate"><span class="pre">--profile</span></code>: <code class="docutils literal notranslate"><span class="pre">workstation</span></code>, <code class="docutils literal notranslate"><span class="pre">slurm</span></code>, or your
+own, as <code class="docutils literal notranslate"><span class="pre">mycluster</span></code> above, in <code class="docutils literal notranslate"><span class="pre">~/VASP-Flow/profiles</span></code>); without one, <code class="docutils literal notranslate"><span class="pre">VASP_STD</span></code> and
+<code class="docutils literal notranslate"><span class="pre">MPI_LAUNCH</span></code> are used. <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">~/VASP-Flow/check_setup.py</span> <span class="pre">local</span></code> (<code class="docutils literal notranslate"><span class="pre">slurm</span></code> on a cluster)
+checks the installation and prints the command that fixes each problem. Details:
+<a class="reference internal" href="runfocexagent.html#focex-agent"><span class="std std-ref">FOCEX agent: from a crystal structure to phonons</span></a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="runscop8.html" class="btn btn-neutral float-left" title="8. Running SCOP8" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="runfocexagent.html" class="btn btn-neutral float-right" title="10. FOCEX agent: from a crystal structure to phonons" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, University of Virginia.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

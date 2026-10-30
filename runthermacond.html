@@ -1,0 +1,397 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>7. Running THERMACOND &mdash; ALADYN 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="8. Running SCOP8" href="runscop8.html" />
+    <link rel="prev" title="6. Running FOCEX" href="runfocex.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ALADYN
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">2. Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">3. Download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">4. Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscsnaps.html">5. Running SC-SNAPS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runfocex.html">6. Running FOCEX</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">7. Running THERMACOND</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#building">7.1. Building</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running">7.2. Running</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#input-files">7.3. Input files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-it-is-computed">7.4. How it is computed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#output-files">7.5. Output files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checks">7.6. Checks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example">7.7. Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#status">7.8. Status</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="runscop8.html">8. Running SCOP8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="focexagent_guide.html">9. FOCEX agent: user’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runfocexagent.html">10. FOCEX agent: from a crystal structure to phonons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ALADYN</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">7. </span>Running THERMACOND</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/runthermacond.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="running-thermacond">
+<h1><span class="section-number">7. </span>Running THERMACOND<a class="headerlink" href="#running-thermacond" title="Link to this heading"></a></h1>
+<p>THERMACOND computes phonon properties and the lattice thermal conductivity from the
+harmonic and cubic force constants fitted by FOCEX, by solving the linearized phonon
+Boltzmann transport equation on the irreducible wedge of the Brillouin zone, with
+tetrahedron integration of the energy-conserving delta functions. The theory and the
+algorithms are described in S. Nayeb Sadeghi, S. Lee and K. Esfarjani,
+<em>npj Comput. Mater.</em> <strong>11</strong>, 303 (2025), <a class="reference external" href="https://doi.org/10.1038/s41524-025-01673-8">https://doi.org/10.1038/s41524-025-01673-8</a>.</p>
+<p>THERMACOND reads the same parameter files as FOCEX, so a FOCEX run folder is also a
+THERMACOND run folder.</p>
+<section id="building">
+<h2><span class="section-number">7.1. </span>Building<a class="headerlink" href="#building" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>THERMACOND
+make<span class="w">            </span><span class="c1"># parallel build with mpif90  -&gt; ~/ALADYN/bin/tcond-2.0.x</span>
+make<span class="w"> </span>serial<span class="w">     </span><span class="c1"># serial build, no MPI library -&gt; ~/ALADYN/bin/tcond-2.0-serial.x</span>
+make<span class="w"> </span><span class="nv">DEBUG</span><span class="o">=</span><span class="m">1</span><span class="w">    </span><span class="c1"># either of the above with -g -fbounds-check instead of -O2</span>
+</pre></div>
+</div>
+<p>Objects and module files go to <code class="docutils literal notranslate"><span class="pre">obj_mpi/</span></code> or <code class="docutils literal notranslate"><span class="pre">obj_serial/</span></code>. On macOS with
+Homebrew’s Open MPI, <code class="docutils literal notranslate"><span class="pre">mpif90</span></code> may pick an older <code class="docutils literal notranslate"><span class="pre">gfortran</span></code> than the one Open MPI was
+built with (<code class="docutils literal notranslate"><span class="pre">Cannot</span> <span class="pre">read</span> <span class="pre">module</span> <span class="pre">file</span> <span class="pre">...</span> <span class="pre">created</span> <span class="pre">by</span> <span class="pre">a</span> <span class="pre">different</span> <span class="pre">version</span> <span class="pre">of</span> <span class="pre">GNU</span>
+<span class="pre">Fortran</span></code>), and the link may fail with <code class="docutils literal notranslate"><span class="pre">library</span> <span class="pre">not</span> <span class="pre">found</span> <span class="pre">for</span> <span class="pre">-lSystem</span></code>. Both are fixed
+by</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">OMPI_FC</span><span class="o">=</span>/opt/homebrew/bin/gfortran
+<span class="nb">export</span><span class="w"> </span><span class="nv">SDKROOT</span><span class="o">=</span><span class="k">$(</span>xcrun<span class="w"> </span>--show-sdk-path<span class="k">)</span>
+</pre></div>
+</div>
+</section>
+<section id="running">
+<h2><span class="section-number">7.2. </span>Running<a class="headerlink" href="#running" title="Link to this heading"></a></h2>
+<p>Serial and parallel runs are the same program; the k-points of the irreducible zone are
+shared among the processes:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>tcond-2.0.x<span class="w">                 </span><span class="c1"># one process (or tcond-2.0-serial.x)</span>
+mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">8</span><span class="w"> </span>tcond-2.0.x<span class="w">    </span><span class="c1"># eight processes</span>
+</pre></div>
+</div>
+<p>A serial run is the reference for a parallel one: built with the same compiler, both give the
+same output files (<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">serial</span></code> uses the compiler of <code class="docutils literal notranslate"><span class="pre">mpif90</span></code>; <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">serial</span> <span class="pre">FC=...</span></code>
+chooses another). The thermal conductivities (RTA and full solution) do not depend on the
+compiler; the per-mode columns of <code class="docutils literal notranslate"><span class="pre">kappa_vs_T.dat</span></code> can, because the eigenvectors chosen within
+a set of degenerate modes do.
+Rank 0 writes all output in the run folder; the other processes work in
+<code class="docutils literal notranslate"><span class="pre">.mpi_rank_NNN/</span></code>, which are removed at the end.</p>
+</section>
+<section id="input-files">
+<h2><span class="section-number">7.3. </span>Input files<a class="headerlink" href="#input-files" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">structure.params</span></code>, <code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code>, <code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code></dt><dd><p>The FOCEX files (<a class="reference internal" href="runfocex.html#focex-inputs"><span class="std std-ref">Input files</span></a>). From <code class="docutils literal notranslate"><span class="pre">structure.params</span></code> THERMACOND reads the
+lattice (lines 1–3, including <code class="docutils literal notranslate"><span class="pre">convcoord</span></code> on line 3), the ranks (line 4), the
+atom types, masses and names, and the atomic positions.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">lat_fc.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc2.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc3.dat</span></code></dt><dd><p>Written by FOCEX. THERMACOND reads <code class="docutils literal notranslate"><span class="pre">lat_fc.dat</span></code> by its section headers and takes
+the number of force constants from the lines present in <code class="docutils literal notranslate"><span class="pre">fc2.dat</span></code> and
+<code class="docutils literal notranslate"><span class="pre">fc3.dat</span></code> (FOCEX omits those below its <code class="docutils literal notranslate"><span class="pre">margin</span></code>).</p>
+</dd>
+</dl>
+<dl id="thermacond-latdyn">
+<dt><code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code></dt><dd><p>13 lines; FOCEX reads the first 7.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>14 14 14      # 1  k-mesh n1 n2 n3
+0 0 0  0 0 1  # 2  mesh shift (fractions of a step), surface normal
+300 350       # 3  number of DOS points, omega_max (1/cm)
+10 30         # 4  Gaussian DOS width, eta = Im(omega) in the self-energy (1/cm)
+.false.       # 5  verbosity
+0 900 31      # 6  Tmin, Tmax (K), number of temperatures (equally spaced)
+0             # 7  0 quantum (Bose-Einstein), 1 classical occupations
+2             # 8  job (below)
+0             # 9  direct solver: 0 conjugate gradient, 1 SVD
+0             # 10 V3*delta: 0 on disk in V3DELTA/ (reused), 1 in memory
+0             # 11 isotope scattering: 0 no, 1 natural abundances
+0 0 0 0       # 12 calc_cross, q_cross(3)
+100000        # 13 sample length (microns)
+</pre></div>
+</div>
+<p>Each line is checked: a missing line or value stops the program with the line
+number and what was expected.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>job</p></th>
+<th class="head"><p>what is computed</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>bands and Gruneisen parameters along <code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code>; frequencies, velocities
+and DOS (Gaussian and tetrahedron) on the k-mesh. Done for every job.</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>0 + three-phonon linewidths of every mode along the band path, at every
+temperature</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>0 + V3*delta in the irreducible zone; at every temperature the RTA and the
+direct solution of the BTE (line 9)</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>0 + V3*delta; at every temperature the RTA and the iterative solution, for
+when the collision matrix does not fit in memory</p></td>
+</tr>
+</tbody>
+</table>
+<p>V3*delta (the three-phonon matrix elements times the tetrahedron weights) does not
+depend on temperature and is computed once. With line 10 = 0 it is written to
+<code class="docutils literal notranslate"><span class="pre">V3DELTA/</span></code>, one file per irreducible k-point, and a later run on the same mesh
+reads it back instead of recomputing it: a new temperature range, or job 3 after
+job 2, then costs seconds instead of the V3 time. <code class="docutils literal notranslate"><span class="pre">V3DELTA/</span></code> keeps copies of the
+<code class="docutils literal notranslate"><span class="pre">lat_fc.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc2.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc3.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">structure.params</span></code> and <code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code>
+it was made from; if any of them has changed, it is computed again.</p>
+<p>Isotope scattering uses the natural isotopic abundances of the elements named in
+<code class="docutils literal notranslate"><span class="pre">structure.params</span></code> (built-in table).</p>
+</dd>
+</dl>
+</section>
+<section id="how-it-is-computed">
+<h2><span class="section-number">7.4. </span>How it is computed<a class="headerlink" href="#how-it-is-computed" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Group velocities: Hellmann-Feynman, v = &lt;e|dD/dq|e&gt;/2omega, including the derivative of the
+non-analytic (Born charge) term. The finite-difference velocities are written next to them in
+<code class="docutils literal notranslate"><span class="pre">veltest.dat</span></code> as a check; they agree to about 1e-4 except at band crossings.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">structure.params</span></code> is optional: without it the cell, species, masses and positions are
+taken from <code class="docutils literal notranslate"><span class="pre">lat_fc.dat</span></code> (written by FOCEX since 23 October 2026, with the conventional
+cell). Results are identical either way (Ge 4x4x4 job 3).</p></li>
+<li><p>k-mesh (<code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code> line 1): integer fractions of the primitive reciprocal vectors of
+<code class="docutils literal notranslate"><span class="pre">lat_fc.dat</span></code> (the run stops if <code class="docutils literal notranslate"><span class="pre">structure.params</span></code> has a different primitive cell). Even
+meshes are Gamma-centred (reduced coordinates -1/2 … 1/2 - 1/n), odd ones start at Gamma;
+the shift on line 2 is not used. Mesh points are found everywhere by their reduced
+coordinates modulo G (<code class="docutils literal notranslate"><span class="pre">get_k_info</span></code>); this is checked at start-up for k, k+G, -k and the
+irreducible points (<code class="docutils literal notranslate"><span class="pre">CHECK_MESH_LABELS</span></code> in <code class="docutils literal notranslate"><span class="pre">phonlog.dat</span></code>). Odd meshes stopped in the
+tetrahedron set-up before 23 October 2026.</p></li>
+<li><p>Irreducible zone: the stars use the Laue group of the crystal (its point group and
+inversion); the representative of each star is the image in the first Brillouin zone
+furthest along a fixed generic direction, so the irreducible points fill one wedge
+(x &gt;= y &gt;= z &gt;= 0 for a cubic lattice, 0-30 degrees for a hexagonal one). The number of
+points and their weights agree with spglib.</p></li>
+<li><p>Degenerate modes (frequencies within 1e-3 1/cm): their eigenvectors are defined only up to a
+rotation within the degenerate set, so <code class="docutils literal notranslate"><span class="pre">|V3|^2</span></code> is averaged over the set at q1, q2 and q3,
+and so is <code class="docutils literal notranslate"><span class="pre">|V3|^2</span></code> times the tetrahedron weight (P1, P2) at q2 and q3. Then every partner
+of a set has the same lifetime and the same collision kernel, F = tau (v + Delta) with Delta
+common to the set, and the conductivity is per-mode value + kappa_P - per-mode RTA: the
+one-velocity-per-mode term is replaced by the trace over the set of the velocity matrix
+(the degenerate block of kappa_P). This is what <code class="docutils literal notranslate"><span class="pre">kappa_vs_T.dat</span></code> reports; checked by
+random rotations of the degenerate eigenvectors (<code class="docutils literal notranslate"><span class="pre">THERMACOND_ROTATE_DEGENERATE=&lt;seed&gt;</span></code>,
+test only): Ge 4x4x4 RTA and iterative results identical to all printed digits, while the
+per-mode values moved by 3 %.</p></li>
+<li><p>Wigner conductivity: in the RTA, <code class="docutils literal notranslate"><span class="pre">kappa_wigner.dat</span></code> gives the conductivity of Simoncelli,
+Marzari and Mauri (Nat. Phys. 15, 809 (2019)): kappa_P from pairs of degenerate modes (the
+usual RTA term, in a form that does not depend on the eigenvector basis) and kappa_C from
+the coherences between different modes. kappa_C is negligible for simple crystals and
+matters for complex or strongly anharmonic ones.</p></li>
+</ul>
+</section>
+<section id="output-files">
+<h2><span class="section-number">7.5. </span>Output files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>file</p></th>
+<th class="head"><p>contents</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bs_freqs.dat</span></code></p></td>
+<td><p>band structure: index, path length, k, frequencies (1/cm)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bs_grun.dat</span></code></p></td>
+<td><p>Gruneisen parameters along the path</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dos.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">dos_tet.dat</span></code></p></td>
+<td><p>DOS, Gaussian and tetrahedron</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">KPOINT.FBZ</span></code>, <code class="docutils literal notranslate"><span class="pre">KPOINT.IBZ</span></code></p></td>
+<td><p>k-mesh and irreducible wedge with weights</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">veloc.dat</span></code></p></td>
+<td><p>group velocities on the mesh (Hellmann-Feynman)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">veltest.dat</span></code></p></td>
+<td><p>finite-difference and Hellmann-Feynman velocities, band path and mesh</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kappa_vs_T.dat</span></code></p></td>
+<td><p>one line per temperature: RTA (= kappa_P) and direct (job 2) or
+iterative (job 3) conductivity tensor xx yy zz xy xz yz (W/mK),
+degenerate modes as blocks; job 2 adds the relative residual of the
+linear solution, job 3 the iterations; then the per-mode values
+(RTA, direct/iterative), which depend on the degenerate basis</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kappa_RTA.dat</span></code></p></td>
+<td><p>conductivity per band in the RTA, for each temperature</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kappa_wigner.dat</span></code></p></td>
+<td><p>jobs 2, 3: one line per temperature: RTA, kappa_P, kappa_C and
+kappa_P + kappa_C (Wigner, RTA linewidths), xx yy zz xy xz yz</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">distribution_F.dat</span></code></p></td>
+<td><p>jobs 2, 3: distribution function F (IBZ point, mode, x y z), RTA
+and final, for each temperature</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tau_RTA.dat</span></code></p></td>
+<td><p>lifetimes (total, normal, Umklapp) in the irreducible wedge</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Qvalue.dat</span></code></p></td>
+<td><p>Q and the three-phonon scattering rates in the irreducible wedge</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kappa_direct.dat</span></code></p></td>
+<td><p>job 2: conductivity per band from the direct solution</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tau_RTAandeff.dat</span></code></p></td>
+<td><p>job 2: RTA and effective lifetimes</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kappa_iter.dat</span></code></p></td>
+<td><p>job 3: conductivity per band at each iteration</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">lw-selfenergy.dat</span></code></p></td>
+<td><p>job 1: linewidths along the path, one line per mode and k</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">lw-selfenergy2.dat</span></code></p></td>
+<td><p>job 1: the same, one line per k</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">V3DELTA/</span></code></p></td>
+<td><p>V3*delta, one file per irreducible k-point (line 10 = 0)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">phonlog.dat</span></code></p></td>
+<td><p>log of the run</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">times.dat</span></code></p></td>
+<td><p>CPU time of each step</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="checks">
+<h2><span class="section-number">7.6. </span>Checks<a class="headerlink" href="#checks" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\omega^2 &lt; -25\)</span> cm<sup>-2</sup> at any k-point stops the run (instability or bad fit);
+smaller negative values (round-off near <span class="math notranslate nohighlight">\(\Gamma\)</span>) are replaced by <span class="math notranslate nohighlight">\(|\omega^2|\)</span>
+with a warning in <code class="docutils literal notranslate"><span class="pre">phonlog.dat</span></code>. <code class="docutils literal notranslate"><span class="pre">focex-agent.py</span></code> flags the same threshold.</p></li>
+<li><p>The dynamical matrix is replaced by <span class="math notranslate nohighlight">\((D+D^\dagger)/2\)</span>; a warning in <code class="docutils literal notranslate"><span class="pre">phonlog.dat</span></code>
+reports <span class="math notranslate nohighlight">\(\max|D-D^\dagger|/\max|D| &gt; 10^{-6}\)</span>, which points to an error elsewhere.</p></li>
+<li><p>An empty <code class="docutils literal notranslate"><span class="pre">fc3.dat</span></code> (all cubic FCs zero in the FOCEX fit) stops the run instead of giving
+infinite lifetimes.</p></li>
+</ul>
+</section>
+<section id="example">
+<h2><span class="section-number">7.7. </span>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
+<p>With the FOCEX Ge example run in a folder (<code class="docutils literal notranslate"><span class="pre">FOCEX/example/Ge</span></code>), THERMACOND runs in the
+same folder: set lines 1, 6 and 8 of <code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">6</span> <span class="pre">6</span> <span class="pre">6</span></code>, <code class="docutils literal notranslate"><span class="pre">300</span> <span class="pre">300</span> <span class="pre">1</span></code>
+and <code class="docutils literal notranslate"><span class="pre">2</span></code>, then <code class="docutils literal notranslate"><span class="pre">tcond-2.0.x</span></code>. On a 6x6x6 mesh (16 irreducible points) this takes about a minute
+and a half on one core (almost all of it V3*delta) and gives at 300 K kappa_P = 30.90 W/mK in
+<code class="docutils literal notranslate"><span class="pre">kappa_wigner.dat</span></code> (kappa_C = 0.017); rerunning with
+<code class="docutils literal notranslate"><span class="pre">100</span> <span class="pre">400</span> <span class="pre">4</span></code> on line 6 reuses <code class="docutils literal notranslate"><span class="pre">V3DELTA/</span></code> and takes a few seconds. Converged values need
+much denser meshes (the paper uses up to 30x30x30 and extrapolates in 1/n).</p>
+</section>
+<section id="status">
+<h2><span class="section-number">7.8. </span>Status<a class="headerlink" href="#status" title="Link to this heading"></a></h2>
+<p>As of October 2026:</p>
+<ul class="simple">
+<li><p>isotope scattering (line 11 = 1) is not yet available with jobs 2 and 3;</p></li>
+<li><p>the optical properties at the zone centre (self-energy at q = 0, dielectric function)
+of the previous job control are not yet part of job 0;</p></li>
+<li><p>the per-band files (<code class="docutils literal notranslate"><span class="pre">kappa_RTA.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">kappa_iter.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">kappa_direct.dat</span></code>,
+<code class="docutils literal notranslate"><span class="pre">distribution_F.dat</span></code>) are per mode and depend on the degenerate basis; the totals in
+<code class="docutils literal notranslate"><span class="pre">kappa_vs_T.dat</span></code> do not;</p></li>
+<li><p>the iterative result for Ge 4x4x4 is anisotropic by 0.24 % (zz high), independently of the
+basis, while the RTA is exactly isotropic: the collision kernel does not have the full
+symmetry (tetrahedron orientation or the star handling of q2, q3), being checked together
+with the next item;</p></li>
+<li><p>the direct solution (job 2) and the iterative one (job 3) do not agree; the direct
+(IBZ-reduced) collision matrix is being checked;</p></li>
+<li><p>before 22 October 2026 the k-point symmetry was wrong for hexagonal, trigonal, monoclinic
+and triclinic cells.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="runfocex.html" class="btn btn-neutral float-left" title="6. Running FOCEX" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="runscop8.html" class="btn btn-neutral float-right" title="8. Running SCOP8" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, University of Virginia.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,1058 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>10. FOCEX agent: from a crystal structure to phonons &mdash; ALADYN 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="11. FAQ" href="faq.html" />
+    <link rel="prev" title="9. FOCEX agent: user’s guide" href="focexagent_guide.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ALADYN
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">2. Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">3. Download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">4. Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscsnaps.html">5. Running SC-SNAPS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runfocex.html">6. Running FOCEX</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runthermacond.html">7. Running THERMACOND</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscop8.html">8. Running SCOP8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="focexagent_guide.html">9. FOCEX agent: user’s guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">10. FOCEX agent: from a crystal structure to phonons</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-the-focex-agent-does">10.1. What the FOCEX agent does</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#what-you-need-and-how-to-install-it">10.2. What you need, and how to install it</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-programs">The programs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-once">Install, once</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tell-vasp-flow-where-vasp-mpi-and-the-potcars-are">Tell VASP-Flow where VASP, MPI and the POTCARs are</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#check-the-set-up">Check the set-up</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#when-is-the-python-environment-needed">When is the Python environment needed?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#quick-start">10.3. Quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mode-from-scratch-from-a-poscar-to-phonons">10.4. Mode from_scratch: from a POSCAR to phonons</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#defaults">Defaults</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-supercell">The supercell</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-focex-frame">The FOCEX frame</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-k-mesh-of-the-supercells">The k-mesh of the supercells</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#mode-extract-only-focex-on-existing-data">10.5. Mode extract_only: FOCEX on existing data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-instruction-file-every-keyword">10.6. The instruction file: every keyword</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#changing-the-files-the-agent-writes">10.7. Changing the files the agent writes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#born-charges-and-the-dielectric-constant">10.8. Born charges and the dielectric constant</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-project-folder-and-the-results">10.9. The project folder and the results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#when-a-run-stops-diagnose-py">10.10. When a run stops: diagnose.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#thermal-conductivity">10.11. Thermal conductivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-history">10.12. Version history</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ALADYN</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">10. </span>FOCEX agent: from a crystal structure to phonons</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/runfocexagent.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="focex-agent-from-a-crystal-structure-to-phonons">
+<span id="focex-agent"></span><h1><span class="section-number">10. </span>FOCEX agent: from a crystal structure to phonons<a class="headerlink" href="#focex-agent-from-a-crystal-structure-to-phonons" title="Link to this heading"></a></h1>
+<p>Version 1.2 (2026-10-27, with FOCEX 9.0). The same manual as a PDF: <code class="docutils literal notranslate"><span class="pre">FOCEX/AGENT/focexagent_manual.pdf</span></code> in the repository; the agent, its
+instruction file and <code class="docutils literal notranslate"><span class="pre">diagnose.py</span></code> are in <code class="docutils literal notranslate"><span class="pre">FOCEX/AGENT</span></code>.</p>
+<section id="what-the-focex-agent-does">
+<h2><span class="section-number">10.1. </span>What the FOCEX agent does<a class="headerlink" href="#what-the-focex-agent-does" title="Link to this heading"></a></h2>
+<p>FOCEX obtains the force constants of a crystal (harmonic, cubic, quartic, …) by fitting them to
+the forces that density-functional theory (DFT) gives on the atoms of a supercell in which every
+atom has been displaced a little at random (a <em>snapshot</em>). From the force constants it computes the
+phonon dispersion, density of states, group velocities, Grüneisen parameters, elastic constants,
+sound speeds and the thermal expansion; THERMACOND then computes the lattice thermal conductivity
+from the same files.</p>
+<p>Making those forces takes many steps: relax the crystal, orient the cell the way FOCEX expects,
+compute the Born charges of an insulator, choose a supercell, generate the snapshots, run one DFT
+calculation per snapshot, collect the forces, write the five input files of FOCEX and run it. Each
+step has its own input files and its own ways to fail. The FOCEX agent, <code class="docutils literal notranslate"><span class="pre">focex-agent.py</span></code>, does
+them all from one short <em>instruction file</em>, checks the result of every step, writes what it did to
+<code class="docutils literal notranslate"><span class="pre">report.log</span></code>, and can be restarted at any time: finished steps are not repeated. When a run
+stops, <code class="docutils literal notranslate"><span class="pre">diagnose.py</span></code> finds out where and why, and writes a script that repairs it
+(<a class="reference internal" href="#agent-diagnose"><span class="std std-ref">When a run stops: diagnose.py</span></a>).</p>
+<p>It works in one of two modes:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 16.0%" />
+<col style="width: 40.0%" />
+<col style="width: 44.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Mode</p></th>
+<th class="head"><p>You give</p></th>
+<th class="head"><p>The agent does</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>from_scratch</strong></p></td>
+<td><p>a crystal structure (<code class="docutils literal notranslate"><span class="pre">POSCAR</span></code>) and the instruction file</p></td>
+<td><p>VASP relaxation, SCF and Born charges; SC-SNAPS snapshots; one VASP run per snapshot;
+FOCEX; plots (<a class="reference internal" href="#agent-scratch"><span class="std std-ref">Mode from_scratch: from a POSCAR to phonons</span></a>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>extract_only</strong></p></td>
+<td><p>existing supercells and their forces (<code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code>, <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code>, …) and the
+instruction file</p></td>
+<td><p>rotates the data into the FOCEX frame; FOCEX; plots (<a class="reference internal" href="#agent-extract"><span class="std std-ref">Mode extract_only: FOCEX on existing data</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="_images/focexagent_flow.png"><img alt="_images/focexagent_flow.png" src="_images/focexagent_flow.png" style="width: 90%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Green: VASP; orange: SC-SNAPS, FOCEX and their tools; blue: your input.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="what-you-need-and-how-to-install-it">
+<h2><span class="section-number">10.2. </span>What you need, and how to install it<a class="headerlink" href="#what-you-need-and-how-to-install-it" title="Link to this heading"></a></h2>
+<p>You do not need to have used VASP-Flow before: the agent uses it as a library, to write the VASP
+input files and the batch scripts. This section has everything you need to set up.</p>
+<section id="the-programs">
+<h3>The programs<a class="headerlink" href="#the-programs" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 22.0%" />
+<col style="width: 45.0%" />
+<col style="width: 33.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>What</p></th>
+<th class="head"><p>Needed for</p></th>
+<th class="head"><p>How to get it</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>VASP 5.4 or newer</p></td>
+<td><p>every DFT step (from_scratch only)</p></td>
+<td><p>your licence; on a cluster usually a module</p></td>
+</tr>
+<tr class="row-odd"><td><p>POTCAR library</p></td>
+<td><p>VASP: the PAW potentials, one folder per element</p></td>
+<td><p>comes with VASP</p></td>
+</tr>
+<tr class="row-even"><td><p>MPI</p></td>
+<td><p>running VASP in parallel (<code class="docutils literal notranslate"><span class="pre">mpirun</span></code> or <code class="docutils literal notranslate"><span class="pre">srun</span></code>)</p></td>
+<td><p>system or cluster module</p></td>
+</tr>
+<tr class="row-odd"><td><p>Python ≥ 3.8 with numpy, spglib, pymatgen</p></td>
+<td><p>the agent and <code class="docutils literal notranslate"><span class="pre">diagnose.py</span></code></p></td>
+<td><p>a virtual environment, below</p></td>
+</tr>
+<tr class="row-even"><td><p>VASP-Flow</p></td>
+<td><p>writes the VASP inputs and batch scripts</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span></code>, below</p></td>
+</tr>
+<tr class="row-odd"><td><p>FOCEX, <code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code></p></td>
+<td><p>the fit; reading the forces from the OUTCARs</p></td>
+<td><p>this repository, <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">focex</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>SC-SNAPS (<code class="docutils literal notranslate"><span class="pre">sc_snaps.x</span></code>)</p></td>
+<td><p>the snapshots (from_scratch only)</p></td>
+<td><p>this repository, <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">sc_snaps</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>gnuplot</p></td>
+<td><p>the plots (PDF)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">gnuplot</span></code>, <code class="docutils literal notranslate"><span class="pre">apt</span> <span class="pre">install</span> <span class="pre">gnuplot</span></code>, or a module</p></td>
+</tr>
+<tr class="row-even"><td><p>a Fortran compiler</p></td>
+<td><p>building FOCEX and SC-SNAPS</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gfortran</span></code> (GCC)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="install-once">
+<h3>Install, once<a class="headerlink" href="#install-once" title="Link to this heading"></a></h3>
+<p>The same commands on a workstation and on the login node of a cluster (there, load Python 3.8+
+and GCC first, e.g. <code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">load</span> <span class="pre">gcc</span> <span class="pre">python</span></code>).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~
+<span class="c1"># 1. this repository: FOCEX, its utilities, SC-SNAPS, the agent</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
+<span class="nb">cd</span><span class="w"> </span>Anharmonic-lattice-dynamics
+make<span class="w"> </span>focex<span class="w"> </span>sc_snaps<span class="w">     </span><span class="c1"># FOCEX, read_outcar.x, ..., sc_snaps.x -&gt; ~/ALADYN/bin (3 min)</span>
+<span class="w">                        </span><span class="c1"># plain "make" also builds THERMACOND (needs MPI) and ANFOMOD</span>
+<span class="nb">cd</span><span class="w"> </span>~
+
+<span class="c1"># 2. VASP-Flow; the agent imports it from ~/VASP-Flow</span>
+<span class="c1">#    (another place: export VASP_FLOW_DIR=/that/place)</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/KeivanS/VASP-Flow.git
+
+<span class="c1"># 3. one Python environment for VASP-Flow and the FOCEX agent</span>
+python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>~/dftphonon-env
+<span class="nb">source</span><span class="w"> </span>~/dftphonon-env/bin/activate
+pip<span class="w"> </span>install<span class="w"> </span>numpy<span class="w"> </span>spglib<span class="w"> </span>pymatgen<span class="w"> </span>matplotlib
+
+<span class="c1"># 4. optional: the commands focex-agent and focex-diagnose (symlinks in ~/ALADYN/bin)</span>
+<span class="o">(</span><span class="nb">cd</span><span class="w"> </span>Anharmonic-lattice-dynamics<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>python-tools<span class="o">)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span>~/ALADYN/bin:<span class="nv">$PATH</span><span class="w">     </span><span class="c1"># put this line in ~/.bashrc</span>
+</pre></div>
+</div>
+<p>The agent finds the programs at these places; a program installed elsewhere is named in the
+instruction file (<code class="docutils literal notranslate"><span class="pre">FOCEX_X</span></code>, <code class="docutils literal notranslate"><span class="pre">SC_SNAPS_X</span></code>, <code class="docutils literal notranslate"><span class="pre">READ_OUTCAR_X</span></code>, <a class="reference internal" href="#agent-keywords"><span class="std std-ref">The instruction file: every keyword</span></a>). With step 4 and the environment active, <code class="docutils literal notranslate"><span class="pre">focex-agent</span></code> and <code class="docutils literal notranslate"><span class="pre">focex-diagnose</span></code> are
+short for <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">.../FOCEX/AGENT/focex-agent.py</span></code> and <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">.../FOCEX/AGENT/diagnose.py</span></code>.</p>
+</section>
+<section id="tell-vasp-flow-where-vasp-mpi-and-the-potcars-are">
+<h3>Tell VASP-Flow where VASP, MPI and the POTCARs are<a class="headerlink" href="#tell-vasp-flow-where-vasp-mpi-and-the-potcars-are" title="Link to this heading"></a></h3>
+<p><strong>The POTCAR library</strong> is always given by an environment variable. Put it in your <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code>
+(or <code class="docutils literal notranslate"><span class="pre">~/.zshrc</span></code>) so that every job sees it:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">VASP_POTCAR_DIR</span><span class="o">=</span>/path/to/potpaw_PBE.54<span class="w">     </span><span class="c1"># holds Zn/, O/, Ga/, ...</span>
+</pre></div>
+</div>
+<p><strong>VASP and MPI</strong> come from a <em>profile</em>, a small JSON file in <code class="docutils literal notranslate"><span class="pre">~/VASP-Flow/profiles/</span></code>, chosen with
+<code class="docutils literal notranslate"><span class="pre">--profile</span></code> (or <code class="docutils literal notranslate"><span class="pre">PROFILE:</span></code> in the instruction file):</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 16.0%" />
+<col style="width: 84.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>profile</p></th>
+<th class="head"><p>use it for</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>(none)</p></td>
+<td><p>a workstation. VASP from the variables <code class="docutils literal notranslate"><span class="pre">VASP_STD</span></code> (default <code class="docutils literal notranslate"><span class="pre">~/BIN/vasp_std</span></code>) and
+<code class="docutils literal notranslate"><span class="pre">MPI_LAUNCH</span></code> (default <code class="docutils literal notranslate"><span class="pre">mpirun</span> <span class="pre">-np</span></code>), set in <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code>; the number of ranks is
+<code class="docutils literal notranslate"><span class="pre">MPI:</span></code> in the instruction file; <code class="docutils literal notranslate"><span class="pre">run_workflow.sh</span></code> is started with <code class="docutils literal notranslate"><span class="pre">bash</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">workstation</span></code></p></td>
+<td><p>the same, with the paths written in <code class="docutils literal notranslate"><span class="pre">profiles/workstation.json</span></code> instead</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">slurm</span></code></p></td>
+<td><p>a template for a SLURM cluster: edit <code class="docutils literal notranslate"><span class="pre">profiles/slurm.json</span></code> (VASP command, <code class="docutils literal notranslate"><span class="pre">modules</span></code> to
+load, partition, nodes, tasks per node, time, account)</p></td>
+</tr>
+<tr class="row-odd"><td><p><em>your own</em> (<code class="docutils literal notranslate"><span class="pre">mycluster</span></code> below)</p></td>
+<td><p>your cluster: copy <code class="docutils literal notranslate"><span class="pre">slurm.json</span></code> to <code class="docutils literal notranslate"><span class="pre">mycluster.json</span></code>, edit it, and use
+<code class="docutils literal notranslate"><span class="pre">--profile</span> <span class="pre">mycluster</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>With a SLURM profile, <code class="docutils literal notranslate"><span class="pre">run_workflow.sh</span></code> begins with the <code class="docutils literal notranslate"><span class="pre">#SBATCH</span></code> lines and the
+<code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">load</span></code> lines of the profile and is submitted with <code class="docutils literal notranslate"><span class="pre">sbatch</span></code>.</p>
+</section>
+<section id="check-the-set-up">
+<h3>Check the set-up<a class="headerlink" href="#check-the-set-up" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>~/dftphonon-env/bin/activate
+python<span class="w"> </span>~/VASP-Flow/check_setup.py<span class="w"> </span><span class="nb">local</span><span class="w">     </span><span class="c1"># a workstation;  "slurm" on a cluster</span>
+</pre></div>
+</div>
+<p>It checks Python and its packages, the POTCAR library, VASP and MPI (and on a cluster the
+profile), and prints for every problem the command that fixes it. <strong>Ready.</strong> at the end means you
+can start.</p>
+</section>
+<section id="when-is-the-python-environment-needed">
+<h3>When is the Python environment needed?<a class="headerlink" href="#when-is-the-python-environment-needed" title="Link to this heading"></a></h3>
+<p>It is the same environment as in VASP-Flow’s manual: one, <code class="docutils literal notranslate"><span class="pre">~/dftphonon-env</span></code>, serves both (DFT with
+VASP-Flow, phonons with the FOCEX agent). It is needed whenever <em>you</em> start <code class="docutils literal notranslate"><span class="pre">focex-agent.py</span></code> or
+<code class="docutils literal notranslate"><span class="pre">diagnose.py</span></code>: they import numpy, spglib, pymatgen and
+VASP-Flow. Either activate it first (<code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">~/dftphonon-env/bin/activate</span></code>, then <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">...</span></code>) or
+call its interpreter directly (<code class="docutils literal notranslate"><span class="pre">~/dftphonon-env/bin/python</span> <span class="pre">...</span></code>). The scripts the agent writes
+(<code class="docutils literal notranslate"><span class="pre">run_workflow.sh</span></code>, <code class="docutils literal notranslate"><span class="pre">resubmit_failed.sh</span></code>, <code class="docutils literal notranslate"><span class="pre">diagnosis/fix_it.sh</span></code>) contain the full path of the
+interpreter you used, so the batch jobs need no activation. The plots need only gnuplot; without it
+the agent writes the plot scripts and you run <code class="docutils literal notranslate"><span class="pre">makeplots.sh</span></code> later, where gnuplot is.</p>
+</section>
+</section>
+<section id="quick-start">
+<h2><span class="section-number">10.3. </span>Quick start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<p>The steps of a from_scratch calculation (<a class="reference internal" href="#agent-extract"><span class="std std-ref">Mode extract_only: FOCEX on existing data</span></a> has those of extract_only):</p>
+<ol class="arabic">
+<li><p><strong>Make a folder</strong> for the material with its crystal structure, in VASP’s POSCAR format, named
+<code class="docutils literal notranslate"><span class="pre">POSCAR</span></code>. Any cell of the crystal will do – primitive or not, any orientation: the agent
+reduces and orients it.</p></li>
+<li><p><strong>Copy the instruction file</strong> <code class="docutils literal notranslate"><span class="pre">FOCEX/AGENT/focex-agent-instructions.txt</span></code> into that folder and
+edit it. Only two lines are required: <code class="docutils literal notranslate"><span class="pre">Project:</span></code> (a name) and <code class="docutils literal notranslate"><span class="pre">RANKS:</span></code> (which force
+constants to fit, e.g. <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">1</span> <span class="pre">1</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span></code> for harmonic and cubic). Set also <code class="docutils literal notranslate"><span class="pre">FUNCTIONAL:</span></code>
+and <code class="docutils literal notranslate"><span class="pre">MPI:</span></code> (the number of MPI ranks for VASP); every other line is optional and shows its
+default.</p>
+<p><strong>Where the calculations go</strong> is also set in this file, by <code class="docutils literal notranslate"><span class="pre">PROJECT_DIR:</span></code>: a path relative to
+the folder of the instruction file (<code class="docutils literal notranslate"><span class="pre">PROJECT_DIR:</span> <span class="pre">runs/ZnO_PBEsol</span></code>) or absolute
+(<code class="docutils literal notranslate"><span class="pre">PROJECT_DIR:</span> <span class="pre">/scratch/me/ZnO</span></code>, <code class="docutils literal notranslate"><span class="pre">~</span></code> allowed). Without it the project folder is a folder
+named after <code class="docutils literal notranslate"><span class="pre">Project:</span></code> next to the instruction file. The agent creates it, with any missing
+parent folders; if it holds a project already, the agent stops unless <code class="docutils literal notranslate"><span class="pre">--force</span></code> is given.</p>
+</li>
+<li><p><strong>Set up the project</strong>: the agent creates the project folder with the relaxation inputs and
+<code class="docutils literal notranslate"><span class="pre">run_workflow.sh</span></code>, and prints the command to start it. This takes seconds and runs no VASP.</p></li>
+<li><p><strong>Start the workflow</strong> from the project folder, and follow <code class="docutils literal notranslate"><span class="pre">report.log</span></code>.</p></li>
+<li><p><strong>If it stops</strong>, run <code class="docutils literal notranslate"><span class="pre">diagnose.py</span></code> (<a class="reference internal" href="#agent-diagnose"><span class="std std-ref">When a run stops: diagnose.py</span></a>).</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/work/ZnO<span class="w">                      </span><span class="c1"># holds POSCAR</span>
+<span class="nv">A</span><span class="o">=</span>~/Anharmonic-lattice-dynamics/FOCEX/AGENT
+cp<span class="w"> </span><span class="nv">$A</span>/focex-agent-instructions.txt<span class="w"> </span>.
+nano<span class="w"> </span>focex-agent-instructions.txt<span class="w">  </span><span class="c1"># Project, RANKS, FUNCTIONAL, MPI</span>
+
+<span class="nb">source</span><span class="w"> </span>~/dftphonon-env/bin/activate
+python<span class="w"> </span><span class="nv">$A</span>/focex-agent.py<span class="w"> </span>--profile<span class="w"> </span>mycluster<span class="w">   </span><span class="c1"># your profile (above)</span>
+<span class="nb">cd</span><span class="w"> </span>ZnO
+sbatch<span class="w"> </span>run_workflow.sh<span class="w">             </span><span class="c1"># without a profile: nohup bash run_workflow.sh &amp;</span>
+tail<span class="w"> </span>-f<span class="w"> </span>report.log
+</pre></div>
+</div>
+<p>The options of <code class="docutils literal notranslate"><span class="pre">focex-agent.py</span></code> are all optional:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 22.0%" />
+<col style="width: 78.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>option</p></th>
+<th class="head"><p>meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--instr</span> <span class="pre">FILE</span></code></p></td>
+<td><p>the instruction file, if it is not called <code class="docutils literal notranslate"><span class="pre">focex-agent-instructions.txt</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--coord</span> <span class="pre">FILE</span></code></p></td>
+<td><p>the crystal structure, if it is not called <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code> (from_scratch)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--profile</span> <span class="pre">NAME</span></code></p></td>
+<td><p>the VASP-Flow profile (previous section); default: <code class="docutils literal notranslate"><span class="pre">PROFILE:</span></code> of the instruction file,
+else none</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--force</span></code></p></td>
+<td><p>set up again a project folder that exists already. Its record of finished tasks is reset,
+so use it only to start over, after removing the old run folders</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Threads.</strong> You do not have to do anything about OpenMP threads: the agent runs VASP with one
+thread per MPI rank (<code class="docutils literal notranslate"><span class="pre">OMP_NUM_THREADS=1</span></code>). Without that, a BLAS library built with OpenMP
+starts one thread per core in every MPI rank and the cores are oversubscribed many times (a
+96-atom ZnO supercell made no SCF step in 30 minutes on 8 ranks). Only if your VASP is built
+for hybrid MPI + OpenMP runs and you want them, set <code class="docutils literal notranslate"><span class="pre">VASP_OMP_NUM_THREADS</span></code> to the number of
+threads per rank before you start the workflow.</p>
+</div>
+</section>
+<section id="mode-from-scratch-from-a-poscar-to-phonons">
+<span id="agent-scratch"></span><h2><span class="section-number">10.4. </span>Mode from_scratch: from a POSCAR to phonons<a class="headerlink" href="#mode-from-scratch-from-a-poscar-to-phonons" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">run_workflow.sh</span></code> runs <code class="docutils literal notranslate"><span class="pre">focex-agent.py</span> <span class="pre">run</span> <span class="pre">&lt;PROJECT_DIR&gt;</span></code>, which does the eleven tasks below in
+order. Each finished task is recorded in <code class="docutils literal notranslate"><span class="pre">state.json</span></code> and in <code class="docutils literal notranslate"><span class="pre">report.log</span></code>, with what was
+checked; a task that fails stops the workflow, and starting <code class="docutils literal notranslate"><span class="pre">run_workflow.sh</span></code> again continues
+from that task. A job that hits its time limit is simply submitted again.</p>
+<p>The supercell tasks are checked again before they are skipped:</p>
+<ul class="simple">
+<li><p><strong>A removed or incomplete ``04_supercells/snap_NNN`` folder</strong> is written again, and the
+<code class="docutils literal notranslate"><span class="pre">supercells</span></code> task and every task after it are redone. Only the folders without a converged
+OUTCAR run VASP.</p></li>
+<li><p><strong>To leave snapshots out on purpose</strong>, move their folders to <code class="docutils literal notranslate"><span class="pre">04_supercells/unused/</span></code>. They
+are then not recreated, and <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code> is collected again from the others.</p></li>
+<li><p><strong>A ``snap_NNN`` folder with no ``03_snaps/poscar_NNN``</strong> stops the workflow.</p></li>
+<li><p><strong>To add snapshots</strong>, raise <code class="docutils literal notranslate"><span class="pre">SNAPSHOTS</span></code> in the project’s <code class="docutils literal notranslate"><span class="pre">focex-agent-instructions.txt</span></code> and
+start <code class="docutils literal notranslate"><span class="pre">run_workflow.sh</span></code> again. The extra snapshots are made at the same temperature and numbered
+after the existing ones, which are kept; only the new ones run VASP, then FOCEX is run again on
+all of them. A lower <code class="docutils literal notranslate"><span class="pre">SNAPSHOTS</span></code> removes nothing.</p></li>
+</ul>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">relax</span></code></dt><dd><p>The structure you gave is reduced to its primitive cell (Niggli reduction) and rotated into
+the orientation FOCEX and SC-SNAPS use (<a class="reference internal" href="#agent-frame"><span class="std std-ref">The FOCEX frame</span></a>); the result is <code class="docutils literal notranslate"><span class="pre">POSCAR.init</span></code>.
+VASP relaxes the atoms and the cell shape and volume in <code class="docutils literal notranslate"><span class="pre">01_relax</span></code>. If the forces are not yet
+below EDIFFG after NSW ionic steps, the relaxation continues from its last structure (CONTCAR),
+up to three times.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">poscar0</span></code></dt><dd><p>The relaxed cell is reduced and oriented again and written as <code class="docutils literal notranslate"><span class="pre">POSCAR0</span></code>: every later step
+uses this cell and this Cartesian frame. The report gives its space group and lattice
+parameters.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">scf</span></code></dt><dd><p>A self-consistent calculation on POSCAR0 in <code class="docutils literal notranslate"><span class="pre">02_scf</span></code> (same INCAR, no ionic steps, same
+k-mesh), which also gives the band gap. If the cell did not change in the previous task, it
+starts from the charge density and wave functions of the relaxation.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">dfpt</span></code></dt><dd><p>For an insulator (band gap above 0.05 eV, <code class="docutils literal notranslate"><span class="pre">DFPT:</span> <span class="pre">auto</span></code>): density-functional perturbation
+theory in <code class="docutils literal notranslate"><span class="pre">02_scf/dfpt</span></code> gives the high-frequency dielectric constant and the Born effective
+charges of every atom (<a class="reference internal" href="#agent-born"><span class="std std-ref">Born charges and the dielectric constant</span></a>). <code class="docutils literal notranslate"><span class="pre">DFPT:</span> <span class="pre">on</span></code> forces it, <code class="docutils literal notranslate"><span class="pre">off</span></code> skips it.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">snaps</span></code></dt><dd><p>The supercell is chosen (<a class="reference internal" href="#agent-supercell"><span class="std std-ref">The supercell</span></a>). SC-SNAPS (<code class="docutils literal notranslate"><span class="pre">03_snaps</span></code>)
+then writes the undistorted supercell <code class="docutils literal notranslate"><span class="pre">poscar_000</span></code> and 50 snapshots, each atom displaced as in
+a thermal ensemble of harmonic oscillators of frequency <code class="docutils literal notranslate"><span class="pre">AVG_FREQ</span></code> at temperature
+<code class="docutils literal notranslate"><span class="pre">TEMPERATURE</span></code>. <strong>A temperature you give is used as it is</strong>, e.g. to sample the
+displacements of that temperature for effective phonons; the report gives the resulting rms
+displacement. Only when <code class="docutils literal notranslate"><span class="pre">TEMPERATURE</span></code> is not given, the default 30 K is adjusted (SC-SNAPS
+rerun at most twice) until the rms displacement is within 15 % of <code class="docutils literal notranslate"><span class="pre">DISP_TARGET</span></code> (0.02 Å):
+large enough for clean forces, small enough for the Taylor expansion of the energy. The
+undistorted supercell is checked to be an
+exact multiple of POSCAR0 before any VASP job is run.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">supercells</span></code></dt><dd><p>One folder per snapshot, <code class="docutils literal notranslate"><span class="pre">04_supercells/snap_NNN</span></code>, with its POSCAR, the SCF INCAR without
+symmetry (<code class="docutils literal notranslate"><span class="pre">ISYM</span> <span class="pre">=</span> <span class="pre">0</span></code>) and a k-mesh equivalent to the SCF one (<a class="reference internal" href="#agent-kmesh"><span class="std std-ref">The k-mesh of the supercells</span></a>); magnetic
+moments given per atom are carried over to the supercell.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">vasp_snaps</span></code></dt><dd><p>The VASP runs of the snapshots, one after the other. A run that fails does not stop the others;
+the failed ones are listed in <code class="docutils literal notranslate"><span class="pre">report.log</span></code>, and <code class="docutils literal notranslate"><span class="pre">resubmit_failed.sh</span></code> reruns only those. An
+existing OUTCAR is never overwritten (it is kept as <code class="docutils literal notranslate"><span class="pre">OUTCAR.1</span></code>, …).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">collect</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code> reads the positions and forces of every run into
+<code class="docutils literal notranslate"><span class="pre">04_supercells/FORCEDISP1</span></code>; <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> is the undistorted supercell. The report gives the
+largest net force on a supercell (should be ≈ 0) and the largest difference between the
+positions in OUTCAR and in POSCAR. The undistorted supercell (<code class="docutils literal notranslate"><span class="pre">snap_000</span></code>, run with
+<code class="docutils literal notranslate"><span class="pre">ISIF</span> <span class="pre">=</span> <span class="pre">2</span></code>; the other snapshots use <code class="docutils literal notranslate"><span class="pre">ISIF</span> <span class="pre">=</span> <span class="pre">1</span></code>, which gives only the trace) also gives the
+stress of the reference structure: <code class="docutils literal notranslate"><span class="pre">stress.params</span></code> (GPa, tensile positive, i.e. minus the
+<code class="docutils literal notranslate"><span class="pre">in</span> <span class="pre">kB</span></code> line of OUTCAR divided by 10) is written and copied to the FOCEX folders, where it
+enters the Huang rows and the elastic constants (<a class="reference internal" href="runfocex.html#focex-stress-params"><span class="std std-ref">stress.params (optional)</span></a>).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">focex</span></code></dt><dd><p>The five input files of FOCEX are written in <code class="docutils literal notranslate"><span class="pre">05_focex</span></code> (<code class="docutils literal notranslate"><span class="pre">structure.params</span></code>,
+<code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code>, <code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code>, <code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code>, <code class="docutils literal notranslate"><span class="pre">default.params</span></code>) and FOCEX is run.
+With Born charges a second run without them is made in <code class="docutils literal notranslate"><span class="pre">05_focex/NOBORN</span></code>, for comparison; with
+fewer than <code class="docutils literal notranslate"><span class="pre">LASSO_RATIO</span></code> (2) equations per unknown, a third run with LASSO, which keeps only
+the force constants the data need, is made in <code class="docutils literal notranslate"><span class="pre">05_focex/LASSO</span></code>. The report gives the fit
+error, the numbers of equations and unknowns, the lowest ω² (a warning below −25 cm⁻²:
+imaginary modes) and the highest frequency. If the DOS range of <code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code> does not fit
+the frequencies, FOCEX is run again with one that does.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">plots</span></code></dt><dd><p>The gnuplot scripts <code class="docutils literal notranslate"><span class="pre">bvel.plt</span></code>, <code class="docutils literal notranslate"><span class="pre">all.plt</span></code>, <code class="docutils literal notranslate"><span class="pre">qha.plt</span></code> are filled in and run in every FOCEX
+folder (<a class="reference internal" href="#agent-results"><span class="std std-ref">The project folder and the results</span></a>); <code class="docutils literal notranslate"><span class="pre">makeplots.sh</span></code> remakes them.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">thermacond</span></code></dt><dd><p>THERMACOND in <code class="docutils literal notranslate"><span class="pre">06_thermacond</span></code>: linewidths or the thermal conductivity, when <code class="docutils literal notranslate"><span class="pre">THERMACOND_JOB</span></code>
+is 1, 2 or 3; skipped for 0, the default (<a class="reference internal" href="#agent-thermacond"><span class="std std-ref">Thermal conductivity</span></a>).</p>
+</dd>
+</dl>
+<section id="defaults">
+<h3>Defaults<a class="headerlink" href="#defaults" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ACCURACY:</span> <span class="pre">Accurate</span></code>: ENCUT 600 eV, EDIFF 10⁻⁷ eV, EDIFFG −0.001 eV/Å, PREC Accurate in every
+VASP step. <code class="docutils literal notranslate"><span class="pre">Normal</span></code>: 450 eV, 10⁻⁶, −0.003, PREC Normal – cheaper, but the residual forces of
+the relaxed structure are larger (0.01 eV/Å in a ZnO test), which adds noise to the force
+constants. DFPT uses EDIFF 10⁻⁸.</p></li>
+<li><p>Relaxation and SCF k-mesh: VASP-Flow’s <code class="docutils literal notranslate"><span class="pre">coarse</span></code> density (1000 k-points per reciprocal atom),
+<code class="docutils literal notranslate"><span class="pre">fine</span></code> (6000) if every element is a metal. Each subdivision is rounded to the nearest integer;
+VASP-Flow itself rounds to even numbers (multiples of 6 in plane for hexagonal cells), the agent
+does not. The FOCEX mesh (<code class="docutils literal notranslate"><span class="pre">FOCEX_MESH</span></code>) is made the same way.</p></li>
+<li><p>50 snapshots. Each gives three equations per atom of the supercell: 20 snapshots of a 96-atom
+supercell give 5760 equations for the 264 unknowns of ZnO with ranks 1–3, so fewer snapshots are
+often enough (<code class="docutils literal notranslate"><span class="pre">SNAPSHOTS</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RANGE:</span> <span class="pre">6</span> <span class="pre">2</span> <span class="pre">1</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span></code>: neighbour shells kept for ranks 2, 3, 4, …; <code class="docutils literal notranslate"><span class="pre">FC2RANGE:</span> <span class="pre">0</span></code>: the
+harmonic force constants are kept over the whole supercell.</p></li>
+<li><p>FOCEX k-mesh <code class="docutils literal notranslate"><span class="pre">fine</span></code>; the band-structure path is found automatically.</p></li>
+</ul>
+</section>
+<section id="the-supercell">
+<span id="agent-supercell"></span><h3>The supercell<a class="headerlink" href="#the-supercell" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">SUPERCELL:</span></code> takes one of three forms:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SMALL</span></code> (the default): the multiple m1×m2×m3 of the conventional cell with the fewest atoms
+whose faces are at least 10 Å apart, at most 100 atoms;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LARGE</span></code>: the same with 14 Å and at most 300 atoms. In both, if no such multiple is small
+enough, the one with the largest face distance; it keeps the symmetry of the lattice;</p></li>
+<li><p><strong>the supercell matrix itself</strong>: nine integers, the three rows of the matrix that the agent
+writes to SC-SNAPS’s <code class="docutils literal notranslate"><span class="pre">supercell.inp</span></code>. The first three integers n11 n12 n13 give the first
+supercell vector as a combination of the primitive vectors of POSCAR0,
+R<sub>S1</sub> = n11 R<sub>01</sub> + n12 R<sub>02</sub> + n13 R<sub>03</sub>; the next three give
+R<sub>S2</sub> and the last three R<sub>S3</sub> in the same way (the agent’s <code class="docutils literal notranslate"><span class="pre">cell.inp</span></code> has
+<code class="docutils literal notranslate"><span class="pre">convcoord</span> <span class="pre">=</span> <span class="pre">1</span></code>, primitive units). For example
+<code class="docutils literal notranslate"><span class="pre">SUPERCELL:</span> <span class="pre">2</span> <span class="pre">0</span> <span class="pre">0</span>&#160; <span class="pre">0</span> <span class="pre">2</span> <span class="pre">0</span>&#160; <span class="pre">0</span> <span class="pre">0</span> <span class="pre">2</span></code> is 2×2×2 primitive cells, and for an fcc crystal
+<code class="docutils literal notranslate"><span class="pre">SUPERCELL:</span> <span class="pre">-1</span> <span class="pre">1</span> <span class="pre">1</span>&#160; <span class="pre">1</span> <span class="pre">-1</span> <span class="pre">1</span>&#160; <span class="pre">1</span> <span class="pre">1</span> <span class="pre">-1</span></code> is its conventional cube (4 primitive cells). The
+determinant must be positive.</p></li>
+</ul>
+<p>The report gives the matrix and the number of atoms (for SMALL and LARGE also the face distance).</p>
+</section>
+<section id="the-focex-frame">
+<span id="agent-frame"></span><h3>The FOCEX frame<a class="headerlink" href="#the-focex-frame" title="Link to this heading"></a></h3>
+<p>FOCEX and SC-SNAPS build the conventional cell from a, b, c, α, β, γ with a along x and b in the
+xy plane, and the supercells, forces and Born charges must be in that same Cartesian frame. The
+agent rotates the cell into it at the start, so everything VASP computes is already in the right
+frame. <code class="docutils literal notranslate"><span class="pre">structure.params</span></code> lists the conventional cell (line 1), the primitive vectors in its
+units (line 2) and the atoms in conventional coordinates.</p>
+</section>
+<section id="the-k-mesh-of-the-supercells">
+<span id="agent-kmesh"></span><h3>The k-mesh of the supercells<a class="headerlink" href="#the-k-mesh-of-the-supercells" title="Link to this heading"></a></h3>
+<p>If the supercell is a diagonal multiple of the primitive cell, its mesh is the SCF mesh divided by
+the multiples, rounded up (6 6 4 with a 3×3×2 supercell gives 2 2 2). Otherwise (every multiple of
+a centred conventional cell) it keeps the k-point spacing of the SCF mesh. <code class="docutils literal notranslate"><span class="pre">KPOINTS_snaps</span></code> sets
+it yourself (<a class="reference internal" href="#agent-override"><span class="std std-ref">Changing the files the agent writes</span></a>).</p>
+</section>
+</section>
+<section id="mode-extract-only-focex-on-existing-data">
+<span id="agent-extract"></span><h2><span class="section-number">10.5. </span>Mode extract_only: FOCEX on existing data<a class="headerlink" href="#mode-extract-only-focex-on-existing-data" title="Link to this heading"></a></h2>
+<p>Use it when the supercell forces exist already – from an earlier calculation, another code, or a
+colleague – and you want FOCEX’s force constants and phonons. No VASP and no SC-SNAPS are run.</p>
+<p><strong>The data folder</strong> (named in the instruction file with <code class="docutils literal notranslate"><span class="pre">DATA:</span></code>) holds</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code> and <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code>: a supercell and the positions and forces of its snapshots, in
+FOCEX’s format (what <code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code> or <code class="docutils literal notranslate"><span class="pre">read_qe.x</span></code> write); more pairs
+<code class="docutils literal notranslate"><span class="pre">POSCAR2</span></code>/<code class="docutils literal notranslate"><span class="pre">FORCEDISP2</span></code>, … are all used. Any orientation.</p></li>
+<li><p>optionally <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code>: the primitive cell, in the same orientation as the data; without it,
+spglib finds the primitive cell of <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code>.</p></li>
+<li><p>optionally <code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code>: the dielectric constant and the Born charges, in the frame of
+the data, one 3×3 block per atom of that primitive cell. With more than one atom of a species the
+primitive <code class="docutils literal notranslate"><span class="pre">POSCAR</span></code> is required, to fix the order of the atoms.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">SPECIES:</span> <span class="pre">Mg</span> <span class="pre">O</span></code> names the elements when the POSCARs have no element line.</p>
+<p><strong>What the agent does.</strong> At set-up it symmetrizes the lattice of the primitive cell (DFT lattice
+parameters given to 6–7 digits make FOCEX’s symmetry analysis lose force constants), finds the
+rotation into the FOCEX frame, and rotates the supercells, the positions and forces in
+<code class="docutils literal notranslate"><span class="pre">FORCEDISPi</span></code>, the dielectric constant and the Born charges with it. The report gives the rotation
+and the size of the symmetrization. The workflow then has only the tasks focex and plots.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat<span class="w"> </span>&gt;<span class="w"> </span>focex-agent-instructions.txt<span class="w"> </span><span class="s">&lt;&lt;'EOF'</span>
+<span class="s">Project: MgO</span>
+<span class="s">MODE: extract_only</span>
+<span class="s">DATA: ~/data/MgO_forces          # POSCAR1, FORCEDISP1, dielectric.params</span>
+<span class="s">SPECIES: Mg O</span>
+<span class="s">RANKS: 1 1 1 0 0 0 0 0</span>
+<span class="s">EOF</span>
+python<span class="w"> </span>~/Anharmonic-lattice-dynamics/FOCEX/AGENT/focex-agent.py
+<span class="nb">cd</span><span class="w"> </span>MgO<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>bash<span class="w"> </span>run_workflow.sh<span class="w">          </span><span class="c1"># FOCEX takes minutes: no batch job needed</span>
+</pre></div>
+</div>
+<p>Checked on MgO data given in a rhombohedral orientation: the fit error (7.197 %), the 35 unknowns,
+the frequencies and the elastic moduli are those of a FOCEX run in the original frame.</p>
+</section>
+<section id="the-instruction-file-every-keyword">
+<span id="agent-keywords"></span><h2><span class="section-number">10.6. </span>The instruction file: every keyword<a class="headerlink" href="#the-instruction-file-every-keyword" title="Link to this heading"></a></h2>
+<p>One keyword per line, <code class="docutils literal notranslate"><span class="pre">KEYWORD:</span> <span class="pre">value</span></code>; <code class="docutils literal notranslate"><span class="pre">#</span></code> starts a comment. The VASP keywords are those of
+VASP-Flow (its manual lists all of them); the common ones are below.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 21.0%" />
+<col style="width: 59.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>keyword</p></th>
+<th class="head"><p>default</p></th>
+<th class="head"><p>meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>project</strong></p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Project</span></code></p></td>
+<td><p>(required)</p></td>
+<td><p>a name, used in titles and as the default folder</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PROJECT_DIR</span></code></p></td>
+<td><p>the Project name</p></td>
+<td><p>folder of the calculations, relative to the instruction file or absolute; created by the
+agent</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MODE</span></code></p></td>
+<td><p>from_scratch</p></td>
+<td><p>or extract_only</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DATA</span></code></p></td>
+<td><p>–</p></td>
+<td><p>extract_only: the data folder</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SPECIES</span></code></p></td>
+<td><p>–</p></td>
+<td><p>extract_only: element names, if the POSCARs have none</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PROFILE</span></code></p></td>
+<td><p>none</p></td>
+<td><p>the VASP-Flow profile, as <code class="docutils literal notranslate"><span class="pre">--profile</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>force constants</strong></p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RANKS</span></code></p></td>
+<td><p>(required)</p></td>
+<td><p>8 flags for ranks 1–8: <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">1</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span></code> harmonic, <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">1</span> <span class="pre">1</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span></code> + cubic,
+<code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">1</span> <span class="pre">1</span> <span class="pre">1</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span> <span class="pre">0</span></code> + quartic</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RANGE</span></code></p></td>
+<td><p>6 2 1 0 0 0 0</p></td>
+<td><p>neighbour shells for ranks 2–8</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC2RANGE</span></code></p></td>
+<td><p>0</p></td>
+<td><p>0: harmonic range = the supercell</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">LASSO_RATIO</span></code></p></td>
+<td><p>2</p></td>
+<td><p>below this many equations per unknown, an extra LASSO run</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>VASP (VASP-Flow keywords)</strong></p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FUNCTIONAL</span></code></p></td>
+<td><p>R2SCAN</p></td>
+<td><p>PBE, PBEsol, LDA, AM05, R2SCAN, HSE06, VV10</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MPI</span></code></p></td>
+<td><p>the profile’s</p></td>
+<td><p>MPI ranks for VASP</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ACCURACY</span></code></p></td>
+<td><p>Accurate</p></td>
+<td><p>or Normal (<a class="reference internal" href="#agent-scratch"><span class="std std-ref">Mode from_scratch: from a POSCAR to phonons</span></a>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ENCUT</span></code></p></td>
+<td><p>by ACCURACY</p></td>
+<td><p>plane-wave cutoff (eV)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">KMESH_DENSITY</span></code></p></td>
+<td><p>coarse or fine</p></td>
+<td><p>k-mesh of the relaxation and SCF</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MAGMOM</span></code></p></td>
+<td><p>–</p></td>
+<td><p>magnetic moments, e.g. <code class="docutils literal notranslate"><span class="pre">MAGMOM:</span> <span class="pre">Cr=3.0</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">GGA_U</span></code></p></td>
+<td><p>auto</p></td>
+<td><p>Hubbard U from VASP-Flow’s table: <code class="docutils literal notranslate"><span class="pre">auto</span></code> applies it to d/f elements when the compound has
+O, S, Se, Te or a halogen; <code class="docutils literal notranslate"><span class="pre">ON</span></code> always; <code class="docutils literal notranslate"><span class="pre">OFF</span></code> never</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DFPT</span></code></p></td>
+<td><p>auto</p></td>
+<td><p>Born charges: auto (if there is a gap), on, off</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BORN_TRANSPOSE</span></code></p></td>
+<td><p>yes</p></td>
+<td><p><a class="reference internal" href="#agent-born"><span class="std std-ref">Born charges and the dielectric constant</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>snapshots</strong></p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SUPERCELL</span></code></p></td>
+<td><p>SMALL</p></td>
+<td><p>SMALL, LARGE, or the 9 integers of the supercell matrix, as in <code class="docutils literal notranslate"><span class="pre">supercell.inp</span></code> (rows,
+primitive units; <a class="reference internal" href="#agent-supercell"><span class="std std-ref">The supercell</span></a>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SNAPSHOTS</span></code></p></td>
+<td><p>50</p></td>
+<td><p>number of snapshots; can be raised later (<a class="reference internal" href="#agent-scratch"><span class="std std-ref">Mode from_scratch: from a POSCAR to phonons</span></a>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TEMPERATURE</span></code></p></td>
+<td><p>30</p></td>
+<td><p>K; given: used as is; not given: 30 K adjusted to DISP_TARGET</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AVG_FREQ</span></code></p></td>
+<td><p>400</p></td>
+<td><p>cm⁻¹, the frequency of the oscillators of SC-SNAPS</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DISP_TARGET</span></code></p></td>
+<td><p>0.02</p></td>
+<td><p>Å, the rms displacement wanted (only without TEMPERATURE)</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>FOCEX</strong></p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FOCEX_MESH</span></code></p></td>
+<td><p>fine</p></td>
+<td><p>k-mesh of latdyn.params: coarse, fine, a density, or 3 integers</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">KPATH</span></code></p></td>
+<td><p>0</p></td>
+<td><p>0: automatic band path; 1: give a <code class="docutils literal notranslate"><span class="pre">kpbs_params</span></code> block</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BS_NKPTS</span></code></p></td>
+<td><p>40</p></td>
+<td><p>points per segment of the band path</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>THERMACOND</strong> (<a class="reference internal" href="#agent-thermacond"><span class="std std-ref">Thermal conductivity</span></a>)</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">THERMACOND_JOB</span></code></p></td>
+<td><p>0</p></td>
+<td><p>0 none; 1 linewidths; 2 kappa, direct; 3 kappa, iterative (latdyn line 8)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">THERMACOND_MESH</span></code></p></td>
+<td><p>the FOCEX mesh</p></td>
+<td><p>n1 n2 n3 (line 1)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">THERMACOND_T</span></code></p></td>
+<td><p>0 900 31</p></td>
+<td><p>Tmin Tmax (K), number of temperatures (line 6)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">THERMACOND_SOLVER</span></code></p></td>
+<td><p>0</p></td>
+<td><p>job 2: 0 conjugate gradient, 1 SVD (line 9)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>programs</strong></p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FOCEX_X</span></code></p></td>
+<td><p>newest <code class="docutils literal notranslate"><span class="pre">~/ALADYN/bin/focex-*.x</span></code></p></td>
+<td><p>the FOCEX binary</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SC_SNAPS_X</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">~/ALADYN/bin/sc_snaps.x</span></code></p></td>
+<td><p>SC-SNAPS</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">READ_OUTCAR_X</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">~/ALADYN/bin/read_outcar.x</span></code></p></td>
+<td><p>reads OUTCARs</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">THERMACOND_X</span></code></p></td>
+<td><p>newest <code class="docutils literal notranslate"><span class="pre">~/ALADYN/bin/tcond-*.x</span></code></p></td>
+<td><p>THERMACOND (MPI build)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="changing-the-files-the-agent-writes">
+<span id="agent-override"></span><h2><span class="section-number">10.7. </span>Changing the files the agent writes<a class="headerlink" href="#changing-the-files-the-agent-writes" title="Link to this heading"></a></h2>
+<p>Every file the agent generates can be changed <em>from the instruction file</em>, with a block named after
+the file: a line with its name, the contents, and a line with the name followed by <code class="docutils literal notranslate"><span class="pre">_END</span></code>.</p>
+<ul class="simple">
+<li><p><strong>INCAR blocks are merged tag by tag</strong>: the tags you give replace or add to those the agent
+writes; the others stay. <code class="docutils literal notranslate"><span class="pre">INCAR</span></code> applies to every VASP step; <code class="docutils literal notranslate"><span class="pre">INCAR_relax</span></code>, <code class="docutils literal notranslate"><span class="pre">INCAR_scf</span></code>,
+<code class="docutils literal notranslate"><span class="pre">INCAR_dfpt</span></code>, <code class="docutils literal notranslate"><span class="pre">INCAR_snaps</span></code> to one.</p></li>
+<li><p><strong>Every other block replaces the whole file</strong>, so it must be complete: <code class="docutils literal notranslate"><span class="pre">KPOINTS</span></code> (relaxation
+and SCF), <code class="docutils literal notranslate"><span class="pre">KPOINTS_snaps</span></code>, <code class="docutils literal notranslate"><span class="pre">cell_inp</span></code>, <code class="docutils literal notranslate"><span class="pre">supercell_inp</span></code>, <code class="docutils literal notranslate"><span class="pre">snaps_inp</span></code> (SC-SNAPS),
+<code class="docutils literal notranslate"><span class="pre">structure_params</span></code>, <code class="docutils literal notranslate"><span class="pre">latdyn_params</span></code>, <code class="docutils literal notranslate"><span class="pre">kpbs_params</span></code>, <code class="docutils literal notranslate"><span class="pre">dielectric_params</span></code>,
+<code class="docutils literal notranslate"><span class="pre">default_params</span></code> (FOCEX).</p></li>
+</ul>
+<p>Simple choices – the supercell, the number of snapshots, the FOCEX k-mesh – have their own
+keyword; use a block only for what has none.</p>
+<p><strong>Example.</strong> Wurtzite ZnO without Hubbard U (VASP-Flow would otherwise put its tabulated U on Zn,
+an oxide), <code class="docutils literal notranslate"><span class="pre">LASPH</span></code> in every VASP step, stricter electronic convergence only in the supercell
+runs, a 3×3×2 supercell, 20 snapshots, a denser FOCEX mesh, and your own band path
+Γ–M–K–Γ–A, which replaces <code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Project: ZnO
+RANKS: 1 1 1 0 0 0 0 0
+FUNCTIONAL: PBEsol
+GGA_U: OFF
+MPI: 40
+SUPERCELL: 3 0 0  0 3 0  0 0 2       # rows: supercell vectors in primitive units
+SNAPSHOTS: 20
+FOCEX_MESH: 12 12 8
+KPATH: 1                              # the band path is given below
+
+INCAR                                 # every VASP step (merged tag by tag)
+  LASPH = .TRUE.
+INCAR_END
+INCAR_snaps                           # the supercell runs only
+  NELM = 200
+  ALGO = All
+INCAR_snaps_END
+kpbs_params                           # replaces kpbs.params (FOCEX's band path)
+1        # coordinates in units of the primitive reciprocal vectors
+60       # k-points per segment
+4        # number of segments
+G   0.000000 0.000000 0.000000
+M   0.500000 0.000000 0.000000
+K   0.333333 0.333333 0.000000
+G   0.000000 0.000000 0.000000
+A   0.000000 0.000000 0.500000
+kpbs_params_END
+</pre></div>
+</div>
+<p>After the set-up you can read <code class="docutils literal notranslate"><span class="pre">01_relax/INCAR</span></code> before anything runs.</p>
+</section>
+<section id="born-charges-and-the-dielectric-constant">
+<span id="agent-born"></span><h2><span class="section-number">10.8. </span>Born charges and the dielectric constant<a class="headerlink" href="#born-charges-and-the-dielectric-constant" title="Link to this heading"></a></h2>
+<p>In an insulator, the long-range Coulomb interaction between the displaced ions splits the
+longitudinal and transverse optical modes near Γ (LO–TO splitting). FOCEX includes it with the
+Born effective charges Z* and the high-frequency dielectric constant ε∞; without them the optical
+branches near Γ are wrong.</p>
+<ul class="simple">
+<li><p>from_scratch: the agent computes them (task dfpt) when the SCF shows a band gap, writes them to
+<code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code>, and makes for comparison a FOCEX run without them in
+<code class="docutils literal notranslate"><span class="pre">05_focex/NOBORN</span></code>. <code class="docutils literal notranslate"><span class="pre">DFPT:</span> <span class="pre">off</span></code> skips them; <code class="docutils literal notranslate"><span class="pre">on</span></code> computes them for any material.</p></li>
+<li><p>extract_only: give them in <code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code> in the data folder.</p></li>
+<li><p>your own values, in either mode: a <code class="docutils literal notranslate"><span class="pre">dielectric_params</span></code> block (it replaces the file).</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>VASP prints Z*<sub>ij</sub> with i the direction of the field and j that of the displacement;
+FOCEX expects the transpose, which the agent writes. <code class="docutils literal notranslate"><span class="pre">BORN_TRANSPOSE:</span> <span class="pre">no</span></code> writes them as VASP
+prints them; you should not need it.</p>
+</div>
+</section>
+<section id="the-project-folder-and-the-results">
+<span id="agent-results"></span><h2><span class="section-number">10.9. </span>The project folder and the results<a class="headerlink" href="#the-project-folder-and-the-results" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 37.0%" />
+<col style="width: 63.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>file or folder</p></th>
+<th class="head"><p>what it is</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">focex-agent-instructions.txt</span></code></p></td>
+<td><p>the copy of your instruction file that the runs read</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">report.log</span></code></p></td>
+<td><p>one entry per task: OK or FAILED, minutes, what was checked – read this first</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">state.json</span></code></p></td>
+<td><p>the finished tasks and the numbers passed between them</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">run_workflow.sh</span></code></p></td>
+<td><p>the job; <code class="docutils literal notranslate"><span class="pre">resubmit_failed.sh</span></code> reruns the failed supercell runs</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">POSCAR.input</span></code>, <code class="docutils literal notranslate"><span class="pre">POSCAR.init</span></code>, <code class="docutils literal notranslate"><span class="pre">POSCAR0</span></code></p></td>
+<td><p>your structure; reduced and oriented; relaxed</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">01_relax</span></code>, <code class="docutils literal notranslate"><span class="pre">02_scf</span></code>, <code class="docutils literal notranslate"><span class="pre">02_scf/dfpt</span></code></p></td>
+<td><p>VASP: relaxation, SCF, Born charges</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">03_snaps</span></code></p></td>
+<td><p>SC-SNAPS input and the snapshots <code class="docutils literal notranslate"><span class="pre">poscar_NNN</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">04_supercells</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">snap_NNN/</span></code> (one VASP run each), <code class="docutils literal notranslate"><span class="pre">POSCAR1</span></code>, <code class="docutils literal notranslate"><span class="pre">FORCEDISP1</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">05_focex</span></code></p></td>
+<td><p>FOCEX: inputs, outputs, plots; <code class="docutils literal notranslate"><span class="pre">NOBORN/</span></code> and <code class="docutils literal notranslate"><span class="pre">LASSO/</span></code> when made</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">06_thermacond</span></code></p></td>
+<td><p>THERMACOND (<code class="docutils literal notranslate"><span class="pre">THERMACOND_JOB</span></code> 1-3): <code class="docutils literal notranslate"><span class="pre">kappa_vs_T.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">kappa_wigner.dat</span></code>, …</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">diagnosis</span></code></p></td>
+<td><p>written by <code class="docutils literal notranslate"><span class="pre">diagnose.py</span></code>: <code class="docutils literal notranslate"><span class="pre">report.txt</span></code>, <code class="docutils literal notranslate"><span class="pre">fix_it.sh</span></code>, backups</p></td>
+</tr>
+</tbody>
+</table>
+<p>In <code class="docutils literal notranslate"><span class="pre">05_focex</span></code>: the force constants <code class="docutils literal notranslate"><span class="pre">fc2.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc3.dat</span></code>, … with the cell in <code class="docutils literal notranslate"><span class="pre">lat_fc.dat</span></code>;
+the dispersion <code class="docutils literal notranslate"><span class="pre">bs_freq.dat</span></code>; the elastic constants and moduli <code class="docutils literal notranslate"><span class="pre">mech.dat</span></code>; thermodynamics and
+thermal expansion <code class="docutils literal notranslate"><span class="pre">thermo_QHA.dat</span></code>; and three PDFs: <code class="docutils literal notranslate"><span class="pre">&lt;Project&gt;.pdf</span></code> (the dispersion coloured by
+group velocity, and the group velocities against frequency), <code class="docutils literal notranslate"><span class="pre">all-&lt;Project&gt;.pdf</span></code> (Grüneisen
+parameters, density of states, dispersion) and <code class="docutils literal notranslate"><span class="pre">qha.pdf</span></code> (thermal expansion, Grüneisen
+parameter, bulk modulus, thermodynamic functions, free energy against volume). <a class="reference internal" href="runfocex.html"><span class="doc">Running FOCEX</span></a>
+describes every output file. The large VASP files (WAVECAR, CHGCAR, CHG, …) are deleted when no
+longer needed; the OUTCARs never.</p>
+</section>
+<section id="when-a-run-stops-diagnose-py">
+<span id="agent-diagnose"></span><h2><span class="section-number">10.10. </span>When a run stops: diagnose.py<a class="headerlink" href="#when-a-run-stops-diagnose-py" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">A</span><span class="o">=</span>~/Anharmonic-lattice-dynamics/FOCEX/AGENT
+python<span class="w"> </span><span class="nv">$A</span>/diagnose.py<span class="w"> </span>~/work/ZnO/ZnO<span class="w">     </span><span class="c1"># one or more project folders</span>
+less<span class="w"> </span>~/work/ZnO/ZnO/diagnosis/report.txt
+bash<span class="w"> </span>~/work/ZnO/ZnO/diagnosis/fix_it.sh
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">diagnose.py</span></code> itself changes nothing. It lists every task as done, FAILED, INTERRUPTED (the job
+was killed inside it) or not reached, or reports that the project is still running or not yet
+started. For a failed task it finds the cause from <code class="docutils literal notranslate"><span class="pre">report.log</span></code>, the OUTCARs, <code class="docutils literal notranslate"><span class="pre">vasp.out</span></code>,
+<code class="docutils literal notranslate"><span class="pre">focex.out</span></code> and the SLURM logs, and writes <code class="docutils literal notranslate"><span class="pre">diagnosis/report.txt</span></code> (what failed, where, the
+evidence, what the fix will change) and <code class="docutils literal notranslate"><span class="pre">diagnosis/fix_it.sh</span></code>. VASP failures are recognised with
+the rules of VASP-Flow’s diagnosis tool; FOCEX, SC-SNAPS and <code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code> stops by their
+messages.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 40.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>cause</p></th>
+<th class="head"><p>meaning</p></th>
+<th class="head"><p>what fix_it.sh does</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">timeout</span></code></p></td>
+<td><p>the job hit its time limit</p></td>
+<td><p>walltime × 2, resubmit</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">scf_nelm</span></code></p></td>
+<td><p>SCF not converged in NELM steps</p></td>
+<td><p>ALGO = All, NELM = 200</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">edddav</span></code></p></td>
+<td><p>the Davidson eigensolver failed</p></td>
+<td><p>ALGO = All</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zbrent</span></code></p></td>
+<td><p>the relaxation’s line search failed</p></td>
+<td><p>IBRION = 1</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">relax_unconv</span></code></p></td>
+<td><p>relaxation not converged</p></td>
+<td><p>resubmit (continues from CONTCAR)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">oom</span></code></p></td>
+<td><p>out of memory</p></td>
+<td><p>KPAR = 1</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mpi_init</span></code>, <code class="docutils literal notranslate"><span class="pre">not_run</span></code>, <code class="docutils literal notranslate"><span class="pre">interrupted</span></code></p></td>
+<td><p>MPI did not start; never ran; killed</p></td>
+<td><p>resubmit</p></td>
+</tr>
+<tr class="row-odd"><td><p>others</p></td>
+<td><p>disk quota, symmetry, an unknown stop, …</p></td>
+<td><p>held, with the error lines</p></td>
+</tr>
+</tbody>
+</table>
+<p>New INCAR tags go into the INCARs of the failed runs and into the matching block of the project’s
+instruction file (<code class="docutils literal notranslate"><span class="pre">INCAR_snaps</span></code>, …), so that later runs use them too. Before it changes
+anything, <code class="docutils literal notranslate"><span class="pre">fix_it.sh</span></code> checks that nothing is running and that nothing changed since the
+diagnosis, and copies every file it edits to <code class="docutils literal notranslate"><span class="pre">diagnosis/backup_&lt;date&gt;/</span></code>; then it resubmits
+(<code class="docutils literal notranslate"><span class="pre">sbatch</span></code> with a SLURM profile, otherwise <code class="docutils literal notranslate"><span class="pre">bash</span></code> in the background). When the fix needs your
+judgement – a cause it does not know, a fix that was already tried, a new supercell – the script
+is <em>held</em>: it prints what to do and stops, and <code class="docutils literal notranslate"><span class="pre">bash</span> <span class="pre">fix_it.sh</span> <span class="pre">--anyway</span></code> runs its suggested
+commands as they are. Run <code class="docutils literal notranslate"><span class="pre">diagnose.py</span></code> again when the resubmitted job has finished.</p>
+</section>
+<section id="thermal-conductivity">
+<span id="agent-thermacond"></span><h2><span class="section-number">10.11. </span>Thermal conductivity<a class="headerlink" href="#thermal-conductivity" title="Link to this heading"></a></h2>
+<p>The last task, <code class="docutils literal notranslate"><span class="pre">thermacond</span></code>, runs THERMACOND on the force constants of <code class="docutils literal notranslate"><span class="pre">05_focex</span></code>. Whether it
+runs is decided by the THERMACOND job, line 8 of <code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code>, which you set in the
+instruction file:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 28.0%" />
+<col style="width: 72.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">THERMACOND_JOB</span></code></p></th>
+<th class="head"><p>what THERMACOND does</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0 (default)</p></td>
+<td><p>nothing: the task is skipped (FOCEX has already given the bands, DOS and Grüneisen
+parameters)</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>three-phonon linewidths of every mode along the band path (<code class="docutils literal notranslate"><span class="pre">lw-selfenergy.dat</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>thermal conductivity: RTA and the direct solution of the BTE</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>thermal conductivity: RTA and the iterative solution of the BTE</p></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>RANKS: 1 1 1 0 0 0 0 0        # cubic force constants are needed
+THERMACOND_JOB: 2
+THERMACOND_MESH: 12 12 12     # latdyn.params line 1 for THERMACOND (default: the FOCEX mesh)
+THERMACOND_T: 100 900 9       # line 6: Tmin, Tmax (K), number of temperatures
+# THERMACOND_SOLVER: 0        # line 9, job 2: 0 conjugate gradient, 1 SVD
+</pre></div>
+</div>
+<p>The task copies <code class="docutils literal notranslate"><span class="pre">lat_fc.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc2.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc3.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">structure.params</span></code>,
+<code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code> and <code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code> from <code class="docutils literal notranslate"><span class="pre">05_focex</span></code> to <code class="docutils literal notranslate"><span class="pre">06_thermacond</span></code>, writes there
+FOCEX’s <code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code> with lines 1, 6, 8 and 9 from these keywords, and runs <code class="docutils literal notranslate"><span class="pre">tcond-2.0.x</span></code>
+with the MPI command of the profile; <code class="docutils literal notranslate"><span class="pre">05_focex</span></code> is not changed. A <code class="docutils literal notranslate"><span class="pre">latdyn_params</span></code> block
+(<a class="reference internal" href="#agent-override"><span class="std std-ref">Changing the files the agent writes</span></a>) sets all 13 lines for both FOCEX and THERMACOND, and its line 8 is the job
+unless <code class="docutils literal notranslate"><span class="pre">THERMACOND_JOB</span></code> is given. The mesh is the expensive choice: the FOCEX default (<code class="docutils literal notranslate"><span class="pre">fine</span></code>)
+is usually far too dense, so set <code class="docutils literal notranslate"><span class="pre">THERMACOND_MESH</span></code> and converge kappa with it.</p>
+<p>The report gives, at up to seven of the temperatures, kappa_RTA, the full (direct or iterative)
+solution and the coherences term kappa_C of the Wigner formulation (W/mK, average of the
+diagonal), and a warning if the full solution falls below the RTA, which it should not do (the
+direct solver has an open issue: compare with job 3). The complete results are in
+<code class="docutils literal notranslate"><span class="pre">06_thermacond</span></code>: <code class="docutils literal notranslate"><span class="pre">kappa_vs_T.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">kappa_wigner.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">Qvalue.dat</span></code> (scattering rates) and
+the other files described in <a class="reference internal" href="runthermacond.html"><span class="doc">Running THERMACOND</span></a>. An existing project gets the task by adding
+<code class="docutils literal notranslate"><span class="pre">THERMACOND_JOB</span></code> to its <code class="docutils literal notranslate"><span class="pre">focex-agent-instructions.txt</span></code> and submitting <code class="docutils literal notranslate"><span class="pre">run_workflow.sh</span></code>
+again: the finished tasks are skipped. Changing <code class="docutils literal notranslate"><span class="pre">THERMACOND_JOB</span></code>, <code class="docutils literal notranslate"><span class="pre">_MESH</span></code>, <code class="docutils literal notranslate"><span class="pre">_T</span></code> or
+<code class="docutils literal notranslate"><span class="pre">_SOLVER</span></code> later and submitting again runs the task again; V3*delta is read back from
+<code class="docutils literal notranslate"><span class="pre">06_thermacond/V3DELTA</span></code> when the force constants and the mesh are the same (job 3 after job 2,
+new temperatures).</p>
+</section>
+<section id="version-history">
+<h2><span class="section-number">10.12. </span>Version history<a class="headerlink" href="#version-history" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>1.2</dt><dd><p>2026-10-27, with FOCEX 9.0: the undistorted supercell <code class="docutils literal notranslate"><span class="pre">snap_000</span></code> is run with <code class="docutils literal notranslate"><span class="pre">ISIF</span> <span class="pre">=</span> <span class="pre">2</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">collect</span></code> writes its stress, minus the <code class="docutils literal notranslate"><span class="pre">in</span> <span class="pre">kB</span></code> line of OUTCAR divided by 10, as
+<code class="docutils literal notranslate"><span class="pre">stress.params</span></code> (GPa, tensile positive) for FOCEX (Huang rows and elastic constants); the test
+VASP stand-in prints the stress.</p>
+</dd>
+<dt>1.1</dt><dd><p>2026-10-23: task <code class="docutils literal notranslate"><span class="pre">thermacond</span></code>, switched on by <code class="docutils literal notranslate"><span class="pre">THERMACOND_JOB</span></code> (latdyn.params line 8), with
+<code class="docutils literal notranslate"><span class="pre">THERMACOND_MESH</span></code>, <code class="docutils literal notranslate"><span class="pre">THERMACOND_T</span></code>, <code class="docutils literal notranslate"><span class="pre">THERMACOND_SOLVER</span></code>; a given <code class="docutils literal notranslate"><span class="pre">TEMPERATURE</span></code> is kept;
+<code class="docutils literal notranslate"><span class="pre">SUPERCELL</span></code> matrix and <code class="docutils literal notranslate"><span class="pre">PROJECT_DIR</span></code> documented; SC-SNAPS periodic images fixed.</p>
+</dd>
+<dt>1.0</dt><dd><p>2026-10-23, with FOCEX 8.19: modes from_scratch and extract_only; instruction file
+<code class="docutils literal notranslate"><span class="pre">focex-agent-instructions.txt</span></code>, <code class="docutils literal notranslate"><span class="pre">--instr</span></code>, <code class="docutils literal notranslate"><span class="pre">--coord</span></code>, <code class="docutils literal notranslate"><span class="pre">PROJECT_DIR</span></code>; <code class="docutils literal notranslate"><span class="pre">diagnose.py</span></code>;
+this manual.</p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="focexagent_guide.html" class="btn btn-neutral float-left" title="9. FOCEX agent: user’s guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="faq.html" class="btn btn-neutral float-right" title="11. FAQ" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, University of Virginia.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

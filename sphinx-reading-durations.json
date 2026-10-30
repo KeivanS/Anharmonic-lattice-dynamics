@@ -1,0 +1,14 @@
+{
+    "download": 0.017,
+    "faq": 0.012,
+    "focexagent_guide": 0.015,
+    "index": 0.003,
+    "install": 0.025,
+    "intro": 0.009,
+    "runfocex": 0.315,
+    "runfocexagent": 0.168,
+    "runscop8": 0.104,
+    "runscsnaps": 0.03,
+    "runthermacond": 0.027,
+    "theory": 0.086
+}
