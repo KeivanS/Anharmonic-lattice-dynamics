@@ -500,7 +500,8 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   Verified: FOCEX on bprime/mkrelaxed.py inputs (relaxed model, D=0, C=0, cubic-truncated forces):
   ZnO B 288.001543 B' -0.157427, CaF2 587.376258 / 0, = full relaxations under pressure (bp2_all.log).
   Assumes hydrostatic reference stress, no residual forces (warnings).
-- QHA (QHA_free_energy_vs_strain): Murnaghan static EOS (B0 = Reuss, B0' from FC3, 4 if no FC3), phonon F
+- QHA (QHA_free_energy_vs_strain): Murnaghan static EOS (B0 = Reuss, B0' from FC3; no FC3: 1 + 2 gamma_Leont'ev,
+  Dugdale-MacDonald, user 2026-11-02; gamma formula = Agne et al. SI Eq. S17), phonon F
   with omega(V) from gamma; V(T) = root of P (cubic), B_T = -V dP/dV there, alpha_V = (dP/dT)_V/B_T
   (identity; summed analytically), lin CTE = alpha_V/3 = dlnL/dT (user: the definition), Cp = Cv + VTB_T
   alpha_V^2. Harmonic-only (no FC3): Leont'ev gamma for all modes + P_agne = NkT/V (user's term) as before.

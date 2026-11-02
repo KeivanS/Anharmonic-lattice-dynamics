@@ -964,8 +964,8 @@ Phonons and thermodynamics
     ``T(K), E_eq(kJ/mol), F_eq(kJ/mol), V_eq/V0, strain, Cv, Cp(J/K/mol),
     S(J/K/mol), linear CTE(1/K), Gruneisen, B_T(T)/B0``. At each temperature the equilibrium volume
     is where :math:`P = -\partial F/\partial V = 0`, with :math:`F` the static energy (Murnaghan equation of
-    state with the Reuss modulus :math:`B_0` and the :math:`B_0'` from FC2 and FC3; :math:`B_0' = 4` is
-    assumed when FC3 are not fitted) plus the phonon free energy. :math:`B_T = -V\,\partial P/\partial V` at
+    state with the Reuss modulus :math:`B_0` and the :math:`B_0'` from FC2 and FC3; without FC3,
+    :math:`B_0' = 1 + 2\gamma` (Dugdale-MacDonald) with Leont'ev's :math:`\gamma` from the sound speeds) plus the phonon free energy. :math:`B_T = -V\,\partial P/\partial V` at
     that volume; the CTE is :math:`\alpha = d\ln L/dT = \alpha_V/3` with
     :math:`\alpha_V = (\partial P/\partial T)_V/B_T`; :math:`C_p = C_v + V T B_T \alpha_V^2`; the Gruneisen
     column is the :math:`C_v`-weighted average.

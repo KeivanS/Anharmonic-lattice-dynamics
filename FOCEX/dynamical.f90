@@ -2377,7 +2377,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 !! Quasi-harmonic thermodynamics at temperature temprk (rewritten 2026-11-01 with the user):
 !!   F(V) = E_static(V) + F_phonon(V,T) [+ F_agne] on 61 isotropic strains -5%..+10%; omega(V) from gamma
 !!   E_static: Murnaghan EOS, B0 = Reuss modulus (exact for a hydrostatic load), B0' from FC2+FC3
-!!     (pressure_derivative_b) or 4 if FC3 are not fitted; P0 = residual pressure of the reference
+!!     (pressure_derivative_b) or 1 + 2 gamma (Dugdale-MacDonald, Leont'ev gamma) without FC3; P0 = residual pressure
 !!   P(V) = -dF/dV is summed analytically at each strain; V(T) is the root of P = 0 (local cubic fit),
 !!   B_T = -V dP/dV at V(T) (the isothermal bulk modulus), alpha_V = (dP/dT)_V / B_T = d ln V/dT
 !!   (thermodynamic identity; (dP/dT)_V summed analytically), linear CTE = alpha_V/3 = d ln L/dT,
@@ -2418,10 +2418,6 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  v0=volume_r0*1d-30                   ! m^3
  pres0=-(sigma0(1,1)+sigma0(2,2)+sigma0(3,3))/3   ! GPa, residual pressure of the reference
  b0=rbulkmod
- bp=b0p
- if (all(abs(grin).lt.1d-6) .or. include_fc(3).eq.0) bp=4d0
- if (abs(bp).lt.1d-6) bp=1d-6
- if (abs(bp-1).lt.1d-6) bp=1+1d-6
  agne=.false.
  if (maxval(abs(grin)).lt.1d-6) then  ! harmonic theory only
     agne=.true.
@@ -2430,10 +2426,16 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  else
     grn=grin
  endif
+! B0': from FC2+FC3 (pressure_derivative_b); without FC3 the Dugdale-MacDonald relation
+! gamma = B0'/2 - 1/2 with Leont'ev's gamma (user, 2026-11-02; was 4)
+ bp=b0p
+ if (include_fc(3).eq.0) bp=1+2*gr2
+ if (abs(bp).lt.1d-6) bp=1d-6
+ if (abs(bp-1).lt.1d-6) bp=1+1d-6
  if (first) then
     write(ulog,'(a,f12.4,a,f10.5,a,f10.4,a,l2)')' QHA: B0 (Reuss, GPa)=',b0,'  B0p=',bp,'  P0 (GPa)=',pres0, &
  &        '  harmonic-only (Leont''ev gamma + P_agne):',agne
-    if (include_fc(3).eq.0) write(ulog,*)' QHA: no FC3: B0'' = 4 assumed for the static equation of state'
+    if (include_fc(3).eq.0) write(ulog,*)' QHA: no FC3: B0'' = 1 + 2 gamma (Dugdale-MacDonald, Leont''ev gamma)'
     first=.false.
  endif
 
