@@ -20,6 +20,9 @@
  &                                   0.73205080756887729d0,  &
  &                                   0.23606797749978970d0 /)
  real(r15), parameter :: translation_min=0.999d0
+! |k| below which a point is Gamma, for gamma_limit and freq_vel alike (2026-11-02: a band path ended at
+! |k| = 2.7e-10, which freq_vel took for Gamma and gamma_limit did not -> long-wave limit along uinc)
+ real(r15), parameter :: gamma_tol=1d-5
 
  abstract interface
     subroutine freq_routine(kp,ndn,vg,eival,eivec)
@@ -35,14 +38,14 @@
 !------------------------------------------------------------
  subroutine gamma_limit(i,nkp,kp,ipath,q,dir)
 !! the point where k-point i of kp is evaluated, and the direction of the eigenvector shift.
-!! Away from Gamma: q = kp(:,i), dir = uinc. At Gamma: q = 1e-6 dir, with dir the band-path segment
+!! Away from Gamma: q = kp(:,i), dir = uinc. At Gamma (|k| < gamma_tol): q = 1e-6 dir, with dir the band-path segment
 !! (ipath=1; incoming if the previous point differs, else outgoing) or uinc.
  integer, intent(in) :: i,nkp,ipath
  real(r15), intent(in) :: kp(3,nkp)
  real(r15), intent(out) :: q(3),dir(3)
 
  q=kp(:,i); dir=uinc
- if (length(q).lt.1d-12) then
+ if (length(q).lt.gamma_tol) then
     if (ipath.eq.1 .and. nkp.gt.1) then
        dir=0
        if (i.gt.1) dir=kp(:,i)-kp(:,i-1)
@@ -92,7 +95,7 @@
  qr = qq + 3d-4*gsize*shdir/length(shdir)
  call getf(qr,ndn,vgr,evl0,evc0)
  call getf(qq,ndn,v2,evl0,evct)
- if (length(qq).lt.1d-5) then
+ if (length(qq).lt.gamma_tol) then
     do l=1,ndn
        if (translation_weight(nat,mass,evct(:,l)).gt.translation_min) then
           write(ulog,'(a,i4,a,g12.4,a)')' FREQ_VEL: Gamma, mode',l,' is a rigid translation, omega^2=', &

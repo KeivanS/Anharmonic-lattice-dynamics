@@ -181,7 +181,13 @@ ZnO/GaN/BAs run scripts still use and which is kept until the user removes it).
 - Phonon frequencies (2026-10-29, user): freq_vel (dynamical.f90) gives omega at the exact k,
   eigenvectors and HF velocities at k + 3e-4 |G| uinc (degeneracies); Gamma = limit q = 1e-6 along
   the path segment (band path, get_frequencies ipath=1) or uinc (mesh); the 3 rigid translations
-  there are set to 0 (log FREQ_VEL), gruneisen gives them gamma 0, QHA skips them. finitedif_vel /
+  there are set to 0 (log FREQ_VEL), gruneisen gives them gamma 0, QHA skips them.
+  Gamma test |k| < gamma_tol = 1e-5 (phonon_rules) in both gamma_limit and freq_vel (2026-11-02, user:
+  LaP path ended at |k| = 2.7e-10: freq_vel zeroed the translations, gamma_limit (then 1e-12) did not see
+  Gamma -> long-wave gamma along uinc, 0.207/-0.558/1.580 next to 0.594/0.594/0.704; checked by a debug
+  print, then rerun: only that row changes). A k equal to a G vector (LaP path G(1 1 1)) is NOT Gamma:
+  omega -1.68/-1.68/-4.07 1/cm there (D(G) - D(0) ~1e-5 in omega^2; user: NA/Ewald term, not tested);
+  user: avoid such points in the path. finitedif_vel /
   veltest.dat only with FOCEX_VELTEST=1. At exactly q=0 naq returns the angular average of the NA
   term (BZO: 3 x 497.8 instead of 462,462,620), hence the limit. Regression vs d85e3d0 (Ge, BZO,
   MoTe2, GeSe): fits identical; off Gamma omega changes by the removed shift (<= 1.25 1/cm, BZO);
