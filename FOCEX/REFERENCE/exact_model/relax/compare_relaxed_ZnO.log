@@ -1,0 +1,29 @@
+
+real	36m3.626s
+user	36m1.648s
+sys	0m1.522s
+exit 0
+ RELAX_REFERENCE:    0   3.1708E-02
+ RELAX_REFERENCE:    1   4.8119E-05
+ RELAX_REFERENCE:    2   1.1085E-10
+ RELAX_REFERENCE:    3   2.2942E-17
+ RELAX_REFERENCE: stage 2, strain: iter, max|stress| (GPa), max|strain step|, max|FC1| (eV/A)
+ RELAX_REFERENCE:    0   1.4974E+01   0.0000E+00   2.2942E-17
+ RELAX_REFERENCE:    1   3.9709E-01   1.7344E-02   3.4498E-16
+ RELAX_REFERENCE:    2   2.9886E-04   5.0135E-04   2.0621E-14
+ RELAX_REFERENCE:    3   1.8430E-10   4.1196E-07   1.2351E-13
+ RELAX_REFERENCE: relaxed strain eta (Voigt xx yy zz yz xz xy) =  -1.783671296000E-02  -1.783671296068E-02  -1.330767235664E-02   1.132031402801E-17   1.498964322490E-17 
+ RELAX_REFERENCE: max|stress| after (GPa) =  1.8430E-10
+strain FOCEX [-1.78367130e-02 -1.78367130e-02 -1.33076724e-02 -1.04165806e-16
+       model [-1.78367122e-02 -1.78367122e-02 -1.33076718e-02 -2.63133100e-17
+ max diff 7.813184960125952e-10
+   model [[0.0, 0.0, 0.0], [-1.4129804551090669e-11, 8.157853734047106e-12, -2.740863092043355e-16], [3.977546861512318e-18, 2.4814321428146717e-16, -0.03531006610302388], [-1.4129763148827524e-11, 8.157798591371039e-12, -0.035310066103024264]] 
+ max diff 1.2513961186733091e-09
+  RELAX_REFERENCE: max |full FC - symmetrized| ranks 1-3 =   1.9639E-11   9.6865E-12   9.5559E-12
+  RELAX_REFERENCE: max |full FC| ranks 1-3                =   3.9154E-11   1.6578E+01   3.0038E+00
+rank 1: 0 terms of fc1.dat: max |FOCEX - exact at the minimum| 0.000e+00 (max |FC| 0) None
+rank 2: 1506 terms of fc2.dat: max |FOCEX - exact at the minimum| 2.719e-06 (max |FC| 16.6) ([1, 1], [1, 1], 13.22102, np.float64(13.221017280652338))
+rank 3: 26368 terms of fc3.dat: max |FOCEX - exact at the minimum| 4.983e-07 (max |FC| 3) ([2, 1, 1], [1, 1, 1], -1.857434, np.float64(-1.8574344983290498))
+Huang: max|[ab,gl]-[gl,ab]|, max|[ab,gl]-[gl,ab]-(d_ab s_gl-d_gl s_ab)|, max|[ab,gl]| (GPa)=  0.2239E-07  0.2239E-07   752.4    
+
+[exited with code 0]

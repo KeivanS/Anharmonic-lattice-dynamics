@@ -709,9 +709,9 @@ fit kept as fcN_unrelaxed.dat, fcN_irr_unrelaxed.dat, lat_fc_unrelaxed.dat; POSC
   exact -0.017837). Cause (2026-11-02, user asked why): substituting u = eta X into 1/2 sum u_i Phi_ij u_j is
   right; the step to -1/4 sum (u_i-u_j) Phi_ij (u_i-u_j) is not: it needs Phi_ij^{ab} = Phi_ij^{ba}, but only
   Phi_ij^{ab} = Phi_ji^{ba} holds. The ASR form drops the part of each 3x3 block antisymmetric in its
-  Cartesian indices (0 for central pair forces, Cauchy case). Checked (scratch cluster_identity.py, 40-atom
+  Cartesian indices (0 for central pair forces, Cauchy case). Checked (REFERENCE/exact_model/relax/cluster_identity.py, 40-atom
   ZnO cluster of the exact model): E2 from energies = 1/2 u Phi u = 1061.81 / 435.42 eV, the -1/4 form
-  1025.80 / 471.43 = 1/2 u Phi_sym u exactly; crystal (paper_A_check.py, ZnO at the minimum, sigma=0):
+  1025.80 / 471.43 = 1/2 u Phi_sym u exactly; crystal (relax/paper_A_check.py, ZnO at the minimum, sigma=0):
   Vc Sym(A) C12-type 49.91 vs exact 53.96 eV, Born-Huang 6e-3 eV off. Same cause as the pre-9.2 elastic
   constants. Q (linear in d, row ASR only) is right. Now: stage 1 relaxes u0 in
   the reference cell (stress += int Q^T du, exact), stage 2 Newton in strain with u0 relaxed at every RK4
@@ -719,10 +719,10 @@ fit kept as fcN_unrelaxed.dat, fcN_irr_unrelaxed.dat, lat_fc_unrelaxed.dat; POSC
   (current brackets, current stress) - QGQ/V.
 - elastic_born_huang lacked the (ab)<->(gd) average: at a non-hydrostatic stressed state its tensor is not
   pair-symmetric (ZnO model at 15 GPa, internal relaxed: H13 51.452 / H31 51.420, exact 51.436 = average;
-  scratch crel_check.py). Average added in elastic_born_huang (all callers; hydrostatic: no change).
+  relax/paper_A_check.py, its first part). Average added in elastic_born_huang (all callers; hydrostatic: no change).
 - Terms whose first atom is outside the primitive cell are skipped (as get_phi_zeta_Xi).
 
-- Checked (exact ZnO model, stressed reference 14.9 GPa, FC1 0.032 eV/A, ranks 1-4, e1; scratch scripts
+- Checked (exact ZnO model, stressed reference 14.9 GPa, FC1 0.032 eV/A, ranks 1-4, e1; REFERENCE/exact_model/relax/
   model_min.py, compare_relaxed.py): FOCEX vs the model's own minimum: strain 7.8e-10, u0 1.3e-9 A, FC2 at the
   minimum 2.7e-6 eV/A^2 (7 printed digits), FC3 5e-7; residual stress 2e-10 GPa, Huang 2e-8 GPa; 3 strain
   steps. Ranks 1-3 only: strain off 1e-5 (FC4 missing). Ge (line 5 absent): elastic constants identical.

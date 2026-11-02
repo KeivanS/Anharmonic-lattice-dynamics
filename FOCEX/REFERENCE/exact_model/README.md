@@ -222,6 +222,30 @@ Run time and memory, from `time.err`:
   isolated.
 - BZO's three methods give different spectra. Which one is right is not established.
 
+## Relaxation of a stressed reference (`relax/`, FOCEX 9.3, 2026-11-02)
+
+FOCEX's `relax_reference` (default.params line 5 = 1) on run_ZnO (stressed reference, 14.9 GPa,
+FC1 0.032 eV/Å, ranks 1–4, enforce_inv 1) against the model's own minimum:
+
+- `model_min.py ZnO out.json`: exact minimum (strain, u0) by Newton on the supercell
+  → `zno_model_min.json`.
+- `compare_relaxed.py RUNDIR zno_model_min.json ZnO`: strain, u0 and every term of fc1–3.dat against the
+  model at the minimum. `compare_relaxed_ZnO.log` (tail of the run): strain 7.8e-10, u0 1.3e-9 Å, FC2
+  2.7e-6 eV/Å² (printed digits), FC3 5e-7.
+- `paper_A_check.py ZnO ref|zno_model_min.json`: exact strain Hessian at a force-free state against FOCEX's
+  tangent (Born–Huang + stress − QΓQ, 6e-3 eV of ~200) and the ALATDYN paper's Sym(A) − QΓQ (8 eV off,
+  also at zero stress). Logs `paper_A_check_ZnO_{ref,min}.log`.
+- `cluster_identity.py`: 40-atom cluster, why: E2 = ½ u·Φ·u is exact, the −¼ Σ (Δu)·Φ·(Δu) form equals
+  ½ u·Φ_sym·u, i.e. it drops the part of each 3×3 block antisymmetric in its Cartesian indices
+  (`cluster_identity.log`).
+
+Run (≈36 min):
+```bash
+./mkrun.sh ZnO 1 1 relax && cp relax/default.params run_ZnO/e1relax/
+cd run_ZnO/e1relax && ~/ALADYN/bin/focex-9.3.x > focex.out && cd ../..
+python relax/compare_relaxed.py run_ZnO/e1relax relax/zno_model_min.json ZnO
+```
+
 ## Reproducing
 
 ```bash
