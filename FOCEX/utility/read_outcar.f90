@@ -1,11 +1,10 @@
  program read_force_position_data
-! this program reads the OUTCAR file (vasp output) and writes 
-! the position-force data in a file called pos-forc.dat
   implicit none
    integer utraj,upos,maxl,i,t,j,k,natom
-    real(8) pos(3),forc(3),toten
+    real(8) toten
+    real(8), allocatable :: pos(:,:),forc(:,:)
      character line*99
-      logical found
+      logical found,pending
 
        utraj = 10; upos = 20
         maxl = 999999999
@@ -24,28 +23,34 @@
         enddo
 98 write(*,*)' read the number of atoms, now rewinding '
  rewind(utraj)
+ allocate(pos(3,natom),forc(3,natom))
 
- ! now get the FORCES from OUTCAR file
-  t=0
+  t=0; toten=0.d0; pending=.false.
    do j=1,maxl
        read(utraj,'(a)',end=88)line
            call findword('free  energy   TOTEN  =',line,found,k)
        if (found) then
-              read(line(k+25:98),*)toten
+              read(line(k+23:98),*)toten
              write(*,*)' j,TOTEN=',j,toten
+             if (pending) then
+                t = t+1
+                write(upos,*) ' # POSITION      TOTAL FORCE '
+                write(upos,*) t,toten
+                do i=1,natom
+                   write(upos,6) pos(1:3,i),forc(1:3,i)
+                enddo
+                pending=.false.
+             endif
             cycle
         endif
-    call findword('POSITION',line,found,i)
+    call findword('TOTAL-FORCE',line,found,i)
         if (found) then
-       read(utraj,*)
-              t = t+1
-             write(upos,*) ' # POSITION      TOTAL FORCE '
-            write(upos,*) t,toten
+           read(utraj,*)
            do i=1,natom
-              read(utraj,*) pos(1:3),forc(1:3)
-                 write(upos,6) pos(1:3),forc(1:3)
-        enddo
-    endif
+              read(utraj,*) pos(1:3,i),forc(1:3,i)
+           enddo
+           pending=.true.
+        endif
      enddo
      88 write(*,*)' reached the end of OUTCAR file after steps= ',t
      6 format(2(2x,3(2x,g16.10)))
@@ -53,8 +58,7 @@
        write(*,'(a)') line
         close(utraj)
  close(upos)
-
-  end program read_force_position_data
+ end program read_force_position_data
 !============================================================
  subroutine findword(word,line,found,i)
  implicit none
