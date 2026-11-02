@@ -1199,8 +1199,8 @@ Version history
 
 9.2 (2026-11-01)
     Elastic constants from the Born-Huang brackets with the stress terms (the symmetrized
-    :math:`A` gave wrong off-diagonal and shear constants); :math:`B_0'` from FC2 and FC3; QHA
-    with a Murnaghan static energy, :math:`V(T)` from :math:`P=0`, :math:`B_T=-V\,dP/dV` and
+    :math:`A` gave wrong off-diagonal and shear constants); :math:`B_0'` from FC2 and FC3 (without
+    FC3, :math:`1+2\gamma`); QHA with a Murnaghan static energy, :math:`V(T)` from :math:`P=0`, :math:`B_T=-V\,dP/dV` and
     :math:`\alpha = d\ln L/dT`; mode Gruneisen parameters from one routine shared with
     THERMACOND (phase of the dynamical matrix, eigenvectors at the k-point, long-wave limit at
     :math:`\Gamma`); standard errors of the force constants (``sd(rank)``); warning for
