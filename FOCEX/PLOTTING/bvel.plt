@@ -11,7 +11,7 @@ set grid xtics
 set grid ytics
 
 a=MAX_FREQUENCY_IN_INVERSE_CM
-#set yrange [0:a]
+set yrange [0:a]
 set ylabel "Frequency (1/cm)"
 set ytics nomirror
 set y2range [0:a*3/100.0]
@@ -21,7 +21,7 @@ set y2tics nomirror
 set title "Phonon dispersion of NAME"
 
 # to setup the colorbar
-set cblabel "Group velovity(km/s)"
+set cblabel "Group velocity (km/s)"
 set cbtics
 set cbrange [0:MAX_GROUP_VELOCITY] # same range as palette definition
 
@@ -29,13 +29,15 @@ plot 'bs_freq.dat' u 3:7:11 w p pt 7 ps 0.3 lc palette z notitle
 pause -1
 
 set term pdfcairo font "Arial,16"
-set output 'NAME.pdf'
+set output 'bvel-NAME.pdf'
 replot
 
 # ---------------- vgroup versus frequency ------------------
 reset
 set xlabel "Frequency (1/cm)"
-set ylabel "Group Velovity (km/s)"
+set ylabel "Group Velocity (km/s)"
+set xrange [0:MAX_FREQUENCY_IN_INVERSE_CM]
+set yrange [0:MAX_GROUP_VELOCITY]
 # bands.dat: 5 columns (index, dk, k), then the nb omega^2, then the nb |v|; nb is read from the file
 nb = int(system("awk '!/^ *#/ && NF>5 {print (NF-5)/2; exit}' bands.dat"))
 plot 'ibz_bands.dat' u ($7):($11/1) w p pt 7 ps 0.5 title  'IBZ' ,\

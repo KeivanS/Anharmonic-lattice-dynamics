@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+"""allplots [DIR] [--name NAME] [--no-run]: the PDF plots of a FOCEX run (2026-11-02, user's request).
+
+Fills the gnuplot templates next to this script (bandgen, bandgrun, bvel, all, qha, thermo, fcs, chi .plt) for the FOCEX
+output in DIR (default .), writes the filled copies into DIR and runs gnuplot on each (log: <name>.log).
+  - bandgen.plt (as bandplot): sorted branches, one colour each -> bands-NAME.pdf (omega^2) and
+    freq_bands-NAME.pdf (1/cm); bandgrun.plt, when bs_grun.dat exists (FC3 fitted): the dispersion
+    above the Gruneisen parameters along the same path, same colours -> bandgrun-NAME.pdf; in all.plt
+    the dispersion is coloured by these Gruneisen parameters (by group velocity without bs_grun.dat);
+  - the 'set xtics ( ... )' line of the dispersion plots is replaced by KTICS.BS, the k range by its
+    last value;
+  - bounds from the data, capped: frequency <= 2000 1/cm, group velocity <= 20 km/s, Gruneisen
+    parameters within [-10:10];
+  - NAME (titles, file names) is the folder above 05_focex in DIR's path (MATERIAL/05_focex/...), else
+    the name of DIR's parent folder; --name overrides it.
+A template is skipped when a data file it needs is missing. Only the Python standard library is used.
+"""
+import math, os, re, shutil, subprocess, sys
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+FMAX, VMAX, GLIM = 2000.0, 20.0, 10.0
+# template -> data files it needs
+TEMPLATES = [('bandgen.plt', ['bands.dat', 'KTICS.BS']),     # sorted branches, one colour each (as bandplot)
+             ('bandgrun.plt', ['bs_grun.dat', 'KTICS.BS']),  # dispersion over Gruneisen, same k axis
+             ('bvel.plt', ['bs_freq.dat', 'bands.dat', 'KTICS.BS']),
+             ('all.plt', ['ibz_grun.dat', 'fbz_dos.dat', 'bs_freq.dat', 'KTICS.BS']),
+             ('qha.plt', ['thermo_QHA.dat', 'temp_free.dat']),
+             ('thermo.plt', ['thermo_QHA.dat', 'temp_free.dat']),
+             ('fcs.plt', ['trace_fc.dat']),
+             ('chi.plt', ['chi_real.dat', 'chi_imag.dat'])]
+
+
+def rows(path):
+    """numeric rows of a data file (comment and non-numeric lines skipped)"""
+    out = []
+    for line in open(path):
+        if line.lstrip().startswith('#'):
+            continue
+        try:
+            out.append([float(v) for v in line.split()])
+        except ValueError:
+            pass
+    return [r for r in out if r]
+
+
+def material_name(d):
+    parts = os.path.abspath(d).split(os.sep)
+    if '05_focex' in parts[1:]:
+        return parts[parts.index('05_focex', 1) - 1]
+    return os.path.basename(os.path.dirname(os.path.abspath(d)))
+
+
+def grun_range(path):
+    """range of the Gruneisen columns (5 columns, nb frequencies, nb Gruneisen), clipped to [-10:10]"""
+    g = []
+    for r in rows(path):
+        nb = (len(r) - 5) // 2
+        g += [x for x in r[5 + nb:5 + 2 * nb] if math.isfinite(x)]
+    clamp = lambda x: int(min(GLIM, max(-GLIM, x)))
+    lo = clamp(math.floor(min(g))) if g else -int(GLIM)
+    hi = clamp(math.ceil(max(g))) if g else int(GLIM)
+    if hi <= lo:
+        lo, hi = clamp(lo - 1), clamp(hi + 1)
+    return str(lo), str(hi)
+
+
+def bounds(d):
+    sub = {}
+    if os.path.isfile(os.path.join(d, 'KTICS.BS')):
+        kt = open(os.path.join(d, 'KTICS.BS')).read().strip()
+        sub['KTICS'] = kt
+        sub['MAX_K_VALUE'] = re.findall(r'([-\d.]+)\s*\)', kt)[-1]
+    if os.path.isfile(os.path.join(d, 'bs_freq.dat')):
+        bs = [r for r in rows(os.path.join(d, 'bs_freq.dat')) if len(r) >= 11]
+        f = max(r[6] for r in bs); v = max(r[10] for r in bs)
+        sub['MAX_FREQUENCY_IN_INVERSE_CM'] = str(int(min(FMAX, math.ceil(1.05 * f / 10) * 10)))
+        sub['MAX_GROUP_VELOCITY'] = f'{min(VMAX, math.ceil(10 * v) / 10):.1f}'
+    for f, key in (('ibz_grun.dat', 'GRUNEISEN'), ('bs_grun.dat', 'BSGRUN')):
+        if os.path.isfile(os.path.join(d, f)):
+            sub[key + '_MIN'], sub[key + '_MAX'] = grun_range(os.path.join(d, f))
+        else:                                   # all.plt: used only when the file exists
+            sub[key + '_MIN'], sub[key + '_MAX'] = str(-int(GLIM)), str(int(GLIM))
+    return sub
+
+
+def fill(text, sub, name, base):
+    out = []
+    for line in text.splitlines():
+        if re.match(r'^\s*pause\b', line):
+            continue
+        if re.match(r'^\s*set\s+xtics\s*\(', line) and 'KTICS' in sub:
+            line = sub['KTICS']
+        for k, v in sub.items():
+            if k != 'KTICS':
+                line = line.replace(k, v)
+        out.append(line.replace('NAME', name))
+    text = '\n'.join(out) + '\n'
+    if not re.search(r'^\s*set\s+term', text, re.M):            # screen-only template: write a pdf
+        text = f"set term pdfcairo font 'Arial,12'\nset output '{base}-{name}.pdf'\n" + text
+    elif not re.match(r'\s*set\s+term', text):                  # plots before its pdf terminal
+        text = 'set term unknown\n' + text
+    left = set(re.findall(r'\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+){1,}\b', re.sub(r'#.*', '', text)))
+    return text, left - {'B_T', 'C_V', 'C_P'}
+
+
+def main(argv):
+    args, name, run = [], None, True
+    it = iter(argv)
+    for a in it:
+        if a == '--name':
+            name = next(it)
+        elif a == '--no-run':
+            run = False
+        elif a in ('-h', '--help'):
+            print(__doc__); return 0
+        else:
+            args.append(a)
+    d = args[0] if args else '.'
+    name = name or material_name(d)
+    sub = bounds(d)
+    gp = shutil.which('gnuplot')
+    print(f'allplots: {os.path.abspath(d)}  NAME={name}  ' +
+          '  '.join(f'{k}={v}' for k, v in sub.items() if k != 'KTICS'))
+    st = 0
+    for tpl, need in TEMPLATES:
+        miss = [f for f in need if not os.path.isfile(os.path.join(d, f))]
+        if miss:
+            print(f'  {tpl}: skipped (no {" ".join(miss)})'); continue
+        base = tpl[:-4]
+        text, left = fill(open(os.path.join(HERE, tpl)).read(), sub, name, base)
+        extra = []
+        if tpl == 'bandgen.plt':                   # as bandplot: KTICS.BS first, variables with -e
+            text = sub['KTICS'] + '\n' + text
+            extra = ['-e', f"fin='bands.dat'; fout='bands-{name}.pdf'; fmt='pdf'; "
+                           f"kmax={sub['MAX_K_VALUE']}; fmax={sub.get('MAX_FREQUENCY_IN_INVERSE_CM', FMAX)}"]
+        open(os.path.join(d, tpl), 'w').write(text)
+        if left:
+            print(f'  {tpl}: unfilled placeholders {" ".join(sorted(left))}'); st = 1
+        if not run:
+            print(f'  {tpl}: written'); continue
+        if gp is None:
+            print(f'  {tpl}: written; gnuplot not found'); st = 1; continue
+        with open(os.path.join(d, base + '.log'), 'w') as log:
+            r = subprocess.run([gp] + extra + [tpl], cwd=d, stdout=log, stderr=subprocess.STDOUT)
+        pdfs = re.findall(r"set\s+output\s+['\"]([^'\"]+\.pdf)", text) or \
+            ([f'bands-{name}.pdf', f'freq_bands-{name}.pdf'] if extra else [])
+        if r.returncode == 0:
+            print(f'  {tpl}: ok -> {" ".join(dict.fromkeys(pdfs))}')
+        else:
+            print(f'  {tpl}: ERROR, see {base}.log'); st = 1
+    return st
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

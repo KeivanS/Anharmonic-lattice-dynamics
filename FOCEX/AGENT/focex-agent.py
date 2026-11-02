@@ -24,7 +24,7 @@ Tasks (each is recorded in <PROJECT_DIR>/report.log and skipped once done):
   vasp_snaps the supercell VASP runs, one after the other
   collect    read_outcar.x -> FORCEDISP1, POSCAR1 = poscar_000; all runs checked
   focex      the five *.params files, FOCEX (+ NOBORN and LASSO runs when needed)
-  plots      bvel.plt / all.plt / qha.plt filled in, makeplots.sh
+  plots      PDF plots by PLOTTING/allplots (bands, Gruneisen, velocities, QHA, ...), makeplots.sh
   thermacond THERMACOND in 06_thermacond if THERMACOND_JOB (latdyn.params line 8) is 1, 2 or 3
 MODE: extract_only (DATA: <folder> with POSCAR1, FORCEDISP1, [POSCAR2, FORCEDISP2, ...],
 optionally POSCAR = primitive cell and dielectric.params, all in the frame of the data) rotates
@@ -598,42 +598,6 @@ def read_born(outcar, natom, transpose):
         return None, None
     Z = [np.array(rows[3 * k:3 * k + 3], dtype=float) for k in range(natom)]
     return eps, [z.T if transpose else z for z in Z]
-
-
-def per_band(text, nb):
-    """The plot statement after a 'THIS HAS AS MANY LINES AS THERE ARE BANDS' comment gets one
-    entry per band: in its first multi-entry file, column 6 becomes 6+b and the other column
-    6+nb+b (b = 0..nb-1), e.g. 'ibz_grun.dat' u 12:6 -> u (6+nb+b):(6+b)."""
-    L = text.splitlines()
-    out, i = [], 0
-    while i < len(L):
-        out.append(L[i])
-        if 'AS MANY LINES AS THERE ARE BANDS' not in L[i]:
-            i += 1
-            continue
-        i += 1
-        while i < len(L) and not re.match(r'^\s*plot\b', L[i]):
-            out.append(L[i])
-            i += 1
-        stmt = []
-        while i < len(L):
-            stmt.append(L[i].rstrip().rstrip('\\').rstrip().rstrip(','))
-            i += 1
-            if not L[i - 1].rstrip().endswith('\\'):
-                break
-        stmt[0] = re.sub(r'^\s*plot\s+', '', stmt[0])
-        files = [re.match(r"\s*'([^']+)'", e).group(1) if re.match(r"\s*'([^']+)'", e) else None for e in stmt]
-        rep = next(f for f in files if f and files.count(f) > 1)
-        tpl = stmt[files.index(rep)]
-        head = re.match(r"(\s*'[^']+'\s+u(?:sing)?\s+)(.*)", tpl)
-        new = [e for e, f in zip(stmt, files) if f != rep]
-        for b in range(nb):
-            cols = re.sub(r'(?<![\w.])\$?(\d+)(?![\w.])',
-                          lambda m: m.group(0).replace(m.group(1), str(6 + b if m.group(1) == '6' else 6 + nb + b)),
-                          head.group(2).split()[0])
-            new.append(head.group(1) + cols + head.group(2)[len(head.group(2).split()[0]):])
-        out.append('plot ' + ' ,\\\n     '.join(e.strip() for e in new))
-    return '\n'.join(out) + '\n'
 
 
 # ── the agent ─────────────────────────────────────────────────────────────────
@@ -1303,47 +1267,21 @@ class Agent:
         return ok, '\n  '.join(msgs)
 
     def plots_in(self, d):
+        """makeplots.sh = PLOTTING/allplots on d (2026-11-02, user: the same script outside the agent):
+        fills the .plt templates (KTICS.BS, capped bounds, NAME = the folder above 05_focex) and makes
+        the PDFs"""
         if not os.path.isfile(os.path.join(d, 'KTICS.BS')):
             return False, 'no KTICS.BS (FOCEX did not finish)'
-        ktics = open(os.path.join(d, 'KTICS.BS')).read().strip()
-        kmax = float(re.findall(r'([-\d.]+)\s*\)', ktics)[-1])
-        bs = np.loadtxt(os.path.join(d, 'bs_freq.dat'), comments='#', ndmin=2)
-        sub = {'MAX_K_VALUE': f'{kmax:.3f}',
-               'MAX_FREQUENCY_IN_INVERSE_CM': str(math.ceil(1.05 * bs[:, 6].max() / 10) * 10),
-               'MAX_GROUP_VELOCITY': f'{math.ceil(bs[:, 10].max() * 10) / 10:.1f}',
-               'NAME': self.fx['project']}
-        unknown = set()
-        nb = 3 * int(open(os.path.join(d, 'structure.params')).read().splitlines()[10].split()[0])
-        for name in ('bvel.plt', 'all.plt', 'qha.plt'):
-            out, replace_next = [], False
-            for line in per_band(open(os.path.join(HERE, 'PLOTTING', name)).read(), nb).splitlines():
-                if replace_next and 'xtics' in line:
-                    out.append(ktics)
-                    replace_next = False
-                    continue
-                if 'REPLACE THE FOLLOWING LINE BY THE CONTENTS OF "KTICS.BS"' in line:
-                    replace_next = True
-                if re.match(r'^\s*pause\b', line):
-                    continue
-                for k, v in sub.items():
-                    line = line.replace(k, v)
-                unknown |= set(re.findall(r'\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+){2,}\b', line.split('#')[0]))
-                out.append(line)
-            text = '\n'.join(out) + '\n'
-            if re.search(r'^\s*set\s+term', text, re.M) and not re.match(r'\s*set\s+term', text):
-                text = 'set term unknown\n' + text                  # plots before the pdf terminal
-            write(os.path.join(d, name), text)
+        allplots = os.path.join(HERE, 'PLOTTING', 'allplots')
         write(os.path.join(d, 'makeplots.sh'),
-              '#!/bin/bash\ncd "$(dirname "$0")"\nst=0\nfor f in bvel.plt all.plt qha.plt; do\n'
-              '  gnuplot "$f" > "${f%.plt}.log" 2>&1 && echo "  $f: ok" || { echo "  $f: ERROR, see ${f%.plt}.log"; st=1; }\n'
-              'done\nexit $st\n', 0o755)
+              f'#!/bin/bash\n# remakes the plots of this FOCEX folder\ncd "$(dirname "$0")"\n'
+              f'exec python3 "{allplots}" .\n', 0o755)
         if shutil.which('gnuplot') is None:
+            subprocess.run([sys.executable, allplots, '.', '--no-run'], cwd=d, capture_output=True)
             return True, 'scripts written; gnuplot not found, run makeplots.sh where it is'
         r = subprocess.run(['bash', 'makeplots.sh'], cwd=d, capture_output=True, text=True)
-        m = r.stdout.strip().replace('\n', ';')
-        if unknown:
-            m += f'; unfilled placeholders: {" ".join(sorted(unknown))}'
-        return r.returncode == 0, m
+        lines = [l.strip() for l in (r.stdout + r.stderr).splitlines()[1:] if l.strip()]
+        return r.returncode == 0, '; '.join(lines)
 
     # ---- task 8: THERMACOND ----------------------------------------------------
     def tc_latdyn(self):

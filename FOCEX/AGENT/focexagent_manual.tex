@@ -371,8 +371,9 @@ The supercell tasks are checked again before they are skipped:
   gives the fit error, the numbers of equations and unknowns, the lowest $\omega^2$ (a warning
   below $-25$\,cm$^{-2}$: imaginary modes) and the highest frequency. If the DOS range of
   \cmd{latdyn.params} does not fit the frequencies, FOCEX is run again with one that does.
-\item[plots] The gnuplot scripts \cmd{bvel.plt}, \cmd{all.plt}, \cmd{qha.plt} are filled in and run
-  in every FOCEX folder (Section~\ref{sec:results}); \cmd{makeplots.sh} remakes them.
+\item[plots] \cmd{FOCEX/PLOTTING/allplots} fills the gnuplot scripts (bands, band Gruneisen
+  parameters, group velocities, DOS, QHA, FCs) and makes the PDFs in every FOCEX folder
+  (Section~\ref{sec:results}); \cmd{makeplots.sh} runs it again.
 \item[thermacond] THERMACOND in \cmd{06_thermacond}: linewidths or the thermal conductivity, when
   \cmd{THERMACOND_JOB} is 1, 2 or 3; skipped for 0, the default (Section~\ref{sec:thermacond}).
 \end{description}
@@ -615,11 +616,14 @@ diagnosis & written by \cmd{diagnose.py}: \cmd{report.txt}, \cmd{fix_it.sh}, bac
 \end{longtable}
 In \cmd{05_focex}: the force constants \cmd{fc2.dat}, \cmd{fc3.dat}, \dots\ with the cell in
 \cmd{lat_fc.dat}; the dispersion \cmd{bs_freq.dat}; the elastic constants and moduli
-\cmd{mech.dat}; thermodynamics and thermal expansion \cmd{thermo_QHA.dat}; and three PDFs:
-\cmd{<Project>.pdf} (the dispersion coloured by group velocity, and the group velocities against
-frequency), \cmd{all-<Project>.pdf} (Gr\"uneisen parameters, density of states, dispersion) and
-\cmd{qha.pdf} (thermal expansion, Gr\"uneisen parameter, bulk modulus, thermodynamic functions,
-free energy against volume). The FOCEX manual describes every output file. The large VASP files
+\cmd{mech.dat}; thermodynamics and thermal expansion \cmd{thermo_QHA.dat}; and the PDFs
+(\cmd{<Name>} is the project folder): \cmd{bands-<Name>.pdf}, \cmd{freq_bands-<Name>.pdf} (one colour
+per branch), \cmd{bandgrun-<Name>.pdf} (dispersion above the Gr\"uneisen parameters along the path),
+\cmd{bvel-<Name>.pdf} (the dispersion coloured by group velocity, and the group velocities against
+frequency), \cmd{all-<Name>.pdf} (Gr\"uneisen parameters, density of states, dispersion coloured by
+the Gr\"uneisen parameters), \cmd{qha.pdf} and \cmd{thermo.pdf} (thermal expansion, Gr\"uneisen
+parameter, bulk modulus, thermodynamic functions, free energy against volume), \cmd{fcs-<Name>.pdf}
+and \cmd{chi.pdf}. The FOCEX manual describes every output file. The large VASP files
 (WAVECAR, CHGCAR, CHG, \dots) are deleted when no longer needed; the OUTCARs never.
 
 % ============================================================

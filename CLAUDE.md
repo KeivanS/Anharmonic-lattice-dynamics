@@ -536,6 +536,12 @@ snapshots, sqrt(4/5 sum (x_i - xbar)^2) / SVD sigma: median FC2 1.04, FC3 0.91; 
   `latdyn.params` must carry **six** numbers (shift *and* normal).
 - `bands.dat` columns 6+ are ω², not ω (`bandgen.plt` applies `521.1*sqrt()`). Plot scripts and `bandplot` are in
   `FOCEX/PLOTTING/` since 2026-11-02 (user); the agent reads its templates from there, `make` links bandplot.
+- `FOCEX/PLOTTING/allplots` (2026-11-02, user): fills bandgen/bandgrun/bvel/all/qha/thermo/fcs/chi.plt for a
+  FOCEX folder and makes the PDFs; KTICS.BS for the xtics line; caps frequency 2000 1/cm, group velocity
+  20 km/s, Gruneisen [-10:10]; NAME = folder above 05_focex, else the parent folder. all.plt colours the
+  dispersion by the band Gruneisen parameters (bs_grun.dat, same band order as bands.dat: checked row by
+  row) when present. The agent's makeplots.sh runs it (per_band removed: no template uses its marker).
+  Checked on the exact-model ZnO run (all 9 PDFs, pages looked at) and with capped/missing data.
 - Group velocities (bs_freq.dat, bands.dat, ibz_bands.dat) are Hellmann-Feynman since 2026-10-22:
   `finitedif_vel` returns `v1` from `get_freq`; before, it returned the finite difference of
   energy-sorted bands (BZO crossing: 0.17/8.50 km/s FD vs 0.65/9.08 HF). Both stay in

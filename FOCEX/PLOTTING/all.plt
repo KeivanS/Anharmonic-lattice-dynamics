@@ -18,6 +18,7 @@ set grid xtics
 set grid ytics
 set xtics in 1
 set xlabel "Gruneisen"
+set xrange [GRUNEISEN_MIN:GRUNEISEN_MAX]
 
 # ibz_grun.dat: 5 columns (index, dk, k), then the nb frequencies, then the nb Gruneisen parameters;
 # nb (= 3 x atoms) is read from the file
@@ -62,15 +63,23 @@ set grid xtics
 set xlabel "Wavenumbers"
 set palette maxcolors 30  # adjust the number of colors as needed
 set palette defined       # model RGB
-set cblabel "Group Velocity(km/s)"
 set cbtics
 #set bmargin 5
 set colorbox user origin 0.92,0.05  # Places box at 95% right, 5% up from bottom
 set colorbox size 0.02,0.85     
-#
-set cbrange [0: MAX_GROUP_VELOCITY ] # same range as palette definition
-
-plot 'bs_freq.dat' u 3:7:11 w p pt 10 ps 0.23 lc palette z notitle
+# coloured by the band Gruneisen parameters when bs_grun.dat exists (FC3 fitted), else by group velocity
+# bs_grun.dat: nk, dk (path length), k(1:3), then nb frequencies (1/cm), then nb Gruneisen parameters
+grun = int(system("test -s bs_grun.dat && echo 1 || echo 0"))
+if (grun) {
+    nbg = int(system("awk '!/^ *#/ && NF>5 {print (NF-5)/2; exit}' bs_grun.dat"))
+    set cblabel "Gruneisen parameter"
+    set cbrange [BSGRUN_MIN:BSGRUN_MAX]
+    plot for [b=1:nbg] 'bs_grun.dat' u 2:(column(5+b)):(column(5+nbg+b)) w l lw 2.5 lc palette notitle
+} else {
+    set cblabel "Group Velocity(km/s)"
+    set cbrange [0: MAX_GROUP_VELOCITY ] # same range as palette definition
+    plot 'bs_freq.dat' u 3:7:11 w p pt 10 ps 0.23 lc palette z notitle
+}
 
 pause -1
 

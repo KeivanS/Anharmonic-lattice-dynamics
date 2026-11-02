@@ -15,9 +15,6 @@ set grid
 set xlabel "Q"
 set ylabel "Eigenvalues"
 
-set y2tics
-set link y2 via y/100.0*3.0 inverse y*100/3.
-set y2label "Frequency (THz)"
 
 # --- styles (ADD THIS BLOCK) ---
 set style data lines
@@ -54,15 +51,27 @@ do for [c = col_start:col_end] {
     }
 }
 
+# optional bounds: kmax (last value of KTICS.BS), fmax (1/cm; the omega^2 axis gets (fmax/521.1)^2)
+if (exists("kmax")) set xrange [0:kmax]
+if (exists("fmax")) set yrange [*:(fmax/521.1)**2]
 eval("plot " . plotcmd)
 pause -1
 
-### Set output and style
-set terminal pngcairo size 1200,800 enhanced font ",16"
+### Set output and style (fmt='pdf' for a pdf, as allplots does; default png)
+if (!exists("fmt")) fmt = 'png'
+if (fmt eq 'pdf') {
+    set terminal pdfcairo size 6in,4in enhanced font ",11"
+} else {
+    set terminal pngcairo size 1200,800 enhanced font ",16"
+}
 set output sprintf("%s", fout)
 replot
 
 set ylabel "Frequency (1/cm)"
+if (exists("fmax")) set yrange [*:fmax]
+set y2tics
+set link y2 via y/100.0*3.0 inverse y*100/3.
+set y2label "Frequency (THz)"
 set output sprintf("freq_%s", fout)
 eval("plot " . p2 . " axes x1y1")
 

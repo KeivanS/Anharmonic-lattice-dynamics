@@ -1083,9 +1083,22 @@ After a run, look at these numbers, in this order:
 Plotting the results
 --------------------
 
-Gnuplot scripts for the standard figures, and ``bandplot``, are in ``FOCEX/PLOTTING``. Copy them into the
-directory with the FOCEX output and run ``gnuplot <script>``. Scripts that do not set a terminal
-draw on the screen.
+Gnuplot scripts for the standard figures, ``bandplot`` and ``allplots`` are in ``FOCEX/PLOTTING``.
+The simplest is ``allplots`` (installed by ``make`` next to the executables), run in the FOCEX output
+folder:
+
+.. code-block:: bash
+
+   allplots            # or: allplots <folder> [--name NAME] [--no-run]
+
+It fills ``bandgen``, ``bandgrun``, ``bvel``, ``all``, ``qha``, ``thermo``, ``fcs`` and ``chi.plt`` for that
+folder (the path labels from ``KTICS.BS``; frequency up to at most 2000 1/cm, group velocity up to
+20 km/s, Gruneisen parameters within [-10, 10]; ``NAME`` is the folder above ``05_focex``, else the
+parent folder), writes them there and makes the PDFs. A script whose data files are missing is
+skipped. The focex-agent's ``makeplots.sh`` runs it.
+
+To run a script by hand, copy it into the output folder and run ``gnuplot <script>``. Scripts that do
+not set a terminal draw on the screen.
 
 .. list-table::
    :header-rows: 1
@@ -1100,14 +1113,19 @@ draw on the screen.
        (1/cm, unstable modes at negative frequency). The number of branches is read from the file.
        Most easily run as ``bandplot [nbands] [filein] [fileout]`` (installed by ``make`` next to
        the executables).
+   * - ``bandgrun.plt``
+     - ``bs_grun.dat``, ``KTICS.BS``
+     - ``bandgrun-NAME.pdf``: dispersion above the mode Gruneisen parameters along the same path,
+       one colour per branch in both panels (needs FC3).
    * - ``bvel.plt``
      - ``bs_freq.dat``, ``bands.dat``, ``ibz_bands.dat``
-     - Dispersion coloured by group velocity (``NAME.pdf``); then group velocity versus frequency
-       for every branch, on the path and in the irreducible wedge (screen).
+     - Dispersion coloured by group velocity (``bvel-NAME.pdf``); then group velocity versus
+       frequency for every branch, on the path and in the irreducible wedge (second page).
    * - ``all.plt``
-     - ``ibz_grun.dat``, ``fbz_dos.dat``, ``bs_freq.dat``
-     - Three panels (``all-NAME.pdf``): frequency versus Gruneisen parameter for every branch,
-       DOS (total and the three acoustic branches), dispersion coloured by group velocity.
+     - ``ibz_grun.dat``, ``fbz_dos.dat``, ``bs_freq.dat``, ``bs_grun.dat``
+     - Three panels (``all-NAME.pdf``): frequency versus Gruneisen parameter in the irreducible
+       wedge, DOS (total and the three acoustic branches), dispersion coloured by the band
+       Gruneisen parameters (by group velocity without ``bs_grun.dat``).
    * - ``qha.plt``
      - ``thermo_QHA.dat``, ``temp_free.dat``
      - ``qha.pdf``: CTE, Gruneisen, :math:`B_T(T)/B_T(0)`; :math:`\Delta V/V` and strain; E, F, :math:`C_V`,
@@ -1123,7 +1141,7 @@ draw on the screen.
      - ``pairs.dat``, ``trace_fc.dat``
      - ``pairs.pdf``: distribution of pair distances and FC2 traces.
    * - ``fcs.plt``
-     - ``trace_fc.dat`` (also ``trace_fc2_sr/lr.dat``), ``atompos.xyz``, ``springs1/2.dat``,
+     - ``trace_fc.dat``, ``trace_phi_lr.dat``, ``atompos.xyz``, ``springs1/2.dat``,
        ``rgrid_raw.xyz``, ``supercell_1.xyz``, ``WSR_boundary.xyz``
      - Screen: FC2 trace versus pair distance; atoms, FC2 bonds and the Wigner-Seitz cell in 3D.
    * - ``kp.plt``
@@ -1133,9 +1151,10 @@ draw on the screen.
      - ``rgrid_raw.xyz``, ``WSR_boundary.xyz``, ``ggrid_raw.xyz``, ``WSG_boundary.xyz``
      - Screen: the R and G grids with their Wigner-Seitz cells.
 
-``bvel.plt`` and ``all.plt`` contain placeholders (capital letters), which you replace by hand when
-running them yourself: ``NAME`` (material name, in the titles and file names), ``MAX_K_VALUE``
-(the last number of ``KTICS.BS``), ``MAX_FREQUENCY_IN_INVERSE_CM``, ``MAX_GROUP_VELOCITY``, and
+``bvel.plt``, ``all.plt`` and ``bandgrun.plt`` contain placeholders (capital letters), which you replace
+by hand when running them yourself: ``NAME`` (material name, in the titles and file names),
+``MAX_K_VALUE`` (the last number of ``KTICS.BS``), ``MAX_FREQUENCY_IN_INVERSE_CM``,
+``MAX_GROUP_VELOCITY``, ``GRUNEISEN_MIN/MAX`` and ``BSGRUN_MIN/MAX`` (ranges of the Gruneisen axes), and
 the ``set xtics`` line below the comment ``REPLACE THE FOLLOWING LINE BY THE CONTENTS OF
 "KTICS.BS"``, which becomes the contents of ``KTICS.BS`` (the labels of the path you defined).
 

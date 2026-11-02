@@ -16,8 +16,7 @@ set cbrange [1:5 ] # same range as palette definition
 ### plot [1:] 'trace_fc.dat' u 1:2 w p pt 1 ps 2.8 title 'Original fc2' ,\
 
  plot [1:] 'trace_fc.dat' u 4:5:($1+$2) w p pt 1 ps 1.8 palette z title 'Original' ,\
-       'trace_fc2_lr.dat' u 6:5:($1+$2) w p pt 4 ps 1.8 palette z title 'fc2 LR' ,\
-       'trace_fc2_sr.dat' u 4:5:($1+$2) w p pt 9 ps 0.9 title 'fc2 SR' ,\
+       'trace_phi_lr.dat' u 4:5:($1+$2) w p pt 4 ps 1.8 palette z title 'fc2 on the extended grid' ,\
  0 w l lt 5  lw 2 notitle
  pause -1
 #set arrow from x1, y1, z1 to x2, y2, z2 nohead lt 1
