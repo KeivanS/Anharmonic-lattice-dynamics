@@ -764,3 +764,12 @@ as check_born_symmetry); chi(g) = Tr(E+ Gam(g) E) per degenerate set; IR: (1/|G|
   FOCEX gamma_modes.dat (checked): ZnO Gamma = 2A1 + 2B2 + 2E2 + 2E1 (IR+Raman E1 243, Raman-only E2 196/404,
   silent B 332/682; Mulliken calls the silent ones B1: sigma_v/sigma_d choice); HfO2 9Ag + 9Au + 9Bg + 9Bu,
   acoustic Au + 2Bu; LaP 2T1u.
+- Symmetry tolerance (2026-11-02, user): tol_sym = 1e-3 A (common/params.f90, parameter) for accepting the
+  operations AND finding atom images: symmetry finder (force_constant_symmetries tol), findatom_cart (was
+  ncmp, i.e. default.params tolerance 1e-4 per component), check_born_symmetry and gamma_mode_symmetry (were
+  1e-4 fractional); all as Cartesian distance. ncmp/tolerance unchanged elsewhere (FC equation coefficients).
+  User's ZnO (Zn pair 8e-5 A off the 6_3 screw, from the relaxation): stopped with "Error0 ... atom not
+  found"; now runs, fit 1.756 % (symmetrized positions: 1.757 %), Gamma frequencies within 0.3 1/cm. User: do
+  not move the atoms. HfO2 exact model: fc2, mech, bs_freq, gamma_modes byte-identical. THERMACOND builds.
+- gamma_mode_symmetry: acoustic set = all modes with translation_weight > translation_min (was |omega| < 1
+  1/cm; ZnO with Born charges has -2.6/2.0 1/cm at exactly q = 0, then listed as IR-active optical).

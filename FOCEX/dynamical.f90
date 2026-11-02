@@ -4030,7 +4030,8 @@ end subroutine band_sort_bs
  subroutine gamma_mode_symmetry(ndn)
 !! IR and Raman activity of the phonon modes at Gamma from symmetry alone (2026-11-02, user).
 !! At q = 0 the modes transform under the space group modulo lattice translations (isomorphic to the
-!! point group); operation g takes atom k to img(k,g) (r' = S r + sgfract, as check_born_symmetry) and
+!! point group); operation g takes atom k to img(k,g) (r' = S r + sgfract within tol_sym, as
+!! check_born_symmetry) and
 !! acts on a displacement pattern by Gam(g)(3(img-1)+a, 3(k-1)+b) = S(a,b). For each set of degenerate
 !! modes (eigenvectors E of D at exactly q = 0, where the non-analytic term is direction-averaged and
 !! keeps the full symmetry) the characters chi(g) = Tr(E^+ Gam(g) E) give
@@ -4046,12 +4047,14 @@ end subroutine band_sort_bs
 !! point_group_rules, common/point_group.f90). Written to gamma_modes.dat and the log.
  use ios, only : ulog
  use born, only : born_flag
- use lattice, only : cart_to_prim
+ use lattice, only : cart_to_prim, prim_to_cart
  use atoms_force_constants, only : atom0, natom_prim_cell, op_matrix, isgop, isgopcount, sgfract
  use geometry, only : v2a
  use constants, only : r15, cnst
+ use params, only : tol_sym
  use eigen, only : mysqrt
  use point_group_rules, only : pg_setup, pg_reduce, pg_write_table, pg_nirr, pg_label, pg_partner
+ use phonon_rules, only : translation_weight, translation_min
  implicit none
  integer, intent(in) :: ndn
  integer isg, k, kp, n, i, j, a, b, n1, n2, ng, de, ga, ninv, unit
@@ -4066,7 +4069,8 @@ end subroutine band_sort_bs
  real(r15), allocatable :: ops(:,:,:), mult(:)
  complex(r15), allocatable :: chitot(:)
  integer ier
- real(r15), parameter :: tol_pos = 1d-4
+ real(r15) mass(natom_prim_cell)
+ logical acou
 
  n = natom_prim_cell
  allocate(img(n,isgopcount), gam(ndn,ndn,isgopcount))
@@ -4082,7 +4086,7 @@ end subroutine band_sort_bs
           if (atom0(kp)%at_type .ne. atom0(k)%at_type) cycle
           d = matmul(cart_to_prim, matmul(s, v2a(atom0(k)%equilibrium_pos)) + sgfract(:,isg) &
  &                                 - v2a(atom0(kp)%equilibrium_pos))
-          if (maxval(abs(d - nint(d))) .lt. tol_pos) then
+          if (sqrt(sum(matmul(prim_to_cart, d - nint(d))**2)) .le. tol_sym) then
              img(k,isg) = kp ; exit
           endif
        enddo
@@ -4108,6 +4112,9 @@ end subroutine band_sort_bs
 
  kz = 0
  call get_freq(kz, ndn, vg, eival, eivec)        ! exactly q = 0
+ do k = 1, n
+    mass(k) = atom0(k)%mass
+ enddo
  om = mysqrt(eival)*cnst                          ! 1/cm (negative = unstable)
  omax = maxval(abs(om))
  tol = max(1d-3, 1d-6*omax)                       ! degeneracy tolerance (1/cm)
@@ -4165,8 +4172,12 @@ end subroutine band_sort_bs
     sir = 'no' ; sram = 'no' ; spar = '-'
     if (nir .gt. 0.5d0)  sir = 'yes'
     if (nram .gt. 0.5d0) sram = 'yes'
-    if (n1.eq.1 .and. abs(om(n1)).lt.1d0 .and. sir.eq.'yes') then   ! the 3 translations (and any
-       sir = 'acoustic' ; sram = '-'                                ! mode degenerate with them)
+    acou = .true.             ! rigid translations: mass-weighted translation weight > translation_min
+    do i = n1, n2             ! (as freq_vel; their omega at q = 0 need not be 0, e.g. with Born charges)
+       if (translation_weight(n, mass, eivec(:,i)) .le. translation_min) acou = .false.
+    enddo
+    if (acou) then
+       sir = 'acoustic' ; sram = '-'
     endif
     if (ninv .gt. 0) then
        par = real(chi(ninv))/ng

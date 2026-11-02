@@ -16,7 +16,7 @@
       use lattice
       use atoms_force_constants
       use ios !, only : ulog
-      use params , only : tolerance,rcutoff
+      use params , only : tolerance,rcutoff,tol_sym
  use constants, only : r15
       implicit none
 
@@ -30,7 +30,7 @@
       real(r15) orth_err
 
 ! maxneighbors= largest # of neighbor shells <  50 usually unless very low symmetry
-      tol=1d-3 ! used to ID atoms related by symmetries
+      tol=tol_sym ! used to ID atoms related by symmetries (params; also findatom_cart)
 !-------------------------------------------------------------------------------
 ! some preliminary stuff
 ! copy input arguments into global variables
@@ -1236,21 +1236,18 @@
 !!          in data base
       use atoms_force_constants
  use constants, only : r15
+ use params, only : tol_sym
       implicit none
       integer,intent(out) :: iatom
       real(r15), intent(in) :: pos(3)
-      integer i,j,ncmp
+      integer i
 
-    ! write(*,5)'natoms,pos=',natoms,pos(:)
+! within tol_sym (Cartesian distance), the tolerance with which the symmetry operations were accepted
       do i=1,natoms
-        jloop: do j=1,3
-          if(ncmp(atompos(j,i)-pos(j)).ne.0)exit jloop
-          if(j.eq.3)then
-    !   write(*,5)'atompos(i)=',i,atompos(:,i)
-            iatom=i
-            return
-          endif
-        enddo jloop
+        if (sum((atompos(:,i)-pos)**2) .le. tol_sym**2) then
+           iatom=i
+           return
+        endif
       enddo
       iatom=0
 5 format(a,i4,3(1x,f12.6))

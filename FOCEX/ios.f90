@@ -250,15 +250,16 @@
 !! Called after symmetry_init, only if born_flag /= 0.
  use ios, only : ulog
  use born, only : epsil, born_flag
- use lattice, only : cart_to_prim
+ use lattice, only : cart_to_prim, prim_to_cart
  use atoms_force_constants, only : atom0, natom_prim_cell, op_matrix, isgop, isgopcount, sgfract
  use geometry, only : v2a
  use constants, only : r15
+ use params, only : tol_sym
  implicit none
  integer isg, k, kp, kbad, kpbad, opbad, n, i, j, nperm, nfit
  integer, allocatable :: img(:,:), perm(:), best(:), idx(:)
  real(r15) r(3,3), d(3), zmax, emax, devmax, edevmax, dev, bestdev
- real(r15), parameter :: tol_stop = 5d-2, tol_warn = 1d-4, tol_pos = 1d-4
+ real(r15), parameter :: tol_stop = 5d-2, tol_warn = 1d-4
  integer, parameter :: maxperm = 1000000
  logical more
 
@@ -274,7 +275,7 @@
           if (atom0(kp)%at_type .ne. atom0(k)%at_type) cycle
           d = matmul(cart_to_prim, matmul(r, v2a(atom0(k)%equilibrium_pos)) + sgfract(:,isg) &
 &                                  - v2a(atom0(kp)%equilibrium_pos))
-          if (maxval(abs(d - nint(d))) .lt. tol_pos) then
+          if (sqrt(sum(matmul(prim_to_cart, d - nint(d))**2)) .le. tol_sym) then
              img(k,isg) = kp ; exit
           endif
        enddo

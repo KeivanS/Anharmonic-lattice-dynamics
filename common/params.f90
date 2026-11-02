@@ -1,6 +1,10 @@
 module params
  use constants, only : r15
  real(r15) tolerance,margin,scalelengths,alfaborn,tempk,rcutoff,coef
+! same atom position (Angstrom, Cartesian distance): accepting a symmetry operation and finding the images
+! of atoms under it use this one value (2026-11-02, user: a ZnO relaxed 8e-5 A off wurtzite passed the
+! symmetry finder at 1e-3 but failed the image lookup at 1e-4)
+ real(r15), parameter :: tol_sym = 1d-3
  integer nconfigs,classical,fdfiles,cal_cross,threemtrx,lamin,lamax,ncpu,n_dig_acc,itemp,convcoord
  integer , allocatable :: nshells(:,:)  !nshells(8,natom_prim_cell) up to which shell to include for each rank of FC (read from input file)
  integer include_fc(8), icutoff !,nsmax  ! whether to include FCs of that rank ,max# of shells looping
