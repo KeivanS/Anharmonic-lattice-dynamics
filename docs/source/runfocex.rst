@@ -1004,6 +1004,13 @@ Phonons and thermodynamics
     Real and imaginary parts of the dielectric response versus frequency, plus
     the refractive index ``n`` and extinction coefficient ``k``.
 
+``gamma_modes.dat``
+    The phonon modes at :math:`\Gamma`, one line per set of degenerate modes: frequency, degeneracy,
+    irreducibility (1 = one irreducible representation), IR active, Raman active, parity (g/u, if the
+    inversion is a symmetry) and, with Born charges, the IR strength :math:`\sum|Z_m|^2`. Activity
+    follows from the characters of the space-group operations on the modes (no tables needed). The
+    frequencies are at exactly :math:`q=0`, where polar modes lie between their TO and LO values.
+
 ``conductance.dat``
     Mode-counting (ballistic conductance) along the ``normal`` direction of
     ``latdyn.params``. The band loop that fills it is currently disabled in the

@@ -738,3 +738,12 @@ fit kept as fcN_unrelaxed.dat, fcN_irr_unrelaxed.dat, lat_fc_unrelaxed.dat; POSC
   model_min.py, compare_relaxed.py): FOCEX vs the model's own minimum: strain 7.8e-10, u0 1.3e-9 A, FC2 at the
   minimum 2.7e-6 eV/A^2 (7 printed digits), FC3 5e-7; residual stress 2e-10 GPa, Huang 2e-8 GPa; 3 strain
   steps. Ranks 1-3 only: strain off 1e-5 (FC4 missing). Ge (line 5 absent): elastic constants identical.
+
+## IR / Raman activity at Gamma (gamma_mode_symmetry, dynamical.f90, 2026-11-02, user)
+Called after dielectric; writes gamma_modes.dat. D at exactly q = 0 (NA term direction-averaged: keeps the
+full symmetry; at normal*1e-6 the LO-TO split breaks it). Operation g maps atom k to img (r' = S r + sgfract,
+as check_born_symmetry); chi(g) = Tr(E+ Gam(g) E) per degenerate set; IR: (1/|G|) sum chi* Tr S, Raman:
+(1/|G|) sum chi* ((Tr S)^2 + Tr S^2)/2, parity chi(i)/dim. No character tables.
+- Checked: ZnO exact model (C6v): A1 + 2B1 + E1 + 2E2 (E2 Raman only, B1 silent, A1/E1 both); HfO2 exact
+  model (C2h): 18 g Raman-only, 15 optical u IR-only; LaP (Oh, Born): T1u IR yes, Raman no, u, strength
+  0.962 = 3 x 0.3207 of dielectric's table.

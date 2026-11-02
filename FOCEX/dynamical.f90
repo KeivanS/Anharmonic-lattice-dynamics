@@ -240,6 +240,7 @@
   q2=normal*1d-6 ! almost zero!
   call get_freq(q2,ndyn,velaux,eivaux,evcaux)
   call dielectric(ndyn,eivaux,evcaux,wmesh,om,epsilon0) ! only need Gamma point spectrum
+  call gamma_mode_symmetry(ndyn)                         ! IR / Raman activity at Gamma (gamma_modes.dat)
   call write_out(ulog,' Ion-clamped dielectric constant ',epsil)
   call write_out(ulog,' Total dielectric constant along normal ',epsilon0)
   deallocate(eivaux,evcaux,velaux)
@@ -4025,3 +4026,139 @@ end subroutine band_sort_bs
  b=b/isgopcount
  dev=maxval(abs(a-b))
  end subroutine symmetrize_tensor4
+!============================================================
+ subroutine gamma_mode_symmetry(ndn)
+!! IR and Raman activity of the phonon modes at Gamma from symmetry alone (2026-11-02, user).
+!! At q = 0 the modes transform under the space group modulo lattice translations (isomorphic to the
+!! point group); operation g takes atom k to img(k,g) (r' = S r + sgfract, as check_born_symmetry) and
+!! acts on a displacement pattern by Gam(g)(3(img-1)+a, 3(k-1)+b) = S(a,b). For each set of degenerate
+!! modes (eigenvectors E of D at exactly q = 0, where the non-analytic term is direction-averaged and
+!! keeps the full symmetry) the characters chi(g) = Tr(E^+ Gam(g) E) give
+!!   irreducibility  (1/|G|) sum |chi|^2            (1: one irrep; 2: a pair of complex-conjugate irreps
+!!                                                    degenerate by time reversal, or an accidental one;
+!!                                                    the acoustic set: sum of squared multiplicities,
+!!                                                    e.g. C6v A1+E1 -> 2, C2h Au+2Bu -> 5)
+!!   IR active       (1/|G|) sum chi^* Tr S          > 0  (contains the vector representation)
+!!   Raman active    (1/|G|) sum chi^* ((Tr S)^2 + Tr S^2)/2 > 0  (symmetric second-rank tensor)
+!!   parity          chi(inversion)/dim, when the inversion is an operation (g = +1, u = -1)
+!! With Born charges, the IR strength sum over the set of |Z_m|^2, Z_m = sum Z*_tau e_tau(m)/sqrt(m_tau)
+!! (as in dielectric). Written to gamma_modes.dat and the log.
+ use ios, only : ulog
+ use born, only : born_flag
+ use lattice, only : cart_to_prim
+ use atoms_force_constants, only : atom0, natom_prim_cell, op_matrix, isgop, isgopcount, sgfract
+ use geometry, only : v2a
+ use constants, only : r15, cnst
+ use eigen, only : mysqrt
+ implicit none
+ integer, intent(in) :: ndn
+ integer isg, k, kp, n, i, j, a, b, n1, n2, ng, de, ga, ninv, unit
+ integer, allocatable :: img(:,:)
+ real(r15) s(3,3), d(3), kz(3), vg(3,ndn), eival(ndn), om(ndn), trs, ts2, dt, tol, nirr, nir, nram, &
+ &         zz, par, omax
+ real(r15), allocatable :: gam(:,:,:)
+ complex(r15) eivec(ndn,ndn), chi(48), zm(3)
+ character(len=8) :: sir, sram, spar
+ real(r15), parameter :: tol_pos = 1d-4
+
+ n = natom_prim_cell
+ allocate(img(n,isgopcount), gam(ndn,ndn,isgopcount))
+ gam = 0 ; ninv = 0
+ do isg = 1, isgopcount
+    s = op_matrix(:,:,isgop(isg))
+    dt = s(1,1)*(s(2,2)*s(3,3)-s(2,3)*s(3,2))-s(1,2)*(s(2,1)*s(3,3)-s(2,3)*s(3,1)) &
+ &     + s(1,3)*(s(2,1)*s(3,2)-s(2,2)*s(3,1))
+    if (dt.lt.0 .and. abs(s(1,1)+s(2,2)+s(3,3)+3).lt.1d-6) ninv = isg     ! S = -1
+    do k = 1, n
+       img(k,isg) = 0
+       do kp = 1, n
+          if (atom0(kp)%at_type .ne. atom0(k)%at_type) cycle
+          d = matmul(cart_to_prim, matmul(s, v2a(atom0(k)%equilibrium_pos)) + sgfract(:,isg) &
+ &                                 - v2a(atom0(kp)%equilibrium_pos))
+          if (maxval(abs(d - nint(d))) .lt. tol_pos) then
+             img(k,isg) = kp ; exit
+          endif
+       enddo
+       if (img(k,isg) .eq. 0) then
+          write(ulog,*)' GAMMA_MODE_SYMMETRY: no image of atom ',k,' under op ',isg,'; not done'
+          return
+       endif
+       gam(3*(img(k,isg)-1)+1:3*img(k,isg), 3*(k-1)+1:3*k, isg) = s
+    enddo
+ enddo
+
+ kz = 0
+ call get_freq(kz, ndn, vg, eival, eivec)        ! exactly q = 0
+ om = mysqrt(eival)*cnst                          ! 1/cm (negative = unstable)
+ omax = maxval(abs(om))
+ tol = max(1d-3, 1d-6*omax)                       ! degeneracy tolerance (1/cm)
+
+ open(newunit=unit, file='gamma_modes.dat')
+ write(unit,'(a)')'# phonon modes at Gamma (q = 0; polar modes: non-analytic term direction-averaged, between TO and LO)'
+ write(unit,'(a,i3,a)')'# symmetry from the ',isgopcount,' space-group operations modulo lattice translations'
+ write(unit,'(a)')'# modes   freq(1/cm)  dim  irred   IR     Raman  parity  IR strength sum|Z_m|^2 (e^2/amu; with Born charges)'
+ write(ulog,*)' GAMMA_MODE_SYMMETRY: modes, freq(1/cm), dim, irreducibility (1 = one irrep), IR, Raman, parity, IR strength'
+ n1 = 1
+ do while (n1 .le. ndn)
+    n2 = n1
+    do while (n2 .lt. ndn)
+       if (abs(om(n2+1) - om(n1)) .gt. tol) exit
+       n2 = n2 + 1
+    enddo
+    ng = n2 - n1 + 1
+    nirr = 0 ; nir = 0 ; nram = 0
+    do isg = 1, isgopcount
+       chi(isg) = 0
+       do i = n1, n2
+          chi(isg) = chi(isg) + dot_product(eivec(:,i), matmul(gam(:,:,isg), eivec(:,i)))
+       enddo
+       s = op_matrix(:,:,isgop(isg))
+       trs = s(1,1)+s(2,2)+s(3,3)
+       ts2 = 0
+       do a = 1, 3
+       do b = 1, 3
+          ts2 = ts2 + s(a,b)*s(b,a)
+       enddo
+       enddo
+       nirr = nirr + abs(chi(isg))**2
+       nir  = nir  + real(conjg(chi(isg))*trs)
+       nram = nram + real(conjg(chi(isg))*(trs**2 + ts2)/2)
+    enddo
+    nirr = nirr/isgopcount ; nir = nir/isgopcount ; nram = nram/isgopcount
+    sir = 'no' ; sram = 'no' ; spar = '-'
+    if (nir .gt. 0.5d0)  sir = 'yes'
+    if (nram .gt. 0.5d0) sram = 'yes'
+    if (n1.eq.1 .and. abs(om(n1)).lt.1d0 .and. sir.eq.'yes') then   ! the 3 translations (and any
+       sir = 'acoustic' ; sram = '-'                                ! mode degenerate with them)
+    endif
+    if (ninv .gt. 0) then
+       par = real(chi(ninv))/ng
+       if (par .gt. 0.5d0) spar = 'g'
+       if (par .lt. -0.5d0) spar = 'u'
+    endif
+    zz = 0
+    if (born_flag .ne. 0) then
+       do i = n1, n2
+          zm = 0
+          do k = 1, n
+          do de = 1, 3
+          do ga = 1, 3
+             zm(de) = zm(de) + atom0(k)%charge(de,ga)*eivec(ga+3*(k-1),i)/sqrt(atom0(k)%mass)
+          enddo
+          enddo
+          enddo
+          zz = zz + real(dot_product(zm,zm))
+       enddo
+    endif
+    write(unit,'(i3,a,i3,f12.3,i5,f7.3,2x,a8,1x,a8,1x,a6,es14.5)') n1,'-',n2, sum(om(n1:n2))/ng, ng, nirr, &
+ &        sir, sram, spar, zz
+    write(ulog,'(a,i3,a,i3,f12.3,i5,f7.3,2x,a8,1x,a8,1x,a6,es14.5)')' GAMMA_MODE_SYMMETRY:',n1,'-',n2, &
+ &        sum(om(n1:n2))/ng, ng, nirr, sir, sram, spar, zz
+    if (abs(nirr - nint(nirr)).gt.1d-3 .or. abs(nir - nint(nir)).gt.1d-3 .or. abs(nram - nint(nram)).gt.1d-3) &
+ &     write(ulog,*)' GAMMA_MODE_SYMMETRY: WARNING: non-integer multiplicities (degenerate set split?)', &
+ &     nirr, nir, nram
+    n1 = n2 + 1
+ enddo
+ close(unit)
+ deallocate(img, gam)
+ end subroutine gamma_mode_symmetry
