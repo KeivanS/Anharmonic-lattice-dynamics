@@ -38,8 +38,11 @@ set yrange [-30:20]
 set xlabel 'Strain (%)'
 set ylabel 'Free Energy (KJ/mol)'
 set key top center
-plot 'temp_free.dat' u (100*$2):3 w l title 'F(V)' ,\
-     'temp_free.dat' u (100*$2):4 w l title 'P(V)'  ,\
+# temp_free.dat has one block per temperature without blank lines between them; this filter adds them
+# (gnuplot needs them for the contour map, and to draw each F(V), P(V) curve separately)
+tf = '< awk ''{ if ($1 !~ /^#/ && NF > 0) { if (seen && $1 != p) print ""; p = $1; seen = 1 } print }'' temp_free.dat'
+plot tf u (100*$2):3 w l title 'F(V)' ,\
+     tf u (100*$2):4 w l title 'P(V)'  ,\
      'thermo_QHA.dat' u (100*$5):3 w l lw 2 title "F_{eq}(kJ/mol)" ,\
   0 w l lt 8 lw 2 notitle
 #pause -1
@@ -48,12 +51,18 @@ unset style data
 set xlabel "Temperature (K)"
 set ylabel "Strain (\%)"
 set title "Free energy contours"
-set yrange [-0.05:0.10]
+unset yrange
 set pm3d map
 set palette defined
 set view map
 set contour surface   
 set cntrparam levels auto 10
-splot 'temp_free.dat' u 1:2:3  w pm3d notitle
+unset clabel                       # all contour lines in one style
+set autoscale xfix
+set autoscale yfix
+set key top right textcolor rgb "white"
+splot tf u 1:(100*$2):3 w pm3d notitle ,\
+      tf u 1:(100*$2):3 w l nosurface lc rgb "black" notitle ,\
+      'thermo_QHA.dat' u 1:(100*$5):3 w l nocontours lw 2 lc rgb "white" title "equilibrium strain"
 #pause -1
 

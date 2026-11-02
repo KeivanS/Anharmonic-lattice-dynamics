@@ -7,8 +7,7 @@ set palette defined # model RGB
 set xrange [0 : MAX_K_VALUE ]
 
 
-set grid xtics
-set grid ytics
+set grid xtics ytics x2tics lt 1 lw 0.6 lc rgb "#303030"   # k-path lines dark enough to see
 
 a=MAX_FREQUENCY_IN_INVERSE_CM
 set yrange [0:a]

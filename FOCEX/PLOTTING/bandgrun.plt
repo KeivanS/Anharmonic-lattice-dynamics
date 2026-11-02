@@ -2,7 +2,7 @@
 # branch in both panels (branch order and colours as bandgen.plt). Placeholders in capitals are filled
 # by allplots; by hand: set the numbers (the path labels are read from KTICS.BS).
 # bs_grun.dat: nk, dk (path length), k(1:3), then nb frequencies (1/cm), then nb Gruneisen parameters
-set term pdfcairo size 6in,6.5in enhanced font ",11"
+set term pdfcairo size 5in,6in enhanced font "Arial,14"
 set output 'bandgrun-NAME.pdf'
 nb = int(system("awk '!/^ *#/ && NF>5 {print (NF-5)/2; exit}' bs_grun.dat"))
 
@@ -23,7 +23,7 @@ ktx2 = "set x2tics " . kt[strstrt(kt, "("):strlen(kt)]
 fmax = MAX_FREQUENCY_IN_INVERSE_CM
 gmin = BSGRUN_MIN
 gmax = BSGRUN_MAX
-xl = 0.12; xr = 0.88; ytop = 0.92; ymid = 0.52; ybot = 0.08
+xl = 0.16; xr = 0.84; ytop = 0.91; ymid = 0.52; ybot = 0.08
 
 set multiplot title "Phonons of NAME"
 # ---- bands (top) ----
@@ -33,7 +33,7 @@ set xrange [0 : MAX_K_VALUE ]
 set x2range [0 : MAX_K_VALUE ]
 unset xtics
 eval(ktx2)
-set grid x2tics ytics
+set grid xtics ytics x2tics lt 1 lw 0.6 lc rgb "#303030"   # k-path lines dark enough to see
 set ylabel "Frequency (1/cm)"
 set yrange [0:fmax]
 set ytics nice(fmax), nice(fmax) nomirror          # no label at 0 (the join)
@@ -48,7 +48,7 @@ unset x2tics
 unset y2tics
 unset y2label
 eval(kt)
-set grid noy2tics xtics ytics
+set grid xtics ytics x2tics lt 1 lw 0.6 lc rgb "#303030"   # k-path lines dark enough to see
 set ylabel "Gruneisen parameter"
 set yrange [gmin:gmax]
 set ytics gmin, nice(gmax-gmin), gmax - 0.5*nice(gmax-gmin) mirror   # no label at gmax (the join)

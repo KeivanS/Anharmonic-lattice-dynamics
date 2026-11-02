@@ -11,7 +11,7 @@ col_end = col_start + nbands - 1
 print "range  =", col_start, col_end
 
 set key outside
-set grid
+set grid xtics ytics x2tics lt 1 lw 0.6 lc rgb "#303030"   # k-path lines dark enough to see
 set xlabel "Q"
 set ylabel "Eigenvalues"
 
@@ -60,7 +60,7 @@ pause -1
 ### Set output and style (fmt='pdf' for a pdf, as allplots does; default png)
 if (!exists("fmt")) fmt = 'png'
 if (fmt eq 'pdf') {
-    set terminal pdfcairo size 6in,4in enhanced font ",11"
+    set terminal pdfcairo size 5in,3.5in enhanced font "Arial,14"
 } else {
     set terminal pngcairo size 1200,800 enhanced font ",16"
 }

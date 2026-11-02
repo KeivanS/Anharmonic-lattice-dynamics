@@ -14,8 +14,7 @@ set yrange [0:a]
 set ylabel 'Frequency (1/cm)'
 #set label  'Gruneisen' at graph 0.2,0.8 font ',8'
 set ytics nomirror
-set grid xtics
-set grid ytics
+set grid xtics ytics x2tics lt 1 lw 0.6 lc rgb "#303030"   # k-path lines dark enough to see
 set xtics in 1
 set xlabel "Gruneisen"
 set xrange [GRUNEISEN_MIN:GRUNEISEN_MAX]
@@ -23,7 +22,7 @@ set xrange [GRUNEISEN_MIN:GRUNEISEN_MAX]
 # ibz_grun.dat: 5 columns (index, dk, k), then the nb frequencies, then the nb Gruneisen parameters;
 # nb (= 3 x atoms) is read from the file
 nb = int(system("awk '!/^ *#/ && NF>5 {print (NF-5)/2; exit}' ibz_grun.dat"))
-plot for [b=1:nb] 'ibz_grun.dat' u (column(5+nb+b)):(column(5+b)) w p pt 1 ps 0.1 notitle
+plot for [b=1:nb] 'ibz_grun.dat' u (column(5+nb+b)):(column(5+b)) w p pt 1 ps 0.2 notitle
 
 # fbz_dos is from tetrahedon method  =================================
 # DOES NOT NEED EDITING AND SHOULD WORK BY DEFAULT
