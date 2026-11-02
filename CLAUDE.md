@@ -216,7 +216,9 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
 - Build: `cd THERMACOND && make` (mpif90 -> ~/ALADYN/bin/tcond-2.0.x) or `make serial` (mpif90's compiler +
   `mpi_stub.f90` -> tcond-2.0-serial.x); objects in obj_mpi/ obj_serial/; `DEBUG=1` for -g
   -fbounds-check (the old default, ~20x slower). On this Mac mpif90 needs
-  `OMPI_FC=/opt/homebrew/bin/gfortran SDKROOT=$(xcrun --show-sdk-path)`.
+  `OMPI_FC=/opt/homebrew/bin/gfortran SDKROOT=$(xcrun --show-sdk-path)`: since 2026-11-02 the top-level
+  Makefile sets and exports both on macOS when /opt/homebrew/bin/gfortran exists (unless already set), so
+  `make all` works in a fresh terminal (user); `make -C THERMACOND` alone still needs them exported.
 - Run: `tcond-2.0.x` (serial) or `mpirun -np N tcond-2.0.x`; same code. Ranks > 0 work in `.mpi_rank_NNN/`
   (symlinked inputs, removed at the end) so only rank 0's files survive. Since 2026-10-22
   (degenerate averaging, below) Ge 6^3 job 2 and 4^3 job 3 give byte-identical kappa_vs_T.dat for

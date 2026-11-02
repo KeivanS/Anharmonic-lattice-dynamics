@@ -8,10 +8,20 @@
 #   make python-tools     links focex-agent, focex-diagnose to FOCEX/AGENT
 #   make scop8            SCOP8 (not in "all": it does not compile at present)
 #   make clean            remove the object files of every part
-# Another place: make DESTDIR=/some/where.  THERMACOND needs mpif90 (on macOS with Homebrew
-# Open MPI: export OMPI_FC=/opt/homebrew/bin/gfortran SDKROOT=$(xcrun --show-sdk-path)).
+# Another place: make DESTDIR=/some/where.  THERMACOND needs mpif90.
 
 include make.inc
+
+# macOS with Homebrew: mpif90 must call the gfortran that compiled Open MPI's mpi.mod (Homebrew's),
+# not another one earlier on the PATH ("mpi.mod ... created by a different version of GNU Fortran").
+# Exported to the sub-makes; values already set in the environment are kept.
+ifeq ($(shell uname -s),Darwin)
+  ifneq ($(wildcard /opt/homebrew/bin/gfortran),)
+    OMPI_FC ?= /opt/homebrew/bin/gfortran
+    SDKROOT ?= $(shell xcrun --show-sdk-path 2>/dev/null)
+    export OMPI_FC SDKROOT
+  endif
+endif
 $(shell mkdir -p $(DESTDIR))
 # SC_SNAPS's Makefile quotes its BINDIR, where the shell does not expand ~
 BINDIR_ABS := $(patsubst ~%,$(HOME)%,$(DESTDIR))
