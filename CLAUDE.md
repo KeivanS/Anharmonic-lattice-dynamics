@@ -747,3 +747,20 @@ as check_born_symmetry); chi(g) = Tr(E+ Gam(g) E) per degenerate set; IR: (1/|G|
 - Checked: ZnO exact model (C6v): A1 + 2B1 + E1 + 2E2 (E2 Raman only, B1 silent, A1/E1 both); HfO2 exact
   model (C2h): 18 g Raman-only, 15 optical u IR-only; LaP (Oh, Born): T1u IR yes, Raman no, u, strength
   0.962 = 3 x 0.3207 of dielectric's table.
+- Character tables (2026-11-02, user: computed, not looked up; modular for electrons/magnetic later):
+  common/point_group.f90, module point_group_rules: pg_setup(nop, ops, ulog, ier) (multiplication table,
+  classes by conjugation, characters by the class-multiplication method: class matrices made normal by
+  D^-1/2 M D^1/2, D = diag(class sizes), Hermitian + anti-Hermitian parts diagonalized together with zheev),
+  pg_reduce(chi per op, multiplicities), pg_write_table, pg_chi_vector / pg_chi_sym2 (IR / Raman).
+  Labels: A/B (cubic: all A), E, T, g/u, '/'', serial number only when needed; classes in a fixed order
+  (E, C2, C3, C4, C6, i, m, S6, S4, S3; principal-axis C2 and sigma_h first), so the numbering does not depend
+  on the order of the operations (it did: ZnO gave the IR E mode as E2); E1 = chi(C2 principal) < 0 with a
+  6-fold axis, T1 = chi(C4 or S4) > 0 (as the standard tables); other 1/2 (B1/B2, A1/A2 where conventions
+  differ) may not be Mulliken's; complex conjugate pairs (C3, C4, C6, S4, S6, C3h, C4h, C6h, T, Th) as
+  Ea/Eb, pg_partner.
+  Unitary operations only (magnetic: corepresentations to add; spin: double groups to add).
+  Checked: FOCEX/REFERENCE/point_groups/test_point_groups.f90, all 32 groups: order, classes, dimensions,
+  orthogonality (ier 0); Oh T1u = 3 1 0 -3 -1 -1 -1 0 1 1 as the standard table.
+  FOCEX gamma_modes.dat (checked): ZnO Gamma = 2A1 + 2B2 + 2E2 + 2E1 (IR+Raman E1 243, Raman-only E2 196/404,
+  silent B 332/682; Mulliken calls the silent ones B1: sigma_v/sigma_d choice); HfO2 9Ag + 9Au + 9Bg + 9Bu,
+  acoustic Au + 2Bu; LaP 2T1u.

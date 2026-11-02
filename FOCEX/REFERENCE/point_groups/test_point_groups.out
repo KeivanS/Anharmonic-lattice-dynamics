@@ -1,0 +1,106 @@
+C1     order  1 classes  1 ier 0  dims 1
+        labels: A
+Ci     order  2 classes  2 ier 0  dims 1 1
+        labels: Ag Au
+C2     order  2 classes  2 ier 0  dims 1 1
+        labels: A B
+Cs     order  2 classes  2 ier 0  dims 1 1
+        labels: A' A''
+C2h    order  4 classes  4 ier 0  dims 1 1 1 1
+        labels: Ag Au Bg Bu
+D2     order  4 classes  4 ier 0  dims 1 1 1 1
+        labels: A B1 B2 B3
+C2v    order  4 classes  4 ier 0  dims 1 1 1 1
+        labels: A1 A2 B1 B2
+D2h    order  8 classes  8 ier 0  dims 1 1 1 1 1 1 1 1
+        labels: Ag Au B1g B1u B2g B2u B3g B3u
+C4     order  4 classes  4 ier 0  dims 1 1 1 1
+        labels: A B Ea Eb
+S4     order  4 classes  4 ier 0  dims 1 1 1 1
+        labels: A1 A2 Ea Eb
+C4h    order  8 classes  8 ier 0  dims 1 1 1 1 1 1 1 1
+        labels: Ag Au Bg Bu Ega Eua Egb Eub
+D4     order  8 classes  5 ier 0  dims 1 1 1 1 2
+        labels: A1 B1 B2 A2 E
+C4v    order  8 classes  5 ier 0  dims 1 1 1 1 2
+        labels: A1 A2 B1 B2 E
+D2d    order  8 classes  5 ier 0  dims 1 1 1 1 2
+        labels: A1 A2 B1 B2 E
+D4h    order 16 classes 10 ier 0  dims 1 1 1 1 1 1 1 1 2 2
+        labels: A1g A1u B1g B1u B2g B2u A2g A2u Eg Eu
+C3     order  3 classes  3 ier 0  dims 1 1 1
+        labels: A Ea Eb
+         irrep           E          C3          C3
+             A       1.000       1.000       1.000
+            Ea       1.000 -0.50+0.87i -0.50-0.87i
+            Eb       1.000 -0.50-0.87i -0.50+0.87i
+S6     order  6 classes  6 ier 0  dims 1 1 1 1 1 1
+        labels: Ag Au Ega Eua Egb Eub
+D3     order  6 classes  3 ier 0  dims 1 1 2
+        labels: A1 A2 E
+C3v    order  6 classes  3 ier 0  dims 1 1 2
+        labels: A1 A2 E
+D3d    order 12 classes  6 ier 0  dims 1 1 1 1 2 2
+        labels: A1g A1u A2g A2u Eg Eu
+C6     order  6 classes  6 ier 0  dims 1 1 1 1 1 1
+        labels: A B E2a E2b E1a E1b
+         irrep           E          C2          C3          C3          C6          C6
+             A       1.000       1.000       1.000       1.000       1.000       1.000
+             B       1.000      -1.000       1.000       1.000      -1.000      -1.000
+           E2a       1.000       1.000 -0.50+0.87i -0.50-0.87i -0.50-0.87i -0.50+0.87i
+           E2b       1.000       1.000 -0.50-0.87i -0.50+0.87i -0.50+0.87i -0.50-0.87i
+           E1a       1.000      -1.000 -0.50+0.87i -0.50-0.87i  0.50+0.87i  0.50-0.87i
+           E1b       1.000      -1.000 -0.50-0.87i -0.50+0.87i  0.50-0.87i  0.50+0.87i
+C3h    order  6 classes  6 ier 0  dims 1 1 1 1 1 1
+        labels: A' A'' E'a E''a E'b E''b
+C6h    order 12 classes 12 ier 0  dims 1 1 1 1 1 1 1 1 1 1 1 1
+        labels: Ag Au Bg Bu E2ga E2ua E2gb E2ub E1ga E1ua E1gb E1ub
+D6     order 12 classes  6 ier 0  dims 1 1 1 1 2 2
+        labels: A1 A2 B1 B2 E2 E1
+C6v    order 12 classes  6 ier 0  dims 1 1 1 1 2 2
+        labels: A1 A2 B1 B2 E2 E1
+         irrep           E          C2         2C3         2C6          3m          3m
+            A1       1.000       1.000       1.000       1.000       1.000       1.000
+            A2       1.000       1.000       1.000       1.000      -1.000      -1.000
+            B1       1.000      -1.000       1.000      -1.000       1.000      -1.000
+            B2       1.000      -1.000       1.000      -1.000      -1.000       1.000
+            E2       2.000       2.000      -1.000      -1.000       0.000       0.000
+            E1       2.000      -2.000      -1.000       1.000       0.000      -0.000
+D3h    order 12 classes  6 ier 0  dims 1 1 1 1 2 2
+        labels: A1' A1'' A2' A2'' E' E''
+         irrep           E         3C2         2C3           m          3m         2S3
+           A1'       1.000       1.000       1.000       1.000       1.000       1.000
+          A1''       1.000       1.000       1.000      -1.000      -1.000      -1.000
+           A2'       1.000      -1.000       1.000       1.000      -1.000       1.000
+          A2''       1.000      -1.000       1.000      -1.000       1.000      -1.000
+            E'       2.000       0.000      -1.000       2.000       0.000      -1.000
+           E''       2.000       0.000      -1.000      -2.000       0.000       1.000
+D6h    order 24 classes 12 ier 0  dims 1 1 1 1 1 1 1 1 2 2 2 2
+        labels: A1g A1u A2g A2u B1g B1u B2g B2u E2g E2u E1g E1u
+T      order 12 classes  4 ier 0  dims 1 1 1 3
+        labels: A Ea Eb T
+Th     order 24 classes  8 ier 0  dims 1 1 1 1 1 1 3 3
+        labels: Ag Au Ega Eua Egb Eub Tg Tu
+O      order 24 classes  5 ier 0  dims 1 1 2 3 3
+        labels: A1 A2 E T2 T1
+Td     order 24 classes  5 ier 0  dims 1 1 2 3 3
+        labels: A1 A2 E T2 T1
+         irrep           E         3C2         8C3          6m         6S4
+            A1       1.000       1.000       1.000       1.000       1.000
+            A2       1.000       1.000       1.000      -1.000      -1.000
+             E       2.000       2.000      -1.000       0.000      -0.000
+            T2       3.000      -1.000       0.000       1.000      -1.000
+            T1       3.000      -1.000      -0.000      -1.000       1.000
+Oh     order 48 classes 10 ier 0  dims 1 1 1 1 2 2 3 3 3 3
+        labels: A1g A1u A2g A2u Eg Eu T2g T2u T1g T1u
+         irrep           E         3C2         6C2         8C3         6C4           i          3m          6m         8S6         6S4
+           A1g       1.000       1.000       1.000       1.000       1.000       1.000       1.000       1.000       1.000       1.000
+           A1u       1.000       1.000       1.000       1.000       1.000      -1.000      -1.000      -1.000      -1.000      -1.000
+           A2g       1.000       1.000      -1.000       1.000      -1.000       1.000       1.000      -1.000       1.000      -1.000
+           A2u       1.000       1.000      -1.000       1.000      -1.000      -1.000      -1.000       1.000      -1.000       1.000
+            Eg       2.000       2.000       0.000      -1.000       0.000       2.000       2.000       0.000      -1.000      -0.000
+            Eu       2.000       2.000       0.000      -1.000      -0.000      -2.000      -2.000       0.000       1.000      -0.000
+           T2g       3.000      -1.000       1.000      -0.000      -1.000       3.000      -1.000       1.000      -0.000      -1.000
+           T2u       3.000      -1.000       1.000      -0.000      -1.000      -3.000       1.000      -1.000      -0.000       1.000
+           T1g       3.000      -1.000      -1.000      -0.000       1.000       3.000      -1.000      -1.000       0.000       1.000
+           T1u       3.000      -1.000      -1.000      -0.000       1.000      -3.000       1.000       1.000       0.000      -1.000

@@ -4042,7 +4042,8 @@ end subroutine band_sort_bs
 !!   Raman active    (1/|G|) sum chi^* ((Tr S)^2 + Tr S^2)/2 > 0  (symmetric second-rank tensor)
 !!   parity          chi(inversion)/dim, when the inversion is an operation (g = +1, u = -1)
 !! With Born charges, the IR strength sum over the set of |Z_m|^2, Z_m = sum Z*_tau e_tau(m)/sqrt(m_tau)
-!! (as in dielectric). Written to gamma_modes.dat and the log.
+!! (as in dielectric). The irreducible representation of each set and the character table (computed by
+!! point_group_rules, common/point_group.f90). Written to gamma_modes.dat and the log.
  use ios, only : ulog
  use born, only : born_flag
  use lattice, only : cart_to_prim
@@ -4050,6 +4051,7 @@ end subroutine band_sort_bs
  use geometry, only : v2a
  use constants, only : r15, cnst
  use eigen, only : mysqrt
+ use point_group_rules, only : pg_setup, pg_reduce, pg_write_table, pg_nirr, pg_label, pg_partner
  implicit none
  integer, intent(in) :: ndn
  integer isg, k, kp, n, i, j, a, b, n1, n2, ng, de, ga, ninv, unit
@@ -4059,6 +4061,11 @@ end subroutine band_sort_bs
  real(r15), allocatable :: gam(:,:,:)
  complex(r15) eivec(ndn,ndn), chi(48), zm(3)
  character(len=8) :: sir, sram, spar
+ character(len=40) :: sirr
+ character(len=400) :: gtot
+ real(r15), allocatable :: ops(:,:,:), mult(:)
+ complex(r15), allocatable :: chitot(:)
+ integer ier
  real(r15), parameter :: tol_pos = 1d-4
 
  n = natom_prim_cell
@@ -4087,6 +4094,18 @@ end subroutine band_sort_bs
     enddo
  enddo
 
+ allocate(ops(3,3,isgopcount), chitot(isgopcount))
+ do isg = 1, isgopcount
+    ops(:,:,isg) = op_matrix(:,:,isgop(isg))
+    chitot(isg) = gam(1,1,isg)*0
+    do i = 1, ndn
+       chitot(isg) = chitot(isg) + gam(i,i,isg)
+    enddo
+ enddo
+ call pg_setup(isgopcount, ops, ulog, ier)
+ if (ier .ne. 0) write(ulog,*)' GAMMA_MODE_SYMMETRY: point group setup failed (ier=',ier,'); no irreps'
+ allocate(mult(max(1,pg_nirr)))
+
  kz = 0
  call get_freq(kz, ndn, vg, eival, eivec)        ! exactly q = 0
  om = mysqrt(eival)*cnst                          ! 1/cm (negative = unstable)
@@ -4096,7 +4115,25 @@ end subroutine band_sort_bs
  open(newunit=unit, file='gamma_modes.dat')
  write(unit,'(a)')'# phonon modes at Gamma (q = 0; polar modes: non-analytic term direction-averaged, between TO and LO)'
  write(unit,'(a,i3,a)')'# symmetry from the ',isgopcount,' space-group operations modulo lattice translations'
- write(unit,'(a)')'# modes   freq(1/cm)  dim  irred   IR     Raman  parity  IR strength sum|Z_m|^2 (e^2/amu; with Born charges)'
+ if (ier .eq. 0) then
+    write(unit,'(a)')'# character table (computed; labels: A/B/E/T, g/u, prime, serial number, not Mulliken numbering)'
+    call pg_write_table(unit, '#  ')
+    call pg_write_table(ulog, ' GAMMA_MODE_SYMMETRY: ')
+    call pg_reduce(chitot, mult)
+    gtot = ''
+    do j = 1, pg_nirr
+       if (nint(mult(j)) .gt. 0) then
+          write(sirr,'(i0,a)') nint(mult(j)), trim(pg_label(j))
+          if (nint(mult(j)) .eq. 1) sirr = pg_label(j)
+          if (len_trim(gtot) .gt. 0) gtot = trim(gtot)//' + '
+          gtot = trim(gtot)//trim(sirr)
+       endif
+    enddo
+    write(unit,'(a)')'# all modes (incl. acoustic): Gamma = '//trim(gtot)
+    write(ulog,*)' GAMMA_MODE_SYMMETRY: Gamma = '//trim(gtot)
+ endif
+ write(unit,'(a)')'# modes   freq(1/cm)  dim  irred   IR     Raman  parity  IR strength sum|Z_m|^2 '// &
+ &                 '(e^2/amu; with Born charges)  irrep'
  write(ulog,*)' GAMMA_MODE_SYMMETRY: modes, freq(1/cm), dim, irreducibility (1 = one irrep), IR, Raman, parity, IR strength'
  n1 = 1
  do while (n1 .le. ndn)
@@ -4150,15 +4187,26 @@ end subroutine band_sort_bs
           zz = zz + real(dot_product(zm,zm))
        enddo
     endif
-    write(unit,'(i3,a,i3,f12.3,i5,f7.3,2x,a8,1x,a8,1x,a6,es14.5)') n1,'-',n2, sum(om(n1:n2))/ng, ng, nirr, &
- &        sir, sram, spar, zz
-    write(ulog,'(a,i3,a,i3,f12.3,i5,f7.3,2x,a8,1x,a8,1x,a6,es14.5)')' GAMMA_MODE_SYMMETRY:',n1,'-',n2, &
- &        sum(om(n1:n2))/ng, ng, nirr, sir, sram, spar, zz
+    sirr = ''
+    if (ier .eq. 0) then
+       call pg_reduce(chi(1:isgopcount), mult)
+       do j = 1, pg_nirr
+          if (nint(mult(j)) .gt. 0) then
+             if (len_trim(sirr) .gt. 0) sirr = trim(sirr)//'+'
+             if (nint(mult(j)) .gt. 1) write(sirr,'(a,i0)') trim(sirr), nint(mult(j))
+             sirr = trim(sirr)//trim(pg_label(j))
+          endif
+       enddo
+    endif
+    write(unit,'(i3,a,i3,f12.3,i5,f7.3,2x,a8,1x,a8,1x,a6,es14.5,2x,a)') n1,'-',n2, sum(om(n1:n2))/ng, ng, nirr, &
+ &        sir, sram, spar, zz, trim(sirr)
+    write(ulog,'(a,i3,a,i3,f12.3,i5,f7.3,2x,a8,1x,a8,1x,a6,es14.5,2x,a)')' GAMMA_MODE_SYMMETRY:',n1,'-',n2, &
+ &        sum(om(n1:n2))/ng, ng, nirr, sir, sram, spar, zz, trim(sirr)
     if (abs(nirr - nint(nirr)).gt.1d-3 .or. abs(nir - nint(nir)).gt.1d-3 .or. abs(nram - nint(nram)).gt.1d-3) &
  &     write(ulog,*)' GAMMA_MODE_SYMMETRY: WARNING: non-integer multiplicities (degenerate set split?)', &
  &     nirr, nir, nram
     n1 = n2 + 1
  enddo
  close(unit)
- deallocate(img, gam)
+ deallocate(img, gam, ops, chitot, mult)
  end subroutine gamma_mode_symmetry

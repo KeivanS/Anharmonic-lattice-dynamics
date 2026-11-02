@@ -12,7 +12,7 @@ FLAGS =-O2 -fcheck=all #-fimplicit-none  -fbacktrace -Wimplicit-interface -Wimpl
 # the modules shared with THERMACOND are in ../common (one file per module)
 vpath %.f90 ../common
 COMMON = constants.f90 params.f90 geometry.f90 ios_mod.f90 atoms_force_constants.f90 \
-  lattice.f90 svd_stuff.f90 linalgb.f90 phonons.f90 gruneisen.f90
+  lattice.f90 svd_stuff.f90 linalgb.f90 phonons.f90 gruneisen.f90 point_group.f90
 
 SUBF90 = \
   $(COMMON) \

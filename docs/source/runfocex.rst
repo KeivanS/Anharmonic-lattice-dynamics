@@ -1007,9 +1007,11 @@ Phonons and thermodynamics
 ``gamma_modes.dat``
     The phonon modes at :math:`\Gamma`, one line per set of degenerate modes: frequency, degeneracy,
     irreducibility (1 = one irreducible representation), IR active, Raman active, parity (g/u, if the
-    inversion is a symmetry) and, with Born charges, the IR strength :math:`\sum|Z_m|^2`. Activity
-    follows from the characters of the space-group operations on the modes (no tables needed). The
-    frequencies are at exactly :math:`q=0`, where polar modes lie between their TO and LO values.
+    inversion is a symmetry), with Born charges the IR strength :math:`\sum|Z_m|^2`, and the
+    irreducible representation. The header has the character table of the point group, computed from
+    the symmetry operations (``common/point_group.f90``; labels A/B/E/T with g/u and primes, serial
+    numbers in the order found, not always Mulliken's), and the decomposition of all :math:`3N` modes.
+    The frequencies are at exactly :math:`q=0`, where polar modes lie between their TO and LO values.
 
 ``conductance.dat``
     Mode-counting (ballistic conductance) along the ``normal`` direction of
