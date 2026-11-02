@@ -106,6 +106,9 @@
   write(ulog,8)'Hill  Bulk modulus(GPa) from        average=',hbulkmod
   write(uio ,8)'Hill  Bulk modulus(GPa) from        average=',hbulkmod
 
+! B0' = dB/dP at T=0 from FC2 and FC3 (FOCEX/notes/generalized_huang.tex, Eq. Bp); overwrites cubic_elastic's
+  if(include_fc(3).ne.0) call pressure_derivative_b(uio)
+
   vshearmod =(elastic(1,1)+elastic(2,2)+elastic(3,3)  &
 &            -elastic(1,2)-elastic(2,3)-elastic(3,1)  &
 &         +3*(elastic(4,4)+elastic(5,5)+elastic(6,6)) )/15d0
@@ -348,8 +351,8 @@
   open(utherm,file='thermo_QHA.dat')
   open(uio,file='temp_free.dat')
   write(utherm,'(a)')"# T(K) , E_eq(kJ/mol) , F_eq(kJ/mol),V_eq/V0,strain , Cv, "// &
- &      "Cp(J/K.mol), S(J/K.mol) , lin_CTE(1/K),Grun , B(T)/B(0)"
-  write(uio,*)'# temperature, strain , E_free(kJ/mol) , Pressure (GPa) , imin,bulkmod,boft,gruneisen,probability,'// &
+ &      "Cp(J/K.mol), S(J/K.mol) , lin_CTE=dlnL/dT(1/K),Grun , B_T(T)/B0(Reuss)"
+  write(uio,*)'# temperature, strain , E_free(kJ/mol) , Pressure (GPa) , i(P=0),B0,B_T(strain),gruneisen,(dP/dT)_V,'// &
  &   ' F0,P0 (static), F_agne,P_agne (harmonic-only term), F_ph,P_ph (phonons); F in kJ/mol, P in GPa'
   tempk=tmin 
   temploop: do i=1,500 ! this allows to from 5K to Tmax 
@@ -367,7 +370,7 @@
      call QHA_free_energy_vs_strain(nibz,wibz,ndyn,eivalibz,real(grunibz),tempk, &
 &              free,etot,cv,cp,eq_vol,entropy,cvte,grune,boft,uio)  ! eq_vol is really eq_vol/volum_r0
 
-     write(utherm,7) tempk,etot,free,eq_vol,(eq_vol)**0.33333-1,cv,cp,entropy,cvte/3,grune,boft/hbulkmod
+     write(utherm,7) tempk,etot,free,eq_vol,(eq_vol)**0.33333-1,cv,cp,entropy,cvte/3,grune,boft/rbulkmod
   enddo temploop
 
  call cpu_time(tim)
@@ -2033,18 +2036,9 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  write(*,*)' MECHANICAL0: symmetrizing atld0'
  call symmetrize4(3,atld0) 
 ! stressed reference (stress.params; pi0=0 in a Bravais lattice, so sigma_res = sigma_ref):
-! C = Sym(A)/V - Sym(d_ag s_bd), and the Huang conditions with that stress
+! C from the Born-Huang brackets with the stress terms (elastic_born_huang), and the Huang check
  call read_stress_params(uio,sref,ex)
- do al=1,3
- do be=1,3
- do ga=1,3
- do de=1,3
-    atld0(al,be,ga,de)=atld0(al,be,ga,de) - (delta_k(al,ga)*sref(be,de) + delta_k(be,ga)*sref(al,de)  &
- &                                         + delta_k(al,de)*sref(be,ga) + delta_k(be,de)*sref(al,ga))/4
- enddo
- enddo
- enddo
- enddo
+ call elastic_born_huang(atld_raw,sref,atld0)   ! replaces Sym(A) - Sym(d_ag s_bd) (wrong, 2026-11-01)
  call check_huang_stress(uio,sref)
 
  do la =1,3
@@ -2278,21 +2272,12 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  call convert_to_voigt(qgq,cq)
  call write_out (uio,' Elastic Tensor correction QGQ in voigt ',cq)
 
-! elastic constants of a stressed reference (Lagrangian strain): C = Sym(A - QGQ)/V - Sym(d_ag s_bd),
-! s = relaxed residual stress sigmav; Sym = average over a<->b and g<->d (all 4 terms, as symmetrize4)
+! elastic constants (Lagrangian strain) of a possibly stressed reference: Born-Huang brackets of the
+! unsymmetrized A plus the stress terms (elastic_born_huang), minus QGQ; s = relaxed residual stress sigmav
  sres(1,1)=sigmav(1); sres(2,2)=sigmav(2); sres(3,3)=sigmav(3)
  sres(2,3)=sigmav(4); sres(1,3)=sigmav(5); sres(1,2)=sigmav(6)
  sres(3,2)=sres(2,3); sres(3,1)=sres(1,3); sres(2,1)=sres(1,2)
- do al=1,3
- do be=1,3
- do ga=1,3
- do de=1,3
-    atld0(al,be,ga,de)=atld0(al,be,ga,de) - (delta_k(al,ga)*sres(be,de) + delta_k(be,ga)*sres(al,de)  &
- &                                         + delta_k(al,de)*sres(be,ga) + delta_k(be,de)*sres(al,ga))/4
- enddo
- enddo
- enddo
- enddo
+ call elastic_born_huang(atld_raw,sres,atld0)   ! replaces Sym(A) - Sym(d_ag s_bd) (wrong, 2026-11-01)
  
   write(uio,*)'checking symmetry for atld0'
   do al=1,3
@@ -2389,211 +2374,203 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  end subroutine sound_speeds
 !============================================================
  subroutine QHA_free_energy_vs_strain(nk,wk,ndyn,eival,grin,temprk,eq_free,eq_etot,eq_cv,eq_cp,eq_vol,entropy,cvte,eq_grun,boft,uio)
-!! QHA : for a given T the free energy vs strain assuming gruneisen gives w(V)=w(V0)-gama*w(V0) trace(strain) (=dV/V)
-!! can also try w(V)=w(V0)/(1+gama*trace(strain)); this is the result of free energy minimization versus volume at a given T
-!! BM EOS: E=E0 +(9*V0*B0/16) * [ ( (eta)**3 ) * B0_prime + ( (eta)**2 ) * (6 - 4*(V0/V)**(2/3)) ] where eta = (V0 / V)**(2/3) - 1
-!! BM EOS interms of Lagrangian strain: P=p0-3eta B*(1-1.5*(b0p-4)*eta)
-!! we will use E(V)=E(V0)+1/2 (V-V0)^2 * (d^2E)/(dV^2)=1/18 B*V0 (V-V0)^2/V0^2  or 1/2 eta^2 (d^2E)/(d eta^2)
-!! and the next-order term involves cubic derivatives or b0p: E^(3)(V)= 1/6 eta^3 (d^3E)/(d eta^3) used if energy_strain called
-!! otherwise use B(V)=B(V0)+ dB/dV (V-V0)=B(V0)*(1-(V-V0)/V0 b0p) =B(V0)*(1-3*eta*b0p) <=  Correct within QHA
-!! b0P is the pressure derivative of bulk modulus (dimensionless) =(-1/3)* sum_123 psi_123 R1 R2 R3 / sum_12 phi_12 R1 R2 only if du^0/deta=0
-!! b0p = dB/dP = (dB/dV)/(dP/dV)=(dB/dV)/-(B/V) =-(d ln B)/(d ln V)=-d ln B/d(3 eta)   ! NOT USED
-!! Cp=Cv(1+gamma alpha T) = Cv + B alpha^2 T ;gamma = (3/2)*( 3 − 4x^2 )/(1 + 2x^2) ; x= v_t/v_l; or x^2 = 3G/(3B+4G)
-!
+!! Quasi-harmonic thermodynamics at temperature temprk (rewritten 2026-11-01 with the user):
+!!   F(V) = E_static(V) + F_phonon(V,T) [+ F_agne] on 61 isotropic strains -5%..+10%; omega(V) from gamma
+!!   E_static: Murnaghan EOS, B0 = Reuss modulus (exact for a hydrostatic load), B0' from FC2+FC3
+!!     (pressure_derivative_b) or 4 if FC3 are not fitted; P0 = residual pressure of the reference
+!!   P(V) = -dF/dV is summed analytically at each strain; V(T) is the root of P = 0 (local cubic fit),
+!!   B_T = -V dP/dV at V(T) (the isothermal bulk modulus), alpha_V = (dP/dT)_V / B_T = d ln V/dT
+!!   (thermodynamic identity; (dP/dT)_V summed analytically), linear CTE = alpha_V/3 = d ln L/dT,
+!!   Cp = Cv + V T B_T alpha_V^2. Cv, <gamma> (Cv-weighted), E, F, S interpolated to V(T).
+!!   Harmonic-only fits (all gamma = 0): every mode gets Leont'ev's gamma = 1.5(3-4x^2)/(1+2x^2), x = vt/vl,
+!!   plus P_agne = NkT/V (F_agne = -NkT ln(V/V0)).
+!!   Until 2026-11-01: V(T) as a Boltzmann-weighted average over the strains with an artificial kT, the CTE
+!!   as the secant eq_strain/T, B(T) = B0(1 - strain (4+3<gamma>)), static energy quadratic in dV (B0' = -1).
+!! Outputs: eq_vol = V(T)/V0, cvte = alpha_V (1/K), boft = B_T (GPa), eq_* per mole of atoms.
  use ios
  use params
  use lattice
  use constants
  use atoms_force_constants, only : natom_prim_cell
- use mech, only : sigma0,hbulkmod,b0p,xagne  ! both in GPa
- use linalgb
+ use mech, only : sigma0,rbulkmod,b0p,xagne
  use eigen, only : mysqrt
  implicit none
  integer, intent(in) :: nk,ndyn,uio
  real(r15), intent(in) :: wk(nk),eival(ndyn,nk),grin(ndyn,nk), temprk
  real(r15), intent(out):: cvte,eq_free,eq_vol,eq_cv,eq_cp,eq_etot,entropy,eq_grun
  real(r15), intent(inout):: boft
- integer, parameter :: imax=20 ! 3*imax+1 =number of volume points
- integer b,k,nat,i,imin,imin2,rk,factorial
- real(r15) x0,x1,x2,cv_nk,cv,etot,hw,nbe,mdedv,pres0,nbx,s0,s1,s2,f0,f1,f2,mtx(3,3),fx(3),abc(3),grune,gr2
- real(r15) eq_strain ,strain(3*imax+1),free(3*imax+1),pres(3*imax+1),prob(3*imax+1),gr(3*imax+1),grn(ndyn,nk),bmod(3*imax+1),boft2
- real(r15) eq_free2,eq_pres,eq_volm2,eq_strain2,frac,cvt2,sump,dvbyv,ev2kjpermol,arg,fmin,fmax,kteff,geff
- real(r15) fst(3*imax+1),pst(3*imax+1),fag(3*imax+1),pag(3*imax+1)
+ integer, parameter :: imax=20, ng=3*imax+1
+ integer b,k,nat,i,i0,j,it
+ real(r15) x0,x1,cv_nk,hw,nbe,pres0,dvbyv,ev2kjpermol,geff,gr2,bp,b0,v0,vr,fstat,pstat,cvsum,grsum
+ real(r15) strain(ng),free(ng),pres(ng),etot(ng),cvv(ng),grv(ng),dpdt(ng),bloc(ng), &
+ &         fst(ng),pst(ng),fag(ng),pag(ng),grn(ndyn,nk)
+ real(r15) xs(4),c(4),seq,dpds,veq,bt,alv,w(4),f_eq,e_eq,cv_eq,dpdt_eq,gsum_eq
  logical agne
- real(r15) ,save :: vol0
+ real(r15), save :: vol0=0
+ logical, save :: first=.true.
 
-    nat = ndyn/3
-    write(ulog,5)'Entering QHA with B,B0p,hbulk,xagne=',boft,b0p,hbulkmod,xagne
-    ev2kjpermol = n_avog/(nat*1000d0)   ! convert from Joule/cell to KJoule per mole
-    if (temprk.le.0) then
-       write(ulog,*)'temperature not in the proper range!!',temprk
-       stop
+ nat = ndyn/3
+ ev2kjpermol = n_avog/(nat*1000d0)   ! J per cell -> kJ per mole of atoms
+ if (temprk.le.0) then
+    write(ulog,*)'temperature not in the proper range!!',temprk
+    stop
+ endif
+ v0=volume_r0*1d-30                   ! m^3
+ pres0=-(sigma0(1,1)+sigma0(2,2)+sigma0(3,3))/3   ! GPa, residual pressure of the reference
+ b0=rbulkmod
+ bp=b0p
+ if (all(abs(grin).lt.1d-6) .or. include_fc(3).eq.0) bp=4d0
+ if (abs(bp).lt.1d-6) bp=1d-6
+ if (abs(bp-1).lt.1d-6) bp=1+1d-6
+ agne=.false.
+ if (maxval(abs(grin)).lt.1d-6) then  ! harmonic theory only
+    agne=.true.
+    gr2=1.5*(3-4*xagne*xagne)/(1+2*xagne*xagne)
+    grn=gr2
+ else
+    grn=grin
+ endif
+ if (first) then
+    write(ulog,'(a,f12.4,a,f10.5,a,f10.4,a,l2)')' QHA: B0 (Reuss, GPa)=',b0,'  B0p=',bp,'  P0 (GPa)=',pres0, &
+ &        '  harmonic-only (Leont''ev gamma + P_agne):',agne
+    if (include_fc(3).eq.0) write(ulog,*)' QHA: no FC3: B0'' = 4 assumed for the static equation of state'
+    first=.false.
+ endif
+
+ do i=1,ng
+    strain(i)= (i-1-imax)/(20d0*imax)
+    vr=(1+strain(i))**3                   ! V/V0
+    dvbyv=vr-1
+! static Murnaghan: P = P0 + (B0/B')[(V0/V)^B' - 1], E = -int P dV (E(V0)=0)
+    pstat=pres0 + b0/bp*(vr**(-bp)-1)
+    fstat=( b0/bp*( (vr**(1-bp)-1)/(bp-1) + dvbyv ) - pres0*dvbyv )*v0*1d9 * ev2kjpermol
+    free(i)=fstat; pres(i)=pstat; etot(i)=fstat
+    fst(i)=fstat; pst(i)=pstat; fag(i)=0; pag(i)=0; dpdt(i)=0
+    if (agne) then
+       pag(i)=k_b*natom_prim_cell*temprk/(v0*vr)*1d-9
+       fag(i)=-k_b*natom_prim_cell*temprk*log(vr)*ev2kjpermol
+       pres(i)=pres(i)+pag(i); free(i)=free(i)+fag(i)
+       dpdt(i)=k_b*natom_prim_cell/(v0*vr)*1d-9
     endif
-    imin=0 ; eq_free=1d90 ; eq_grun=0 ; prob=0 ; sump=0
-! assuming E0=0.5*a(V-V0)^2, p0=-dE0/dV=-a(V-V0) ; B=Vd^2E0/dV^2=aV (taken at V0 B=a*V0); P0=-B*strain 
-! Assuming BM EOS: let 2f=[(V0/V)^2/3-1] be the Eulerian strain => 1+2f=(V0/V)^2/3 then E=E0+(9B0*V0/2)*(f^3*B0P+f^2*(5-4f))
-
-    write(uio,*)' ' 
-  
-! calculate free energy and pressure for every volume or strain
-    pres =  -sum( (/ (sigma0(b,b),b=1,3)/) )/3   ! this is in GPa
-    write(ulog,*)'Pressure=sigma0(GPa)=',pres(1)
-    pres0 = pres(1)                      ! residual pressure at V0 (GPa); F gets -pres0*(V-V0)
-    agne = .false.
-    if (maxval(abs(grin)).lt.1d-6) then  ! if harmonic theory only
-! P_agne = N k T / V, so that the harmonic case has a thermal expansion; its free energy is
-! F_agne = -N k T ln(V/V0) (added below, so that P = -dF/dV and the F minimum moves with it)
-       agne = .true.
-       gr2 = 1.5*(3-4*xagne*xagne)/(1+2*xagne*xagne)
-       grn=gr2
-    else
-       grn=grin
-    endif
-    write(ulog,*)'Initial Pressure(GPa), gr,xagne=',pres(1),gr2,xagne
-
-    strainloop: do i=1,1+3*imax ! volume or Lagrangian strain loop  -------------
-       cv=0 ; grune=0
-       strain(i)= (i-1-imax)/(20d0*imax)  ! linear strain from -5% to +10% ! this is with respect to volume_r0
-       dvbyv = (1+strain(i))**3 - 1 ! used to be  (1+2*strain(i))**1.5 - 1
-! harmonic calculation; no Gruneisen available; use Leontiev Approx
-
-! static energy E0(V) = -P0 (V-V0) + B V0 (dV/V0)^2 / 2, and its pressure -dE0/dV = P0 - B dV/V0:
-! P(V) must be -dF/dV of the same F(V), so that P=0 is the minimum of F (the static term was
-! missing from P before 2026-10-23: Ge P=0 at +10 % strain instead of the F minimum at +0.25 %)
-       etot=(0.5*dvbyv*dvbyv*hbulkmod - pres0*dvbyv)*volume_r0*1d-30*1d9 * ev2kjpermol
-       free(i)=etot
-       pres(i)=pres0 - hbulkmod*dvbyv
-       fst(i)=free(i) ; pst(i)=pres(i) ; fag(i)=0 ; pag(i)=0
-       if (agne) then
-          pag(i) = k_b*natom_prim_cell*temprk/(volume_r0*(1+dvbyv)*1d-30)*1d-9   ! P_agne, GPa
-          fag(i) = -k_b*natom_prim_cell*temprk*log(1+dvbyv) * ev2kjpermol        ! F_agne
-          pres(i)= pres(i) + pag(i)
-          free(i)= free(i) + fag(i)
-       endif
-      
-       do k=1,nk
-       do b=1,ndyn
-          if (eival(b,k).eq.0) cycle   ! rigid translation at k=0 (freq_vel): not a vibration
-          x0=h_plank*mysqrt(abs(eival(b,k)))*cnst*100*c_light/(k_b*temprk)  
-        if (x0.gt.0) then
-! geff = -dln(omega)/dln(V) of the omega(V) used here, so that the pressure below is -dF/dV
-          if (strain(i)*grn(b,k).lt. 0 ) then ! use the following to avoid divergence or negative x1
-             x1= x0 * (1-3*grn(b,k)*strain(i))  
-             geff = grn(b,k)*(1+strain(i))/(1-3*grn(b,k)*strain(i))
+    cvsum=0; grsum=0
+    do k=1,nk
+    do b=1,ndyn
+       if (eival(b,k).eq.0) cycle   ! rigid translation at k=0 (freq_vel): not a vibration
+       x0=h_plank*mysqrt(abs(eival(b,k)))*cnst*100*c_light/(k_b*temprk)
+       if (x0.gt.0) then
+          if (strain(i)*grn(b,k).lt.0) then
+             x1=x0*(1-3*grn(b,k)*strain(i))
+             geff=grn(b,k)*(1+strain(i))/(1-3*grn(b,k)*strain(i))
           else
-             x1= x0 / (1+3*grn(b,k)*strain(i)) 
-             geff = grn(b,k)*(1+strain(i))/(1+3*grn(b,k)*strain(i))
+             x1=x0/(1+3*grn(b,k)*strain(i))
+             geff=grn(b,k)*(1+strain(i))/(1+3*grn(b,k)*strain(i))
           endif
-          if (x1.gt.60) then
-             nbx=0
-          elseif(x1.gt.x0/100) then
-             nbx=nbe(x1,1d0,classical)
-          else ! limit x1 to x0/100
-             x1=x0/100d0
-             nbx=nbe(x1,1d0,classical)
-             geff=0                          ! frequency held fixed
+          if (x1.le.x0/100) then
+             x1=x0/100d0; geff=0
           endif
-        else
-          x1=abs(x0)/100 ! treat negative freqs as near zero =0.001*kT  
-          nbx=nbe(x1,1d0,classical)
-          geff=0
-        endif
-          cv_nk = x1*x1*nbx*(1+nbx) ![x/2/sinh(x/2)]^2  
-          hw = x1*k_b*temprk  ! hbar*omega in Joules
-          cv  = cv + cv_nk*wk(k)   ! this is in J/K units : per unit cell
-          grune  = grune + cv_nk*wk(k)*grn(b,k)   ! this is in J/K units : per unit cell
-          pres(i)= pres(i) + hw * (nbx + 0.5d0) * wk(k) * geff/(volume_r0*(1+dvbyv)*1d-30)*1d-9 ! in GPa
-          etot   = etot    + hw * (nbx + 0.5d0)                * wk(k) * ev2kjpermol 
-          free(i)= free(i) + k_b*temprk*(x1/2+log(1-exp(-x1))) * wk(k) * ev2kjpermol  
- !        write(*,7)' kp,band,x,hw,nbx,pres,free=',k,b,x1,hw,nbx,pres(i),free(i)
-       enddo
-       enddo
-       gr(i)=grune/cv
-       b0p = (1+6*gr2)/3
-  !    boft=hbulkmod*(1-3*strain(i)*b0p) ! + pres(i)*b0p   ! this is the strain-dependent second derivative
-       if( (1-strain(i)*(4+3*gr(i)) ).gt.0) then 
-          bmod(i)=hbulkmod*(1-strain(i)*(4+3*gr(i)) )
        else
-          bmod(i)=hbulkmod/(1+strain(i)*(4+3*gr(i)) ) 
+          x1=abs(x0)/100; geff=0
        endif
-       write(ulog,5)'tempK,strain,etot,grun,B0,bulk(eta)=',temprK,strain(i),etot,gr(i),hbulkmod,bmod(i) !,hbulkmod+pres(i)*b0p
-
-!       pres(i)= pres(i)- hbulkmod*3*strain(i)*(1-(1.5*b0p-4)*strain(i) +3*strain(i)*strain(i)*(b0p-4))
-!       free(i)= free(i)+4.5*hbulkmod*volume_r0*strain(i)*strain(i)*(strain(i)*(1-b0p)+0.25) *1d+9*1d-30 *ev2kjpermol
-!      free(i)= free(i)+0.5*boft*volume_r0 * 9*strain(i)*strain(i)*1d+9*1d-30 /nat*n_avog/1000d0 
-       if (free(i).lt.eq_free) then
-         imin=i
-         eq_cv=cv
-         eq_etot=etot
-         eq_free=free(imin)
-         eq_grun=gr(imin)
-         boft2= bmod(imin)
-   !     boft=hbulkmod + b0p*volume_r0/ee/1d30/1d-9 * (-27*hbulkmod) * strain(imin)
-   !     boft=-pres(imin)/dvbyv  !hbulkmod *(1 - 3* b0p * strain(imin))
-   !     b0p =(1-boft/hbulkmod)/3d0/strain(i)
-   !     gr2 = gr(i)
+       if (x1.gt.60) then
+          cv_nk=0; hw=x1*k_b*temprk
+          pres(i)=pres(i)+hw*0.5d0*wk(k)*geff/(v0*vr)*1d-9
+          etot(i)=etot(i)+hw*0.5d0*wk(k)*ev2kjpermol
+          free(i)=free(i)+k_b*temprk*(x1/2)*wk(k)*ev2kjpermol
+       else
+          cv_nk=x1*x1*nbe(x1,1d0,classical)*(1+nbe(x1,1d0,classical))
+          hw=x1*k_b*temprk
+          pres(i)=pres(i)+hw*(nbe(x1,1d0,classical)+0.5d0)*wk(k)*geff/(v0*vr)*1d-9
+          etot(i)=etot(i)+hw*(nbe(x1,1d0,classical)+0.5d0)*wk(k)*ev2kjpermol
+          free(i)=free(i)+k_b*temprk*(x1/2+log(1-exp(-x1)))*wk(k)*ev2kjpermol
        endif
-
-    enddo strainloop   !  -----------------------------------
-
-! defining the Boltzmann weights 
-    fmax=maxval(free)
-    fmin=minval(free)
-    kteff=(fmax-fmin)/100
-    write(ulog,*)'fmin,fmax,kTeff (kJ/mol)=',fmin,fmax,kteff
-    do i=1,1+3*imax 
-       prob(i)=exp(-(free(i)-(fmax+fmin)/2d0)/kteff) 
+       cvsum=cvsum+cv_nk*wk(k)
+       grsum=grsum+cv_nk*wk(k)*grn(b,k)
+       dpdt(i)=dpdt(i)+k_b*cv_nk*wk(k)*geff/(v0*vr)*1d-9      ! (dP/dT)_V, GPa/K
     enddo
-    prob=prob/sum(prob)
-    boft =sum(bmod*prob)/sum(prob)
-    write(ulog,5)'------------------At T: boft(imin),boft(prob)=',temprk,boft2,boft
-    do i=1,1+3*imax 
-       write(uio,3)temprk,strain(i),free(i),pres(i),dble(imin),hbulkmod,bmod(i) ,gr(i),prob(i), &
- &                 fst(i),pst(i),fag(i),pag(i),free(i)-fst(i)-fag(i),pres(i)-pst(i)-pag(i)
     enddo
-
-! #################       Now do strain minimization     #########################
-! do averages according to prob , which gives a weighted average not really the true minimum
-! strictly speaking prob should be =1 at the minimum and zero elsewhere; 
-! but a finite value smears out the result and does not require a minimization
-    eq_free2=0 ; eq_volm2=0
-    do i=1,3*imax+1
-       eq_free2 = eq_free2 + free(i)* prob(i)
-       if(prob(i).ne.0) then
-          eq_free2 = eq_free2 + k_b*temprk*prob(i)*log(prob(i)) * ev2kjpermol 
-       endif
-       eq_volm2 = eq_volm2 + volume_r0*(1+strain(i))**3 * prob(i)
-    enddo 
-    
-    
-    if (temprk.lt.8) vol0 = eq_volm2   ! measure volume and strain wrt to this volume 
-
-    eq_strain  = (eq_volm2 / vol0)**0.333333 -1
-!   eq_strain  = (eq_volm2 / volume_r0)**0.333333 -1
-    imin2 = int((eq_strain -strain(1))*20*imax)+1
-    if(imin2.lt.1 ) imin2=1
-    if(imin2.gt.3*imax+1) imin2=1+3*imax
-    frac=((eq_strain -strain(1))*20*imax) - imin2
-!   boft=hbulkmod *(1 - 3* b0p * eq_strain )
-    CVT2 = ((eq_volm2 / vol0) -1)/temprk 
-    eq_pres=dot_product(prob,pres)
-    write(*,*)'vol0,cvt2,boft=',vol0,cvt2,boft
-    eq_cv = eq_cv*k_b* ev2kjpermol*1000 ! in J/mol
-    eq_cp = eq_cv+cvt2*cvt2*temprk*boft*1d9*vol0*1d-30 * ev2kjpermol*1000  
-    write(ulog,4)'imin2,frac,eq_strain,eq_vol2,cvt2,T,eqfree,eqpres,cv,cp=',imin2,frac,eq_strain , & 
-&                 eq_volm2, CVT2,temprk,eq_free2,eq_pres,eq_cv,eq_cp
-    write(*   ,4)'imin,T,strain,Approximate pmin,eq_free=',imin,temprk,strain(imin),eq_pres,free(imin)
-
-    entropy=(eq_etot-eq_free)/temprk*1000  ! in J/K/mol
-    CVTE = 3*eq_strain/temprk 
-!   eq_vol=volume_r0*(1+3*eq_strain)
-    eq_vol=(1+eq_strain)**3
-
+    cvv(i)=cvsum
+    grv(i)=grsum/max(cvsum,1d-300)
+ enddo
+! B_T at each strain: -V dP/dV = -(1+s)/3 dP/ds (central differences)
+ do i=1,ng
+    j=min(max(i,2),ng-1)
+    bloc(i)=-(1+strain(i))/3*(pres(j+1)-pres(j-1))/(strain(j+1)-strain(j-1))
+ enddo
+! V(T): root of P(s) = 0 by a cubic through the 4 points around the sign change
+ i0=0
+ do i=1,ng-1
+    if (pres(i).ge.0 .and. pres(i+1).lt.0) then
+       i0=i; exit
+    endif
+ enddo
+ if (i0.eq.0) then
+    write(ulog,*)' QHA: WARNING: P(V) has no root in the strain range at T=',temprk,'; endpoint used'
+    i0=merge(1,ng-1,pres(1).lt.0)
+    seq=strain(i0)
+ else
+    j=min(max(i0-1,1),ng-3)
+    xs=strain(j:j+3)
+    seq=strain(i0)+(strain(i0+1)-strain(i0))*pres(i0)/(pres(i0)-pres(i0+1))
+    do it=1,30                        ! Newton on the Lagrange cubic of P
+       call lagrange4(xs,seq,w,c)
+       dpds=dot_product(c,pres(j:j+3))
+       seq=seq-dot_product(w,pres(j:j+3))/dpds
+    enddo
+ endif
+ j=min(max(i0-1,1),ng-3)
+ xs=strain(j:j+3)
+ call lagrange4(xs,seq,w,c)
+ dpds=dot_product(c,pres(j:j+3))
+ bt=-(1+seq)/3*dpds                  ! GPa
+ dpdt_eq=dot_product(w,dpdt(j:j+3))
+ alv=dpdt_eq/bt                      ! 1/K
+ f_eq=dot_product(w,free(j:j+3)); e_eq=dot_product(w,etot(j:j+3))
+ cv_eq=dot_product(w,cvv(j:j+3)); eq_grun=dot_product(w,grv(j:j+3))
+ veq=(1+seq)**3
+ if (temprk.lt.8 .or. vol0.eq.0) vol0=veq
+ eq_vol=veq/vol0
+ eq_free=f_eq; eq_etot=e_eq
+ eq_cv=cv_eq*k_b*ev2kjpermol*1000                    ! J/K/mol
+ eq_cp=eq_cv+v0*veq*temprk*bt*1d9*alv*alv*ev2kjpermol*1000
+ entropy=(eq_etot-eq_free)/temprk*1000               ! J/K/mol
+ cvte=alv
+ boft=bt
+ do i=1,ng
+    write(uio,3)temprk,strain(i),free(i),pres(i),dble(i0),b0,bloc(i),grv(i),dpdt(i), &
+ &              fst(i),pst(i),fag(i),pag(i),free(i)-fst(i)-fag(i),pres(i)-pst(i)-pag(i)
+ enddo
+ write(ulog,'(a,f9.2,a,f12.8,a,f12.4,a,es12.4,a,f10.5)')' QHA: T=',temprk,' strain=',seq,' B_T=',bt, &
+ &     ' alpha_V=',alv,' <gamma>=',eq_grun
 3 format(99(2x,g11.4))
-4 format(a,i5,9(2x,g11.4))
-5 format(a,99(2x,g11.4))
-
  end subroutine QHA_free_energy_vs_strain
+!------------------------------------------------------------
+ subroutine lagrange4(xs,x,w,dw)
+!! weights w (value) and dw (first derivative) at x of the cubic through the 4 points xs
+ use constants, only : r15
+ implicit none
+ real(r15), intent(in) :: xs(4),x
+ real(r15), intent(out) :: w(4),dw(4)
+ integer i,j,k
+ real(r15) p,s
+ do i=1,4
+    p=1; s=0
+    do j=1,4
+       if (j.eq.i) cycle
+       p=p*(x-xs(j))/(xs(i)-xs(j))
+    enddo
+    w(i)=p
+    do k=1,4                          ! derivative: sum over the left-out factor
+       if (k.eq.i) cycle
+       p=1/(xs(i)-xs(k))
+       do j=1,4
+          if (j.eq.i .or. j.eq.k) cycle
+          p=p*(x-xs(j))/(xs(i)-xs(j))
+       enddo
+       s=s+p
+    enddo
+    dw(i)=s
+ enddo
+ end subroutine lagrange4
 !=======================================================
  subroutine check_mdyn(ndyn,nk,kp,eivec,eival)
 ! form the dynamical matrix from existing eigenvectors and eigenvalues
@@ -3337,6 +3314,243 @@ end subroutine band_sort_bs
  enddo
 
  end subroutine putback_eiktau
+!============================================================
+ subroutine elastic_born_huang(araw,s,c)
+!! elastic constants c (GPa) for the Lagrangian strain from the unsymmetrized
+!! araw(a,b,g,d) = A_{ab,gd} = -1/(2V) sum Phi^{ag} d_b d_d (a,g displacements), i.e. the brackets
+!! [ab,gd] = A_{ag,bd} (Born and Huang), and the reference stress s (GPa):
+!!   c_abgd = Sym{ [ag,bd] + [bg,ad] - [ab,gd] + (d_ab s_gd + d_gd s_ab)/2 - d_ag s_bd - d_bd s_ag }
+!! Sym = average over a<->b and g<->d. Checked on the exact model (REFERENCE/exact_model/bprime/
+!! elastic_check.py): exact (5e-10 GPa) for relaxed ZnO, CaF2 and stressed CaF2; with residual forces
+!! (stressed ZnO, HfO2 references) 0.2 GPa off, the part FOCEX handles through the relaxation.
+!! Until 2026-11-01 FOCEX used Sym(A) - Sym(d_ag s_bd): off-diagonal and shear constants wrong
+!! (relaxed ZnO model: C12 171 instead of 221 GPa, C44 108 instead of 78).
+ use constants, only : r15
+ implicit none
+ real(r15), intent(in) :: araw(3,3,3,3),s(3,3)
+ real(r15), intent(out) :: c(3,3,3,3)
+ real(r15) t(3,3,3,3),dl(3,3)
+ integer a,b,g,d
+ dl=0; dl(1,1)=1; dl(2,2)=1; dl(3,3)=1
+ do a=1,3
+ do b=1,3
+ do g=1,3
+ do d=1,3
+    t(a,b,g,d)=araw(a,b,g,d)+araw(b,a,g,d)-araw(a,g,b,d) &
+ &            +(dl(a,b)*s(g,d)+dl(g,d)*s(a,b))/2 - dl(a,g)*s(b,d) - dl(b,d)*s(a,g)
+ enddo
+ enddo
+ enddo
+ enddo
+ do a=1,3
+ do b=1,3
+ do g=1,3
+ do d=1,3
+    c(a,b,g,d)=(t(a,b,g,d)+t(b,a,g,d)+t(a,b,d,g)+t(b,a,d,g))/4
+ enddo
+ enddo
+ enddo
+ enddo
+ end subroutine elastic_born_huang
+!============================================================
+ subroutine pressure_derivative_b(uio)
+!! B and B' = dB/dP of the reference at T=0 from FC2 and FC3 (FOCEX/notes/generalized_huang.tex Part II;
+!! method checked on the exact model, REFERENCE/exact_model/bprime/w3_check.py and mkrelaxed.py):
+!!   eta1 = -Ht^-1 v, u1 = xi.eta1: strain and internal relaxation per unit pressure (path p1)
+!!   the crystal deformed by +-lam p1 has FC2 Phi +- lam dPhi, dPhi_{tau j} = sum_k Psi_{tau j k}(S_k-S_tau),
+!!   S_j = eta1.x_j + u1(tau_j), relative vectors d +- lam (eta1.d + u1_j - u1_tau), pressure P0 +- lam;
+!!   B(+-lam) = V/(v^T Ht^-1 v), Ht = V (c + S2) + P V V2, with c its relaxed elastic constants (Born-Huang
+!!   brackets + stress terms - QGQ, as elastic_born_huang), S2 = d^2(sigma:eta^2/2), V2 = (Tr e)^2 - Tr e^2;
+!!   B' = (B(+lam) - B(-lam))/(2 lam)  (FC4 does not enter B').
+!! Evaluating p1^T H[dPhi] p1 with the plain sum -1/2 sum dPhi d d instead gives a wrong W3 (exact ZnO model:
+!! B' -0.064 instead of -0.157), the same reason as Sym(A) for the elastic constants.
+!! Assumes a hydrostatic reference stress -P0 (sigma0) and no residual forces; deviations are reported.
+ use ios, only : ulog
+ use lattice, only : volume_r0
+ use atoms_force_constants
+ use svd_stuff
+ use constants, only : r15
+ use eigen, only : ndyn
+ use mech
+ implicit none
+ integer, intent(in) :: uio
+ real(r15), parameter :: gpa=160.21766208d0, lam=1d-4     ! 1 eV/A^3 in GPa; pressure step (eV/A^3)
+ real(r15) cs(3,3,3,3),e1(6),eta(3,3),p0,v0,b0,bpm(2),sdev,psi,dk(3),sg
+ real(r15), allocatable :: u1(:,:),ph(:,:,:),dph(:,:,:),dv(:,:)
+ integer, allocatable :: slot(:,:),pt(:),pj(:)
+ integer i,j,k,g,t,ti,tau,al,be,ga,ired,nat,np,is
+
+ nat=natom_prim_cell
+ v0=volume_r0
+ p0=-(sigma0(1,1)+sigma0(2,2)+sigma0(3,3))/3/gpa          ! eV/A^3
+ sdev=0
+ do i=1,3
+    do j=1,3
+       sdev=max(sdev,abs(sigma0(i,j)+merge(p0*gpa,0d0,i.eq.j)))
+    enddo
+ enddo
+! pairs (tau, j) of FC2 and FC3 terms, tau in the primitive cell
+ allocate(slot(nat,size(atompos,2)))
+ slot=0; np=0
+ call collect_pairs(2)
+ call collect_pairs(3)
+ allocate(pt(np),pj(np),ph(3,3,np),dph(3,3,np),dv(3,np),u1(3,nat))
+ slot=0; np=0
+ call collect_pairs(2)
+ call collect_pairs(3)
+ ph=0; dph=0
+ do i=1,np
+    dv(:,i)=atompos(:,pj(i))-atompos(:,pt(i))
+ enddo
+ do g=1,map(2)%ngr
+ do ti=1,map(2)%ntind(g)
+    if(map(2)%keep(counteri(2,g,ti)).ne.1) cycle
+    ired=map(1)%nkeptind+current(2,g,ti)
+    do t=1,map(2)%nt(g)
+       tau=map(2)%gr(g)%iat(1,t); if (tau.gt.nat) cycle
+       is=slot(tau,map(2)%gr(g)%iat(2,t))
+       al=map(2)%gr(g)%ixyz(1,t); be=map(2)%gr(g)%ixyz(2,t)
+       ph(al,be,is)=ph(al,be,is)+fcs(ired)*map(2)%gr(g)%mat(t,ti)
+    enddo
+ enddo
+ enddo
+! B and eta1 of the reference
+ call b_of_state(0d0,b0,e1)
+ eta(1,1)=e1(1); eta(2,2)=e1(2); eta(3,3)=e1(3)
+ eta(2,3)=e1(4); eta(3,2)=e1(4); eta(1,3)=e1(5); eta(3,1)=e1(5); eta(1,2)=e1(6); eta(2,1)=e1(6)
+ u1=0
+ if (ndyn.gt.3) then
+    do tau=1,nat
+    do al=1,3
+       u1(al,tau)=sum(xi(al+3*(tau-1),:,:)*eta)
+    enddo
+    enddo
+ endif
+! dPhi from the FC3 terms
+ do g=1,map(3)%ngr
+ do t=1,map(3)%nt(g)
+    tau=map(3)%gr(g)%iat(1,t); if (tau.gt.nat) cycle
+    j=map(3)%gr(g)%iat(2,t); k=map(3)%gr(g)%iat(3,t)
+    al=map(3)%gr(g)%ixyz(1,t); be=map(3)%gr(g)%ixyz(2,t); ga=map(3)%gr(g)%ixyz(3,t)
+    dk=matmul(eta,atompos(:,k)-atompos(:,tau))+u1(:,iatomcell0(k))-u1(:,tau)
+    is=slot(tau,j)
+    do ti=1,map(3)%ntind(g)
+       if (map(3)%gr(g)%mat(t,ti).eq.0) cycle
+       ired=counteri(3,g,ti) + map(1)%ntotind + map(2)%nkeptind
+       psi=fcs(ired)*map(3)%gr(g)%mat(t,ti)
+       dph(al,be,is)=dph(al,be,is)+psi*dk(ga)
+    enddo
+ enddo
+ enddo
+ do i=1,2
+    sg=merge(1d0,-1d0,i.eq.1)
+    call b_of_state(sg*lam,bpm(i),e1)
+ enddo
+ b0p=(bpm(1)-bpm(2))/(2*lam)
+ write(ulog,'(a,f14.6,a,f12.6)')' PRESSURE_DERIVATIVE_B: B (GPa) =',b0*gpa,'   B0''=dB/dP =',b0p
+ write(ulog,'(a,3es12.4,a,es12.4)')'   eta1 diagonal per GPa =',eta(1,1)/gpa,eta(2,2)/gpa,eta(3,3)/gpa, &
+ &   '  max|u1| per GPa (A)=',maxval(abs(u1))/gpa
+ write(uio ,'(a,f14.6,a,f12.6)')' B (GPa) from the relaxed elastic constants =',b0*gpa,'   B0''=dB/dP from FC2+FC3 =',b0p
+ if (sdev.gt.1d-3) write(ulog,*)' PRESSURE_DERIVATIVE_B: WARNING: reference stress not hydrostatic, max dev (GPa)=',sdev
+ if (ndyn.gt.3) then
+    if (maxval(abs(pi0)).gt.1d-4) write(ulog,*)' PRESSURE_DERIVATIVE_B: WARNING: residual forces (eV/A)=', &
+ &        maxval(abs(pi0)),'; the formula assumes none'
+ endif
+ deallocate(slot,pt,pj,ph,dph,dv,u1)
+
+ contains
+
+ subroutine collect_pairs(rank)
+ integer, intent(in) :: rank
+ integer gg,tt,ta,jj
+ do gg=1,map(rank)%ngr
+ do tt=1,map(rank)%nt(gg)
+    ta=map(rank)%gr(gg)%iat(1,tt); if (ta.gt.nat) cycle
+    jj=map(rank)%gr(gg)%iat(2,tt)
+    if (slot(ta,jj).eq.0) then
+       np=np+1; slot(ta,jj)=np
+       if (allocated(pt)) then
+          pt(np)=ta; pj(np)=jj
+       endif
+    endif
+ enddo
+ enddo
+ end subroutine collect_pairs
+
+ subroutine b_of_state(dp,bb,ee1)
+!! B and eta1 of the crystal deformed by dp*p1 (dp = 0: the reference)
+ real(r15), intent(in) :: dp
+ real(r15), intent(out) :: bb,ee1(6)
+ real(r15) a4(3,3,3,3),c4(3,3,3,3),q(3*nat,3,3),phi0(3*nat,3*nat),gm(3*nat-3,3*nat-3),gi(3*nat-3,3*nat-3), &
+ &         sig(3,3),vol,dd(3),mc(6,6),mv2(6,6),ht(6,6),hti(6,6),vv(6),fe(3,3),ek(3,3),el(3,3),qs(3*nat,3,3)
+ integer ip,a,bq,gq,d,s1,s2,kk,ll,j0
+ integer, parameter :: vo(2,6)=reshape((/1,1, 2,2, 3,3, 2,3, 1,3, 1,2/),(/2,6/))
+ fe=0; fe(1,1)=1; fe(2,2)=1; fe(3,3)=1
+ vol=v0
+ if (dp.ne.0) then
+    fe=fe+dp*eta
+    vol=v0*(fe(1,1)*(fe(2,2)*fe(3,3)-fe(2,3)*fe(3,2))-fe(1,2)*(fe(2,1)*fe(3,3)-fe(2,3)*fe(3,1)) &
+ &          +fe(1,3)*(fe(2,1)*fe(3,2)-fe(2,2)*fe(3,1)))
+ endif
+ a4=0; q=0; phi0=0
+ do ip=1,np
+    dd=dv(:,ip)
+    if (dp.ne.0) dd=dd+dp*(matmul(eta,dv(:,ip))+u1(:,iatomcell0(pj(ip)))-u1(:,pt(ip)))
+    j0=iatomcell0(pj(ip))
+    do a=1,3
+    do gq=1,3
+       psi=ph(a,gq,ip)+dp*dph(a,gq,ip)
+       if (psi.eq.0) cycle
+       s1=a+3*(pt(ip)-1); s2=gq+3*(j0-1)
+       phi0(s1,s2)=phi0(s1,s2)+psi
+       do bq=1,3
+          q(s1,gq,bq)=q(s1,gq,bq)+psi*dd(bq)
+          do d=1,3
+             a4(a,bq,gq,d)=a4(a,bq,gq,d)-0.5d0*psi*dd(bq)*dd(d)
+          enddo
+       enddo
+    enddo
+    enddo
+ enddo
+ a4=a4/vol*gpa
+ sig=0; sig(1,1)=-(p0+dp)*gpa; sig(2,2)=sig(1,1); sig(3,3)=sig(1,1)
+ call elastic_born_huang(a4,sig,c4)                      ! GPa
+ if (nat.gt.1) then                                      ! relaxation of the internal coordinates
+    gm=phi0(4:,4:)
+    call inverse_real(gm,gi,3*nat-3)
+    do s1=1,3*nat
+       qs(s1,:,:)=(q(s1,:,:)+transpose(q(s1,:,:)))/2
+    enddo
+    do a=1,3
+    do bq=1,3
+    do gq=1,3
+    do d=1,3
+       c4(a,bq,gq,d)=c4(a,bq,gq,d)-dot_product(qs(4:,a,bq),matmul(gi,qs(4:,gq,d)))/vol*gpa
+    enddo
+    enddo
+    enddo
+    enddo
+ endif
+! Ht in the tensor strain components: V (c + S2) + P V V2, engineering factor 2 on shears for c
+ mv2=0
+ mv2(1,2)=1; mv2(1,3)=1; mv2(2,3)=1; mv2(2,1)=1; mv2(3,1)=1; mv2(3,2)=1
+ mv2(4,4)=-2; mv2(5,5)=-2; mv2(6,6)=-2
+ do kk=1,6
+ do ll=1,6
+    mc(kk,ll)=c4(vo(1,kk),vo(2,kk),vo(1,ll),vo(2,ll))/gpa*merge(2d0,1d0,kk.gt.3)*merge(2d0,1d0,ll.gt.3)
+    ek=0; ek(vo(1,kk),vo(2,kk))=1; ek(vo(2,kk),vo(1,kk))=1
+    el=0; el(vo(1,ll),vo(2,ll))=1; el(vo(2,ll),vo(1,ll))=1
+    mc(kk,ll)=mc(kk,ll)+sum(sig/gpa*(matmul(ek,el)+matmul(el,ek)))/2
+ enddo
+ enddo
+ ht=vol*mc+(p0+dp)*vol*mv2
+ call inverse_real(ht,hti,6)
+ vv=0; vv(1:3)=vol
+ ee1=-matmul(hti,vv)
+ bb=vol/dot_product(vv,matmul(hti,vv))
+ end subroutine b_of_state
+
+ end subroutine pressure_derivative_b
 !===========================================================
  subroutine cubic_elastic 
 !! calculates b0p=dB/dP=-d ln B/d ln V=(-1/3B) dB/deta =-(1/27BV0) \sum psi R1 R2 R3 

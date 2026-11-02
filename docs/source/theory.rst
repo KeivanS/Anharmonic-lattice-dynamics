@@ -504,16 +504,27 @@ where :math:`\sigma_{ref}` is read from the file ``stress.params`` if it exists 
 reference structure from the DFT calculation; 3 lines of 3 numbers in GPa, tensile positive, see
 :ref:`focex-stress-params`), and is otherwise estimated from the residual forces alone as
 :math:`\sum_\tau \Pi_\tau^\alpha \tau^\beta / V_0` (zero for a Bravais lattice whatever the
-stress). The elastic tensor is
+stress). With the brackets :math:`[\alpha\beta,\gamma\delta] = A_{\alpha\gamma,\beta\delta}/V_0`
+[BornHuang]_, the elastic tensor (with respect to the Lagrangian strain) is
 
 .. math::
-   C_{\alpha\beta,\gamma\delta} = \frac{1}{V_0}\, {\rm Sym} \big( A - Q\, \Gamma\, Q \big)_{\alpha\beta,\gamma\delta}
-   - {\rm Sym} \big( \delta_{\alpha\gamma}\, \sigma_{res,\beta\delta} \big) ,
+   C_{\alpha\beta,\gamma\delta} = {\rm Sym} \Big( [\alpha\gamma,\beta\delta] + [\beta\gamma,\alpha\delta]
+   - [\alpha\beta,\gamma\delta] + \tfrac12 (\delta_{\alpha\beta}\sigma_{\gamma\delta} + \delta_{\gamma\delta}\sigma_{\alpha\beta})
+   - \delta_{\alpha\gamma}\sigma_{\beta\delta} - \delta_{\beta\delta}\sigma_{\alpha\gamma} \Big)
+   - \frac{1}{V_0}\, {\rm Sym} \big( Q\, \Gamma\, Q \big)_{\alpha\beta,\gamma\delta} ,
 
-where Sym averages over :math:`\alpha \leftrightarrow \beta` and :math:`\gamma \leftrightarrow \delta`.
-:math:`Q\Gamma Q` is the correction for the atomic relaxation, and the last term is the correction for the
-stress of the reference: for a stressed reference, :math:`C` is the elastic tensor with respect to the
-Lagrangian strain. The relaxed shape of the cell is :math:`\epsilon_{eq} = -C^{-1}\, \sigma_{res}`.
+where Sym averages over :math:`\alpha \leftrightarrow \beta` and :math:`\gamma \leftrightarrow \delta`,
+:math:`\sigma = \sigma_{res}`, and :math:`Q\Gamma Q` is the correction for the atomic relaxation. The
+symmetrized :math:`A` alone, :math:`{\rm Sym}(A)/V_0`, is not the elastic tensor: only its diagonal
+elements are right. The formula reproduces the elastic constants of an exact model to 1e-9 GPa, at
+zero stress and under hydrostatic stress. The relaxed shape of the cell is :math:`\epsilon_{eq} =
+-C^{-1}\, \sigma_{res}`.
+
+**Pressure derivative of the bulk modulus.** With FC3, FOCEX also gives :math:`B_0' = dB/dP` at
+:math:`T=0`: the bulk modulus :math:`B = V/(v^{\mathsf T} \tilde H^{-1} v)`, :math:`\tilde H = V C + P V_2`,
+is evaluated for the crystal compressed by :math:`\pm\lambda` along the relaxed path of unit pressure
+(its FC2 changed by the FC3 times that displacement), and :math:`B_0' = [B(+\lambda) - B(-\lambda)]/2\lambda`.
+FC4 does not enter :math:`B_0'`. Derivation: ``FOCEX/notes/generalized_huang.pdf``, Part II.
 
 The log and ``mech.dat`` report the following checks of the force constants used. Each prints the
 size of the violation, and a warning if it exceeds the tolerance:
@@ -844,6 +855,8 @@ with :math:`\kappa_{full}` the full solution of Eq. :eq:`kappa_full`:
 .. [Esfarjani2025] K. Esfarjani, H. Stokes, S. Nayeb Sadeghi, Y. Liang, B. Timalsina, H. Meng, J. Shiomi, B. Liao and R. Sun, ALATDYN: A set of Anharmonic LATtice DYNamics codes to compute thermodynamic and thermal transport properties of crystalline solids, Comput. Phys. Commun. 312, 109575 (2025). `doi:10.1016/j.cpc.2025.109575 <https://doi.org/10.1016/j.cpc.2025.109575>`__
 
 .. [Wallace1998] Wallace, D.C., 1998. Thermodynamics of Crystals. Dover Publications, New York.
+
+.. [BornHuang] M. Born and K. Huang, Dynamical Theory of Crystal Lattices (Oxford University Press, 1954), Ch. V.
 
 .. [Sadeghi2025] S. Nayeb Sadeghi, S. Lee and K. Esfarjani, THERMACOND, a code to compute lattice thermal conductivity from harmonic and anharmonic force constants, npj Comput. Mater. 11, 303 (2025). `doi:10.1038/s41524-025-01673-8 <https://doi.org/10.1038/s41524-025-01673-8>`__
 

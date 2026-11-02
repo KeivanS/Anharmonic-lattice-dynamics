@@ -210,8 +210,9 @@
  end subroutine gruneisen_longwave
 !------------------------------------------------------------
  subroutine mode_gruneisen(getdyn,nkp,kp,ipath,ndn,nat,mass,gsize,eivl,eivc,grn,ulog)
-!! gamma of every mode at every k-point; eivl, eivc as returned by get_frequencies (freq_vel rules:
-!! omega^2 at k, eigenvectors at the shifted point, the rigid translations at Gamma with eivl = 0).
+!! gamma of every mode at every k-point, written in the band order of eivl, eivc (get_frequencies).
+!! gamma uses the eigenvectors of D at the point itself (user, 2026-11-01: the 3e-4 shift of freq_vel is
+!! only a device to separate degenerate bands), with W diagonalized inside each degenerate set.
 !! Those translations get the long-wave limit along the direction gamma_limit uses at that point
 !! (band path segment for ipath=1, else uinc).
 !! Near Gamma, 0 < |k| V^(1/3) < qrad (user, 2026-11-01: 0.05; V = primitive-cell volume, and
@@ -224,55 +225,124 @@
  complex(r15), intent(in) :: eivc(ndn,ndn,nkp)
  complex(r15), intent(out) :: grn(ndn,nkp)
  real(r15), parameter :: qrad=0.05d0
- complex(r15) w(ndn,ndn)
- real(r15) q(3),dir(3),a(3),b(3),g3(3),qk,tw(ndn),pi2
- integer ik,la,nt,itr(ndn),iac(3),i,j,nnear
+ complex(r15) w(ndn,ndn),dk(ndn,ndn),ev(ndn,ndn),sub(ndn,ndn),u(ndn,ndn)
+ real(r15) q(3),dir(3),a(3),b(3),g3(3),qk,tw(ndn),pi2,lam(ndn),gm(ndn),ws(ndn),tol,ov,best
+ integer ik,la,nt,itr(ndn),iac(3),i,j,nnear,n1,n2,ng,ordc(ndn),ordm(ndn),mm(ndn),ic,im,k,jb
+ logical used(ndn),istr(ndn),acou(ndn)
 
+ pi2=8*atan(1d0)
  nnear=0
  do ik=1,nkp
-    call w_matrix(kp(:,ik),ndn,w)
-    nt=0
-    do la=1,ndn
-       if (eivl(la,ik).eq.0) then      ! rigid translation at Gamma (freq_vel)
-          grn(la,ik)=0
-          nt=nt+1; itr(nt)=la
-       else
-          grn(la,ik)=-dot_product(eivc(:,la,ik),matmul(w,eivc(:,la,ik)))/(6*eivl(la,ik))
-       endif
-       if (abs(grn(la,ik)).gt.1d3) grn(la,ik)=0   ! as before: very large gamma replaced by 0
+! the mode's own eigenvectors at the point where omega^2 is evaluated (k; at Gamma 1e-6 along dir):
+! inside a set of degenerate omega^2, W is diagonalized, so gamma does not depend on the basis
+    call gamma_limit(ik,nkp,kp,ipath,q,dir)
+    call getdyn(q,ndn,dk)
+    call herm_eig(ndn,dk,lam,ev)
+    call w_matrix(q,ndn,w)
+    w=(w+conjg(transpose(w)))/2
+    tol=1d-7*maxval(abs(lam))
+    gm=0
+    n1=1
+    do while (n1.le.ndn)
+       n2=n1
+       do while (n2.lt.ndn)
+          if (abs(lam(n2+1)-lam(n1)).gt.tol) exit
+          n2=n2+1
+       enddo
+       ng=n2-n1+1
+       sub(1:ng,1:ng)=matmul(conjg(transpose(ev(:,n1:n2))),matmul(w,ev(:,n1:n2)))
+       call herm_eig(ng,sub(1:ng,1:ng),ws(1:ng),u(1:ng,1:ng))
+       ev(:,n1:n2)=matmul(ev(:,n1:n2),u(1:ng,1:ng))      ! basis that diagonalizes W in the set
+       do i=1,ng
+          if (lam(n1+i-1).ne.0) gm(n1+i-1)=-ws(i)/(6*lam(n1+i-1))
+       enddo
+       n1=n2+1
     enddo
-    if (nt.eq.3) then
-       call gamma_limit(ik,nkp,kp,ipath,q,dir)
-       call gruneisen_longwave(getdyn,dir,ndn,nat,mass,gsize,a,b,g3,ulog)
-       do la=1,3
-          grn(itr(la),ik)=g3(la)
-       enddo
-    elseif (nt.gt.0) then
-       write(ulog,*)' MODE_GRUNEISEN: WARNING: ',nt,' modes with omega=0 at k=',kp(:,ik),'; gamma 0'
-    endif
-! near Gamma (not at it): the acoustic modes take the long-wave limit along k/|k|
-    pi2=8*atan(1d0)
+! rigid translations: at Gamma (eivl=0, freq_vel) and, near it, the acoustic modes (user's radius
+! 0 < |k| V^(1/3) < qrad, V^(1/3) = 2 pi/gsize): the long-wave limit along the direction of approach
+    nt=count(eivl(:,ik).eq.0)
     qk=sqrt(dot_product(kp(:,ik),kp(:,ik)))
-    if (nt.eq.0 .and. qk.gt.1d-12 .and. qk*pi2/gsize.lt.qrad) then
+    acou=.false.
+    if (nt.eq.3 .or. (nt.eq.0 .and. qk.gt.1d-12 .and. qk*pi2/gsize.lt.qrad)) then
        do la=1,ndn
-          tw(la)=translation_weight(nat,mass,eivc(:,la,ik))
+          tw(la)=translation_weight(nat,mass,ev(:,la))
        enddo
-       do i=1,3                         ! the 3 largest translation weights
+       do i=1,3                         ! the 3 modes closest to rigid translations
           iac(i)=maxloc(tw,1); tw(iac(i))=-1
        enddo
        do i=1,2                         ! in order of increasing omega^2 (as a_s)
        do j=i+1,3
-          if (eivl(iac(j),ik).lt.eivl(iac(i),ik)) then
+          if (lam(iac(j)).lt.lam(iac(i))) then
              la=iac(i); iac(i)=iac(j); iac(j)=la
           endif
        enddo
        enddo
-       call gruneisen_longwave(getdyn,kp(:,ik)/qk,ndn,nat,mass,gsize,a,b,g3,ulog)
+       if (nt.eq.3) then
+          call gruneisen_longwave(getdyn,dir,ndn,nat,mass,gsize,a,b,g3,ulog)
+       else
+          call gruneisen_longwave(getdyn,kp(:,ik)/qk,ndn,nat,mass,gsize,a,b,g3,ulog)
+          nnear=nnear+1
+       endif
        do i=1,3
-          grn(iac(i),ik)=g3(i)
+          gm(iac(i))=g3(i); acou(iac(i))=.true.
        enddo
-       nnear=nnear+1
+    elseif (nt.gt.0) then
+       write(ulog,*)' MODE_GRUNEISEN: WARNING: ',nt,' modes with omega=0 at k=',kp(:,ik),'; gamma 0'
     endif
+! map onto the code's bands: the code's translations (eivl=0) to the acoustic modes, the rest by omega^2
+! (both sorted); inside a degenerate set by the largest overlap with the code's eigenvector
+    istr=(eivl(:,ik).eq.0)
+    used=.false.; mm=0
+    if (nt.eq.3) then
+       k=0
+       do la=1,ndn
+          if (istr(la)) then
+             k=k+1; mm(la)=iac(k); used(iac(k))=.true.
+          endif
+       enddo
+    endif
+    ic=0
+    do la=1,ndn                       ! code bands that are not translations, by increasing eivl
+       if (istr(la)) cycle
+       ic=ic+1; ordc(ic)=la
+    enddo
+    do i=1,ic-1
+    do j=i+1,ic
+       if (eivl(ordc(j),ik).lt.eivl(ordc(i),ik)) then
+          la=ordc(i); ordc(i)=ordc(j); ordc(j)=la
+       endif
+    enddo
+    enddo
+    im=0
+    do k=1,ndn                        ! own modes not yet used, by increasing lam (already sorted)
+       if (used(k)) cycle
+       im=im+1; ordm(im)=k
+    enddo
+    i=1
+    do while (i.le.ic)
+! the run of own modes degenerate with ordm(i)
+       j=i
+       do while (j.lt.ic)
+          if (abs(lam(ordm(j+1))-lam(ordm(i))).gt.tol) exit
+          j=j+1
+       enddo
+       do k=i,j                       ! code band ordc(k): own mode of the run with the largest overlap
+          best=-1; jb=ordm(i)
+          do n1=i,j
+             if (used(ordm(n1))) cycle
+             ov=abs(dot_product(ev(:,ordm(n1)),eivc(:,ordc(k),ik)))**2
+             if (ov.gt.best) then
+                best=ov; jb=ordm(n1)
+             endif
+          enddo
+          mm(ordc(k))=jb; used(jb)=.true.
+       enddo
+       i=j+1
+    enddo
+    do la=1,ndn
+       grn(la,ik)=gm(mm(la))
+       if (abs(grn(la,ik)).gt.1d3) grn(la,ik)=0   ! as before: very large gamma replaced by 0
+    enddo
  enddo
  write(ulog,'(a,i6,a,f6.3,a)')' MODE_GRUNEISEN: ',nnear,' k-points with 0 < |k| V^(1/3) <',qrad, &
  &   ': acoustic gamma from the long-wave limit along k'

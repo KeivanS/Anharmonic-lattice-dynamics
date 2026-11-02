@@ -9,7 +9,7 @@ frequency."""
 import sys, os
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gruneisen_q0 import setup, blocks, gamma_limit, UINC
+from gruneisen_q0 import setup, blocks, gamma_limit, gamma_direct, UINC
 from model import read_structure
 
 mat, rd = sys.argv[1], sys.argv[2]
@@ -53,8 +53,19 @@ PHASE = 'x'
 
 
 def focex_gamma(i):
-    bl = blocks if PHASE == 'x' else (lambda s_, q, kind: blocks_R(q, kind))
     k = kp[i]
+    if PHASE == 'k':        # FOCEX 9.2: eigenvectors at the point itself, W diagonalized in degenerate sets
+        q = k
+        if np.linalg.norm(k) < 1e-12:
+            d = kp[i + 1] - kp[i] if i + 1 < len(kp) else kp[i] - kp[i - 1]
+            q = 1e-6 * d / np.linalg.norm(d)
+        w2, num, g = gamma_direct(s, q)
+        g = g.copy()
+        if np.linalg.norm(k) < 1e-12:
+            g[:3] = np.nan
+        g[np.abs(g) > 1e3] = 0
+        return g, w2
+    bl = blocks if PHASE == 'x' else (lambda s_, q, kind: blocks_R(q, kind))
     if np.linalg.norm(k) < 1e-12:
         d = kp[i + 1] - kp[i] if i + 1 < len(kp) else kp[i] - kp[i - 1]
         d = d / np.linalg.norm(d)
@@ -106,9 +117,12 @@ def compare(label):
 
 
 
-compare('exact formula (phase x_j - x_t)')
+PHASE = 'k'
+compare('rule of FOCEX 9.2 (eigenvectors at k, W diagonalized in degenerate sets)')
+PHASE = 'x'
+compare('rule of 9.1 (eigenvectors at k + 3e-4|G|u), phase x_j - x_t')
 PHASE = 'R'
-compare("FOCEX's phase exp(ik.R) (with eigenvectors at k + 3e-4|G|u the two differ near Gamma)")
+compare("rule of 9.1, FOCEX's phase exp(ik.R)")
 i0 = int(np.where(np.linalg.norm(kp, axis=1) < 1e-12)[0][0])
 d = (kp[i0 + 1] - kp[i0]); d /= np.linalg.norm(d)
 a, b, gl, ck = gamma_limit(s, d)

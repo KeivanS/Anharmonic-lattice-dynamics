@@ -98,6 +98,23 @@ C=\frac1{V_0}\,\frac{\partial^2W_{\rm rel}}{\partial\eta\,\partial\eta}=\frac1{V
 the elastic tensor of the paper. ``Sym'' symmetrises over $\al\leftrightarrow\be$ within each pair,
 because $\eta$ is symmetric.
 
+\paragraph{Correction (1 November 2026).} Eq.~\eqref{eq:C} with the relative-vector $A$ of Eq.~\eqref{eq:AQphi}
+is \emph{not} the second derivative of the energy of the homogeneously deformed crystal: only its diagonal
+elements are right (exact ZnO model at $P=0$: $C_{12}=171$ instead of 221~GPa, $C_{44}=108$ instead of 78).
+The correct form uses the Born--Huang brackets $[\al\be,\ga\de]=A_{\al\ga,\be\de}/V_0$, with the stress of the
+reference:
+\begin{equation}
+c_{\al\be\ga\de}=\mathrm{Sym}\Big([\al\ga,\be\de]+[\be\ga,\al\de]-[\al\be,\ga\de]
++\tfrac12(\de_{\al\be}\si_{\ga\de}+\de_{\ga\de}\si_{\al\be})-\de_{\al\ga}\si_{\be\de}-\de_{\be\de}\si_{\al\ga}\Big)
+-\frac1{V_0}\mathrm{Sym}(Q^{\mathsf T}\Ga Q),
+\label{eq:Cbh}
+\end{equation}
+the elastic constants for the Lagrangian strain; the second derivative in the stretch $\eta$ adds
+$\partial^2(\si:\eta^2/2)/\partial\eta\partial\eta$. Checked against the exact Hessian of the model
+(\texttt{bprime/elastic\_check.py}): $\le6\times10^{-10}$~GPa for relaxed ZnO, relaxed CaF$_2$ and CaF$_2$
+under 14.5~GPa; 0.2~GPa for the stressed ZnO and HfO$_2$ references, which have residual forces. FOCEX
+uses Eq.~\eqref{eq:Cbh} since that date (\texttt{elastic\_born\_huang}).
+
 \part*{I. Huang conditions for a stressed reference}
 
 \section{Rotational invariance and the stress}
@@ -219,6 +236,14 @@ crystal sum to zero, and all cells are equivalent.
 \end{equation}
   Here $H[\Delta\Phi]$ means the blocks evaluated with $\Delta\Phi$ in place of $\Phi$.
   Numerical check: differences of $C$ at $\pm\la$.
+\item \textbf{Correction (1 November 2026).} With the relative-vector $A$ block, $p^{\mathsf T}H[\Psi S]p$ is wrong
+  for the same reason as Eq.~\eqref{eq:C} (exact ZnO, $D=0$: $B'=-0.064$ instead of $-0.157$). FOCEX
+  (\texttt{pressure\_derivative\_b}) therefore takes $B'$ from $B$ of the crystal deformed by $\pm\la p_1$:
+  FC2 $\Phi\pm\la\Psi S$, relative vectors $d\pm\la(\eta_1d+u^0_{1,j}-u^0_{1,\tau})$, pressure $\pm\la$,
+  $B=V/(v^{\mathsf T}\tilde H^{-1}v)$ with $\tilde H=V(c+S_2)+PV_2$, $c$ from Eq.~\eqref{eq:Cbh} and
+  $S_2=\partial^2(\si:\eta^2/2)$; $B'=[B(+\la)-B(-\la)]/2\la$. FOCEX fitted to the cubic-truncated exact ZnO model
+  at $P=0$ ($D=0$, \texttt{bprime/mkrelaxed.py}) gives $B=288.001543$~GPa, $B'=-0.157427$, the values of the full
+  relaxations under pressure in the table below.
 \item \textbf{The vector $w$} of Eq.~\eqref{eq:W4rel} is $w_\tau=\sum_{jk}\Psi_{\tau jk}(S_j-S_\tau)(S_k-S_\tau)$, with $\tau$ in
   cell 0 and $j,k$ over all atoms.
 \item \textbf{Images.} Choosing another image of an atom, $\tau\to\tau+R$, changes $u^0_1$ by $-\eta R$ and leaves $S$
@@ -651,10 +676,11 @@ codes' rules (bands matched by frequency; FOCEX writes them in band-connection o
   $=$ Eq.~\eqref{eq:gq0}; along $u$ (IBZ mesh) FOCEX gives $-2.004678,\,-1.096437,\,-0.831788$ $=$
   Table~\ref{tab:grq}. Checks of items 1--3: FOCEX $\le7\times10^{-13}$, THERMACOND (7-digit FC files)
   $\le5\times10^{-8}$.
-\item Remaining rule-dependence: off $\Ga$ the eigenvectors are taken at $k+3\times10^{-4}|G|u$ (to separate
-  degenerate bands) and $W$, $\omega^2$ at $k$. Next to $\Ga$ the acoustic $\ga$ then depends on the phase
-  convention by $\simeq1.4\times10^{-4}/|k|$ (\AA$^{-1}$): $9\times10^{-3}$ at $|k|=0.015$, $10^{-3}$ at
-  $0.14$; both codes use $e^{ik\cdot R}$ consistently.
+\item With the eigenvectors taken at $k+3\times10^{-4}|G|u$ (the 9.1 rule for separating degenerate bands) and
+  $W$, $\omega^2$ at $k$, the acoustic $\ga$ next to $\Ga$ depended on the phase convention by
+  $\simeq1.4\times10^{-4}/|k|$ (\AA$^{-1}$). Since FOCEX 9.2 the routine diagonalizes $D$ at $k$ itself and $W$
+  inside each degenerate set: FOCEX $=$ exact $\ga(k)$ to $5\times10^{-5}$ at all 520 points, THERMACOND to its
+  4 printed digits; and for $0<|k|V^{1/3}<0.05$ the acoustic $\ga$ is the limit along $\hat k$.
 \end{itemize}
 
 \begin{thebibliography}{9}

@@ -14,13 +14,14 @@ the Makefiles drop `.o`/`.mod` files next to the sources.
 ## Building and running FOCEX
 
 ```bash
-cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-9.1.x
+cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-9.2.x
 ```
 
 Executables (2026-10-23, user's rule): all in `~/ALADYN/bin` (`DESTDIR`; the top-level `make`
-passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-9.1.x` (9.1 since 2026-10-29, user: frequencies at the
+passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-9.2.x` (9.2 2026-11-01: elastic constants, B0', QHA, Gruneisen,
+sd -- see below; 9.1 since 2026-10-29, user: frequencies at the
 exact k, Gamma limit, no stop for split FC2 groups; 9.0 2026-10-23: invariance rows for all ranks + the
-Born check; reading some FC ranks and fitting the rest, once reserved as 9.1, gets the next number;
+Born check; reading some FC ranks and fitting the rest gets the next number (9.3);
 8.18 and earlier: `~/BIN/v8.18`),
 THERMACOND `tcond-2.0.x` / `tcond-2.0-serial.x` (was `kap8` in its
 source folder). Top-level `make` (= `make all`, user's spec 2026-10-23): python-tools, focex (FOCEX +
@@ -473,13 +474,38 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   THERMACOND to its 4 digits, Gamma limit = -1.691288 -1.344395 -0.658566 in both. bs_grun.dat columns are
   in band-connection order (compare by frequency). Other FOCEX outputs byte-identical except QHA
   (thermo_QHA/temp_free use ibz gamma: HfO2 model <gamma>(300 K) -1.149 -> -0.922).
-- OPEN (user to decide): off Gamma, eigenvectors at k+3e-4|G|u but W, omega^2 at k (9.1 rule): near
-  Gamma the acoustic gamma then depends on the phase convention by ~1.4e-4/|k| (9e-3 at |k|=0.015 1/A).
+- Eigenvectors (user, 2026-11-01: the 3e-4 shift is only a numerical device): mode_gruneisen diagonalizes D at
+  the point itself and W inside each degenerate set (tol 1e-7 max omega^2), then maps onto the code's bands
+  (by omega^2; in a set by overlap with the code's eigenvector). THERMACOND HfO2: = exact gamma(k) to its 4
+  digits everywhere (was 9e-3 next to Gamma).
 - NA term: formula verified in Python (gruneisen_q0_na.py, ZnO + rigid-ion Z, 1.5e-6 at q=1e-3); the codes'
   route for a polar crystal (D0..D2 fitted from get_dynmat with FOCEX's NA term) not yet run.
 - born_flag > 2: WARNING in read_dielectric (both codes; user: use 0 or 2, 1 only for testing); manual says so.
-  Noticed, not checked: the log says born_flag=1 subtracts the Ewald force, the manual says nothing is
-  subtracted.
+  born_flag=1: nothing subtracted (subtract_coulomb_force returns for <= 1), NA term added to D; the
+  log message said otherwise until 2026-11-01 (fixed).
+
+## Elastic constants, B0', QHA (FOCEX 9.2, 2026-11-01; user's questions)
+
+- Elastic constants (elastic_born_huang, mechanical and mechanical0): c = Sym{[ag,bd]+[bg,ad]-[ab,gd]
+  + (d_ab s_gd + d_gd s_ab)/2 - d_ag s_bd - d_bd s_ag} - Sym(QGQ)/V, [ab,gd] = atld_raw(a,g,b,d). Until
+  2026-11-01 Sym(A) - Sym(d_ag s_bd): off-diagonal and shear constants wrong (exact relaxed ZnO model:
+  C12 171 vs 221, C13 137 vs 197, C44 108 vs 78, C66 146 vs 121 GPa; diagonal right). Checked
+  (REFERENCE/exact_model/bprime/elastic_check.py vs the model Hessian): <= 6e-10 GPa relaxed ZnO, CaF2 and
+  CaF2 under 14.5 GPa; 0.2 GPa on the stressed ZnO/HfO2 references (residual forces, not in the formula).
+  All earlier FOCEX elastic constants (and B, G, sound speeds, Debye T) were affected.
+- B0' (pressure_derivative_b, overwrites cubic_elastic's b0p): B(+-lam) of the crystal deformed along the
+  relaxed unit-pressure path p1 (FC2 + lam Psi.S, deformed d, pressure), B = V/(v Ht^-1 v), Ht = V(c+S2)+PV2;
+  B' = (B(+)-B(-))/2lam, lam = 1e-4 eV/A^3. The A-form W3 of the notes (p H[Psi S] p) is wrong like Sym(A).
+  Verified: FOCEX on bprime/mkrelaxed.py inputs (relaxed model, D=0, C=0, cubic-truncated forces):
+  ZnO B 288.001543 B' -0.157427, CaF2 587.376258 / 0, = full relaxations under pressure (bp2_all.log).
+  Assumes hydrostatic reference stress, no residual forces (warnings).
+- QHA (QHA_free_energy_vs_strain): Murnaghan static EOS (B0 = Reuss, B0' from FC3, 4 if no FC3), phonon F
+  with omega(V) from gamma; V(T) = root of P (cubic), B_T = -V dP/dV there, alpha_V = (dP/dT)_V/B_T
+  (identity; summed analytically), lin CTE = alpha_V/3 = dlnL/dT (user: the definition), Cp = Cv + VTB_T
+  alpha_V^2. Harmonic-only (no FC3): Leont'ev gamma for all modes + P_agne = NkT/V (user's term) as before.
+  Checked: alpha = numerical dlnL/dT of the table to 0.8 % (ZnO model, with FC3) and 0.7 % (FC2 only).
+  Before: V(T) Boltzmann-weighted over strains (kT_eff = range/100), CTE secant eq_strain/T, B(T) =
+  B0(1-strain(4+3<gamma>)), static energy quadratic in dV (B0' = -1).
 
 ## Fit errors sd(rank) (2026-11-01, user: make sure it is correct)
 

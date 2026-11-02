@@ -18,8 +18,9 @@
  if (born_flag.le.0) then
     write(ulog,*)' Born_flag  =',born_flag,' Born charges are not subtracted'
     write(6   ,*)' Born_flag  =',born_flag,' Born charges are not subtracted'
- elseif(born_flag.eq.1) then
-    write(ulog,*)' Born_flag  =',born_flag,' Ewald force will be subtracted from input forces'
+ elseif(born_flag.eq.1) then   ! subtract_coulomb_force returns for born_flag <= 1
+    write(ulog,*)' Born_flag  =',born_flag,' nothing subtracted from the forces; non-analytical term added to D'
+    write(6   ,*)' Born_flag  =',born_flag,' nothing subtracted from the forces; non-analytical term added to D'
  else
     write(ulog,*)' Born_flag  =',born_flag,' non-analytical force will be subtracted from input forces'
     write(6   ,*)' Born_flag  =',born_flag,' non-analytical force will be subtracted from input forces'

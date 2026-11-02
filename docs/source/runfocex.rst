@@ -87,7 +87,7 @@ conventional cubic cell, :math:`a = 5.7022565` Å) and 36 snapshots.
    # after compiling (see the Installation chapter)
    mkdir -p ~/runs/Ge && cd ~/runs/Ge
    cp <path-to-repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
-   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.1.x
+   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.2.x
 
 On a single modern core the run takes a few minutes. It should end with
 
@@ -811,7 +811,7 @@ input files in one directory, ``cd`` into it and run the binary.
    ls
    # default.params  dielectric.params  kpbs.params  latdyn.params
    # structure.params  POSCAR1  FORCEDISP1
-   ~/ALADYN/bin/focex-9.1.x | tee focex.out
+   ~/ALADYN/bin/focex-9.2.x | tee focex.out
 
 The run is serial and memory-bound: the largest array is the fit matrix, of
 size (number of force components + constraints) × (number of independent FCs).
@@ -962,17 +962,22 @@ Phonons and thermodynamics
 ``thermo_QHA.dat``
     Quasi-harmonic thermodynamics versus temperature, one line per temperature:
     ``T(K), E_eq(kJ/mol), F_eq(kJ/mol), V_eq/V0, strain, Cv, Cp(J/K/mol),
-    S(J/K/mol), linear CTE(1/K), Gruneisen, B(T)/B(0)``.
+    S(J/K/mol), linear CTE(1/K), Gruneisen, B_T(T)/B0``. At each temperature the equilibrium volume
+    is where :math:`P = -\partial F/\partial V = 0`, with :math:`F` the static energy (Murnaghan equation of
+    state with the Reuss modulus :math:`B_0` and the :math:`B_0'` from FC2 and FC3; :math:`B_0' = 4` is
+    assumed when FC3 are not fitted) plus the phonon free energy. :math:`B_T = -V\,\partial P/\partial V` at
+    that volume; the CTE is :math:`\alpha = d\ln L/dT = \alpha_V/3` with
+    :math:`\alpha_V = (\partial P/\partial T)_V/B_T`; :math:`C_p = C_v + V T B_T \alpha_V^2`; the Gruneisen
+    column is the :math:`C_v`-weighted average.
 
 ``temp_free.dat``
     The free energy versus strain curve at each temperature that is minimised to
     produce ``thermo_QHA.dat`` — useful to check that the minimum is well inside
     the scanned strain range. Columns: T, linear strain, F (kJ/mol), P (GPa), index of
-    the F minimum, B, B(strain), Gruneisen, weight, then the parts of F and P: static
-    (F0 = -P0 dV + B V0 (dV/V0)^2/2 with P0 the residual pressure, P0 - B dV/V0), the
-    harmonic-only term (F_agne = -N k T ln(V/V0), P_agne = N k T/V; zero when FC3 are
-    included) and the phonons. P is -dF/dV of the same F, so P = 0 at the minimum of F
-    (before 23 October 2026 the static term was missing from P).
+    the strain where P changes sign, B0, B_T at that strain, Gruneisen, (dP/dT)_V (GPa/K), then the
+    parts of F and P: static (Murnaghan with B0, B0' and the residual pressure P0), the harmonic-only
+    term (F_agne = -N k T ln(V/V0), P_agne = N k T/V; zero when FC3 are included) and the phonons.
+    P is -dF/dV of the same F, so P = 0 at the minimum of F.
 
 ``chi_real.dat`` / ``chi_imag.dat``
     Real and imaginary parts of the dielectric response versus frequency, plus
@@ -1191,6 +1196,15 @@ needs.
 
 Version history
 ---------------
+
+9.2 (2026-11-01)
+    Elastic constants from the Born-Huang brackets with the stress terms (the symmetrized
+    :math:`A` gave wrong off-diagonal and shear constants); :math:`B_0'` from FC2 and FC3; QHA
+    with a Murnaghan static energy, :math:`V(T)` from :math:`P=0`, :math:`B_T=-V\,dP/dV` and
+    :math:`\alpha = d\ln L/dT`; mode Gruneisen parameters from one routine shared with
+    THERMACOND (phase of the dynamical matrix, eigenvectors at the k-point, long-wave limit at
+    :math:`\Gamma`); standard errors of the force constants (``sd(rank)``); warning for
+    ``born_flag`` > 2.
 
 9.1 (2026-10-29)
     Phonon frequencies at the k-points themselves (eigenvectors and velocities a small fixed
