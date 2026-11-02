@@ -87,7 +87,7 @@ conventional cubic cell, :math:`a = 5.7022565` Å) and 36 snapshots.
    # after compiling (see the Installation chapter)
    mkdir -p ~/runs/Ge && cd ~/runs/Ge
    cp <path-to-repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
-   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.3.x
+   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.4.x
 
 On a single modern core the run takes a few minutes. It should end with
 
@@ -830,7 +830,7 @@ input files in one directory, ``cd`` into it and run the binary.
    ls
    # default.params  dielectric.params  kpbs.params  latdyn.params
    # structure.params  POSCAR1  FORCEDISP1
-   ~/ALADYN/bin/focex-9.3.x | tee focex.out
+   ~/ALADYN/bin/focex-9.4.x | tee focex.out
 
 The run is serial and memory-bound: the largest array is the fit matrix, of
 size (number of force components + constraints) × (number of independent FCs).
@@ -1276,6 +1276,12 @@ needs.
 
 Version history
 ---------------
+
+9.4 (2026-11-02)
+    IR and Raman activity, parity and irreducible representation of the :math:`\Gamma` modes
+    (``gamma_modes.dat``), with the character table computed from the symmetry operations; one
+    :math:`\Gamma` threshold for frequencies and Gruneisen limits (a path ending at :math:`|k|\approx 10^{-10}`
+    got the wrong limit); ``allplots`` makes all PDF plots of a run.
 
 9.3 (2026-11-02)
     Optional relaxation of an unrelaxed reference (``default.params`` line 5 = 1): strain and

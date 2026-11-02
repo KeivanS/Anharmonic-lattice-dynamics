@@ -14,14 +14,14 @@ the Makefiles drop `.o`/`.mod` files next to the sources.
 ## Building and running FOCEX
 
 ```bash
-cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-9.3.x
+cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-9.4.x
 ```
 
 Executables (2026-10-23, user's rule): all in `~/ALADYN/bin` (`DESTDIR`; the top-level `make`
-passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-9.3.x` (9.3 2026-11-02: relaxation of an unrelaxed reference, default.params line 5; 9.2 2026-11-01: elastic constants, B0', QHA, Gruneisen,
+passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-9.4.x` (9.4 2026-11-02: IR/Raman activity and irreps at Gamma, computed character tables, Gamma threshold, allplots; 9.3 2026-11-02: relaxation of an unrelaxed reference, default.params line 5; 9.2 2026-11-01: elastic constants, B0', QHA, Gruneisen,
 sd -- see below; 9.1 since 2026-10-29, user: frequencies at the
 exact k, Gamma limit, no stop for split FC2 groups; 9.0 2026-10-23: invariance rows for all ranks + the
-Born check; reading some FC ranks and fitting the rest gets the next number (9.4; 9.3 went to the relaxation, user 2026-11-02);
+Born check; reading some FC ranks and fitting the rest gets the next number (9.5; 9.3 went to the relaxation, 9.4 to the Gamma symmetry, user 2026-11-02);
 8.18 and earlier: `~/BIN/v8.18`),
 THERMACOND `tcond-2.0.x` / `tcond-2.0-serial.x` (was `kap8` in its
 source folder). Top-level `make` (= `make all`, user's spec 2026-10-23; thermacond-serial added 2026-11-01, user):
