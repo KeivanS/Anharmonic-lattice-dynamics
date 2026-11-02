@@ -13,6 +13,10 @@ module params
  integer  :: lasso_nlambda = 40     ! points on the mu path
  real(r15):: lasso_epsratio= 1d-4   ! smallest mu, as a fraction of the largest
  real(r15):: lasso_mu               ! the selected value (output)
+! relax_ref (default.params line 5, absent = 0): 1 = relax the reference with the fitted FCs and use the
+! re-expanded FCs downstream (FOCEX relax_reference); ref_relaxed is set once that is done
+ integer  :: relax_ref = 0
+ logical  :: ref_relaxed = .false.
 
 end module params
 !============================================================

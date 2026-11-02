@@ -11,7 +11,7 @@ set xtics 250
 #set yrange [:3]
 plot 'thermo_QHA.dat' u 1:(100000*$9) lw 2 title "10^5 CTE" ,\
      'thermo_QHA.dat' u 1:10 lw 2 title "Gruneisen " ,\
-     'thermo_QHA.dat' u 1:($11) lw 2 title "B(T)/B(0K)"
+     'thermo_QHA.dat' u 1:($11) lw 2 title "B_T(T)/B_T(0K)"
 #pause -1
 
 #set size ratio 2

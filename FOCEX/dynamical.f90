@@ -18,7 +18,7 @@
  real(r15) rotc(3,3),atldc(3,3,3,3),elasticc(6,6),atld_sym(3,3,3,3),asym_c
  character(len=12) csys
  character(len=8) vtest
- real(r15) deteps3,grune,boft,epsilon0(3,3),velocfbz(3),mat(3,3)
+ real(r15) deteps3,grune,boft,boft0,epsilon0(3,3),velocfbz(3),mat(3,3)
  complex(r15) dyn_coul(3,3),ddn(6,6,3)
  real(r15), allocatable :: aux(:),array(:) ,eivaux(:),velaux(:,:)
  complex(r15), allocatable :: evcaux(:,:) 
@@ -351,7 +351,7 @@
   open(utherm,file='thermo_QHA.dat')
   open(uio,file='temp_free.dat')
   write(utherm,'(a)')"# T(K) , E_eq(kJ/mol) , F_eq(kJ/mol),V_eq/V0,strain , Cv, "// &
- &      "Cp(J/K.mol), S(J/K.mol) , lin_CTE=dlnL/dT(1/K),Grun , B_T(T)/B0(Reuss)"
+ &      "Cp(J/K.mol), S(J/K.mol) , lin_CTE=dlnL/dT(1/K),Grun , B_T(T)/B_T(T->0), B_T(GPa), B0(Reuss,static,GPa)"
   write(uio,*)'# temperature, strain , E_free(kJ/mol) , Pressure (GPa) , i(P=0),B0,B_T(strain),gruneisen,(dP/dT)_V,'// &
  &   ' F0,P0 (static), F_agne,P_agne (harmonic-only term), F_ph,P_ph (phonons); F in kJ/mol, P in GPa'
   tempk=tmin 
@@ -370,7 +370,11 @@
      call QHA_free_energy_vs_strain(nibz,wibz,ndyn,eivalibz,real(grunibz),tempk, &
 &              free,etot,cv,cp,eq_vol,entropy,cvte,grune,boft,uio)  ! eq_vol is really eq_vol/volum_r0
 
-     write(utherm,7) tempk,etot,free,eq_vol,(eq_vol)**0.33333-1,cv,cp,entropy,cvte/3,grune,boft/rbulkmod
+! B_T normalized like V_eq (to the lowest temperatures, T < 8 K), so column 11 goes to 1 at T -> 0 (user,
+! 2026-11-02; was B_T/B0(Reuss) at V0, /= 1 at T=0 because of zero-point and residual pressure)
+     if (i.eq.1 .or. tempk.lt.8) boft0=boft
+     write(utherm,7) tempk,etot,free,eq_vol,(eq_vol)**0.33333-1,cv,cp,entropy,cvte/3,grune,boft/boft0, &
+ &                   boft,rbulkmod
   enddo temploop
 
  call cpu_time(tim)
@@ -1857,12 +1861,18 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  use ios, only : ulog, write_out
  use constants, only : r15
  use linalgb, only : symmetrize2
+ use params, only : ref_relaxed
  implicit none
  integer, intent(in) :: uio
  real(r15), intent(out) :: s(3,3)
  logical, intent(out) :: ex
  integer i
  s=0
+ if(ref_relaxed) then  ! relax_reference relaxed the structure: the stress of the new reference is 0
+    ex=.true.
+    write(uio,*)'stress.params not used: the reference was relaxed by RELAX_REFERENCE (stress 0)'
+    return
+ endif
  inquire(file='stress.params',exist=ex)
  if(.not.ex) return
  open(357,file='stress.params',status='old')
@@ -3322,7 +3332,7 @@ end subroutine band_sort_bs
 !! araw(a,b,g,d) = A_{ab,gd} = -1/(2V) sum Phi^{ag} d_b d_d (a,g displacements), i.e. the brackets
 !! [ab,gd] = A_{ag,bd} (Born and Huang), and the reference stress s (GPa):
 !!   c_abgd = Sym{ [ag,bd] + [bg,ad] - [ab,gd] + (d_ab s_gd + d_gd s_ab)/2 - d_ag s_bd - d_bd s_ag }
-!! Sym = average over a<->b and g<->d. Checked on the exact model (REFERENCE/exact_model/bprime/
+!! Sym = average over a<->b, g<->d and (ab)<->(gd). Checked on the exact model (REFERENCE/exact_model/bprime/
 !! elastic_check.py): exact (5e-10 GPa) for relaxed ZnO, CaF2 and stressed CaF2; with residual forces
 !! (stressed ZnO, HfO2 references) 0.2 GPa off, the part FOCEX handles through the relaxation.
 !! Until 2026-11-01 FOCEX used Sym(A) - Sym(d_ag s_bd): off-diagonal and shear constants wrong
@@ -3353,6 +3363,10 @@ end subroutine band_sort_bs
  enddo
  enddo
  enddo
+! and over (ab)<->(gd): with a non-hydrostatic stress the expression above is not symmetric under it, a
+! second derivative is (2026-11-02, exact model ZnO at 14.97/14.97/14.87 GPa, internal coordinates relaxed:
+! H13 51.452, H31 51.420, exact 51.436 eV per cell = the average; hydrostatic stress: no change)
+ c=(c+reshape(c,[3,3,3,3],order=[3,4,1,2]))/2
  end subroutine elastic_born_huang
 !============================================================
  subroutine pressure_derivative_b(uio)

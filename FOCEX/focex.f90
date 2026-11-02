@@ -562,6 +562,24 @@ real(r15) presid
 
    call write_output_fcs
 
+! relax the reference with the fitted FCs (default.params line 5); the fc files of the unrelaxed
+! reference are kept as fcN_unrelaxed.dat, fcN_irr_unrelaxed.dat, lat_fc_unrelaxed.dat
+   if(relax_ref.ne.0) then
+      call relax_reference
+      do rank=1,4
+         write(xt,'(i1)')rank
+         if(include_fc(rank).eq.1) then
+            close(ufit1-1+rank); close(ufc1-1+rank)
+            call rename('fc'//xt//'_irr.dat','fc'//xt//'_irr_unrelaxed.dat')
+            call rename('fc'//xt//'.dat','fc'//xt//'_unrelaxed.dat')
+            open(ufit1-1+rank ,file='fc'//xt//'_irr.dat',status='unknown')
+            open( ufc1-1+rank ,file='fc'//xt//'.dat',status='unknown')
+         endif
+      enddo
+      call rename('lat_fc.dat','lat_fc_unrelaxed.dat')
+      call write_output_fcs
+   endif
+
    call create_extended_rgrid  ! to include all grid points covered by FC2s beyond supercell WS
 
    if (born_flag.ge.1) then

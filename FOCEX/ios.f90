@@ -29,6 +29,11 @@
    if(icutoff.eq.0) icutoff = 6     ! default multiple of bond length; defines maxatoms
    read(uparams,*) margin    ! cutoff for neighborshells
    if(margin.eq.0) margin = 1d-6     ! default margin to eliminate FCs
+! line 5 (optional, absent = 0): 1 = relax the reference structure with the fitted FCs and re-expand the
+! FCs about it (relax_reference.f90); everything after the fit then uses the relaxed structure
+! (only the value 1 switches it on: older long default.params files have other numbers on line 5)
+   read(uparams,*,iostat=ios_cc) relax_ref
+   if(ios_cc.ne.0 .or. relax_ref.ne.1) relax_ref = 0
  close(uparams)
 
  open(uparams,file='structure.params',status='old')

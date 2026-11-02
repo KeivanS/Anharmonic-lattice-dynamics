@@ -14,14 +14,14 @@ the Makefiles drop `.o`/`.mod` files next to the sources.
 ## Building and running FOCEX
 
 ```bash
-cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-9.2.x
+cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-9.3.x
 ```
 
 Executables (2026-10-23, user's rule): all in `~/ALADYN/bin` (`DESTDIR`; the top-level `make`
-passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-9.2.x` (9.2 2026-11-01: elastic constants, B0', QHA, Gruneisen,
+passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-9.3.x` (9.3 2026-11-02: relaxation of an unrelaxed reference, default.params line 5; 9.2 2026-11-01: elastic constants, B0', QHA, Gruneisen,
 sd -- see below; 9.1 since 2026-10-29, user: frequencies at the
 exact k, Gamma limit, no stop for split FC2 groups; 9.0 2026-10-23: invariance rows for all ranks + the
-Born check; reading some FC ranks and fitting the rest gets the next number (9.3);
+Born check; reading some FC ranks and fitting the rest gets the next number (9.4; 9.3 went to the relaxation, user 2026-11-02);
 8.18 and earlier: `~/BIN/v8.18`),
 THERMACOND `tcond-2.0.x` / `tcond-2.0-serial.x` (was `kap8` in its
 source folder). Top-level `make` (= `make all`, user's spec 2026-10-23; thermacond-serial added 2026-11-01, user):
@@ -679,3 +679,50 @@ chose HTTPS + gh token (no new key). The repo, VASP-Flow and SC_SNAPS are public
 login anywhere, pushing from another machine needs its own `gh auth login`. The SC_SNAPS clone at
 `~/PROJECTS/SC_SNAPS` is on HTTPS too. `WebFetch` and sandboxed `curl`
 cannot reach github.com at all. Other hosts (readthedocs.io, PyPI) are fine.
+
+## SCOP8: static strain and u0 -> FCs, review for FOCEX (2026-11-02, user: note problems, fix later)
+Read (not run: SCOP8 does not compile). Notation to reuse in FOCEX: strain(3,3) = eta, atomic_deviation(3,tau)
+= u0, S(:,i) = eta.(R_i+tau_i) + u0(type_tau(i)) (static displacement), trialfc2_value = effective FC2,
+myfc2_value%phi / myfc3_value%psi / myfc4_value%chi, GradientV_utau / GradientV_eta / GradientV_cor.
+- Correct (VA_math.f95 GetV_avg_And_GradientV_avg, UpdateTrialFC2 in check.f90): static part of the effective FC2
+  = 2 dV/d<YY> = Phi2 + sum_m Psi S_m + 1/2 sum_mn Chi (S_n-S_i)(S_m-S_i) (+ the <YY> term); equals the Taylor
+  re-expansion at x0+S (the -S_i parts vanish by ASR on m, n).
+- PROBLEM 1: FC1 (residual forces) is not in <V> nor in GradientV_utau/GradientV_eta: myfc1 is used only in
+  `residuals` (diagnostics). An unrelaxed reference is treated as if relaxed (missing pi0.S, i.e. the
+  residual forces and the reference stress they carry).
+- PROBLEM 2: `residuals` sigma0 = sum_tau pi0 tau/V: image-dependent when pi0 /= 0 (FOCEX replaced it by
+  stress.params); no stress.params in SCOP8.
+- TO CHECK 3: add_Pressure adds V(eta) eta:sigma; the work of a constant external stress is sigma:(change of
+  shape), which differs at second order in eta (hydrostatic: P dV = P V0 (tr e + ((tr e)^2 - tr e^2)/2 + det e)
+  vs P V0 (1+tr e+..) tr e). Algebra only, not tested.
+- TO CHECK 4: mechanical2 uses atld0 - QGQ - sigma0(be,ga) delta(al,de): the pre-9.2 FOCEX form (Sym(A) -
+  stress term) gave wrong off-diagonal/shear constants; not compared.
+- Cubic "gradient w.r.t strain, term 2" (IF found ... END IF) is empty; intent unknown.
+
+## Relaxing an unrelaxed reference with the fitted FCs (relax_reference.f90, 2026-11-02, user)
+default.params line 5 = 1 (only 1 switches it on; absent/other = off). After the fit: minimize the Taylor
+expansion over strain eta and u0 (S = eta(R+tau)+u0, paper/SCOP8 notation), re-expand K = Phi+Psi S+Chi SS/2,
+Psi' = Psi+Chi S (S_j - S_tau forms), project on the irreducible FCs, strain lattice/positions/grids by
+M = 1+eta (+u0); downstream uses them; stress.params read as 0 (params: relax_ref, ref_relaxed); unrelaxed
+fit kept as fcN_unrelaxed.dat, fcN_irr_unrelaxed.dat, lat_fc_unrelaxed.dat; POSCAR_relaxed written.
+- The paper's A = -1/2 sum K d d as strain Hessian is WRONG (first version gave ZnO strain -0.01831 vs
+  exact -0.017837). Cause (2026-11-02, user asked why): substituting u = eta X into 1/2 sum u_i Phi_ij u_j is
+  right; the step to -1/4 sum (u_i-u_j) Phi_ij (u_i-u_j) is not: it needs Phi_ij^{ab} = Phi_ij^{ba}, but only
+  Phi_ij^{ab} = Phi_ji^{ba} holds. The ASR form drops the part of each 3x3 block antisymmetric in its
+  Cartesian indices (0 for central pair forces, Cauchy case). Checked (scratch cluster_identity.py, 40-atom
+  ZnO cluster of the exact model): E2 from energies = 1/2 u Phi u = 1061.81 / 435.42 eV, the -1/4 form
+  1025.80 / 471.43 = 1/2 u Phi_sym u exactly; crystal (paper_A_check.py, ZnO at the minimum, sigma=0):
+  Vc Sym(A) C12-type 49.91 vs exact 53.96 eV, Born-Huang 6e-3 eV off. Same cause as the pre-9.2 elastic
+  constants. Q (linear in d, row ASR only) is right. Now: stage 1 relaxes u0 in
+  the reference cell (stress += int Q^T du, exact), stage 2 Newton in strain with u0 relaxed at every RK4
+  point (force-free path) and PK2 stress integrated with J F^-1F^-1 c_rel F^-TF^-T, c_rel = elastic_born_huang
+  (current brackets, current stress) - QGQ/V.
+- elastic_born_huang lacked the (ab)<->(gd) average: at a non-hydrostatic stressed state its tensor is not
+  pair-symmetric (ZnO model at 15 GPa, internal relaxed: H13 51.452 / H31 51.420, exact 51.436 = average;
+  scratch crel_check.py). Average added in elastic_born_huang (all callers; hydrostatic: no change).
+- Terms whose first atom is outside the primitive cell are skipped (as get_phi_zeta_Xi).
+
+- Checked (exact ZnO model, stressed reference 14.9 GPa, FC1 0.032 eV/A, ranks 1-4, e1; scratch scripts
+  model_min.py, compare_relaxed.py): FOCEX vs the model's own minimum: strain 7.8e-10, u0 1.3e-9 A, FC2 at the
+  minimum 2.7e-6 eV/A^2 (7 printed digits), FC3 5e-7; residual stress 2e-10 GPa, Huang 2e-8 GPa; 3 strain
+  steps. Ranks 1-3 only: strain off 1e-5 (FC4 missing). Ge (line 5 absent): elastic constants identical.

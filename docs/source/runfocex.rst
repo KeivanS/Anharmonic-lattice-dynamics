@@ -87,7 +87,7 @@ conventional cubic cell, :math:`a = 5.7022565` Å) and 36 snapshots.
    # after compiling (see the Installation chapter)
    mkdir -p ~/runs/Ge && cd ~/runs/Ge
    cp <path-to-repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
-   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.2.x
+   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.3.x
 
 On a single modern core the run takes a few minutes. It should end with
 
@@ -781,6 +781,25 @@ They are:
 * **margin** (default :math:`10^{-6}`) — FCs smaller than this are not written
   to the ``fcN.dat`` files.
 
+An optional **line 5** (absent or 0: off) relaxes the reference structure with the fitted force
+constants (since 2026-11-02):
+
+.. code-block:: text
+
+   1      relax the reference with the fitted FCs (1) or not (0)
+
+FOCEX then minimizes the energy of the fitted Taylor expansion with respect to a homogeneous strain
+:math:`\eta` and the internal displacements :math:`u^0` (static displacement
+:math:`S = \eta (R+\tau) + u^0`, as in the ALATDYN paper and SCOP8), starting from the residual forces
+(FC1) and the reference stress of ``stress.params`` (without that file: estimated from FC1). The force
+constants are re-expanded about the relaxed structure, :math:`\Phi' = \Phi + \Psi S + \chi S S/2`,
+:math:`\Psi' = \Psi + \chi S`, :math:`\Pi' \approx 0`, and everything after the fit (phonons,
+elastic constants, Grüneisen parameters, QHA, ``fcN.dat``) uses the relaxed structure and these FCs;
+``stress.params`` is then taken as zero. The fit of the unrelaxed reference is kept in
+``fcN_unrelaxed.dat``, ``fcN_irr_unrelaxed.dat`` and ``lat_fc_unrelaxed.dat``; the relaxed cell and
+positions are written to ``POSCAR_relaxed``; the log lines start with ``RELAX_REFERENCE``. It needs FC3
+(and FC4 for :math:`\Psi'`) to change the FCs. The Born charges and dielectric tensor are not changed.
+
 .. _focex-stress-params:
 
 ``stress.params`` (optional)
@@ -811,7 +830,7 @@ input files in one directory, ``cd`` into it and run the binary.
    ls
    # default.params  dielectric.params  kpbs.params  latdyn.params
    # structure.params  POSCAR1  FORCEDISP1
-   ~/ALADYN/bin/focex-9.2.x | tee focex.out
+   ~/ALADYN/bin/focex-9.3.x | tee focex.out
 
 The run is serial and memory-bound: the largest array is the fit matrix, of
 size (number of force components + constraints) × (number of independent FCs).
@@ -962,7 +981,9 @@ Phonons and thermodynamics
 ``thermo_QHA.dat``
     Quasi-harmonic thermodynamics versus temperature, one line per temperature:
     ``T(K), E_eq(kJ/mol), F_eq(kJ/mol), V_eq/V0, strain, Cv, Cp(J/K/mol),
-    S(J/K/mol), linear CTE(1/K), Gruneisen, B_T(T)/B0``. At each temperature the equilibrium volume
+    S(J/K/mol), linear CTE(1/K), Gruneisen, B_T(T)/B_T(0), B_T (GPa), B0 (GPa)``. V_eq and B_T are
+    divided by their values at the lowest temperatures (below 8 K), so both go to 1 at T = 0; B_T(0) differs
+    from the static :math:`B_0` by the zero-point and residual pressures. At each temperature the equilibrium volume
     is where :math:`P = -\partial F/\partial V = 0`, with :math:`F` the static energy (Murnaghan equation of
     state with the Reuss modulus :math:`B_0` and the :math:`B_0'` from FC2 and FC3; without FC3,
     :math:`B_0' = 1 + 2\gamma` (Dugdale-MacDonald) with Leont'ev's :math:`\gamma` from the sound speeds) plus the phonon free energy. :math:`B_T = -V\,\partial P/\partial V` at
@@ -1089,12 +1110,12 @@ draw on the screen.
        DOS (total and the three acoustic branches), dispersion coloured by group velocity.
    * - ``qha.plt``
      - ``thermo_QHA.dat``, ``temp_free.dat``
-     - ``qha.pdf``: CTE, Gruneisen, :math:`B_T/B_0`; :math:`\Delta V/V` and strain; E, F, :math:`C_V`,
+     - ``qha.pdf``: CTE, Gruneisen, :math:`B_T(T)/B_T(0)`; :math:`\Delta V/V` and strain; E, F, :math:`C_V`,
        :math:`C_P`, S versus T; then F(V) and P(V) and free-energy contours.
    * - ``thermo.plt``
      - ``thermo_QHA.dat``, ``temp_free.dat``
      - ``thermo.pdf``: F(V) and P(V) with the equilibrium strain; E, F, :math:`C_V`, :math:`C_P`, S;
-       :math:`\Delta V/V`; CTE, Gruneisen, :math:`B_T/B_0` versus T, one plot each.
+       :math:`\Delta V/V`; CTE, Gruneisen, :math:`B_T(T)/B_T(0)` versus T, one plot each.
    * - ``chi.plt``
      - ``chi_real.dat``, ``chi_imag.dat``
      - ``chi.pdf``: dielectric function and optical constants.
@@ -1157,7 +1178,7 @@ Troubleshooting
 
 ``End of file`` while reading ``default.params`` or ``latdyn.params``
     The file has fewer lines than expected. Start from the template in the ``FOCEX``
-    directory: ``default.params`` has 4 lines, and line 2 of ``latdyn.params`` contains six
+    directory: ``default.params`` has 4 lines (an optional 5th), and line 2 of ``latdyn.params`` contains six
     numbers (shift **and** normal).
 
 ``Bad real number in item 4 of list input`` (``latdyn.params``)
@@ -1227,6 +1248,13 @@ needs.
 
 Version history
 ---------------
+
+9.3 (2026-11-02)
+    Optional relaxation of an unrelaxed reference (``default.params`` line 5 = 1): strain and
+    atomic shifts that remove the residual forces and stress, force constants re-expanded about the
+    relaxed structure and used downstream, ``POSCAR_relaxed`` written; Born-Huang elastic
+    constants symmetric under pair exchange at stressed references; QHA column 11 is
+    :math:`B_T(T)/B_T(0)`.
 
 9.2 (2026-11-01)
     Elastic constants from the Born-Huang brackets with the stress terms (the symmetrized

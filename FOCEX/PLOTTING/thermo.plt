@@ -26,5 +26,5 @@ plot 'thermo_QHA.dat' u 1:($4-1)*100 lw 2 title "dV/V (%)" ,\
 set key top right
 plot 'thermo_QHA.dat' u 1:($9*1E5) lw 2 title "10^5 CVE(1/K)" ,\
      'thermo_QHA.dat' u 1:($10)  lw 2 title "Gruneisen" ,\
-     'thermo_QHA.dat' u 1:($11) lw 2 title "B(T)/B_0"
+     'thermo_QHA.dat' u 1:($11) lw 2 title "B_T(T)/B_T(0K)"
 #pause -1
