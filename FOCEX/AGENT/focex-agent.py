@@ -1316,7 +1316,7 @@ class Agent:
         nb = 3 * int(open(os.path.join(d, 'structure.params')).read().splitlines()[10].split()[0])
         for name in ('bvel.plt', 'all.plt', 'qha.plt'):
             out, replace_next = [], False
-            for line in per_band(open(os.path.join(HERE, name)).read(), nb).splitlines():
+            for line in per_band(open(os.path.join(HERE, 'PLOTTING', name)).read(), nb).splitlines():
                 if replace_next and 'xtics' in line:
                     out.append(ktics)
                     replace_next = False

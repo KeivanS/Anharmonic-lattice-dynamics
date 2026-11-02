@@ -534,7 +534,8 @@ snapshots, sqrt(4/5 sum (x_i - xbar)^2) / SVD sigma: median FC2 1.04, FC3 0.91; 
   with a confusing message. `default.params` has 4 lines (the 32 maxterms/maxtermzero/maxtermsindep/maxgroups lines were
   removed 2026-10-27: setup_maps sizes its arrays itself; an old 36-line file still works); line 2 of
   `latdyn.params` must carry **six** numbers (shift *and* normal).
-- `bands.dat` columns 6+ are ω², not ω (`bandgen.plt` applies `521.1*sqrt()`).
+- `bands.dat` columns 6+ are ω², not ω (`bandgen.plt` applies `521.1*sqrt()`). Plot scripts and `bandplot` are in
+  `FOCEX/PLOTTING/` since 2026-11-02 (user); the agent reads its templates from there, `make` links bandplot.
 - Group velocities (bs_freq.dat, bands.dat, ibz_bands.dat) are Hellmann-Feynman since 2026-10-22:
   `finitedif_vel` returns `v1` from `get_freq`; before, it returned the finite difference of
   energy-sorted bands (BZO crossing: 0.17/8.50 km/s FD vs 0.65/9.08 HF). Both stay in

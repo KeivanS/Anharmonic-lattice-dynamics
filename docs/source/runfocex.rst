@@ -1062,7 +1062,7 @@ After a run, look at these numbers, in this order:
 Plotting the results
 --------------------
 
-Gnuplot scripts for the standard figures are in the ``FOCEX`` directory. Copy them into the
+Gnuplot scripts for the standard figures, and ``bandplot``, are in ``FOCEX/PLOTTING``. Copy them into the
 directory with the FOCEX output and run ``gnuplot <script>``. Scripts that do not set a terminal
 draw on the screen.
 

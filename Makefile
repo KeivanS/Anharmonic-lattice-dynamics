@@ -5,7 +5,7 @@
 #   make sc_snaps         SC-SNAPS (sc_snaps.x, poscar2xyz.py)
 #   make thermacond       THERMACOND with MPI (tcond-<ver>.x); make thermacond-serial: no MPI
 #   make anfomod          ANFOMOD
-#   make python-tools     links focex-agent, focex-diagnose (FOCEX/AGENT) and bandplot (FOCEX)
+#   make python-tools     links focex-agent, focex-diagnose (FOCEX/AGENT) and bandplot (FOCEX/PLOTTING)
 #   make scop8            SCOP8 (not in "all": it does not compile at present)
 #   make clean            remove the object files of every part
 # Another place: make DESTDIR=/some/where.  THERMACOND needs mpif90.
@@ -55,7 +55,7 @@ scop8:
 python-tools:
 	ln -sf $(CURDIR)/FOCEX/AGENT/focex-agent.py $(DESTDIR)/focex-agent
 	ln -sf $(CURDIR)/FOCEX/AGENT/diagnose.py $(DESTDIR)/focex-diagnose
-	ln -sf $(CURDIR)/FOCEX/bandplot $(DESTDIR)/bandplot
+	ln -sf $(CURDIR)/FOCEX/PLOTTING/bandplot $(DESTDIR)/bandplot
 
 # the parts' clean rules fail when there is nothing to remove; carry on regardless
 clean:

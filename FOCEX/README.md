@@ -63,7 +63,7 @@ is in `example/Ge`; see `example/INPUT_FILE_INFO.md`.
 
 ## Plotting
 
-The `*.plt` files in this directory are gnuplot scripts for the standard figures
+The `*.plt` files in `PLOTTING/` are gnuplot scripts for the standard figures
 — dispersion (`bandgen.plt`, `bvel.plt`, `all.plt`), force-constant decay
 (`fcs.plt`, `pair.plt`), thermodynamics (`qha.plt`, `thermo.plt`), dielectric
 response (`chi.plt`) and the k-meshes and Wigner–Seitz cells (`kp.plt`,
