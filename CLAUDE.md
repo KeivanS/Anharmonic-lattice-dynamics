@@ -97,7 +97,10 @@ POSCAR -> VASP relax/SCF/DFPT -> SC_SNAPS -> supercell VASP runs -> FORCEDISP1 -
 plots, restartable (`state.json`, `report.log`). Everything is in `FOCEX/AGENT/`: the script,
 `diagnose.py`, `focexagent_manual.tex/.pdf` (same content as `docs/source/runfocexagent.rst`: change
 both, rebuild both, Sphinx at zero warnings), `focex-agent-instructions.txt` (the template),
-`tests/` (argon, fake VASP). `FOCEX/focex-agent.py` is a forwarder for old run scripts. The script
+`tests/` (argon, fake VASP). `FOCEX/focex-agent.py` was a forwarder to it for the run scripts of
+pre-2026-10-23 projects; removed 2026-10-30 (user: one copy only). A project whose
+`run_workflow.sh` still names that path needs the path changed to `FOCEX/AGENT/focex-agent.py`
+(or a fresh setup). The script
 finds FOCEX/ (templates, utility/) as the parent of its folder (realpath, so symlinks work);
 `make python-tools` (part of the top-level `make`) links them as `focex-agent`, `focex-diagnose` in DESTDIR.
 Run it with `~/dftphonon-env/bin/python` (numpy, spglib, pymatgen; Homebrew python3 has none). That one
