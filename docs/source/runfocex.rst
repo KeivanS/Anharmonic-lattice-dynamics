@@ -1281,7 +1281,9 @@ Version history
     IR and Raman activity, parity and irreducible representation of the :math:`\Gamma` modes
     (``gamma_modes.dat``), with the character table computed from the symmetry operations; one
     :math:`\Gamma` threshold for frequencies and Gruneisen limits (a path ending at :math:`|k|\approx 10^{-10}`
-    got the wrong limit); ``allplots`` makes all PDF plots of a run.
+    got the wrong limit); one symmetry tolerance (:math:`10^{-3}` Å) for the operations and the
+    images of the atoms (a structure relaxed slightly off its symmetry stopped with "atom not found");
+    ``allplots`` makes all PDF plots of a run.
 
 9.3 (2026-11-02)
     Optional relaxation of an unrelaxed reference (``default.params`` line 5 = 1): strain and
