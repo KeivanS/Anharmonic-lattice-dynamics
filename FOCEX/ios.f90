@@ -1205,6 +1205,9 @@
 !===========================================================
  subroutine write_independent_fcs(n,sig,sd,ulog)
 !! write independent or irreducible force constants in file fci_irr.dat (i=rank)
+!! sd(rank) = mean standard error of the irreducible FCs of that rank (sig = standard error of each,
+!! from the least-squares fit: enforce_inv=0 svd_set, 1 fit_kernel_basis; 0 = not estimated: LASSO,
+!! itemp=1)
  use svd_stuff
  use atoms_force_constants
  use params
@@ -1251,9 +1254,9 @@
                   stop
                endif
             endif
-            sd(rnk)=sd(rnk)+sig(cnt2)/sqrt(1.*dim_al)
+            sd(rnk)=sd(rnk)+sig(cnt2)
             if(verbose) write(ulog,6)'rank,group,nind,cnt(rnk),cntot,sd(rnk)=' &
-&                       ,rnk,g,ti,cnt,cnt2,sig(cnt2)/sqrt(1.*dim_al),sd(rnk)
+&                       ,rnk,g,ti,cnt,cnt2,sig(cnt2),sd(rnk)
         enddo
       enddo
       if(cnt .ne. 0 ) sd(rnk)=sd(rnk)/cnt
@@ -1261,7 +1264,8 @@
 
       res=res+map(rnk)%nkeptind
    enddo
-   write(ulog,5)' !==== sd(rank) for each rank=1,8 ',(sd(rnk),rnk=1,maxrank)
+   write(ulog,5)' !==== sd(rank) = mean standard error of the FCs of each rank=1,8 ',(sd(rnk),rnk=1,maxrank)
+   if(all(sig.eq.0)) write(ulog,*)' sd(rank): no standard errors for this fit (LASSO or itemp=1)'
 
 
 3 format(a,i6,3(2x,g14.7))

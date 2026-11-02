@@ -11,7 +11,7 @@
 \newcommand{\Wt}{W^{(3)}}\newcommand{\Wf}{W^{(4)}}
 \title{Stress, elastic constants and the equation of state\\ from the FOCEX force constants}
 \author{FOCEX notes (draft for checking)}
-\date{23 October 2026; Part II added 27 October 2026}
+\date{23 October 2026; Part II added 27 October 2026; Part III 1 November 2026}
 \begin{document}
 \maketitle
 
@@ -508,6 +508,153 @@ CaF$_2$ & $-0.005$ & 639.282015 & 639.282015 & 3.399760 & 3.399762 & 3.399773\\
   (ZnO) and 0.167 and $-1.0$ (CaF$_2$).
 \item Not yet tested: $\Wt$ from the FC3 lattice sums, Eq.~\eqref{eq:Wcompute}, which is what FOCEX would
   compute. Scripts and output: \texttt{FOCEX/REFERENCE/exact\_model/bprime/}.
+\end{itemize}
+
+\part*{III. Mode Gr\"uneisen parameters in the limit \texorpdfstring{$q\to0$}{q -> 0} (1 November 2026)}
+
+\section{The definition used in FOCEX and THERMACOND}
+Under an isotropic strain $\eta_{\al\be}=\ep\,\de_{\al\be}$ ($dV/V=3\ep$), with the internal coordinates
+relaxed, the atoms move by $S_{R\tau}=\ep\,y_{R\tau}$ with
+\begin{equation}
+y_{R\tau}=R+\tau+\xi_\tau,\qquad \xi_\tau=-\sum_{\tau'}\Ga_{\tau\tau'}\,\Tr_{\al}Q_{\tau';\al\al}
+\label{eq:yrelax}
+\end{equation}
+($\Ga$, $Q$ of Eq.~\eqref{eq:AQphi}; atom 1 held fixed). To first order in $\ep$ the harmonic FCs change by
+$\delta\Phi_{ij}=\ep\sum_k\Psi_{ijk}y_k$, and the mode Gr\"uneisen parameter is
+\begin{equation}
+\ga_s(q)=-\frac{V}{\omega_s}\frac{\partial\omega_s}{\partial V}=-\frac{\langle e_s|W(q)|e_s\rangle}{6\,\omega_s^2(q)},
+\qquad
+W_{\tau\al,\tau'\be}(q)=\sum_{R'}\sum_{k}\frac{\Psi^{\al\be\ga}_{0\tau,R'\tau',k}\,y_{k\ga}}{\sqrt{m_\tau m_{\tau'}}}\,e^{iq\cdot R'} .
+\label{eq:gamma}
+\end{equation}
+The absolute positions $y_k$ may be used because $\sum_k\Psi_{ijk}=0$. The phase of $W$ must be the one of
+the dynamical matrix $D(q)$ whose eigenvectors $e_s$ are used. Both codes build $D$ with $e^{iq\cdot R'}$.
+
+\paragraph{Correction (2026-11-01).} Until this date FOCEX built $W$ with $e^{iq\cdot(R'+\tau'-\tau)}$ while
+its eigenvectors come from $D$ with $e^{iq\cdot R'}$ (\texttt{set\_dynamical\_matrix\_std}). The two
+conventions differ by the diagonal phase $e^{iq\cdot\tau}$, so $\ga$ was correct only at $q=0$. On the exact
+model (HfO$_2$, Sec.~\ref{sec:grtest}) FOCEX's \texttt{bs\_grun.dat} was reproduced to its printed digits by
+this mismatched combination, and differed from Eq.~\eqref{eq:gamma} by up to 3.2 (acoustic branches next to
+$\Ga$: $-4.13,-4.54,-1.61$ instead of $-1.70,-1.35,-0.66$). THERMACOND's own routine used the right phase but
+no relaxation ($\xi=0$). Both codes now call one routine (\texttt{common/gruneisen.f90}) that implements
+Eq.~\eqref{eq:gamma} with the relaxation.
+
+\section{The acoustic branches at \texorpdfstring{$q\to0$}{q -> 0}}
+For the three acoustic modes both $\omega_s^2$ and $\langle e_s|W|e_s\rangle$ vanish like $q^2$, so
+Eq.~\eqref{eq:gamma} is $0/0$ at $\Ga$. Evaluated directly at small $q$ it loses digits: the numerator is
+$q^2\times O(1)$ while the elements of $W$ are $O(1)$, so its relative error is $\sim\varepsilon_{\rm mach}/q^2$
+(Table~\ref{tab:grq}, last rows). The limit is obtained analytically.
+
+Along a unit vector $\hat q$ write
+\begin{equation}
+D(q\hat q)=D_0+qD_1+q^2D_2+O(q^3),\qquad W(q\hat q)=W_0+qW_1+q^2W_2+O(q^3),
+\end{equation}
+with $D_n=\frac1{n!}\sum(i\hat q\cdot R')^n\Phi/\sqrt{mm'}$ and the same for $W_n$. All are Hermitian. Let
+$T$ ($3n\times3$) hold the rigid translations, $T_{\tau\be,\al}=\sqrt{m_\tau/M}\,\de_{\al\be}$ ($M=\sum_\tau m_\tau$),
+$P=\Id-TT^\dagger$, and $G=(PD_0P)^{+}$ (pseudo-inverse: $T$ spans its null space).
+\begin{enumerate}
+\item $D_0T=0$ and $W_0T=0$: the ASR of $\Phi$ and of $\Psi$ in its second index.
+\item $T^\dagger D_1T=0$. Its elements are $\frac iM S^{\al\be\ga}\hat q_\ga$ with
+  $S^{\al\be\ga}=\sum_{\tau,R'\tau'}\Phi^{\al\be}_{0\tau,R'\tau'}(R'+\tau'-\tau)_\ga$ (the $\tau,\tau'$ parts of
+  $R'$ drop out by the ASR). $\Phi_{ij}=\Phi_{ji}$ and the ASR give $S^{\al\be\ga}=-S^{\be\al\ga}$; the rotational
+  invariance of $\Phi$, summed over $\tau$, gives $S^{\al\be\ga}=S^{\al\ga\be}$ (its FC1 terms add up to the total
+  force, which is zero). A tensor antisymmetric in $(\al\be)$ and symmetric in $(\be\ga)$ vanishes.
+\item $T^\dagger W_1T=0$ is not derived here. It holds on the exact model to $10^{-13}$ (Table~\ref{tab:grq}),
+  and the code prints it. A non-zero value would make $\ga$ diverge as $1/q$.
+\end{enumerate}
+\paragraph{Frequencies.} Second-order degenerate perturbation theory on the translation subspace gives
+\begin{equation}
+\omega_s^2=q^2a_s+O(q^3),\qquad A=T^\dagger D_2T-T^\dagger D_1GD_1T,
+\label{eq:Achr}
+\end{equation}
+with $a_s$ the eigenvalues of $A$ (eigenvectors $u_s$), and $e_s=Tu_s-qGD_1Tu_s+O(q^2)$. $A$ is the
+Christoffel matrix divided by the density; its second term is the internal strain.
+\paragraph{Numerator.} By Hellmann--Feynman, $\langle e_s|W|e_s\rangle=\partial\omega_s^2/\partial\la$ for
+$D+\la W$. That matrix has the same structure (1 and 2 hold for it to first order in $\la$, 3 assumed), so its
+acoustic eigenvalues are $q^2$ times those of
+$A(\la)=T^\dagger(D_2+\la W_2)T-T^\dagger(D_1+\la W_1)G(\la)(D_1+\la W_1)T$, with
+$G(\la)=(P(D_0+\la W_0)P)^+$ and $dG/d\la=-GW_0G$. Hence $\langle e_s|W|e_s\rangle=q^2b_s+O(q^3)$, with
+\begin{equation}
+B=\frac{dA}{d\la}\Big|_0=T^\dagger W_2T-T^\dagger W_1GD_1T-T^\dagger D_1GW_1T+T^\dagger D_1GW_0GD_1T,
+\qquad b_s=u_s^\dagger Bu_s ,
+\label{eq:Bchr}
+\end{equation}
+where, if $a_s$ is degenerate, $b_s$ are the eigenvalues of $B$ within that subspace of $A$. Therefore
+\begin{equation}
+\boxed{\ \ga_s(\hat q)=\lim_{q\to0}\ga_s(q\hat q)=-\frac{b_s}{6\,a_s}\ }
+\label{eq:gq0}
+\end{equation}
+is finite and depends on the direction $\hat q$ only. For a Bravais lattice $G=0$ and
+$\ga_s=-u_s^\dagger T^\dagger W_2Tu_s/(6a_s)$.
+
+\paragraph{In the codes.} \texttt{gruneisen\_longwave} (\texttt{common/gruneisen.f90}) is used for the three
+rigid translations at $\Ga$ (those with $\omega^2=0$ from \texttt{freq\_vel}), along the direction of approach
+(band-path segment; on a mesh the fixed direction $u$), and for the three acoustic modes (eigenvectors
+closest to rigid translations) at $0<|k|\,V^{1/3}<0.05$ along $\hat k$, where the standard formula is a
+$q^2$ cancellation (the Taylor error there is $O(q^2)$: $\lesssim4\times10^{-4}$ in Table~\ref{tab:grq}). $W_0,W_1,W_2$ are the exact sums over the FC3 terms.
+$D_0,D_1,D_2$ are taken from the code's own $D$ at $q=\pm h,\pm2h,\pm3h$ along $\hat q$
+($h=10^{-3}|G|$): the even and odd parts are fitted exactly to degree 4 and 5. In this way the non-analytic
+term of a polar crystal enters as it does in the frequencies: $D_0$ then contains its $\hat q$-dependent limit,
+which annihilates $T$ by the charge sum rule and changes $G$ (the piezoelectric stiffening of the acoustic
+waves).
+
+\section{Tests on the exact model}\label{sec:grtest}
+Model of Part II (FC1--FC4 exact, stressed reference), CaF$_2$, wurtzite ZnO and monoclinic HfO$_2$
+($P2_1/c$, 12 atoms). FC2 is its analytic Hessian; $\sum_k\Psi_{ijk}y_k$ is the central difference of the
+Hessian along $y$, exact since FC5 $=0$ (\texttt{FOCEX/REFERENCE/exact\_model/gruneisen\_q0.py}).
+\begin{table}[h]
+\centering
+\caption{HfO$_2$, $\hat q\propto(\sqrt2-1,\sqrt3-1,\sqrt5-2)$, with relaxation: Eq.~\eqref{eq:gq0} gives
+$\ga=-2.004678,-1.096437,-0.831788$. Direct evaluation of Eq.~\eqref{eq:gamma} at $q\hat q$:}
+\label{tab:grq}
+\begin{tabular}{lccc}
+\toprule
+$q$ (\AA$^{-1}$) & $\max_s|\ga^{\rm direct}_s-\ga_s(\hat q)|$ & $\max_s|\omega_s^2/q^2-a_s|/q$ & $\max_s|\langle W\rangle_s/q^2-b_s|/q$\\
+\midrule
+$10^{-1}$ & $4.2\times10^{-2}$ & $6.4\times10^{-2}$ & $0.29$\\
+$10^{-2}$ & $4.3\times10^{-4}$ & $6.6\times10^{-3}$ & $3.1\times10^{-2}$\\
+$10^{-3}$ & $4.3\times10^{-6}$ & $6.6\times10^{-4}$ & $3.1\times10^{-3}$\\
+$3\times10^{-4}$ & $1.7\times10^{-7}$ & $1.9\times10^{-4}$ & $1.1\times10^{-3}$\\
+$10^{-5}$ & $2.7\times10^{-4}$ & $0.17$ & $5.8$\\
+$10^{-6}$ & $2.6\times10^{-2}$ & $133$ & $5.6\times10^{3}$\\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{itemize}
+\item The direct values approach the limit as $q^2$ down to $q\simeq3\times10^{-4}$; below that round-off
+  ($\propto1/q^2$) takes over. At $q=10^{-6}$, where both codes used to evaluate $\Ga$, the direct value is off
+  by $0.03$ here and by up to 0.7 in ZnO.
+\item The last two columns fall linearly with $q$: $\omega^2-a q^2$ and $\langle W\rangle-bq^2$ are $O(q^4)$, so the
+  coefficients $a_s$ and $b_s$ are exactly the $q^2$ terms.
+\item Same at $q=10^{-3}$ for all three crystals, four directions each, with and without relaxation:
+  $\max|\ga^{\rm direct}-\ga(\hat q)|\le8\times10^{-6}$. $|T^\dagger D_1T|\le2\times10^{-16}$, $|T^\dagger W_1T|\le3\times10^{-13}$
+  (relative). Degenerate TA pairs (cubic [100], [111]; hexagonal $c$) come out equal.
+\item The relaxation $\xi$ changes the acoustic $\ga$ of HfO$_2$ by up to 0.13 and of ZnO by up to 0.04; CaF$_2$
+  has $\xi=0$ by symmetry.
+\item With a non-analytic term (ZnO model plus rigid-ion charges $Z_{zz}({\rm Zn})=2.1=-Z_{zz}({\rm O})$,
+  $\ep_{zz}=5.5$, in $D$ only; \texttt{gruneisen\_q0\_na.py}): direct $\to$ Eq.~\eqref{eq:gq0} with $D_0$ including
+  $NA(\hat q)$, to $1.5\times10^{-6}$ at $q=10^{-3}$ in three directions. The term changes the LA $\ga$ along $c$
+  from $-0.618$ to $-0.541$. Not yet run: the codes' own route for a polar crystal (born\_flag $=2$).
+\end{itemize}
+\paragraph{FOCEX and THERMACOND on the exact model.} HfO$_2$ forces of the model cut after the cubic term
+(the orders separated exactly from $F(\pm u)$, $F(\pm2u)$; \texttt{mkcubic.py}), ranks 1--3 fitted with the
+Huang rows and \texttt{stress.params}; THERMACOND job 0 on FOCEX's \texttt{fc2.dat}, \texttt{fc3.dat}.
+\texttt{gruneisen\_focex\_check.py} recomputes $\ga$ from the exact FCs at the 520 band-path points with the
+codes' rules (bands matched by frequency; FOCEX writes them in band-connection order).
+\begin{itemize}
+\item Frequencies: FOCEX $=$ exact to $2\times10^{-4}$\,cm$^{-1}$.
+\item Before the correction: FOCEX's $\ga$ off by up to 3.2 (reproduced to its 4 printed decimals by the
+  mismatched phases). After: FOCEX $=$ exact to $5\times10^{-5}$ (its printed digits) at all 519 points
+  off $\Ga$; THERMACOND to its 4 printed significant digits. The relaxation $\xi$ equals FOCEX's own
+  $\Tr\,\xi$ (\texttt{get\_phi\_zeta\_Xi}) to $2\times10^{-15}$\,\AA.
+\item At $\Ga$ along the first path segment $[001]$: both codes give $-1.691288,\,-1.344395,\,-0.658566$
+  $=$ Eq.~\eqref{eq:gq0}; along $u$ (IBZ mesh) FOCEX gives $-2.004678,\,-1.096437,\,-0.831788$ $=$
+  Table~\ref{tab:grq}. Checks of items 1--3: FOCEX $\le7\times10^{-13}$, THERMACOND (7-digit FC files)
+  $\le5\times10^{-8}$.
+\item Remaining rule-dependence: off $\Ga$ the eigenvectors are taken at $k+3\times10^{-4}|G|u$ (to separate
+  degenerate bands) and $W$, $\omega^2$ at $k$. Next to $\Ga$ the acoustic $\ga$ then depends on the phase
+  convention by $\simeq1.4\times10^{-4}/|k|$ (\AA$^{-1}$): $9\times10^{-3}$ at $|k|=0.015$, $10^{-3}$ at
+  $0.14$; both codes use $e^{ik\cdot R}$ consistently.
 \end{itemize}
 
 \begin{thebibliography}{9}

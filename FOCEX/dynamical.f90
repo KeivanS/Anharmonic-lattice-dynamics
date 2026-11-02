@@ -183,7 +183,7 @@
   if(include_fc(3).ne.0) then
      write(*,*)' calling gruneisen'
      open(ugrun,file='bs_grun.dat')
-     call gruneisen(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,eigenvec_bs,grun_bs,ugrun)
+     call gruneisen(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,eigenvec_bs,grun_bs,ugrun,1)
      close(ugrun)
   endif
 
@@ -216,7 +216,7 @@
 
   if(include_fc(3).ne.0) then
      open(ugrun,file='ibz_grun.dat')
-     call gruneisen(nibz,kibz,dk_bs,ndyn,eivalibz,eivecibz,grunibz,ugrun)
+     call gruneisen(nibz,kibz,dk_bs,ndyn,eivalibz,eivecibz,grunibz,ugrun,0)
      close(ugrun)
   endif
 
@@ -1531,111 +1531,130 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 
  end subroutine dyn_coulomb_structfactor
 !============================================================
- subroutine gruneisen(nkp,kp,dk,ndn,eivl,eivc,grn,ugr2)
-! takes the eigenvalues (w^2) and eigenvectors calculated along some
-! crystalline directions and calculates the corresponding mode
-! gruneisen parameters
+ subroutine gruneisen(nkp,kp,dk,ndn,eivl,eivc,grn,ugr2,ipath)
+!! mode Gruneisen parameters at the k-points kp (eivl, eivc from get_frequencies with the same ipath),
+!! computed by the routine shared with THERMACOND (common/gruneisen.f90, module gruneisen_rules):
+!! gamma = -<e|W(k)|e>/(6 omega^2), W from the cubic FCs times the positions y = x + xi (internal
+!! relaxation per unit isotropic strain), with the phase exp(ik.R) of set_dynamical_matrix_std; the 3 rigid
+!! translations at Gamma get the long-wave limit along the direction of approach.
+!! Until 2026-11-01 W used exp(iq.(R+taup-tau)) while the eigenvectors come from exp(ik.R): gamma was
+!! wrong away from Gamma and for the acoustic branches near it (exact-model test, HfO2).
  use ios
- use lattice
+ use lattice, only : volume_g0
  use geometry
  use atoms_force_constants
  use svd_stuff
  use eigen
- use mech
+ use mech, only : xi
  use constants
+ use gruneisen_rules, only : dynmat_routine, w_terms_set, internal_strain_trace, mode_gruneisen
  implicit none
- integer, intent(in) :: nkp,ndn,ugr2
+ integer, intent(in) :: nkp,ndn,ugr2,ipath
  real(r15), intent(in) :: kp(3,nkp),dk(nkp),eivl(ndn,nkp)
  complex(r15), intent(in) :: eivc(ndn,ndn,nkp)
  complex(r15), intent(out) :: grn(ndn,nkp)
- integer ik,tau,la,al,be,ga,j,k,taup,k0,ta1,ta2,t,cnt3,g,ti,ired
- real(r15) mi,mj,rr3(3),rr2(3),qq(3),omk,rot(3,ndn/3,ndn/3) 
- complex(r15) zz,one,term
+ procedure(dynmat_routine) :: get_dynmat
+ integer ik,tau,la,al,be,ga,j,k,taup,k0,t,g,ti,ired,n2,n3,pass,nat
+ real(r15) mi,mj,y,xir(ndn),mass(natom_prim_cell),dev
+ integer, allocatable :: row(:),col(:)
+ real(r15), allocatable :: val(:),ph(:,:)
 
- one = dcmplx(1d0,0d0)
-! write(ugr2,*)'# la, nk , dk(nk) ,     kp(1:3,nk)     , om(la,nk),Re(gruneisen(la,nk)), Im(gr))'
+ nat=natom_prim_cell
+ mass=atom0(1:nat)%mass
+! FC2 terms -> internal relaxation of the sublattices per unit isotropic strain
+ do pass=1,2
+    n2=0
+    do g=1,map(2)%ngr
+    do ti=1,map(2)%ntind(g)
+       if(map(2)%keep(counteri(2,g,ti)).ne.1) cycle
+       ired = map(1)%nkeptind + current(2,g,ti)
+       do t=1,map(2)%nt(g)
+          if (map(2)%gr(g)%iat(1,t).gt.nat) cycle   ! first atom in the primitive cell only
+          if (map(2)%gr(g)%mat(t,ti).eq.0) cycle
+          n2=n2+1
+          if (pass.eq.2) then
+             tau=map(2)%gr(g)%iat(1,t); al=map(2)%gr(g)%ixyz(1,t)
+             j=map(2)%gr(g)%iat(2,t);   ga=map(2)%gr(g)%ixyz(2,t)
+             row(n2)=al+3*(tau-1); col(n2)=ga+3*(iatomcell0(j)-1)
+             val(n2)=fcs(ired)*map(2)%gr(g)%mat(t,ti)
+             ph(:,n2)=atompos(:,j)-atompos(:,tau)
+          endif
+       enddo
+    enddo
+    enddo
+    if (pass.eq.1) allocate(row(n2),col(n2),val(n2),ph(3,n2))
+ enddo
+ call internal_strain_trace(nat,n2,row,col,val,ph,xir)
+ if (ndn.gt.3) then   ! mech's xi is set by get_phi_zeta_Xi only for more than one atom
+    dev=0
+    do t=1,ndn
+       dev=max(dev,abs(xir(t)-(xi(t,1,1)+xi(t,2,2)+xi(t,3,3))))
+    enddo
+    write(ulog,'(a,es10.3,a)')' GRUNEISEN: internal relaxation xi (per unit isotropic strain), max |xi - Tr xi(mech)|=',dev,' A'
+ endif
+ deallocate(row,col,val,ph)
+
+! FC3 terms of W: Psi(tau al, j be, k ga) (x_k + xi_k0)_ga / sqrt(m m'), phase vector R_j
+ do pass=1,2
+    n3=0
+    do g=1,map(3)%ngr
+    do t=1,map(3)%nt(g)
+       tau=map(3)%gr(g)%iat(1,t)
+       if (tau.gt.nat) cycle
+       al=map(3)%gr(g)%ixyz(1,t); be=map(3)%gr(g)%ixyz(2,t); ga=map(3)%gr(g)%ixyz(3,t)
+       j=map(3)%gr(g)%iat(2,t); k=map(3)%gr(g)%iat(3,t)
+       taup=iatomcell0(j); k0=iatomcell0(k)
+       mi=atom0(tau)%mass; mj=atom0(taup)%mass
+       y=atompos(ga,k)+xir(ga+3*(k0-1))
+       do ti=1,map(3)%ntind(g)
+          if (map(3)%gr(g)%mat(t,ti).eq.0) cycle
+          n3=n3+1
+          if (pass.eq.2) then
+             ired=counteri(3,g,ti) + map(1)%ntotind + map(2)%nkeptind
+             row(n3)=al+3*(tau-1); col(n3)=be+3*(taup-1)
+             val(n3)=fcs(ired)*map(3)%gr(g)%mat(t,ti)*y/sqrt(mi*mj)
+             ph(:,n3)=atompos(:,j)-atompos(:,taup)
+          endif
+       enddo
+    enddo
+    enddo
+    if (pass.eq.1) allocate(row(n3),col(n3),val(n3),ph(3,n3))
+ enddo
+ call w_terms_set(n3,row,col,val,ph)
+ deallocate(row,col,val,ph)
+
+ call mode_gruneisen(get_dynmat,nkp,kp,ipath,ndn,nat,mass,volume_g0**0.33333333d0,eivl,eivc,grn,ulog)
+
  write(ugr2,*)'# nk , dk(nk) ,     kp(1:3,nk)     , om(la,nk),Re(gruneisen(la,nk)) '
-  do ik=1,nkp
-     qq(:) = kp(:,ik)
-  do la=1,ndn
-!    write(ulog,6)'Starting gruneisen parameters for kpoint & band# ',ik,la,kp(:,ik)
-!    write(ulog,*)' fcs_3(t),term(2),6*eival(la,i),rr3(3),grun(la,i)'
-     grn(la,ik) = 0
-     omk = mysqrt(eivl(la,ik))*cnst
-
-     if(la.le.4 .and. ik.le.2)  rot=0
-
-     do tau=1,natom_prim_cell
-        mi = atom0(tau)%mass
-        cnt3=0
-       
-        gloop: do g=1,map(3)%ngr
-           if(g.gt.1) then
-              cnt3=cnt3+map(3)%ntind(g-1)  ! cnt3 counts all the terms in the previous groups
-           endif
-           tloop: do t=1,map(3)%nt(g)  
-
-              if ( tau .ne. map(3)%gr(g)%iat(1,t) ) cycle tloop
-              al = map(3)%gr(g)%ixyz(1,t)  !ixyzterm_3(1,t)
-              be = map(3)%gr(g)%ixyz(2,t)  !ixyzterm_3(2,t)
-              ga = map(3)%gr(g)%ixyz(3,t)  !ixyzterm_3(3,t)
-              j  = map(3)%gr(g)%iat(2,t)   ! this atompos index
-              k  = map(3)%gr(g)%iat(3,t)
-              taup = iatomcell0(j)     ! atom_sc(j)%cell%tau  is incorrect
-              k0 = iatomcell0(k)     !atom_sc(k)%cell%tau is incorrect
-              mj = atom0(taup)%mass
-              ta1= al + 3*(tau-1)
-              ta2= be + 3*(taup-1)
-              rr3(:) = atompos(:,k)                  ! R"+tau"
-!             rr2(:) = atompos(:,j) - atompos(:,taup)  ! R consistent with dynmat which uses j-j0
-! K1 2-9-24 this one is consistent with exp(iq.(r+taup-tau))
-              rr2(:) = atompos(:,j) - atompos(:,tau)  ! R consistent with dynmat which uses j-i0  ! new phase convention
-! K1 2-9-24 this one is consistent with exp(iq.(r+taup-tau))
-              zz = cdexp( ci * ( qq .dot. rr2) )
-              do ti=1,map(3)%ntind(g)  ! index of independent terms in that group g
-!                 ired=cnt3+ti + map(1)%ntotind + map(2)%nkeptind 
-                 ired=counteri(3,g,ti) + map(1)%ntotind + map(2)%nkeptind 
-                 term = zz * eivc(ta2,la,ik)*conjg(eivc(ta1,la,ik))/sqrt(mi*mj) &
-         &             * fcs(ired) * (rr3(ga) - dot_product(gam(3*(k0-1)+ga,:), &
-         &             (qiu(:,1,1)+qiu(:,2,2)+qiu(:,3,3)) ))
-                 grn(la,ik) = grn(la,ik) + term * map(3)%gr(g)%mat(t,ti)
-
-! if (ik.eq.nkp .and. map(3)%gr(g)%mat(t,ti).ne.0) then
-!    write(*,9)'t,ti,la,g,tau,ired,R2,R3,zz,fc,term=',t,ti,la,g,tau,ired,rr2,rr3,zz,fcs(ired),term
-! endif
-                 if(la.le.4 .and. ik.le.2) then ! verify rotational invce sum_R2 psi^{al,al,ga} R2^ga =0 (forall tau,r1,al)
-                    if(al.eq.be) rot(al,tau,taup)=rot(al,tau,taup)+fcs(ired)*rr3(ga)
-                 endif
-              enddo
-           enddo tloop
-        enddo gloop
-     enddo
-     
-     if (eivl(la,ik).eq.0) then      ! rigid translation at k=0 (freq_vel): no Gruneisen parameter
-        grn(la,ik)=0
-     else
-        grn(la,ik) = -grn(la,ik)/6/eivl(la,ik)
-     endif
-     if(abs(grn(la,ik)).gt.1d3) grn(la,ik)=0  ! substitute very large gama by zero
-
-     if (aimag(grn(la,ik)) .gt. 5d-4) then
-       write(ulog,6)' GRUNEISEN: ... has large imaginary part!! for nk,la=',ik,la,grn(la,ik)
-
-     endif
-!   write(ugr2,6)' ',ik,la,dk(ik),kp(:,ik),omk,grn(la,ik)
-  enddo
-  write(ugr2,8)ik,dk(ik),kp(:,ik),( mysqrt(eivl(la,ik))*cnst , la=1,ndn), &
-&              (real(grn(la,ik)),la=1,ndn)
-
+ do ik=1,nkp
+    do la=1,ndn
+       if (abs(aimag(grn(la,ik))) .gt. 5d-4) &
+ &        write(ulog,6)' GRUNEISEN: ... has large imaginary part!! for nk,la=',ik,la,grn(la,ik)
+    enddo
+    write(ugr2,8)ik,dk(ik),kp(:,ik),( mysqrt(eivl(la,ik))*cnst , la=1,ndn), &
+ &              (real(grn(la,ik)),la=1,ndn)
  enddo
 
-5 format(4i7,9(1x,g11.4))
 6 format(a,2i5,99(1x,g11.4))
-7 format(i5,i5,i6,99(1x,g11.4))
 8 format(i8,66(1x,f9.4),6(1x,f9.4))
-9 format(a,6i4,66(1x,g11.4),6(1x,f9.4))
-! deallocate(eivl,eivc,kg,grn)
  end subroutine gruneisen
+!============================================================
+ subroutine get_dynmat(kp,ndn,dynmat)
+!! the dynamical matrix of get_freq at kp (non-analytic term included, made Hermitian)
+ use born, only : born_flag
+ use constants, only : r15
+ implicit none
+ integer, intent(in) :: ndn
+ real(r15), intent(in) :: kp(3)
+ complex(r15), intent(out) :: dynmat(ndn,ndn)
+ complex(r15) ddyn(ndn,ndn,3)
+ if (born_flag.gt.10) then
+    call set_dynamical_matrix_hard(kp,dynmat,ndn,ddyn)
+ else
+    call set_dynamical_matrix_std (kp,dynmat,ndn,ddyn)
+ endif
+ call make_hermitian(ndn,dynmat,ddyn)
+ end subroutine get_dynmat
 !============================================================
  subroutine get_phi_zeta_Xi(uio) !ndn,atld0,gama,phi,zeta,teta,xi,qiu,uio)
 !! calculates some matrices useful for later operations, in addition to the  "standard" elastic constants

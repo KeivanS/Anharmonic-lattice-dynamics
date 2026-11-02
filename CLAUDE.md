@@ -320,14 +320,14 @@ include_fc=1 ranks; ios.f90 ~136 "fix this to be also able to read only some fil
 rest". To check: RHS subtraction in read_snaps_set_aforce; the invariance rows. Discuss the design
 with the user before coding.
 
-## Invariance rows: one loop over ranks (2026-10-23, invariance_ranks.f90; default)
+## Invariance rows: one loop over ranks (2026-10-23, invariance_ranks.f90)
 
 `set_translational_inv_constraints` / `set_rotational_inv_constraints` (module invariance_ranks)
 build the rows of every included rank (up to 8) in one pass over the group terms (row key = prefix
 atoms + directions [+ nu]; one column function, offset + current(), skipping dropped FC2 terms).
-The rank-by-rank routines are kept as `set_*_inv_constraints_old` (setup_amatrix.f90), selected by
-`FOCEX_INVARIANCE=old`; `FOCEX_INVARIANCE_COMPARE=1` builds both, writes inv_rows_old/new.dat and
-inv_fcs.dat, fits with the chosen one. include_fc=2 is not handled yet (marked: RHS b).
+The rank-by-rank routines `set_*_inv_constraints_old`, `FOCEX_INVARIANCE=old` and
+`FOCEX_INVARIANCE_COMPARE` (inv_rows_*.dat, inv_fcs.dat) were removed 2026-11-01 (user: remove once
+validated; validation below; in git history). include_fc=2 is not handled yet (marked: RHS b).
 - Bug in the old rotational routine, fixed 2026-10-23 (user's diagnosis: the cnt3 offsets must
   use current()): rank-3 rows, FC2 part used res1+cnt3+ti with cnt3 counting dropped FC2 groups
   (fc2range=0 drops groups outside the supercell WS cell; groups are ordered by first atom, so
@@ -372,7 +372,7 @@ Exact-model test of the maps (2026-10-26, scratch exact/: model.py gen.py check.
 polynomial potential (pairs to rc, triplets/quadruplets with all pairs < Rm; term lists fixed at the
 reference, so FCs of ranks 1-4 exact at any amplitude, 0.03 A), forces on the materials' own
 supercells; check.py compares every fcN_irr.dat term and 2000 fcN.dat terms per rank with the exact
-FC (polynomial fit on a 5^m grid) and evaluates inv_rows_*.dat (FOCEX_INVARIANCE_COMPARE=1) on
+FC (polynomial fit on a 5^m grid) and evaluated inv_rows_*.dat (FOCEX_INVARIANCE_COMPARE=1, removed 2026-11-01; verify.py uses the amat dump) on
 them. fcflag=0, FC2 range inside the WS cell (fc2range=1; with fc2range=0 a 2-body cluster and its
 image are both unknowns and only their sum is fixed): Ge, BZO, GeSe (rot rows off) fit 0.000 %,
 all FCs = exact to the 7 written digits. Pre-existing failures found (original route too):
@@ -443,6 +443,52 @@ DFT regression (Ge, BZO, MoTe2, GeSe, e1-e3; table in the README): Ge, BZO e1 = 
 35.269 -> 32.194 %, GeSe 6.111 -> 5.755 % (changes 1-3, not separated); Ge e2 0.083 -> 0.036 %;
 the rest identical. The log label "non-zeros ... after projection" (focex.f90) is left over from the
 old e1 path: it counts |x| > margin.
+
+## Mode Gruneisen parameters (2026-11-01, user's request; common/gruneisen.f90)
+
+One routine for FOCEX and THERMACOND (module gruneisen_rules): gamma = -<e|W(k)|e>/(6 omega^2),
+W = sum Psi y exp(ik.R)/sqrt(mm'), y = x + xi, xi = -Gam Tr Q (internal relaxation per unit isotropic
+strain, `internal_strain_trace`, from the FC2 terms; = FOCEX's Tr xi of get_phi_zeta_Xi to 2e-15 A). Each
+code passes its FC2/FC3 term lists (FOCEX from map/fcs, THERMACOND from fcs_2/fcs_3, first atom in the
+primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA term included).
+- The 3 rigid translations at Gamma (eivl=0 from freq_vel) get the long-wave limit gamma = -b/(6a)
+  along the direction gamma_limit uses (path segment; mesh: uinc): A = T+D2T - T+D1 G D1T, B = T+W2T -
+  T+W1GD1T - T+D1GW1T + T+D1GW0GD1T. D0..D2 from the code's own D at +-h,+-2h,+-3h (h=1e-3|G|; even/odd
+  parts fitted exactly), W0..W2 exact. Log: GRUNEISEN_LONGWAVE (checks |D0T|,|W0T|,|T+D1T|,|T+W1T|).
+  Derivation + tests: FOCEX/notes/generalized_huang.tex Part III. Also (user, 2026-11-01) the 3 acoustic
+  modes at 0 < |k| V^(1/3) < 0.05 (qrad; V^(1/3) = 2pi/gsize) take the limit along k/|k| (modes = largest
+  translation_weight). Checked: THERMACOND, HfO2 path 400 pts/segment: inside = exact gamma(k) to <= 4e-4
+  (print), just outside off by 5-6e-3 (the shift effect below). qdir normalized inside (IBZ Gamma came in
+  as uinc unnormalized: gamma unchanged, a and b scaled).
+- Bug fixed: FOCEX built W with exp(iq.(R+taup-tau)) (since fd1297c, 2025-02-17) but its eigenvectors
+  come from set_dynamical_matrix_std's exp(ik.R) (R since at least 3ee84a6): gamma right only at q=0,
+  off by up to 3.2 on the exact HfO2 model. THERMACOND's routine (removed) had no relaxation.
+- Verified on the exact model (FOCEX/REFERENCE/exact_model): gruneisen_q0.py (limit vs direct, CaF2,
+  ZnO, HfO2, 4 directions, +-relaxation: q^2 convergence, <= 8e-6 at q=1e-3; direct at q=1e-6 off by up
+  to 0.72); mkcubic.py (forces cut after the cubic term, orders separated exactly) + FOCEX ranks 1-3 on
+  HfO2 + gruneisen_focex_check.py: FOCEX = exact to the printed 5e-5 at all 519 path points off Gamma,
+  THERMACOND to its 4 digits, Gamma limit = -1.691288 -1.344395 -0.658566 in both. bs_grun.dat columns are
+  in band-connection order (compare by frequency). Other FOCEX outputs byte-identical except QHA
+  (thermo_QHA/temp_free use ibz gamma: HfO2 model <gamma>(300 K) -1.149 -> -0.922).
+- OPEN (user to decide): off Gamma, eigenvectors at k+3e-4|G|u but W, omega^2 at k (9.1 rule): near
+  Gamma the acoustic gamma then depends on the phase convention by ~1.4e-4/|k| (9e-3 at |k|=0.015 1/A).
+- NA term: formula verified in Python (gruneisen_q0_na.py, ZnO + rigid-ion Z, 1.5e-6 at q=1e-3); the codes'
+  route for a polar crystal (D0..D2 fitted from get_dynmat with FOCEX's NA term) not yet run.
+- born_flag > 2: WARNING in read_dielectric (both codes; user: use 0 or 2, 1 only for testing); manual says so.
+  Noticed, not checked: the log says born_flag=1 subtracts the Ewald force, the manual says nothing is
+  subtracted.
+
+## Fit errors sd(rank) (2026-11-01, user: make sure it is correct)
+
+sigma(j) = standard error of FC j: s sqrt([K (A_K^T A_K)^-1 K^T]_jj) (regularized as svbksb), s^2 =
+||Ax-b||^2/(m-p) (svd_set; it now also returns V diag(s sqrt f(w)) so fit_kernel_basis maps it by K).
+sd(rank) = mean sigma of the irreducible FCs of the rank (log only). Before: enforce_inv=1 never set
+sigma (sd from an unset array), enforce_inv=0 scaled by sqrt(svdcut), sd divided again by sqrt(rows).
+LASSO and itemp=1: 0 (not estimated). Verified: exact ZnO model ranks 1-3 + Gaussian force noise 1e-3:
+s = 0.9948e-3 / 1.0005e-3 / 0.9776e-3 (seeds 1, 2; enforce_inv=1, 0); (x-x_exact)/sigma rms FC2 1.03,
+FC3 0.84-0.90 (FC3 errors 10-15 % below the estimate, cause not known), 72-76 % within 1 sigma.
+Jackknife (user's idea, done once, not in the code): 5 refits each leaving out 20 of the 100 noisy ZnO
+snapshots, sqrt(4/5 sum (x_i - xbar)^2) / SVD sigma: median FC2 1.04, FC3 0.91; rms ratio 0.96.
 
 ## Things that bite
 

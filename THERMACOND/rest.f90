@@ -2811,10 +2811,12 @@ endif
   end subroutine finitedif_vel
 !============================================================
  subroutine gruneisen(nkp,kp,dk,ndn,eivl,eivc,ugr,grn)
-! takes the eigenvalues (w^2) and eigenvectors calculated along some
-! crystalline directions and calculates the corresponding mode
-! gruneisen parameters
- use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+!! mode Gruneisen parameters along the band path (eivl, eivc from get_frequencies with ipath=1), by the
+!! routine shared with FOCEX (common/gruneisen.f90, module gruneisen_rules; replaces THERMACOND's own of
+!! before 2026-11-01, which had no internal relaxation of the sublattices): gamma = -<e|W(k)|e>/(6 omega^2),
+!! W from fc3 times y = x + xi (relaxation per unit isotropic strain, from fc2), phase exp(ik.R) as in
+!! set_dynamical_matrix; the 3 rigid translations at Gamma get the long-wave limit along the path.
+ use ios, only : ulog
  use tc_ios
  use lattice
  use geometry
@@ -2822,69 +2824,70 @@ endif
  use svd_stuff
  use eigen
  use constants
+ use gruneisen_rules, only : dynmat_routine, w_terms_set, internal_strain_trace, mode_gruneisen
  implicit none
- integer ik,i0,nkp,la,al,be,ga,j,k,j0,k0,ta1,ta2,t,ugr,ndn    ! ,i3,j3,k3
- real(8) mi,mj,rr3(3),rr2(3),qq(3),denom,qdotr,omk
- real(8) kp(3,nkp),dk(nkp),eivl(ndn,nkp)
- complex(8) zz,one,term
- complex(8) grn(ndn,nkp), eivc(ndn,ndn,nkp)
+ integer, intent(in) :: nkp,ndn,ugr
+ real(8), intent(in) :: kp(3,nkp),dk(nkp),eivl(ndn,nkp)
+ complex(8), intent(in) :: eivc(ndn,ndn,nkp)
+ complex(8), intent(out) :: grn(ndn,nkp)
+ procedure(dynmat_routine) :: get_dynmat_tc
+ integer ik,la,t,i0,j,k,j0,k0,al,be,ga,n
+ real(8) xir(ndn),mass(natoms0)
+ integer, allocatable :: row(:),col(:)
+ real(8), allocatable :: val(:),ph(:,:)
 
- one = cmplx(1d0,0d0)
-! write(ugr,*)'# la,nk,dk(nk),kp(:,nk),om(la,nk),gruneisen(la,nk))'
+ mass=atom0(1:natoms0)%mass
+! fc2 -> internal relaxation of the sublattices per unit isotropic strain
+ allocate(row(nterms(2)),col(nterms(2)),val(nterms(2)),ph(3,nterms(2)))
+ n=0
+ do t=1,nterms(2)
+    i0=iatomterm_2(1,t); j=iatomterm_2(2,t)
+    if (i0.gt.natoms0) cycle          ! first atom in the primitive cell only
+    n=n+1
+    row(n)=ixyzterm_2(1,t)+3*(i0-1); col(n)=ixyzterm_2(2,t)+3*(iatomcell0(j)-1)
+    val(n)=fcs_2(t); ph(:,n)=atompos(:,j)-atompos(:,i0)
+ enddo
+ call internal_strain_trace(natoms0,n,row(1:n),col(1:n),val(1:n),ph(:,1:n),xir)
+ deallocate(row,col,val,ph)
+! fc3 terms of W: Psi(i0 al, j be, k ga) (x_k + xi_k0)_ga / sqrt(m m'), phase vector R_j
+ allocate(row(nterms(3)),col(nterms(3)),val(nterms(3)),ph(3,nterms(3)))
+ n=0
+ do t=1,nterms(3)
+    i0=iatomterm_3(1,t); j=iatomterm_3(2,t); k=iatomterm_3(3,t)
+    if (i0.gt.natoms0) cycle
+    n=n+1
+    j0=iatomcell0(j); k0=iatomcell0(k)
+    al=ixyzterm_3(1,t); be=ixyzterm_3(2,t); ga=ixyzterm_3(3,t)
+    row(n)=al+3*(i0-1); col(n)=be+3*(j0-1)
+    val(n)=fcs_3(t)*(atompos(ga,k)+xir(ga+3*(k0-1)))/sqrt(atom0(i0)%mass*atom0(j0)%mass)
+    ph(:,n)=atompos(:,j)-atompos(:,j0)
+ enddo
+ call w_terms_set(n,row(1:n),col(1:n),val(1:n),ph(:,1:n))
+ deallocate(row,col,val,ph)
+
+ call mode_gruneisen(get_dynmat_tc,nkp,kp,1,ndn,natoms0,mass,volume_g**0.33333333d0,eivl,eivc,grn,ulog)
+
  write(ugr,*)'# nk,dk(nk),kp(:,nk),gruneisen(la,nk).la=1,ndyn)'
  do ik=1,nkp
-    qq(:) = kp(:,ik)
- do la=1,ndn
-!   write(ulog,6)'Starting gruneisen parameters for kpoint & band# ',ik,la,kp(:,ik)
-!   write(ulog,*)' i,la,t,fcs_3(t),term(2),6*eival(la,i),rr3(3),grun(la,i)'
-    grn(la,ik) = 0
-    denom = 6 * eivl(la,ik)
-    omk = sqrt(abs(eivl(la,ik)))*cnst
-    do i0=1,natoms0
-         mi = atom0(i0)%mass
-       tloop: do t=1,nterms(3)
-
-         if ( i0 .ne. iatomterm_3(1,t) ) cycle tloop
-         al = ixyzterm_3(1,t)
-         be = ixyzterm_3(2,t)
-         ga = ixyzterm_3(3,t)
-!        i0 = iatomcell0(iatomterm_3(1,t))
-         j  = iatomterm_3(2,t)  ;  j0 = iatomcell0(j) ; mj = atom0(j0)%mass
-         k  = iatomterm_3(3,t)  ;  k0 = iatomcell0(k)
-         ta1= al + 3*(i0-1)
-         ta2= be + 3*(j0-1)
-
-! rr2(:)=iatomcell(1,j)*r1+iatomcell(2,j)*r2+iatomcell(3,j)*r3
-!  be careful: it has to be the translations R not atompos!
-         rr2(:) = atompos(:,j) - atompos(:,j0)  ! R
-         rr3(:) = atompos(:,k)                  ! R+tau
-         qdotr =  ( qq .dot. rr2)
-         zz = cdexp( ci * qdotr )
-!! term = - ampterm_3(t)*fcs_3(igroup_3(t))*zz*eivc(ta1,la,i)*conjg(eivc(ta2,la,i))*rr3(ga)/sqrt(mi*mj)
-         term = - fcs_3(t) * zz * eivc(ta2,la,ik)*conjg(eivc(ta1,la,ik))*rr3(ga)/sqrt(mi*mj)
-         grn(la,ik) = grn(la,ik) + term
-!        write(ulog,7)i,la,t,fcs_3(t),rr2,qdotr,zz,rr3,grn(la,ik)
-       enddo tloop
+    do la=1,ndn
+       if (abs(aimag(grn(la,ik))) .gt. 1d-4) &
+ &        write(ulog,*)' GRUNEISEN: ... has large imaginary part!! for nk,la=',ik,la,grn(la,ik)
     enddo
-    if (eivl(la,ik).eq.0) then      ! rigid translation at k=0 (freq_vel): no Gruneisen parameter
-       grn(la,ik) = 0
-    else
-       grn(la,ik) = grn(la,ik)/denom
-    endif
-    if (aimag(grn(la,ik)) .gt. 1d-4) then
-       write(ulog,*)' GRUNEISEN: ... has large imaginary part!! for nk,la=',ik,la,grn(la,ik)
-!      stop
-    endif
-!   write(ugr,6)' ',la,ik,dk(ik),kp(:,ik),omk,real(grn(la,ik))
- enddo
     write(ugr,8)ik,dk(ik),kp(:,ik),(real(grn(la,ik)),la=1,ndn)
  enddo
-5 format(4i7,9(1x,g10.4))
-6 format(a,2i5,99(1x,g10.4))
-7 format(i5,i5,i6,99(1x,g10.4))
 8 format(i8,99(1x,g10.4))
-! deallocate(eivl,eivc,kg,grn)
  end subroutine gruneisen
+!============================================================
+ subroutine get_dynmat_tc(kp,ndn,dynmat)
+!! the dynamical matrix of get_freq_vg at kp (FOCEX's non-analytic term included)
+ implicit none
+ integer, intent(in) :: ndn
+ real(8), intent(in) :: kp(3)
+ complex(8), intent(out) :: dynmat(ndn,ndn)
+ complex(8) ddyn(ndn,ndn,3)
+ call set_dynamical_matrix(kp,dynmat,ndn,ddyn)
+ call add_nonanalytic(kp,dynmat,ddyn,ndn)
+ end subroutine get_dynmat_tc
 !============================================================
  subroutine gruneisen_fc
  use phi3

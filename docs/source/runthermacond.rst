@@ -156,7 +156,8 @@ Output files
 file                           contents
 ============================== ======================================================================
 ``bs_freqs.dat``               band structure: index, path length, k, frequencies (1/cm)
-``bs_grun.dat``                Gruneisen parameters along the path
+``bs_grun.dat``                Gruneisen parameters along the path (same routine as FOCEX; at Gamma the
+                               acoustic values are the limit along the path)
 ``dos.dat``, ``dos_tet.dat``   DOS, Gaussian and tetrahedron
 ``KPOINT.FBZ``, ``KPOINT.IBZ`` k-mesh and irreducible wedge with weights
 ``veloc.dat``                  group velocities on the mesh (Hellmann-Feynman)

@@ -60,7 +60,7 @@
  deallocate(u,v,w,dd)
  end subroutine particular_solution
 !===============================================================================
- subroutine fit_kernel_basis(nrow,ncol,nker,a,b,kernel,svdcut,x,error,ermax,sig,fnsvd)
+ subroutine fit_kernel_basis(nrow,ncol,nker,a,b,kernel,svdcut,x,sigx,error,ermax,sig,fnsvd)
 !! Constrained least squares. Minimises ||A x - b|| over the x that satisfy the
 !! invariance relations exactly, by fitting the nker free parameters y of
 !! x = K y and returning x.
@@ -69,14 +69,17 @@
 !!   nker  : dimension of the kernel = number of free parameters
 !!   a,b   : force-displacement matrix and right-hand side (not modified)
 !!   kernel: kernel(ncol,>=nker), orthonormal basis from get_kernel
+!!   sigx  : standard error of each x(j): sqrt([K Cov(y) K^T]_jj), Cov(y) from svd_set (residual
+!!           variance s^2 = ||A K y - b||^2/(nrow-nker))
  use constants, only : r15
  use ios, only : ulog
  implicit none
  integer, intent(in) :: nrow,ncol,nker
  real(r15), intent(in) :: a(nrow,ncol),b(nrow),kernel(ncol,nker),svdcut
- real(r15), intent(out):: x(ncol),error,ermax,sig
+ real(r15), intent(out):: x(ncol),sigx(ncol),error,ermax,sig
  character(len=*), intent(in) :: fnsvd
- real(r15), allocatable :: ared(:,:),y(:),sigred(:)
+ real(r15), allocatable :: ared(:,:),y(:),sigred(:),vs(:,:),kvs(:,:)
+ integer j
 
  write(ulog,*)'FIT_KERNEL_BASIS: constrained least squares in the kernel basis'
  write(ulog,*)'FIT_KERNEL_BASIS: rows,columns,free parameters=',nrow,ncol,nker
@@ -84,20 +87,27 @@
  if(nker.le.0) then
     write(ulog,*)'FIT_KERNEL_BASIS: kernel is empty; the invariances leave no'
     write(ulog,*)' free parameter. Check itrans/irot/ihuang and the FC ranges.'
-    x=0 ; error=0 ; ermax=0 ; sig=0
+    x=0 ; sigx=0 ; error=0 ; ermax=0 ; sig=0
     return
  endif
 
- allocate(ared(nrow,nker),y(nker),sigred(nker))
+ allocate(ared(nrow,nker),y(nker),sigred(nker),vs(nker,nker))
 ! A K : the force equations expressed in the free parameters
  ared = matmul(a,kernel(:,1:nker))
 ! svd_set overwrites ared, which is why it is a local copy
- call svd_set(nrow,nker,ared,b,y,sigred,svdcut,error,ermax,sig,fnsvd)
+ call svd_set(nrow,nker,ared,b,y,sigred,vs,svdcut,error,ermax,sig,fnsvd)
 ! back to the full set of force constants, eliminated ones included
  x = matmul(kernel(:,1:nker),y)
+! Cov(x) = K vs vs^T K^T: standard errors from the rows of K vs
+ deallocate(ared)
+ allocate(kvs(ncol,nker))
+ kvs = matmul(kernel(:,1:nker),vs)
+ do j=1,ncol
+    sigx(j)=sqrt(dot_product(kvs(j,:),kvs(j,:)))
+ enddo
 
  write(ulog,*)'FIT_KERNEL_BASIS: done'
- deallocate(ared,y,sigred)
+ deallocate(y,sigred,vs,kvs)
 
  end subroutine fit_kernel_basis
 !===============================================================================

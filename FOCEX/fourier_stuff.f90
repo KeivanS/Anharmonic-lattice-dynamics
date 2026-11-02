@@ -222,7 +222,7 @@
  integer, intent(in) :: ncfg,nat,nrmesh,nkmesh,maprtausc(natom_prim_cell,nrmesh)
  real(r15), intent(in) :: dsp(3,nat,ncfg),frc(3,nat,ncfg)
  real(r15), intent(in) :: rmesh(3,nrmesh),kmesh(3,nkmesh)
- real(r15), allocatable:: ur(:,:),uk(:,:),fr(:,:),fk(:,:),amatk(:,:),bmatk(:),coefs(:,:),sigm(:)
+ real(r15), allocatable:: ur(:,:),uk(:,:),fr(:,:),fk(:,:),amatk(:,:),bmatk(:),coefs(:,:),sigm(:),vsdum(:,:)
  complex(r15), allocatable:: dynk(:,:,:) ,aux(:) ,d2(:,:),phi(:,:,:)
  integer nat0,icfg,ik,iarm,l,i,j,tau,ir,iatom,nu,nkstar,dim_l,dimdyn, &
  &       kvecop(48),narms,nsym,dim_c,n2,iop
@@ -346,8 +346,9 @@
      enddo armloop
 
 ! now perform the svd for that kibz
-    allocate(aux(dim_c),sigm(dim_c))
-    call svd_set(dim_l,dim_c,amatk,bmatk,aux,sigm,svdcut,error,ermax,sig,'svd_k.dat')
+    allocate(aux(dim_c),sigm(dim_c),vsdum(dim_c,dim_c))
+    call svd_set(dim_l,dim_c,amatk,bmatk,aux,sigm,vsdum,svdcut,error,ermax,sig,'svd_k.dat')
+    deallocate(vsdum)
 
     write(ulog,5)'FOR ik,kibz=',ik,kibz(:,ik)
     write(ulog,*)'After svd, || F_dft-F_fit || / || F_dft || (K)=',sig

@@ -102,3 +102,7 @@ as `main` apart from `use` lines; unit numbers of the two `ios` modules that coi
 - dynamical matrix (short-range part), `eigen`, `om_dos`, `tetrahedron`, `svd_stuff`.
 - Step 7 (started 2026-10-30): phonons from one routine (`get_freq`, `get_frequencies`,
   `freq_vel`, `gruneisen`), so THERMACOND takes FOCEX 9.1's exact-k / Gamma-limit rule.
+  `gruneisen` done 2026-11-01: `common/gruneisen.f90` (module `gruneisen_rules`) in both Makefiles;
+  FOCEX's and THERMACOND's `gruneisen` are wrappers that pass their FC2/FC3 terms and dynamical
+  matrix. THERMACOND's own routine removed. Checked on the exact HfO2 model, not with the harness
+  (user: no Ge harness rerun); see CLAUDE.md "Mode Gruneisen parameters".

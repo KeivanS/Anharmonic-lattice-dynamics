@@ -672,14 +672,13 @@ only the first line matters.
 * ``born_flag = 0`` — Born charges are ignored (correct for non-polar crystals
   such as Si, Ge, and the simplest choice to start with ; no LO-TO splitting).
 * ``born_flag = 1`` — nothing is subtracted from the DFT forces, but the
-  non-analytical (Parlinski) term is added to the dynamical matrix.
+  non-analytical (Parlinski) term is added to the dynamical matrix. For testing only.
 * ``born_flag = 2`` — the Ewald force is subtracted from the input forces before
   the fit, so that the fitted FCs are purely short-ranged, and the
   non-analytical term is added back when the dynamical matrix is built. This is
   the recommended setting for polar materials.
-* ``born_flag = 3, 4, 6, 7, 8, 9`` — variants of the subtraction scheme intended
-  for development and testing; the log file states which one is active. They are not
-  recommended and are not guaranteed to work correctly.
+* ``born_flag`` larger than 2 — not recommended (development variants of the subtraction scheme);
+  FOCEX and THERMACOND print a WARNING. Use 0 for non-polar and 2 for polar crystals.
 
 There must be exactly ``natom_prim_cell`` Born-charge blocks, in the order in
 which the atoms are declared in ``structure.params``. The acoustic sum rule is
@@ -941,7 +940,11 @@ Phonons and thermodynamics
 
 ``bs_grun.dat`` / ``ibz_grun.dat``
     Mode Gruneisen parameters along the path and in the irreducible wedge
-    (written only when rank 3 is included).
+    (written only when rank 3 is included). Columns: ``index, path length, k (Cartesian), the frequencies
+    (1/cm), then the Gruneisen parameters``; along the path the bands are in band-connection order, not
+    sorted by frequency. At Gamma the three
+    acoustic values are the limit along the path (along a fixed direction in ``ibz_grun.dat``), and so are
+    those within :math:`|k|\,V^{1/3} < 0.05` of Gamma (limit along :math:`k`).
 
 ``mech.dat``
     Mechanical properties: the :math:`\Phi`, :math:`\zeta`, :math:`\Xi` tensors,
@@ -1197,6 +1200,5 @@ Version history
 
 9.0 (2026-10-23)
     Translational and rotational invariance rows of all ranks built in one loop
-    (the old rank-by-rank routines, with a column-index bug for dropped FC2
-    groups now fixed, remain available with ``FOCEX_INVARIANCE=old``); Born
+    (replacing the old rank-by-rank routines); Born
     charges and dielectric tensor checked against the crystal symmetry.

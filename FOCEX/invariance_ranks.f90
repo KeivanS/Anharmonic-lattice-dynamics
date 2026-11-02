@@ -2,8 +2,8 @@
  module invariance_ranks
 !! Translational and rotational invariance rows of the fit for every rank in one loop.
 !! set_translational_inv_constraints and set_rotational_inv_constraints (the default since
-!! 2026-10-23) replace the rank-by-rank routines, kept as set_*_inv_constraints_old in
-!! setup_amatrix.f90 (FOCEX_INVARIANCE=old selects them, see focex.f90).
+!! 2026-10-23) replaced the rank-by-rank routines set_*_inv_constraints_old (removed 2026-11-01 after the
+!! exact-model and DFT checks recorded in CLAUDE.md; in git history before that date).
 !!
 !! The first index of a force constant is an atom i1 of the primitive cell, the others are its
 !! neighbours. For rank n, with all indices but the last fixed (the "prefix"):

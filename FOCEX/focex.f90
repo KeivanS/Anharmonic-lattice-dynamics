@@ -65,7 +65,7 @@ character xt*1,fn*7,now*10,today*8,zone*5,fni*11,bfl,bnp
 logical ex,isperiodic
 real(r15), allocatable :: xout(:),foldedk(:,:),rand(:),rand2(:),phi_naq0(:,:,:,:),phi_na(:,:,:,:,:)
 complex(r15), allocatable :: auxr(:),auxg(:),aravg(:),axavg(:),ax1(:),ax2(:),dynmat(:,:),ddyn(:,:,:)
-real(r15), allocatable :: mat(:,:),qmat(:)
+real(r15), allocatable :: mat(:,:),qmat(:),vsdum(:,:)
 integer, allocatable :: frc_constr(:),mp(:) 
 real(r15) error,ermax,sd(4),sig, volmax,sf,dsf(3) ,q2(3),qr(3),largestcutoff,matr(3,3)
 type(vector):: y1,y2,y3,k1,k2,k3
@@ -73,8 +73,7 @@ real tim
 real(r15) gmax,ene,grad,pos(3,64) ,ewald_force(3,64),deteps3, etaewa,xx,asr
 complex(r15) d2ew(3,3), d3ew(3,3,3), d0(3,3),sum
 real(r15) q(3)
-character(len=16) invmode, invcmp
-real(r15), allocatable :: atr_old(:,:), arot_old(:,:)
+character(len=16) invcmp
 real(r15), allocatable :: xpart(:), bshift(:)
 real(r15) presid
 
@@ -288,48 +287,15 @@ real(r15) presid
 
     call estimate_inv_constraints
 
-! Translational and rotational rows of all ranks from one loop (invariance_ranks.f90, default).
-! FOCEX_INVARIANCE=old: the rank-by-rank routines set_*_inv_constraints_old (setup_amatrix.f90).
-! FOCEX_INVARIANCE_COMPARE=1 builds both, writes them to inv_rows_old.dat and inv_rows_new.dat
-! (and the final FCs to inv_fcs.dat), and fits with the one chosen.
-    call get_environment_variable('FOCEX_INVARIANCE', invmode)
-    call get_environment_variable('FOCEX_INVARIANCE_COMPARE', invcmp)
-    if (invmode .ne. 'old') invmode = 'new'
-    write(ulog,*)'Invariance rows: ', trim(invmode), '; compare: ', trim(invcmp)
-    if (invmode .eq. 'old' .or. invcmp .eq. '1') then
-       call set_translational_inv_constraints_old
-       write(ulog,*)'Number of translational invariance constraints (old) is=',transl_constraints
-       call cpu_time(tim)
-       write(utimes,'(a,f12.4)')' TIME after set_translational_inv_constraints_old IS ',tim
-       call set_rotational_inv_constraints_old
-       write(ulog,*)'Number of rotational invariance constraints (old) is=',rot_constraints
-       call cpu_time(tim)
-       write(utimes,'(a,f12.4)')' TIME after set_rotational_inv_constraints_old    IS ',tim
-    endif
-    if (invcmp .eq. '1') then
-       call write_inv_rows('inv_rows_old.dat')
-       allocate(atr_old(transl_constraints,nindepfc), arot_old(rot_constraints,nindepfc))
-       atr_old = atransl ; arot_old = arot
-    endif
-    if (invmode .eq. 'new' .or. invcmp .eq. '1') then
-       call set_translational_inv_constraints
-       write(ulog,*)'Number of translational invariance constraints is=',transl_constraints
-       call cpu_time(tim)
-       write(utimes,'(a,f12.4)')' TIME after set_translational_inv_constraints IS ',tim
-       call set_rotational_inv_constraints
-       write(ulog,*)'Number of rotational invariance constraints is=',rot_constraints
-       call cpu_time(tim)
-       write(utimes,'(a,f12.4)')' TIME after set_rotational_inv_constraints    IS ',tim
-       if (invcmp .eq. '1') call write_inv_rows('inv_rows_new.dat')
-    endif
-    if (invcmp .eq. '1' .and. invmode .eq. 'old') then      ! fit with the old rows
-       deallocate(atransl, btransl, arot, brot)
-       transl_constraints = size(atr_old,1) ; rot_constraints = size(arot_old,1)
-       allocate(atransl(transl_constraints,nindepfc), btransl(transl_constraints), &
-&               arot(rot_constraints,nindepfc), brot(rot_constraints))
-       atransl = atr_old ; arot = arot_old ; btransl = 0 ; brot = 0
-    endif
-    if (allocated(atr_old)) deallocate(atr_old, arot_old)
+! Translational and rotational rows of all ranks from one loop (invariance_ranks.f90).
+    call set_translational_inv_constraints
+    write(ulog,*)'Number of translational invariance constraints is=',transl_constraints
+    call cpu_time(tim)
+    write(utimes,'(a,f12.4)')' TIME after set_translational_inv_constraints IS ',tim
+    call set_rotational_inv_constraints
+    write(ulog,*)'Number of rotational invariance constraints is=',rot_constraints
+    call cpu_time(tim)
+    write(utimes,'(a,f12.4)')' TIME after set_rotational_inv_constraints    IS ',tim
 
     call set_huang_inv_constraints
     write(ulog,*)'Number of Huang    invariance constraints is=',huang_constraints
@@ -452,6 +418,9 @@ real(r15) presid
       call implement_temperature(force_constraints,dim_ac,aforce, &
 &            bforce,nconfigs,energies,nlines,tempk,mat,qmat)
       call solve_svd(dim_ac,dim_ac,mat,qmat,svdcut,xout,sigma,uio)
+! sigma of solve_svd on the weighted normal matrix, before the projection, is not a standard error
+! of the projected FCs: none is reported (sd(rank) = 0)
+      sigma=0
       call write_out(ulog,'TEMP: SVD solution before kernel projection',xout)
       call project_on(dim_ac,nkernel,xout,kernelbasis(1:dim_ac,1:nkernel),fcs)
       deallocate(kernelbasis,mat,qmat)
@@ -490,7 +459,7 @@ real(r15) presid
          allocate(bshift(force_constraints))
          bshift = bforce - matmul(aforce,xpart)
          call fit_kernel_basis(force_constraints,dim_ac,nkernel,aforce,bshift,  &
-      &       kernelbasis(1:dim_ac,1:nkernel),svdcut,fcs,error,ermax,sig,'svd-kernel.dat')
+      &       kernelbasis(1:dim_ac,1:nkernel),svdcut,fcs,sigma,error,ermax,sig,'svd-kernel.dat')
          fcs = fcs + xpart
          deallocate(bshift)
        endif
@@ -565,7 +534,9 @@ real(r15) presid
          amat(1+inv_constraints:dim_al,:) = aforce ; bmat(1+inv_constraints:dim_al) = bforce
          deallocate (aforce,bforce)
 
-         call svd_set(dim_al,dim_ac,amat,bmat,fcs,sigma,svdcut,error,ermax,sig,'svd-all.dat')
+         allocate(vsdum(dim_ac,dim_ac))
+         call svd_set(dim_al,dim_ac,amat,bmat,fcs,sigma,vsdum,svdcut,error,ermax,sig,'svd-all.dat')
+         deallocate(vsdum)
          write(ulog,'(a,f9.3,a)')'Percent error, || F_dft-F_fit || / || F_dft || =',sig,' %'
          call write_invariance_violations(ulog,dim_ac,fcs)
          deallocate(amat,bmat)
@@ -587,12 +558,6 @@ real(r15) presid
 
    write(ulog,*)'map(ntotind)=',map(:)%ntotind
 
-   if (invcmp .eq. '1') then
-      open(98, file='inv_fcs.dat', status='unknown')
-      write(98,*) dim_ac
-      write(98,'(es24.16)') fcs
-      close(98)
-   endif
    call write_independent_fcs(dim_ac,sigma,sd,ulog)
 
    call write_output_fcs
@@ -1178,21 +1143,5 @@ enddo
 
  end subroutine make_grids
 
-!==========================================================
- subroutine write_inv_rows(fname)
-!! the translational and rotational rows (atransl, arot) to fname, for FOCEX_INVARIANCE_COMPARE
- character(*), intent(in) :: fname
- integer i
- open(97, file=fname, status='unknown')
- write(97,*) 'translational', transl_constraints, nindepfc
- do i = 1, transl_constraints
-    write(97,'(*(es24.16))') atransl(i,:)
- enddo
- write(97,*) 'rotational', rot_constraints, nindepfc
- do i = 1, rot_constraints
-    write(97,'(*(es24.16))') arot(i,:)
- enddo
- close(97)
- end subroutine write_inv_rows
 
 end program FOCEX

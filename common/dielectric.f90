@@ -24,6 +24,11 @@
     write(ulog,*)' Born_flag  =',born_flag,' non-analytical force will be subtracted from input forces'
     write(6   ,*)' Born_flag  =',born_flag,' non-analytical force will be subtracted from input forces'
  endif
+! user's rule (2026-11-01): use 0 (non-polar) or 2 (polar); 1 only for testing; > 2 not recommended
+ if (born_flag.gt.2) then
+    write(ulog,*)'WARNING: born_flag=',born_flag,' > 2 is not recommended: use 0 or 2 (1 only for testing)'
+    write(6   ,*)'WARNING: born_flag=',born_flag,' > 2 is not recommended: use 0 or 2 (1 only for testing)'
+ endif
 
  do i=1,3
     read(uborn,*)(epsil(i,j),j=1,3)

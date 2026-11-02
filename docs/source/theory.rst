@@ -632,8 +632,27 @@ Using the Hellmann-Feynman theorem applied to the derivative of the dynamical ma
 .. math::
    \gamma_{\lambda}(k) = -\frac{1}{6 \, \omega_{\lambda}^2(k)} \sum_{\tau, R_1 \tau_1, R_2 \tau_2}
    \frac{\Psi_{\tau, R_1 \tau_1, R_2 \tau_2}^{\alpha \alpha_1 \alpha_2}}{\sqrt{m_{\tau} m_{\tau_1}}} \,
-   e_{\tau \alpha, \lambda}(k)^* \, e_{\tau_1 \alpha_1, \lambda}(k) \, e^{i k \cdot (R_1 + \tau_1 - \tau)} \,
+   e_{\tau \alpha, \lambda}(k)^* \, e_{\tau_1 \alpha_1, \lambda}(k) \, e^{i k \cdot R_1} \,
    \left[(R_2 + \tau_2)^{\alpha_2} - \sum_{\mu=1,2,3} \Gamma_{\tau_2 \alpha_2, .} Q_{., \mu \mu} \right].
+
+The phase factor must be the one of the dynamical matrix whose eigenvectors are used: FOCEX and THERMACOND
+both build it with :math:`e^{i k \cdot R}` and compute the formula above with one shared routine.
+
+At :math:`\Gamma` the three acoustic modes give :math:`0/0`. Their Gruneisen parameters are the limit
+:math:`k = q \hat q \to 0`, which depends on the direction :math:`\hat q`. With the expansions
+:math:`D(q\hat q) = D_0 + q D_1 + q^2 D_2`, the same for the strain derivative :math:`W` of :math:`D`, the
+rigid translations :math:`T` and :math:`G` the pseudo-inverse of :math:`D_0` on the optical modes,
+
+.. math::
+   A = T^\dagger D_2 T - T^\dagger D_1 G D_1 T, \qquad
+   B = T^\dagger W_2 T - T^\dagger W_1 G D_1 T - T^\dagger D_1 G W_1 T + T^\dagger D_1 G W_0 G D_1 T,
+
+   \gamma_s(\hat q) = -\frac{b_s}{6 a_s},
+
+where :math:`a_s` are the eigenvalues of :math:`A` (:math:`\omega_s^2 = q^2 a_s`) and :math:`b_s` the
+corresponding values of :math:`B`. The codes use this along the band-path direction at :math:`\Gamma` (on a
+mesh, along a fixed direction), and for the acoustic modes at :math:`0 < |k|\,V^{1/3} < 0.05` along :math:`k`. The derivation and its test on an exact model are in
+``FOCEX/notes/generalized_huang.pdf``, Part III.
 
 The temperature-dependent Gruneisen parameter is defined as the thermal average of the above modes weighted by their heat capacity:
 

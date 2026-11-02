@@ -30,7 +30,7 @@ FLAGS = $(OPT) -ffree-line-length-0
 vpath %.f90 ../common
 COMMON = constants.f90 params.f90 geometry.f90 ios_mod.f90 born.f90
 # shared sources that use THERMACOND's own modules (lattice, atoms_force_constants): after them
-COMMON2 = tools.f90 ewald.f90 nonanal.f90 dielectric.f90 phonons.f90
+COMMON2 = tools.f90 ewald.f90 nonanal.f90 dielectric.f90 phonons.f90 gruneisen.f90
 SRC  = $(COMMON) modules.f90 $(COMMON2) zhegv.f force_constants.f90 sub.f90 rest.f90 extratools.f90 svd.f90 \
        tetrahedron.f90 cg.f90 emissivity.f90
 OBJS = $(addsuffix .o,$(basename $(SRC)))
@@ -62,6 +62,7 @@ $(1)/born.o: $(1)/ios_mod.o
 $(1)/modules.o: $(addprefix $(1)/,$(COMMONO))
 $(addprefix $(1)/,$(COMMON2O)): $(1)/modules.o
 $(1)/nonanal.o: $(1)/ewald.o
+$(1)/gruneisen.o: $(1)/phonons.o
 endef
 $(eval $(call chain,obj_mpi))
 $(eval $(call chain,obj_serial))

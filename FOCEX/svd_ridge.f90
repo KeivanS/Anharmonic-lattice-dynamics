@@ -1,7 +1,10 @@
 !===========================================================
- subroutine svd_set(m3,n,a,b,x,sigma,svdcut,error,ermax,sig,fnsvd)
+ subroutine svd_set(m3,n,a,b,x,sigma,vs,svdcut,error,ermax,sig,fnsvd)
 !! performs a Singular Value Decomposition of the matrix a(m3,n) in order to solve the linear
 !! system ax=b. SVD results will be written in the file fnsvd
+!! sigma(j): standard error of x(j), s sqrt([V f(W) V^T]_jj) with s^2 = ||Ax-b||^2/(m3-n) the residual
+!! variance per row and f(w) = w^4/(w^6+wcut^6) (= 1/w^2 above the cutoff, the regularization of svbksb);
+!! vs = V diag(s sqrt(f(w))), so that the covariance of x is vs vs^T (callers with x = K y map it by K)
  use constants, only : r15
  implicit none
  integer , intent(in):: m3,n
@@ -9,7 +12,8 @@
  real(r15), intent(in) :: b(m3),svdcut
 ! real(r15), allocatable :: u(:,:),v(:,:),w(:)
  real(r15) v(n,n),w(n), ax(m3)
- real(r15), intent(out) :: error,ermax,x(n),sigma(n),sig
+ real(r15), intent(out) :: error,ermax,x(n),sigma(n),sig,vs(n,n)
+ real(r15) s
  character(LEN=*), intent(in) :: fnsvd
  integer i,j,k,uio,umat
  real(r15) wmax,wmin,wcut,num,denom ,y(n) !,prod,junk
@@ -89,12 +93,7 @@
 ! enddo
 
 ! Solve the system using x=V(1/W)(U^T) b; after eliminating w=0 terms
-   call svbksb(a,w,v,m3,n,b,x,wcut,sigma)
-   sigma=sigma * sqrt(svdcut)
-  write(uio,*)'# Results of SVD solution : i, x(i),sigma(i),Dx(i)=force_error*sigma(i)'
-  do j=1,n
-     write(uio,7) j,x(j),sigma(j)
-  enddo
+   call svbksb(a,w,v,m3,n,b,x,wcut,sigma)   ! sigma here: sqrt([V f(W) V^T]_jj), for unit noise
 
 ! deallocate(v,w,u) !,aux,eye)
 
@@ -112,6 +111,19 @@
   enddo
   sig=sqrt(num/denom)*100
   write(uio,3)' MAE, largest errors in force(eV/Ang),percent deviation=',error,ermax,sig
+
+! standard errors: scale by the residual standard deviation per row (the noise of b, estimated
+! from the fit itself with m3-n degrees of freedom)
+  s=sqrt(num/max(m3-n,1))
+  sigma=sigma*s
+  do k=1,n
+     vs(:,k)=v(:,k)*s*sqrt(w(k)**4/(w(k)**6+wcut**6))
+  enddo
+  write(uio,3)' residual standard deviation per row s=||Ax-b||/sqrt(m-n) (eV/Ang)=',s
+  write(uio,*)'# Results of SVD solution : i, x(i), standard error sigma(i)'
+  do j=1,n
+     write(uio,7) j,x(j),sigma(j)
+  enddo
 
 6 format(i6,3(1x,g13.6),3x,g11.4)
 3 format(a,3(1x,g13.6))
