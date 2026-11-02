@@ -1183,15 +1183,20 @@
 ! engy=engy/natom_super_cell*natom_prim_cell
 !! energy in the exponent of Boltzmann should be proportional to supercell size
 
-! subtract lowest energy value ! get it from FORCEDISP1; it is arbitrary anyways
+! energy per primitive cell first, then subtract the lowest per-cell energy of FORCEDISP1, so that the
+! snapshots of supercells of different sizes are on the same scale (user, 2026-11-02; until then emin
+! was the lowest TOTAL energy of supercell 1, subtracted from the totals of every supercell before the
+! division, which shifted a supercell of another size by about E0(1)/N_cells)
+ engy=engy/natom_super_cell*natom_prim_cell  ! eV per primitive cell
  if( first_call ) then
     emin=minval(engy)
     first_call=.false.
  endif
- engy=engy-emin  ! this is for that supercell of fixed size; how to compare among different SCs?
- engy=engy/natom_super_cell*natom_prim_cell  ! to normalize among supercells of different size
+ engy=engy-emin
 
- write(*,9)'Energy assigned ',engy
+ write(*,9)'Energy per primitive cell relative to the lowest of FORCEDISP1 (eV): ',engy
+ write(ulog,'(a,a,i6,a,i4)')' Energy assigned (eV per primitive cell, relative to the lowest of FORCEDISP1): ', &
+ &    outcar,natom_super_cell/natom_prim_cell,' cells'
  write(ulog,9)'Energy assigned ',engy
  write(*,*)'Calling calculate_and_write_displacements'
  write(ulog,*)'Now writing all snapshots force and displacement in the log file'

@@ -607,6 +607,11 @@ snapshots, sqrt(4/5 sum (x_i - xbar)^2) / SVD sigma: median FC2 1.04, FC3 0.91; 
   that factor is a Hartree, not a Rydberg, and carries no 1/a_B — flagged to the
   author, unresolved.
 - `read_qe.x` takes its input filename on **stdin**: `echo pw.out | read_qe.x`.
+- Snapshot energies (read_force_position_data, 2026-11-02, user): converted to eV per primitive cell, then
+  the lowest per-cell value of FORCEDISP1 subtracted, so several supercells are on one scale (log: "Energy
+  assigned (eV per primitive cell ...)" with file and cell count). Before, emin was supercell 1's lowest
+  TOTAL energy, subtracted before the division. Checked: Ge example tiled 2x along a1 as POSCAR2/FORCEDISP2
+  (2E): identical per-cell energies for 108 and 216 cells; one supercell: same values as before.
 - POSCARi species (2026-10-22): `check_input_poscar_consistency_new` first requires each atom
   to sit on a site of the species its counts line gives it (order of structure.params) --
   this fixes the origin where positions cannot (MgO sublattices); if impossible it falls back
