@@ -50,7 +50,7 @@ plot 'fbz_dos.dat' u 4:1  w l title "Total" ,\
 set size ratio 1.2 #  0.2,1
 set lmargin at screen 0.45
 unset ylabel
-set y2range [0:a*3/100]
+set y2range [0:a*3/100.]
 set y2label 'Frequency (THz)'
 set y2tics nomirror
 set format y ""
