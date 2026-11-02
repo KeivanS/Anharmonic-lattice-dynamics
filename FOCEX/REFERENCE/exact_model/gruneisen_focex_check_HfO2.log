@@ -1,0 +1,15 @@
+# FOCEX built before the 2026-11-01 Gruneisen fix
+HfO2: 520 band-path points; max |k(FOCEX, 4 decimals) - k(here)| = 5.0e-05 1/A
+omega (bands matched by frequency): max |FOCEX - exact| = 0.0002 1/cm (conversion 521.1099)
+exact formula (phase x_j - x_t): gamma, all modes except the Gamma translations: max |FOCEX - exact| = 3.19e+00 (k-point 2, sorted band 2); points with max dev > 2e-4: 519 of 520
+FOCEX's phase exp(ik.R) (with eigenvectors at k + 3e-4|G|u the two differ near Gamma): gamma, all modes except the Gamma translations: max |FOCEX - exact| = 3.20e+00 (k-point 2, sorted band 2); points with max dev > 2e-4: 519 of 520
+Gamma (point 1), direction [0. 0. 1.]: long-wave limit of the 3 translations [-1.691288 -1.344395 -0.658566]; FOCEX writes [0. 0. 0.]
+  next path point (|k| = 0.0154 1/A): FOCEX acoustic gamma [-4.1269 -4.5357 -1.6056]
+
+# FOCEX with common/gruneisen.f90 (2026-11-01)
+HfO2: 520 band-path points; max |k(FOCEX, 4 decimals) - k(here)| = 5.0e-05 1/A
+omega (bands matched by frequency): max |FOCEX - exact| = 0.0002 1/cm (conversion 521.1099)
+exact formula (phase x_j - x_t): gamma, all modes except the Gamma translations: max |FOCEX - exact| = 8.90e-03 (k-point 2, sorted band 1); points with max dev > 2e-4: 56 of 520
+FOCEX's phase exp(ik.R) (with eigenvectors at k + 3e-4|G|u the two differ near Gamma): gamma, all modes except the Gamma translations: max |FOCEX - exact| = 5.00e-05 (k-point 461, sorted band 13); points with max dev > 2e-4: 0 of 520
+Gamma (point 1), direction [0. 0. 1.]: long-wave limit of the 3 translations [-1.691288 -1.344395 -0.658566]; FOCEX writes [-1.6913 -1.3444 -0.6586]
+  next path point (|k| = 0.0154 1/A): FOCEX acoustic gamma [-1.6919 -1.3397 -0.6556]

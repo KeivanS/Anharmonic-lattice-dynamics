@@ -1,0 +1,13 @@
+ZnO model + NA term (Z_zz(Zn) 2.1, eps_zz 5.5), with relaxation; V = 47.593 A^3
+ direction a1: limit with NA [-1.136104 -1.067609 -0.605432] (omega^2/q^2 [0.3279  0.34448 0.98306]); without NA [-1.136104 -1.113192 -0.605432]
+    q= 1e-02: direct [-1.136024 -1.06756  -0.605408]  max |direct - limit| 8.02e-05
+    q= 1e-03: direct [-1.136102 -1.067608 -0.605431]  max |direct - limit| 1.52e-06
+    q= 3e-04: direct [-1.136096 -1.067605 -0.60543 ]  max |direct - limit| 8.10e-06
+ direction c: limit with NA [-1.221417 -1.221417 -0.540832] (omega^2/q^2 [0.33773 0.33773 1.31981]); without NA [-1.221417 -1.221417 -0.61836 ]
+    q= 1e-02: direct [-1.221369 -1.221369 -0.540799]  max |direct - limit| 4.81e-05
+    q= 1e-03: direct [-1.221416 -1.221416 -0.540831]  max |direct - limit| 1.19e-06
+    q= 3e-04: direct [-1.221409 -1.221412 -0.540831]  max |direct - limit| 7.87e-06
+ direction uinc: limit with NA [-1.142506 -1.038917 -0.606839] (omega^2/q^2 [0.32862 0.36439 0.98504]); without NA [-1.142506 -1.081027 -0.61082 ]
+    q= 1e-02: direct [-1.14243  -1.038877 -0.606813]  max |direct - limit| 7.56e-05
+    q= 1e-03: direct [-1.142505 -1.038916 -0.606838]  max |direct - limit| 1.29e-06
+    q= 3e-04: direct [-1.1425   -1.038913 -0.606836]  max |direct - limit| 5.95e-06

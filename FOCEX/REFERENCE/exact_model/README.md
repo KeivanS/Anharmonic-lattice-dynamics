@@ -98,10 +98,16 @@ against the exact FCs, with x_exact being the exact value of every irreducible F
 | ZnO e1all | 1 | 8e-8 | 9e-8 | 1.6e-7 | 9e-10 | 0 lost |
 | ZnO e2n | 2 | 6e-6 | 7e-7 | 1e-5 | **3.6e-4** | 2/47/243/579 (true 2/47/229/553), 0 lost |
 | ZnO e3n | 3 | 8e-8 | 9e-8 | 1.6e-7 | 8e-10 | 2/47/229/553 = exactly the true set |
-| HfO2 e0n | 0 | pending | | | | |
+| HfO2 e0n | 0 | 1e-7 | 6.5e-8 | 2.2e-7 | 5e-10 | 9/210/861/1380 = true, 0 lost |
 | HfO2 e1 | 1 | 1e-7 | 6.5e-8 | 2.2e-7 | 5e-10 | 9/210/861/1380 = true, 0 lost |
-| HfO2 e2n | 2 | pending | | | | |
-| HfO2 e3n | 3 | pending | | | | |
+| HfO2 e2n | 2 | 2e-6 | 1.9e-7 | 1.2e-5 | **6.9e-5** | 9/210/907/1380 (true 9/210/861/1380), 0 lost |
+| HfO2 e3n | 3 | lost | | | | |
+
+- HfO2 e0n and e2n: from their verify.log, which survives only as read into the session transcript of
+  2026-10-30 (run folders in a scratch directory that has since been deleted); their absolute errors
+  divided by max |FC| of e1. e2n took about 2.7 days.
+- HfO2 e3n was started 2026-10-30; its run folder was deleted with the scratch directory before it was
+  checked. Not rerun.
 
 - The force fit is 0.000 % in every run.
 - enforce_inv=0, 1 and 3 reproduce the exact FCs to the digits written.
