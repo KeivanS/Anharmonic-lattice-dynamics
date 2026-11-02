@@ -18,7 +18,7 @@ BINDIR_ABS := $(patsubst ~%,$(HOME)%,$(DESTDIR))
 
 .PHONY: all focex sc_snaps thermacond thermacond-serial anfomod scop8 python-tools clean
 
-all: python-tools focex sc_snaps thermacond anfomod
+all: python-tools focex sc_snaps thermacond thermacond-serial anfomod
 
 focex:
 	$(MAKE) -C FOCEX DESTDIR=$(DESTDIR)

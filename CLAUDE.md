@@ -24,8 +24,9 @@ exact k, Gamma limit, no stop for split FC2 groups; 9.0 2026-10-23: invariance r
 Born check; reading some FC ranks and fitting the rest gets the next number (9.3);
 8.18 and earlier: `~/BIN/v8.18`),
 THERMACOND `tcond-2.0.x` / `tcond-2.0-serial.x` (was `kap8` in its
-source folder). Top-level `make` (= `make all`, user's spec 2026-10-23): python-tools, focex (FOCEX +
-FOCEX/utility), sc_snaps, thermacond, anfomod; single targets of those names, `thermacond-serial`,
+source folder). Top-level `make` (= `make all`, user's spec 2026-10-23; thermacond-serial added 2026-11-01, user):
+python-tools, focex (FOCEX +
+FOCEX/utility), sc_snaps, thermacond, thermacond-serial, anfomod; single targets of those names,
 `scop8` (not in all: SCOP8 does not compile -- `VA_math.f95:7416` calls `dotproduct(...)`, which does
 not exist, geometry.f95 has only the `.dot.` operator; from 07f9f456, YuanLiang21120, 2025-04-02;
 user: ignore SCOP8 for now). Verified in a scratch copy: make all exit 0, make clean exit 0.
