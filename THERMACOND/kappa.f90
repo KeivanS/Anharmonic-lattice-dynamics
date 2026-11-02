@@ -14,16 +14,18 @@
 !! Serial and parallel runs are the same program:  tcond-2.0.x   or   mpirun -np N tcond-2.0.x
 !! Rank 0 works in the run folder; the other ranks work in .mpi_rank_NNN/ (removed at the end),
 !! so only rank 0's output files are kept.
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use kpoints
  use om_dos
  use atoms_force_constants
  use phi3
  use phi3_sy
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
- use born
+ use born, only : epsil,born_flag
  use exactBTE2
  use mod_ksubset2
  use tetrahedron
@@ -100,6 +102,7 @@
   call read_input_fit
   call read_lattice  ! reads lat_fc.dat
   call read_born
+  call setup_nonanalytic
   nkc = nc(1)*nc(2)*nc(3)
   call read_fc234
   call timing('After readings')
@@ -115,7 +118,7 @@
 ! job 0 part, always done: band structure and Gruneisen along kpbs.params, mesh, IBZ, DOS
   call make_kp_bs
   call allocate_eig_bs(ndyn,nkp_bs,ndyn) !3rd index is for eivecs needed for gruneisen
-  call get_frequencies(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,ndyn,eigenvec_bs,ueiv,veloc)
+  call get_frequencies(nkp_bs,kp_bs,dk_bs,ndyn,eigenval_bs,ndyn,eigenvec_bs,ueiv,veloc,1)
   open(1008,file='nkpbs.dat')
   write(1008,*)nkp_bs
   close(1008)
@@ -131,11 +134,12 @@
   call allocate_eig(ndyn,nkc,nkc)      ! last one (nkc) is for veloc
   allocate(dkc(nkc))
   dkc=0
-  call get_frequencies(nkc,kpc,dkc,ndyn,eigenval,ndyn,eigenvec,ucors,veloc)
+  call get_frequencies(nkc,kpc,dkc,ndyn,eigenval,ndyn,eigenvec,ucors,veloc,0)
   call timing('After om(k) calculation within FBZ')
   call check_mdyn(ndyn,nkc,kpc,eigenvec,eigenval)
   if(verbose) call write_eivecs(ndyn,nkc,kpc,eigenvec)
   call subst_eivecs(ndyn,nkc,eigenvec,kpc,npos,mappos)
+  call mark_gamma_acoustic
 
   call set_omdos(ndyn,wmesh)  ! allocates om and dos arrays of size mesh
   allocate(evc(nibz))
@@ -297,7 +301,7 @@
  call make_kp_bs
  nb=nkp_bs
  allocate(evlbs(ndyn,nb),evcbs(ndyn,ndyn,nb),vlcbs(3,ndyn,nb),om0(ndyn))
- call get_frequencies(nb,kp_bs,dk_bs,ndyn,evlbs,ndyn,evcbs,ll,vlcbs)
+ call get_frequencies(nb,kp_bs,dk_bs,ndyn,evlbs,ndyn,evcbs,ll,vlcbs,0)   ! k itself: V3 sums
  call split_range(nb,b1,b2)
  allocate(ise_loc(max(b2-b1+1,0),ndyn),ise(nb,ndyn))
  if (root) then
@@ -398,6 +402,34 @@
  if (n.gt.0) read(u) txt
  close(u)
  end subroutine read_whole
+
+!---------------------------------------------------------------
+ subroutine mark_gamma_acoustic()
+!! gamma_acoustic(la,nk): the 3 acoustic modes at Gamma of the mesh, the rigid translations
+!! (translation_weight > translation_min, module phonon_rules; found from the eigenvector, not the
+!! band index). omega -> 0 makes their V3 (1/sqrt(omega1 omega2 omega3)) and occupation diverge;
+!! they carry no heat and have zero weight in the k-sum, so they are excluded from every sum:
+!! V3 = 0, v = 0, F = 0. Their omega^2 is kept as computed.
+ use phonon_rules, only : translation_weight, translation_min
+ integer kk,l,n
+ n=0
+ do kk=1,nkc
+    if (sqrt(sum(kpc(:,kk)**2)).gt.1d-10) cycle
+    do l=1,ndyn
+       if (translation_weight(natoms0,atom0(1:natoms0)%mass,eigenvec(:,l,kk)).gt.translation_min) then
+          gamma_acoustic(l,kk)=.true.
+          veloc(:,l,kk)=0
+          n=n+1
+          write(ulog,'(a,i4,a,g12.4)')' MARK_GAMMA_ACOUSTIC: Gamma, mode',l,' excluded from the sums, omega^2=', &
+ &              eigenval(l,kk)
+       endif
+    enddo
+ enddo
+ if (n.ne.3) then
+    write(ulog,*)' MARK_GAMMA_ACOUSTIC: found',n,' rigid translations at Gamma, expected 3'
+    error stop 'MARK_GAMMA_ACOUSTIC: not 3 acoustic modes at Gamma (is Gamma on the mesh? force constants?)'
+ endif
+ end subroutine mark_gamma_acoustic
 
 !---------------------------------------------------------------
  subroutine check_v3_inputs()
@@ -811,9 +843,7 @@
  do nk=1,nkc
     ib=mapibz(nk)
     call set_dynamical_matrix(kpc(:,nk),dyn,ndyn,dd)
-    khat=kpc(:,nk)
-    if (all(khat.eq.0d0)) khat=khat+1d-10
-    if (born_flag.ne.0) call nonanal(khat,dyn,ndyn,dd)
+    call add_nonanalytic(kpc(:,nk),dyn,dd,ndyn)
     l0=0
     if (sqrt(sum(kpc(:,nk)**2)).lt.1d-10) l0=3     ! acoustic modes at Gamma
     do s=1,ndyn

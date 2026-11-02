@@ -9,15 +9,25 @@ FLAGS =-O2 -fcheck=all #-fimplicit-none  -fbacktrace -Wimplicit-interface -Wimpl
 # other gfortran compile options  useful for debugging:
 # -fcheck=all -Wsurprising -Wextra -Wall -std=f2018 -fbounds-check -fcheck=array-temporaries
 
+# the modules shared with THERMACOND are in ../common (one file per module)
+vpath %.f90 ../common
+COMMON = constants.f90 params.f90 geometry.f90 ios_mod.f90 atoms_force_constants.f90 \
+  lattice.f90 svd_stuff.f90 linalgb.f90 phonons.f90
+
 SUBF90 = \
-  fc_modules.f90 \
+  $(COMMON) \
   fc34_range.f90 \
+  tools.f90 \
   kpoints.f90 \
   fourier_stuff.f90 \
+  born.f90 \
+  ewald.f90 \
   ewald_born.f90 \
   dyn_modules.f90 \
   modules_tetra.f90 \
   aux_na.f90 \
+  nonanal.f90 \
+  dielectric.f90 \
   ios.f90 \
   svd_ridge.f90 \
   lasso_lars.f90 \

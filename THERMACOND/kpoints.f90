@@ -6,7 +6,8 @@
 ! a mapping of this mesh into the FBZ: kpc(3,mapbz(1:nbz))
 ! one grid in the irreducible FBZ for kappa/dos sums: kibz(3,nibz)
  use lattice   ! it is also used for all included subroutines
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use constants
  implicit none
  integer nbs1,nbs2,nbs3,nkp_bs   ! for the band structure
@@ -37,7 +38,8 @@
   subroutine make_kp_bs
 !! this subroutine sets up the kpoints for the band structure from the
 !! list written in the file kpbs.params (given in direct coordinates of the CONVENTIONAL cell)
-  use ios
+  use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+  use tc_ios
   use geometry
   use lattice , only : g01,g02,g03
   use constants, only : pi
@@ -175,7 +177,8 @@
   subroutine make_kp_reg(ncs,gg1,gg2,gg3,shft,kpt,wkt)
 !! generate a regular mesh from 0 to g_i, with eventual shift
     use geometry
-    use params
+    use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+    use tc_params
     implicit none
     integer, intent(in) :: ncs(3)
     real(r15), intent(in) :: shft(3) !,g1(3),g2(3),g3(3)
@@ -297,8 +300,10 @@
  subroutine get_k_info3(q,nkt,ex) !,i1,j1,k1,gg1,gg2,gg3,inside)
 ! scans the kpoints to identify the index of the input q
  use geometry
- use params
- use ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  implicit none
  real(r15) q(3),ll
  integer nkt,i

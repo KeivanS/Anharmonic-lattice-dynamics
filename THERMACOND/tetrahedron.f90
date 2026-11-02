@@ -3,10 +3,12 @@
 ! generate a regular mesh for tetrahedron method (same as make_kp_reg)
 
     use geometry
-    use params
+    use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+    use tc_params
     use tetrahedron
     use lattice
-    use ios
+    use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+    use tc_ios
     use kpoints , only : nc,nkc
 
     implicit none
@@ -397,7 +399,8 @@ use tetrahedron
 use constants                                                               
 use om_dos
 use geometry
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 implicit none                                      
 
 integer :: i,j,k,kk,l,nx,ny,nz,mesh,ndn

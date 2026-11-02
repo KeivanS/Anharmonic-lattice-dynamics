@@ -1,710 +1,28 @@
 !==============================================
 ! Modules here
 !==============================================
- module constants
- implicit none
- real(8) :: pi=3.14159265358979323846d0
- complex(8) :: ci=cmplx(0d0,1d0)
- real(8) :: h_plank= 6.62606896d-34
- real(8) :: n_avog= 6.023d23
- real(8) :: k_b = 1.3806504d-23       ! J/K:
- real(8) :: c_light = 2.99792458d+8   ! in (m/s)
- real(8) :: hbar = 1.054571628d-34  !h_plank/2/pi  !
- real(8) :: ee = 1.60217653d-19
- real(8) :: eps0 = 8.854187817d-12
- real(8) :: me = 9.1093826d-31
- real(8) :: uma = 1.66053878d-27 ! kg
-! real(8) :: cnst = sqrt(ee*1d20/uma)/pi/200/c_light ! converts sqrt(eV/A/A/uma) to cm^-1
-  real(8) :: cnst= 521.1098918
-! real(8) :: ryd= me*ee**4/2/pi/pi/hbar**2/16/pi/pi/eps0/eps0
-  real(8) :: ryd= 27.2116  
-! real(8) :: ab = hbar*hbar/me/ee/ee*4*pi*eps0
-  real(8) :: ab = 0.529177
-! kbe=8.617343e-05 
- end module constants
+! module constants: ../common/constants.f90 (shared with FOCEX)
 !==============================================
-module params
- real(8) tolerance,margin,lmicron
- integer nconfigs,classical,ntemp,fdfiles,calc_cross,threemtrx,lamin,lamax
- integer nshells(4)   ! up to which shell to include for each rank of FC
- integer include_fc(4),nsmax  ! whether to include FCs of that rank
+module tc_params
+!! THERMACOND inputs not in the shared params module (../common/params.f90)
+ real(8) lmicron
+ integer ntemp,calc_cross,nsmax
  real(8) rcut(4),tau0,wshift(3)
- real(8) tmin,tmax,q_cross(3)
- logical verbose
- !!mine
+ real(8) q_cross(3)
  real(8) alphamix
-end module params
+end module tc_params
 !============================================================
- module geometry
-
-  type vector
-    real(8) :: x,y,z
-  end type vector
-  type point
-    real(8) :: x,y,z
-  end type point
-!-----------------------------
-   interface operator(*)
-     module procedure multiply_by_real,multiply_by_integer ; end interface
-   interface operator(/)
-     module procedure divide_by_scalar; end interface
-   interface assignment(=)
-     module procedure array_eq_vector , array_eq_point , vector_eq_array , &
-&                     vector_eq_point , point_eq_vector, point_eq_array
-   end interface
-   interface operator(+)
-     module procedure addition_avv , addition_vav, addition !,  &
-! &                     addition_ava , addition_vaa 
-   end interface
-   interface operator(-)
-     module procedure subtraction,subtraction_av,subtraction_va; end interface
-   interface operator(.dot.)
-     module procedure dotproduct_v,dotproduct_a,  &
-&                     dotproduct_av,dotproduct_va; end interface
-   interface operator(.cross.)
-     module procedure crossproduct_v,crossproduct_a; end interface
-   interface operator(.myeqz.)
-     module procedure myequal0, myequal0array, myequal0vector ; end interface
-   interface operator(.myeq.)
-     module procedure myequal, myequalarray, myequalvector ; end interface
-
-  interface length
-     module procedure lengthv,lengtha ; end interface
-
-  interface bring_to_cell_c
-     module procedure bring_to_cell_cv,bring_to_cell_ca
-  end interface
-
-  interface bring_to_cell_d
-     module procedure bring_to_cell_dv,bring_to_cell_da
-  end interface
-
-! interface cart_to_direct
-!    module procedure cart_to_direct_aa,cart_to_direct_av,cart_to_direct_v
-! end interface
-
-! interface direct_to_cart
-!    module procedure direct_to_cart_aa,direct_to_cart_av,direct_to_cart_v
-! end interface
-
-  interface reduce
-     module procedure reduce_v,reduce_a
-  end interface
-
-  interface bring_to_center
-     module procedure bring_to_center_a, bring_to_center_v
-  end interface bring_to_center
-
-   contains
-
-!============================================================
-
-   function crossproduct_v(v,w) result(cross)
-     type(vector) cross !, intent(out) ::
-     type(vector), intent(in) :: v,w
-     cross%x = v%y*w%z-v%z*w%y
-     cross%y = v%z*w%x-v%x*w%z
-     cross%z = v%x*w%y-v%y*w%x
-   end function crossproduct_v
-
-   function crossproduct_a(v,w) result(cross)
-     real(8) cross(3) !, intent(out) ::
-     real(8), intent(in) :: v(3),w(3)
-     cross(1) = v(2)*w(3)-v(3)*w(2)
-     cross(2) = v(3)*w(1)-v(1)*w(3)
-     cross(3) = v(1)*w(2)-v(2)*w(1)
-   end function crossproduct_a
-
-!-----------------------------------
-   function dotproduct_v(v,w) result(dot)
-     real(8) dot !, intent(out) ::
-     type(vector), intent(in) :: v,w
-     dot = w%x * v%x + w%y * v%y + w%z * v%z
-   end function dotproduct_v
-!-----------------------------------
-   function dotproduct_a(v,w) result(dot)
-     real(8) dot !, intent(out) ::
-     real(8), intent(in) :: v(:),w(:)
-!    dot = v(1)*w(1) + v(2)*w(2) + v(3)*w(3)
-     dot = sum(v*w)
-   end function dotproduct_a
-!-----------------------------------
-   function dotproduct_av(v,w) result(dot)
-     real(8) dot !, intent(out) ::
-     real(8), intent(in) :: v(3)
-     type(vector), intent(in) :: w
-     dot = v(1)*w%x + v(2)*w%y + v(3)*w%z
-   end function dotproduct_av
-!-----------------------------------
-   function dotproduct_va(w,v) result(dot)
-     real(8) dot !, intent(out) ::
-     real(8), intent(in) :: v(3)
-     type(vector), intent(in) :: w
-     dot = v(1)*w%x + v(2)*w%y + v(3)*w%z
-   end function dotproduct_va
-!-----------------------------------
-   function v2a(w) result(a)
-   type(vector), intent(in) :: w
-   real(8) a(3)
-   a(1) = w%x
-   a(2) = w%y
-   a(3) = w%z
-   end function v2a
-!-----------------------------------
-   function myequal0(v,w) result(eq)
-     use params
-     real(8), intent(in)::  v,w
-     logical eq !, intent(out) :: eq
-
-        if (abs(v-w) .lt. 1d-5) then
-           eq=.true.
-        else
-           eq=.false.
-        endif
-
-   end function myequal0
-!-----------------------------------
-   function myequal(v,w) result(eq)
-     use params
-     real(8), intent(in)::  v,w
-     logical eq !, intent(out) :: eq
-!    if (v.eq.0 ) then
-!       if (w.eq.0) then
-!          eq=.true.
-!       else
-!          eq=.false.
-!       endif
-!    else
-!       if (abs(v-w)/abs(v) .lt. tolerance) then
-        if (abs(v-w) .lt. tolerance) then
-           eq=.true.
-        else
-           eq=.false.
-        endif
-!    endif
-   end function myequal
-!-----------------------------------
-   function myequal0vector(v,w) result(eq)
-     type(vector), intent(in)::  v,w
-     logical eq !, intent(out) :: eq
-  if ( (v%x .myeqz. w%x) .and. (v%y .myeqz. w%y) .and. (v%z .myeqz. w%z) ) then
-           eq=.true.
-     else
-           eq=.false.
-     endif
-   end function myequal0vector
-!-----------------------------------
-   function myequalvector(v,w) result(eq)
-     type(vector), intent(in)::  v,w
-     logical eq !, intent(out) :: eq
-     if ( (v%x .myeq. w%x) .and. (v%y .myeq. w%y) .and. (v%z .myeq. w%z) ) then
-           eq=.true.
-     else
-           eq=.false.
-     endif
-   end function myequalvector
-!-----------------------------------
-   function myequal0array(v,w) result(eq)
-     real(8), dimension(:), intent(in) ::  v,w
-     logical eq !, intent(out) :: eq
-     integer i,n
-     i = size(v) ; n=size(w)
-     if (n .ne. i) then
-        print*, 'MYEQUAL0ARRAY: the input arrays are of different size ',i,n
-        stop
-     else
-        eq = .true.
-        loop: do n=1,i
-           if ( .not. myequal0(v(n),w(n)) ) then
-              eq = .false.
-              exit loop
-           endif
-        enddo loop
-     endif
-   end function myequal0array
-!-----------------------------------
-   function myequalarray(v,w) result(eq)
-     real(8), dimension(:), intent(in) ::  v,w
-     logical eq !, intent(out) :: eq
-     integer i,n
-     i = size(v) ; n=size(w)
-     if (n .ne. i) then
-        print*, 'MYEQUALARRAY: the input arrays are of different size ',i,n
-        stop
-     else
-        eq = .true.
-        loop: do n=1,i
-           if ( .not. myequal(v(n),w(n)) ) then
-              eq = .false.
-              exit loop
-           endif
-        enddo loop
-     endif
-   end function myequalarray
-!-----------------------------------
-   function addition(v,w) result(add)
-     type(vector) add !, intent(out) ::
-     type(vector), intent(in) :: v,w
-     add%x = v%x + w%x
-     add%y = v%y + w%y
-     add%z = v%z + w%z
-   end function addition
-!-----------------------------------
-   function addition_vav(v,w) result(add)
-     type(vector) add !, intent(out) ::
-     type(vector), intent(in) :: v
-     real(8), intent(in) :: w(3)
-     add%x = v%x + w(1)
-     add%y = v%y + w(2)
-     add%z = v%z + w(3)
-   end function addition_vav
-!-----------------------------------
-   function addition_avv(w,v) result(add)
-     type(vector) add !, intent(out) ::
-     type(vector), intent(in) :: v
-     real(8), intent(in) :: w(3)
-     add%x = v%x + w(1)
-     add%y = v%y + w(2)
-     add%z = v%z + w(3)
-   end function addition_avv
-!-----------------------------------
-!  function addition_vaa(v,w) result(add)
-!    real(8) add(3) !, intent(out) ::
-!    type(vector), intent(in) :: v
-!    real(8), intent(in) :: w(3)
-!    add(1) = v%x + w(1)
-!    add(2) = v%y + w(2)
-!    add(3) = v%z + w(3)
-!  end function addition_vaa
-!-----------------------------------
-!  function addition_ava(w,v) result(add)
-!    real(8) add(3) !, intent(out) ::
-!    type(vector), intent(in) :: v
-!    real(8), intent(in) :: w(3)
-!    add(1) = v%x + w(1)
-!    add(2) = v%y + w(2)
-!    add(3) = v%z + w(3)
-!  end function addition_ava
-!-----------------------------------
-   function subtraction(v,w) result(dif)
-     type(vector) dif !, intent(out) ::
-     type(vector), intent(in) :: v,w
-     dif%x = v%x - w%x
-     dif%y = v%y - w%y
-     dif%z = v%z - w%z
-   end function subtraction
-!-----------------------------------
-   function subtraction_va(v,w) result(dif)
-     type(vector) dif !, intent(out) ::
-     type(vector), intent(in) :: v
-     real(8), intent(in) :: w(3)
-     dif%x = v%x - w(1)
-     dif%y = v%y - w(2)
-     dif%z = v%z - w(3)
-   end function subtraction_va
-!-----------------------------------
-   function subtraction_av(w,v) result(dif)
-     type(vector) dif !, intent(out) ::
-     type(vector), intent(in) :: v
-     real(8), intent(in) :: w(3)
-     dif%x = v%x - w(1)
-     dif%y = v%y - w(2)
-     dif%z = v%z - w(3)
-   end function subtraction_av
-!-----------------------------------
-   function multiply_by_integer(s,v) result(sv)
-   integer, intent(in) :: s
-   type(vector), intent(in) :: v
-   type(vector) sv !, intent(out)::
-     sv%x=s*v%x
-     sv%y=s*v%y
-     sv%z=s*v%z
-   end function multiply_by_integer
-!-----------------------------------
-   function multiply_by_real(s,v) result(sv)
-   real(8), intent(in) :: s
-   type(vector), intent(in) :: v
-   type(vector) sv !, intent(out)::
-     sv%x=s*v%x
-     sv%y=s*v%y
-     sv%z=s*v%z
-   end function multiply_by_real
-!-----------------------------------
-   function divide_by_scalar(v,s) result(sv)
-   real(8), intent(in) :: s
-   type(vector), intent(in) :: v
-   type(vector) sv !, intent(out)::
-     sv%x=1/s*v%x
-     sv%y=1/s*v%y
-     sv%z=1/s*v%z
-   end function divide_by_scalar
-!-----------------------------------
-   function distance(v,w) result(d)
-   type(point), intent(in) :: v,w
-   real(8) d !, intent(out)::
-     d = sqrt( (v%x-w%x)**2 +(v%y-w%y)**2 +(v%z-w%z)**2 )
-   end function distance
-!-----------------------------------
-    subroutine point_eq_array(p,a)
-      real(8), intent(in) :: a(3)
-      type(point), intent(out) :: p
-      p%x = a(1)
-      p%y = a(2)
-      p%z = a(3)
-    end subroutine point_eq_array
-!-----------------------------------
-    subroutine point_eq_vector(p,v)
-      type(vector), intent(in) :: v
-      type(point), intent(out) :: p
-      p%x = v%x
-      p%y = v%y
-      p%z = v%z
-    end subroutine point_eq_vector
-!-----------------------------------
-    subroutine vector_eq_point(v,p)
-      type(point), intent(in) :: p
-      type(vector), intent(out) :: v
-      v%x = p%x
-      v%y = p%y
-      v%z = p%z
-    end subroutine vector_eq_point
-!-----------------------------------
-    subroutine vector_eq_array(vv,aa)
-      real(8), intent(in) :: aa(3)
-      type(vector), intent(out) :: vv
-      vv%x = aa(1)
-      vv%y = aa(2)
-      vv%z = aa(3)
-    end subroutine vector_eq_array
-!-----------------------------------
-    subroutine array_eq_vector(a,v)
-      type(vector), intent(in) :: v
-      real(8), intent(out) :: a(3)
-      a(1) = v%x
-      a(2) = v%y
-      a(3) = v%z
-    end subroutine array_eq_vector
-!-----------------------------------
-    subroutine array_eq_point(a,p)
-      type(point), intent(in) :: p
-      real(8), intent(out):: a(3)
-      a(1) = p%x
-      a(2) = p%y
-      a(3) = p%z
-    end subroutine array_eq_point
-!-----------------------------------
-   function vect(a,b) result(v)
-     type(point), intent(in) :: a,b
-     type(vector) v
-     v%x= b%x-a%x
-     v%y= b%y-a%y
-     v%z= b%z-a%z
-   end function vect
-!-----------------------------------
-   function lengthv(v) result(l)
-     real(8) l
-     type(vector), intent(in) :: v
-     l = sqrt(v%x*v%x+v%y*v%y+v%z*v%z)
-   end function lengthv
-!-----------------------------------
-   function lengtha(v) result(l)
-     real(8) l
-     real(8), dimension(:), intent(in) :: v
-     integer i
-     l = 0d0
-     do i=1,size(v)
-        l = l + v(i)*v(i)
-     enddo
-     l = sqrt(l)
-   end function lengtha
-!-----------------------------------
- subroutine reduce_v(v,q1,q2,q3,w)
-! takes direct coordinates and returns direct coordinates
- implicit none
- type(vector) v,q1,q2,q3,w
- real(8) a1,a2,a3
-
- a1 = v .dot. q1
- a2 = v .dot. q2
- a3 = v .dot. q3
- w%x = a1 ; w%y = a2 ; w%z = a3
-
- end subroutine reduce_v
-!-----------------------------------------
- subroutine reduce_a(a,q1,q2,q3,w)
-! takes direct coordinates and returns direct coordinates
- implicit none
- type(vector) v,q1,q2,q3,w
- real(8) a1,a2,a3,a(3)
-
- v%x = a(1);v%y = a(2);v%z = a(3)
- a1 = v .dot. q1
- a2 = v .dot. q2
- a3 = v .dot. q3
- w%x = a1 ; w%y = a2 ; w%z = a3
-
- end subroutine reduce_a
-!-----------------------------------------
- function bring_to_cell_dv(v) result(w)
-! takes direct coordinates and returns direct coordinates
- implicit none
- type(vector) v,w
- real(8) a1,a2,a3
-
- a1 = v%x ; a2 = v%y ; a3 = v%z
- a1 = a1 - floor(a1)
- a2 = a2 - floor(a2)
- a3 = a3 - floor(a3)
- w%x = a1 ; w%y = a2 ; w%z = a3
-
- end function bring_to_cell_dv
-!-----------------------------------------
- function bring_to_cell_da(a) result(w)
-! takes direct coordinates and returns direct coordinates
- implicit none
- type(vector) w
- real(8) a(3)
-
- a(1) = a(1) - floor(a(1))
- a(2) = a(2) - floor(a(2))
- a(3) = a(3) - floor(a(3))
- w%x = a(1) ; w%y = a(2) ; w%z = a(3)
-
- end function bring_to_cell_da
-!-----------------------------------------
- subroutine bring_to_cell_ca(a,r1,r2,r3,g1,g2,g3,b)
-! takes cart coordinates and returns cart coordinates within the supercell
-! assumes r_i.g_j=delta_ij (no factor of 2pi included)
- implicit none
- type(vector) v,w,g1,g2,g3,r1,r2,r3
- real(8) a1,a2,a3,a(3),b(3)
-
- v%x = a(1);v%y = a(2);v%z = a(3)
-! get direct coordinates first
- a1 = v .dot. g1
- a2 = v .dot. g2
- a3 = v .dot. g3
-! bring into cell: between 0 and cell
- a1 = a1 - floor(a1)
- a2 = a2 - floor(a2)
- a3 = a3 - floor(a3)
-! convert to cartesian coordinates
- w = a1*r1+a2*r2+a3*r3
- b(1)=w%x ; b(2)=w%y ; b(3)=w%z
-
- end subroutine bring_to_cell_ca
-!-----------------------------------
- subroutine bring_to_cell_cv(v,r1,r2,r3,g1,g2,g3,w)
-! takes cart coordinates and returns cart coordinates within the supercell
-! assumes r_i.g_j=delta_ij (no factor of 2pi included)
- implicit none
- type(vector) v,g1,g2,g3,w,r1,r2,r3
- real(8) a1,a2,a3
-
-! get direct coordinates first
- a1 = v .dot. g1
- a2 = v .dot. g2
- a3 = v .dot. g3
-!print*,'v=',v
-!print*,'g1,g2,g3=',g1,g2,g3
-!print*,'a1,a2,a3=',a1,a2,a3
-! bring into cell: between 0 and cell
- a1 = a1 - floor(a1)
- a2 = a2 - floor(a2)
- a3 = a3 - floor(a3)
-!print*,'NEW a1,a2,a3=',a1,a2,a3
-! convert to cartesian coordinates
- w = a1*r1+a2*r2+a3*r3
-
- end subroutine bring_to_cell_cv
-!-----------------------------------------
- subroutine bring_to_center_v(v,r1,r2,r3,g1,g2,g3,w)
- use constants
-! takes cart coordinates and returns cart coordinates within the FBZ
- implicit none
- type(vector) v,g1,g2,g3,r1,r2,r3,w
- real(8) a1,a2,a3
-
-! get direct coordinates first
- a1 = v .dot. g1
- a2 = v .dot. g2
- a3 = v .dot. g3
- a1 = a1/2/pi ;  a2 = a2/2/pi ;  a3 = a3/2/pi
-!print*,'v=',v
-!print*,'g1,g2,g3=',g1,g2,g3
-!print*,'a1,a2,a3=',a1,a2,a3
-! bring into cell: between -cell/2 and cell/2
- a1 = a1 - floor(a1) - 0.5
- a2 = a2 - floor(a2) - 0.5
- a3 = a3 - floor(a3) - 0.5
-!print*,'NEW a1,a2,a3=',a1,a2,a3
-! convert to cartesian coordinates
- w = a1*r1+a2*r2+a3*r3
-
- end subroutine bring_to_center_v
-!-----------------------------------------
- subroutine bring_to_center_a(v,r1,r2,r3,g1,g2,g3,w)
- use constants
-! takes cart coordinates and returns cart coordinates within the FBZ
- implicit none
- type(vector) g1,g2,g3,r1,r2,r3
- real(8) a1,a2,a3,v(3),w(3)
-
-! get direct coordinates first
- a1 = v .dot. g1
- a2 = v .dot. g2
- a3 = v .dot. g3
- a1 = a1/2/pi ;  a2 = a2/2/pi ;  a3 = a3/2/pi
-!print*,'v=',v
-!print*,'g1,g2,g3=',g1,g2,g3
-!print*,'a1,a2,a3=',a1,a2,a3
-! bring into cell: between -cell/2 and cell/2
- a1 = a1 - floor(a1) - 0.5
- a2 = a2 - floor(a2) - 0.5
- a3 = a3 - floor(a3) - 0.5
-!print*,'NEW a1,a2,a3=',a1,a2,a3
-! convert to cartesian coordinates
- w = a1*r1+a2*r2+a3*r3
-
- end subroutine bring_to_center_a
-
- end module geometry
+! module geometry: ../common/geometry.f90 (shared with FOCEX)
 !==============================================
-module ios
- integer, parameter:: ulog=30,uposcar=10,uparams=11, utraj=40,ufco=20,  &
-&         umap=60,umatrx=50,utimes=70,ufc1=21,ufc2=22,ufc3=23,ufc4=24,   &
-&         ufc=80,ufit1=31,ufit2=32,ufit3=33,ufit4=34,uborn=12
-
+module tc_ios
+!! THERMACOND unit numbers not in the shared ios module (../common/ios_mod.f90); udos, uibz and
+!! ugrun keep the THERMACOND values (the shared module has others)
  integer, parameter::ubs=51,udos=41,ueiv=61,ukap=71,uslf=3000, &
 &         ufc0=28,ualph=27,uvel=31,umod=2000,  &
 &         fbz=93,bzf=95,uibz=94,ibs=96,ucors=65,uv3=85,ugrun=81,urate=88, &
-&         ucof=87,ucross=89, k_kappa=9000 
-
- integer, parameter:: debug=9999, self_detail=9990, iself_bs=9980, ksubset_bs_inp=9970    ! sy. 
-
-  interface write_out
-     module procedure write_outiv, write_outrv, write_outim, write_outrm &
-&    , write_outi, write_outr , write_outv,write_outcv,write_outcm
-  end interface
-
- contains
-
-!-----------------------------
-  subroutine write_outcm(unit,string,var)
-  implicit none
-  character*(*) string
-  integer n,m,unit,l,i,j
-  complex(8), dimension(:,:), intent(in) ::  var(:,:)
-
-  l=len_trim(string)
-  n=size(var(:,1)) ; m=size(var(1,:))
-  write(unit,4)string(1:l)//' is='
-  do i=1,n
-     write(unit,5) (var(i,j),j=1,m)
-  enddo
-4 format(a,99(1x,g12.6))
-5 format(199(1x,g12.6))
-  end subroutine write_outcm
-!-----------------------------
-  subroutine write_outrm(unit,string,var)
-  implicit none
-  character*(*) string
-  integer n,m,unit,l,i,j
-  real(8), dimension(:,:), intent(in) ::  var(:,:)
-
-  l=len_trim(string)
-  n=size(var(:,1)) ; m=size(var(1,:))
-  write(unit,4)string(1:l)//' is='
-  do i=1,n
-     write(unit,5) (var(i,j),j=1,m)
-  enddo
-4 format(a,99(1x,g12.6))
-5 format(199(1x,g12.6))
-  end subroutine write_outrm
-!-----------------------------
-  subroutine write_outim(unit,string,n,m,var)
-  implicit none
-  character*(*) string
-  integer n,m,unit,i,l,j
-  integer var(n,m)
-
-  l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',((var(i,j),i=1,n),j=1,m)
-4 format(a,99(1x,i8))
-
-  end subroutine write_outim
-!-----------------------------
-  subroutine write_outrv(unit,string,var)
-  implicit none
-  character*(*) string
-  integer unit,l,i
-  real(8), dimension(:) :: var
-
-  l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',(var(i),i=1,size(var))
-4 format(a,99(1x,g12.5))
-  end subroutine write_outrv
-!-----------------------------
-  subroutine write_outiv(unit,string,var)
-  implicit none
-  character*(*) string
-  integer unit,i,l
-  integer, dimension(:) :: var
-
-  l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',(var(i),i=1,size(var))
-4 format(a,99(1x,i8))
-
-end subroutine write_outiv
-!-----------------------------
-  subroutine write_outr(unit,string,var)
-  implicit none
-  character*(*) string
-  integer unit,l
-  real(8) var
-
-  l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',var
-4 format(a,99(1x,g12.6))
-end subroutine write_outr
-!-----------------------------
-  subroutine write_outi(unit,string,var)
-  implicit none
-  character*(*) string
-  integer n,unit,l
-  integer var
-
-  l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',var
-4 format(a,99(1x,i8))
-
-end subroutine write_outi
-!-----------------------------
-  subroutine write_outv(unit,string,var)
-  use geometry
-  implicit none
-  character*(*) string
-  integer unit,l
-  type(vector) var
-
-  l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',var
-4 format(a,3(1x,g12.6))
-end subroutine write_outv
-!-----------------------------
-  subroutine write_outcv(unit,string,var)
-  implicit none
-  character*(*) string
-  integer unit,l,i
-  complex(8), dimension(:) :: var
-
-  l=len_trim(string)
-  write(unit,4)string(1:l)//' is=',(var(i),i=1,size(var))
-4 format(a,99(3x,g11.4,1x,g11.4))
-  end subroutine write_outcv
-!-----------------------------
-
-end module ios
+&         ucof=87,ucross=89, k_kappa=9000
+ integer, parameter:: debug=9999, self_detail=9990, iself_bs=9980, ksubset_bs_inp=9970    ! sy.
+end module tc_ios
 !===========================================================
  module atoms_force_constants
 ! the type atom_id0 concerns the properties of the primitive unit cell
@@ -833,7 +151,8 @@ contains
 ! to a pair ij, or ijk or ijkl
 ! if a neighbor j is known then one can get the vect(i,j) between
 ! their equilibrium positions
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
 ! use lattice
  use ios , only : ulog
  use geometry
@@ -848,7 +167,8 @@ contains
     allocate( atom0(i0)%shells(0:maxshells) )
     do j=1,natoms
        call calculate_distance(i0,j,atompos,maxatoms,dist(j) )
-       if ( iatomneighbor(i0,j) .eq. nshells(2) .and. dist(j) .gt. rmax ) then
+       ! (not called by THERMACOND; nshells is the shared 2-D array nshells(rank,atom))
+       if ( iatomneighbor(i0,j) .eq. nshells(2,i0) .and. dist(j) .gt. rmax ) then
             rmax = dist(j)
        endif
     enddo
@@ -926,6 +246,7 @@ contains
  type(vector) r01,r02,r03,g01,g02,g03  ! the same primitive cell (r0i from structure.params, checked equal)
  type(vector) r1conv,r2conv,r3conv,g1conv,g2conv,g3conv
  real(8) volume_r,volume_g,lattice_parameter,latticeparameters(6),primitivelattice(3,3)
+ real(8) volume_r0   ! = volume_r, the primitive cell; the name used by the shared NA routines
  real(8) conv_to_cart(3,3),conv_to_prim(3,3), cart_to_prim(3,3), prim_to_cart(3,3),prim_to_conv(3,3)
  real(8) box(3),boxg(3)
  real(8) r0g(3,3)
@@ -1179,12 +500,7 @@ contains
 
   end module svd_stuff
 !============================================================
-  module born
-  real(8) epsil(3,3)
-  real(8), allocatable:: zeu(:,:,:)
-  real(8) rho 
-  integer born_flag
-  end module born
+! module born: ../common/born.f90 (shared with FOCEX)
 
 !===================================================================
 module tetrahedron
@@ -1378,7 +694,8 @@ end module exactBTE2
    end subroutine set_omdos
 
    subroutine write_dos
-   use ios
+   use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+   use tc_ios
    implicit none
    integer i,la
    real(8) sumdos
@@ -1410,12 +727,16 @@ end module exactBTE2
  real(8), allocatable :: eigenval_f(:,:),eigenval_bs(:,:),eigenval(:,:),eigenval_es(:)
 ! sqr of phonon freqs in eV/A/A/m0
  complex(8), allocatable :: eigenvec_f(:,:,:),eigenvec_bs(:,:,:),eigenvec(:,:,:),grun(:,:),grun_bs(:,:), eigenvec_es(:,:)
+! gamma_acoustic(la,nk): the 3 acoustic modes at Gamma of the mesh, excluded from every sum (set by
+! mark_gamma_acoustic, kappa.f90)
+ logical, allocatable :: gamma_acoustic(:,:)
 
     contains
 
     subroutine allocate_eig(nb,ni,nk) ! nb for band, nk for coarse mesh in FBZ
     integer nb,nk,ni
       allocate( eigenval(nb,ni),eigenvec(nb,nb,ni),grun(nb,ni),veloc(3,nb,nk), eigenval_es(nb),eigenvec_es(nb,nb) )
+      allocate( gamma_acoustic(nb,ni) ); gamma_acoustic=.false.
     end subroutine allocate_eig
 !---------------------------------
     subroutine allocate_eig_bs(nb,nk,nv) ! nb for band, nk for band structure mesh
@@ -1438,7 +759,7 @@ end module exactBTE2
 !   end subroutine allocate_eig_f
 !---------------------------------
     subroutine deallocate_eig ! nb for band, nk for coarse mesh in FBZ
-      deallocate( eigenval,eigenvec,grun,veloc )
+      deallocate( eigenval,eigenvec,grun,veloc,gamma_acoustic )
     end subroutine deallocate_eig
 
  end module eigen
@@ -1478,7 +799,8 @@ end module exactBTE2
 ! a mapping of this coarse mesh into the FBZ: kpc(3,mapbz(1:nbz)) 
 ! one fine grid in the irreducible FBZ for kappa/dos sums: kibz(3,nibz)
  use lattice   ! it is also used for all included subroutines
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use constants
  implicit none
  integer nbs1,nbs2,nbs3,nkp_bs   ! for the band structure
@@ -1508,7 +830,8 @@ end module exactBTE2
    subroutine make_kp_bs
  !! this subroutine sets up the kpoints for the band structure from the
  !! list written in the file kpbs.params (given in direct coordinates of the CONVENTIONAL cell)
-   use ios
+   use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+   use tc_ios
    use geometry
    use lattice !, only : g01,g02,g03
    use constants, only : pi
@@ -1722,7 +1045,8 @@ end module exactBTE2
   subroutine make_kp_reg(nc,gg1,gg2,gg3,shft,kpt,wkt)
 ! generate a regular mesh from 0 to g_i, with eventual shift 
     use geometry
-    use params
+    use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+    use tc_params
     implicit none
     integer, intent(in) :: nc(3)
     real(8), intent(in) :: shft(3) 
@@ -1939,7 +1263,8 @@ end module exactBTE2
  subroutine fold_in_fbz(nk,kp,nshl,gg,nbz,kz,mapz)
 ! folds the k-mesh defined by kp_fine into the FBZ and stores the result in kz
  use lattice
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  implicit none
  integer, intent(in) :: nk,nshl
  integer, intent(out) :: nbz,mapz(nk)
@@ -2015,9 +1340,11 @@ end module exactBTE2
 !! n1,n2,n3 loops
  use lattice
  use constants
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use geometry
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  implicit none
  integer nk,nkibz,i,j,l,narms,kvecop(48)
  integer, allocatable :: mcor(:)

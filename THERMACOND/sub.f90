@@ -17,10 +17,12 @@
  subroutine matrix_kpt_sy
 ! print out k2 points, omega, sum(1,3) V33(k1,la1,k2,la2,k3,la3)^2
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use lattice
@@ -79,13 +81,15 @@
 ! with the restriction of k2 in the IRREDUCIBLE BZ defined by ki(3,ni) included in kp(3,nk)
 !
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
  use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  implicit none
  integer nk,ni,ndn,l1,l2,l3,n2,n3,j,k
@@ -190,7 +194,8 @@
 !-------------------------------------------------------------------
  subroutine read_ksubset (ksubset)
 ! this subroutine reads ksubset.inp
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  implicit none
  integer ksubset_f
  integer ksubset(2)
@@ -214,10 +219,12 @@
 ! it assumes the input momentum q is on the already-generated kmesh and
 ! is the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use lattice
@@ -351,10 +358,12 @@
 ! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
 ! the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use lattice
@@ -509,7 +518,8 @@ write(*,*) 'omega, omq', omega, omq
  use eigen
  use constants ! for cnst
  use kpoints   ! for nkc
- use params    ! for classical
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  implicit none
  integer , intent(in) :: l2,l3,nk2,nk3
  integer j2,j3
@@ -641,13 +651,15 @@ end subroutine merge_Pmatrix
 subroutine Pmatrix (ksubset,nk,kp,ndn,eigenval,temp)
 
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
 ! use geometry
 ! use atoms_force_constants
 ! use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
 ! use coll_matrix
@@ -791,13 +803,15 @@ subroutine cal_P(temp,omega1,omega2,omega3_proc1,omega3_proc2,V3sq1,col1,col2)
 ! resulting V3sq1, V3sq2 is in cm^-1
 
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
  use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
 ! use coll_matrix
@@ -831,13 +845,15 @@ subroutine cal_P2(n1,l1,n2,l2,n3,l3,V3sq1,V3sq2,col1,col2)
 ! resulting V3sq1, V3sq2 is in cm^-1
 
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
  use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use exactBTE2
@@ -887,13 +903,15 @@ end subroutine cal_P2
 !
  use kpoints
  use pre_matrix_elt, only : eiqr2
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
  use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use phi3_sy
  implicit none
@@ -1068,13 +1086,15 @@ close(uv3)
 !
  use kpoints
  use pre_matrix_elt, only : eiqr2
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
  use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use phi3_sy
  implicit none
@@ -1242,7 +1262,8 @@ subroutine calculate_RTA_distributionfunction(nk,nkk,kp,ndn,tempk,veloc,eigenval
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
 use kpoints, only : mapinv
 
@@ -1297,9 +1318,11 @@ subroutine mode_kappa(ndn,tempk,veloc,eigenval)!,FFF) !!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use kpoints 
 implicit none
 
@@ -1412,9 +1435,11 @@ subroutine mode_kappa_d(ndn,tempk,veloc,eigenval,Fi_x) !!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use kpoints 
 implicit none
 
@@ -1540,9 +1565,11 @@ subroutine mode_thermal_noniter2(nk,ndn,tempk,veloc,eigenval,F_MRHS2)
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 
 implicit none
 
@@ -1673,7 +1700,8 @@ end subroutine mode_thermal_noniter2
 
  use phi3
  use phi3_sy
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use lattice
  implicit none
  integer j,unt
@@ -1719,9 +1747,11 @@ subroutine write_thermal(iteration,nk,ndn,tempk,veloc,eigenval,kp)
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 
 implicit none
 
@@ -1822,9 +1852,11 @@ end subroutine write_thermal
 ! nk = nibz
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use kpoints
 implicit none
 
@@ -1961,7 +1993,8 @@ subroutine distribution(nk,ndn,tempk)
 
 use exactBTE2
 use eigen
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use constants
 
 implicit none
@@ -1989,7 +2022,8 @@ subroutine cal_freq(nk,ndn)
 
 use exactBTE2
 use eigen
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use constants
 
 implicit none
@@ -2012,8 +2046,10 @@ subroutine get_k_infos(q,nq,nk,kp,ins)
 
 use lattice 
 !use kpoints
-use params
-use ios
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 
 implicit none
 integer, intent(in) :: nk 
@@ -2049,9 +2085,11 @@ subroutine get_kvecopn2(q,k,nk,kp,spf) !!Saf!!
 use constants
 use exactBTE2
 use lattice
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use kpoints
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 implicit none
 real(8) q(3), kvecstar(3,48),xp, k(3)
 integer n,s,narms,sp,spf,kvecop(48),nk,sd,sk
@@ -2120,9 +2158,11 @@ subroutine syop_f(s,ff,fs) !!Saf!!
 !unsing symmetry operations to transform a vector from IBZ to FBZ
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -2153,9 +2193,11 @@ subroutine update(ndn)!!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -2307,9 +2349,11 @@ subroutine update_mpi(ndn,ibz_subset)!!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -2470,9 +2514,11 @@ subroutine update_iso(ndn)!!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -2626,7 +2672,8 @@ subroutine cal_RHS_IBZ(ndn,nkk,tempk,veloc,eigenval)!,RHSS) !!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
 use kpoints 
 
@@ -2704,9 +2751,11 @@ subroutine sycollisionM_split2(ksbst,nibbz,kibbz,ndn,nk,kp,Cs) !!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -2874,9 +2923,11 @@ subroutine CollisionMatrix(ndn)!(nibbz,kibbz,ndn,nk,kp)!,Cs) !!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -3042,9 +3093,11 @@ subroutine CollisionMatrix_mpi(ksbst,ndn)!Cs) !!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -3223,9 +3276,11 @@ subroutine CollisionMatrix_split(ksbst,ndn)!Cs) !!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -3395,9 +3450,11 @@ subroutine CollisionMatrix_iso(ndn)!(nibbz,kibbz,ndn,nk,kp)!,Cs) !!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -3584,9 +3641,11 @@ subroutine CollisionMatrix_iso_split(ndn)!(nibbz,kibbz,ndn,nk,kp)!,Cs) !!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -3770,8 +3829,10 @@ end subroutine CollisionMatrix_iso_split
 !===========================================================
 subroutine cal_g(attname,g)
 
- use ios
- use params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use lattice
  use atoms_force_constants
 
@@ -4699,8 +4760,10 @@ end subroutine cal_g
 !==========================================================
 subroutine cal_giso(gis)
 
-  use ios
-  use params
+  use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+  use tc_ios
+  use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+  use tc_params
   use lattice
   use atoms_force_constants
 
@@ -4737,10 +4800,12 @@ end subroutine cal_giso
 subroutine P_iso(g,ndn,evec)
 
 
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use exactBTE2
 use mod_ksubset2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use constants
 use phi3
 use lattice
@@ -4830,10 +4895,12 @@ endsubroutine P_iso
 subroutine P_iso_split(ksubset,g,ndn,evec)
 
 
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use exactBTE2
 use mod_ksubset2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use constants
 use phi3
 use lattice
@@ -4973,7 +5040,8 @@ endsubroutine P_iso_split
 
 subroutine read_Piso(ndn,piss) !!Saf!!
 ! this subroutine reads the Cs_sycollisionm.dat
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use kpoints
  implicit none
@@ -5066,9 +5134,11 @@ subroutine selfenergyw3(kbsubset,ndn,tmp,tmpk,nkpbss,kpbss,dkbss) !!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -5089,7 +5159,7 @@ lll = 5322
 
 
          allocate(evlbbs(ndn,nkpbss),evcbbs(ndn,ndn,nkpbss),vlcbbs(3,ndn,nkpbss))!,omega0(ndyn),tse(ndyn))
-         call get_frequencies(nkpbss,kpbss,dkbss,ndn,evlbbs,ndn,evcbbs,lll,vlcbbs)
+         call get_frequencies(nkpbss,kpbss,dkbss,ndn,evlbbs,ndn,evcbbs,lll,vlcbbs,0)
 
 
       do nbss=kbsubset(1),kbsubset(2)
@@ -5120,7 +5190,8 @@ end subroutine selfenergyw3
 
 subroutine read_lw(ndn,nks) !!Saf!!
 ! this subroutine reads the Cs_sycollisionm.dat
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use kpoints
  implicit none
@@ -5212,7 +5283,8 @@ end subroutine read_lw
 
 subroutine read_lw2(ndn,nks) !!Saf!!
 ! this subroutine reads the Cs_sycollisionm.dat
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use kpoints
  implicit none
@@ -5307,7 +5379,8 @@ end subroutine read_lw2
 
 subroutine read_Collision_Matrix(ndn,cs) !!Saf!!
 ! this subroutine reads the Cs_sycollisionm.dat
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use kpoints
  implicit none
@@ -5370,7 +5443,8 @@ end subroutine read_Collision_Matrix
 !==========================================================
  subroutine read_RHS(nik,ndn,RHSi)!!Saf!!
 ! this subroutine reads RHS_IBZ.dat
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  implicit none
  integer rhs_f
  integer i,nik,ndn,kil
@@ -5404,7 +5478,8 @@ end subroutine read_RHS
 !==========================================================
  subroutine read_CM_1D_mpi(nik,ndn,CM3D)!!Saf!!
 ! this subroutine reads RHS_IBZ.dat
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  implicit none
  integer CM_f
  integer i,j,s,nik,ndn,kil
@@ -5442,7 +5517,8 @@ end subroutine read_CM_1D_mpi
 !==========================================================
  subroutine read_DS(nik,ndn,DS1d)!!Saf!!
 ! this subroutine reads RHS_IBZ.dat
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  implicit none
  integer DS_f
  integer i,nik,ndn,kil
@@ -5485,9 +5561,11 @@ subroutine veloc_avergeIBZ_invsyFBZ(nk,kp,nibbz,kibbz,ndn,veloc,veloci) !!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -5558,9 +5636,11 @@ subroutine kstarsinfbz1(q,nk,kp,ds,kvecstars,kvecops) !!Saf!!
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -5620,13 +5700,15 @@ end subroutine kstarsinfbz1
 subroutine Pmatrix3 (indx,ksub_size2,ksubset,nk,kp,ndn,temp,k_shift)
 
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
 ! use geometry
 ! use atoms_force_constants
 ! use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
 ! use coll_matrix
@@ -5780,9 +5862,11 @@ subroutine check_conv23(i,nk,kp,nibbz,kibbz,ndn,tempk,convergence,iter_cont) !!S
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use phi3
 use mod_ksubset2
 use eigen
@@ -5896,11 +5980,13 @@ end subroutine check_conv23
  subroutine matrix_elt_simplified(q1,q2,l1,l2,l3,w33,inside,ndn)
 
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use svd_stuff
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use atoms_force_constants
  use om_dos
@@ -6026,9 +6112,11 @@ use kpoints
 use eigen
 use pre_matrix_elt
 use lattice
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
  use atoms_force_constants
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use svd_stuff
 use constants
@@ -6096,13 +6184,15 @@ subroutine mode_thermal_RTA(tempk,nk,ndn,kp)
 
 
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
 ! use geometry
 ! use atoms_force_constants
 ! use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
 ! use coll_matrix
@@ -6442,13 +6532,15 @@ subroutine Pmatrix4 (indx,ksub_size2,ksubset,nk,kp,ndn,temp,k_shift)
 
 
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
 ! use geometry
 ! use atoms_force_constants
 ! use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
 ! use coll_matrix
@@ -6609,10 +6701,12 @@ subroutine calculate_v3sq_delta (ksubset,ndn,nk,kp)
 !- calculate delta function for coalescence and decay processes
 !- write v33sq * delta to files
 
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use exactBTE2
 use mod_ksubset2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use constants
 use phi3
 use lattice
@@ -6908,10 +7002,12 @@ subroutine calculate_FGR(ksubset,ndn,nv3oi)!,v33sq_8) !  ,nk,kp)
 !- calculate delta function for coalescence and decay processes
 !- write v33sq * delta to files
 
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use exactBTE2
 use mod_ksubset2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use constants
 use phi3
 use lattice
@@ -7209,10 +7305,12 @@ subroutine calculate_FGR_mpi2(ksubset,ndn,nv3oi)!,v33sq_8) !  ,nk,kp)
 !- calculate delta function for coalescence and decay processes
 !- write v33sq * delta to files
 
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use exactBTE2
 use mod_ksubset2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use constants
 use phi3
 use lattice
@@ -7514,10 +7612,12 @@ subroutine cal_Qm3_tet2(nk,ndn,kp,tempk)
 ! same as cal_Qm2 but calculate Pmatrix and save it to memory
 
 
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use exactBTE2
 use mod_ksubset2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use constants
 use phi3
 use lattice
@@ -7735,10 +7835,12 @@ subroutine calculate_tauRTA(ndn,tempk)
 !! the first index ibz is in IBZ, if you want to get the corresponding FBZ index 
 !! use i=mapinv(ibz)
 !!
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use exactBTE2
 use mod_ksubset2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use constants
 use phi3
 use lattice , only : g1,g2,g3
@@ -7965,10 +8067,12 @@ subroutine calculate_tauRTA_mpi2(ibz_subset,ndn,tempk)!,rankmpi)!,P1sm,P2sm)
 !! the first index ibz is in IBZ, if you want to get the corresponding FBZ index 
 !! use i=mapinv(ibz)
 !!
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use exactBTE2
 use mod_ksubset2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use constants
 use phi3
 use lattice , only : g1,g2,g3
@@ -8212,10 +8316,12 @@ subroutine Qandtau(ndn,tempk)!,P1sm,P2sm)
 !! the first index ibz is in IBZ, if you want to get the corresponding FBZ index
 !! use i=mapinv(ibz)
 !!
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use exactBTE2
 use mod_ksubset2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use constants
 use phi3
 use lattice , only : g1,g2,g3
@@ -8325,10 +8431,12 @@ subroutine calculate_tauRTA_iso(ndn,tempk)
 !! the first index ibz is in IBZ, if you want to get the corresponding FBZ index
 !! use i=mapinv(ibz)
 !!
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use exactBTE2
 use mod_ksubset2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use constants
 use phi3
 use lattice , only : g1,g2,g3
@@ -8570,9 +8678,11 @@ subroutine syop_f2(s,ff,fs2) !!Saf!!
 !using inverse symetry operations to transform a vector
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
-use ios
+use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
@@ -8602,14 +8712,16 @@ end subroutine syop_f2
 ! not to mention saving time, we calculate only for 0<q_i<G/2 and complete by symmetry
 !
  use kpoints
- use ios !io2
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
  !use force_constants_module
  use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  implicit none
  integer, intent(in) :: ksubibz(2),ndn,nk,nib
@@ -8758,14 +8870,16 @@ end subroutine syop_f2
 ! not to mention saving time, we calculate only for 0<q_i<G/2 and complete by symmetry
 !
  use kpoints
- use ios  !io2
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
 ! use force_constants_module
  use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  implicit none
  integer, intent(in) :: ndn,nk,nib !ksubibz(2),ndn,nk,nib
@@ -8915,14 +9029,16 @@ end subroutine syop_f2
 ! not to mention saving time, we calculate only for 0<q_i<G/2 and complete by symmetry
 !
  use kpoints
- use ios  !io2
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
 ! use force_constants_module
  use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  implicit none
  integer, intent(in) :: ndn,nk,nib !ksubibz(2),ndn,nk,nib
@@ -9076,10 +9192,12 @@ kf_shift=kfsubset(1)-1
 ! it assumes the 2nd momentum k2 is on the already-generated kmesh and
 ! is the second argument of V33(q,k2,k3) where k2 covers the FBZ and k3=-q-k2
  use kpoints
- use ios !io2
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use lattice
@@ -9184,7 +9302,8 @@ write(*,*)'insde-self-tetra',nself,uself
 ! also: re(om)=1/pi*\int_0^inf imag(x)*((x-om)/((x-om)**2+eta**2)+1/(x+om))*dx
 ! uses a trapezoidal method and works even on a non-uniform mesh x(i)
 ! so here x or om is the square of the phonon frequency
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants, only : pi
 
  implicit none
@@ -9211,7 +9330,8 @@ write(*,*)'insde-self-tetra',nself,uself
 ! which is: Im(om)=-1/pi*\int_0^inf real(x)(1/(x-om) -1/(x+om)) dx
 ! also: re(om)=-1/pi*\int_0^inf real(x)*((x-om)/((x-om)**2+eta**2)-1/(x+om))*dx
 ! uses a trapezoidal method and works even on a non-uniform mesh x(i)
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants, only : pi
  implicit none
  integer n,i

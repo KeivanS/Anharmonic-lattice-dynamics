@@ -25,8 +25,13 @@ else
 endif
 FLAGS = $(OPT) -ffree-line-length-0
 
-# modules.f90 first (it holds the modules); kappa.f90 (the main program) last
-SRC  = modules.f90 zhegv.f force_constants.f90 sub.f90 rest.f90 extratools.f90 svd.f90 \
+# modules shared with FOCEX (../common, one file per module) first, then modules.f90 (the
+# THERMACOND modules); kappa.f90 (the main program) last
+vpath %.f90 ../common
+COMMON = constants.f90 params.f90 geometry.f90 ios_mod.f90 born.f90
+# shared sources that use THERMACOND's own modules (lattice, atoms_force_constants): after them
+COMMON2 = tools.f90 ewald.f90 nonanal.f90 dielectric.f90 phonons.f90
+SRC  = $(COMMON) modules.f90 $(COMMON2) zhegv.f force_constants.f90 sub.f90 rest.f90 extratools.f90 svd.f90 \
        tetrahedron.f90 cg.f90 emissivity.f90
 OBJS = $(addsuffix .o,$(basename $(SRC)))
 
@@ -41,9 +46,27 @@ $(EXE_SERIAL): $(addprefix obj_serial/,mpi_stub.o $(OBJS) kappa.o)
 	mkdir -p $(DESTDIR)
 	mv $@ $(DESTDIR)/
 
-# every source uses the modules of modules.f90; the main program uses all of them
-$(addprefix obj_mpi/,$(filter-out modules.o,$(OBJS))):    obj_mpi/modules.o
-$(addprefix obj_serial/,$(filter-out modules.o,$(OBJS))): obj_serial/modules.o
+# the common modules in their order of use, then modules.f90; every other source uses them all
+COMMONO = $(COMMON:.f90=.o)
+COMMON2O = $(COMMON2:.f90=.o)
+NONCOMMON = $(filter-out $(COMMONO) $(COMMON2O),$(OBJS))
+define chain
+$(1)/params.o: $(1)/constants.o
+$(1)/geometry.o: $(1)/params.o
+$(1)/ios_mod.o: $(1)/geometry.o
+$(1)/atoms_force_constants.o: $(1)/ios_mod.o
+$(1)/lattice.o: $(1)/atoms_force_constants.o
+$(1)/svd_stuff.o: $(1)/lattice.o
+$(1)/linalgb.o: $(1)/svd_stuff.o
+$(1)/born.o: $(1)/ios_mod.o
+$(1)/modules.o: $(addprefix $(1)/,$(COMMONO))
+$(addprefix $(1)/,$(COMMON2O)): $(1)/modules.o
+$(1)/nonanal.o: $(1)/ewald.o
+endef
+$(eval $(call chain,obj_mpi))
+$(eval $(call chain,obj_serial))
+$(addprefix obj_mpi/,$(filter-out modules.o,$(NONCOMMON))):    obj_mpi/modules.o $(addprefix obj_mpi/,$(COMMON2O))
+$(addprefix obj_serial/,$(filter-out modules.o,$(NONCOMMON))): obj_serial/modules.o $(addprefix obj_serial/,$(COMMON2O))
 obj_mpi/kappa.o:    $(addprefix obj_mpi/,$(OBJS))
 obj_serial/kappa.o: $(addprefix obj_serial/,mpi_stub.o $(OBJS))
 

@@ -24,7 +24,8 @@
 !     iatom (output), index of atom in supercell. Returns zero if not found
       use geometry
       use lattice
-      use ios
+      use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+      use tc_ios
       use atoms_force_constants
       implicit none
       integer n3(3),tau,iatom,j,m(3)
@@ -73,8 +74,10 @@
 !! output ai are the coefficients of its linear combination on this basis
 !! ier=0 means r is an integer multiple of the basis
  use geometry
- use params
- use ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  implicit none
 
  type(vector) :: r,g1,g2,g3
@@ -104,8 +107,10 @@
 ! output ai are the coefficients of its linear combination on this basis
 ! ier=0 means r is an integer multiple of the basis
  use geometry
- use params
- use ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  implicit none
  type(vector) :: r
  real(8) a1,a2,a3,ep
@@ -151,28 +156,7 @@
 
  end subroutine calculate_distance
 !============================================================
- subroutine sort(n,r,mcor,maxat)
-! sorts the first n elements of array r in ascending order r(mcor(i)) is the ordered array
-! make sure to initialize the array r to a huge number if n\=maxat
-  implicit none
-  integer maxat,n,i,j,temp
-  real(8) r(maxat)
-  integer mcor(maxat)
-
-  do i=1,maxat ! n
-     mcor(i)=i
-  enddo
-  do i=1,n  ! was 1,n-1
-     do j=i+1,maxat  ! was i+1,n
-        if(r(mcor(i)).gt.r(mcor(j))) then
-           temp=mcor(i)
-           mcor(i)=mcor(j)
-           mcor(j)=temp
-        endif
-     enddo
-  enddo
-!  r(mcor) is now the ordered array!
- end subroutine sort
+! subroutine sort: ../common/tools.f90 (shared with FOCEX)
 !============================================================
 subroutine calculate_volume(r1,r2,r3,om)
 use geometry
@@ -206,26 +190,7 @@ end subroutine calculate_volume
 
  end subroutine make_reciprocal_lattice
 !===============================================================
- subroutine make_reciprocal_lattice_2pi(r1,r2,r3,g1,g2,g3)
-! be careful it does not have the factor of 2*pi in it!
- use geometry
- use constants
- use ios
- implicit none
- type(vector) :: r1,r2,r3,g1,g2,g3
- real(8) om
-
- om = r1 .dot. (r2 .cross. r3)
- write(ulog,*)'RECIPROCAL_LATTICE: '
- g1=2*pi*(r2 .cross. r3)/om
- g2=2*pi*(r3 .cross. r1)/om
- g3=2*pi*(r1 .cross. r2)/om
-! call write_out(ulog,'om ',om)
-! call write_out(ulog,'g1 ',g1)
-! call write_out(ulog,'g2 ',g2)
-! call write_out(ulog,'g3 ',g3)
-
- end subroutine make_reciprocal_lattice_2pi
+! subroutine make_reciprocal_lattice_2pi: ../common/tools.f90 (shared with FOCEX)
 !==========================================================
  function delta(x) result(y)
  use constants
@@ -674,7 +639,8 @@ end subroutine calculate_volume
 ! if no pbc should be applied, set nshl = 1
  use geometry
  use lattice
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  implicit none
  integer nkp,i,j,nbmax,l,sh,nshl,sh0
  integer nb(nkp,nbmax),nbk(nkp)

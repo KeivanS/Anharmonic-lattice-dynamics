@@ -46,6 +46,7 @@ use lattice
 use params
 use atoms_force_constants
 use ewald
+use ewald_forces
 use svd_stuff
 use geometry
 use fourier

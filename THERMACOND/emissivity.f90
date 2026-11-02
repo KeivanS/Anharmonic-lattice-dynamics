@@ -3,7 +3,8 @@ subroutine renormalizedphononfrequency
 
 use constants
 use exactBTE2
-use params
+use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+use tc_params
 use lattice
 use kpoints
 
@@ -36,10 +37,12 @@ end subroutine renormalizedphononfrequency
 !============================================================
  subroutine dielectric(n,eival,eivec,mesh,om,epsilon0)
 ! takes the eigenvalues and eigenvectors at the gamma point and calculates the susceptibility
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use atoms_force_constants, only : natoms0, atom0 !natom_prim_cell, atom0
  use lattice, only: volume_r !volume_r0
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use born, only : epsil
  use om_dos, only : width
  use constants, only : ee,pi,eps0,cnst,ci !r15,ee,pi,eps0,cnst,ci
@@ -110,10 +113,12 @@ end subroutine renormalizedphononfrequency
 !============================================================
  subroutine dielectric_se(n,eival,eivec,mesh,om,tm,epsilon0)
 ! takes the eigenvalues and eigenvectors at the gamma point and calculates the susceptibility
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use atoms_force_constants, only : natoms0, atom0  !natom_prim_cell, atom0
  use lattice, only: volume_r !volume_r0
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use born, only : epsil
  use om_dos, only : width
  use constants, only : ee,pi,eps0,cnst,ci !r15,ee,pi,eps0,cnst,ci
@@ -284,10 +289,12 @@ write(*,*)'i---------------',i
 !============================================================
  subroutine dielectric_sempi(wmsubset,n,eival,eivec,mesh,om,tm,epsilon0)
 ! takes the eigenvalues and eigenvectors at the gamma point and calculates the susceptibility
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use atoms_force_constants, only : natoms0, atom0  !natom_prim_cell, atom0
  use lattice, only: volume_r !volume_r0
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use born, only : epsil
  use om_dos, only : width
  use constants, only : ee,pi,eps0,cnst,ci !r15,ee,pi,eps0,cnst,ci
@@ -488,10 +495,12 @@ write(*,*)'i---------------',i
 !============================================================
  subroutine dielectric_sempi2(wmsubset,n,eival,eivec,mesh,om,tm,epsilon0)
 ! takes the eigenvalues and eigenvectors at the gamma point and calculates the susceptibility
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use atoms_force_constants, only : natoms0, atom0  !natom_prim_cell, atom0
  use lattice, only: volume_r !volume_r0
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use born, only : epsil
  use om_dos, only : width
  use constants, only : ee,pi,eps0,cnst,ci !r15,ee,pi,eps0,cnst,ci
@@ -721,10 +730,12 @@ write(*,*)'i---------------',i
 !============================================================
  subroutine dielectric_setetra(n,eival,eivec,mesh,om,tm,epsilon0)
 ! takes the eigenvalues and eigenvectors at the gamma point and calculates the susceptibility
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use atoms_force_constants, only : natoms0, atom0  !natom_prim_cell, atom0
  use lattice, only: volume_r !volume_r0
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use born, only : epsil
  use om_dos, only : width
  use constants, only : ee,pi,eps0,cnst,ci !r15,ee,pi,eps0,cnst,ci
@@ -887,10 +898,12 @@ write(*,*)'i---------------',i
 !============================================================
  subroutine dielectric_setetrampirzero(n,eival,eivec,mesh,om,tm,ise_em,epsilon0)
 ! takes the eigenvalues and eigenvectors at the gamma point and calculates the susceptibility
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use atoms_force_constants, only : natoms0, atom0  !natom_prim_cell, atom0
  use lattice, only: volume_r !volume_r0
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use born, only : epsil
  use om_dos, only : width
  use constants, only : ee,pi,eps0,cnst,ci !r15,ee,pi,eps0,cnst,ci

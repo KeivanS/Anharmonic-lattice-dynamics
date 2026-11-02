@@ -12,9 +12,10 @@
 !     atompos_in(j,i) (input), jth dimensionless coordinate of the ith atom
 
       use lattice
-      use ios 
+      use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+      use tc_ios
       use atoms_force_constants
-      use params , only : nsmax
+      use tc_params, only : nsmax
       implicit none
       integer maxshell
 !      parameter(maxshell=10)

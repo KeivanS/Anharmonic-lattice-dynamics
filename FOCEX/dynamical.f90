@@ -387,68 +387,39 @@
 !===========================================================
  subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,vg,ipath)
 ! also outputs the group velocities from HF theorem (exact) in km/s
-! A Gamma point is taken as the limit q = 1e-6 along a direction (the non-analytic term has no value
-! at q = 0 itself; naq's angular average there would mix LO and TO): with ipath=1 (kp is the band path,
-! consecutive segments) the segment it belongs to (incoming if the previous point differs, else
-! outgoing), otherwise the fixed direction uinc. FOCEX_VELTEST=1 also writes the finite-difference
-! check of the velocities (veltest.dat).
+! Where each point is evaluated (the k-point itself; Gamma as a directional limit, the band-path
+! segment for ipath=1, else uinc) is set by gamma_limit and freq_vel (module phonon_rules, common/,
+! shared with THERMACOND). FOCEX_VELTEST=1 also writes the finite-difference check of the
+! velocities (veltest.dat).
  use params
  use constants
  use born
  use geometry
- use kpoints, only : dk_bs
-! use fourier, only : nrgrid,rgrid,rws_weights,ggrid,nggrid 
+ use lattice, only : volume_g0
+ use atoms_force_constants, only : natom_prim_cell, atom0
+ use ios, only : ulog
+ use phonon_rules, only : gamma_limit, freq_vel, freq_routine
  implicit none
  integer, intent(in) :: nkp,ndn,nv,ipath ! no of wanted eivecs
  real(r15), intent(in) :: kp(3,nkp),dk(nkp)
  real(r15), intent(out):: eival(ndn,nkp),vg(3,ndn,nkp)
  complex(r15), intent(out) :: eivec(ndn,ndn,nkp)
- integer i,j,l
- real(r15) eivl(ndn),vel(3,ndn),q(3),dir(3)  !,sf,dsf(3),mysf
+ procedure(freq_routine) :: get_freq
+ integer i
+ real(r15) eivl(ndn),vel(3,ndn),q(3),dir(3),gsize,mass(natom_prim_cell)
  complex(r15) eivc(ndn,ndn)
  character(len=8) veltest
-! a fixed direction whose components are mutually incommensurate (as in finitedif_vel): the shift
-! for the eigenvectors and velocities leaves no point on a symmetry plane or axis
- real(r15), parameter :: uinc(3)= (/ 0.41421356237309505d0,  &
- &                                   0.73205080756887729d0,  &
- &                                   0.23606797749978970d0 /)
 
  call get_environment_variable('FOCEX_VELTEST',veltest)
+ gsize=volume_g0**0.33333333
+ mass=atom0(1:natom_prim_cell)%mass
 
  kloop: do i=1,nkp
-    q=kp(:,i); dir=uinc
-    if (length(q).lt.1d-12) then
-       if (ipath.eq.1 .and. nkp.gt.1) then
-          dir=0
-          if (i.gt.1) dir=kp(:,i)-kp(:,i-1)
-          if (length(dir).lt.1d-12 .and. i.lt.nkp) dir=kp(:,i+1)-kp(:,i)
-          if (length(dir).lt.1d-12) dir=uinc
-       endif
-       dir=dir/length(dir)
-       q=1d-6*dir
-    endif
-    call freq_vel(q,dir,ndn,vg(:,:,i),eival(:,i),eivec(:,1:nv,i))
+    call gamma_limit(i,nkp,kp,ipath,q,dir)
+    call freq_vel(get_freq,q,dir,gsize,natom_prim_cell,mass,ndn, &
+ &                vg(:,:,i),eival(:,i),eivec(:,1:nv,i),ulog)
     if (veltest(1:1).eq.'1') call finitedif_vel(kp(:,i),ndn,vel,eivl,eivc)
-!   if (born_flag .eq.2) then  ! for now use FD for velocities with ewald
-!      write(*,5)' Calling finitedif for k# ',i,kp(:,i)
-!      call finitedif_vel(kp(:,i),ndn,vg(:,:,i),eival(:,i),eivec(:,1:nv,i))
-!   else
-!      call get_freq(kp(:,i),ndn,vg(:,:,i),eival(:,i),eivec(:,1:nv,i) )
-!   endif 
-        
-    !  call get_freq0(kp(:,i),ndn,vel,eivl,eivc)  ! uses direct seting from fcs
-    !  write(654,6)i,dk_bs(i),kp(:,i),eivl,(length(vel(:,l))/1000,l=1,ndn)
-    !   call structure_factor_recip(kp(:,i),nsubgrid,subgrid,subgrid_weights,sf,dsf)
-    !   write(345,4)dk(i),sf,mysf(kp(:,i)),parlinski_sf(kp(:,i))
  enddo kloop
-
-
- 2 format(i5,1x,4(1x,f8.3),999(1x,g11.4))
- 3 format(a,i5,9(1x,f19.9))
- 4 format(99(1x,2(1x,g10.3),1x))
- 5 format(a,i5,99(1x,2(1x,g10.3),1x))
- 6 format(i5,99(1x,g11.4))
- 7 format(i6,2x,3(1x,f7.3),1x,99(1x,f7.3))
 
  end subroutine get_frequencies
 !=====================================================
@@ -516,49 +487,6 @@
  6 format(a,3(1x,f9.3),1x,g12.5,9(1x,f9.4))
 
   end subroutine finitedif_vel
-!=====================================================
-  subroutine freq_vel(qq,shdir,ndn,vgr,evl0,evc0)
-!! frequencies (omega^2, evl0) at qq itself; eigenvectors and Hellmann-Feynman group velocities at
-!! qq + 3e-4 |G| shdir/|shdir|, which separates degenerate bands so that both are unique.
-!! At the Gamma limit (|qq| < 1e-5, see get_frequencies) the rigid translations (eigenvector in the
-!! mass-weighted translation subspace) get omega^2 = 0 exactly: they are not vibrations (the value
-!! before is in the log).
-  use constants
-  use lattice, only : volume_g0
-  use geometry
-  use atoms_force_constants, only : natom_prim_cell, atom0
-  use ios, only : ulog
-  implicit none
-  integer, intent(in) :: ndn
-  real(r15),intent(in) :: qq(3),shdir(3)
-  real(r15),intent(out) :: vgr(3,ndn),evl0(ndn)
-  complex(r15),intent(out) :: evc0(ndn,ndn)
-  real(r15) qr(3),evlr(ndn),v2(3,ndn),proj,mtot
-  complex(r15) evct(ndn,ndn),s
-  integer l,al,tau
-
-  qr = qq + 3d-4*volume_g0**0.33333333*shdir/length(shdir)
-  call get_freq(qr,ndn,vgr,evlr,evc0)
-  call get_freq(qq,ndn,v2,evl0,evct)
-  if (length(qq).lt.1d-5) then
-     mtot=sum(atom0(1:natom_prim_cell)%mass)
-     do l=1,ndn
-        proj=0
-        do al=1,3
-           s=0
-           do tau=1,natom_prim_cell
-              s=s+sqrt(atom0(tau)%mass/mtot)*evct(al+3*(tau-1),l)
-           enddo
-           proj=proj+abs(s)**2
-        enddo
-        if (proj.gt.0.999d0) then
-           write(ulog,'(a,i4,a,g12.4,a)')' FREQ_VEL: Gamma, mode',l,' is a rigid translation, omega^2=', &
- &               evl0(l),' set to 0'
-           evl0(l)=0
-        endif
-     enddo
-  endif
-  end subroutine freq_vel
 !===========================================================
  subroutine get_freq(kp,ndn,vg,eival,eivec)
 !! given a kpoint kp, it sets up the dynamical matrix and diagonalizes it

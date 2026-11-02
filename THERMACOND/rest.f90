@@ -7,9 +7,11 @@
 !!  2 +kappa direct, 3 +kappa iterative)  9 direct solver 0 CG, 1 SVD
 !! 10 V3*delta 0 on disk (reused if present), 1 in memory   11 isotopes 0/1
 !! 12 calc_cross, q_cross(3)   13 sample length (microns)
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use om_dos
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use lattice
  use phi3
  use kpoints
@@ -94,8 +96,10 @@
  end subroutine read_params
 !==========================================================
  subroutine read_input_fit
- use ios
- use params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use lattice
  use atoms_force_constants
  implicit none
@@ -186,6 +190,7 @@ end subroutine read_input_fit
 !! written by FOCEX since 2026-10-23), the primitive vectors and the atoms (label, name, type,
 !! Cartesian position, mass) from lat_fc.dat, in the form read_input_fit leaves them
  use ios
+ use tc_ios, only : ufc0
  use params
  use lattice
  use atoms_force_constants
@@ -248,8 +253,10 @@ end subroutine read_input_fit
  end subroutine read_input_from_latfc
 !==========================================================
  subroutine read_lattice
- use ios
- use params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use lattice
  use geometry
  use atoms_force_constants
@@ -280,6 +287,7 @@ open(ufc0,file='lat_fc.dat' ,status='old')
        endif
        do i=1,natoms0
           read(ufc0,*)tt,name,ttyp,tau1,mss  ! atomic types names coordinates and and masses
+          atom0(i)%equilibrium_pos = tau1     ! Cartesian (A), as in FOCEX: used by the NA term
           if(tt .eq. i .and. ttyp .eq. atom0(i)%at_type .and. abs(atom0(i)%mass-mss).lt.1d-3) then
              write(ulog,*)'####### compatibility with structure.params checked  ######### ',i
           else
@@ -306,7 +314,7 @@ open(ufc0,file='lat_fc.dat' ,status='old')
     write(*,*)'READ_LATTICE: no primitive-cell atoms in lat_fc.dat'
     stop
  endif
- write(ulog,*)'include_fc  =',include_fc
+ write(ulog,*)'include_fc  =',include_fc(1:4)   ! THERMACOND uses ranks 1-4
  write(ulog,*)'ngroups     =',ngroups
  write(ulog,*)'nterms      =',nterms
  write(ulog,*)'nsmax,natoms=',nsmax,natoms2
@@ -392,8 +400,10 @@ open(ufc0,file='lat_fc.dat' ,status='old')
  end subroutine read_lattice
 !===========================================================
  subroutine read_fc234
- use ios
- use params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use lattice
  use geometry
  use atoms_force_constants
@@ -539,7 +549,8 @@ open(ufc0,file='lat_fc.dat' ,status='old')
  end subroutine read_fc234
 !==========================================================
  subroutine set_dynamical_matrix(kpt,dynmat,ndim,ddyn)
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use lattice
  use kpoints
  use atoms_force_constants
@@ -709,7 +720,8 @@ open(ufc0,file='lat_fc.dat' ,status='old')
  end subroutine write_eigenvalues
 !==========================================================
  subroutine store_2d_to_1d(eigenval,eival1d,n,m)
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  implicit none
  integer n1d,n,m,i,j,k
  real(8), dimension(n*m) :: eival1d
@@ -739,8 +751,10 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 !==========================================================
  subroutine calculate_dos_g(mx,eival,wkp,mesh,omega,ds)
 ! use gaussian broadening
- use ios
- use params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use om_dos
  use constants
  implicit none
@@ -766,8 +780,10 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 !==========================================================
  subroutine calculate_jdos(mx,eival,wkp,mesh,omega,udosj)
 ! use gaussian broadening to calculate the joint dos
- use ios
- use params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use om_dos
  use constants
  implicit none
@@ -823,8 +839,10 @@ open(ufc0,file='lat_fc.dat' ,status='old')
  subroutine lifetime_dos_l(q,ndn,omq,dosp,dosm)
 ! use lorentzian broadening to calculate the joint dos
 ! for given q, calculates sum_1,2  delta(q-q1-/+q2)delta(w_q-w1-/+w2)
- use ios
- use params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use om_dos
  use constants
  use eigen
@@ -875,7 +893,8 @@ open(ufc0,file='lat_fc.dat' ,status='old')
  end subroutine lifetime_dos_l
 !===========================================================
  subroutine phase_space_lifetime_bs
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use om_dos
  use kpoints
  use eigen
@@ -900,7 +919,8 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 !===========================================================
  subroutine phase_space_lifetime_FBZ
 !! calculates for  given q the integral sum_k delta(w(q) pm w2(k) - w3(-k-q)) 
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use om_dos
  use kpoints
  use eigen
@@ -935,13 +955,15 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 ! not to mention saving time, we calculate only for 0<q_i<G/2 and complete by symmetry
 !
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
  use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  implicit none
  integer nk,ndn,l1,l2,l3,n2,n3,al,be,ga,i0,j0,k0,j,k,t,ta1,ta2,ta3
@@ -1129,13 +1151,15 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 ! not to mention saving time, we calculate only for 0<q_i<G/2 and complete by symmetry
 !
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
  use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  implicit none
  integer nk,ndn,l1,l2,l3,n2,n3,al,be,ga,i0,j0,k0,j,k,t,ta1,ta2,ta3
@@ -1308,13 +1332,15 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 ! with the restriction of k2 in the IRREDUCIBLE BZ defined by ki(3,ni) included in kp(3,nk)
 !
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
  use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  implicit none
  integer nk,ni,ndn,l1,l2,l3,n2,n3,al,be,ga,i0,j0,k0,j,k,t,ta1,ta2,ta3
@@ -1476,7 +1502,8 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 !============================================================
  subroutine read_v3_all_formatted(nk2,nk3,ndn)
  use phi3
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use lattice
  implicit none
  integer i,k2,k3,l1,l2,l3,nk2,nk3,ndn,unt ,ncc,n1,n2,n3,nd
@@ -1511,7 +1538,8 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 !============================================================
  subroutine read_v3_all_unformatted(nk2,nk3,ndn)
  use phi3
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use lattice
  implicit none
  integer i,k2,k3,l1,l2,l3,nk2,nk3,ndn,unt ,ncc,n1,n2,n3,nd
@@ -1545,7 +1573,8 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 !============================================================
  subroutine read_v3sq_new_unformatted
  use phi3
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use lattice
  implicit none
  integer j,unt
@@ -1573,7 +1602,8 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 !============================================================
  subroutine read_v3_new_formatted
  use phi3
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use lattice
  implicit none
  integer j,unt
@@ -1665,10 +1695,12 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 !===========================================================
  subroutine calculate_kappa(temp,kappau,kappat) !,kp,nkc)
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  implicit none
@@ -1725,7 +1757,8 @@ open(ufc0,file='lat_fc.dat' ,status='old')
  use constants
 ! use kpoints
  use lattice
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  implicit none
  real(8) q(3),a1,a2,a3,ep
  integer n1,n2,n3,nbmx,na1,na2,na3,e1,e2,e3,indexn,nx,ny,nz
@@ -1789,10 +1822,12 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 ! p(q,lambda)=sum_kla1la2 |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
 ! it assumes the input momentum q is on the already-generated kmesh
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use lattice
@@ -1868,10 +1903,12 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 ! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
 ! it assumes the input momentum q is on the already-generated kmesh
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use lattice
@@ -1973,10 +2010,12 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 ! it assumes the input momentum q is on the already-generated kmesh and
 ! is the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use lattice
@@ -2086,10 +2125,12 @@ open(ufc0,file='lat_fc.dat' ,status='old')
 ! it assumes the input momentum q is on the already-generated kmesh and
 ! is the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use lattice
@@ -2182,10 +2223,12 @@ enddo
 ! res=sum_q,la sum_12 0.5*|v3(q,la;1;2)|^2 delta(omega-w(q,la))  wk(q)
 ! it assumes the input momentum q is on the already-generated kmesh
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use lattice
@@ -2231,7 +2274,8 @@ enddo
  use eigen
  use constants ! for cnst
  use kpoints   ! for nkc
- use params    ! for classical
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  implicit none
  integer , intent(in) :: l2,l3,nk2,nk3
  integer j2,j3
@@ -2279,7 +2323,8 @@ enddo
  use eigen
  use constants ! for cnst
  use kpoints   ! for nkc
- use params    ! for classical
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  implicit none
  integer , intent(in) :: j2,j3
  integer l2,l3,nk2,nk3
@@ -2315,15 +2360,25 @@ enddo
 
  end subroutine nkla
 !===========================================================
- subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,uio,vg)
+ subroutine get_frequencies(nkp,kp,dk,ndn,eival,nv,eivec,uio,vg,ipath)
 ! also outputs the group velocities from HF theorem (exact) in units of c_light
- use params
- use ios
+! ipath=1 (band path output): FOCEX's rule (gamma_limit, freq_vel of module phonon_rules, common/):
+! omega at the k-point, eigenvectors and velocities at k + 3e-4 |G| u, Gamma as the limit along the
+! path segment with the rigid translations set to 0. ipath=0 (the mesh, and every sum): all at the
+! k-point itself; at Gamma the non-analytic term is naq's angular average. THERMACOND_VELTEST=1
+! also writes the finite-difference check of the velocities (veltest.dat).
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use constants
- use born
+ use born, only : epsil,born_flag
  use geometry
+ use lattice, only : volume_g
+ use atoms_force_constants, only : natoms0, atom0
+ use phonon_rules, only : gamma_limit, freq_vel, freq_routine
  implicit none
- integer, intent(in) :: nkp,ndn,uio,nv ! no of wanted eivecs
+ integer, intent(in) :: nkp,ndn,uio,nv,ipath ! no of wanted eivecs
  real(8), intent(in) :: kp(3,nkp),dk(nkp)
  real(8), intent(out):: eival(ndn,nkp),vg(3,ndn,nkp)
  complex(8), intent(out) :: eivec(ndn,ndn,nkp)
@@ -2338,6 +2393,9 @@ enddo
  complex(8) ecfd(ndn,ndn)
  integer, parameter :: uveltest=331
  logical, save :: first_call=.true.
+ procedure(freq_routine) :: get_freq_hf
+ real(8) q(3),dir(3),vtmp(3,ndn),mass(natoms0)
+ character(len=8) veltest
 
 ! open files and write the group velocities
 ! do l=1,ndn
@@ -2353,11 +2411,15 @@ enddo
 ! write(uio,*)'# dynmat allocated, printing: Kpoint, eival(j),j=1,ndyn)'
 
 open(800,file='finitvel.dat')
+ call get_environment_variable('THERMACOND_VELTEST',veltest)
+ mass=atom0(1:natoms0)%mass
+ if (veltest(1:1).eq.'1') then
  if (first_call) then
     open(uveltest,file='veltest.dat',status='replace')
     first_call=.false.
  else
     open(uveltest,file='veltest.dat',status='old',position='append')
+ endif
  endif
 
  kloop: do i=1,nkp
@@ -2367,13 +2429,21 @@ write(800,*)i
  write(*,*)'GET_FREQUENCIES: before setting up dynmat, kp number ',i
 
 ! write(uio,*)'############ before setting up dynmat, kp number ',i
-    call get_freq_vg(kp(:,i),ndn,eivl,eivc,vg(:,:,i))       ! Hellmann-Feynman velocities
+    if (ipath.eq.1) then
+       call gamma_limit(i,nkp,kp,ipath,q,dir)
+       call freq_vel(get_freq_hf,q,dir,volume_g**0.33333333,natoms0,mass,ndn, &
+ &                   vg(:,:,i),eivl,eivc,ulog)
+    else
+       call get_freq_vg(kp(:,i),ndn,eivl,eivc,vg(:,:,i))       ! Hellmann-Feynman velocities
+    endif
+    if (veltest(1:1).eq.'1') then
     call finitedif_vel(kp(:,i),ndn,vfd,evfd,ecfd)               ! finite differences, for veltest.dat
     write(uveltest,'(a,3(1x,f9.5))')'# la, omega^2, v_FD(3), |v_FD|, v_HF(3), |v_HF| (m/s); k=',kp(:,i)
     do l=1,ndn
        write(uveltest,'(i5,1x,g11.4,2(5x,f11.3,3(1x,f11.3)))')l,eivl(l),vfd(:,l)*c_light,  &
  &          length(vfd(:,l))*c_light,vg(:,l,i)*c_light,length(vg(:,l,i))*c_light
     enddo
+    endif
 
 !   call set_dynamical_matrix(kp(:,i),dynmat,ndn,ddyn)
 !
@@ -2409,6 +2479,10 @@ write(800,*)i
        do l=1,nv
           eivec(j,l,i) = eivc(j,mp(l))
        enddo
+    enddo
+    vtmp=vg(:,:,i)     ! the velocities follow their modes (|omega^2| of get_freq_vg need not be ascending)
+    do j=1,ndn
+       vg(:,j,i)=vtmp(:,mp(j))
     enddo
 
 ! if pure imaginary make eigenvectors real as they can be multiplied by any arbitrary number
@@ -2491,7 +2565,7 @@ write(800,*)i
  enddo
  enddo
 close(800)
-close(uveltest)
+if (veltest(1:1).eq.'1') close(uveltest)
 ! do l=1,ndn
 !    close(uvel+l)
 ! enddo
@@ -2511,10 +2585,12 @@ close(uvel)
 !===========================================================
  subroutine get_frequencies2(nkp,kp,dk,ndn,eival,nv,eivec,uio,vg)
 ! also outputs the group velocities from HF theorem (exact) in units of c_light
- use params
- use ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use constants
- use born
+ use born, only : epsil,born_flag
  use geometry
  implicit none
  integer, intent(in) :: nkp,ndn,uio,nv ! no of wanted eivecs
@@ -2738,7 +2814,8 @@ endif
 ! takes the eigenvalues (w^2) and eigenvectors calculated along some
 ! crystalline directions and calculates the corresponding mode
 ! gruneisen parameters
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use lattice
  use geometry
  use atoms_force_constants
@@ -2789,7 +2866,11 @@ endif
 !        write(ulog,7)i,la,t,fcs_3(t),rr2,qdotr,zz,rr3,grn(la,ik)
        enddo tloop
     enddo
-    grn(la,ik) = grn(la,ik)/denom
+    if (eivl(la,ik).eq.0) then      ! rigid translation at k=0 (freq_vel): no Gruneisen parameter
+       grn(la,ik) = 0
+    else
+       grn(la,ik) = grn(la,ik)/denom
+    endif
     if (aimag(grn(la,ik)) .gt. 1d-4) then
        write(ulog,*)' GRUNEISEN: ... has large imaginary part!! for nk,la=',ik,la,grn(la,ik)
 !      stop
@@ -2807,7 +2888,8 @@ endif
 !============================================================
  subroutine gruneisen_fc
  use phi3
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use lattice
  use geometry
  use atoms_force_constants
@@ -2856,7 +2938,8 @@ endif
  end subroutine gruneisen_fc
 !============================================================
  subroutine mechanical(bulk,c11,c44,dlogv)
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use lattice
  use geometry
  use atoms_force_constants
@@ -2896,10 +2979,12 @@ endif
  end subroutine mechanical
 !============================================================
  subroutine calculate_thermal(nk,wk,ndyn,eival,grn,tmn,tmx,ual)
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use lattice
  use constants
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  implicit none
  integer nk,ndyn,b,k,ual,itemp,nat,ntmp,iter
  real(8) wk(nk),eival(ndyn,nk),nbx,cv,cv_nk,cv2,nbe,dlogv,dalpha
@@ -2995,8 +3080,10 @@ endif
 !============================================================
  subroutine energies(nk,wk,ndyn,eival,grn,temp,etot,free,pres,pres0,cv)
 ! calculate total and free energies within QHA, at a given temperature (temp in Kelvin)
- use ios
- use params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use lattice
  use constants
  implicit none
@@ -3051,7 +3138,8 @@ endif
 ! output is vg(3,ndyn,nkpoint) in units of c_light
  use constants
  use lattice
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  implicit none
  integer nk,n1,n2,n3,la,ndyn,i1,i2,i3,ip1,ip2,ip3,im1,im2,im3,nibz
  integer ipp1,ipp2,ipp3,imm1,imm2,imm3
@@ -3173,7 +3261,8 @@ endif
 ! temp is in 1/cm
 ! output is the collision matrix (C_matrix) determined from the rates by using FGR
  use constants
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  implicit none
  integer nq,np,nk1,nk2,nk3,l1,l2,l3,ndyn,nkp,nk,inside
  real(8) c_matrix(nkp*ndyn,nkp*ndyn),ratepk,ratepq,rateqk
@@ -3254,7 +3343,8 @@ endif
  use constants
  use phi3
  use lattice
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use kpoints , only : nc
  implicit none
  integer l1,l2,l3,nk1,nk2,nk3,nkp,ndyn,i,j,k,inside
@@ -3287,7 +3377,8 @@ endif
 !===========================================================
  subroutine write_collision_times(ndyn,nkp,eival,temp,inv_relax_t)
  use constants
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  implicit none
  integer la,nk,nkp,ndyn,nq
  real(8) eival(ndyn,nkp),nbe,temp,inv_relax_t(ndyn*nkp),nbq,x1
@@ -3316,8 +3407,10 @@ endif
 ! the negative k's are kp(:,map(i)), i=nps+1,nk
  use kpoints
  use lattice
- use ios
- use params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  implicit none
  integer nk,i,map(nk),nps,i1,j1,k1,inside,mk,i2,j2,k2,k,match,cnt
  real(8) kp(3,nk) !,q(3)
@@ -3369,7 +3462,8 @@ endif
 ! other eivec(q') (for q'=-q) by the conjugate of eivec(q) in order to get
 ! rid of the ambiguity in the case of the degenerate case, and assure e(-q)=conjg(e(q)).
  use lattice  ! needed to access NC,g1,g2,g3
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use kpoints , only : nc
  implicit none
  integer nk,ndyn,npos,map(nk),i1,j1,k1,n,inside,mk3,n3,la,mu
@@ -3456,7 +3550,8 @@ endif
 !===========================================================
  subroutine write_eivecs(ndyn,nk,kp,eigenvec)
  use lattice
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use geometry
  use constants
  use kpoints , only : nc
@@ -3507,7 +3602,8 @@ enddo
 ! input are the freqs, velocs , relaxation times and weights for each band
 ! output is the thermal conductivity for that band
  use constants
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use lattice
  implicit none
  integer, intent(in) ::  nk
@@ -3546,7 +3642,8 @@ enddo
  subroutine thermal_conductivity(nk,wk,ndn,tau_inv,veloc,omg,temp,kappa_q)
 ! temp is in cm^-1, veloc in c_light, omg in ev/ang^2/uma, tau_inv in cm_1
  use constants
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use lattice
  implicit none
  integer, intent(in) ::  nk,ndn
@@ -3619,105 +3716,97 @@ enddo
 
  end function cross_section
 !===========================================================
- subroutine nonanal(q,dynmat,ndim,ddyn)
- use constants
- use lattice
- use atoms_force_constants
- use born
-
- integer, intent(in) ::ndim
- complex(8), intent(inout) :: dynmat(ndim,ndim),ddyn(ndim,ndim,3)
- real(8), intent(in) :: q(3)
- real(8) zag(3),zbg(3),qeq,om0,ma,mb,rr(3)
- integer na,nb,i,j
- real(8) eps_scale,q2,gg,dqeq(3),cna
-
- eps_scale=8.8541878176D-12/1D10/ee
- gg=(length(g1)*length(g2)*length(g3))**0.33
-! if ( gg .lt. 4*rho) then
-! if (born_flag.eq.0)  rho = gg/4d0
-  rho = gg/4d0
-! write(30,*)'ADOPTED VALUE of RHO = ',rho
-! endif
- rho2=rho*rho
-
- call calculate_volume(r1,r2,r3,om0)
-
- qeq = (q(1)*(epsil(1,1)*q(1)+epsil(1,2)*q(2)+epsil(1,3)*q(3))+ &
-&       q(2)*(epsil(2,1)*q(1)+epsil(2,2)*q(2)+epsil(2,3)*q(3))+ &
-&       q(3)*(epsil(3,1)*q(1)+epsil(3,2)*q(2)+epsil(3,3)*q(3)))
- q2=q(1)*q(1)+q(2)*q(2)+q(3)*q(3)
-
- do na = 1,natoms0
-   ma = atom0(na)%mass
- do nb = 1,natoms0
-   mb = atom0(nb)%mass
-   rr = atompos(:,na)-atompos(:,nb)
-   do i=1,3
-!     zag(i) = q(1)*zeu(1,i,na)+q(2)*zeu(2,i,na)+q(3)*zeu(3,i,na)
-!     zbg(i) = q(1)*zeu(1,i,nb)+q(2)*zeu(2,i,nb)+q(3)*zeu(3,i,nb)
-      zag(i) = q(1)*atom0(na)%charge(1,i)+ &
-      &        q(2)*atom0(na)%charge(2,i)+ &
-      &        q(3)*atom0(na)%charge(3,i)
-      zbg(i) = q(1)*atom0(nb)%charge(1,i)+ &
-      &        q(2)*atom0(nb)%charge(2,i)+ &
-      &        q(3)*atom0(nb)%charge(3,i)
-
-   end do
-   do i = 1,3
-   do j = 1,3
-!write(*,*)
-!dynmat(i+3*(na-1),j+3*(nb-1)),
-!4*pi*zag(i)*zbg(j)/(qeq*eps_scale)/om0/sqrt(ma*mb)*exp(-q2/rho2),ma,mb,zag(i),zbg(j)
-!4*pi*zag(i)*zbg(j)/(qeq*eps_scale)/om0/sqrt(ma*mb)*exp(-q2/rho2)
-      dynmat(i+3*(na-1),j+3*(nb-1)) = dynmat(i+3*(na-1),j+3*(nb-1))+ &
-      & zag(i)*zbg(j)/(qeq*eps_scale)/om0/sqrt(ma*mb)*exp(-q2/rho2)
-! d/dq of the term above, for the group velocities; left out at q=0, where it is undefined
-      if (q2.gt.1d-16) then
-         cna = exp(-q2/rho2)/(eps_scale*om0*sqrt(ma*mb))
-         dqeq = matmul(epsil+transpose(epsil),q)
-         ddyn(i+3*(na-1),j+3*(nb-1),:) = ddyn(i+3*(na-1),j+3*(nb-1),:) + cna*(            &
-         &    (atom0(na)%charge(:,i)*zbg(j)+zag(i)*atom0(nb)%charge(:,j))/qeq          &
-         &   - zag(i)*zbg(j)*dqeq/qeq**2 - zag(i)*zbg(j)/qeq*2*q/rho2 )
-      endif
-   end do
-   end do
- end do
- end do
-
- end subroutine nonanal
+! subroutine nonanal (Gaussian-damped, rho=|G|/4): replaced by add_nonanalytic (FOCEX's term)
 !=========================================================
  subroutine read_born
-! reads ! born ! effective ! charge ! and ! dielectric ! constants ! from ! para.born
- use born
- use lattice
- use atoms_force_constants
- use ios
- integer i,j,k
-
- open(uborn,file='dielectric.params',status='old')
- read(uborn,*) born_flag   ! if 0 use default
- do i=1,3
-    read(uborn,*)(epsil(i,j),j=1,3)
- end do
- do k=1,natoms0
-    do i=1,3
-       read(uborn,*)atom0(k)%charge(i,:)
-!       read(uborn,*)(zeu(i,j,k),j=1,3)
-    end do
- end do
- close(uborn)
-
+!! dielectric.params with FOCEX's reader (../common/dielectric.f90): epsilon, its inverse, and
+!! the Born charges with the acoustic sum rule imposed, as FOCEX uses them
+ use atoms_force_constants, only : natom_prim_cell,natoms0
+ implicit none
+ natom_prim_cell=natoms0
+ call read_dielectric
  end subroutine read_born
+!===========================================================
+ subroutine setup_nonanalytic
+!! the non-analytical term as FOCEX sets it up before its lattice dynamics (focex.f90):
+!! coef, the Ewald damping eta and grids (from the primitive cell and epsilon), and the q=0 term
+ use constants, only : ee,eps0
+ use params, only : coef
+ use lattice, only : volume_r,volume_r0,r01,r02,r03
+ use geometry, only : det
+ use born, only : epsil,born_flag,dyn_naq0,np
+ use ewald, only : cuts,make_grid_shell_ewald,eta,rcutoff_ewa,gcutoff_ewa,nr_ewald,ng_ewald
+ use atoms_force_constants, only : natom_prim_cell
+ use ios, only : ulog
+ implicit none
+ real(8) deteps3,a0_scale
+ volume_r0=volume_r
+ coef=ee*1d10/eps0/volume_r0
+ deteps3=det(epsil)**(1/3d0)
+ a0_scale=volume_r0**(1/3d0)
+ np=1
+ write(ulog,'(a,4(1x,g14.7))')' SETUP_NONANALYTIC: np,a0scale,deteps3,coef=',real(np),a0_scale,deteps3,coef
+ if (born_flag.le.0) return
+ if (mod(born_flag,10).eq.6) then
+    write(*,*)'born_flag 6 needs the supercell grids of FOCEX; THERMACOND supports the other values'
+    stop
+ endif
+ call cuts(deteps3,a0_scale,born_flag,eta,rcutoff_ewa,gcutoff_ewa)
+ call make_grid_shell_ewald(r01,r02,r03,rcutoff_ewa,gcutoff_ewa,epsil)
+ write(ulog,'(a,3(1x,g14.7))')' SETUP_NONANALYTIC: eta,rcut_ewa,gcut_ewa=',eta,rcutoff_ewa,gcutoff_ewa
+ write(ulog,*)' nr_ewa,ng_ewa=',nr_ewald,ng_ewald
+ if (allocated(dyn_naq0)) deallocate(dyn_naq0)
+ allocate(dyn_naq0(natom_prim_cell,3,3))
+ call non_analq0(dyn_naq0,born_flag,1)
+ end subroutine setup_nonanalytic
+!===========================================================
+ subroutine add_nonanalytic(kp,dynmat,ddyn,ndn)
+!! adds FOCEX's non-analytical term (set_dynamical_NA_3N3N) and its q-derivative, then makes
+!! the sum hermitian as FOCEX's make_hermitian does; nothing for born_flag <= 0
+ use born, only : born_flag
+ implicit none
+ integer, intent(in) :: ndn
+ real(8), intent(in) :: kp(3)
+ complex(8), intent(inout) :: dynmat(ndn,ndn),ddyn(ndn,ndn,3)
+ complex(8) dna(ndn,ndn),ddna(ndn,ndn,3)
+ real(8) mi,mj
+ integer t,j
+ if (born_flag.le.0) return
+ call set_dynamical_NA_3N3N(kp,dna,ndn,ddna)
+ dynmat=dynmat+dna
+ ddyn=ddyn+ddna
+ do t=1,ndn
+    dynmat(t,t)=cmplx(real(dynmat(t,t)),0d0,kind=8)
+    do j=t+1,ndn          ! as FOCEX's make_hermitian (the whole upper triangle)
+       mi=(aimag(dynmat(t,j))-aimag(dynmat(j,t)))/2
+       mj=(real (dynmat(t,j))+real (dynmat(j,t)))/2
+       dynmat(t,j)=cmplx(mj, mi,kind=8)
+       dynmat(j,t)=cmplx(mj,-mi,kind=8)
+    enddo
+ enddo
+ end subroutine add_nonanalytic
+!===========================================================
+ subroutine dyn_coulomb_structfactor(q,tau,taup,dn,ddn)
+!! born_flag 6 needs FOCEX's supercell grids; setup_nonanalytic stops before this is reached
+ implicit none
+ integer, intent(in) :: tau,taup
+ real(8), intent(in) :: q(3)
+ complex(8), intent(out) :: dn(3,3),ddn(3,3,3)
+ dn=0 ; ddn=0
+ write(*,*)'DYN_COULOMB_STRUCTFACTOR (born_flag 6) is not available in THERMACOND',q,tau,taup
+ stop
+ end subroutine dyn_coulomb_structfactor
 !============================================================
  subroutine matrix_elt(q1,q2,l1,l2,l3,w33,inside)
 ! for input modes (qi,li) i=1,2,3 calculates the 3-phonon matrix element w33(1,2,3) on the fly
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use svd_stuff
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use atoms_force_constants
  use om_dos
@@ -3774,11 +3863,13 @@ enddo
  subroutine matrix_elt_full(q,q2,q3,omq,om2,om3,evq,ev2,ev3,w33)
 ! for input modes (qi,li) i=1,2,3 calculates the 3-phonon matrix element w33(1,2,3) on the fly
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use svd_stuff
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use atoms_force_constants
  use om_dos
@@ -3839,13 +3930,15 @@ enddo
 ! with the restriction of k2 in the IRREDUCIBLE BZ defined by ki(3,ni) included in kp(3,nk)
 !
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
  use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  implicit none
  integer nk,ni,ndn,l1,l2,l3,n2,n3,j,k
@@ -3939,10 +4032,12 @@ enddo
 ! it assumes the input momentum q is on the already-generated kmesh and
 ! is the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use lattice
@@ -4033,10 +4128,12 @@ enddo
 ! it assumes the input momentum q is on the already-generated kmesh and
 ! is the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use lattice
@@ -4129,10 +4226,12 @@ enddo
 ! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
 ! the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use lattice
@@ -4243,10 +4342,12 @@ enddo
 ! sigma(q,lambda,w)=sum_k |v3(q,la;k,la1;-k-q,la2)|2 * (n1+n2+1/... + n1-n2/...)
 ! the second argument of V33(k1,q,k2) where k2 covers the FBZ and k1=-q-k2
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use eigen
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  use om_dos
  use lattice
@@ -4353,13 +4454,15 @@ enddo
 ! this subroutine computes for each q the sum_q2 delta(w-w_q2 \pm w_q3)
 ! and finds the kpoints available
  use kpoints
- use ios
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use phi3
  use lattice
  use geometry
  use atoms_force_constants
  use svd_stuff
- use params
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
  use constants
  implicit none
  integer nk,ni,ndn,l1,l2,l3,n2,n3,j,k
@@ -4426,6 +4529,16 @@ enddo
 
  end subroutine phase
 !===========================================================
+ subroutine get_freq_hf(kp,ndn,vg,eival,eivec)
+!! get_freq_vg with FOCEX's argument order (interface freq_routine of module phonon_rules)
+ implicit none
+ integer, intent(in) :: ndn
+ real(8), intent(in) :: kp(3)
+ real(8), intent(out):: eival(ndn),vg(3,ndn)
+ complex(8), intent(out) :: eivec(ndn,ndn)
+ call get_freq_vg(kp,ndn,eival,eivec,vg)
+ end subroutine get_freq_hf
+!===========================================================
  subroutine get_freq(kp,ndn,eival,eivec)
 !! eigenvalues (omega^2) and eigenvectors at kp, sorted in ascending order
  implicit none
@@ -4440,10 +4553,12 @@ enddo
  subroutine get_freq_vg(kp,ndn,eival,eivec,vg)
 !! as get_freq, plus the group velocities vg (units of c_light) from the Hellmann-Feynman
 !! theorem, v_l = < e_l | dD/dk | e_l > / (2 omega_l), dD/dk including the non-analytic term
- use params
- use ios
+ use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
+ use tc_params
+ use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+ use tc_ios
  use constants
- use born
+ use born, only : epsil,born_flag
  implicit none
  integer, intent(in) :: ndn
  real(8), intent(in) :: kp(3)
@@ -4465,14 +4580,7 @@ enddo
 ! write(uio,*)'# dynmat allocated, printing: Kpoint, eival(j),j=1,ndyn)'
 
     call set_dynamical_matrix(kp,dynmat,ndn,ddyn)
-
-!JS: call nonanalytical term for born effective change
-    if (kp(1)==0.d0 .AND. kp(2)==0.d0 .AND. kp(3)==0.d0) then
-        khat=kp(:)+1.0D-10
-    else
-        khat=kp(:)
-    endif
-    if(born_flag.ne.0) call nonanal(khat,dynmat,ndn,ddyn)
+    call add_nonanalytic(kp,dynmat,ddyn,ndn)      ! FOCEX's non-analytical term (born_flag > 0)
 
     if (verbose) then
        write(ulog,3)' ======================================================================'
