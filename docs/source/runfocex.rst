@@ -1094,7 +1094,7 @@ folder:
 It fills ``bandgen``, ``bandgrun``, ``bvel``, ``all``, ``qha``, ``thermo``, ``fcs`` and ``chi.plt`` for that
 folder (the path labels from ``KTICS.BS``; frequency up to at most 2000 1/cm, group velocity up to
 20 km/s, Gruneisen parameters within [-10, 10]; ``NAME`` is the folder above ``05_focex``, else the
-parent folder), writes them there and makes the PDFs. A script whose data files are missing is
+parent folder; ``--name LaP`` sets it), writes them there and makes the PDFs. A script whose data files are missing is
 skipped. The focex-agent's ``makeplots.sh`` runs it.
 
 To run a script by hand, copy it into the output folder and run ``gnuplot <script>``. Scripts that do

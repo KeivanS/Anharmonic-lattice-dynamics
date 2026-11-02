@@ -538,7 +538,7 @@ snapshots, sqrt(4/5 sum (x_i - xbar)^2) / SVD sigma: median FC2 1.04, FC3 0.91; 
   `FOCEX/PLOTTING/` since 2026-11-02 (user); the agent reads its templates from there, `make` links bandplot.
 - `FOCEX/PLOTTING/allplots` (2026-11-02, user): fills bandgen/bandgrun/bvel/all/qha/thermo/fcs/chi.plt for a
   FOCEX folder and makes the PDFs; KTICS.BS for the xtics line; caps frequency 2000 1/cm, group velocity
-  20 km/s, Gruneisen [-10:10]; NAME = folder above 05_focex, else the parent folder. all.plt colours the
+  20 km/s, Gruneisen [-10:10]; NAME = folder above 05_focex, else the parent folder (--name overrides). all.plt colours the
   dispersion by the band Gruneisen parameters (bs_grun.dat, same band order as bands.dat: checked row by
   row) when present. The agent's makeplots.sh runs it (per_band removed: no template uses its marker).
   Checked on the exact-model ZnO run (all 9 PDFs, pages looked at) and with capped/missing data.

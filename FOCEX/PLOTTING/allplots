@@ -12,7 +12,7 @@ output in DIR (default .), writes the filled copies into DIR and runs gnuplot on
   - bounds from the data, capped: frequency <= 2000 1/cm, group velocity <= 20 km/s, Gruneisen
     parameters within [-10:10];
   - NAME (titles, file names) is the folder above 05_focex in DIR's path (MATERIAL/05_focex/...), else
-    the name of DIR's parent folder; --name overrides it.
+    the name of DIR's parent folder; --name overrides it (allplots --name LaP).
 A template is skipped when a data file it needs is missing. Only the Python standard library is used.
 """
 import math, os, re, shutil, subprocess, sys
