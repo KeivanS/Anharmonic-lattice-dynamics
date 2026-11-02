@@ -19,14 +19,10 @@ set grid ytics
 set xtics in 1
 set xlabel "Gruneisen"
 
-# THIS HAS AS MANY LINES AS THERE ARE BANDS; ACCORDINGLY COLUMN NYMBERS MUST BE EDITED
-# Second column goes from 6 to 6+3N-1 and first column goes from 6+3N to 6+6N-1 (N=#of atoms)
-plot 'ibz_grun.dat'   u 12:6  w p pt 1 ps 0.1 notitle ,\
-     'ibz_grun.dat'   u 13:7  w p pt 1 ps 0.1 notitle ,\
-     'ibz_grun.dat'   u 14:8  w p pt 1 ps 0.1 notitle ,\
-     'ibz_grun.dat'   u 15:9  w p pt 1 ps 0.1 notitle ,\
-     'ibz_grun.dat'   u 16:10 w p pt 1 ps 0.1 notitle ,\
-     'ibz_grun.dat'   u 17:11 w p pt 1 ps 0.1 notitle
+# ibz_grun.dat: 5 columns (index, dk, k), then the nb frequencies, then the nb Gruneisen parameters;
+# nb (= 3 x atoms) is read from the file
+nb = int(system("awk '!/^ *#/ && NF>5 {print (NF-5)/2; exit}' ibz_grun.dat"))
+plot for [b=1:nb] 'ibz_grun.dat' u (column(5+nb+b)):(column(5+b)) w p pt 1 ps 0.1 notitle
 
 # fbz_dos is from tetrahedon method  =================================
 # DOES NOT NEED EDITING AND SHOULD WORK BY DEFAULT

@@ -1,5 +1,6 @@
-if (!exists("nbands")) nbands = 6   # default
 if (!exists("fin"))    fin    = 'bands.dat'   # default is bands.dat
+# number of bands: given with -e "nbands=N", else read from the file (5 columns, then nbands omega^2, nbands |v|)
+if (!exists("nbands")) nbands = int(system(sprintf("awk '!/^ *#/ && NF>5 {print (NF-5)/2; exit}' %s", fin)))
 if (!exists("fout"))   fout   = 'bands.png'   # default output is bands.png
 print "nbands =", nbands
 print "fin  =", fin
@@ -42,7 +43,7 @@ do for [c = col_start:col_end] {
     ls_idx = 1 + (lc-1) % 8
 
     entry  = sprintf("'%s' using 2:%d with l ls %d notitle",          fin, c, ls_idx)
-    entry2 = sprintf("'%s' using 2:(521.1*sqrt($%d)) with l ls %d notitle", fin, c, ls_idx)
+    entry2 = sprintf("'%s' using 2:(521.1*sgn($%d)*sqrt(abs($%d))) with l ls %d notitle", fin, c, c, ls_idx)
 
     if (c == col_start) {
         plotcmd = plotcmd . entry

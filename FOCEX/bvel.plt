@@ -36,15 +36,10 @@ replot
 reset
 set xlabel "Frequency (1/cm)"
 set ylabel "Group Velovity (km/s)"
-# THIS HAS AS MANY LINES AS THERE ARE BANDS; ACCORDINGLY COLUMN NYMBERS MUST BE EDITED
-# First column goes from 6 to 6+3N-1 and second column goes from 6+3N to 6+6N-1 (N=#of atoms)
+# bands.dat: 5 columns (index, dk, k), then the nb omega^2, then the nb |v|; nb is read from the file
+nb = int(system("awk '!/^ *#/ && NF>5 {print (NF-5)/2; exit}' bands.dat"))
 plot 'ibz_bands.dat' u ($7):($11/1) w p pt 7 ps 0.5 title  'IBZ' ,\
-       'bands.dat' u (sqrt($6)*521.11):12 w p pt 7 ps 0.2 title  'BS',\
-       'bands.dat' u (sqrt($7)*521.11):13 w p pt 7 ps 0.2 notitle ,\
-       'bands.dat' u (sqrt($8)*521.11):14 w p pt 7 ps 0.2 notitle ,\
-       'bands.dat' u (sqrt($9)*521.11):15 w p pt 7 ps 0.2 notitle ,\
-       'bands.dat' u (sqrt($10)*521.11):16 w p pt 7 ps 0.2 notitle ,\
-       'bands.dat' u (sqrt($11)*521.11):17 w p pt 7 ps 0.2 notitle
+     for [b=1:nb] 'bands.dat' u (sgn(column(5+b))*sqrt(abs(column(5+b)))*521.11):(column(5+nb+b)) w p pt 7 ps 0.2 lc 2 title (b==1 ? 'BS' : '')
 
 
 # pt=1(plus),2(cross),3(cross-plus),4(empty square),5 (diamond),6(triangle),7(circle),10(square)

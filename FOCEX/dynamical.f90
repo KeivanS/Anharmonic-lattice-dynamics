@@ -379,7 +379,7 @@
   close(uio)
   close(utherm)
 5 format(a,i5,99(1x,g11.4))
-6 format(i5,99(1x,g11.4))
+6 format(i5,9999(1x,g11.4))   ! bands.dat: one line per k-point (99 wrapped beyond 47 bands)
 7 format(99(1x,g11.5))
 8 format(a,9(1x,g11.4))
 
@@ -1639,7 +1639,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  enddo
 
 6 format(a,2i5,99(1x,g11.4))
-8 format(i8,66(1x,f9.4),6(1x,f9.4))
+8 format(i8,9999(1x,f9.4))   ! one line per k-point (66+6 wrapped beyond 33 bands)
  end subroutine gruneisen
 !============================================================
  subroutine get_dynmat(kp,ndn,dynmat)

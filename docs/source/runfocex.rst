@@ -1072,12 +1072,14 @@ directory; run them in the directory containing the output files.
    * - Script
      - Figure
    * - ``bandgen.plt``
-     - Phonon dispersion from ``bands.dat``. Pass the number of branches, e.g.
-       ``gnuplot -e "nbands=6" bandgen.plt``.
+     - Phonon dispersion from ``bands.dat`` (``bands.png``, ``freq_bands.png``). The number of
+       branches is read from the file; ``gnuplot -e "nbands=6" bandgen.plt`` overrides it.
+       Unstable modes are drawn at negative frequency.
    * - ``bvel.plt``
-     - Dispersion coloured by group velocity.
+     - Dispersion coloured by group velocity; group velocity versus frequency for every branch.
    * - ``all.plt``
-     - Combined dispersion + DOS + Gruneisen figure.
+     - Combined dispersion + DOS + Gruneisen figure (every branch; the number of branches is read
+       from ``ibz_grun.dat``).
    * - ``fcs.plt``
      - Trace of FC2 versus pair distance (``trace_fc.dat``).
    * - ``pair.plt``
