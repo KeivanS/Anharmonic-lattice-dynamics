@@ -7,7 +7,7 @@ set ylabel "Free energy (kJ/mol)"
 set yrange [-20:50]
 set key center top
 plot "temp_free.dat" u (100*$2):3 w l lw 2 title "Free Energy",\
-     "temp_free.dat" u (100*$2):4 w l lw 1 title "Pressure"
+     "temp_free.dat" u (100*$2):4 w l lw 1 title "Pressure" ,\
      "thermo_QHA.dat" u (100*$5):3 w p ps 0.5 pt 10 title "Equilibrium strain"
 pause -1
 set xlabel "Temperature(K)"

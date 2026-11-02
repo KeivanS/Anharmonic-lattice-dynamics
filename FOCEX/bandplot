@@ -1,0 +1,37 @@
+#!/bin/bash
+# bandplot [nbands] [filein] [fileout]: phonon dispersion of a FOCEX run with bandgen.plt (next to
+# this script, symlinks followed). Run in the FOCEX output folder (needs KTICS.BS and filein.dat).
+#   nbands   number of branches; omit (or give "auto") to read it from the data file
+#   filein   data file without .dat (default bands)      fileout  output name without .png (default filein)
+# Writes fileout.png (omega^2) and freq_fileout.png (frequency in 1/cm). Based on ~/BIN/bandplot (user).
+
+echo "Usage: bandplot [nbands] [filein] [fileout]   (defaults: from the file, bands, filein)"
+
+# where this script really is (follow symlinks), to find bandgen.plt
+src="${BASH_SOURCE[0]}"
+while [ -h "$src" ]; do
+    dir="$(cd -P "$(dirname "$src")" && pwd)"
+    src="$(readlink "$src")"
+    [[ $src != /* ]] && src="$dir/$src"
+done
+HERE="$(cd -P "$(dirname "$src")" && pwd)"
+PLT="$HERE/bandgen.plt"
+
+NB=""
+if [[ -n "$1" && "$1" =~ ^[0-9]+$ ]]; then
+    NB="nbands=$1; "
+    shift
+elif [[ "$1" == "auto" ]]; then
+    shift
+fi
+FILEIN="${1:-bands}"
+FILEOUT="${2:-$FILEIN}"
+
+for f in KTICS.BS "${FILEIN}.dat" "$PLT"; do
+    if [ ! -f "$f" ]; then
+        echo "bandplot: $f not found" >&2
+        exit 1
+    fi
+done
+
+gnuplot -e "${NB}fin='${FILEIN}.dat'; fout='${FILEOUT}.png'" <(cat KTICS.BS; echo; cat "$PLT")

@@ -1062,41 +1062,70 @@ After a run, look at these numbers, in this order:
 Plotting the results
 --------------------
 
-Gnuplot scripts for the standard figures are provided in the ``FOCEX``
-directory; run them in the directory containing the output files.
+Gnuplot scripts for the standard figures are in the ``FOCEX`` directory. Copy them into the
+directory with the FOCEX output and run ``gnuplot <script>``. Scripts that do not set a terminal
+draw on the screen.
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 80
+   :widths: 14 40 46
 
    * - Script
-     - Figure
+     - Reads
+     - Shows / writes
    * - ``bandgen.plt``
-     - Phonon dispersion from ``bands.dat`` (``bands.png``, ``freq_bands.png``). The number of
-       branches is read from the file; ``gnuplot -e "nbands=6" bandgen.plt`` overrides it.
-       Unstable modes are drawn at negative frequency.
+     - ``bands.dat`` (``fin``), ``KTICS.BS`` (via ``bandplot``)
+     - Dispersion, one colour per branch: ``bands.png`` (:math:`\omega^2`) and ``freq_bands.png``
+       (1/cm, unstable modes at negative frequency). The number of branches is read from the file.
+       Most easily run as ``bandplot [nbands] [filein] [fileout]`` (installed by ``make`` next to
+       the executables).
    * - ``bvel.plt``
-     - Dispersion coloured by group velocity; group velocity versus frequency for every branch.
+     - ``bs_freq.dat``, ``bands.dat``, ``ibz_bands.dat``
+     - Dispersion coloured by group velocity (``NAME.pdf``); then group velocity versus frequency
+       for every branch, on the path and in the irreducible wedge (screen).
    * - ``all.plt``
-     - Combined dispersion + DOS + Gruneisen figure (every branch; the number of branches is read
-       from ``ibz_grun.dat``).
-   * - ``fcs.plt``
-     - Trace of FC2 versus pair distance (``trace_fc.dat``).
-   * - ``pair.plt``
-     - Distribution of pair distances (``pairs.dat``).
+     - ``ibz_grun.dat``, ``fbz_dos.dat``, ``bs_freq.dat``
+     - Three panels (``all-NAME.pdf``): frequency versus Gruneisen parameter for every branch,
+       DOS (total and the three acoustic branches), dispersion coloured by group velocity.
    * - ``qha.plt``
-     - Thermal expansion, heat capacity and Gruneisen versus T
-       (``thermo_QHA.dat``).
+     - ``thermo_QHA.dat``, ``temp_free.dat``
+     - ``qha.pdf``: CTE, Gruneisen, :math:`B_T/B_0`; :math:`\Delta V/V` and strain; E, F, :math:`C_V`,
+       :math:`C_P`, S versus T; then F(V) and P(V) and free-energy contours.
    * - ``thermo.plt``
-     - Free energy versus strain (``temp_free.dat``).
+     - ``thermo_QHA.dat``, ``temp_free.dat``
+     - ``thermo.pdf``: F(V) and P(V) with the equilibrium strain; E, F, :math:`C_V`, :math:`C_P`, S;
+       :math:`\Delta V/V`; CTE, Gruneisen, :math:`B_T/B_0` versus T, one plot each.
    * - ``chi.plt``
-     - Dielectric function and optical constants.
-   * - ``kp.plt``, ``ws.plt``
-     - k-point meshes and Wigner-Seitz cells, for checking the grids.
+     - ``chi_real.dat``, ``chi_imag.dat``
+     - ``chi.pdf``: dielectric function and optical constants.
+   * - ``pair.plt``
+     - ``pairs.dat``, ``trace_fc.dat``
+     - ``pairs.pdf``: distribution of pair distances and FC2 traces.
+   * - ``fcs.plt``
+     - ``trace_fc.dat`` (also ``trace_fc2_sr/lr.dat``), ``atompos.xyz``, ``springs1/2.dat``,
+       ``rgrid_raw.xyz``, ``supercell_1.xyz``, ``WSR_boundary.xyz``
+     - Screen: FC2 trace versus pair distance; atoms, FC2 bonds and the Wigner-Seitz cell in 3D.
+   * - ``kp.plt``
+     - ``KPOINT.IBZ``, ``KPOINT_tet.MP``, ``WSG_boundary.xyz``
+     - Screen: the k-point mesh, its irreducible part and the Brillouin-zone boundary.
+   * - ``ws.plt``
+     - ``rgrid_raw.xyz``, ``WSR_boundary.xyz``, ``ggrid_raw.xyz``, ``WSG_boundary.xyz``
+     - Screen: the R and G grids with their Wigner-Seitz cells.
 
-The tick marks of the band-structure plots come from ``KTICS.BS``, which FOCEX
-writes for the path you defined; the ranges hard-coded in some of the scripts
-may need adjusting for your material.
+``bvel.plt`` and ``all.plt`` contain placeholders (capital letters), which you replace by hand when
+running them yourself: ``NAME`` (material name, in the titles and file names), ``MAX_K_VALUE``
+(the last number of ``KTICS.BS``), ``MAX_FREQUENCY_IN_INVERSE_CM``, ``MAX_GROUP_VELOCITY``, and
+the ``set xtics`` line below the comment ``REPLACE THE FOLLOWING LINE BY THE CONTENTS OF
+"KTICS.BS"``, which becomes the contents of ``KTICS.BS`` (the labels of the path you defined).
+
+The focex-agent does this in its ``plots`` task. For each FOCEX run folder it writes filled-in
+copies of ``bvel.plt``, ``all.plt`` and ``qha.plt`` there: ``NAME`` = the project name,
+``MAX_K_VALUE`` from ``KTICS.BS``, ``MAX_FREQUENCY_IN_INVERSE_CM`` = 1.05 x the largest frequency in
+``bs_freq.dat`` rounded up to 10, ``MAX_GROUP_VELOCITY`` = the largest group velocity there, rounded
+up to 0.1 km/s; the ``xtics`` line is replaced by ``KTICS.BS``; the ``pause`` lines are removed,
+and ``set term unknown`` is put first when a script draws before choosing the pdf terminal. It
+then writes ``makeplots.sh``, which only runs ``gnuplot`` on the three filled-in scripts (one log
+file each) and does not change them; run it again after editing them.
 
 .. _focex-troubleshooting:
 
