@@ -107,7 +107,11 @@ against the exact FCs, with x_exact being the exact value of every irreducible F
   2026-10-30 (run folders in a scratch directory that has since been deleted); their absolute errors
   divided by max |FC| of e1. e2n took about 2.7 days.
 - HfO2 e3n was started 2026-10-30; its run folder was deleted with the scratch directory before it was
-  checked. Not rerun.
+  checked. Not rerun with rank 4 (the cost is the 7977 unknowns: 5-fold CV over 60-80 lam values).
+- HfO2 e3 on the cubic model instead (2026-11-01; `mkcubic.py HfO2 cubic`, ranks 1-3, 1566 unknowns,
+  enforce_inv=3): 24 min. LASSO selected 1324 of 1566 (grid extended to 1e-6 lam_max); after the refit
+  max |e3 - exact| / max|FC| = 0, 7e-13, 4.5e-11 for FC1-3 (exact = the enforce_inv=1 fit of the same
+  data); no true non-zero FC lost.
 
 - The force fit is 0.000 % in every run.
 - enforce_inv=0, 1 and 3 reproduce the exact FCs to the digits written.
