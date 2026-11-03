@@ -35,7 +35,9 @@ Old utility builds were kept in `~/ALADYN/bin/old_2026-10-23/`. Tags (2026-10-23
 versioned separately, focex-agent-1.0, focex-agent-1.1 (thermacond task; `__version__` in focex-agent.py and diagnose.py, manual title and
 its Version history section); 1.2 (2026-10-27, snap_000 ISIF=2 -> stress.params; no tag); VASP-Flow v2.6 (at ef92326) and v2.7.
 `FOCEX/Makefile` does **not** include the top-level `make.inc`: it hardcodes
-`FF=gfortran`, `FLAGS=-O2 -fcheck=all`, `exe=focex-$(ver).x`, `DESTDIR ?= ~/ALADYN/bin`. It has
+`FF=gfortran`, `FLAGS=-O2 -fcheck=all`, `exe=focex-$(ver).x`, `DESTDIR ?= ~/ALADYN/bin`
+(a test build in a copied tree still moves its binary there: use `make DESTDIR=<scratch>`; 2026-11-03 a test
+build replaced the installed focex-9.5.x). It has
 CRLF line endings. The utility programs are separate
 (`cd FOCEX/utility && make`, installs to `make.inc`'s `DESTDIR=~/ALADYN/bin`) —
 that builds `read_outcar.x`, `read_qe.x`, `poscar2xyz.x` and `poscar2focex.x`.
@@ -482,6 +484,18 @@ disabled conductance loop in dynamical.f90 and the uncalled extract_fourier).
   regression (Ge, BZO, MoTe2, GeSe): same stars, thermo outputs within 1 in the last printed digit; THERMACOND Ge 4^3
   job 3: every output byte-identical; CdI2 exact model through FOCEX and THERMACOND (8x8x8, 6x6x4): = spglib
   (old FOCEX: 50 instead of 65 IBZ points on 8x8x8). Scratch scripts: ibztest/test.py, ex_cdi2/cmp_spg.py, cmp_tc.py.
+
+## Ballistic conductance (conductance.dat; 2026-11-03, user; test in FOCEX/REFERENCE/exact_model/chain)
+- M(om)/A = 2pi sum_lambda int d3k/(2pi)^3 delta(om-om_k) |v.n|/2 in 1/A^2 (user asked for per A^2). |v.n|/2,
+  not v.n: the full-zone sum of v.n is 0 by v(-k)=-v(k). Code: tet_sum(|v.n|/2 in m/s)/(c_light*volume_r0*1d-8).
+- Mesh values from the IBZ: v(kpc(l)) = rlaue(:,:,kop_ibz2fbz(l)) velocibz(:,j,mapibz(l)) (module kpoints,
+  filled by get_weights through ibz_reduce's optional oparm). Replaced the getstar loop (lattice point group,
+  disabled with do j=1,-1).
+- Verified on exact chains: plateaus 3 and 6 channels/cell to 0.2%, continuous case 0.8% rms, normal (1,2,3) too.
+- SC_SNAPS gives no transverse displacements when all its springs (r < 2 r_nn) lie along a chain: use
+  Gaussian displacements for such models (setup_chain.py).
+- extract_fourier (fourier_stuff.f90) still calls getstar; left as it is (user, 2026-11-03). Known problems:
+  global kibz instead of the k* mesh, real fk/uk, mod-based index decoding, no fractional-translation phases.
 
 ## Mode Gruneisen parameters (2026-11-01, user's request; common/gruneisen.f90)
 

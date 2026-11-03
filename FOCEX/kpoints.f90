@@ -18,6 +18,8 @@
  real(r15), allocatable :: kpc(:,:),wk(:),kp_bs(:,:),dk_bs(:),dkc(:),gibz(:,:),wgibz(:)
  real(r15), allocatable :: kbzf(:,:) ,kibz(:,:),wibz(:),kbz(:,:),kpfbz(:,:),kmesh(:,:),rmesh(:,:)
  integer, allocatable :: fbz2ibz(:),kop_ibz2fbz(:),fbzKstar(:)
+ integer nlaue                 ! Laue operations of the crystal (get_weights): rlaue(:,:,1:nlaue), Cartesian
+ real(r15) rlaue(3,3,48)       ! kop_ibz2fbz(j): the one taking kibz(:,mapibz(j)) to kpc(:,j) modulo G
  integer, allocatable :: ibzarms(:),ibz2fbz(:)
  character(LEN=5), allocatable :: kname_bs(:)
  integer nibz

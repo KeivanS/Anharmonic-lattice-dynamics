@@ -2562,11 +2562,12 @@ end subroutine create_extended_rgrid
  subroutine get_weights(nk,kp ,mapinv,mapibz)
 !! irreducible wedge of the mesh kp(3,nk) (Cartesian): nibz points kibz with normalized weights wibz (module kpoints),
 !! mapibz(j) = IBZ point of mesh point j, mapinv(i) = mesh index of IBZ point i (i <= nibz; 0 beyond).
+!! Also (module kpoints) the Laue operations rlaue(:,:,1:nlaue) and kop_ibz2fbz(j): kp(:,j) = rlaue(kop_ibz2fbz(j)) kibz(mapibz(j)) mod G.
 !! The work is done by ibz_reduce (common/ibz.f90, shared with THERMACOND since 2026-11-03, user): Laue group of the
 !! crystal, stars modulo G, representatives in one wedge. The earlier FOCEX version used all operations of the
 !! lattice point group, wrong for a crystal of lower symmetry than its lattice.
  use lattice, only : r01,r02,r03,cart2red_g,fold_ws,g0ws26
- use kpoints, only : kibz, wibz, nibz
+ use kpoints, only : kibz, wibz, nibz, nlaue, rlaue, kop_ibz2fbz
  use atoms_force_constants, only : lattpgcount, op_matrix, isgopcount, isgop
  use ibz_rules, only : laue_operations, ibz_reduce
  use constants, only : r15
@@ -2577,12 +2578,15 @@ end subroutine create_extended_rgrid
  integer, intent(in):: nk
  real(r15), intent(in):: kp(3,nk)
  integer, intent(out):: mapibz(nk),mapinv(nk)
- real(r15) kf(3), rlaue(3,3,48)
- integer i, nlaue
+ real(r15) kf(3)
+ integer i
 
  call laue_operations(lattpgcount, op_matrix, isgopcount, isgop, nlaue, rlaue)
  write(ulog,*)'GET_WEIGHTS: Laue operations of the crystal: ',nlaue,' of the ',lattpgcount,' of the lattice'
- call ibz_reduce(nk, kp, v2a(r01), v2a(r02), v2a(r03), nlaue, rlaue, ulog, nibz, kibz, wibz, mapibz, mapinv)
+ if (allocated(kop_ibz2fbz)) deallocate(kop_ibz2fbz)
+ allocate(kop_ibz2fbz(nk))
+ call ibz_reduce(nk, kp, v2a(r01), v2a(r02), v2a(r03), nlaue, rlaue, ulog, nibz, kibz, wibz, mapibz, mapinv, &
+ &               kop_ibz2fbz)
 
 ! write the kpoints and their weights-------------------------
  open(uibz,file='KPOINT.IBZ',status='unknown')

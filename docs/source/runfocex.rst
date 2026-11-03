@@ -1032,9 +1032,11 @@ Phonons and thermodynamics
     The frequencies are at exactly :math:`q=0`, where polar modes lie between their TO and LO values.
 
 ``conductance.dat``
-    Mode-counting (ballistic conductance) along the ``normal`` direction of
-    ``latdyn.params``. The band loop that fills it is currently disabled in the
-    source, so in this version the file is written but contains only zeros.
+    Ballistic (Landauer) channels per Å² of cross section normal to the ``normal`` of
+    ``latdyn.params``: :math:`M(\omega)/A = 2\pi\sum_\lambda\int\frac{d^3k}{(2\pi)^3}\,\delta(\omega-\omega_{k\lambda})\,|v_{k\lambda}\cdot n|/2`,
+    total and per band, from the tetrahedron method on the k-mesh. For chains that do not
+    disperse sideways, times the cell cross section it counts the branches crossing
+    :math:`\omega`, an integer.
 
 Diagnostics
 ^^^^^^^^^^^
@@ -1301,7 +1303,8 @@ Version history
     Born term added back to the dynamical matrix, and the invariance rows carry the Coulomb part;
     elastic constants and stress also from the long-wave sound speeds; the irreducible k-points
     from the crystal's own symmetry (one routine shared with THERMACOND; crystals of lower
-    symmetry than their lattice were given wrong weights); ``fcN.dat`` with 8 digits.
+    symmetry than their lattice were given wrong weights); ``fcN.dat`` with 8 digits; ballistic
+    conductance (``conductance.dat``, channels per Å²).
 
 9.4 (2026-11-02)
     IR and Raman activity, parity and irreducible representation of the :math:`\Gamma` modes

@@ -42,13 +42,15 @@
  enddo
  end subroutine laue_operations
 !------------------------------------------------------------
- subroutine ibz_reduce(nk, kp, r1, r2, r3, nrot, rot, ulog, nibz, kibz, wibz, mapibz, mapinv)
+ subroutine ibz_reduce(nk, kp, r1, r2, r3, nrot, rot, ulog, nibz, kibz, wibz, mapibz, mapinv, oparm)
 !! kp(3,nk): the mesh (Cartesian, 1/A, with 2pi); r1, r2, r3: primitive vectors (Cartesian, A); rot: Laue operations.
 !! Outputs: nibz, kibz(3,nibz) (representatives, Cartesian, in the WS cell), wibz(nibz) (normalized), mapibz(nk)
-!! (IBZ point of each mesh point), mapinv(nibz) (mesh index of each representative, modulo G)
+!! (IBZ point of each mesh point), mapinv(nibz) (mesh index of each representative, modulo G),
+!! optional oparm(nk): an operation s with kp(:,j) = rot(:,:,s) kibz(:,mapibz(j)) modulo G (e.g. v(kp(j)) = rot(s) v(kibz))
  integer, intent(in) :: nk, nrot, ulog
  real(8), intent(in) :: kp(3,nk), r1(3), r2(3), r3(3), rot(3,3,nrot)
  integer, intent(out) :: nibz, mapibz(nk), mapinv(nk)
+ integer, intent(out), optional :: oparm(nk)
  real(8), allocatable, intent(out) :: kibz(:,:), wibz(:)
  real(8) pi, rr(3,3), gg(3,3), q(3), qws(3), krep(3), best, f, sw
  real(8), allocatable :: k2(:,:), w2(:)
@@ -93,6 +95,20 @@
  allocate(kibz(3,nibz), wibz(nibz))
  kibz = k2(:,1:nibz); wibz = w2(1:nibz)
  sw = sum(wibz); wibz = wibz/sw
+ if (present(oparm)) then
+    oparm = 0
+    do j = 1, nk
+       do l = 1, nrot
+          if (all(mesh_key(matmul(rot(:,:,l), kibz(:,mapibz(j)))) .eq. keys(:,j))) then
+             oparm(j) = l; exit
+          endif
+       enddo
+       if (oparm(j) .eq. 0) then
+          write(ulog,*)'IBZ_REDUCE: no operation takes IBZ point ',mapibz(j),' to mesh point ',j
+          stop 'IBZ_REDUCE: no operation to a star member, see the log'
+       endif
+    enddo
+ endif
  write(ulog,*)'IBZ_REDUCE: ',nk,' mesh points, ',nrot,' Laue operations, ',nibz,' points in the irreducible wedge'
  deallocate(keys, ord, k2, w2)
 

@@ -4,7 +4,7 @@
  use atoms_force_constants, only : natom_prim_cell,atom0 ,op_kmatrix
  use ios, only : ulog , uibs, uband, ugrun, write_out
  use eigen 
- use constants, only : r15,ee,pi,eps0
+ use constants, only : r15,ee,pi,eps0,c_light,cnst
  use lattice, only : volume_r0,g0ws26,r01,r02,r03,primitivelattice
  use mech
  use fourier, only : nrgrid,rgrid,rws_weights ,ggrid,nggrid ,gws_weights,nreg,rgridreg
@@ -13,7 +13,7 @@
  use born
  use tetrahedron
  implicit none
- integer i,j,k,uio,tau,taup,l,ll,narms,ier
+ integer i,j,k,uio,tau,taup,l,ier
  real(r15) vkms(3),vavg(3),qr(3),q2(3),sf,etot,free,cv,cp,entropy,eq_vol,tempk,cvte
  real(r15) rotc(3,3),atldc(3,3,3,3),elasticc(6,6),atld_sym(3,3,3,3),asym_c
  character(len=12) csys
@@ -22,9 +22,8 @@
  complex(r15) dyn_coul(3,3),ddn(6,6,3)
  real(r15), allocatable :: aux(:),array(:) ,eivaux(:),velaux(:,:)
  complex(r15), allocatable :: evcaux(:,:) 
- real(r15) kvecstar(3,48),tempi(3,3),v3(3),v4(3),velred(3)
- integer kvecop(48),f,total_arms
- integer, allocatable :: visit_count(:)
+ real(r15) tempi(3,3),v3(3),v4(3),velred(3)
+ integer f
  real tim
  logical found
 
@@ -264,82 +263,36 @@
   call write_dos(udos)
   close(udos)
 
-! -------------- THERMAL CONDUCTANCE : count number of modes along "normal" direction  
-! 
-! first normalize the normal vector
+! -------------- THERMAL CONDUCTANCE (ballistic, Landauer): channels per unit area normal to "normal"
+! M(om)/A = 2 pi sum_lambda int d3k/(2pi)^3 delta(om-om_k,lambda) |v_k,lambda.n|/2   (|v.n|/2 = v.n for v.n > 0 summed
+! over the FBZ, since v(-k) = -v(k)). With (1/N) sum_k = V int d3k/(2pi)^3 and om in 1/cm (delta(om) = delta(nu)/(2 pi c)):
+! M/A = [ (1/N) sum_k delta(nu-nu_k) |v.n|/2 ] / (c V)   (1/A^2; v in m/s, c in m/s, V in A^2 cm).
+! In 1D it is (number of branches crossing om with v > 0)/(cross section): an integer per cell if the bands do not
+! disperse transversely. The k sum is done by tetrahedra (tet_sum) on the mesh kpc; frequencies and velocities on the
+! mesh come from the IBZ by the Laue operation of each mesh point: v(R k) = R v(k) (also for R = -S, time reversal).
   normal=normal/(length(normal)+1d-12)
-  allocate(visit_count(nkc))
   dos = 0
-  do j=1,-1 !ndyn  ! sum over bands
-     eig=0d0; afunc=0d0; visit_count=0; total_arms=0
-     do k=1,nibz   ! sum over k vectors in the irreducible wedge
-        call getstar(kibz(:,k),primitivelattice,narms,kvecstar,kvecop)
-        if(debug_kpoints) then
-          total_arms=total_arms+narms
-          if(abs(narms/dble(nkc)-wibz(k)) .gt. 1d-6) then
-             write(*,5) 'ERROR: weight mismatch for IBZ point ', k,narms/real(nkc),wibz(k),narms/real(nkc)-wibz(k)
-          endif
-        endif
-        do ll=1,narms  ! sum over the stars of kibz obtained by symmetry
-           vkms = matmul( op_kmatrix(:,:,kvecop(ll)) , velocibz(:,j,k) )
-           q2   = matmul( op_kmatrix(:,:,kvecop(ll)) , kibz(:,k) )
-! id this kibz and arm with actual k
-           found=.false.
-           do l=1,nkc
-              if(length(kpc(:,l)-q2).lt.1d-6) then
-                 found=.true.
-                 exit
-              endif
-           enddo
-           if(.not. found) then
-              write(*,5)'could not find k corresponding to kibz,arm ',ll,kibz(:,k)
-           !  stop
-           else
-              visit_count(l)=visit_count(l)+1
-           endif
-           if (l.le.nkc) then
-              eig(l) = mysqrt(eivalibz(j,k)) * cnst
-              afunc(l)=dot_product(normal,vkms) ! weight in front of the delta function
-           else
-              write(*,*) 'Could not find l; stopping!'
-           !  stop
-           endif
-        enddo 
+  do j=1,ndyn  ! sum over bands
+     do l=1,nkc
+        k=mapibz(l)
+        eig(l) = mysqrt(eivalibz(j,k)) * cnst
+        vkms   = matmul(rlaue(:,:,kop_ibz2fbz(l)), velocibz(:,j,k))
+        afunc(l)= abs(dot_product(normal,vkms))/2     ! weight in front of the delta function (m/s)
      enddo
-
-! Now check to see if any l point is visited once and only once
-   if(debug_kpoints) then
-     do l = 1, nkc
-        if (visit_count(l) .eq. 0) then
-           write(*,*) 'ERROR: k-point ', l, ' never visited: ', kpc(:,l)
-        elseif (visit_count(l) .gt. 1) then
-           write(*,*) 'ERROR: k-point ', l, ' visited ', visit_count(l), ' times: ', kpc(:,l)
-        endif
-     enddo
-! Summary check
-     if (total_arms .ne. nkc) then
-        write(*,*) 'ERROR: sum of star sizes = ', total_arms, ' != nkc = ', nkc
-        stop
-     endif
-     if (sum(visit_count) .ne. nkc) then
-        write(*,*) 'ERROR: total visits = ', sum(visit_count), ' but nkc = ', nkc
-        stop
-     endif
-     if (any(visit_count .ne. 1)) then
-        write(*,*) 'ERROR: visit_count is not uniformly 1'
-        stop
-     endif
-     write(*,*) 'OK: all ', nkc, ' k-points visited exactly once'
-   endif
-
      do i=1,wmesh
-        call tet_sum(om(i),nkc,eig,afunc,dos(j,i))  ! tetrahedron DOS
-        dos(0,i)=dos(0,i)+dos(j,i)
+        call tet_sum(om(i),nkc,eig,afunc,dos(j,i))
      enddo
   enddo
-
+  dos = dos/(c_light*volume_r0*1d-8)    ! channels per A^2
+  do i=1,wmesh
+     dos(0,i)=sum(dos(1:ndyn,i))
+  enddo
   open(udos,file='conductance.dat')
-  call write_dos(udos)
+  write(udos,'(a,3(1x,f9.5))')'# ballistic channels per A^2 of cross section normal to n =',normal
+  write(udos,'(a)')'# om(1/cm), M_total(om)/A (1/A^2), M_lambda(om)/A for each band lambda (sorted by frequency)'
+  do i=1,wmesh
+     write(udos,'(g11.4,99(1x,g13.6))')om(i),(dos(j,i),j=0,ndyn)
+  enddo
   close(udos)
 
 2 format(a,2i5,9(1x,f10.5))
