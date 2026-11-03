@@ -2,11 +2,11 @@
 # End-to-end test of focex-agent.py without VASP: a nearest-neighbour Lennard-Jones fcc crystal
 # (fake_vasp.py) stands in for VASP; FOCEX's phonons are compared with the exact ones.
 #   ./run_test.sh [workdir]
-# Needs: ~/dftphonon-env/bin/python (numpy, spglib, pymatgen), VASP-Flow, sc_snaps.x (built with -O2, see
+# Needs: ~/myenv/bin/python (numpy, spglib, pymatgen), VASP-Flow, sc_snaps.x (built with -O2, see
 # SC_SNAPS; one built with -fcheck=all aborts), read_outcar.x, a FOCEX binary (FOCEX_X below).
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
-PY=${PY:-$HOME/dftphonon-env/bin/python}
+PY=${PY:-$HOME/myenv/bin/python}
 W=${1:-$(mktemp -d)}
 FOCEX_X=${FOCEX_X:-$(ls -t "$HOME"/ALADYN/bin/focex-[0-9]*.x "$HOME"/BIN/v[0-9]* 2>/dev/null | head -1)}
 SC_SNAPS_X=${SC_SNAPS_X:-$(ls "$HOME"/ALADYN/bin/sc_snaps.x "$HOME"/BIN/sc_snaps.x 2>/dev/null | head -1)}

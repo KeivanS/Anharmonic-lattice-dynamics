@@ -234,7 +234,7 @@ FOCEX_X=~/ALADYN/bin/focex-9.0.x ./run.sh CaF2 3 1 n   # -> run_CaF2/e3n (refuse
 python verify.py run_CaF2/e3n
 ```
 
-- Python: `~/dftphonon-env/bin/python` (numpy, scipy).
+- Python: `~/myenv/bin/python` (numpy, scipy).
 - Standalone LASSO, in a scratch directory:
   ```bash
   python lasso/mkin.py <run>             # writes lasso_in.bin from the run's amat_dump.bin

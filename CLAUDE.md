@@ -104,9 +104,9 @@ pre-2026-10-23 projects; removed 2026-10-30 (user: one copy only). A project who
 (or a fresh setup). The script
 finds FOCEX/ (templates, utility/) as the parent of its folder (realpath, so symlinks work);
 `make python-tools` (part of the top-level `make`) links them as `focex-agent`, `focex-diagnose` in DESTDIR.
-Run it with `~/dftphonon-env/bin/python` (numpy, spglib, pymatgen; Homebrew python3 has none). That one
-environment serves VASP-Flow too (made 2026-10-23 with the 50 packages of the old `~/vaspenv`, which the
-ZnO/GaN/BAs run scripts still use and which is kept until the user removes it).
+Run it with `~/myenv/bin/python` (numpy, spglib, pymatgen; Homebrew python3 has none). That one
+environment serves VASP-Flow too. History: `~/vaspenv` until 2026-10-23, `~/dftphonon-env` until 2026-11-03,
+`~/myenv` since (user; rebuilt from the same pip freeze, `ase` added). Scripts, manuals, VASP-Flow use `~/myenv`.
 
 - Command line (2026-10-23, user's spec): `focex-agent.py [--instr FILE] [--coord FILE]
   [--profile NAME] [--force]` sets up; defaults `focex-agent-instructions.txt` (not

@@ -61,7 +61,7 @@ Set up (seconds, no VASP), then start the workflow:
 
 .. code-block:: bash
 
-   source ~/dftphonon-env/bin/activate
+   source ~/myenv/bin/activate
    python ~/Anharmonic-lattice-dynamics/FOCEX/AGENT/focex-agent.py --profile mycluster
    cd Si && sbatch run_workflow.sh        # workstation, no profile: nohup bash run_workflow.sh &
    tail -f report.log
@@ -143,8 +143,8 @@ inputs and batch scripts.
    git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
    (cd Anharmonic-lattice-dynamics && make focex sc_snaps)   # -> ~/ALADYN/bin
    git clone https://github.com/KeivanS/VASP-Flow.git        # elsewhere: export VASP_FLOW_DIR=...
-   python3 -m venv ~/dftphonon-env
-   ~/dftphonon-env/bin/pip install numpy spglib pymatgen matplotlib
+   python3 -m venv ~/myenv
+   ~/myenv/bin/pip install numpy spglib pymatgen matplotlib
    export VASP_POTCAR_DIR=/path/to/potpaw_PBE.54             # put it in ~/.bashrc
 
 VASP and MPI come from a VASP-Flow profile (``--profile``: ``workstation``, ``slurm``, or your
