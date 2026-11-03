@@ -162,7 +162,7 @@
   write(uio ,8)' xagne, T_D(K) =',xagne,t_debye
 
 
-  call elastic_longwave(uio,rotc)   ! C_ij from the sound speeds, E = 0 and with the NA term
+  call elastic_longwave(uio,rotc,elasticc)   ! C_ij from the sound speeds, E = 0 and with the NA term; moduli table
   close(uio)
 
 ! now calculating average sound speeds and Debye temperature along 100, 110, and 111
@@ -2300,7 +2300,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 
  end subroutine sound_speeds
 !============================================================
- subroutine elastic_longwave(uio,rotc)
+ subroutine elastic_longwave(uio,rotc,cbr)
 !! elastic constants and the deviatoric stress from the long-wave limit of the code's own dynamical matrix
 !! (the one of the band structure: fitted FC2 + Ewald/NA term), 2026-11-02 (user's request).
 !! Along 13 directions qh (axes, face and body diagonals) the acoustic matrix A(qh) (omega^2 = q^2 eig A,
@@ -2328,9 +2328,11 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  use gruneisen_rules, only : dynmat_routine, acoustic_tensor
  implicit none
  integer, intent(in) :: uio
- real(r15), intent(in) :: rotc(3,3)
+ real(r15), intent(in) :: rotc(3,3),cbr(6,6)   ! cbr: the bracket-route C (crystal frame) printed above, for the table
  procedure(dynmat_routine) :: get_dynmat
  integer, parameter :: nd=13
+ real(r15) cmod(6,6,3),tab(11,3)
+ character(len=14) colh(3)
  real(r15) dirs(3,nd),qh(3),mass(natom_prim_cell),rho,conv,gsize,gam(3,3,nd),eg(3), &
  &   ata(36,36),atai(36,36),atb(36),row(36),x(36),bb(6,6),b4(3,3,3,3),dl(3,3), &
  &   sm(6,6),smi(6,6),sb(6),sr(6),sl(3,3),sf(3,3),sfd(3,3),pr,res,nrm, &
@@ -2483,8 +2485,31 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
     do i=1,6
        write(uio,'(6(1x,f10.3))') (merge(cc(i,j),0d0,abs(cc(i,j)).ge.1d-3*maxval(abs(cc))),j=1,6)
     enddo
+    cmod(:,:,mode+1)=cc
+    colh(mode+1)='long-wave'
+    if (born_flag.ne.0 .and. ewald_no_macro) colh(mode+1)='long-wave E=0'
+    if (born_flag.ne.0 .and. .not.ewald_no_macro) colh(mode+1)='long-wave NA'
  enddo
  ewald_no_macro=.false.
+
+! moduli of each C (crystal frame), same formulas as the bracket-route lines above (2026-11-03, user)
+ cmod(:,:,1)=cbr; colh(1)='brackets'
+ do mode=1,nmode+1
+    call moduli_from_c(cmod(:,:,mode),tab(:,mode))
+ enddo
+ write(uio,*)'ELASTIC_MODULI: from each C_ij above (GPa; crystal frame; Hill = (Voigt+Reuss)/2)'
+ write(uio,'(a,3(1x,a14))')'                                        ',(colh(mode),mode=1,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Voigt bulk modulus                     ',(tab(1,mode),mode=1,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Reuss bulk modulus                     ',(tab(2,mode),mode=1,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Hill  bulk modulus B                   ',(tab(3,mode),mode=1,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Voigt shear modulus                    ',(tab(4,mode),mode=1,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Reuss shear modulus                    ',(tab(5,mode),mode=1,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Hill  shear modulus G                  ',(tab(6,mode),mode=1,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Hill  Young modulus 9BG/(3B+G)         ',(tab(7,mode),mode=1,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Hill  Poisson ratio (1.5B-G)/(3B+G)    ',(tab(8,mode),mode=1,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Poisson ratio -S12/S11                 ',(tab(9,mode),mode=1,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Anisotropy ratio 2C44/(C11-C12)        ',(tab(10,mode),mode=1,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Universal anisotropy 5GV/GR+BV/BR-6    ',(tab(11,mode),mode=1,nmode+1)
 
  contains
  real(r15) function e6(m,p,q)
@@ -2494,6 +2519,30 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  if (voigt(p,q).eq.m) e6=1
  end function e6
  end subroutine elastic_longwave
+!============================================================
+ subroutine moduli_from_c(c,t)
+!! isotropic averages of a Voigt elastic tensor c (GPa), the formulas of the mech.dat lines of mechanical:
+!! t = BV, BR, BH, GV, GR, GH, E_H = 9BG/(3B+G), nu_H = (1.5B-G)/(3B+G), -S12/S11, 2C44/(C11-C12),
+!! universal anisotropy 5 GV/GR + BV/BR - 6 (Ranganathan & Ostoja-Starzewski 2008; 0 for isotropic)
+ use constants, only : r15
+ implicit none
+ real(r15), intent(in) :: c(6,6)
+ real(r15), intent(out) :: t(11)
+ real(r15) s(6,6),w(6,6)
+ w=c
+ call inverse_real(w,s,6)      ! inverse_real overwrites its first argument
+ t(1)=sum(c(1:3,1:3))/9
+ t(2)=1/sum(s(1:3,1:3))
+ t(3)=(t(1)+t(2))/2
+ t(4)=(c(1,1)+c(2,2)+c(3,3)-c(1,2)-c(2,3)-c(3,1)+3*(c(4,4)+c(5,5)+c(6,6)))/15
+ t(5)=15/(4*(s(1,1)+s(2,2)+s(3,3))-4*(s(1,2)+s(2,3)+s(3,1))+3*(s(4,4)+s(5,5)+s(6,6)))
+ t(6)=(t(4)+t(5))/2
+ t(7)=9*t(3)*t(6)/(3*t(3)+t(6))
+ t(8)=(1.5d0*t(3)-t(6))/(3*t(3)+t(6))
+ t(9)=-s(1,2)/s(1,1)
+ t(10)=2*c(4,4)/(c(1,1)-c(1,2))
+ t(11)=5*t(4)/t(5)+t(1)/t(2)-6
+ end subroutine moduli_from_c
 !============================================================
  subroutine QHA_free_energy_vs_strain(nk,wk,ndyn,eival,grin,temprk,eq_free,eq_etot,eq_cv,eq_cp,eq_vol,entropy,cvte,eq_grun,boft,uio)
 !! Quasi-harmonic thermodynamics at temperature temprk (rewritten 2026-11-01 with the user):

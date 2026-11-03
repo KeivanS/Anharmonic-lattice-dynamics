@@ -994,7 +994,11 @@ Phonons and thermodynamics
     macroscopic field (E = 0, as VASP reports them), and with the non-analytic term (the
     piezoelectric stiffening of the ionic charges only; for reference). The pressure cannot be
     seen in sound speeds and is taken from the residual stress. A negative :math:`\rho v^2` is
-    reported as a warning (unstable long waves).
+    reported as a warning (unstable long waves). ``ELASTIC_MODULI`` (last): the Voigt/Reuss/Hill
+    bulk and shear moduli, Young modulus, Poisson ratios, :math:`2C_{44}/(C_{11}-C_{12})` and the
+    universal anisotropy :math:`5G_V/G_R+B_V/B_R-6` of each of these C side by side (brackets,
+    long-wave, and with Born charges long-wave E = 0 and with the NA term), all in the crystal
+    frame. They are averages of a stable crystal: meaningless if C is not positive definite.
 
 ``thermo_QHA.dat``
     Quasi-harmonic thermodynamics versus temperature, one line per temperature:

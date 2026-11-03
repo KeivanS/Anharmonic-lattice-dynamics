@@ -561,6 +561,10 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   (user) read_outcar pairs the t-th TOTAL-FORCE block with the t-th TOTEN, each found from the top of the file
   (find_nth rewinds; count_word): order-independent. Checked: TOTEN before/after the forces same output; two
   real OUTCARs (4, 20 steps) byte-identical to the 8d633ee build.
+- ELASTIC_MODULI table (2026-11-03, user): moduli_from_c (dynamical.f90) applies the mech.dat formulas (Voigt/Reuss/Hill
+  B, G, Young, Poisson, 2C44/(C11-C12), universal anisotropy) to the bracket C and to each long-wave C, crystal frame.
+  Before, the moduli came from the bracket C only. inverse_real (common/tools.f90) overwrites its first argument (no
+  explicit interface: an intent(in) actual is not caught): pass a copy. Ge: bracket column = the old mech.dat lines.
 - One atom per cell: the G (optical-mode) terms of A and B are skipped explicitly (gruneisen_longwave,
   acoustic_tensor; user); outputs byte-identical (argon, ZnO born 0).
 - born2 ZnO asymmetry, located (2026-11-03; scratch coulomb_stress/coul_brackets.py, Ewald E=0 of the Z*/eps
