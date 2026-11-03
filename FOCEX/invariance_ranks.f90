@@ -20,6 +20,9 @@
 !!
 !! One pass over the terms of every group adds (key, column, value) contributions; sorting the
 !! keys gathers each row. Column of independent term ti of group g of rank n: column_of.
+!! born_flag 2 (2026-11-03, user): the fit sees FC2 - Phi_B (Born-dipole FCs subtracted with the forces,
+!! no FC1 subtracted), so the rank-2 rotational rows get the right-hand side -sum_{a,mu} M(i1;a1,a,mu) eps(a,mu,nu),
+!! M = sum_j Phi_B(i1 a1, j a) (X_j - X_i1)_mu from coulomb_lr.
  use constants, only : r15
  implicit none
  private
@@ -28,6 +31,7 @@
  integer, allocatable :: ckey(:,:), ccol(:)
  real(r15), allocatable :: cval(:)
  integer ncon, keylen
+ integer, allocatable :: rkey(:,:)     ! rotational rows kept: rank and key (i1, a1, nu for rank 2)
 
  contains
 !---------------------------------------------------------------------------
@@ -46,10 +50,12 @@
  use params
  use atoms_force_constants
  use ios
+ use born, only : born_flag
+ use coulomb_lr, only : lr_moments
  implicit none
  logical, intent(in) :: do_tr, do_rot
- real(r15), allocatable :: arow(:,:), rrow(:,:)
- integer ntr, nro, rnk, lc(3,3,3), g, t, ti, i1, c, nu, mu, k, ak, l, a
+ real(r15), allocatable :: arow(:,:), rrow(:,:), mo(:,:,:,:)
+ integer ntr, nro, rnk, lc(3,3,3), g, t, ti, i1, c, nu, mu, k, ak, l, a, ir, a1
  integer, allocatable :: key(:)
  real(r15) cf
 
@@ -60,6 +66,8 @@
  call check_columns
  ntr = 0 ; nro = 0
  allocate(arow(16,nindepfc), rrow(16,nindepfc))
+ if (allocated(rkey)) deallocate(rkey)
+ allocate(rkey(0:15,16)); rkey = 0
 
  do rnk = 1, maxrank
     if (include_fc(rnk) .eq. 0) cycle
@@ -156,6 +164,24 @@
     allocate(arot(nro,nindepfc), brot(nro))
     arot = rrow(1:nro,:) ; brot = 0
     write(ulog,*)' SET_ROTATIONAL_INV_CONSTRAINTS: rows (all ranks) =', nro
+    if (born_flag.eq.2 .and. include_fc(2).eq.1) then
+       allocate(mo(natom_prim_cell,3,3,3))
+       call lr_moments(mo)
+       do ir = 1, nro
+          if (rkey(0,ir) .ne. 2) cycle
+          i1 = rkey(1,ir); a1 = rkey(2,ir); nu = rkey(3,ir)
+          cf = 0
+          do a = 1, 3
+          do mu = 1, 3
+             cf = cf + mo(i1,a1,a,mu)*lc(a,mu,nu)
+          enddo
+          enddo
+          brot(ir) = -cf
+       enddo
+       write(ulog,'(a,es12.4,a)')'  born_flag 2: rank-2 rotational right-hand sides from the Born-dipole FCs, max|b| =', &
+ &        maxval(abs(brot)),' eV/A'
+       deallocate(mo)
+    endif
  endif
  deallocate(arow, rrow)
  if (allocated(ckey)) deallocate(ckey, ccol, cval)
@@ -186,9 +212,9 @@
    integer, intent(inout) :: nrow
    character(*), intent(in) :: label
    integer, intent(in) :: r
-   integer, allocatable :: ord(:)
+   integer, allocatable :: ord(:), ktmp(:,:)
    real(r15), allocatable :: a1d(:), zero(:), tmp(:,:)
-   integer i, j, n0
+   integer i, j, n0, i0
    logical new
    allocate(ord(ncon), a1d(nindepfc), zero(nindepfc)) ; zero = 0
    call sort_keys(ord)
@@ -197,6 +223,7 @@
    do while (i .le. ncon)
       a1d = 0
       j = i
+      i0 = i
       do while (j .le. ncon)
          if (any(ckey(:,ord(j)) .ne. ckey(:,ord(i)))) exit
          a1d(ccol(ord(j))) = a1d(ccol(ord(j))) + cval(ord(j))
@@ -213,6 +240,15 @@
       endif
       nrow = nrow + 1
       rows(nrow,:) = a1d
+      if (label .eq. 'rotational') then                ! key of the row, for its right-hand side
+         if (nrow .gt. size(rkey,2)) then
+            allocate(ktmp(0:15,2*size(rkey,2))) ; ktmp = 0
+            ktmp(:,1:size(rkey,2)) = rkey
+            call move_alloc(ktmp, rkey)
+         endif
+         rkey(0,nrow) = r
+         rkey(1:keylen,nrow) = ckey(:,ord(i0))
+      endif
    enddo
    write(ulog,'(a,a,a,i2,a,i8,a,i8)')'  ', label, ' rank', r, ': contributions', ncon, ', new rows', nrow-n0
    deallocate(ord, a1d, zero)

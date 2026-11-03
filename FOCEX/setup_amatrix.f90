@@ -9,21 +9,33 @@
 !! (tensile > 0), read from stress.params (3 lines, GPa); without that file sig = 0 and S is
 !! invariant under (al,be) <-> (ga,de) as before. Holds with FC1 /= 0 too: checked on exact model
 !! FC2 to 2e-13 (wurtzite, monoclinic HfO2, 2026-10-26).
+! born_flag 2: the fit sees FC2 - Phi_B (the Born-dipole FCs are subtracted with the forces), so the right-hand
+! side becomes b - (S_B(ab,gd) - S_B(gd,ab)), S_B from coulomb_lr (2026-11-03, user).
  use params
  use atoms_force_constants
  use svd_stuff
  use ios
  use lattice, only : volume_r0
  use constants, only : r15
+ use born, only : born_flag
+ use coulomb_lr, only : lr_brackets
 ! use geometry
 ! use force_constants_module
  implicit none
  integer i,j,al,be,ga,de,t,ti,mterm,cnt,cnt2,g,rnk,voigt,vab,vcd,counter,ired,res,dim_h
  real(r15) huang,rr(3),term,sig(3,3),dl(3,3)
  real(r15), allocatable:: ared1d(:),zero(:)
- logical ex
+ logical ex, lrcor
+ real(r15) sb(3,3,3,3)
 
  huang_constraints=15  ! this is only for rank 2
+ lrcor = (born_flag.eq.2)
+ sb = 0
+ if (lrcor) then
+    call lr_brackets(sb)
+    write(ulog,*)' HUANG: born_flag 2, right-hand side corrected by the Born-dipole brackets S_B(ab,gd)-S_B(gd,ab)'
+    write(ulog,'(a,es12.4,a)')'  max|S_B| =',maxval(abs(sb)),' eV'
+ endif
 
 ! stress of the reference structure, GPa -> eV/A^3
  sig = 0
@@ -96,7 +108,10 @@
       endif
       ahuang(counter,:) = ared1d(:)
       if(verbose) write(umatrx,7) ared1d(res+1:res+map(2)%nkeptind) 
-      bhuang(counter) = -2*volume_r0*(dl(al,be)*sig(ga,de) - dl(ga,de)*sig(al,be))
+      bhuang(counter) = -2*volume_r0*(dl(al,be)*sig(ga,de) - dl(ga,de)*sig(al,be)) &
+ &                      - (sb(al,be,ga,de) - sb(ga,de,al,be))
+      if (lrcor) write(ulog,'(a,4i2,a,2es14.6)')'  HUANG row',al,be,ga,de,': -2V(d s - d s), Born-dipole part =', &
+ &        -2*volume_r0*(dl(al,be)*sig(ga,de) - dl(ga,de)*sig(al,be)), sb(al,be,ga,de) - sb(ga,de,al,be)
    enddo
    enddo
    enddo

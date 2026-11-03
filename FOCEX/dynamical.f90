@@ -1890,21 +1890,32 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  subroutine check_huang_stress(uio,s)
 !! Huang conditions, generalized to a stressed reference (FOCEX/notes/generalized_huang.tex; the same
 !! relation as the Huang rows of set_huang_inv_constraints): [ab,gl]-[gl,ab] = d_ab s_gl - d_gl s_ab,
-!! [ab,gl] = -1/(2V) sum phi_ab x_g x_l = atld_raw(a,g,b,l) (GPa); s the reference stress (GPa)
+!! [ab,gl] = -1/(2V) sum phi_ab x_g x_l = atld_raw(a,g,b,l) (GPa); s the reference stress (GPa).
+!! born_flag 2: the fitted FC2 is the total minus the Born-dipole FCs, whose brackets
+!! [ab,gl]_B (coulomb_lr) carry their own asymmetry; the relation is then that of the sum (as the Huang rows).
  use ios, only : ulog
  use constants, only : r15
  use mech, only : atld_raw
+ use born, only : born_flag
+ use lattice, only : volume_r0
+ use coulomb_lr, only : lr_brackets
  implicit none
  integer, intent(in) :: uio
  real(r15), intent(in) :: s(3,3)
  integer al,be,ga,de,delta_k
- real(r15) junk,hmax,hdev,amax
+ real(r15) junk,hmax,hdev,amax,sb(3,3,3,3)
  hmax=0; hdev=0; amax=maxval(abs(atld_raw))
+ sb=0
+ if (born_flag.eq.2) then
+    call lr_brackets(sb)
+    sb=-sb/(2*volume_r0)*160.21766208d0       ! S_B (eV) -> brackets [ab,gd]_B = sb(a,b,g,d) (GPa)
+    write(uio,*)'Huang check: born_flag 2, the Born-dipole brackets are added to the fitted ones'
+ endif
  do al=1,3
  do be=1,3
  do ga=1,3
  do de=1,3
-    junk=atld_raw(al,ga,be,de)-atld_raw(ga,al,de,be)
+    junk=atld_raw(al,ga,be,de)-atld_raw(ga,al,de,be) + sb(al,be,ga,de)-sb(ga,de,al,be)
     hmax=max(hmax,abs(junk))
     junk=junk-(delta_k(al,be)*s(ga,de)-delta_k(ga,de)*s(al,be))
     hdev=max(hdev,abs(junk))
@@ -2017,10 +2028,13 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  use linalgb, only : symmetrize2,symmetrize_res
  use mech
  use eigen, only : ndyn
+ use born, only : born_flag
+ use coulomb_lr, only : lr_moments
  implicit none
  integer, intent(in) :: uio !,ndn 
  integer tau,taup,al,be,ga,de,i,j,t,g,ti,ired,voigt,la,nl,nc,nu,s,nq,delta_k,cnt2
  real(r15)  rij(3),junk,res(3,3) ,mat2(3,3),fsum(3),rotmax,sdft(3,3)
+ real(r15), allocatable :: mo(:,:,:,:)
  logical ex
 
  write(  * ,*)' ********** ENTERING RESIDUALS *************, ndyn=',ndyn
@@ -2120,12 +2134,20 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 ! + pi0(tau,be) eps(be,al,nu) = 0, i.e. Qiu(tau al;be,ga)-Qiu(tau al;ga,be) + pi0(tau,be) delta(al,ga)
 ! - pi0(tau,ga) delta(al,be) = 0  (teta and qiu sums differ by tau*sum_taup phi = 0 by ASR)
 ! enforces mat2(a,b)-mat2(b,a)=res(a,b)-res(b,a); consider mat=mat2-res ; symmetrize mat then mat2=sym(mat)+res
+! born_flag 2: the fitted FC2 is the total minus the Born-dipole FCs; the relation holds
+! for the sum (as the rotational rows, invariance_ranks), so their moments mo(tau,al,be,ga) = sum_j Phi_B(tau al,j be)
+! (x_j-x_tau)_ga (coulomb_lr) are added (x_tau sum_j Phi_B = 0 by ASR, as for teta)
+ allocate(mo(natom_prim_cell,3,3,3)); mo=0
+ if (born_flag.eq.2) then
+    call lr_moments(mo)
+    write(uio,*)'Rotational check: born_flag 2, the Born-dipole moments are added to the fitted ones'
+ endif
  s=0; rotmax=0
  do al=1,3
     do tau=1,natom_prim_cell
        do be=1,3
        do ga=1,3
-          junk=0
+          junk=mo(tau,al,be,ga)-mo(tau,al,ga,be)
           do taup=1,natom_prim_cell
             junk=junk+teta(3*(tau-1)+al,3*(taup-1)+be,ga)-teta(3*(tau-1)+al,3*(taup-1)+ga,be)
           enddo
@@ -2139,6 +2161,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
        enddo
     enddo
  enddo
+ deallocate(mo)
  write(ulog,4)'RESIDUALS: max rotational invariance violation of Qiu and pi0 (eV/Ang)=',rotmax
  if(s.ne.0) then
     call warn3(   6,'rotational invariance violated: max |Q(ab)-Q(ba)+pi0 terms| (eV/Ang)=',rotmax)

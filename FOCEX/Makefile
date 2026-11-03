@@ -22,6 +22,7 @@ SUBF90 = \
   fourier_stuff.f90 \
   born.f90 \
   ewald.f90 \
+  coulomb_lr.f90 \
   ewald_born.f90 \
   dyn_modules.f90 \
   modules_tetra.f90 \

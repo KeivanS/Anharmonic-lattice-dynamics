@@ -676,7 +676,11 @@ only the first line matters.
 * ``born_flag = 2`` — the Ewald force is subtracted from the input forces before
   the fit, so that the fitted FCs are purely short-ranged, and the
   non-analytical term is added back when the dynamical matrix is built. This is
-  the recommended setting for polar materials.
+  the recommended setting for polar materials. The subtracted force is that of point charges
+  with strength tr(Z_i Z_j^T)/3 (Ewald sum, screened by epsilon), with its harmonic part replaced by the
+  Born-dipole term Z_i T Z_j^T, so that what is subtracted at small displacements equals
+  what is added back. The rotational and Huang invariance rows then apply to the sum of the
+  short-range and Coulomb parts: their right-hand sides carry the Coulomb contribution.
 * ``born_flag`` larger than 2 — not recommended (development variants of the subtraction scheme);
   FOCEX and THERMACOND print a WARNING. Use 0 for non-polar and 2 for polar crystals.
 

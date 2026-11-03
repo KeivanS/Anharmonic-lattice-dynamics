@@ -531,6 +531,24 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   the invariances (rotational, Huang) on the SR part with the total pi and sigma, so SR + Coulomb violates
   them by pi_C, sigma_C. 0.216 of the 0.906 GPa is the stress; the rest (through pi_C and G) not yet
   computed. Possible fix (not decided): SR rows with RHS -pi_C (rotational) and sigma - sigma_C (Huang).
+- Block-by-block check of the born_flag-2 Coulomb model (2026-11-03, user; scratch coulomb_stress/coul_force.py,
+  coul_force2.py: ewaldforce/dewapot reimplemented, F1 = e^2 Z1 sum_2 Z2 (-grad phi(r12)), Ewald): F0 = +0.1826
+  (Zn z) = FOCEX log. Translational: F(x+c) = F(x) to 5e-15, q=0 FC sums zero (exact by construction).
+  Rotational: scalar Z and eps -> F(Rx) = R F(x) to 5e-9 and dF/deta_bg - dF/deta_gb = F_g d_ab - F_b d_ag to
+  6e-10 (user's expectation holds); with ZnO's tensor Z, eps: F(Rx) - R F(x) = 0.49 of the first-order change,
+  rotational form violated by 0.178 eV/A (Z, eps fixed in space). Per pair (one Zn-O pair, no images): the force
+  formula's FC (Z1 Z2)_ac d_b d_c phi is not symmetric (xz 0.170, zx 0.188) and differs from the Z1 T Z2^T
+  added back to D (xz = zx = 0.179); q=0 sums agree only by symmetry. So born_flag 2 subtracts a harmonic part
+  /= the D_NA added back when Z is anisotropic (possibly the BZO zone-boundary OPEN item; not tested).
+- born_flag 2 hybrid (2026-11-03, user: "go ahead with the hybrid"; details and tests in
+  REFERENCE/exact_model/coulomb/README.md): subtracted F = F_m(x) - F_m(x0) - (Phi_B - Phi_m)u, F_m = Ewald force of
+  charges tr(Zi Zj^T)/3 (ewaldforce), Phi_B = Born-dipole FCs (= D_NA added back), Phi_m its trace-model harmonic part
+  (hybrid_harmonic, d2ewapot). Invariance rows get RHS -A x_sub whenever they are included (no switch, user):
+  Huang -(S_B(ab,gd)-S_B(gd,ab)) (setup_amatrix), rank-2 rotational -M:eps (invariance_ranks), S_B and M from
+  coulomb_lr.f90 (small-q E=0 Ewald). mech.dat Huang/rotational checks add the same terms. Exact tests (point charges,
+  ZnO ranks 1-4, HfO2 cubic ranks 1-3): exact to the printed digits; each RHS is needed. Rank-3+ rotational rows still
+  homogeneous: exact for scalar Z, OPEN for anisotropic Z. Build in a clean folder: a copied build folder kept a stale
+  dynamical.o once (make did not recompile).
 
 ## Elastic constants, B0', QHA (FOCEX 9.2, 2026-11-01; user's questions)
 

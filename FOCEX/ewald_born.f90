@@ -9,6 +9,7 @@
  use constants, only : r15,pi,ci
  use ios, only : ulog
  use ewald
+ real(r15), allocatable, save :: dfc_hyb(:,:,:,:)   ! Phi_B - Phi_m in the supercell (hybrid_harmonic)
  contains
  subroutine dewapot(x,dpot)
 !! calculates the -d/dx(sum_R 1/|R+x| -background) = force  with the corrected metric
@@ -57,8 +58,96 @@
 
  end subroutine dewapot
 !===========================================================
+ subroutine d2ewapot(x,hpot)
+!! hpot = grad grad phi(x) of the potential whose -grad is dewapot (same images, same cutoffs):
+!! real space erfc(eta D)/(D sqrt det eps), D = sqrt(x.eps^-1.x); reciprocal (4pi/V) sum_G exp(-GeG/4eta^2)/GeG cos(G.x)
+ use lattice
+ use geometry, only : det
+ use params
+ use born , only : epsil,epsinv
+ implicit none
+ real(r15), intent(in) :: x(3)
+ real(r15), intent(out) :: hpot(3,3)
+ integer igrid,a
+ real(r15) r(3),u(3),dd,d,e,g,g1,g2,qpg(3),geg,termg,ei(3,3),sd,my_erfc
+ ei=(epsinv+transpose(epsinv))/2; sd=sqrt(det(epsil))
+ hpot=0
+ do igrid=1,nr_ewald
+    r=x+r_ewald(:,igrid)
+    u=matmul(ei,r)
+    d=sqrt(dot_product(r,u)); dd=eta*d
+    if(dd.lt.1d-12) cycle
+    if (dd.gt.6) cycle
+    e=my_erfc(dd); g=2*eta/sqrt(pi)*exp(-dd*dd)
+    g1=-e/d**2-g/d
+    g2=2*e/d**3+g*(2/d**2+2*eta*eta)
+    do a=1,3
+       hpot(:,a)=hpot(:,a)+(g2-g1/d)*u*u(a)/d**2/sd
+       hpot(:,a)=hpot(:,a)+g1/d*ei(:,a)/sd
+    enddo
+ enddo
+ do igrid=2,ng_ewald
+    qpg=g_ewald(:,igrid)
+    geg=dot_product(qpg,matmul(epsil,qpg))
+    if (geg.gt.100*eta*eta) exit
+    termg=exp(-geg/4/eta/eta)/geg
+    do a=1,3
+       hpot(:,a)=hpot(:,a) - termg*qpg*qpg(a)*cos(dot_product(qpg,x))*4*pi/volume_r
+    enddo
+ enddo
+ end subroutine d2ewapot
+!===========================================================
+ subroutine hybrid_harmonic(n,dfc)
+!! dfc(:,:,i,j) = Phi_B(i,j) - Phi_m(i,j) (eV/A^2) in the supercell at the reference: Phi_B = -e^2 Z_i H_ij Z_j^T the
+!! Born-dipole FCs (the D_NA added back to D), Phi_m = -e^2 c_ij H_ij the harmonic part of ewaldforce's pair model,
+!! H_ij = grad grad phi(r_ij) (d2ewapot, images summed); on-site blocks by the sum rule. The born_flag 2 subtraction
+!! uses F_m(x) - F_m(x0) - dfc u: harmonic part = Phi_B exactly, anharmonic part from the pair model (user, 2026-11-03).
+ use constants, only : ee, eps0,pi
+ use atoms_force_constants
+ use geometry, only : v2a
+ use ios
+ implicit none
+ integer, intent(in) :: n
+ real(r15), intent(out) :: dfc(3,3,n,n)
+ integer i,j
+ real(r15) h(3,3),zi(3,3),zj(3,3),e2,r(3),hf(3,3),dp(3),dm(3),err,hs
+ e2=ee*1d10/(4*pi*eps0)
+ dfc=0
+ do i=1,n
+    zi=atom_sc(i)%charge
+    do j=1,n
+       if (j.eq.i) cycle
+       zj=atom_sc(j)%charge
+       r=v2a(atom_sc(i)%equilibrium_pos)-v2a(atom_sc(j)%equilibrium_pos)
+       call d2ewapot(r,h)
+       dfc(:,:,i,j)=-e2*(matmul(zi,matmul(h,transpose(zj))) - sum(zi*zj)/3*h)
+    enddo
+ enddo
+ do i=1,n
+    do j=1,n
+       if (j.ne.i) dfc(:,:,i,i)=dfc(:,:,i,i)-dfc(:,:,i,j)
+    enddo
+ enddo
+! check of d2ewapot against differences of dewapot (one pair)
+ r=v2a(atom_sc(1)%equilibrium_pos)-v2a(atom_sc(min(2,n))%equilibrium_pos)
+ if (n.gt.1) then
+    call d2ewapot(r,h)
+    hs=1d-4
+    do i=1,3
+       r(i)=r(i)+hs; call dewapot(r,dp); r(i)=r(i)-2*hs; call dewapot(r,dm); r(i)=r(i)+hs
+       hf(:,i)=-(dp-dm)/(2*hs)
+    enddo
+    err=maxval(abs(hf-h))/max(maxval(abs(h)),1d-30)
+    write(ulog,'(a,es10.2)')' HYBRID_HARMONIC: d2ewapot vs differences of dewapot (relative) =',err
+ endif
+ write(ulog,'(a,es12.4,a)')' HYBRID_HARMONIC: max|Phi_B - Phi_m| =',maxval(abs(dfc)),' eV/A^2'
+ end subroutine hybrid_harmonic
+!===========================================================
  subroutine ewaldforce(n,pos,fewald)
 !! calculates the Coulomb force on atoms in supercell (in 1/Ang)
+!! Pair potential c_12 phi_eps(r_12), c_12 = tr(Z_1 Z_2^T)/3 (2026-11-03, user): a scalar coupling, so the force
+!! derives from an energy and its direction is that of -grad phi; for Z = z 1 it is z_1 z_2 (point charges).
+!! Before: Z_1 Z_2 (-grad phi), whose FCs were not symmetric for anisotropic Z.
 !! Assumes translation vectors are r_ewald(:,igrid),g_ewald(:,igrid)
  use constants, only : ee, eps0,pi
  use lattice
@@ -85,9 +174,9 @@
     r12=pos(:,tau1)-pos(:,tau2) ! pos includes equilibrium positions
 ! force on tau1 from tau2 and all its images inluding epsilon; beware of the sign!
     call dewapot(r12,dpot)  ! has epsil-modified metric included
-    efield = efield + matmul(z2,dpot)
+    efield = efield + sum(z1*z2)/3 * dpot      ! tr(Z1 Z2^T)/3
  enddo
-    fewald(:,tau1)= matmul(z1,efield) * ee*1d10/(4*pi*eps0)  ! to convert to eV/Ang
+    fewald(:,tau1)= efield * ee*1d10/(4*pi*eps0)  ! to convert to eV/Ang
  enddo
 
 ! now compare to the energy finite difference
@@ -398,6 +487,18 @@
 !        endif
          write(ulog,5)'######## sum(Ftot),sum(dfewa),Sdfewa/SFtot=',ftot,dfewa,dfewa/ftot
          coulmb_force = coulmb_force- coulmb_force0 
+! hybrid (born_flag 2): replace the harmonic part of the pair model by the Born-dipole one, - (Phi_B - Phi_m) u
+         if (born_flag.eq.2) then
+            if (.not.allocated(dfc_hyb)) then
+               allocate(dfc_hyb(3,3,natom_super_cell,natom_super_cell))
+               call hybrid_harmonic(natom_super_cell,dfc_hyb)
+            endif
+            do i=1,natom_super_cell
+               do j=1,natom_super_cell
+                  coulmb_force(:,i)=coulmb_force(:,i)-matmul(dfc_hyb(:,:,i,j),dsp(:,j,icfg))
+               enddo
+            enddo
+         endif
          write(982,*)' nsc,rgrid,tau, coulmb_force on Rgrid (redundant) ====== BF, nrgrid=',born_flag,nrgrid
          do j=1,nrgrid
          do tau=1,natom_prim_cell
