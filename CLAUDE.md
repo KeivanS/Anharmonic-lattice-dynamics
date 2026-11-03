@@ -517,7 +517,20 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   bracket C (3.074/1.540/1.537 GPa), B - B^T 2e-11. mechanical0's cubic group-velocity block and the unused
   get_cij removed (user, 2026-11-02): elastic_longwave covers them.
 - Argon test (AGENT/tests/fake_vasp.py): TOTEN now after the force block, as VASP; read_outcar.f90 since
-  8d633ee writes a step only when TOTEN follows TOTAL-FORCE, so the test stopped at collect.
+  8d633ee wrote a step only when TOTEN followed TOTAL-FORCE, so the test stopped at collect. Since 2026-11-03
+  (user) read_outcar pairs the t-th TOTAL-FORCE block with the t-th TOTEN, each found from the top of the file
+  (find_nth rewinds; count_word): order-independent. Checked: TOTEN before/after the forces same output; two
+  real OUTCARs (4, 20 steps) byte-identical to the 8d633ee build.
+- One atom per cell: the G (optical-mode) terms of A and B are skipped explicitly (gruneisen_longwave,
+  acoustic_tensor; user); outputs byte-identical (argon, ZnO born 0).
+- born2 ZnO asymmetry, located (2026-11-03; scratch coulomb_stress/coul_brackets.py, Ewald E=0 of the Z*/eps
+  dipole FCs alone, lam-independent to 4e-11): the SR brackets satisfy Huang (6e-5 GPa), the Coulomb FCs do
+  not: their unrelaxed brackets carry a deviatoric stress (-0.108,-0.108,+0.216) GPa, and their Q has
+  exactly the residual-force form Q(ta;bg)-Q(ta;gb) = pi_g d_ab - pi_b d_ag (misfit 2e-9) with pi_z = -0.133
+  (Zn), +0.133 (O) eV/A: the dipole FCs are those of a stressed, not force-free charge lattice. FOCEX imposes
+  the invariances (rotational, Huang) on the SR part with the total pi and sigma, so SR + Coulomb violates
+  them by pi_C, sigma_C. 0.216 of the 0.906 GPa is the stress; the rest (through pi_C and G) not yet
+  computed. Possible fix (not decided): SR rows with RHS -pi_C (rotational) and sigma - sigma_C (Huang).
 
 ## Elastic constants, B0', QHA (FOCEX 9.2, 2026-11-01; user's questions)
 

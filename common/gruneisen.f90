@@ -135,10 +135,14 @@
  w0=(w0+conjg(transpose(w0)))/2; w1=(w1+conjg(transpose(w1)))/2; w2=(w2+conjg(transpose(w2)))/2
  if (ns.ne.3) write(ulog,'(a,i3,a)')' GRUNEISEN_LONGWAVE: WARNING: ',ns, &
  &   ' near-zero eigenvalues of P D0 P (expected 3: a soft optical mode at Gamma?)'
- gd1t=matmul(g,matmul(d1,tt)); gw1t=matmul(g,matmul(w1,tt))
- am=matmul(conjg(transpose(tt)),matmul(d2,tt)) - matmul(conjg(transpose(matmul(d1,tt))),gd1t)
- bm=matmul(conjg(transpose(tt)),matmul(w2,tt)) - matmul(conjg(transpose(matmul(w1,tt))),gd1t) &
- &  - matmul(conjg(transpose(matmul(d1,tt))),gw1t) + matmul(conjg(transpose(gd1t)),matmul(w0,gd1t))
+ am=matmul(conjg(transpose(tt)),matmul(d2,tt))
+ bm=matmul(conjg(transpose(tt)),matmul(w2,tt))
+ if (nat.gt.1) then     ! the optical modes folded out through G (none with one atom per cell)
+    gd1t=matmul(g,matmul(d1,tt)); gw1t=matmul(g,matmul(w1,tt))
+    am=am - matmul(conjg(transpose(matmul(d1,tt))),gd1t)
+    bm=bm - matmul(conjg(transpose(matmul(w1,tt))),gd1t) &
+    &  - matmul(conjg(transpose(matmul(d1,tt))),gw1t) + matmul(conjg(transpose(gd1t)),matmul(w0,gd1t))
+ endif
  scd=maxval(abs(d0)); scw=max(maxval(abs(w0)),tiny(1d0))
  chk(1)=maxval(abs(matmul(d0,tt)))/scd; chk(2)=maxval(abs(matmul(w0,tt)))/scw
  chk(3)=maxval(abs(matmul(conjg(transpose(tt)),matmul(d1,tt))))/scd
@@ -215,7 +219,7 @@
  call herm_eig(ndn,pdp,lam,vv)
  lmax=maxval(abs(lam))
  g=0; ns=0
- if (nat.eq.1) then        ! Bravais lattice: no optical modes, P D0 P = 0 and G = 0 (else 0/0 = NaN)
+ if (nat.eq.1) then        ! Bravais lattice: no optical modes, P D0 P = 0; G is not used (0/0 = NaN)
     ns=ndn; return
  endif
  do i=1,ndn
@@ -241,7 +245,8 @@
  real(r15) qh(3)
  qh=qdir/sqrt(dot_product(qdir,qdir))
  call longwave_parts(getdyn,qh,ndn,nat,mass,gsize,d0,d1,d2,tt,g,ns)
- am=matmul(conjg(transpose(tt)),matmul(d2,tt)) - matmul(conjg(transpose(matmul(d1,tt))),matmul(g,matmul(d1,tt)))
+ am=matmul(conjg(transpose(tt)),matmul(d2,tt))
+ if (nat.gt.1) am=am - matmul(conjg(transpose(matmul(d1,tt))),matmul(g,matmul(d1,tt)))   ! needs a 2nd atom
  am=(am+conjg(transpose(am)))/2
  end subroutine acoustic_tensor
 !------------------------------------------------------------

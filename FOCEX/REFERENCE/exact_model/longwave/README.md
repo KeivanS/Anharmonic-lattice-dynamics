@@ -21,3 +21,11 @@ python longwave_check.py ZnO > longwave_check_ZnO.log     # ~3 s
 python mkstressed.py ZnO /tmp/zno_stressed                 # then reset x, y as above
 cd /tmp/zno_stressed && ~/ALADYN/bin/focex-9.4.x > focex.out   # mech.dat: ELASTIC_LONGWAVE lines
 ```
+
+## coul_brackets.py (2026-11-03)
+
+Brackets of the Born-charge (dipole) force constants alone, Ewald with E = 0, for the user's ZnO
+(Z*, eps_inf and structure hard-coded from its dielectric.params / lat_fc.dat). `python3 coul_brackets.py`
+(~1.5 min; `neutral` removes the small net charge). Prints: Ewald-parameter check (4e-11), the 36 brackets,
+their deviatoric stress (-0.108, -0.108, +0.216 GPa) and the antisymmetric part of Q (0.134 eV/A; it has the
+residual-force form, pi_z = -0.133 Zn / +0.133 O eV/A, see CLAUDE.md).
