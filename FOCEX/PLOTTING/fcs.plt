@@ -44,12 +44,13 @@ splot file0 u 2:3:4 with p pt 9 ps 0.35 title 'Atompos'   ,\
       file4 u 2:3:4 with p pt 2 ps 0.1 title 'WScell of SC'
 pause -1
 # one plot per primitive atom i: its FC2 bonds (springs<i>.dat: r_i - r_j) drawn from atom i to each
-# neighbour j, and those neighbours
+# neighbour j, and those neighbours. Atom i is put at the centre of the Wigner-Seitz cell of the supercell
+# (the origin of WSR_boundary.xyz), not at its absolute position, so the neighbours r_j - r_i show the
+# FC2 range against that cell (2026-11-03, user)
 nat = int(system("ls springs[0-9]*.dat 2>/dev/null | wc -l"))
 do for [i=1:nat] {
     fs = sprintf('springs%d.dat', i)
-    pos = system(sprintf("awk '$6==\"%d(\" && $7==0 && $8==0 && $9==\"0)\" {print $2, $3, $4; exit}' %s", i, file0))
-    xi = real(word(pos, 1)); yi = real(word(pos, 2)); zi = real(word(pos, 3))
+    xi = 0.0; yi = 0.0; zi = 0.0
     set title sprintf("FC2 neighbours of atom %d", i)
     splot fs u (xi):(yi):(zi):(-$4):(-$5):(-$6) with vectors nohead lt 1 title sprintf("%d-j", i) ,\
           fs u (xi-$4):(yi-$5):(zi-$6) with p pt 7 ps 0.25 lc rgb "black" title 'neighbours' ,\
