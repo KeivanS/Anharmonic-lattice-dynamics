@@ -471,8 +471,13 @@ line 2.
 
   * ``0`` — this rank is excluded from the model;
   * ``1`` — this rank is fitted;
-  * ``2`` — this rank is read from an existing ``fcN_irr.dat`` instead of being
-    fitted (experimental — check the log carefully if you use it).
+  * ``2`` — this rank is read, not fitted, from ``fcN.dat`` of an earlier run of the
+    same crystal; that run's ``lat_fc.dat`` must be in the folder too (ranks 1–4). The
+    read terms go to the right-hand side of the force and invariance equations, and
+    the other ranks are fitted with them fixed. Lines ``READ_GIVEN_FCS`` in the log
+    report how many terms were matched. ``fcN.dat`` carries 8 digits, and the fitted
+    ranks inherit that rounding. The read ranks are written out again with the fitted
+    ones (same values).
 
   Rank 1 (the residual force :math:`\Pi`) should normally be included: it is
   zero only if the reference structure is exactly at its energy minimum.

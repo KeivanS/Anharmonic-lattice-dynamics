@@ -1,6 +1,6 @@
 """compare.py BASE RUN...: irreducible FCs (fcN_irr.dat, N = 1..4) of each RUN against BASE, term by term.
 Rank-N lines: index, group, N pairs (atom, direction), value, ... (the value is column 2 + 2N).
-Prints per rank: max |x_run - x_base| and that over max |x_base|. fcN_irr.dat carry ~7 significant digits."""
+Prints per rank: max |x_run - x_base| and that over max |x_base|. fcN_irr.dat carry 8 significant digits (7 before 2026-11-03)."""
 import sys, os
 import numpy as np
 

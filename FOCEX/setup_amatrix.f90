@@ -19,6 +19,7 @@
  use constants, only : r15
  use born, only : born_flag
  use coulomb_lr, only : lr_brackets
+ use invariance_ranks, only : column_of
 ! use geometry
 ! use force_constants_module
  implicit none
@@ -29,6 +30,14 @@
  real(r15) sb(3,3,3,3)
 
  huang_constraints=15  ! this is only for rank 2
+ if (include_fc(2) .ne. 1) then        ! FC2 not fitted (absent or read, include_fc=2): the rows have no unknowns
+    huang_constraints = 0
+    if (allocated(ahuang)) deallocate(ahuang)
+    if (allocated(bhuang)) deallocate(bhuang)
+    allocate(ahuang(0,nindepfc), bhuang(0))
+    write(ulog,*)' HUANG: FC2 is not fitted (include_fc(2)=',include_fc(2),'): no Huang rows'
+    return
+ endif
  lrcor = (born_flag.eq.2)
  sb = 0
  if (lrcor) then
@@ -82,8 +91,8 @@
       atomloop: do i=1,natom_prim_cell
       gloop: do g=1,map(2)%ngr
       do ti =1,map(2)%ntind(g)
-         if(map(2)%keep(counteri(2,g,ti)).ne.1) cycle ! skip if term is not kept
-         ired = res+ current(2,g,ti)
+         ired = column_of(2,g,ti)                      ! 0 if the term is not kept
+         if (ired .eq. 0) cycle
       do t=1,map(2)%nt(g)
          if ( map(2)%gr(g)%iat(1,t).ne.i ) cycle
             j  =  map(2)%gr(g)%iat(2,t)
@@ -137,12 +146,14 @@
  use ios
  use geometry
  use constants, only : r15
+ use invariance_ranks, only : column_of
+ use given_fcs, only : xfull, full_col
  implicit none
  integer, intent(in) :: frc_constr,ncfgs
  real(r15), intent(out) :: afrc(frc_constr,nindepfc),bfrc(frc_constr)
- integer al,g,t,ti,ired,line,rnk,nat,confg,res,cnt,cnt2,cnt3,rk
+ integer al,g,t,ti,ired,line,rnk,nat,confg,rk,ifull
  integer ga(8),tau(8),j_sc(8),nj(3,8)
- real(r15), allocatable:: ux(:)
+ real(r15) ux
 
  write(*,*) 'entering set_force_displacements routine,nindepfc=',nindepfc
  write(ulog,*)' SETUP_AMATRICES : ************************************'
@@ -154,8 +165,6 @@
 !------------------------------------------------------------------
 
 ! allocate(aforce(force_constraints,ngr),bforce(force_constraints))
- allocate( ux(nindepfc) )
-
  afrc = 0d0; bfrc = 0d0
 
  write(ulog,*)'********************************************************'
@@ -180,59 +189,45 @@
      nj(:,1)= atom_sc(nat)%cell%n
 !    write(*,4)'line#,confg,i,alfa,tau,n =',line,confg,nat,al,taui,ni
 
-! now set up ared1d: rank by rank
-     res=0
+! now set up ared1d: rank by rank. Column of a fitted term: column_of; a read term (include_fc=2) goes to the
+! right-hand side with its value xfull(full_col) (given_fcs; 2026-11-03)
      do rnk=1,maxrank   !********************************************
+        if (include_fc(rnk) .eq. 0) cycle
 
-        cnt2= 0       ! cnt2 is the size of previous groups
         do g=1,map(rnk)%ngr  ! sum over groups
-           if(g.gt.1) cnt2 = cnt2 + map(rnk)%ntind(g-1)
 
            do t=1,map(rnk)%nt(g) ! sum over all terms in that group
 
               if ( tau(1).ne. map(rnk)%gr(g)%iat (1,t)   .or.  &
           &        ga (1).ne. map(rnk)%gr(g)%ixyz(1,t) ) cycle
 
+              ux=1
+              do rk=2,rnk
+                 tau(rk) = iatomcell0( map(rnk)%gr(g)%iat (rk,t))
+                 ga(rk)   =            map(rnk)%gr(g)%ixyz(rk,t)
+                 nj(:,rk)= iatomcell(:,map(rnk)%gr(g)%iat (rk,t)) + nj(:,1)
+! Identify neighbor j within the SCell, find its displacement
+                 call findatom_sc(nj(:,rk),tau(rk),j_sc(rk))
+                 ux=ux*displ(ga(rk),j_sc(rk),confg)/(rk-1)
+              enddo
+
               do ti=1,map(rnk)%ntind(g)
-! ired is the full index of the indep FC coming in the A*FC=b matrix product
-! res is for the reank, cnt2 is for the group, ti is for the element in that group
-                  if(rnk.eq.2) then
-                     if(map(2)%keep(counteri(2,g,ti)).ne.1) cycle ! skip if term is not kept
-                     ired = res+ current(rnk,g,ti)
-                  else
-                     ired = res+cnt2+ti  ! should be the same as res+sum(map(2)%ntind(1:g-1))+ti 
-                  endif
-!                write(*,4)'rank,res,g,cnt2,ti,ired=',rnk,res,g,cnt2,ti,ired
-
-                 ux(ired)=1
-                 do rk=2,rnk
-                    tau(rk) = iatomcell0( map(rnk)%gr(g)%iat (rk,t))
-                    ga(rk)   =            map(rnk)%gr(g)%ixyz(rk,t)
-                    nj(:,rk)= iatomcell(:,map(rnk)%gr(g)%iat (rk,t)) + nj(:,1)
-! Identify neighbor j within the SCell, find its displacement and add to ared
-                    call findatom_sc(nj(:,rk),tau(rk),j_sc(rk))
-                    ux(ired)=ux(ired)*displ(ga(rk),j_sc(rk),confg)/(rk-1)
-                 enddo
-
                  if ( include_fc(rnk) .eq. 1 ) then
-                    afrc(line,ired)=afrc(line,ired) + ux(ired)*map(rnk)%gr(g)%mat(t,ti)
-                 elseif ( include_fc(rnk) .eq. 2 ) then
-                    bfrc(line)=bfrc(line) - ux(ired) * fcs(ired)
+                    ired = column_of(rnk,g,ti)        ! 0: FC2 term not kept
+                    if (ired .gt. 0) afrc(line,ired)=afrc(line,ired) + ux*map(rnk)%gr(g)%mat(t,ti)
+                 else
+                    ifull = full_col(rnk,g,ti)
+                    if (ifull .gt. 0) bfrc(line)=bfrc(line) - ux*map(rnk)%gr(g)%mat(t,ti)*xfull(ifull)
                  endif
-
               enddo
            enddo
         enddo
-     
-        res = res + map(rnk)%nkeptind
 
      enddo
 
  enddo
  enddo
  enddo
-     
- deallocate( ux )
 
 
  write(umatrx,*)'**********************************************'

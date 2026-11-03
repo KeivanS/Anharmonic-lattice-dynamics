@@ -29,6 +29,7 @@ SUBF90 = \
   aux_na.f90 \
   nonanal.f90 \
   dielectric.f90 \
+  given_fcs.f90 \
   ios.f90 \
   svd_ridge.f90 \
   lasso_lars.f90 \

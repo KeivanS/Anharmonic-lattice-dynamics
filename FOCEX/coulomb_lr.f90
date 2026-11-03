@@ -12,10 +12,19 @@
 !!   S(ab,gd) = - d^2/dq_g dq_d sum_tu Re C_ab(q) at 0,   M(t;a1,a,m) = d/dq_m sum_u Im C_t,u(q)_(a1,a) at 0,
 !! by central differences with Richardson extrapolation. Same kernel as REFERENCE/exact_model/longwave/
 !! coul_brackets.py (checked there: independent of the Ewald parameter to 4e-11).
+!! Rank-3 rotational rows (lr_rot3_pair, lr_rot3_onsite): b = -A_full x_sub, x_sub = Phi_B (rank 2) + the FC3 of the
+!! pair model c_ij phi_eps, c_ij = tr(Z_i Z_j^T)/3 (rank 3). Row (i1 a1, i2 a2; nu), r = X_i1 - X_i2, e2 = 1/eps0scale:
+!!   pair (i2 /= i1):  b = e2 [ c phi_(a1 a2 a)(r) r_mu eps(a,mu,nu) + P_(g a2) eps(g,a1,nu) + P_(a1 g) eps(g,a2,nu) ],
+!!                     P = Z_i1 H Z_i2^T - c H, H = grad grad phi_eps (bare: one pair of the crystal);
+!!   on-site (i2 = i1): b = - sum_(l /= i1) b_pair(i1,l) (ASR of x_sub), a conditionally convergent sum, taken as the
+!!                     E = 0 Ewald lattice sum. Its first part uses c phi_(a1 a2 a) r_mu eps(a,mu,nu) + c (H eps terms)
+!!                     = c D_eps H [eps J_nu - J_nu eps], J_nu(a,mu) = eps(a,mu,nu) (rotating r at fixed eps =
+!!                     rotating eps the other way), so it is the eps-derivative of the E = 0 sum of c H.
+!! For scalar Z and eps all of it vanishes (the pair model is then rotationally invariant and Phi_B = Phi_m).
  use constants, only : r15, pi, ci, eps0scale
  implicit none
  private
- public :: lr_c, lr_brackets, lr_moments
+ public :: lr_c, lr_brackets, lr_moments, lr_rot3_pair, lr_rot3_onsite
 
  logical, save :: ready=.false.
  integer, save :: nrs=0, ngs=0
@@ -31,9 +40,8 @@
  use lattice, only : r01, r02, r03, volume_r0
  use atoms_force_constants, only : atom0, natom_prim_cell
  use geometry, only : v2a, det
- real(r15) a(3,3), b(3,3), w(3), v(3,3), rwork(7), rc, gc, dmax, r(3)
- complex(r15) cv(3,3), work(12)
- integer i, j, k, n(3), info, m
+ real(r15) a(3,3), b(3,3), w(3), rc, gc, dmax, r(3)
+ integer i, j, k, n(3), m
  if (ready) return
  nat = natom_prim_cell
  allocate(xpos(3,nat), zc(3,3,nat))
@@ -43,14 +51,7 @@
  enddo
  a(:,1)=v2a(r01); a(:,2)=v2a(r02); a(:,3)=v2a(r03)
  vol = volume_r0
- eps = (epsil+transpose(epsil))/2
- cv = eps
- call zheev('V','U',3,cv,3,w,work,12,rwork,info)       ! (zhegv.f; no LAPACK linked)
- v = real(cv)
- eih = matmul(v, matmul(reshape((/1/sqrt(w(1)),0d0,0d0, 0d0,1/sqrt(w(2)),0d0, 0d0,0d0,1/sqrt(w(3))/),(/3,3/)), &
- &     transpose(v)))
- ei = matmul(eih,eih)
- sdet = sqrt(det(eps))
+ call set_eps((epsil+transpose(epsil))/2, w)
  lam = 2.5d0/vol**(1d0/3)
  dmax = 0
  do i=1,nat
@@ -87,6 +88,24 @@
  ready = .true.
  end subroutine setup
 !------------------------------------------------------------
+ subroutine set_eps(e, w)
+!! eps and the derived eih = eps^-1/2, ei = eps^-1, sdet = sqrt(det eps); w its eigenvalues
+ use geometry, only : det
+ real(r15), intent(in) :: e(3,3)
+ real(r15), intent(out) :: w(3)
+ real(r15) v(3,3), rwork(7)
+ complex(r15) cv(3,3), work(12)
+ integer info
+ eps = e
+ cv = eps
+ call zheev('V','U',3,cv,3,w,work,12,rwork,info)       ! (zhegv.f; no LAPACK linked)
+ v = real(cv)
+ eih = matmul(v, matmul(reshape((/1/sqrt(w(1)),0d0,0d0, 0d0,1/sqrt(w(2)),0d0, 0d0,0d0,1/sqrt(w(3))/),(/3,3/)), &
+ &     transpose(v)))
+ ei = matmul(eih,eih)
+ sdet = sqrt(det(eps))
+ end subroutine set_eps
+!------------------------------------------------------------
  subroutine inverse3(a, ai)
  real(r15), intent(in) :: a(3,3)
  real(r15), intent(out) :: ai(3,3)
@@ -119,6 +138,20 @@
 !! C_tu(q) (eV/A^2), full-distance phase, E = 0, blocks c(3,3,t,u); Born charges Z(displacement, field)
  real(r15), intent(in) :: q(3)
  complex(r15), intent(out) :: c(3,3,nat,nat)
+ complex(r15) k(3,3,nat,nat)
+ integer it, iu
+ call lr_k(q, k)
+ do it=1,nat
+ do iu=1,nat
+    c(:,:,it,iu) = matmul(zc(:,:,it), matmul(k(:,:,it,iu), transpose(zc(:,:,iu))))
+ enddo
+ enddo
+ end subroutine lr_c
+!------------------------------------------------------------
+ subroutine lr_k(q, kk)
+!! e2 sum_R T(R + x_u - x_t) exp(i q.(R + x_u - x_t)), T = -grad grad phi_eps (E = 0; r = 0 left out), eV/A^2
+ real(r15), intent(in) :: q(3)
+ complex(r15), intent(out) :: kk(3,3,nat,nat)
  complex(r15) k(3,3)
  real(r15) d(3), r(3), t(3,3), kv(3), kek, fac
  integer it, iu, m, i
@@ -143,10 +176,130 @@
        enddo
     enddo
     if (it.eq.iu) k = k - 4*lam**3/(3*sqrt(pi))*ei/sdet               ! Gaussian self term
-    c(:,:,it,iu) = matmul(zc(:,:,it), matmul(k, transpose(zc(:,:,iu))))/eps0scale
+    kk(:,:,it,iu) = k/eps0scale
  enddo
  enddo
- end subroutine lr_c
+ end subroutine lr_k
+!------------------------------------------------------------
+ subroutine bare_h(r, h, h3)
+!! h = grad grad phi_eps(r), h3(a,b,c) = its gradient; phi_eps = 1/(sqrt(det eps) |eps^-1/2 r|), unscreened, one pair
+ real(r15), intent(in) :: r(3)
+ real(r15), intent(out) :: h(3,3), h3(3,3,3)
+ real(r15) x(3), rho, hx(3,3), tx(3,3,3)
+ integer i, j, k, a, b, c
+ x = matmul(eih, r); rho = sqrt(sum(x**2))
+ do i=1,3
+ do j=1,3
+    hx(i,j) = 3*x(i)*x(j)/rho**5
+    if (i.eq.j) hx(i,j) = hx(i,j) - 1/rho**3
+    do k=1,3
+       tx(i,j,k) = -15*x(i)*x(j)*x(k)/rho**7
+       if (i.eq.j) tx(i,j,k) = tx(i,j,k) + 3*x(k)/rho**5
+       if (i.eq.k) tx(i,j,k) = tx(i,j,k) + 3*x(j)/rho**5
+       if (j.eq.k) tx(i,j,k) = tx(i,j,k) + 3*x(i)/rho**5
+    enddo
+ enddo
+ enddo
+ h = matmul(eih, matmul(hx, eih))/sdet           ! eih symmetric: d/dr_a = sum_i eih(i,a) d/dx_i
+ h3 = 0
+ do a=1,3; do b=1,3; do c=1,3
+    do i=1,3; do j=1,3; do k=1,3
+       h3(a,b,c) = h3(a,b,c) + eih(i,a)*eih(j,b)*eih(k,c)*tx(i,j,k)
+    enddo; enddo; enddo
+ enddo; enddo; enddo
+ h3 = h3/sdet
+ end subroutine bare_h
+!------------------------------------------------------------
+ subroutine levi(lc)
+ integer, intent(out) :: lc(3,3,3)
+ lc = 0
+ lc(1,2,3) =  1 ; lc(2,3,1) =  1 ; lc(3,1,2) =  1
+ lc(1,3,2) = -1 ; lc(2,1,3) = -1 ; lc(3,2,1) = -1
+ end subroutine levi
+!------------------------------------------------------------
+ subroutine lr_rot3_pair(r, zi, zj, b)
+!! b(a1,a2,nu): right-hand side of the rank-3 rotational row (i1 a1, i2 a2; nu), i2 /= i1, r = X_i1 - X_i2 (eV/A)
+ real(r15), intent(in) :: r(3), zi(3,3), zj(3,3)
+ real(r15), intent(out) :: b(3,3,3)
+ real(r15) h(3,3), h3(3,3,3), p(3,3), c
+ integer lc(3,3,3), a1, a2, nu, a, mu, g
+ call setup
+ call levi(lc)
+ call bare_h(r, h, h3)
+ c = sum(zi*zj)/3
+ p = matmul(zi, matmul(h, transpose(zj)))        ! c W = c (h3.r eps + H eps terms), plus P = Z H Z^T - c H
+ b = 0
+ do nu=1,3; do a1=1,3; do a2=1,3
+    do a=1,3; do mu=1,3
+       b(a1,a2,nu) = b(a1,a2,nu) + c*h3(a1,a2,a)*r(mu)*lc(a,mu,nu)
+    enddo; enddo
+    do g=1,3
+       b(a1,a2,nu) = b(a1,a2,nu) + p(g,a2)*lc(g,a1,nu) + p(a1,g)*lc(g,a2,nu)
+    enddo
+ enddo; enddo; enddo
+ b = b/eps0scale
+ end subroutine lr_rot3_pair
+!------------------------------------------------------------
+ subroutine lr_rot3_onsite(bo, ulog)
+!! bo(t,a1,a2,nu): right-hand side of the rank-3 rotational row (t a1, t a2; nu), t in the primitive cell (eV/A):
+!! - sum_(l /= t) b_pair(t,l) as E = 0 lattice sums (see the module header). Logs a check of the eps-derivative
+!! identity on one pair (bare): c D_eps H [eps J - J eps] = c (h3.r eps + H eps terms).
+ integer, intent(in) :: ulog
+ real(r15), intent(out) :: bo(:,:,:,:)
+ complex(r15), allocatable :: k0(:,:,:,:), kp(:,:,:,:), km(:,:,:,:)
+ real(r15) e0(3,3), de(3,3), w(3), he, p(3,3), dk(3,3), cc, jn(3,3), h(3,3), h3(3,3,3), hp(3,3), hm(3,3), r(3), &
+ &         wa(3,3), wb(3,3), err
+ integer lc(3,3,3), it, iu, nu, a1, a2, g, a, mu
+ call setup
+ call levi(lc)
+ allocate(k0(3,3,nat,nat), kp(3,3,nat,nat), km(3,3,nat,nat))
+ e0 = eps
+ he = 1d-4
+ call lr_k((/0d0,0d0,0d0/), k0)
+ bo = 0
+ err = 0
+ do nu=1,3
+    jn = lc(:,:,nu)
+    de = matmul(e0,jn) - matmul(jn,e0)
+    call set_eps(e0+he*de, w); call lr_k((/0d0,0d0,0d0/), kp)
+    call set_eps(e0-he*de, w); call lr_k((/0d0,0d0,0d0/), km)
+    call set_eps(e0, w)
+    do it=1,nat
+       dk = 0; p = 0
+       do iu=1,nat
+          cc = sum(zc(:,:,it)*zc(:,:,iu))/3
+          dk = dk + cc*real(kp(:,:,it,iu)-km(:,:,it,iu))/(2*he)
+          p = p + matmul(zc(:,:,it), matmul(real(k0(:,:,it,iu)), transpose(zc(:,:,iu)))) - cc*real(k0(:,:,it,iu))
+       enddo
+! sum_l e2 c H = -sum_u c K, sum_l e2 P = -sum_u (Z K Z^T - c K): bo = -sum_l b_pair = D_eps(sum_u c K) + P eps terms
+       do a1=1,3; do a2=1,3
+          bo(it,a1,a2,nu) = dk(a1,a2)
+          do g=1,3
+             bo(it,a1,a2,nu) = bo(it,a1,a2,nu) + p(g,a2)*lc(g,a1,nu) + p(a1,g)*lc(g,a2,nu)
+          enddo
+       enddo; enddo
+    enddo
+! check of the identity on one bare pair (nearest atom 2, else an image of atom 1)
+    r = xpos(:,1) - xpos(:,min(2,nat)) + rlist(:,2)
+    call bare_h(r, h, h3)
+    call set_eps(e0+he*de, w); call bare_h(r, hp, h3)
+    call set_eps(e0-he*de, w); call bare_h(r, hm, h3)
+    call set_eps(e0, w); call bare_h(r, h, h3)
+    wa = (hp-hm)/(2*he)
+    wb = 0
+    do a1=1,3; do a2=1,3
+       do a=1,3; do mu=1,3
+          wb(a1,a2) = wb(a1,a2) + h3(a1,a2,a)*r(mu)*lc(a,mu,nu)
+       enddo; enddo
+       do g=1,3
+          wb(a1,a2) = wb(a1,a2) + h(g,a2)*lc(g,a1,nu) + h(a1,g)*lc(g,a2,nu)
+       enddo
+    enddo; enddo
+    err = max(err, maxval(abs(wa-wb))/max(maxval(abs(h)),1d-30))
+ enddo
+ write(ulog,'(a,es10.2)')' LR_ROT3_ONSITE: eps-derivative identity on a bare pair, max|D_eps H - (h3.r + H eps)|/max|H| =',err
+ deallocate(k0, kp, km)
+ end subroutine lr_rot3_onsite
 !------------------------------------------------------------
  subroutine csum(q, s)
 !! sum over t,u of C_tu(q)

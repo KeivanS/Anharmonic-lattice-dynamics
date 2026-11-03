@@ -56,7 +56,8 @@ use linalgb
 use tetrahedron
 use eigen !, only : ndyn,eigenval,eigenvec,allocate_eig,eigenval_bs,eigenvec_bs,allocate_eig
 use constants, only : r15,ee,pi,eps0,cnst
-use invariance_ranks, only : set_translational_inv_constraints, set_rotational_inv_constraints, write_map_dump
+use invariance_ranks, only : set_translational_inv_constraints, set_rotational_inv_constraints, write_map_dump, &
+&   merge_given_fcs
 
 implicit none
 integer i,j,g,ti,rank,iunit,uio,nkernel,imax,n_hom,nt(maxrank),ntind(maxrank),tau,taup,nat,ncs(3),al,be,ia,jb
@@ -193,33 +194,12 @@ real(r15) presid
    enddo
    call write_lat_fc(ntind,nt,'lat0_fc.dat')
 
-!--------------------------------------------------------------------
-! read FCs from a file if already present
-! outputs: ngrnk(rank), irreducible fcs:fcrnk(rank,ngrnk(rank))
-   do rank=1,maxrank
-      if (include_fc(rank) .eq. 2 ) then
-         write(xt,'(i1)')rank
-         fni= 'fc'//xt//'_irr.dat'
-         iunit = ufco+rank
-         inquire ( file=fni, exist=ex)
-         if (ex) then
-            open(iunit,file=fni,status='old')
-! this rank is to be read and is not included in svd extraction
-            ngrnk(rank)=map(rank)%ntotind; allocate(fcrnk(rank,ngrnk(rank)))
-!!!        call read_fcs(iunit,fn,rank,fcrnk(rank,:),ngrnk(rank))
-         endif
-      endif
-   enddo
-
-! if read, may need to check compatibility with given supercells?!?
-!--------------------------------------------------------------------
+! include_fc(rank)=2: those FCs are read after the FC2 range is settled (read_fcs, below)
 
 ! before imposing the constraints, first define the number of columns in matrix A
-   if (.not.readfc) then
-      do rank=2,2 !1,maxrank
-         allocate(map(rank)%keep(map(rank)%ntotind))  ! which indep fc2s to keep based on rws26
-      enddo
-   endif
+   do rank=2,2 !1,maxrank
+      allocate(map(rank)%keep(map(rank)%ntotind))  ! which indep fc2s to keep based on rws26
+   enddo
 
    do i=1,26
       call write_out(ulog,' rws26 ',rws26(:,i))
@@ -262,6 +242,8 @@ real(r15) presid
       map(2)%gr(g)%mat(:,ti) = map(2)%gr(g)%mat(:,ti)*map(2)%keep(counteri(2,g,ti))
    enddo
    enddo
+! include_fc(rank)=2: read those FCs (fcN.dat, lat_fc.dat of the earlier run); they go to the right-hand sides
+   if (any(include_fc.eq.2)) call read_fcs
    call get_environment_variable('FOCEX_DUMP_MAP', invcmp)
    if (invcmp .eq. '1') then
       call write_map_dump('map_dump.bin')
@@ -333,12 +315,6 @@ real(r15) presid
 
     write(ulog,*)'dim_al,dim_ac set to ',dim_al,dim_ac
 
-! check if any include_fc=2, then read atompos and call setup_maps and read fcs
-    if(readfc) then  
-       call read_fcs 
-! modify ahom,,aforce, bhom,bforce to move known stuff on the RHS
-!      call modify_matrices 
-    endif 
 
 ! give warnings if any column in amat is totally zero
 ! allocate(amat(inv_constraints+force_constraints,dim_ac),bmat(inv_constraints+force_constraints))
@@ -546,6 +522,9 @@ real(r15) presid
    endif
    close(uio)
    close(umatrx)
+
+! include_fc=2: fitted and read FCs into one vector; the read ranks count as included (=1) from here on
+   if (any(include_fc.eq.2)) call merge_given_fcs(ulog)
 
 
    do rank=1,4

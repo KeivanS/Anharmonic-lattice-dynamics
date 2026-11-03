@@ -220,12 +220,12 @@
 
  nindepfc = 0
  do rnk=1,maxrank
-    if ( include_fc(rnk) .eq. 1 ) then ! exclude them if they already exist and will be read
+    if ( include_fc(rnk) .ne. 0 ) then ! read ranks (include_fc=2) too: their sizes are needed, but not columns
 ! get the total number of independent and full terms for each rank
        call get_dim(map(rnk),map(rnk)%ntotind,map(rnk)%ntot)
        write(ulog,*)'SETUP_MAPS: RANK, NDINDEP, NDFULL=',rnk,map(rnk)%ntotind,map(rnk)%ntot
 
-       nindepfc = nindepfc + map(rnk)%ntotind
+       if ( include_fc(rnk) .eq. 1 ) nindepfc = nindepfc + map(rnk)%ntotind
 
     endif
  enddo

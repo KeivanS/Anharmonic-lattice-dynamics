@@ -22,16 +22,18 @@
 !! keys gathers each row. Column of independent term ti of group g of rank n: column_of.
 !! born_flag 2 (2026-11-03, user): the fit sees FC2 - Phi_B (Born-dipole FCs subtracted with the forces,
 !! no FC1 subtracted), so the rank-2 rotational rows get the right-hand side -sum_{a,mu} M(i1;a1,a,mu) eps(a,mu,nu),
-!! M = sum_j Phi_B(i1 a1, j a) (X_j - X_i1)_mu from coulomb_lr.
+!! M = sum_j Phi_B(i1 a1, j a) (X_j - X_i1)_mu from coulomb_lr. Rank-3 rows (i1 a1, i2 a2; nu): b = -A_full x_sub with
+!! x_sub's FC3 = that of the pair model tr(Z_i Z_j^T)/3 phi_eps (lr_rot3_pair, lr_rot3_onsite).
  use constants, only : r15
  implicit none
  private
- public set_translational_inv_constraints, set_rotational_inv_constraints, write_map_dump
+ public set_translational_inv_constraints, set_rotational_inv_constraints, write_map_dump, column_of, merge_given_fcs
 
  integer, allocatable :: ckey(:,:), ccol(:)
  real(r15), allocatable :: cval(:)
  integer ncon, keylen
  integer, allocatable :: rkey(:,:)     ! rotational rows kept: rank and key (i1, a1, nu for rank 2)
+ real(r15) :: rdrop                    ! max |C_read x_read| of rows without fitted columns (read FCs' own violation)
 
  contains
 !---------------------------------------------------------------------------
@@ -51,10 +53,13 @@
  use atoms_force_constants
  use ios
  use born, only : born_flag
- use coulomb_lr, only : lr_moments
+ use coulomb_lr, only : lr_moments, lr_rot3_pair, lr_rot3_onsite
+ use given_fcs, only : xfull, full_col
  implicit none
  logical, intent(in) :: do_tr, do_rot
- real(r15), allocatable :: arow(:,:), rrow(:,:), mo(:,:,:,:)
+ real(r15), allocatable :: arow(:,:), rrow(:,:), mo(:,:,:,:), trhs(:), rrhs(:)
+ real(r15) b3(3,3,3), b2max, b3max
+ integer i2, a2, count_log, count_log2
  integer ntr, nro, rnk, lc(3,3,3), g, t, ti, i1, c, nu, mu, k, ak, l, a, ir, a1
  integer, allocatable :: key(:)
  real(r15) cf
@@ -65,7 +70,8 @@
  write(ulog,*)' BUILD_INV_ROWS (all ranks): translational, rotational =', do_tr, do_rot
  call check_columns
  ntr = 0 ; nro = 0
- allocate(arow(16,nindepfc), rrow(16,nindepfc))
+ allocate(arow(16,nindepfc), rrow(16,nindepfc), trhs(16), rrhs(16)); trhs = 0; rrhs = 0
+ rdrop = 0
  if (allocated(rkey)) deallocate(rkey)
  allocate(rkey(0:15,16)); rkey = 0
 
@@ -83,11 +89,15 @@
        key(rnk:2*rnk-1) = map(rnk)%gr(g)%ixyz(1:rnk,t)
        do ti = 1, map(rnk)%ntind(g)
           c = column_of(rnk, g, ti)
-          if (c .gt. 0) call add(key, c, map(rnk)%gr(g)%mat(t,ti))
+          if (c .gt. 0) then
+             call add(key, c, map(rnk)%gr(g)%mat(t,ti))
+          elseif (include_fc(rnk) .eq. 2 .and. full_col(rnk,g,ti) .gt. 0) then     ! read FC -> right-hand side
+             call add(key, -1, map(rnk)%gr(g)%mat(t,ti)*xfull(full_col(rnk,g,ti)))
+          endif
        enddo
     enddo
     enddo
-    call gather_rows(arow, ntr, 'translational', rnk)
+    call gather_rows(arow, trhs, ntr, 'translational', rnk)
     endif
 !------------------------------------ rotational, rank rnk: the rank-rnk part ...
 ! No rank-1 rows: the torque of FC1 over the primitive cell, sum_i Phi_i x X_i, is not an
@@ -111,7 +121,11 @@
           key(2*rnk-1) = nu
           do ti = 1, map(rnk)%ntind(g)
              c = column_of(rnk, g, ti)
-             if (c .gt. 0) call add(key, c, map(rnk)%gr(g)%mat(t,ti)*cf)
+             if (c .gt. 0) then
+                call add(key, c, map(rnk)%gr(g)%mat(t,ti)*cf)
+             elseif (include_fc(rnk) .eq. 2 .and. full_col(rnk,g,ti) .gt. 0) then
+                call add(key, -1, map(rnk)%gr(g)%mat(t,ti)*cf*xfull(full_col(rnk,g,ti)))
+             endif
           enddo
        enddo
     enddo
@@ -133,7 +147,12 @@
              key(2*rnk-1) = nu
              do ti = 1, map(rnk-1)%ntind(g)
                 c = column_of(rnk-1, g, ti)
-                if (c .gt. 0) call add(key, c, map(rnk-1)%gr(g)%mat(t,ti)*lc(map(rnk-1)%gr(g)%ixyz(k,t),ak,nu))
+                if (c .gt. 0) then
+                   call add(key, c, map(rnk-1)%gr(g)%mat(t,ti)*lc(map(rnk-1)%gr(g)%ixyz(k,t),ak,nu))
+                elseif (include_fc(rnk-1) .eq. 2 .and. full_col(rnk-1,g,ti) .gt. 0) then
+                   call add(key, -1, map(rnk-1)%gr(g)%mat(t,ti)*lc(map(rnk-1)%gr(g)%ixyz(k,t),ak,nu) &
+ &                          *xfull(full_col(rnk-1,g,ti)))
+                endif
              enddo
           enddo
           enddo
@@ -142,19 +161,21 @@
        enddo
     endif
     endif
-    call gather_rows(rrow, nro, 'rotational', rnk)
+    call gather_rows(rrow, rrhs, nro, 'rotational', rnk)
     endif
     deallocate(key)
  enddo
 
- ! include_fc=1 ranks only for now: the right-hand sides are zero. For a rank read from file
-! (include_fc=2) its terms are to go to these right-hand sides, b = -sum(coef * known FC)
+! right-hand sides: -C_read x_read of the read ranks (include_fc=2; zero otherwise), plus the Coulomb part below
+ if (any(include_fc .eq. 2)) write(ulog,'(a,es12.4)') &
+ &   ' BUILD_INV_ROWS: read FCs: max |C x_read| of rows with no fitted FC (their own violation; born_flag 2: '// &
+ &   'Coulomb part not included) =', rdrop
  if (do_tr) then
     transl_constraints = ntr
     if (allocated(atransl)) deallocate(atransl)
     if (allocated(btransl)) deallocate(btransl)
     allocate(atransl(ntr,nindepfc), btransl(ntr))
-    atransl = arow(1:ntr,:) ; btransl = 0
+    atransl = arow(1:ntr,:) ; btransl = trhs(1:ntr)
     write(ulog,*)' SET_TRANSLATIONAL_INV_CONSTRAINTS: rows (all ranks) =', ntr
  endif
  if (do_rot) then
@@ -162,9 +183,9 @@
     if (allocated(arot)) deallocate(arot)
     if (allocated(brot)) deallocate(brot)
     allocate(arot(nro,nindepfc), brot(nro))
-    arot = rrow(1:nro,:) ; brot = 0
+    arot = rrow(1:nro,:) ; brot = rrhs(1:nro)
     write(ulog,*)' SET_ROTATIONAL_INV_CONSTRAINTS: rows (all ranks) =', nro
-    if (born_flag.eq.2 .and. include_fc(2).eq.1) then
+    if (born_flag.eq.2 .and. include_fc(2).ne.0) then           ! fitted or read (include_fc=2)
        allocate(mo(natom_prim_cell,3,3,3))
        call lr_moments(mo)
        do ir = 1, nro
@@ -176,14 +197,42 @@
              cf = cf + mo(i1,a1,a,mu)*lc(a,mu,nu)
           enddo
           enddo
-          brot(ir) = -cf
+          brot(ir) = brot(ir) - cf
        enddo
+       b2max = maxval(abs(brot))
        write(ulog,'(a,es12.4,a)')'  born_flag 2: rank-2 rotational right-hand sides from the Born-dipole FCs, max|b| =', &
- &        maxval(abs(brot)),' eV/A'
+ &        b2max,' eV/A'
+       deallocate(mo)
+    endif
+    if (born_flag.eq.2 .and. include_fc(2).ne.0 .and. include_fc(3).ne.0) then
+       allocate(mo(natom_prim_cell,3,3,3))
+       call lr_rot3_onsite(mo, ulog)
+       b3max = 0; count_log = 0; count_log2 = 0
+       do ir = 1, nro
+          if (rkey(0,ir) .ne. 3) cycle
+          i1 = rkey(1,ir); i2 = rkey(2,ir); a1 = rkey(3,ir); a2 = rkey(4,ir); nu = rkey(5,ir)
+          if (i2 .eq. i1) then
+             cf = mo(i1,a1,a2,nu)
+          else
+             call lr_rot3_pair(atompos(:,i1)-atompos(:,i2), atom0(iatomcell0(i1))%charge, &
+ &                             atom0(iatomcell0(i2))%charge, b3)
+             cf = b3(a1,a2,nu)
+          endif
+          brot(ir) = brot(ir) + cf
+          b3max = max(b3max, abs(cf))
+          if (abs(cf).gt.1d-8 .and. ((i2.eq.i1 .and. count_log.lt.30) .or. (i2.ne.i1 .and. count_log2.lt.30))) then
+             if (i2.eq.i1) count_log = count_log + 1          ! a sample of rows, for checking
+             if (i2.ne.i1) count_log2 = count_log2 + 1
+             write(ulog,'(a,5i5,3f12.6,es16.8)')'  ROT3_RHS i1,i2,a1,a2,nu, X_i2-X_i1, b =',i1,i2,a1,a2,nu, &
+ &              atompos(:,i2)-atompos(:,i1), cf
+          endif
+       enddo
+       write(ulog,'(a,es12.4,a)')'  born_flag 2: rank-3 rotational right-hand sides (Phi_B and the pair-model FC3), max|b| =', &
+ &        b3max,' eV/A^2'
        deallocate(mo)
     endif
  endif
- deallocate(arow, rrow)
+ deallocate(arow, rrow, trhs, rrhs)
  if (allocated(ckey)) deallocate(ckey, ccol, cval)
 
  contains
@@ -205,15 +254,17 @@
    prefix_ok = .true.
    end function prefix_ok
 
-   subroutine gather_rows(rows, nrow, label, r)
+   subroutine gather_rows(rows, rhs, nrow, label, r)
 !! sorts the contributions by key, adds each key's contributions into one row and keeps it
-!! if it is not zero and not a multiple of a row kept already (any rank)
-   real(r15), allocatable, intent(inout) :: rows(:,:)
+!! if it is not zero and not a multiple of a row kept already (any rank). Contributions with column -1 are
+!! read FCs (include_fc=2) times their value: their sum s gives the row's right-hand side -s.
+   real(r15), allocatable, intent(inout) :: rows(:,:), rhs(:)
    integer, intent(inout) :: nrow
    character(*), intent(in) :: label
    integer, intent(in) :: r
    integer, allocatable :: ord(:), ktmp(:,:)
-   real(r15), allocatable :: a1d(:), zero(:), tmp(:,:)
+   real(r15), allocatable :: a1d(:), zero(:), tmp(:,:), tmp1(:)
+   real(r15) sr
    integer i, j, n0, i0
    logical new
    allocate(ord(ncon), a1d(nindepfc), zero(nindepfc)) ; zero = 0
@@ -221,25 +272,36 @@
    n0 = nrow
    i = 1
    do while (i .le. ncon)
-      a1d = 0
+      a1d = 0; sr = 0
       j = i
       i0 = i
       do while (j .le. ncon)
          if (any(ckey(:,ord(j)) .ne. ckey(:,ord(i)))) exit
-         a1d(ccol(ord(j))) = a1d(ccol(ord(j))) + cval(ord(j))
+         if (ccol(ord(j)) .lt. 0) then
+            sr = sr + cval(ord(j))
+         else
+            a1d(ccol(ord(j))) = a1d(ccol(ord(j))) + cval(ord(j))
+         endif
          j = j + 1
       enddo
       i = j
-      if (a1d .myeq. zero) cycle
+      if (a1d .myeq. zero) then
+         rdrop = max(rdrop, abs(sr))
+         cycle
+      endif
       call compare2previous_lines(size(rows,1), nindepfc, a1d, rows, nrow, new)
       if (.not. new) cycle
       if (nrow .eq. size(rows,1)) then              ! grow the row store
          allocate(tmp(2*size(rows,1), nindepfc)) ; tmp = 0
          tmp(1:nrow,:) = rows(1:nrow,:)
          call move_alloc(tmp, rows)
+         allocate(tmp1(2*size(rhs))) ; tmp1 = 0
+         tmp1(1:nrow) = rhs(1:nrow)
+         call move_alloc(tmp1, rhs)
       endif
       nrow = nrow + 1
       rows(nrow,:) = a1d
+      rhs(nrow) = -sr
       if (label .eq. 'rotational') then                ! key of the row, for its right-hand side
          if (nrow .gt. size(rkey,2)) then
             allocate(ktmp(0:15,2*size(rkey,2))) ; ktmp = 0
@@ -259,8 +321,7 @@
  integer function column_of(rnk, g, ti)
 !! column of independent term ti of group g of rank rnk in the fit, 0 if it is not a column:
 !! the rank is not in the model, or an FC2 group not kept (beyond the supercell).
-!! include_fc=2 (FCs read from file) is not treated yet: their terms will go to the right-hand
-!! side of the rows instead of a column.
+!! include_fc=2 (FCs read from file): not a column (0); build_inv_rows puts their terms on the right-hand side.
  use svd_stuff
  use params
  implicit none
@@ -398,5 +459,43 @@
  enddo
  key_le = .true.
  end function key_le
+
+!---------------------------------------------------------------------------
+ subroutine merge_given_fcs(uio)
+!! include_fc=2: fitted FCs (columns column_of) and read FCs (xfull) into one vector in the full layout (full_col),
+!! fcs and sigma (0 for the read ones) reallocated; the read ranks are then marked include_fc=1 and nindepfc,
+!! dim_ac set to the full size, so that the output and everything after it work as for a full fit.
+ use svd_stuff
+ use params
+ use given_fcs, only : xfull, nfull, full_col
+ implicit none
+ integer, intent(in) :: uio
+ real(r15), allocatable :: f(:), s(:)
+ integer r, g, ti, c, k
+ allocate(f(nfull), s(nfull)); f = 0; s = 0
+ do r = 1, maxrank
+    if (include_fc(r) .eq. 0) cycle
+    do g = 1, map(r)%ngr
+       do ti = 1, map(r)%ntind(g)
+          k = full_col(r, g, ti)
+          if (k .eq. 0) cycle
+          if (include_fc(r) .eq. 1) then
+             c = column_of(r, g, ti)
+             f(k) = fcs(c); s(k) = sigma(c)
+          else
+             f(k) = xfull(k)
+          endif
+       enddo
+    enddo
+ enddo
+ call move_alloc(f, fcs); call move_alloc(s, sigma)
+ do r = 1, maxrank
+    if (include_fc(r) .eq. 2) then
+       include_fc(r) = 1
+       write(uio,*)'MERGE_GIVEN_FCS: rank ',r,' (read) merged with the fitted ranks; marked include_fc=1 from here on'
+    endif
+ enddo
+ nindepfc = nfull; dim_ac = nfull
+ end subroutine merge_given_fcs
 
  end module invariance_ranks

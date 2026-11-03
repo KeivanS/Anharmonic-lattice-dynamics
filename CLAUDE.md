@@ -322,7 +322,15 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
 - job 1 is slow: function_self_w3 recomputes V3 over the mesh for each (k, mode); use few
   points per segment in kpbs.params.
 
-## PLANNED RELEASE (user, 2026-10-23, very important): read some FC ranks, fit the others
+## Read some FC ranks, fit the others (include_fc=2; implemented 2026-11-03, user)
+
+read_fcs (ios.f90; the old read_fcs/_3/_old and readfc removed, user), given_fcs.f90 (xfull, full_col), invariance_ranks.f90 (RHS of the rows, merge_given_fcs),
+setup_amatrix.f90 (force rows: column_of / xfull; Huang rows dropped when FC2 is read). Reads fcN.dat (all terms) +
+lat_fc.dat of the earlier run (atom numbers -> (tau, n)), least squares per group for the irreducible values; after
+the fit the read ranks are merged and marked include_fc=1, so the output and everything downstream is a full fit.
+setup_maps now calls get_dim for include_fc /= 0 (sizes of read ranks). Atom numbering: the read files' numbers are
+translated through their lat_fc.dat; the output (all ranks, new lat_fc.dat) is in this run's numbering. Tests: REFERENCE/exact_model/coulomb/README.md. The original plan, kept for the record:
+
 
 include_fc(rank)=2 (structure.params line 4): fcN.dat of that rank is input, the include_fc=1
 ranks are fitted. Force part: the read rank's columns times its known FCs go to the right-hand
@@ -549,8 +557,9 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   Huang -(S_B(ab,gd)-S_B(gd,ab)) (setup_amatrix), rank-2 rotational -M:eps (invariance_ranks), S_B and M from
   coulomb_lr.f90 (small-q E=0 Ewald). mech.dat Huang/rotational checks add the same terms. Exact tests (point charges,
   ZnO ranks 1-4, HfO2 cubic ranks 1-3): exact to the printed digits; each RHS is needed. Rank-3+ rotational rows still
-  homogeneous: exact for scalar Z, OPEN for anisotropic Z. Build in a clean folder: a copied build folder kept a stale
-  dynamical.o once (make did not recompile).
+  homogeneous at first; since 2026-11-03 rank-3 rows get -A_full x_sub too (lr_rot3_pair / lr_rot3_onsite; checked
+  against an independent Python route, README). Rank 4 for tensor eps: OPEN. Build in a clean folder: a copied build
+  folder kept a stale dynamical.o once (make did not recompile).
 
 ## Elastic constants, B0', QHA (FOCEX 9.2, 2026-11-01; user's questions)
 
@@ -619,7 +628,8 @@ snapshots, sqrt(4/5 sum (x_i - xbar)^2) / SVD sigma: median FC2 1.04, FC3 0.91; 
   energy-sorted bands (BZO crossing: 0.17/8.50 km/s FD vs 0.65/9.08 HF). Both stay in
   `veltest.dat`. Regression on Ge, BZO, MoTe2, GeSe: only those velocity columns changed.
 - The log line "Initial Pressure(GPa), gr,xagne" prints an uninitialised `gr` (~1e-314).
-- fc*.dat carry ~7 significant digits; symmetry-equivalent FCs then differ at ~1e-7.
+- fc*.dat, fc*_irr.dat carry 8 significant digits since 2026-11-03 (g15.8, user; 7 before); symmetry-equivalent FCs
+  then differ at ~1e-8. Readers are list-directed (FOCEX, THERMACOND), so the wider field is harmless.
 - QHA (`QHA_free_energy_vs_strain`, 2026-10-23): P(V) is now -dF/dV of the same F(V): the static
   pressure P0 - B dV/V0 was missing from P (Ge: P=0 at +10 % strain, F minimum at +0.25 %), F
   lacked -P0 dV, and the phonon pressure uses the exact -dln(omega)/dlnV of the omega(V) used

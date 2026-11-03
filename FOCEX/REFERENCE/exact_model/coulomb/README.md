@@ -14,8 +14,13 @@ What FOCEX does with born_flag 2 (ewald_born.f90, coulomb_lr.f90):
   lr_moments; central differences, Richardson).
   - FC1 is not subtracted: the fitted FC1 = total FC1, i.e. it includes -F_C(x0).
 - The mech.dat checks (Huang, rank-2 rotational) add the same Phi_B brackets/moments.
-- Rank-3 and higher rotational rows: homogeneous. Exact for scalar Z (the trace model is then rotationally
-  invariant and Phi_B = Phi_m); for anisotropic Z not yet corrected (see "Open").
+- Rank-3 rotational rows (i1 a1, i2 a2; nu): b = -A_full x_sub (lr_rot3_pair, lr_rot3_onsite), x_sub = Phi_B (rank 2)
+  + the pair model's FC3 (rank 3), r = X_i1 - X_i2:
+  - pair, i2 /= i1 (bare, one pair of the crystal): b = e2 [c phi_(a1 a2 a) r_mu eps(a,mu,nu) + (Z H Z^T)_(g a2) eps(g,a1,nu)
+    + (Z H Z^T)_(a1 g) eps(g,a2,nu)];
+  - on-site, i2 = i1: b = -sum_l b_pair(i1,l), as E = 0 Ewald lattice sums; the phi''' part through the identity
+    (J r).grad H - J H - H J^T = D_eps H [eps J - J eps] (rotating r at fixed eps = rotating eps the other way).
+  - Zero for scalar Z and eps. Rank 4 and higher: homogeneous (exact for scalar eps; not corrected for tensor eps).
 
 ## Scripts
 
@@ -62,7 +67,49 @@ F_C(x0) up to 0.376 eV/A, Coulomb stress yz -0.53 GPa):
   1.720 -> 1.269 %; long-wave max |B - B^T| (E = 0) 1.36 -> 0.017 GPa; mech.dat Huang check (fitted + Born
   brackets) 4.7e-5 GPa. The long-wave C is still unphysical (rho v^2 < 0 along several directions).
 
+## Rank-3 rotational right-hand side: checks (2026-11-03)
+
+- Scalar charges (HfO2 cubic, `r3_on`): max |b| = 8e-16; FCs = the run without it, byte for byte.
+- User's ZnO (tensor Z and eps; scratch z_b2_r3): max |b| 0.278 eV/A^2; fit 1.269 -> 1.232 %; long-wave
+  |B - B^T| 0.017 GPa, Huang check 4.4e-5 GPa.
+- Independent Python (scratch rot3chk/): 30 pair rows from mpmath derivatives of phi_eps: |b - b_FOCEX| <= 2.3e-7
+  (positions printed to 1e-6 A); on-site rows by rotating the lattice positions at fixed eps (own Ewald, E = 0,
+  Richardson in the angle) instead of FOCEX's eps-derivative: <= 5.2e-7 (3e-6 relative); FOCEX's ASR-enforced Z.
+  A double-precision finite-difference third derivative was not enough: the row is the difference of two terms of
+  ~7 eV/A^2 and ends at ~0.04.
+- No exact end-to-end test with anisotropic Z: the hybrid's subtracted FC3 is not the rotational partner of Phi_B,
+  so the true short-range FC3 has a 1/r^4 tail and no finite-range fit is exact.
+
+## include_fc = 2 (read FCs), tests (2026-11-03; scratch coul_cubic/rf_*)
+
+HfO2 cubic exact model; fcN.dat and lat_fc.dat from the full fits c_base / c_on (rel = vs the full fit):
+
+| run | read | FC1 rel | FC2 rel | FC3 rel |
+|---|---|---|---|---|
+| rf_base, rf_on | none | byte-identical to the full fits (force rows rewritten) | | |
+| rf_b_r3 | FC3 | 2.1e-7 | 2.6e-7 | read |
+| rf_b_r2 | FC2 | 2.6e-5 | read | 1.1e-4 |
+| rf_o_r2 (charges) | FC2 | 3.9e-6 | read | 1.3e-4 |
+| rf_o_r12 (charges) | FC1, FC2 | read | read | 3.1e-6 |
+
+- Every term of the read fcN.dat matched (atoms via lat_fc.dat's (tau, n)); least-squares residual of the
+  irreducible values <= 2e-16.
+- These runs used 7-digit files. The FC3 error with FC2 read is the rounding of the read FC2 (p8_*, p15_*: FC2 read from a
+  full fit written with 7, 8 and, in a scratch build only, 15 digits):
+
+  | digits of fc2.dat | FC1 rel | FC3 rel |
+  |---|---|---|
+  | 7 | 2.6e-5 | 1.1e-4 |
+  | 8 (FOCEX since 2026-11-03) | 1.4e-5 | 5.3e-5 |
+  | 15 | 5.8e-10 | 2.4e-9 |
+
+  FC3 is that sensitive to FC2 (re-rounding fc2.dat at the 3e-7 level moved FC3 by 4.7e-4); the mechanism was not
+  analysed. FC3 read (8 digits): FC1, FC2 off by 2e-8, 4e-8.
+- Atom numbering (p8_r2perm, p8_r3perm; scratch rot3chk/permute.py): the earlier run's atoms 13..6500 renumbered by a
+  random permutation in lat_fc.dat and the read fcN.dat: every output (fc1-3, fc*_irr, lat_fc.dat, mech.dat)
+  byte-identical to the unpermuted read; the rewritten read rank is in this run's numbering (= the original file).
+- The rewritten fcN.dat of a read rank is byte-identical to the one read (same numbering).
+
 ## Open
 
-- Rank-3 rotational rows for anisotropic Z: right-hand side -A_full x_sub (not yet implemented, no exact
-  test with anisotropic Z yet).
+- Rank-4 rotational rows for tensor eps (the trace model is then not rotationally invariant at rank 4).

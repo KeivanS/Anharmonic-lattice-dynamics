@@ -83,17 +83,7 @@
  read(uparams,*) nshells(7,1:natom_prim_cell)
  read(uparams,*) nshells(8,1:natom_prim_cell)
 
-!!!!!!!!!   fix this  to be also able to read only some files and fit the rest
-
- readfc=.false.
- do rnk=1,maxrank
-    if(include_fc(rnk).eq.2) then
-         readfc=.true.
-         exit
-    endif
- enddo
-
-!!!!!!!!!!!!!!!!!!!!!!!!
+! include_fc(rank)=2: those FCs are read by read_fcs (after the FC2 range is set) and go to the right-hand sides
 
 ! just for naming of log file
  open(321,file='dielectric.params',status='old')
@@ -162,7 +152,6 @@
  write(ulog,'(a,f10.4)')' STARTING TIME OF THE PROGRAM                   IS ',tim
  write(ulog,*)'===================================================================='
 
- write(ulog,*) 'READ_STRUCTURE: readfc is ',readfc
  write(ulog,*) 'DEFAULT VALUES:'
  write(ulog,*) svdcut   ,'   cutoff for smallest eigenvalue w to be included for inversion'
  write(ulog,*) tolerance,'   tolerance(Ang) for equating two variables '
@@ -1404,10 +1393,10 @@
     frm=30+rnk
     write(ln,'(i1)')rnk
     write(lm,'(i1)')rnk-1
-    goh='(a1,i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,g14.7,1x,f7.4,1x,15i3)'
-    geh='(   i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,g14.7,1x,f7.4,1x,15i3)'
-    goh2='(a1,i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,g14.7,1x,f7.4,1x,4i3,6(1x,f7.4))'
-    geh2='(   i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,g14.7,1x,f7.4,1x,4i3,6(1x,f7.4))'
+    goh='(a1,i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,g15.8,1x,f7.4,1x,15i3)'
+    geh='(   i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,g15.8,1x,f7.4,1x,15i3)'
+    goh2='(a1,i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,g15.8,1x,f7.4,1x,4i3,6(1x,f7.4))'
+    geh2='(   i6,1x,i5,'//ln//'(3x,i4,1x,i1),3x,g15.8,1x,f7.4,1x,4i3,6(1x,f7.4))'
 !   write(*,*)'for rank ',rnk,' formats geh and goh are:'
 !   write(*,*)geh
 !   write(*,*)goh
@@ -1609,509 +1598,223 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
 2 format(9(1x,f10.4))
  end subroutine write_springs
 !============================================================
- subroutine read_fcs_3(iunit,fn,rank,fc,nfc)
-!! reads irreducible force constants of given rank from file fn if the latter exists
+ subroutine read_fcs
+!! include_fc(rank)=2: reads fcN.dat of those ranks and lat_fc.dat of the run that wrote them, matches every term to
+!! this run's atoms through (sublattice, cell) (the two runs' atom numbering need not agree) and sets the irreducible
+!! values xfull (module given_fcs) by least squares per group. Replaces the earlier read_fcs/read_fcs_3/read_fcs_old
+!! (2026-11-03, user).
+ use given_fcs, only : xfull, nfull, full_col, solve_small, sort_i8, find_i8
  use svd_stuff
- use ios
- use atoms_force_constants
  use params
- use constants, only : r15
- implicit none
- integer, intent(in) :: rank,iunit,nfc
- integer t,ti,igr,term,g,j
- real(r15) fc(nfc)
- character fn*11
- logical ex
-
-     inquire(file=fn,exist=ex)
-     if (ex) then
-        open(iunit ,file=fn ,status='old')
-     else
-        write(*   ,*)'For rank=',rank,' there is no FC data file present '
-        write(*   ,*)'check your inputs and run the program again'
-        write(ulog,*)'For rank=',rank,' there is no FC data file present '
-        write(ulog,*)'check your inputs and run the program again'
-        stop
-     endif
-
-     if (nfc.ne.map(rank)%nkeptind) then
-        write(ulog,*)' READ_FCS_3: rank=',rank
-        write(ulog,*)' number of groups ',nfc,' is not the same as one by setup_maps ',map(rank)%nkeptind
-        stop
-     endif
-
-     term = 0;
-     groups: do g=1,map(rank)%ngr ! %ntotind  ! index of a given group
-       map(rank)%gr(g)%iatind(:,:)=0
-       map(rank)%gr(g)%ixyzind(:,:)=0
-       do ti=1,map(rank)%ntind(g)  ! index of independent terms in that group g
-            term=term+1
-            read(iunit,*,err=91) t,igr,(map(rank)%gr(igr)%iatind (j,t),  &
-            &                           map(rank)%gr(igr)%ixyzind(j,t), j=1,rank), &
-            &                           fc(term)
-       enddo
-     enddo groups
-
-91   write(ulog,*)'READ_FCS_3: rank=',rank,' reached end of file after ',term-1,' lines'
-     write(ulog,3)fc
-     if (term.eq.1) then
-        write(ulog,*)'READ_FCS_3: the file exists but is empty! rank=',rank
-        write(*   ,*)'READ_FCS_3: the file exists but is empty! rank=',rank
-        stop
-!       include_fc(rank) = 0       ! if nothing, then exclude from fitting
-     endif
-     close(iunit)
-
-3 format(99(1x,f9.5))
- end subroutine read_fcs_3
-!============================================================
- subroutine read_fcs  !(iunit,fn,rank,fc2,nfc)
-!! reads existing fci.dat and fci_irr.dat to calculate phonons & LD properties
- use svd_stuff
- use ios
+ use ios, only : ulog
  use atoms_force_constants
- use params
- use lattice
- use constants, only : r15
- use fourier, only : rgrid,nrgrid
- use born, only : phi_periodic
+ use lattice, only : r01, r02, r03
+ use geometry, only : v2a
  implicit none
-! integer, intent(in) :: iunit,rank
-! integer, intent(out) :: nfc
- integer largest,rnk,iunit,iuni2,t,t2,res,i,j,k,a, b, cnt2,g,g2,ti,ti2,ln,lm,&
- &       imax,nat,iat(8),ixyz(8),ired,igrd,ia2,n2(3),tau
- real(r15) term2,rij,fcd,volmax,rr(3),rr2(3)
-! character(len=*), intent(in) :: fn
+ integer, parameter :: ulat=191, ufc=192
+ integer nat0, i, j, k, r, g, t, ti, nold, ia(8), ix(8), ios_, nlo(3), nhi(3), tau, nn(3), ncur, nread, nmiss, &
+ &       nout, nt, nk, ib, jb, iold, cnt
+ integer, allocatable :: otau(:), on(:,:), lookup(:,:,:,:), kidx(:), korder(:), tg(:), tt(:)
+ integer(8), allocatable :: keys(:,:)
+ integer(8) kk(2)
+ real(r15) v(3), rold(3,3), val, resid, resmax, fmax, posold(3)
+ real(r15), allocatable :: f(:,:), a(:,:), x(:), ata(:,:), atb(:)
+ character(len=300) line
  character(len=1) rn
- character(len=99) line
- character wd1*22,wd2*12,wd3*11
- logical ex,ex2
+ logical ex
+ integer, allocatable :: kept(:)
 
-! first read lat_fc.dat to read and allocate arrays
+ nfull = 0
+ do r = 1, maxrank
+    if (include_fc(r) .ne. 0) nfull = nfull + map(r)%nkeptind
+ enddo
+ if (allocated(xfull)) deallocate(xfull)
+ allocate(xfull(nfull)); xfull = 0
+ do r = 5, maxrank
+    if (include_fc(r) .eq. 2) then
+       write(*,*)'READ_FCS: include_fc=2 is implemented for ranks 1-4 only; rank ',r
+       write(ulog,*)'READ_FCS: include_fc=2 is implemented for ranks 1-4 only; rank ',r
+       stop
+    endif
+ enddo
 
- iunit=190
- iuni2=170
+! ---- lat_fc.dat of the run that produced the FCs: cell check and atom number -> (tau, n)
+ inquire(file='lat_fc.dat', exist=ex)
+ if (.not. ex) then
+    write(*,*)'READ_FCS: include_fc=2 needs lat_fc.dat (and fcN.dat) of the run that produced the FCs'
+    write(ulog,*)'READ_FCS: include_fc=2 needs lat_fc.dat (and fcN.dat) of the run that produced the FCs'
+    stop
+ endif
+ open(ulat, file='lat_fc.dat', status='old')
+ read(ulat,'(a)') line
+ do i = 1, 3
+    read(ulat,*) rold(:,i)
+ enddo
+ if (maxval(abs(rold(:,1)-v2a(r01))) + maxval(abs(rold(:,2)-v2a(r02))) + maxval(abs(rold(:,3)-v2a(r03))) .gt. 1d-4) then
+    write(*,*)'READ_FCS: the primitive vectors of lat_fc.dat differ from structure.params'
+    write(ulog,*)'READ_FCS: the primitive vectors of lat_fc.dat differ from structure.params'
+    stop
+ endif
+ read(ulat,'(a)') line
+ read(ulat,*) nat0
+ if (nat0 .ne. natom_prim_cell) then
+    write(*,*)'READ_FCS: lat_fc.dat has ',nat0,' atoms in the primitive cell, structure.params ',natom_prim_cell
+    stop
+ endif
+ do i = 1, nat0
+    read(ulat,'(a)') line
+ enddo
+ do
+    read(ulat,'(a)',iostat=ios_) line
+    if (ios_ .ne. 0) then
+       write(*,*)'READ_FCS: no atom list (maxshells,Neighborshell atoms) in lat_fc.dat'
+       stop
+    endif
+    if (index(line,'Neighborshell atoms') .gt. 0) exit
+ enddo
+ read(ulat,*) i, nold, j
+ allocate(otau(nold), on(3,nold))
+ do i = 1, nold
+    read(ulat,*) iold, posold, otau(i), on(:,i)
+    if (iold .ne. i) then
+       write(*,*)'READ_FCS: atom list of lat_fc.dat out of order at ',i
+       stop
+    endif
+ enddo
+ close(ulat)
+ write(ulog,*)'READ_FCS: lat_fc.dat read, cell matches, atoms listed: ',nold
 
- inquire ( file='lat_fc.dat', exist=ex)
- if(.not. ex) then
-   write(*,*)' File lat_fc.dat does not exist, so FCs cannot be read without lat_fc!!'
-   stop
+! ---- this run's atoms by (tau, n)
+ nlo = minval(iatomcell(:,1:natoms),2); nhi = maxval(iatomcell(:,1:natoms),2)
+ allocate(lookup(natom_prim_cell, nlo(1):nhi(1), nlo(2):nhi(2), nlo(3):nhi(3))); lookup = 0
+ do i = 1, natoms
+    lookup(iatomcell0(i), iatomcell(1,i), iatomcell(2,i), iatomcell(3,i)) = i
+ enddo
+ if (natoms .ge. 2**20) then
+    write(*,*)'READ_FCS: more than 2**20-1 atoms in the neighbour list; term keys overflow'
+    stop
  endif
 
- allocate(nterm(maxrank),ntermsindep(maxrank))
-
- open(iunit,file='lat_fc.dat',status='old')
- do i=1,5
-    read(iunit,*) line
- enddo
- read(iunit,*) natom_prim_cell
- do i=1,natom_prim_cell
-    read(iunit,*) line
- enddo
-
- read(iunit,*) line
- read(iunit,*) line
- write(*,*)'reading include_fc=',line
- 
- read(iunit,*) line
-! write(ufco,*)' Number of shells for each atom in each rank '
- do i=2,maxrank
-    read(iunit,*)nshells(i,:)
- enddo
-
- read(iunit,*) line
-! write(ufco,*)' Crystal data: Number of groups for each rank ' 
- read(iunit,*)map(1:8)%ngr
-
- read(iunit,*) line
-! write(ufco,*)' Number of FCs for each rank '
- read(iunit,*)map(1:8)%ntot !;  ntrms(:)=map(:)%ntot  
-
- read(iunit,*) line
-! write(ufco,*)' Number of independent FCs for each rank '
- read(iunit,*)map(1:8)%ntotind, map(1:8)%nkeptind !;  ntindep(:)=map(:)%ntotind 
-
- write(*,*)'reading map%ngr     ',map(:)%ngr
- write(*,*)'reading map%nkeptind',map(:)%nkeptind
- write(*,*)'reading map%ntotind ',map(:)%ntotind
- write(*,*)'reading map%ntot    ',map(:)%ntot
-
-
- read(iunit,*) line
-! write(ufco,*)' maxshells,Neighborshell atoms: i,x,y,z,type_tau,n1,n2,n3 '
- read(iunit,*)  maxshells,largest,natoms
- write(*,*)'reading maxshells,largest,natoms=',maxshells,largest,natoms
-
-! nat=0
- do i=1,largest !natoms
-!   ri = length(atompos(:,i)) !-atompos(:,1))
-!      nat=nat+1
-      read(iunit,*)nat,atompos(:,nat),iatomcell0(nat),iatomcell(:,nat)
- enddo
- close(iunit)
-
-! call find_WS_largest_SC(imax,volmax)
-
- call set_neighbor_list
-
-! call setup_maps
-
- allocate(map(2)%keep(map(2)%ntotind))  ! which indep fc2s to keep based on the vectors rws26
- if(fc2range.eq.0) then ! determine the range from the supercell WS 
-    call setup_FC2_in_supercell(rws26) ! keep harmonic FCs within the WS of the Supercell 
- else ! use default values found by setup_maps and the required shells
-    map(2)%keep(:)=1  ! keep everything
-    call exclude_beyond_sc(map(2)%ntotind,map(2)%keep(:))
-    map(2)%nkeptind= sum(map(2)%keep(:)) ! not sum of the groups but sum of all rnk2 indep terms
- endif
-! initialize nkeptind for all other ranks
- do rnk=1,maxrank
-    if(rnk.ne.2) map(rnk)%nkeptind = map(rnk)%ntotind
- enddo
-
-! after reading lat_fc.dat, include_fc is overwritten!!
- nindepfc=0
- do rnk=1,maxrank
-  if ( include_fc(rnk) .ne. 0 ) then ! exclude them if they already exist and will be read
-! for now, we put in amat all fc2 of number nkeptind
-       nindepfc = nindepfc + map(2)%nkeptind 
-       write(ulog,*)'rank,nindep_rnk,cumulative nindep_kept=',rnk,map(rnk)%nkeptind,nindepfc
-   endif
- enddo
- write(ulog,*)' MAIN: total # of independent FCs of all rank, nindepfc=',nindepfc
-
- allocate(fcs(nindepfc),sigma(nindepfc))
- fcs=0; sigma=0
-! now read available fcs
- rankloop: do rnk=1,maxrank
-    if (include_fc(rnk).ne.0) then
-       write(rn,'(i1)')rnk 
-!       write(lm,'(i1)')rnk-1
-       inquire ( file='fc'//rn//'_irr.dat', exist=ex)
-       if (.not.ex ) then !.or. .not.ex2) then
-          write(*,*)'EITHER file fc'//rn//'_irr.dat does not exist!!'
-!          write(*,*)'OR file fc'//rn//'.dat does not exist!!'
-          stop
-       else
-          open(iunit+rnk,file='fc'//rn//'_irr.dat',status='old')
-          write(*,*)'READ_FC: file opened for rank=',rnk
-!      ng=map(rnk)%ngr ! number of groups
-          cnt2=0  ! cumulative # of indep terms of given rnk up to g and excluding group g
-          g2=0
-          groups: do g=1,map(rnk)%ngr  ! index of a given group of given rank
-            if(g.le.g2) cycle
-            cnt2=0
-            if(rnk.eq.2) then
-              if(g.gt.1) cnt2=sum(map(rnk)%keep(1:counteri(2,g-1,map(2)%ntind(g-1))))
-            else
-              if(g.gt.1) cnt2 = counteri(rnk,g,1) -1 !sum(map(rnk)%ntind(1:g-1)) ! cumulative indep term index up to, but excluding  group g (used for ranks other than 2)
-            endif
-            ti2=0
-            do ti=1,map(rnk)%ntind(g)  ! index of independent terms in that group g
-               if(ti.le.ti2) cycle
-               iat(1:rnk)  = map(rnk)%gr(g)%iatind (:,ti)
-               ixyz(1:rnk) = map(rnk)%gr(g)%ixyzind(:,ti)
-               if (rnk.eq.2) then
-                 rij = length(atompos(:,iat(1))-atompos(:,iat(2)))
-               else
-                 rij = 0
-               endif
-
-               if(rnk.eq.2)then 
-                  if(map(2)%keep(counteri(2,g,ti)).eq.0) cycle
-               endif
-
-               read(iunit+rnk,*,end=98) ti2,g2,(iat(j),ixyz(j),j=1,rnk),  &
-       &       fcd,rij,(iatomcell0(iat(k)),iatomcell(:,iat(k)),k=2,rnk)
-
-     if(rnk.eq.2) then
-          write(*,*)'g,ti,g2,ti2,current(g2,ti2),fcd=',g,ti,g2,ti2,current(2,g2,ti2),fcd
-     else
-          write(*,*)'g,ti,g2,ti2,fcd=',g,ti,g2,ti2,fcd
-     endif
-
-               if(g2.ne.g) then
-                write(*,*)'read_fcs: g.ne.g2!!',g,g2
-                if(rnk.eq.2) then
-                  do i=g,g2-1
-                     map(2)%keep(counteri(2,i,ti))=0
-                  enddo
-                  fcs(res+current(2,g2,ti2))=fcd
-                  cycle
-                endif
-               endif
-               if(ti2.ne.ti) then  ! consistency check with kept terms
-                write(*,*)'read_fcs: ti.ne.ti2!!',ti,ti2
-                if(rnk.eq.2) then
-                  do i=ti,ti2-1
-                     map(2)%keep(counteri(2,g,i))=0
-                  enddo
-                  fcs(res+current(2,g2,ti2))=fcd
-                  cycle
-                endif
-               endif
-
-               fcs(res+counteri(rnk,g2,ti2))=fcd
-
-            enddo
-          enddo groups
-
-    res=res+ map(rnk)%nkeptind
-
-98  close(iunit)
-  endif
-  endif
- enddo rankloop
-
-! now read fc2.dat in 5Dmatrix form
- inquire ( file='fc2.dat', exist=ex2)  ! not needed if map%mat known
- if (.not.ex ) then 
-    write(*,*)'file fc2.dat does not exist!!'
- else
-    allocate(phi_periodic(natom_prim_cell,natom_prim_cell,3,3,nrgrid))
-    phi_periodic=0
-    open(iuni2,file='fc2.dat',status='old')
-    read(iuni2,*)line
-
-    do tau=1,natom_prim_cell
-    g2=0
-    do g=1,map(2)%ngr  ! index of a given group of given rank
-       if(g.le.g2) cycle
-       t2=0
-       do t=1,map(2)%nt(g)  ! index of all terms in that group g
-          if(t.le.t2) cycle
-         !     iat(1:rnk)  = map(rnk)%gr(g)%iatind (:,t)
-         !     ixyz(1:rnk) = map(rnk)%gr(g)%ixyzind(:,t)
-         !     rij = length(atompos(:,iat(1))-atompos(:,iat(2)))
-          read(iuni2,*,end=99) t2,g2,(iat(j),ixyz(j),j=1,2), fcd,rij,ia2,n2
-          if(iat(1).ne.tau) cycle
-
-          write(*,4)'g,t,g2,t2,iat,ixyz,fcd=',g,t,g2,t2,iat,ixyz,fcd
-
-          if(iatomcell0(iat(2)).ne.ia2 .or. .not.(iatomcell(:,iat(2)).myeq.n2) ) then
-             write(*,*)'iat(2),tau,n2 read vs calc:',iat(2),ia2,n2,iatomcell0(iat(2)),iatomcell(:,iat(2))
+ do r = 1, 4
+    if (include_fc(r) .ne. 2) cycle
+    write(rn,'(i1)') r
+! keys of this run's terms: (iat(1:r), ixyz(1:r)) -> (g, t)
+    ncur = sum(map(r)%nt(1:map(r)%ngr))
+    allocate(keys(2,ncur), tg(ncur), tt(ncur), korder(ncur))
+    k = 0
+    do g = 1, map(r)%ngr
+       do t = 1, map(r)%nt(g)
+          k = k + 1
+          keys(:,k) = term_key(r, map(r)%gr(g)%iat(1:r,t), map(r)%gr(g)%ixyz(1:r,t))
+          tg(k) = g; tt(k) = t
+       enddo
+    enddo
+    call sort_i8(ncur, keys, korder)
+    allocate(f(maxval(map(r)%nt(1:map(r)%ngr)), map(r)%ngr)); f = 0
+    inquire(file='fc'//rn//'.dat', exist=ex)
+    if (.not. ex) then
+       write(*,*)'READ_FCS: include_fc(',r,')=2 but fc'//rn//'.dat is missing'
+       write(ulog,*)'READ_FCS: include_fc(',r,')=2 but fc'//rn//'.dat is missing'
+       stop
+    endif
+    open(ufc, file='fc'//rn//'.dat', status='old')
+    nread = 0; nmiss = 0; nout = 0
+    do
+       read(ufc,'(a)',iostat=ios_) line
+       if (ios_ .ne. 0) exit
+       if (len_trim(line) .eq. 0) cycle
+       if (index(adjustl(line),'#') .eq. 1) cycle
+       read(line,*,iostat=ios_) t, g, (ia(j), ix(j), j=1,r), val
+       if (ios_ .ne. 0) cycle
+       nread = nread + 1
+       do j = 1, r                                   ! old atom number -> this run's atom
+          if (ia(j) .lt. 1 .or. ia(j) .gt. nold) then
+             write(*,*)'READ_FCS: fc'//rn//'.dat names atom ',ia(j),' not in lat_fc.dat (1..',nold,')'
              stop
           endif
-          if(g2.ne.g) then
-             write(*,*)'read_fcs: g.ne.g2!!',g,g2
-          endif
-          if(t2.ne.t) then  ! consistency check with kept terms
-             write(*,*)'read_fcs: t.ne.t2!!',t,t2
-          endif
-          rr=atompos(:,iat(2))-atompos(:,ia2)
-          call findgrid(rr,rgrid,nrgrid,igrd)
-          if(igrd.gt.0 .and. igrd.le.nrgrid) then
-             phi_periodic(iatomcell0(iat(1)),iatomcell0(iat(2)),ixyz(1),ixyz(2),igrd)=fcd
+          tau = otau(ia(j)); nn = on(:,ia(j))
+          if (any(nn .lt. nlo) .or. any(nn .gt. nhi)) then
+             ia(j) = 0
           else
-!             write(ulog,8)'READ_fcs: error could not find rgrid point',igrd,length(rr),rr,cart2red(rr,'r')
-             rr2= fold_ws(rr,rws26) 
-             call findgrid(rr2,rgrid,nrgrid,igrd)
-             if(igrd.eq.0) then
-               write(*,8)'second attempt ',igrd,rr2,cart2red(rr2,'r')
-               stop
-             else
-               phi_periodic(iatomcell0(iat(1)),iatomcell0(iat(2)),ixyz(1),ixyz(2),igrd)=fcd
-             endif 
-          endif 
+             ia(j) = lookup(tau, nn(1), nn(2), nn(3))
+          endif
        enddo
+       if (any(ia(1:r) .eq. 0)) then
+          nout = nout + 1; cycle
+       endif
+       kk = term_key(r, ia(1:r), ix(1:r))
+       i = find_i8(ncur, keys, korder, kk)
+       if (i .eq. 0) then
+          nmiss = nmiss + 1; cycle
+       endif
+       f(tt(i), tg(i)) = val
     enddo
+    close(ufc)
+! irreducible values group by group (least squares; kept terms only for rank 2)
+    resmax = 0; fmax = 0
+    do g = 1, map(r)%ngr
+       nt = map(r)%nt(g)
+       allocate(kept(map(r)%ntind(g))); nk = 0
+       do ti = 1, map(r)%ntind(g)
+          if (full_col(r,g,ti) .gt. 0) then
+             nk = nk + 1; kept(nk) = ti
+          endif
+       enddo
+       if (nk .gt. 0) then
+          allocate(a(nt,nk), x(nk), ata(nk,nk), atb(nk))
+          do jb = 1, nk
+             a(:,jb) = map(r)%gr(g)%mat(1:nt, kept(jb))
+          enddo
+          ata = matmul(transpose(a), a); atb = matmul(transpose(a), f(1:nt,g))
+          call solve_small(nk, ata, atb, x)
+          do jb = 1, nk
+             xfull(full_col(r,g,kept(jb))) = x(jb)
+          enddo
+          resid = maxval(abs(matmul(a,x) - f(1:nt,g)))
+          resmax = max(resmax, resid); fmax = max(fmax, maxval(abs(f(1:nt,g))))
+          deallocate(a, x, ata, atb)
+       endif
+       deallocate(kept)
     enddo
- 99 close(iuni2)
-  
- endif
-
- do g=1,map(2)%ngr
- do ti=1,map(2)%ntind(g)
-     write(ulog,'(a,9i4)')'g,ti,counter,keep,current=',g,ti,counteri(2,g,ti),map(2)%keep(counteri(2,g,ti)),current(2,g,ti)
-     map(2)%gr(g)%mat(:,ti) = map(2)%gr(g)%mat(:,ti)*map(2)%keep(counteri(2,g,ti))
+    write(ulog,'(a,i2,a,i8,a,i8,a,i8,a,i8)')' READ_FCS: rank',r,': terms read ',nread,', matched ', &
+ &        nread-nmiss-nout,', not in this run''s groups ',nmiss,', atoms outside its neighbour list ',nout
+    write(ulog,'(a,i2,a,es10.2,a,es10.2)')' READ_FCS: rank',r,': max |mat x - f| over the terms =',resmax, &
+ &        ' (max |f| =',fmax
+    write(*,'(a,i2,a,i8,a,es10.2)')' READ_FCS: rank',r,' read from fc'//rn//'.dat: terms ',nread, &
+ &        ', max residual of the irreducible fit',resmax
+    if (nmiss+nout .gt. 0) then
+       write(*,*)'READ_FCS: WARNING: ',nmiss+nout,' terms of fc'//rn//'.dat are not FCs of this run (ignored)'
+       write(ulog,*)'READ_FCS: WARNING: ',nmiss+nout,' terms of fc'//rn//'.dat are not FCs of this run (ignored)'
+    endif
+    if (resmax .gt. 1d-4*max(fmax,1d-30)) then
+       write(*,*)'READ_FCS: WARNING: the read FCs of rank ',r,' do not follow this run''s symmetry relations'
+       write(ulog,*)'READ_FCS: WARNING: the read FCs of rank ',r,' do not follow this run''s symmetry relations'
+    endif
+    deallocate(keys, tg, tt, korder, f)
  enddo
+ deallocate(otau, on, lookup)
+ cnt = 0
+ do r = 1, maxrank
+    if (include_fc(r) .eq. 2) cnt = cnt + map(r)%nkeptind
  enddo
- 
- 
-! check ASR
- do i=1,natom_prim_cell
- do a=1,3
- do b=1,3
-    fcd=0
-    do j=1,natom_prim_cell
-    do igrd=1,nrgrid
-       fcd=fcd+phi_periodic(i,j,a,b,igrd)
-    enddo
-    enddo
-    write(ulog,3)'ASR CHECK in FC5 after reading:',i,a,b,fcd
- enddo
- enddo
- enddo
+ write(ulog,*)'READ_FCS: irreducible FCs read (all read ranks): ',cnt,' of ',nfull
 
-!! write this set of fcs into a file to compare with original fcs
-  open(932,file='trace_fc5.dat')
-  write(932,*)'# tau,taup,igrid,|r+taup-tau|,trace(fc2),fold(r+taup-tau),red(R+taup-tau),fc2(a,b)'
-  do tau =1,natom_prim_cell
-  do j=1,natom_prim_cell
-     rr2 = atompos(:,j)-atompos(:,tau)
-     do igrd=1,nrgrid
-        rr=rgrid(:,igrd)+rr2 
-        fcd= trace(phi_periodic(tau,j,:,:,igrd))
-        if(abs(fcd).gt.0.0001) then
-           write(932,3)' ',tau,j,igrd,length(rr),fcd,length(fold_ws(rr,rws26)),cart2red(rr,'r'),phi_periodic(tau,j,:,:,igrd) 
-        endif
-     enddo
-  enddo
-  enddo
-  close(932)
-
- call write_out(ulog,' READ_FCS: done list ',fcs)
-
-3 format(a,3i5,99(1x,f9.4))
-4 format(a,4i5,99(1x,g11.4))
-8 format(a,i5,99(1x,g11.4))
-
+ contains
+   function term_key(rr, at, dx) result(kk2)
+!! (first atom and the directions ; the other atoms, 20 bits each): two integers, compared in that order
+   integer, intent(in) :: rr, at(:), dx(:)
+   integer(8) kk2(2)
+   integer m
+   kk2(1) = int(at(1),8)
+   do m = 1, rr
+      kk2(1) = kk2(1)*4_8 + int(dx(m)-1,8)
+   enddo
+   kk2(2) = 0
+   do m = 2, rr
+      kk2(2) = kk2(2)*1048576_8 + int(at(m),8)
+   enddo
+   end function term_key
  end subroutine read_fcs
-!============================================================
- subroutine read_fcs_old(iunit,fn,rank,fc2,nfc)
- use svd_stuff
- use ios
- use atoms_force_constants
- use params
- use constants, only : r15
- implicit none
- integer rank,iunit,t,res,i,a, b, cnt2,term,g,ti,nfc
- real(r15) fc2(nfc)
- character(len=*), intent(in) :: fn
- logical ex
-
- open(iunit,file=fn,status='old')
-
-! read(iunit,'(a)') line
- t = 0
-!----------------------------------------
-if ( rank .eq. 1) then
-
- res = 0
- do i=1,nterms(rank)
-       read(iunit,*,err=91)t,igroup_1(t), &
-& iatomterm_1(1,t),ixyzterm_1(1,t),  &
-& fcs_1(igroup_1(t)),ampterm_1(t)
- enddo
- return
-91 write(ulog,*)'READ_FCS: rank=',rank,' reached end of file after t=',t
- if (t.eq.0) then
-    nterms(1) = 1
-    iatomterm_1(1:1,1:1) = 1
-    ixyzterm_1 (1:1,1:1) = 1
-    igroup_1 (1:1) = 0
-    ampterm_1(1:1) = 0
-    include_fc(rank) = 0       ! if nothing, then exclude from fitting
- endif
-
-!----------------------------------------
-elseif ( rank .eq. 2) then
-
- res =  igroup_1(nterms(1))
-
- if ( include_fc(rank) .eq. 2 ) then
-!   write(*,*) "The value of map(2)%ngr and rank is: ", map(2)%ngr, rank
-   inquire ( file='fc2_irr.dat', exist=ex)
-   if (ex) then
-!     open(473,file='fc2_irr.dat',status='old')
-
-     cnt2=0;   term = 0;
-     groups: do g=1,map(rank)%ngr  ! index of a given group
-       map(2)%gr(g)%iatind(:,:)=0
-       map(2)%gr(g)%ixyzind(:,:)=0
-
-       if(g.gt.1 .and. (map(2)%keep(g-1).eq.1)) cnt2=cnt2+map(2)%ntind(g-1)
-
-       do t=1,map(2)%ntind(g)  ! index of independent terms in that group g
-          term = term+1
-           read(ufit2,*) ti,nfc,map(2)%gr(nfc)%iatind (1,ti),  &
-           &                   map(2)%gr(nfc)%ixyzind(1,ti),  &
-           &                   map(2)%gr(nfc)%iatind (2,ti),  &
-           &                   map(2)%gr(nfc)%ixyzind(2,ti),  &
-           &                   fc2(res+cnt2+ti),a,b
-       enddo
-
-!        do i=1, map(2)%ngr
-!           read(473,*,iostat=reason) a, b, c, d, e, f, fc_ind(i), amp, rijs
-!           if (reason > 0) then
-!              write(*,*) "something is wrong"
-!           elseif (reason < 0) then
-!              write(*,*) "END OF FILE REACHED"
-!           else
-!              write(*,*) a,b,c,d,e,f,fc_ind(i),amp,rijs
-!           endif
-!        enddo
-
-        enddo groups
-     close(ufit2)
-  endif
- endif
- return
-! this is how fc_irr were written
-!    cnt2=0;   term = 0;    term2= 0
-!    groups: do g=1,map(rnk)%ntotind  ! index of a given group
-
-!       if(g.gt.1) cnt2=cnt2+map(rnk)%ntind(g-1)
-
-    ! write in the log and fcn_fit.dat: cnt2+ti is the position of indep_fc of that rank
-!       do ti=1,map(rnk)%ntind(g)  ! index of independent terms in that group g
-!          iat(1:rnk)  = map(rnk)%gr(g)%iatind (:,ti)
-!          ixyz(1:rnk) = map(rnk)%gr(g)%ixyzind(:,ti)
-!          term = term+1
-!          if (rnk.eq.2) then
-!            rij = length(atompos(:,iat(1))-atompos(:,iat(2)))
-!          else
-!            rij = 0
-!          endif
-!          write(ufit1-1+rnk,geh) ti,g,(iat(j),ixyz(j),j=1,rnk),  &  ! for fcn_irr.dat
-!       &     fcs(res+cnt2+ti),one,rij
-!       enddo
-
-! res =  igroup_1(nterms(1))
-! do i=1,nterms(rank)
-!       read(iunit,*,err=92)t,igroup_2(t), &
-! & iatomterm_2(1,t),ixyzterm_2(1,t),iatomterm_2(2,t),ixyzterm_2(2,t),  &
-! & fcs_2(igroup_2(t)),ampterm_2(t)
-! enddo
-! 
-! 92 write(ulog,*)'READ_FCS: rank=',rank,' reached end of file after t=',t
-!----------------------------------------
-
-elseif ( rank .eq. 3) then
-
- res =  igroup_1(nterms(1)) + igroup_2(nterms(2))
- do i=1,nterms(rank)
-       read(iunit,*,err=93)t,igroup_3(t), &
-& iatomterm_3(1,t),ixyzterm_3(1,t),iatomterm_3(2,t),ixyzterm_3(2,t), &
-& iatomterm_3(3,t),ixyzterm_3(3,t),  &
-& fcs_3(igroup_3(t)),ampterm_3(t)
- enddo
- return
-93 write(ulog,*)'READ_FCS: rank=',rank,' reached end of file after t=',t
-!----------------------------------------
-
-elseif ( rank .eq. 4) then
-
- res =  igroup_1(nterms(1)) + igroup_2(nterms(2)) + igroup_3(nterms(3))
- do i=1,nterms(rank)
-       read(iunit,*,err=94)t,igroup_4(t), &
-& iatomterm_4(1,t),ixyzterm_4(1,t),iatomterm_4(2,t),ixyzterm_4(2,t), &
-& iatomterm_4(3,t),ixyzterm_4(3,t),iatomterm_4(4,t),ixyzterm_4(4,t), &
-& fcs_4(igroup_4(t)),ampterm_4(t)
- enddo
- return
-94 write(ulog,*)'READ_FCS: rank=',rank,' reached end of file after t=',t
-else
-
- write(ulog,*)' READ_FCS: rank must be from 1 to 4, not ',rank
-
-endif
-
-write(ulog,*)'READ_FCS: error!! should not have gotten here!'
-
-stop
-
- end subroutine read_fcs_old
 !=================================================================
  subroutine calculate_and_write_displacements(ncfg,dsp,frc)
 !! equilibrium position already subtracted when reading the FORCEDISP files
