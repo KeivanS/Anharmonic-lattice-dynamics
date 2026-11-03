@@ -13,7 +13,8 @@
  use constants, only : r15, ci
  implicit none
  private
- public :: dynmat_routine, w_terms_set, internal_strain_trace, mode_gruneisen, gruneisen_longwave
+ public :: dynmat_routine, w_terms_set, internal_strain_trace, mode_gruneisen, gruneisen_longwave, &
+ &         acoustic_tensor
 
  integer, save :: nw=0
  integer, allocatable, save :: wrow(:),wcol(:)
@@ -122,56 +123,16 @@
  real(r15), intent(in) :: qdir(3),mass(nat),gsize
  real(r15), intent(out) :: a(3),b(3),gam(3)
  real(r15) qh(3)
- complex(r15) dp(ndn,ndn,3),dm(ndn,ndn,3),d0(ndn,ndn),d1(ndn,ndn),d2(ndn,ndn),ev(ndn,ndn,3),od(ndn,ndn,3)
- complex(r15) w0(ndn,ndn),w1(ndn,ndn),w2(ndn,ndn),g(ndn,ndn),pdp(ndn,ndn),vv(ndn,ndn)
+ complex(r15) d0(ndn,ndn),d1(ndn,ndn),d2(ndn,ndn)
+ complex(r15) w0(ndn,ndn),w1(ndn,ndn),w2(ndn,ndn),g(ndn,ndn)
  complex(r15) tt(ndn,3),am(3,3),bm(3,3),u(3,3),sub(3,3),vs(3,3),gd1t(ndn,3),gw1t(ndn,3)
- real(r15) h,m(3,3),mi(3,3),lam(ndn),lmax,mtot,es(3),chk(4),scd,scw
- integer k,i,j,t,al,n1,n2,ns
+ real(r15) es(3),chk(4),scd,scw
+ integer i,n1,n2,ns
 
  qh=qdir/sqrt(dot_product(qdir,qdir))   ! unit vector (a and b scale with |qdir|^2, gamma does not)
- h=1d-3*gsize
- do k=1,3
-    call getdyn( k*h*qh,ndn,dp(:,:,k))
-    call getdyn(-k*h*qh,ndn,dm(:,:,k))
-    ev(:,:,k)=(dp(:,:,k)+dm(:,:,k))/2            ! c0 + c2 t^2 + c4 t^4
-    od(:,:,k)=(dp(:,:,k)-dm(:,:,k))/(2*k*h)      ! c1 + c3 t^2 + c5 t^4
- enddo
-! [1 u^2 u^4] for u = 1,2,3 (t = u h); its inverse gives (c0, c2 h^2, c4 h^4) and (c1, c3 h^2, c5 h^4)
- do k=1,3
-    m(k,:)=(/ 1d0, dble(k*k), dble(k**4) /)
- enddo
- call inverse_real(m,mi,3)
- d0=0; d1=0; d2=0
- do k=1,3
-    d0=d0+mi(1,k)*ev(:,:,k)
-    d2=d2+mi(2,k)*ev(:,:,k)/h**2
-    d1=d1+mi(1,k)*od(:,:,k)
- enddo
- d0=(d0+conjg(transpose(d0)))/2; d1=(d1+conjg(transpose(d1)))/2; d2=(d2+conjg(transpose(d2)))/2
+ call longwave_parts(getdyn,qh,ndn,nat,mass,gsize,d0,d1,d2,tt,g,ns)
  call w_taylor(qh,0,ndn,w0); call w_taylor(qh,1,ndn,w1); call w_taylor(qh,2,ndn,w2)
  w0=(w0+conjg(transpose(w0)))/2; w1=(w1+conjg(transpose(w1)))/2; w2=(w2+conjg(transpose(w2)))/2
-
- mtot=sum(mass)
- tt=0
- do t=1,nat
- do al=1,3
-    tt(al+3*(t-1),al)=sqrt(mass(t)/mtot)
- enddo
- enddo
-! G = pseudo-inverse of P D0 P (the 3 translations are its zero modes)
- pdp=d0-matmul(tt,matmul(conjg(transpose(tt)),d0))
- pdp=pdp-matmul(matmul(pdp,tt),conjg(transpose(tt)))
- call herm_eig(ndn,pdp,lam,vv)
- lmax=maxval(abs(lam))
- g=0; ns=0
- do i=1,ndn
-    if (abs(lam(i)).lt.1d-9*lmax) then
-       ns=ns+1; cycle
-    endif
-    do j=1,ndn
-       g(:,j)=g(:,j)+vv(:,i)*conjg(vv(j,i))/lam(i)
-    enddo
- enddo
  if (ns.ne.3) write(ulog,'(a,i3,a)')' GRUNEISEN_LONGWAVE: WARNING: ',ns, &
  &   ' near-zero eigenvalues of P D0 P (expected 3: a soft optical mode at Gamma?)'
  gd1t=matmul(g,matmul(d1,tt)); gw1t=matmul(g,matmul(w1,tt))
@@ -208,6 +169,78 @@
  enddo
  write(ulog,'(a,3es14.6,a,3f12.6)')' GRUNEISEN_LONGWAVE: omega^2/q^2=',a,'  gamma=',gam
  end subroutine gruneisen_longwave
+!------------------------------------------------------------
+ subroutine longwave_parts(getdyn,qh,ndn,nat,mass,gsize,d0,d1,d2,tt,g,ns)
+!! D(t qh) = D0 + t D1 + t^2 D2 + ... from the code's own D at t = +-h, +-2h, +-3h (h = 1e-3 gsize),
+!! even and odd parts fitted exactly to degree 4 and 5; tt = the 3 rigid translations sqrt(m_t/M) delta;
+!! g = pseudo-inverse of P D0 P (P = 1 - T T^+), ns = its number of near-zero eigenvalues (3 expected)
+ procedure(dynmat_routine) :: getdyn
+ integer, intent(in) :: ndn,nat
+ real(r15), intent(in) :: qh(3),mass(nat),gsize
+ complex(r15), intent(out) :: d0(ndn,ndn),d1(ndn,ndn),d2(ndn,ndn),tt(ndn,3),g(ndn,ndn)
+ integer, intent(out) :: ns
+ complex(r15) dp(ndn,ndn,3),dm(ndn,ndn,3),ev(ndn,ndn,3),od(ndn,ndn,3),pdp(ndn,ndn),vv(ndn,ndn)
+ real(r15) h,m(3,3),mi(3,3),lam(ndn),lmax,mtot
+ integer k,i,j,t,al
+ h=1d-3*gsize
+ do k=1,3
+    call getdyn( k*h*qh,ndn,dp(:,:,k))
+    call getdyn(-k*h*qh,ndn,dm(:,:,k))
+    ev(:,:,k)=(dp(:,:,k)+dm(:,:,k))/2            ! c0 + c2 t^2 + c4 t^4
+    od(:,:,k)=(dp(:,:,k)-dm(:,:,k))/(2*k*h)      ! c1 + c3 t^2 + c5 t^4
+ enddo
+! [1 u^2 u^4] for u = 1,2,3 (t = u h); its inverse gives (c0, c2 h^2, c4 h^4) and (c1, c3 h^2, c5 h^4)
+ do k=1,3
+    m(k,:)=(/ 1d0, dble(k*k), dble(k**4) /)
+ enddo
+ call inverse_real(m,mi,3)
+ d0=0; d1=0; d2=0
+ do k=1,3
+    d0=d0+mi(1,k)*ev(:,:,k)
+    d2=d2+mi(2,k)*ev(:,:,k)/h**2
+    d1=d1+mi(1,k)*od(:,:,k)
+ enddo
+ d0=(d0+conjg(transpose(d0)))/2; d1=(d1+conjg(transpose(d1)))/2; d2=(d2+conjg(transpose(d2)))/2
+
+ mtot=sum(mass)
+ tt=0
+ do t=1,nat
+ do al=1,3
+    tt(al+3*(t-1),al)=sqrt(mass(t)/mtot)
+ enddo
+ enddo
+! G = pseudo-inverse of P D0 P (the 3 translations are its zero modes)
+ pdp=d0-matmul(tt,matmul(conjg(transpose(tt)),d0))
+ pdp=pdp-matmul(matmul(pdp,tt),conjg(transpose(tt)))
+ call herm_eig(ndn,pdp,lam,vv)
+ lmax=maxval(abs(lam))
+ g=0; ns=0
+ do i=1,ndn
+    if (abs(lam(i)).lt.1d-9*lmax) then
+       ns=ns+1; cycle
+    endif
+    do j=1,ndn
+       g(:,j)=g(:,j)+vv(:,i)*conjg(vv(j,i))/lam(i)
+    enddo
+ enddo
+ end subroutine longwave_parts
+!------------------------------------------------------------
+ subroutine acoustic_tensor(getdyn,qdir,ndn,nat,mass,gsize,am,ns)
+!! the long-wave acoustic matrix along the unit vector qh = qdir/|qdir|: omega^2 = q^2 eig(A) + O(q^3),
+!!   A = T+ D2 T - T+ D1 G D1 T  (the optical modes folded out through G, as in gruneisen_longwave);
+!! (M/V) A is the Christoffel tensor C_ijkl qh_j qh_l (+ the macroscopic-field term if D has it)
+ procedure(dynmat_routine) :: getdyn
+ integer, intent(in) :: ndn,nat
+ real(r15), intent(in) :: qdir(3),mass(nat),gsize
+ complex(r15), intent(out) :: am(3,3)
+ integer, intent(out) :: ns
+ complex(r15) d0(ndn,ndn),d1(ndn,ndn),d2(ndn,ndn),tt(ndn,3),g(ndn,ndn)
+ real(r15) qh(3)
+ qh=qdir/sqrt(dot_product(qdir,qdir))
+ call longwave_parts(getdyn,qh,ndn,nat,mass,gsize,d0,d1,d2,tt,g,ns)
+ am=matmul(conjg(transpose(tt)),matmul(d2,tt)) - matmul(conjg(transpose(matmul(d1,tt))),matmul(g,matmul(d1,tt)))
+ am=(am+conjg(transpose(am)))/2
+ end subroutine acoustic_tensor
 !------------------------------------------------------------
  subroutine mode_gruneisen(getdyn,nkp,kp,ipath,ndn,nat,mass,gsize,eivl,eivc,grn,ulog)
 !! gamma of every mode at every k-point, written in the band order of eivl, eivc (get_frequencies).

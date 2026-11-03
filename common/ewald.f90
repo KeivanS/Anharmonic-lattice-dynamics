@@ -6,6 +6,10 @@
  integer nr_ewald,ng_ewald
  real(r15), allocatable :: r_ewald(:,:),g_ewald(:,:)
  real(r15) rcutoff_ewa,gcutoff_ewa, eta
+! E = 0 (no macroscopic field; 2026-11-02, for the elastic constants from the long-wave limit): when
+! set, ewald_2nd_deriv_hat keeps of its G = 0 term only the analytic part (exp(-x)-1)(Z.q)(Z.q)/(q.eps.q),
+! x = q.eps.q/(4 eta^2), i.e. the non-analytic (macroscopic-field) term of D(q -> 0) is left out
+ logical :: ewald_no_macro = .false.
 
  contains
 
@@ -195,7 +199,7 @@
  integer igrid,al,be,ga
  real(r15) sd(3),del(3),dd,my_erfc,geg,ep,vd(3),dta(3),qpg(3), &
 &          qal(3),qbe(3),dum(3),ep3,tol,sumcut,dd2
- complex(r15) hout(3,3),gout(3,3,3),zz,gsum,rpgsum,consta
+ complex(r15) hout(3,3),gout(3,3,3),zz,gsum,rpgsum,consta,hmac(3,3),gmac(3,3,3)
  integer, external :: delta_k
 
  dta = v2a(atom0(taup)%equilibrium_pos)-v2a(atom0(tau)%equilibrium_pos)
@@ -212,6 +216,11 @@
 !      if (geg.gt.100*etaew*etaew) cycle 
        if (geg.gt.4*sumcut*sumcut*etaew*etaew) cycle 
        call naq(qpg,tau,taup,etaew,hout,gout)
+       if (ewald_no_macro .and. dot_product(ggrid(:,igrid),ggrid(:,igrid)).lt.1d-20) then
+          call naq(qpg,tau,taup,1d6,hmac,gmac)       ! the bare G = 0 term (exp -> 1), removed
+          hout = hout - hmac
+          gout = gout - gmac
+       endif
        d2ew = d2ew + hout
        do ga=1,3
           d3ew(:,:,ga)=d3ew(:,:,ga) + gout(:,:,ga)  

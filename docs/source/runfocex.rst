@@ -977,6 +977,15 @@ Phonons and thermodynamics
     symmetry-forbidden part removed is printed). The anisotropy ratio and the sound speeds
     along 100, 110, 111 are evaluated in this frame; before, they used the axes of
     ``structure.params``, so a cell in another orientation mislabelled the directions.
+    ``ELASTIC_LONGWAVE`` lines (since 2 November 2026): the same constants from the sound speeds,
+    i.e. from the long-wave limit of the dynamical matrix of the band structure (long-range
+    term included) along 13 directions: the 36 Born-Huang brackets, the deviatoric stress from
+    their asymmetry (compare with FOCEX's residual stress printed next to it; a difference means
+    the force constants and the stress do not agree), and C. With Born charges, two sets: at zero
+    macroscopic field (E = 0, as VASP reports them), and with the non-analytic term (the
+    piezoelectric stiffening of the ionic charges only; for reference). The pressure cannot be
+    seen in sound speeds and is taken from the residual stress. A negative :math:`\rho v^2` is
+    reported as a warning (unstable long waves).
 
 ``thermo_QHA.dat``
     Quasi-harmonic thermodynamics versus temperature, one line per temperature:

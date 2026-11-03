@@ -493,6 +493,26 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   born_flag=1: nothing subtracted (subtract_coulomb_force returns for <= 1), NA term added to D; the
   log message said otherwise until 2026-11-01 (fixed).
 
+## Elastic constants from sound speeds (elastic_longwave, 2026-11-02; user's request)
+
+- FOCEX/dynamical.f90 elastic_longwave, called at the end of the mech.dat block: along 13 directions
+  (axes, face and body diagonals) gruneisen_rules acoustic_tensor (common/gruneisen.f90; the D0/D1/D2
+  expansion and G of gruneisen_longwave, factored into longwave_parts, output of gruneisen_longwave
+  unchanged) gives A; rho A_ik = sum_jl B[(ik),(jl)] qh_j qh_l, B = the 36 relaxed brackets (rank 36; a general
+  Voigt C_(ij),(kl) would have rank 31). B[ab,cd]-B[cd,ab] = d_ab s_cd - d_cd s_ab gives the deviatoric
+  stress (pressure invisible: absorbed exactly by a Voigt-symmetric C); C from B - d_ik s_jl with
+  s = s_dev + Tr(sigmav)/3. Assumes a force-free reference (else Q's antisymmetric part adds to the asymmetry).
+- Switch ewald_no_macro (common/ewald.f90): ewald_2nd_deriv_hat keeps of its G=0 term only (exp(-x)-1)
+  (Z.q)(Z.q)/(q.eps.q): E = 0 elastic constants (VASP's). Only for born_flag 2,3,6,7,8; reset after.
+- Checks: exact model (REFERENCE/exact_model/longwave): python longwave_check.py (exact Hessian) s_dev 1e-13,
+  C 5e-10 GPa for ZnO, HfO2, CaF2 stressed (internal coordinates relaxed); FOCEX on mkstressed.py ZnO inputs:
+  s_dev and C to the printed digits; FOCEX relaxed ZnO model: C = exact strain Hessian (1e-3 GPa). User's ZnO
+  data born 0: = brackets route within 0.06 GPa, other outputs byte-identical; LaP (centrosymmetric) E=0 = with NA.
+- Found with it: mech.dat's bracket route has no long-range term (get_phi_zeta, residuals, mechanical use the
+  fitted FC2 only): with born_flag 2 its PHI can be indefinite and C wrong (user's ZnO: C33 -58, C44 -33 GPa).
+  User's ZnO born 2: the brackets imply s_zz - p = 0.91 GPa vs 0.01 from FOCEX's stress (born 0: consistent);
+  cause not checked (possibly the Huang rows constrain only the short-range FC2). Open.
+
 ## Elastic constants, B0', QHA (FOCEX 9.2, 2026-11-01; user's questions)
 
 - Elastic constants (elastic_born_huang, mechanical and mechanical0): c = Sym{[ag,bd]+[bg,ad]-[ab,gd]

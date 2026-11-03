@@ -163,6 +163,7 @@
   write(uio ,8)' xagne, T_D(K) =',xagne,t_debye
 
 
+  call elastic_longwave(uio,rotc)   ! C_ij from the sound speeds, E = 0 and with the NA term
   close(uio)
 
 ! now calculating average sound speeds and Debye temperature along 100, 110, and 111
@@ -2383,6 +2384,201 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 8 format(a,9(1x,g11.4))
 
  end subroutine sound_speeds
+!============================================================
+ subroutine elastic_longwave(uio,rotc)
+!! elastic constants and the deviatoric stress from the long-wave limit of the code's own dynamical matrix
+!! (the one of the band structure: fitted FC2 + Ewald/NA term), 2026-11-02 (user's request).
+!! Along 13 directions qh (axes, face and body diagonals) the acoustic matrix A(qh) (omega^2 = q^2 eig A,
+!! optical modes folded out exactly; gruneisen_rules acoustic_tensor) gives
+!!   Gamma_ik = rho A_ik = sum_jl B[(ik),(jl)] qh_j qh_l = (C_ijkl + d_ik s_jl) qh_j qh_l,  rho = M/V,
+!! B = the 36 relaxed Born-Huang brackets, fitted by least squares (78 equations, rank 36). Then
+!!   B[ab,cd] - B[cd,ab] = d_ab s_cd - d_cd s_ab   (stressed Huang relation, force-free reference)
+!! gives the deviatoric stress s_dev (15 equations, 5 unknowns; the pressure is not seen by long waves),
+!! and C (21) follows from B - d_ik s_jl with s = s_dev + the pressure of FOCEX's own residual stress.
+!! Checked on the exact model (REFERENCE/exact_model/longwave): s_dev to 1e-13 GPa, C to 5e-10 GPa
+!! (ZnO, HfO2 stressed, CaF2), and against the strain Hessian at the relaxed ZnO model (1e-3 GPa).
+!! With residual forces (FC1 /= 0) the asymmetry also contains a force term (antisymmetric part of Q).
+!! Two results when Born charges are on (born_flag 2,3,6,7,8, ewald_2nd_deriv_hat):
+!!   E = 0 : the non-analytic G = 0 (macroscopic-field) term left out (ewald_no_macro): the relaxed-ion
+!!           elastic constants at zero field, as VASP reports them;
+!!   with NA: D as in the dispersion, i.e. C^E stiffened by the ionic piezoelectric term only (no
+!!           electronic clamped-ion part in FOCEX), direction dependent: for reference.
+ use ios, only : ulog, write_out
+ use lattice, only : volume_r0,volume_g0
+ use atoms_force_constants, only : natom_prim_cell,atom0
+ use born, only : born_flag
+ use ewald, only : ewald_no_macro
+ use mech, only : sigmav
+ use constants, only : r15,ee
+ use gruneisen_rules, only : dynmat_routine, acoustic_tensor
+ implicit none
+ integer, intent(in) :: uio
+ real(r15), intent(in) :: rotc(3,3)
+ procedure(dynmat_routine) :: get_dynmat
+ integer, parameter :: nd=13
+ real(r15) dirs(3,nd),qh(3),mass(natom_prim_cell),rho,conv,gsize,gam(3,3,nd),eg(3), &
+ &   ata(36,36),atai(36,36),atb(36),row(36),x(36),bb(6,6),b4(3,3,3,3),dl(3,3), &
+ &   sm(6,6),smi(6,6),sb(6),sr(6),sl(3,3),sf(3,3),sfd(3,3),pr,res,nrm, &
+ &   ca(21,21),cai(21,21),cb(21),cr(21),cx(21),cv(6,6),c4(3,3,3,3),cs(3,3,3,3),cro(3,3,3,3),cc(6,6),dev,dif
+ integer i,j,k,l,a,b,c,d,n,ns,mode,nmode,ip(6,6),np,ii,jj,voigt,ier,vij,vil
+ complex(r15) am(3,3),ev(3,3)
+ logical e0,ex
+ character(len=40) lab
+
+ dirs=reshape((/ 1d0,0d0,0d0, 0d0,1d0,0d0, 0d0,0d0,1d0, 1d0,1d0,0d0, 1d0,-1d0,0d0, 1d0,0d0,1d0, &
+ &   1d0,0d0,-1d0, 0d0,1d0,1d0, 0d0,1d0,-1d0, 1d0,1d0,1d0, 1d0,1d0,-1d0, 1d0,-1d0,1d0, -1d0,1d0,1d0 /),(/3,nd/))
+ do i=1,natom_prim_cell
+    mass(i)=atom0(i)%mass
+ enddo
+ rho=sum(mass)/volume_r0                  ! amu/A^3; rho A in eV/A^3
+ conv=ee*1d30*1d-9                         ! eV/A^3 -> GPa
+ gsize=volume_g0**0.33333333d0
+ dl=0; dl(1,1)=1; dl(2,2)=1; dl(3,3)=1
+ np=0                                       ! independent pairs (I<=J) of the Voigt-symmetric C
+ do ii=1,6
+ do jj=ii,6
+    np=np+1; ip(ii,jj)=np; ip(jj,ii)=np
+ enddo
+ enddo
+! FOCEX's own stress (GPa): the relaxed residual stress of residuals, or stress.params for one atom per cell
+ sf=0
+ if (3*natom_prim_cell.gt.3) then
+    sf(1,1)=sigmav(1); sf(2,2)=sigmav(2); sf(3,3)=sigmav(3)
+    sf(2,3)=sigmav(4); sf(1,3)=sigmav(5); sf(1,2)=sigmav(6)
+    sf(3,2)=sf(2,3); sf(3,1)=sf(1,3); sf(2,1)=sf(1,2)
+ else
+    call read_stress_params(ulog,sf,ex)
+ endif
+ pr=(sf(1,1)+sf(2,2)+sf(3,3))/3
+ sfd=sf-pr*dl
+ e0 = born_flag.eq.2 .or. born_flag.eq.3 .or. born_flag.eq.6 .or. born_flag.eq.7 .or. born_flag.eq.8
+ nmode=1; if (e0) nmode=2
+
+ write(uio,*)'ELASTIC_LONGWAVE: C_ij and deviatoric stress from the sound speeds (long-wave limit of D, 13 directions)'
+ if (born_flag.ne.0 .and. .not.e0) write(uio,*)'ELASTIC_LONGWAVE: E = 0 switch not available for born_flag=', &
+ &   born_flag,'; the result includes the non-analytic term'
+ do mode=1,nmode
+    ewald_no_macro = (mode.eq.1 .and. e0)
+    if (born_flag.eq.0) then
+       lab='(no Born charges)'
+    elseif (ewald_no_macro) then
+       lab='E = 0 (G=0 macroscopic term left out)'
+    else
+       lab='with the non-analytic term (as bands)'
+    endif
+! Christoffel tensors and the fit of the 36 brackets B[(ik),(jl)]
+    ata=0; atb=0; nrm=0
+    do n=1,nd
+       qh=dirs(:,n)/sqrt(dot_product(dirs(:,n),dirs(:,n)))
+       call acoustic_tensor(get_dynmat,qh,3*natom_prim_cell,natom_prim_cell,mass,gsize,am,ns)
+       gam(:,:,n)=real(am)*rho*conv
+       if (ns.ne.3) write(ulog,*)'ELASTIC_LONGWAVE: WARNING: near-zero optical modes at Gamma, ns=',ns
+       am=gam(:,:,n)
+       call diagonalize(3,am,eg,0,ev,ier)
+       write(ulog,'(a,3f8.4,a,3f12.4)')' ELASTIC_LONGWAVE: qh=',qh,'  rho v^2 (GPa)=',eg
+       if (minval(eg).lt.0) write(uio,'(a,3f8.4,a,3f11.3)')' ELASTIC_LONGWAVE: WARNING: rho v^2 < 0 along ', &
+ &        qh,' (GPa): ',eg
+       do i=1,3
+       do k=i,3
+          row=0
+          do j=1,3
+          do l=1,3
+             row(6*(voigt(i,k)-1)+voigt(j,l))=row(6*(voigt(i,k)-1)+voigt(j,l))+qh(j)*qh(l)
+          enddo
+          enddo
+          do ii=1,36
+             ata(ii,:)=ata(ii,:)+row(ii)*row
+          enddo
+          atb=atb+row*gam(i,k,n)
+          nrm=nrm+gam(i,k,n)**2
+       enddo
+       enddo
+    enddo
+    call inverse_real(ata,atai,36)
+    x=matmul(atai,atb)
+    do ii=1,6
+    do jj=1,6
+       bb(ii,jj)=x(6*(ii-1)+jj)
+    enddo
+    enddo
+    do a=1,3; do b=1,3; do c=1,3; do d=1,3
+       b4(a,b,c,d)=bb(voigt(a,b),voigt(c,d))
+    enddo; enddo; enddo; enddo
+! deviatoric stress from B[ab,cd]-B[cd,ab] = d_ab s_cd - d_cd s_ab, with Tr s = 0 (least squares, 6 unknowns)
+    sm=0; sb=0; res=0
+    do a=1,3; do b=1,3; do c=1,3; do d=1,3
+       sr=0
+       do ii=1,6
+          sr(ii)=dl(a,b)*e6(ii,c,d)-dl(c,d)*e6(ii,a,b)
+       enddo
+       do ii=1,6
+          sm(ii,:)=sm(ii,:)+sr(ii)*sr
+       enddo
+       sb=sb+sr*(b4(a,b,c,d)-b4(c,d,a,b))
+    enddo; enddo; enddo; enddo
+    sr=(/1d0,1d0,1d0,0d0,0d0,0d0/)
+    do ii=1,6
+       sm(ii,:)=sm(ii,:)+sr(ii)*sr
+    enddo
+    call inverse_real(sm,smi,6)
+    sr=matmul(smi,sb)
+    sl(1,1)=sr(1); sl(2,2)=sr(2); sl(3,3)=sr(3); sl(2,3)=sr(4); sl(1,3)=sr(5); sl(1,2)=sr(6)
+    sl(3,2)=sl(2,3); sl(3,1)=sl(1,3); sl(2,1)=sl(1,2)
+    do a=1,3; do b=1,3; do c=1,3; do d=1,3
+       res=res+(b4(a,b,c,d)-b4(c,d,a,b)-dl(a,b)*sl(c,d)+dl(c,d)*sl(a,b))**2
+    enddo; enddo; enddo; enddo
+! C (21) from B - d_ik s_jl = (C_ijkl + C_ilkj)/2, s = s_dev(long wave) + the pressure of FOCEX's stress
+    ca=0; cb=0
+    do i=1,3; do k=1,3; do j=1,3; do l=1,3
+       cr=0
+       vij=ip(voigt(i,j),voigt(k,l)); vil=ip(voigt(i,l),voigt(k,j))
+       cr(vij)=cr(vij)+0.5d0; cr(vil)=cr(vil)+0.5d0
+       do ii=1,21
+          ca(ii,:)=ca(ii,:)+cr(ii)*cr
+       enddo
+       cb=cb+cr*(b4(i,k,j,l)-dl(i,k)*(sl(j,l)+pr*dl(j,l)))
+    enddo; enddo; enddo; enddo
+    call inverse_real(ca,cai,21)
+    cx=matmul(cai,cb)
+    do ii=1,6
+    do jj=1,6
+       cv(ii,jj)=cx(ip(ii,jj))
+    enddo
+    enddo
+    do i=1,3; do j=1,3; do k=1,3; do l=1,3
+       c4(i,j,k,l)=cv(voigt(i,j),voigt(k,l))
+    enddo; enddo; enddo; enddo
+    dif=0
+    do i=1,3; do k=1,3; do j=1,3; do l=1,3
+       dif=dif+(b4(i,k,j,l)-dl(i,k)*(sl(j,l)+pr*dl(j,l))-(c4(i,j,k,l)+c4(i,l,k,j))/2)**2
+    enddo; enddo; enddo; enddo
+    call symmetrize_tensor4(c4,cs,dev)
+    call rotate_tensor4(rotc,cs,cro)
+    call convert_to_voigt(cro,cc)
+    write(uio,*)'ELASTIC_LONGWAVE: ',trim(lab)
+    call write_out(uio,' ELASTIC_LONGWAVE: brackets B[(ik),(jl)] (GPa), rows ik, columns jl, Voigt order',bb)
+    write(uio,'(a,es10.2)')' ELASTIC_LONGWAVE: max |B - B^T| (GPa) =',maxval(abs(bb-transpose(bb)))
+    call write_out(uio,' ELASTIC_LONGWAVE: deviatoric stress from the asymmetry of B (GPa)',sl)
+    call write_out(uio,' ELASTIC_LONGWAVE: deviatoric part of FOCEX residual stress (GPa)',sfd)
+    write(uio,'(a,es10.2,a,f10.4,a)')' ELASTIC_LONGWAVE: rms misfit of the asymmetry relation (GPa) =', &
+ &     sqrt(res/81),';  pressure part used for C: Tr(s)/3 =',pr,' GPa (FOCEX residual stress)'
+    write(uio,'(a,es10.2,a,f8.3)')' ELASTIC_LONGWAVE: rms misfit of the 21-C fit to B - d s (GPa) =', &
+ &     sqrt(dif/81),'; symmetry-forbidden part of C removed (GPa)=',dev
+    write(uio,*)'ELASTIC_LONGWAVE: CRYSTAL FRAME C_ij (GPa)'
+    do i=1,6
+       write(uio,'(6(1x,f10.3))') (merge(cc(i,j),0d0,abs(cc(i,j)).ge.1d-3*maxval(abs(cc))),j=1,6)
+    enddo
+ enddo
+ ewald_no_macro=.false.
+
+ contains
+ real(r15) function e6(m,p,q)
+!! (p,q) component of the symmetric unit tensor of Voigt index m
+ integer, intent(in) :: m,p,q
+ e6=0
+ if (voigt(p,q).eq.m) e6=1
+ end function e6
+ end subroutine elastic_longwave
 !============================================================
  subroutine QHA_free_energy_vs_strain(nk,wk,ndyn,eival,grin,temprk,eq_free,eq_etot,eq_cv,eq_cp,eq_vol,entropy,cvte,eq_grun,boft,uio)
 !! Quasi-harmonic thermodynamics at temperature temprk (rewritten 2026-11-01 with the user):
