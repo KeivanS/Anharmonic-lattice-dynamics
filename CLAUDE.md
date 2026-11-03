@@ -591,6 +591,14 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   3 runs, byte-identical; single-supercell runs byte-identical to before. Found by FOCEX_DUMP_AMAT: only bforce rows
   of structure 2 differed between runs. -fcheck=all did not report the out-of-bounds read (not checked why).
   The exact-model tests used one supercell only, so they could not see it.
+- chi (dielectric, 2026-11-03, user): modes now from D at q = 0 with ewald_no_macro (TO; born_flag 2,3,6,7,8), not
+  q = 1e-6*normal (there the mode along normal was LO: GaN Im chi_xx at E1(LO) 726, eps0_xx 8.26 vs eps0_yy 10.01;
+  now both 10.0065, peaks at E1(TO) 553.9 and A1(TO) 529.9, the transverse modes of the old q||x run). Acoustic modes
+  left out by translation_weight, not as bands 1-3. gamma_mode_symmetry(ndn,to): to=.true. writes chi_modes.dat
+  (TO modes, irreps), chi.plt labels the IR-active peaks from it. gamma_modes.dat unchanged.
+- Band Gruneisen divergence (GaN, user's question): gamma = -<e|W|e>/(6 omega^2); the numerator omega^2*gamma is
+  smooth along G-M (-239, -772, -1573, -2553, -3640 1/cm^2), omega^2 crosses 0 between dk 0.052 and 0.069: the spike
+  (-116) is the 1/omega^2 of an unstable harmonic branch, not large anharmonicity.
 - GaN (2026-11-03, open): enforce_inv=1 with rotational rows conflicts with the data: set 2 alone, ranks 1-2:
   born 0 13.3 %, born 2 22.4 % (translational only, born 2: 7.7 %); ranks 1-3 (FC3 2 shells): born 0 36 %, born 2
   123 %; translational only, ranks 1-3, both sets: 1.20 %. Cause not found (truncated FC2 of a polar crystal for

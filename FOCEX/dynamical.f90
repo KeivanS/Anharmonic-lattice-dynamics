@@ -12,8 +12,10 @@
  use params, only : tmin,tmax,include_fc,coef
  use born
  use tetrahedron
+ use ewald, only : ewald_no_macro
  implicit none
  integer i,j,k,uio,tau,taup,l,ier
+ logical to_modes
  real(r15) vkms(3),vavg(3),qr(3),q2(3),sf,etot,free,cv,cp,entropy,eq_vol,tempk,cvte
  real(r15) rotc(3,3),atldc(3,3,3,3),elasticc(6,6),atld_sym(3,3,3,3),asym_c
  character(len=12) csys
@@ -237,12 +239,26 @@
 
   deallocate(aux,array)  
   allocate(eivaux(ndyn),velaux(3,ndyn),evcaux(ndyn,ndyn))
-  q2=normal*1d-6 ! almost zero!
+! chi(omega) is the response to the macroscopic field E: its poles are the TO modes, the eigenmodes of D at q = 0
+! without the G = 0 (macroscopic-field) term (2026-11-03, user). Until then D at q = 1e-6*normal was used: with
+! the non-analytic term along normal, the mode polarized along normal was its LO mode (GaN, normal x: Im chi_xx
+! peaked at E1(LO) 726 instead of E1(TO) 554 1/cm, eps0_xx 8.26 /= eps0_yy 10.01).
+! ewald_no_macro acts in ewald_2nd_deriv_hat (born_flag 2, 3, 6, 7, 8); for the other born_flags the old q -> 0 limit.
+  to_modes = born_flag.eq.2 .or. born_flag.eq.3 .or. born_flag.eq.6 .or. born_flag.eq.7 .or. born_flag.eq.8
+  if (to_modes) then
+     q2=0; ewald_no_macro=.true.
+  else
+     q2=normal*1d-6 ! almost zero!
+     if (born_flag.ne.0) write(ulog,*)'DIELECTRIC: TO modes not available for born_flag=',born_flag, &
+ &      '; modes at q = 1e-6*normal used (LO along normal)'
+  endif
   call get_freq(q2,ndyn,velaux,eivaux,evcaux)
+  ewald_no_macro=.false.
   call dielectric(ndyn,eivaux,evcaux,wmesh,om,epsilon0) ! only need Gamma point spectrum
-  call gamma_mode_symmetry(ndyn)                         ! IR / Raman activity at Gamma (gamma_modes.dat)
+  call gamma_mode_symmetry(ndyn,.false.)                 ! IR / Raman activity at Gamma (gamma_modes.dat)
+  if (to_modes) call gamma_mode_symmetry(ndyn,.true.)   ! the same for the TO modes, the poles of chi (chi_modes.dat)
   call write_out(ulog,' Ion-clamped dielectric constant ',epsil)
-  call write_out(ulog,' Total dielectric constant along normal ',epsilon0)
+  call write_out(ulog,' Total (static) dielectric constant ',epsilon0)
   deallocate(eivaux,evcaux,velaux)
 
  call cpu_time(tim)
@@ -3287,14 +3303,16 @@ end subroutine band_sort_bs
  use constants, only : r15,pi,cnst,ci
  use kpoints, only : normal
  use eigen , only : mysqrt
+ use phonon_rules, only : translation_weight, translation_min
  implicit none
  integer, intent(in):: n,mesh
  real(r15),intent(in) :: om(mesh),eival(n)
  complex(r15),intent(in) :: eivec(n,n)
  real(r15),intent(out) :: epsilon0(3,3)
  complex(r15) chi(3,3),epsnormal !,intent(out) :: chi(3,3,mesh)
- real(r15) d1,d2,z(n,3),reflectivity
+ real(r15) d1,d2,z(n,3),reflectivity,mass(natom_prim_cell)
  integer i,j,k,b,al,be,ga,de,tau,taup
+ logical acoustic(n)
 
  if(maxval(abs(aimag(eivec))).gt.1d-6*maxval(abs(eivec))) then
     write(ulog,*)'DIELECTRIC: eivec at gamma has imaginary parts!! '
@@ -3305,8 +3323,16 @@ end subroutine band_sort_bs
 
 ! calculate Born chargs in the eivec basis 
  write(ulog,*)'#================== IR intensities versus  frequency(1/cm) =================='
+! the rigid translations are left out by their eigenvector (mass-weighted translation weight), not by assuming
+! they are bands 1-3: an unstable optical mode sorts below them (2026-11-03)
+ mass=atom0(1:natom_prim_cell)%mass
+ do b=1,n
+    acoustic(b) = translation_weight(natom_prim_cell,mass,eivec(:,b)).gt.translation_min
+ enddo
+ if (count(acoustic).ne.3) write(ulog,*)'DIELECTRIC: WARNING: ',count(acoustic),' modes identified as translations'
  z=0
- do b=4,n
+ do b=1,n
+    if (acoustic(b)) cycle
     do de=1,3
        do ga=1,3
        do tau =1,natom_prim_cell
@@ -3328,7 +3354,8 @@ end subroutine band_sort_bs
     chi=0
     do al=1,3
     do be=1,3
-    do b=4,n
+    do b=1,n
+       if (acoustic(b)) cycle
        chi(al,be)=chi(al,be)+ z(b,al)*z(b,be)  / &
  &      (-om(i)*om(i)+eival(b)*cnst*cnst-ci*om(i)*width)
     enddo
@@ -4133,7 +4160,7 @@ end subroutine band_sort_bs
  dev=maxval(abs(a-b))
  end subroutine symmetrize_tensor4
 !============================================================
- subroutine gamma_mode_symmetry(ndn)
+ subroutine gamma_mode_symmetry(ndn,to)
 !! IR and Raman activity of the phonon modes at Gamma from symmetry alone (2026-11-02, user).
 !! At q = 0 the modes transform under the space group modulo lattice translations (isomorphic to the
 !! point group); operation g takes atom k to img(k,g) (r' = S r + sgfract within tol_sym, as
@@ -4151,6 +4178,8 @@ end subroutine band_sort_bs
 !! With Born charges, the IR strength sum over the set of |Z_m|^2, Z_m = sum Z*_tau e_tau(m)/sqrt(m_tau)
 !! (as in dielectric). The irreducible representation of each set and the character table (computed by
 !! point_group_rules, common/point_group.f90). Written to gamma_modes.dat and the log.
+!! to = .false.: as above; to = .true. (born_flag 2,3,6,7,8): the same for the TO modes (D at q = 0 without the G = 0 macroscopic term,
+!! the poles of chi in dielectric), one line per set in chi_modes.dat (read by chi.plt for the peak labels).
  use ios, only : ulog
  use born, only : born_flag
  use lattice, only : cart_to_prim, prim_to_cart
@@ -4161,8 +4190,11 @@ end subroutine band_sort_bs
  use eigen, only : mysqrt
  use point_group_rules, only : pg_setup, pg_reduce, pg_write_table, pg_nirr, pg_label, pg_partner
  use phonon_rules, only : translation_weight, translation_min
+ use ewald, only : ewald_no_macro
  implicit none
  integer, intent(in) :: ndn
+ logical, intent(in) :: to
+ logical tom
  integer isg, k, kp, n, i, j, a, b, n1, n2, ng, de, ga, ninv, unit
  integer, allocatable :: img(:,:)
  real(r15) s(3,3), d(3), kz(3), vg(3,ndn), eival(ndn), om(ndn), trs, ts2, dt, tol, nirr, nir, nram, &
@@ -4216,8 +4248,11 @@ end subroutine band_sort_bs
  if (ier .ne. 0) write(ulog,*)' GAMMA_MODE_SYMMETRY: point group setup failed (ier=',ier,'); no irreps'
  allocate(mult(max(1,pg_nirr)))
 
+ tom = to
  kz = 0
+ ewald_no_macro = tom                             ! TO modes: no macroscopic-field term
  call get_freq(kz, ndn, vg, eival, eivec)        ! exactly q = 0
+ ewald_no_macro = .false.
  do k = 1, n
     mass(k) = atom0(k)%mass
  enddo
@@ -4225,8 +4260,14 @@ end subroutine band_sort_bs
  omax = maxval(abs(om))
  tol = max(1d-3, 1d-6*omax)                       ! degeneracy tolerance (1/cm)
 
- open(newunit=unit, file='gamma_modes.dat')
- write(unit,'(a)')'# phonon modes at Gamma (q = 0; polar modes: non-analytic term direction-averaged, between TO and LO)'
+ if (tom) then
+    open(newunit=unit, file='chi_modes.dat')
+    write(ulog,*)' GAMMA_MODE_SYMMETRY: the lines below are the TO modes (macroscopic term left out; chi_modes.dat)'
+    write(unit,'(a)')'# TO modes at Gamma (q = 0, macroscopic-field term left out): the poles of chi in chi_imag.dat'
+ else
+    open(newunit=unit, file='gamma_modes.dat')
+    write(unit,'(a)')'# phonon modes at Gamma (q = 0; polar modes: non-analytic term direction-averaged, between TO and LO)'
+ endif
  write(unit,'(a,i3,a)')'# symmetry from the ',isgopcount,' space-group operations modulo lattice translations'
  if (ier .eq. 0) then
     write(unit,'(a)')'# character table (computed; labels: A/B/E/T, g/u, prime, serial number, not Mulliken numbering)'
@@ -4245,8 +4286,12 @@ end subroutine band_sort_bs
     write(unit,'(a)')'# all modes (incl. acoustic): Gamma = '//trim(gtot)
     write(ulog,*)' GAMMA_MODE_SYMMETRY: Gamma = '//trim(gtot)
  endif
- write(unit,'(a)')'# modes   freq(1/cm)  dim  irred   IR     Raman  parity  IR strength sum|Z_m|^2 '// &
+ if (tom) then
+    write(unit,'(a)')'# freq(1/cm)  dim  IR  Raman  parity  IR strength sum|Z_m|^2 (e^2/amu)  irrep'
+ else
+    write(unit,'(a)')'# modes   freq(1/cm)  dim  irred   IR     Raman  parity  IR strength sum|Z_m|^2 '// &
  &                 '(e^2/amu; with Born charges)  irrep'
+ endif
  write(ulog,*)' GAMMA_MODE_SYMMETRY: modes, freq(1/cm), dim, irreducibility (1 = one irrep), IR, Raman, parity, IR strength'
  n1 = 1
  do while (n1 .le. ndn)
@@ -4315,8 +4360,12 @@ end subroutine band_sort_bs
           endif
        enddo
     endif
-    write(unit,'(i3,a,i3,f12.3,i5,f7.3,2x,a8,1x,a8,1x,a6,es14.5,2x,a)') n1,'-',n2, sum(om(n1:n2))/ng, ng, nirr, &
+    if (tom) then
+       write(unit,'(f12.3,i5,2x,a8,1x,a8,1x,a6,es14.5,2x,a)') sum(om(n1:n2))/ng, ng, sir, sram, spar, zz, trim(sirr)
+    else
+       write(unit,'(i3,a,i3,f12.3,i5,f7.3,2x,a8,1x,a8,1x,a6,es14.5,2x,a)') n1,'-',n2, sum(om(n1:n2))/ng, ng, nirr, &
  &        sir, sram, spar, zz, trim(sirr)
+    endif
     write(ulog,'(a,i3,a,i3,f12.3,i5,f7.3,2x,a8,1x,a8,1x,a6,es14.5,2x,a)')' GAMMA_MODE_SYMMETRY:',n1,'-',n2, &
  &        sum(om(n1:n2))/ng, ng, nirr, sir, sram, spar, zz, trim(sirr)
     if (abs(nirr - nint(nirr)).gt.1d-3 .or. abs(nir - nint(nir)).gt.1d-3 .or. abs(nram - nint(nram)).gt.1d-3) &

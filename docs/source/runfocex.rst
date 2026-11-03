@@ -1024,7 +1024,10 @@ Phonons and thermodynamics
 
 ``chi_real.dat`` / ``chi_imag.dat``
     Real and imaginary parts of the dielectric response versus frequency, plus
-    the refractive index ``n`` and extinction coefficient ``k``.
+    the refractive index ``n`` and extinction coefficient ``k``. The poles are the TO modes (D at
+    :math:`q=0` without the macroscopic-field term; ``born_flag`` 2, 3, 6, 7, 8; before 3 November 2026
+    the mode polarized along ``normal`` was its LO mode). ``chi_modes.dat``: these TO modes, with
+    activity and irreducible representation as in ``gamma_modes.dat``.
 
 ``gamma_modes.dat``
     The phonon modes at :math:`\Gamma`, one line per set of degenerate modes: frequency, degeneracy,
@@ -1169,14 +1172,16 @@ not set a terminal draw on the screen.
        :math:`\Delta V/V`; CTE, Gruneisen, :math:`B_T(T)/B_T(0)` versus T, one plot each.
    * - ``chi.plt``
      - ``chi_real.dat``, ``chi_imag.dat``
-     - ``chi.pdf``: dielectric function and optical constants.
+     - ``chi.pdf``: dielectric function and optical constants; the IR-active peaks labelled from
+       ``chi_modes.dat`` (irrep, IR or IR+Raman, frequency).
    * - ``pair.plt``
      - ``pairs.dat``, ``trace_fc.dat``
      - ``pairs.pdf``: distribution of pair distances and FC2 traces.
    * - ``fcs.plt``
      - ``trace_fc.dat``, ``trace_phi_lr.dat``, ``atompos.xyz``, ``springs1/2.dat``,
        ``rgrid_raw.xyz``, ``supercell_1.xyz``, ``WSR_boundary.xyz``
-     - Screen: FC2 trace versus pair distance; atoms, FC2 bonds and the Wigner-Seitz cell in 3D.
+     - Screen: FC2 trace versus pair distance; atoms, FC2 bonds and the Wigner-Seitz cell in 3D (each
+       atom's bonds drawn from the centre of the supercell's Wigner-Seitz cell).
    * - ``kp.plt``
      - ``KPOINT.IBZ``, ``KPOINT_tet.MP``, ``WSG_boundary.xyz``
      - Screen: the k-point mesh, its irreducible part and the Brillouin-zone boundary.
