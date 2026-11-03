@@ -19,7 +19,7 @@ Tests of FOCEX's `elastic_longwave` (FOCEX/dynamical.f90) on the exact model of 
 ```bash
 python longwave_check.py ZnO > longwave_check_ZnO.log     # ~3 s
 python mkstressed.py ZnO /tmp/zno_stressed                 # then reset x, y as above
-cd /tmp/zno_stressed && ~/ALADYN/bin/focex-9.4.x > focex.out   # mech.dat: ELASTIC_LONGWAVE lines
+cd /tmp/zno_stressed && ~/ALADYN/bin/focex-9.5.x > focex.out   # mech.dat: ELASTIC_LONGWAVE lines
 ```
 
 ## coul_brackets.py (2026-11-03)

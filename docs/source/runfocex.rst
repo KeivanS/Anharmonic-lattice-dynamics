@@ -87,7 +87,7 @@ conventional cubic cell, :math:`a = 5.7022565` Å) and 36 snapshots.
    # after compiling (see the Installation chapter)
    mkdir -p ~/runs/Ge && cd ~/runs/Ge
    cp <path-to-repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
-   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.4.x
+   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.5.x
 
 On a single modern core the run takes a few minutes. It should end with
 
@@ -839,7 +839,7 @@ input files in one directory, ``cd`` into it and run the binary.
    ls
    # default.params  dielectric.params  kpbs.params  latdyn.params
    # structure.params  POSCAR1  FORCEDISP1
-   ~/ALADYN/bin/focex-9.4.x | tee focex.out
+   ~/ALADYN/bin/focex-9.5.x | tee focex.out
 
 The run is serial and memory-bound: the largest array is the fit matrix, of
 size (number of force components + constraints) × (number of independent FCs).
@@ -1294,6 +1294,14 @@ needs.
 
 Version history
 ---------------
+
+9.5 (2026-11-03)
+    Some ranks read, the others fitted (``include_fc = 2``; the read terms go to the right-hand
+    sides of the equations); ``born_flag = 2`` subtracts a Coulomb force whose harmonic part is the
+    Born term added back to the dynamical matrix, and the invariance rows carry the Coulomb part;
+    elastic constants and stress also from the long-wave sound speeds; the irreducible k-points
+    from the crystal's own symmetry (one routine shared with THERMACOND; crystals of lower
+    symmetry than their lattice were given wrong weights); ``fcN.dat`` with 8 digits.
 
 9.4 (2026-11-02)
     IR and Raman activity, parity and irreducible representation of the :math:`\Gamma` modes

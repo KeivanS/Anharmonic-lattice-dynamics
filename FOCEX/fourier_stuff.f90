@@ -238,8 +238,6 @@
  allocate(dynk(3*nat0,3*nat0,nkmesh),phi(3*nat0,3*nat0,nkmesh),d2(3*nat0,3*nat0))
 ! &        amatk(dimal,dimac,nkmesh),bmatk(dimal,nkmesh))
 
-! first need to group the kmesh vectors into arms of vectors within IBZ
-!    call get_weights4(nkmesh,kmesh,ngibz,mapibz,gibz,wgibz)
 
   ibzloop: do ik=1,nibz
 

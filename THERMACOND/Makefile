@@ -28,7 +28,7 @@ FLAGS = $(OPT) -ffree-line-length-0
 # modules shared with FOCEX (../common, one file per module) first, then modules.f90 (the
 # THERMACOND modules); kappa.f90 (the main program) last
 vpath %.f90 ../common
-COMMON = constants.f90 params.f90 geometry.f90 ios_mod.f90 born.f90
+COMMON = constants.f90 params.f90 geometry.f90 ios_mod.f90 born.f90 ibz.f90
 # shared sources that use THERMACOND's own modules (lattice, atoms_force_constants): after them
 COMMON2 = tools.f90 ewald.f90 nonanal.f90 dielectric.f90 phonons.f90 gruneisen.f90
 SRC  = $(COMMON) modules.f90 $(COMMON2) zhegv.f force_constants.f90 sub.f90 rest.f90 extratools.f90 svd.f90 \

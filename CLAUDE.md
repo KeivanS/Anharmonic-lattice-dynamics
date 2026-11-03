@@ -14,14 +14,15 @@ the Makefiles drop `.o`/`.mod` files next to the sources.
 ## Building and running FOCEX
 
 ```bash
-cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-9.4.x
+cd FOCEX && make       # ~3 min; produces ~/ALADYN/bin/focex-9.5.x
 ```
 
 Executables (2026-10-23, user's rule): all in `~/ALADYN/bin` (`DESTDIR`; the top-level `make`
-passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-9.4.x` (9.4 2026-11-02: IR/Raman activity and irreps at Gamma, computed character tables, Gamma threshold, allplots; 9.3 2026-11-02: relaxation of an unrelaxed reference, default.params line 5; 9.2 2026-11-01: elastic constants, B0', QHA, Gruneisen,
+passes make.inc's), named `<name>-<version>.x` (user: hyphens for all): `focex-9.5.x` (9.5 2026-11-03: include_fc=2, born_flag 2 hybrid +
+Coulomb RHS, elastic_longwave, IBZ from the crystal's Laue group (common/ibz.f90), 8-digit fc files; 9.4 2026-11-02: IR/Raman activity and irreps at Gamma, computed character tables, Gamma threshold, allplots; 9.3 2026-11-02: relaxation of an unrelaxed reference, default.params line 5; 9.2 2026-11-01: elastic constants, B0', QHA, Gruneisen,
 sd -- see below; 9.1 since 2026-10-29, user: frequencies at the
 exact k, Gamma limit, no stop for split FC2 groups; 9.0 2026-10-23: invariance rows for all ranks + the
-Born check; reading some FC ranks and fitting the rest gets the next number (9.5; 9.3 went to the relaxation, 9.4 to the Gamma symmetry, user 2026-11-02);
+Born check; reading some FC ranks and fitting the rest got 9.5 (2026-11-03; 9.3 went to the relaxation, 9.4 to the Gamma symmetry, user 2026-11-02);
 8.18 and earlier: `~/BIN/v8.18`),
 THERMACOND `tcond-2.0.x` / `tcond-2.0-serial.x` (was `kap8` in its
 source folder). Top-level `make` (= `make all`, user's spec 2026-10-23; thermacond-serial added 2026-11-01, user):
@@ -466,6 +467,21 @@ DFT regression (Ge, BZO, MoTe2, GeSe, e1-e3; table in the README): Ge, BZO e1 = 
 35.269 -> 32.194 %, GeSe 6.111 -> 5.755 % (changes 1-3, not separated); Ge e2 0.083 -> 0.036 %;
 the rest identical. The log label "non-zeros ... after projection" (focex.f90) is left over from the
 old e1 path: it counts |x| > margin.
+
+## Irreducible k-points: one routine for FOCEX and THERMACOND (2026-11-03, user; common/ibz.f90)
+
+module ibz_rules: laue_operations (lattice point-group ops that are a space-group rotation or minus one) and
+ibz_reduce (THERMACOND's get_weights algorithm of 2026-10-22: stars modulo G, weight = mesh points in the star,
+representative = WS-folded member with the largest u.k, u = (0.9, sqrt2-1, sqrt5-2); mesh lookup by sorted reduced
+coordinates, any regular mesh). FOCEX get_weights (extratools.f90) and THERMACOND get_weights (modules.f90) are
+wrappers that keep their output files. Removed: FOCEX get_weights2/3/4, getstarp (lattice point group: wrong for a
+crystal of lower symmetry than its lattice), THERMACOND kappa9.f90 (not built). Kept: FOCEX getstar (used by the
+disabled conductance loop in dynamical.f90 and the uncalled extract_fourier).
+- Checked: unit test vs spglib get_ir_reciprocal_mesh (time reversal), 9 structures (Si, wurtzite, CdI2 P-3m1,
+  approximate quartz, pyrite Pa-3, P4/m, HfO2, P-1, R-3) x 4 meshes: same stars, weights, wedge, own-star; FOCEX
+  regression (Ge, BZO, MoTe2, GeSe): same stars, thermo outputs within 1 in the last printed digit; THERMACOND Ge 4^3
+  job 3: every output byte-identical; CdI2 exact model through FOCEX and THERMACOND (8x8x8, 6x6x4): = spglib
+  (old FOCEX: 50 instead of 65 IBZ points on 8x8x8). Scratch scripts: ibztest/test.py, ex_cdi2/cmp_spg.py, cmp_tc.py.
 
 ## Mode Gruneisen parameters (2026-11-01, user's request; common/gruneisen.f90)
 

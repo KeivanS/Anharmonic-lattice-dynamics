@@ -97,8 +97,10 @@ as `main` apart from `use` lines; unit numbers of the two `ios` modules that coi
   FOCEX's whole setup (`symmetry_init`, its `force_constants_init`, supercell grids). Sharing it
   means THERMACOND setting up its lattice and symmetry the FOCEX way, from `structure.params`
   and `lat_fc.dat` without POSCARs: a design decision.
-- `kpoints` / IBZ: two correct implementations now (FOCEX `getstarp`, THERMACOND `get_weights`
-  with the one-wedge choice); choose one.
+- `kpoints` / IBZ: done 2026-11-03 (user): one routine, common/ibz.f90 (`ibz_reduce`, `laue_operations`), THERMACOND's
+  algorithm. FOCEX's `getstarp` version used the lattice point group: wrong for crystals of lower symmetry than
+  their lattice (CdI2 P-3m1, 8x8x8: 50 IBZ points instead of 65); the agreement with spglib noted above holds
+  only because Ge, BZO, MoTe2, GeSe have the full symmetry of their lattices.
 - dynamical matrix (short-range part), `eigen`, `om_dos`, `tetrahedron`, `svd_stuff`.
 - Step 7 (started 2026-10-30): phonons from one routine (`get_freq`, `get_frequencies`,
   `freq_vel`, `gruneisen`), so THERMACOND takes FOCEX 9.1's exact-k / Gamma-limit rule.

@@ -1814,53 +1814,6 @@
       enddo iloop
 
       end subroutine getstar
-!-------------------------------------------------------------------------------
-      subroutine getstarp(kvec,narms,kvecstar,kvecop)
-!! find the stars of a kvector; input k and output kstars are in reduced units of g0
-!! arguments:
-!!     kvec(i) (input), ith dimensionless component of k vector
-!!     narms (output), number of star vectors associated with kvec
-!!     kvecstar(3,1:narms), all the stars of kvec in reduced units 
-!!     kvecop(i), the symmetry operation number for the star vector i
-      use atoms_force_constants
-      use constants, only : r15
-      use ios, only: ulog
-      use lattice, only : red2cart_g
-      implicit none
-      integer, intent(out):: narms,kvecop(48)
-      real(r15), intent(in) :: kvec(3)
-      real(r15), intent(out):: kvecstar(3,48)
-      integer i,j,k,n,ncmp
-      real(r15) v(3),v2(3),v3(3),kvecstarp(3,48)
-
-      narms=0
-!      print*,'lattpgcount=',lattpgcount
-      iloop: do i=1,lattpgcount
-! apply symmetry operation to k to get v=kstar
-        v=matmul(iop_kmatrix(:,:,i),kvec)
-
-! now check if v - any_previous_v is integer (differ by a G vector)
-! if so, skip; else store this v as a new star vector
-        do j=1,narms
-! is v - any of the stars kvecstar(j) is a translation vector (i.e. integer)? 
-          if( is_integer(v-kvecstar(:,j))) then  ! it's already in the star list
-             cycle iloop
-          endif
-        enddo
-! add it to the lis
-        narms=narms+1
-        kvecstar(1:3,narms)=v(1:3)
-        kvecop(narms)=i
-      enddo iloop
-
-!      write(ulog,*)'# k_red, k_cart , kstar_red , kstar_cart '
-!      do j=1,narms
-!         write(ulog,4)j,kvec,red2cart_g(kvec),kvecstar(:,j),red2cart_g(kvecstar(:,j))
-!      enddo
-
-4 format(i4,4(2x,3(1x,f8.4)))
-
-      end subroutine getstarp
 !****************************************************************************
       subroutine size_force_constants(nrank,nshell,ngroups, &
      &     ntermszero,maxnterm,maxntermsindep,mxwork,mxiwork,mxzwork)

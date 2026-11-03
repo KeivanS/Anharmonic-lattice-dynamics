@@ -306,7 +306,6 @@
  end subroutine make_reciprocal_lattice_v
 !===============================================================
 !==========================================================
-!==========================================================
  function delta(x) result(y)
  use constants
  implicit none
@@ -2561,16 +2560,16 @@ end subroutine create_extended_rgrid
  end subroutine get_short_rlatvecs
 !==========================================================
  subroutine get_weights(nk,kp ,mapinv,mapibz)
-!! takes as input kp(3,nk) in cartesian and finds based on crystal symmetries, the
-!! weights associated with each kpoint, and then normalizes them
-!! nibz is the final number of kpoints stored in kibz in the irreducible BZ
-!! the other important output is the mapping of the full kmesh onto the ones
-!! folded in the irreducible zone : mapibz(j=1:nk) is the index of the k in the IBZ list
-!! corresponding to the argument j
-!! for i=1,nibz mapinv(i) gives the index of the corresponding kpoint in the original kp list
- use lattice, only : primitivelattice,r01,r02,r03 ,cart2red_g,red2cart_g,prim_to_conv,fold_ws ,g0ws26
+!! irreducible wedge of the mesh kp(3,nk) (Cartesian): nibz points kibz with normalized weights wibz (module kpoints),
+!! mapibz(j) = IBZ point of mesh point j, mapinv(i) = mesh index of IBZ point i (i <= nibz; 0 beyond).
+!! The work is done by ibz_reduce (common/ibz.f90, shared with THERMACOND since 2026-11-03, user): Laue group of the
+!! crystal, stars modulo G, representatives in one wedge. The earlier FOCEX version used all operations of the
+!! lattice point group, wrong for a crystal of lower symmetry than its lattice.
+ use lattice, only : r01,r02,r03,cart2red_g,fold_ws,g0ws26
  use kpoints, only : kibz, wibz, nibz
- use constants, only : pi,r15
+ use atoms_force_constants, only : lattpgcount, op_matrix, isgopcount, isgop
+ use ibz_rules, only : laue_operations, ibz_reduce
+ use constants, only : r15
  use geometry
  use params
  use ios
@@ -2578,497 +2577,34 @@ end subroutine create_extended_rgrid
  integer, intent(in):: nk
  real(r15), intent(in):: kp(3,nk)
  integer, intent(out):: mapibz(nk),mapinv(nk)
- real(r15), allocatable :: k2(:,:),w2(:)
- real(r15) kvecstar(3,48),kf(3),kred(3),weig,sw,q(3)
- integer i,j,s,k,narms,kvecop(48),aux,ibz
+ real(r15) kf(3), rlaue(3,3,48)
+ integer i, nlaue
 
- write(*,*) ' entering get_weights'
- open(uibz,file='KPOINT.IBZ',status='unknown')
- open(ufbz,file='KPOINT.FBZ',status='unknown')
- do i=1,nk
-    mapinv(i)=i
- enddo
- allocate(w2(nk),k2(3,nk))
- write(*,*) ' w2,k2,mapinv,mapibz allocated'
-
- nibz=0; w2=0
- iloop: do i=1,nk
-    kred=cart2red_g(kp(:,i))
-! first fold
- !  kred=cart2red_g(kf) 
-! find stars of kp in reduced units 
-    call getstarp(kred,narms,kvecstar,kvecop)
-
-!   write(*,*) ' called getstar i,narms,kred=',i,narms,kred
-!   do s=1,narms
-!      write(*,3)s,kvecstar(:,s),red2cart_g(kvecstar(:,s))
-!   enddo
-
-! compare the stars of i to existing IBZ vectors and skip i if found
-! k2 contains the list of IBZs in reduced units
-    armloop: do s=1,narms
-       do k=1,nibz  ! kvecstar and k2 list are in reduced coordinates
-          q=(kvecstar(:,s)-k2(:,k))  
- !        write(*,5)'i,arm,k,nibz,s(k(i))-kibz=',i,s,k,nibz,q
-          if (is_integer(q)) then
-               mapibz(i)=k 
-               w2(k)=w2(k)+1        ! weight of this ibz should be increased
-               cycle iloop
-           endif
-       enddo
-! star(s) was not in the ibz list, try other stars
-    enddo armloop
-
-! none of the stars was in the ibz list; add i to the ibz list
-    nibz=nibz+1
-    k2(:,nibz)=kred ! save as reduced coordinates
-    mapibz(i) = nibz
-    w2(nibz)  = 1
-! here need to switch two elements of mapinv; so we add this line
-    aux=mapinv(nibz)
-    mapinv(nibz)=i
-    mapinv(i)=aux
-    write(*   ,5)'* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :', nibz,i,mapinv(i),mapibz(i),kred 
-    write(ulog,5)'* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :', nibz,i,mapinv(i),mapibz(i),kred 
-       
- enddo iloop
-
- write(*,*)'exited iloop with NIBZ=',nibz,' and allocating now WIBZ and KIBZ '
- if ( allocated(wibz)) deallocate(wibz)
- if ( allocated(kibz)) deallocate(kibz)
- allocate(wibz(nibz),kibz(3,nibz))
- wibz=w2(1:nibz)
- sw = sum(wibz(1:nibz))
- wibz = wibz/sw
-
-! of all the stars of k2 select the one whose reduced coords satisfies 0<q1<q2<q3
- do i=1,nibz
-    call getstarp(k2(:,i),narms,kvecstar,kvecop)  ! k2 is already reduced
-    sloop: do s=1,narms
-       q=kvecstar(:,s)
-       if ( 0.le.q(1) .and. q(1).le.q(2) .and. q(2).le.q(3) ) then
-          kibz(:,i)=red2cart_g(q)
-          exit sloop
-       endif
-! take the first if the above not satisfied
-       kibz(:,i)=red2cart_g(kvecstar(:,1)) 
-    enddo sloop     
- enddo 
-
-! k(mapinv(1:nibz) is kibz; all in reduced coordinates
-! indexing is ik = i1 + n1*i2 + n1*n2*i3 where i1=(0:n1-1) etc
+ call laue_operations(lattpgcount, op_matrix, isgopcount, isgop, nlaue, rlaue)
+ write(ulog,*)'GET_WEIGHTS: Laue operations of the crystal: ',nlaue,' of the ',lattpgcount,' of the lattice'
+ call ibz_reduce(nk, kp, v2a(r01), v2a(r02), v2a(r03), nlaue, rlaue, ulog, nibz, kibz, wibz, mapibz, mapinv)
 
 ! write the kpoints and their weights-------------------------
+ open(uibz,file='KPOINT.IBZ',status='unknown')
+ open(ufbz,file='KPOINT.FBZ',status='unknown')
  write(uibz,*)'#i,kibz(:,i),kibz_reduced,wibz(i)'
  write(ufbz,*)'#i,kp(i),kp_reduced,folded_WS(kp(i)),reduced_folded_WS(kp(i))'
  open(345,file='mapinv.dat')
- write(345,*)'# i,mapinv(i)(i=1,nfbz),mapibz(i)'
- do i=1,nk !,nibz
-    if(i.le.nibz) then
- !     kibz(:,i)=red2cart_g(k2(:,i)) 
-       write(uibz,3)i,kibz(:,i),cart2red_g(kibz(:,i)),  wibz(i) ! kred id dummy!
-    endif
-! also fold kp and kibz into in FZ and write 
-    kf  = fold_ws(kp(:,i),g0ws26) 
+ write(345,*)'# i,mapinv(i)(i=1,nibz; 0 beyond),mapibz(i)'
+ do i=1,nk
+    if(i.le.nibz) write(uibz,3)i,kibz(:,i),cart2red_g(kibz(:,i)),wibz(i)
+    kf  = fold_ws(kp(:,i),g0ws26)
     write(ufbz,3)i,kp(:,i),cart2red_g(kp(:,i)), kf,cart2red_g(kf)
     write(345,*)i,mapinv(i),mapibz(i)
  enddo
  close(345)
  close(uibz)
  close(ufbz)
- deallocate(w2,k2)
 
 3 format(i7,9(3x,3(1x,f9.4)))
-4 format(a,2i7,2x,f9.5,2x,99(1x,f9.5))
-5 format(a,4i7,2x,99(1x,f9.5))
 
  end subroutine get_weights
 !==========================================================
- subroutine get_weights2(nk,kp ,mapibz)
-!! takes as input kp(3,nk) in cartesian and finds based on crystal symmetries, the
-!! weights associated with each kpoint, and then normalizes them
-!! nibz is the final number of kpoints stored in kibz in the irreducible BZ
-!! the other important output is the mapping of the full kmesh onto the ones
-!! folded in the irreducible zone : mapibz(j=1:nk) is the index of the k in the IBZ list
-!! corresponding to the argument j
-!! for i=1,nibz mapinv(i) gives the index of the corresponding kpoint in the original kp list
- use lattice, only : primitivelattice,r01,r02,r03 ,cart2red_g,red2cart_g,prim_to_conv,fold_ws ,g0ws26
- use kpoints, only : kibz, wibz , nibz,wk
- use constants, only : pi,r15
- use geometry
- use params
- use ios
- implicit none
- integer, intent(in):: nk
- real(r15), intent(in):: kp(3,nk)
- integer, intent(out):: mapibz(nk)
-! real(r15), intent(out), allocatable :: kibz(:,:) ,wibz(:)
- integer, allocatable :: mcor(:),mapinv(:)
- real(r15), allocatable :: k2(:,:),lg(:),w2(:)
- real(r15) q(3),kvecstar(3,48),sw,skc(3),qout(3),kfold(3,nk),weig
- integer i,j,l,k,narms,kvecop(48),aux
- logical processed(nk)
-
- open(uibz,file='KPOINT.IBZ',status='unknown')
- open(ufbz,file='KPOINT.FBZ',status='unknown')
-
- allocate(kibz(3,nk),wibz(nk),mapinv(nk))
- wibz=0d0  
- write(ulog,*)'GET_WEIGHTS2: folding the kpoints in the WS cell '
- do i=1,nk
-    kfold(:,i) = fold_ws(kp(:,i),g0ws26)
-    wk(i)=1d0/nk
-    write(ufbz,3)i,kfold(:,i),wk(i),cart2red_g(kfold(:,i))
-    mapinv(i)=i
- enddo
- close(ufbz)
- processed=.False.
-
- do i=1,nk
- if(.not.processed(i)) then
-! find stars of folded vectors
-    call getstarp(cart2red_g(kfold(:,i)),narms,kvecstar,kvecop)
-
-    weig=0
-! mark all kpoints in the stars as processed
-    armloop: do l=1,narms
-!  take the star vector to cartesian coordinates and fold into WS cell
-       qout = fold_ws(red2cart_g(kvecstar(:,l)),g0ws26)
-! compare the stars to existing IBZ vectors and mark processed if found
-       do k=1,nk 
-          if(.not.processed(k)) then
-            if (kfold(:,k) .myeq. qout) then
-               processed(k)=.true.
-               mapibz(k)=nibz+1  ! use nibz+1 as it will be incremented later
-               weig=weig+1
-! here need to switch two elements of mapinv; so we add this line
-               aux=mapinv(nibz+1)
-               mapinv(nibz+1)=k
-               mapinv(k)=aux
-            endif
-          endif
-       enddo
-    enddo armloop
-
-    nibz=nibz+1
-    kibz(:,nibz)=kfold(:,i)
-    wibz(nibz)=dble(weig)
-    q = cart2red_g(kibz(:,nibz))    ! to get it in reduced coordinates of g0i
-    mapibz(i)=nibz
-    write(ulog,4)'new vector*:',nibz,narms,wibz(nibz),kibz(:,nibz),length(kibz(:,nibz)),q
-    write(*   ,4)'new vector*:',nibz,narms,wibz(nibz),kibz(:,nibz),length(kibz(:,nibz)),q
- endif
- enddo
-
- kibz=kibz(:,1:nibz)
- wibz=wibz(  1:nibz)
- sw = sum(wibz(1:nibz))
- wibz = wibz/sw
-
-! indexing is ik = i1 + n1*i2 + n1*n2*i3 where i1=(0:n1-1) etc
-
-! sort kibz(1:nibz) in order of increasing length 
-! allocate(k2(3,nibz),lg(nibz),mcor(nibz),w2(nibz))
-! do i=1,nibz
-!    lg(i)=length(k2(:,i))
-! enddo
-! call sort(nibz,lg,mcor,nibz)
-
-! define new kibz and wibz ---------------------------------------------
-! do i=1,nibz
-!    wibz(i) = w2(mcor(i))
-!    kibz(:,i)=k2(:,mcor(i))
-! enddo
-! deallocate(k2,w2,lg,mcor)
-
-! sort and write out the kpoints and their weights-------------------------
- write(uibz,*)'#i,kibz(:,i),wibz(i),kibz_reduced,length(kibz(i))'
- open(345,file='mapinv.dat')
- write(345,*)'# i,mapinv(i)(i=1,nibz),mapibz(i)'
- do i=1,nk !,nibz
-    if(i.le.nibz) then
-       write(uibz,3)i,kibz(:,i),wibz(i),cart2red_g(kibz(:,i)),length(kibz(:,i))
-    endif
-    write(345,*)i,mapinv(i),mapibz(i)
- enddo
- close(345)
- close(uibz)
-
-3 format(i7,2x,3(1x,f9.4),2x,f9.5,2x,3(1x,f9.5),3x,f9.5)
-4 format(a,2i7,2x,f9.5,2x,99(1x,f9.5))
-
- end subroutine get_weights2
-!==========================================================
- subroutine get_weights3(nk,kp ,mapibz)
-!! takes as input kp(3,nk) in cartesian and finds based on crystal symmetries, the
-!! weights associated with each kpoint, and then normalizes them
-!! nibz is the final number of kpoints stored in kibz in the irreducible BZ
-!! the other important output is the mapping of the full kmesh onto the ones
-!! folded in the irreducible zone : mapibz(j=1:nk) is the index of the k in the IBZ list
-!! corresponding to the argument j
-!! for i=1,nibz mapinv(i) gives the index of the corresponding kpoint in the original kp list
- use lattice, only : primitivelattice,r01,r02,r03 ,cart2red_g,red2cart_g,prim_to_conv,fold_ws ,g0ws26
- use kpoints, only : kibz, wibz , nibz
- use constants, only : pi,r15
- use geometry
- use params
- use ios
- implicit none
- integer, intent(in):: nk
- real(r15), intent(in):: kp(3,nk)
- integer, intent(out):: mapibz(nk)
-! real(r15), intent(out), allocatable :: kibz(:,:) ,wibz(:)
- integer, allocatable :: mcor(:),mapinv(:)
- real(r15), allocatable :: k2(:,:),lg(:),w2(:)
- real(r15) zro,q(3),kvecstar(3,48),sw,skc(3),qout(3)
- integer i,j,l,narms,kvecop(48),aux
- logical exists
-
-!  interface v2a
-!     module procedure fold_ws
-!  end interface
- open(uibz,file='KPOINT.IBZ',status='unknown')
-
- allocate(k2(3,nk),w2(nk),mapinv(nk))
- zro=0d0  ! shift
- write(ulog,*)'GET_WEIGHTS3: generating kpoints in the irreducible FBZ '
- write(*,*)'MAKE_KP_IBZ: nk,wk(nk),k2(:,nk)'
-
- nibz=0 ; mapibz=0; w2=1; k2=0
-
-! initialize mapvinv with identity so that later elements can be switched
- do i=1,nk
-    mapinv(i)=i
- enddo
-
-! main loop to identify points in the FBZ
- kploop: do i=1,nk
-
-! below the reduced components of kp are needed, output is also in reduced
-    call getstarp(cart2red_g(kp(:,i)),narms,kvecstar,kvecop)
-  ! call getstar (kp(:,i),prim_to_conv,narms,kvecstar,kvecop)
-
-! see if already exists among the previously assigned ones
-    exists=.False.
-
-    armloop: do l=1,narms
-
-        if(verbose) write(ulog,4)'stars in red&cart are:',i,l,kvecstar(:,l),red2cart_g(kvecstar(:,l))
-
-!  take the star vector to cartesian coordinates and fold into WS cell
-        qout = fold_ws(red2cart_g(kvecstar(:,l)),g0ws26)
-
-! set weight for the first kpoint where nibz=0
-        jloop: do j=1,nibz
-          if (k2(:,j) .myeq. qout) then 
-             exists=.True.
-             w2(j)=w2(j)+1d0
-             mapibz(i)=j
-             exit armloop
-          endif
-        enddo jloop
-
-    enddo armloop
-
-!   write(ulog,4)' kpoint, folded one  ',i,kp(:,i),exists,j,k2(:,j)
-    if(exists ) then
-
-       cycle kploop
-
-    else
-
-       nibz=nibz+1  ! didn't exist: new kvector in the ibz list
-
-       if (nibz.eq.1) w2(nibz) = 1
-       mapibz(i) = nibz
-
-! here need to switch two elements of mapinv; so we add this line
-       aux=mapinv(nibz)
-       mapinv(nibz)=i
-       mapinv(i)=aux
-
-!      call bring_to_ws_gx(kp(:,i),g0ws26,k2(:,nibz))
-       k2(:,nibz) = fold_ws(kp(:,i),g0ws26) 
-
- !     k2(:,nibz)=kp(:,i)
-       q = cart2red_g(k2(:,nibz))    ! to get it in reduced coordinates of g0i
-       write(ulog,4)'new vector*:',nibz,narms,w2(nibz),k2(:,nibz),length(k2(:,nibz)),q
-       write(*   ,4)'new vector*:',nibz,narms,w2(nibz),k2(:,nibz),length(k2(:,nibz)),q
-
-    endif
-
- enddo kploop
- write(ulog,*)'GET_WEIGHTS3: generated ',nibz,' points in the irreducible FBZ'
-
-! sort k2(1:nibz) in order of increasing length 
- allocate(lg(nibz),mcor(nibz))
- do i=1,nibz
-    lg(i)=length(k2(:,i))
- enddo
- call sort(nibz,lg,mcor,nibz)
-
-! define kibz and wibz ---------------------------------------------
- if ( allocated(wibz)) deallocate(wibz)
- if ( allocated(kibz)) deallocate(kibz)
- allocate(wibz(nibz),kibz(3,nibz))
- do i=1,nibz
-    wibz(i) = w2(mcor(i))
-    kibz(:,i)=k2(:,mcor(i))
- enddo
-! k2 is in reduced units
-! do j=1,nibz
-!    kibz(:,j)=k2(1,j)*g1+k2(2,j)*g2+k2(3,j)*g3
-! enddo
-
- deallocate(k2,w2)
- sw = sum(wibz(1:nibz))
- wibz = wibz/sw
-
-! sort and write out the kpoints and their weights-------------------------
- write(uibz,*)'#i,kibz(:,i),wibz(i),kibz_reduced,length(kibz(i))'
- open(345,file='mapinv.dat')
-! open(346,file='NEWKP.dat')
- write(345,*)'# i,mapinv(i)(i=1,nibz),mapibz(i)'
-! write(346,*)'# i,        newkp(i)         newkp_reduced(i)'
- do i=1,nk !,nibz
-    if(i.le.nibz) then
-       j=mcor(i)
-       write(uibz,3)i,kibz(:,j),wibz(j),cart2red_g(kibz(:,j)),length(kibz(:,j))
-    endif
-    write(345,*)i,mapinv(i),mapibz(i)
-!    write(346,3)i,kp(:,i),reduce_g(kp(:,i))
- enddo
- close(345)
-! close(346)
- close(uibz)
-
-2 format(3i7,2x,3(1x,f9.4),2x,f9.4,2x,3(1x,f9.5),3x,f14.8)
-3 format(i7,2x,3(1x,f9.4),2x,f9.5,2x,3(1x,f9.5),3x,f9.5)
-4 format(a,2i7,2x,f9.5,2x,99(1x,f9.5))
-5 format(a,2x,99(1x,f9.5))
-
- end subroutine get_weights3
-!==========================================================
- subroutine get_weights4(nk,kp,ngibz,mapibz,gibz,wgibz)
-!! takes as input kp(3,nk) in cartesian and finds based on crystal symmetries, the
-!! weights associated with each kpoint, and then normalizes them
-!! nibz is the final number of kpoints stored in kibz in the irreducible BZ
-!! the other important output is the mapping of the full kmesh onto the ones
-!! folded in the irreducible zone : mapibz(j=1:nk) is the index of the k in the IBZ
-!! corresponding to the argument j
-!! for i=1,nibz mapinv(i) gives the index k of the kpoints generated from
-! n1,n2,n3 loops
- use lattice, only : primitivelattice  !,r01,r02,r03
-! use kpoints, only : kibz, wibz
- use constants
- use geometry
- use params
- use ios
- implicit none
- integer, intent(in):: nk
- real(r15), intent(in):: kp(3,nk) !,prim2cart(3,3) !r1(3),r2(3),r3(3)
- integer, intent(out):: ngibz,mapibz(nk)
- real(r15), intent(out), allocatable :: gibz(:,:) ,wgibz(:)
- integer, allocatable :: mapinv(:)  !mcor(:),mapibz(:),
- real(r15), allocatable :: k2(:,:),w2(:)
- real(r15) zro,q(3),kvecstar(3,48),sw,skc(3),rr1(3),rr2(3),rr3(3)
- integer i,j,l,narms,kvecop(48),aux
- logical exists
-
-
- open(uibz,file='GMESH.IBZ',status='unknown')
-
- allocate(k2(3,nk),w2(nk),mapinv(nk))
- zro=0d0  ! shift
- write(ulog,*)'GET_WEIGHTS4: generating kpoints in the irreducible FBZ '
- write(*,*)'MAKE_KP_IBZ: nk,wk(nk),k2(:,nk)'
-
- ngibz=0 ; mapibz=0; w2=1
-
-! initialize mapvinv with identity so that later elements can be switched
- do i=1,nk
-    mapinv(i)=i
- enddo
-
-! main loop to identify points in the FBZ
- kploop: do i=1,nk
-
-! below the cartesian components of kp are needed
-    call getstar(kp(:,i),primitivelattice,narms,kvecstar,kvecop)
-
-! see if already exists among the previously assigned ones
-    exists=.False.
-    if(verbose) write(ulog,4)'list of kvecstar(l),l=1,narms for kp_red=',i,q
-
-    lloop: do l=1,narms
-
-        if(verbose)   write(ulog,4)'stars are:',l,kvecstar(:,l)
-
-! set weight for the first kpoint where nibz=0
-        jloop: do j=1,ngibz
-          if (k2(:,j) .myeq. kvecstar(:,l)) then
-! first bring the star in the FBZ, then compare to the existing points
-             exists=.True.
-             w2(j)=w2(j)+1d0
-             mapibz(i)=j
-!            write(ulog,4)' this kpoint turned out to exist ',j,k2(:,j)
-             exit lloop
-          endif
-        enddo jloop
-    enddo lloop
-
-!   write(ulog,4)' kpoint, folded one  ',i,kp(:,i),exists,j,k2(:,j)
-    if(exists ) then
-       cycle kploop
-    else
-       ngibz=ngibz+1
-       if (ngibz.eq.1) w2(ngibz) = 1
-       mapibz(i) = ngibz
-! here need to switch two elements of mapinv; so we add this line
-       aux=mapinv(ngibz)
-       mapinv(ngibz)=i
-       mapinv(i)=aux
-       k2(:,ngibz)=kp(:,i)
-       write(ulog,4)'new vector*:',ngibz,w2(ngibz),k2(:,ngibz),length(k2(:,ngibz))
-       write(*,4)'new vector*:',ngibz,w2(ngibz),k2(:,ngibz),length(k2(:,ngibz))
-    endif
-
- enddo kploop
- write(ulog,*)'GET_WEIGHTS4: generated ',ngibz,' points in the irreducible FBZ'
-
-! define kibz and wibz ---------------------------------------------
- if ( allocated(wgibz)) deallocate(wgibz)
- if ( allocated(gibz)) deallocate(gibz)
- allocate(wgibz(ngibz),gibz(3,ngibz))
- wgibz(1:ngibz) = w2(1:ngibz)
- gibz(:,1:ngibz)=k2(:,1:ngibz)
- deallocate(k2,w2)
- sw = sum(wgibz(1:ngibz))
- wgibz = wgibz/sw
-
- write(uibz,*)'#i,kibz(:,i),wibz(i),kibz_reduced,length(kibz(i))'
- open(345,file='mapinv.dat')
- open(346,file='NEWKP.dat')
- write(345,*)'# i,mapinv(i)(i=1,nibz),mapibz(i)'
- write(346,*)'# i,        newkp(i)         newkp_reduced(i)'
- do i=1,ngibz
-    write(345,*)i,mapinv(i),mapibz(i)
-!    skc = matmul(transpose(prim2cart),kp(:,i))
-!    call reduce(kp(:,i),gshells(:,1),gshells(:,2),gshells(:,3),skc)
-    call reduce(kp(:,i),rr1,rr2,rr3,skc)
-    write(346,3)i,kp(:,i),skc
-    write(uibz,3)i,gibz(:,i),wgibz(i)
- enddo
- close(345)
- close(346)
- close(uibz)
-
-2 format(3i7,2x,3(1x,f9.4),2x,f9.4,2x,3(1x,f9.5),3x,f14.8)
-3 format(i7,2x,3(1x,f9.4),3x,f9.5,2x,3(1x,f9.5),3x,f9.5)
-4 format(a,i7,2x,f9.5,2x,99(1x,f9.5))
-5 format(a,2x,99(1x,f9.5))
-
- end subroutine get_weights4
 !====================================
  subroutine structure_factor_reg(v,n,grid,st,dst)
 !! takes kpoints within the FBZ as input, and calculates sum_k cos(k.R) for given R
