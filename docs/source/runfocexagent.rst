@@ -114,8 +114,8 @@ and GCC first, e.g. ``module load gcc python``).
    git clone https://github.com/KeivanS/VASP-Flow.git
 
    # 3. one Python environment for VASP-Flow and the FOCEX agent
-   python3 -m venv ~/dftphonon-env
-   source ~/dftphonon-env/bin/activate
+   python3 -m venv ~/myenv
+   source ~/myenv/bin/activate
    pip install numpy spglib pymatgen matplotlib
 
    # 4. optional: the commands focex-agent and focex-diagnose (symlinks in ~/ALADYN/bin)
@@ -166,7 +166,7 @@ Check the set-up
 
 .. code-block:: bash
 
-   source ~/dftphonon-env/bin/activate
+   source ~/myenv/bin/activate
    python ~/VASP-Flow/check_setup.py local     # a workstation;  "slurm" on a cluster
 
 It checks Python and its packages, the POTCAR library, VASP and MPI (and on a cluster the
@@ -176,11 +176,11 @@ can start.
 When is the Python environment needed?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It is the same environment as in VASP-Flow's manual: one, ``~/dftphonon-env``, serves both (DFT with
+It is the same environment as in VASP-Flow's manual: one, ``~/myenv``, serves both (DFT with
 VASP-Flow, phonons with the FOCEX agent). It is needed whenever *you* start ``focex-agent.py`` or
 ``diagnose.py``: they import numpy, spglib, pymatgen and
-VASP-Flow. Either activate it first (``source ~/dftphonon-env/bin/activate``, then ``python ...``) or
-call its interpreter directly (``~/dftphonon-env/bin/python ...``). The scripts the agent writes
+VASP-Flow. Either activate it first (``source ~/myenv/bin/activate``, then ``python ...``) or
+call its interpreter directly (``~/myenv/bin/python ...``). The scripts the agent writes
 (``run_workflow.sh``, ``resubmit_failed.sh``, ``diagnosis/fix_it.sh``) contain the full path of the
 interpreter you used, so the batch jobs need no activation. The plots need only gnuplot; without it
 the agent writes the plot scripts and you run ``makeplots.sh`` later, where gnuplot is.
@@ -216,7 +216,7 @@ The steps of a from_scratch calculation (:ref:`agent-extract` has those of extra
    cp $A/focex-agent-instructions.txt .
    nano focex-agent-instructions.txt  # Project, RANKS, FUNCTIONAL, MPI
 
-   source ~/dftphonon-env/bin/activate
+   source ~/myenv/bin/activate
    python $A/focex-agent.py --profile mycluster   # your profile (above)
    cd ZnO
    sbatch run_workflow.sh             # without a profile: nohup bash run_workflow.sh &

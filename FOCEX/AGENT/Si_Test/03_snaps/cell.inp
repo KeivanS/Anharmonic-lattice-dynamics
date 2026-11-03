@@ -1,0 +1,9 @@
+5.4362991904 5.4362991904 5.4362991904 90.0000000000 90.0000000000 90.0000000000   # a b c alpha beta gamma (conventional)
+0 0.5 0.5 0.5 0 0.5 0.5 0.5 0   # primitive vectors in conventional units
+1.0 1   # scale, convcoord=1: atoms and supercell.inp in primitive units
+1
+2
+28.0855 0   # masses, charges
+Si
+0.000000000000 0.000000000000 0.000000000000
+0.250000000000 0.250000000000 0.250000000000

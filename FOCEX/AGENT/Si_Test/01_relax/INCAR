@@ -1,0 +1,35 @@
+# Relaxation calculation
+SYSTEM = Si_Test
+
+# Electronic structure
+PREC = Normal
+ENCUT = 450
+EDIFF = 1E-6
+NELM = 100
+ALGO = Normal
+
+# Ionic relaxation
+IBRION = 2
+ISIF = 3
+NSW = 100
+EDIFFG = -0.003
+
+# Electronic smearing
+ISMEAR = 0
+SIGMA = 0.05
+
+# Start from scratch (ignore any stale WAVECAR/CHGCAR in this directory);
+# WAVECAR and CHGCAR are written for the SCF step to pick up.
+ISTART = 0
+ICHARG = 2
+
+GGA = PS
+
+
+# MPI parallelization
+KPAR  = 12
+NCORE = 1
+# Output
+LWAVE = .TRUE.
+LCHARG = .TRUE.
+LORBIT = 11

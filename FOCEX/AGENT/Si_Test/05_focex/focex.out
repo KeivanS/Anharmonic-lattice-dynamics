@@ -1,0 +1,2273 @@
+latticeparameters is=       5.43630       5.43630       5.43630      90.00000      90.00000      90.00000
+ primitive lattice is=
+       0.00000       0.50000       0.50000
+       0.50000       0.00000       0.50000
+       0.50000       0.50000       0.00000
+# of different atom types is=        1
+# of each type in primcel is=        2
+# mass of different types is=      28.08550
+ READ_PARAMS: opening latdyn.params
+ READ_PARAMS: kmesh=           14          14          14
+READ_PARAMS: shift, normal =     0.0000    0.0000    0.0000    1.0000    0.0000    0.0000
+ READ_PARAMS: wmesh, wmax =          300   560.00000000000000     
+ READ_PARAMS: width=    10.000000000000000     
+ READ_PARAMS: just read verbose  F
+ READ_PARAMS: tmin,tmax=   0.0000000000000000        900.00000000000000     
+ conv_to_cart has conventional vectors on its columns=
+ prim_to_cart has primitive vectors on its columns
+ cart_to_conv has conventional reciprocal vectors on its lines (no 2pi)
+ cart_to_prim has primitive reciprocal vectors on its lines (no 2pi) 
+  primitive lattice (lines) is=
+       0.00000       2.71815       2.71815
+       2.71815       0.00000       2.71815
+       2.71815       2.71815       0.00000
+  reciprocal lattice (lines, no 2pi) is=
+      -0.18395       0.18395       0.18395
+       0.18395      -0.18395       0.18395
+       0.18395       0.18395      -0.18395
+  COORDINATES read successfully 
+ gmax,vol,junk,radius,diameter=   10.872598379999999        1285.2867727639878        10.872339357047405                2           5
+ 26SHORTEST_SHELL: diameter**3-1=d3=         124
+ 26SHORTEST_SHELL: counted=         124
+ 26SHORTEST_SHELL2: j, area=           3   118.21339553277861     
+ 26SHORTEST_SHELL3: j, volume=           4   1285.2867727639878     
+26SHORTEST_SHELL: final smallest vector1=(    -10.8726      0.0000      0.0000)(
+26SHORTEST_SHELL: final smallest vector2=(      0.0000    -10.8726      0.0000)(
+26SHORTEST_SHELL: final smallest vector3=(      0.0000      0.0000    -10.8726)(
+ 26SHORTEST_SHELL: final smallest volume=   1285.2867727639878     
+ Entering fc_init; maxatoms is=     3961
+ Number of atoms in primitive cell is=        2
+ FC_INIT: maxneighbors= is=      100
+  cartesian atomic positions is=
+       0.00000       1.35907
+       0.00000       1.35907
+       0.00000       1.35907
+Atompos After unitcell Si       1       1     0.0000     0.0000     0.0000    28.0855
+Atompos After unitcell Si       1       2     1.3591     1.3591     1.3591    28.0855
+ after lattpgcount loop
+ Entered FC_INIT with    maxshells is=        6
+ Entered FC_INIT with maxneighbors is=      100
+ SET_ATOMPOS: shortest distance with atom1 within primcell is a0=   2.3539866007295882     
+ FC_INIT: last shell #           6  corresponding to rcut=   20.522644736042182     
+ FC_INIT: generated natoms=         1870  atoms in the neighborhood of primcell
+  maxatoms, natoms=        3961        1870
+ gmax,vol,junk,radius,diameter=   3.8440440220907779        40.165211657740628        3.4246118028986934                2           5
+ 26SHORTEST_SHELL: diameter**3-1=d3=         124
+ 26SHORTEST_SHELL: counted=         124
+ 26SHORTEST_SHELL2: j, area=           3   12.796975451758708     
+ 26SHORTEST_SHELL3: j, volume=           4   40.165211657740628     
+26SHORTEST_SHELL: final smallest vector1=(      0.0000     -2.7181     -2.7181)(
+26SHORTEST_SHELL: final smallest vector2=(      2.7181      0.0000     -2.7181)(
+26SHORTEST_SHELL: final smallest vector3=(      2.7181     -2.7181      0.0000)(
+ 26SHORTEST_SHELL: final smallest volume=   40.165211657740628     
+ gmax,vol,junk,radius,diameter=   10.872598379999999        1285.2867727639878        10.872339357047405                2           5
+ 26SHORTEST_SHELL: diameter**3-1=d3=         124
+ 26SHORTEST_SHELL: counted=         124
+ 26SHORTEST_SHELL2: j, area=           3   118.21339553277861     
+ 26SHORTEST_SHELL3: j, volume=           4   1285.2867727639878     
+26SHORTEST_SHELL: final smallest vector1=(    -10.8726      0.0000      0.0000)(
+26SHORTEST_SHELL: final smallest vector2=(      0.0000    -10.8726      0.0000)(
+26SHORTEST_SHELL: final smallest vector3=(      0.0000      0.0000    -10.8726)(
+ 26SHORTEST_SHELL: final smallest volume=   1285.2867727639878     
+* New vector     1   0 0 0         0.00000       0.00000       0.00000       0.00000       0.00000       0.00000
+* New vector     2  -1-1-1        -5.43630       5.43630       5.43630       3.00000      -1.00000      -1.00000
+* New vector     3  -1-1 0        -2.71815       2.71815       5.43630       2.00000       0.00000      -1.00000
+* New vector     4  -1-1 1         0.00000       0.00000       5.43630       1.00000       1.00000      -1.00000
+* New vector     5  -1 0-1        -2.71815       5.43630       2.71815       2.00000      -1.00000       0.00000
+* New vector     6  -1 0 0         0.00000       2.71815       2.71815       1.00000       0.00000       0.00000
+* New vector     7  -1 0 1         2.71815       0.00000       2.71815       0.00000       1.00000       0.00000
+* New vector     8  -1 1-1         0.00000       5.43630       0.00000       1.00000      -1.00000       1.00000
+* New vector     9  -1 1 0         2.71815       2.71815       0.00000       0.00000       0.00000       1.00000
+* New vector    10  -1 1 1         5.43630       0.00000       0.00000      -1.00000       1.00000       1.00000
+* New vector    11   0-1-1        -5.43630       2.71815       2.71815       2.00000      -1.00000      -1.00000
+* New vector    12   0-1 0        -2.71815      -0.00000       2.71815       1.00000       0.00000      -1.00000
+* New vector    13   0-1 1         0.00000      -2.71815       2.71815       0.00000       1.00000      -1.00000
+* New vector    14   0 0-1        -2.71815       2.71815      -0.00000       1.00000      -1.00000       0.00000
+* New vector    15   0 0 1         2.71815      -2.71815       0.00000      -1.00000       1.00000       0.00000
+* New vector    16   0 1-1         0.00000       2.71815      -2.71815       0.00000      -1.00000       1.00000
+* New vector    17   0 1 0         2.71815       0.00000      -2.71815      -1.00000       0.00000       1.00000
+* New vector    18   0 1 1         5.43630      -2.71815      -2.71815      -2.00000       1.00000       1.00000
+* New vector    19   1-1-1        -5.43630       0.00000       0.00000       1.00000      -1.00000      -1.00000
+* New vector    20   1-1 0        -2.71815      -2.71815       0.00000       0.00000       0.00000      -1.00000
+* New vector    21   1-1 1         0.00000      -5.43630       0.00000      -1.00000       1.00000      -1.00000
+* New vector    22   1 0-1        -2.71815       0.00000      -2.71815       0.00000      -1.00000       0.00000
+* New vector    23   1 0 0         0.00000      -2.71815      -2.71815      -1.00000       0.00000       0.00000
+* New vector    24   1 0 1         2.71815      -5.43630      -2.71815      -2.00000       1.00000       0.00000
+* New vector    25   1 1-1         0.00000       0.00000      -5.43630      -1.00000      -1.00000       1.00000
+* New vector    26   1 1 0         2.71815      -2.71815      -5.43630      -2.00000       0.00000       1.00000
+* New vector    27   1 1 1         5.43630      -5.43630      -5.43630      -3.00000       1.00000       1.00000
+* New vector    28  -2 0 0         0.00000       5.43630       5.43630       2.00000       0.00000       0.00000
+* New vector    29  -2 0 1         2.71815       2.71815       5.43630       1.00000       1.00000       0.00000
+* New vector    30  -2 0 2         5.43630       0.00000       5.43630       0.00000       2.00000       0.00000
+* New vector    31  -2 1 0         2.71815       5.43630       2.71815       1.00000       0.00000       1.00000
+* New vector    32  -2 1 1         5.43630       2.71815       2.71815       0.00000       1.00000       1.00000
+* New vector    33  -2 2 0         5.43630       5.43630       0.00000       0.00000       0.00000       2.00000
+* New vector    34  -1-1 2         2.71815      -2.71815       5.43630       0.00000       2.00000      -1.00000
+* New vector    35  -1 0 2         5.43630      -2.71815       2.71815      -1.00000       2.00000       0.00000
+* New vector    36  -1 2-1         2.71815       5.43630      -2.71815       0.00000      -1.00000       2.00000
+* New vector    37  -1 2 0         5.43630       2.71815      -2.71815      -1.00000       0.00000       2.00000
+* New vector    38   0-2 0        -5.43630      -0.00000       5.43630       2.00000       0.00000      -2.00000
+* New vector    39   0-2 1        -2.71815      -2.71815       5.43630       1.00000       1.00000      -2.00000
+* New vector    40   0-2 2         0.00000      -5.43630       5.43630       0.00000       2.00000      -2.00000
+* New vector    41   0-1 2         2.71815      -5.43630       2.71815      -1.00000       2.00000      -1.00000
+* New vector    42   0 0-2        -5.43630       5.43630      -0.00000       2.00000      -2.00000       0.00000
+* New vector    43   0 0 2         5.43630      -5.43630       0.00000      -2.00000       2.00000       0.00000
+* New vector    44   0 1-2        -2.71815       5.43630      -2.71815       1.00000      -2.00000       1.00000
+* New vector    45   0 2-2         0.00000       5.43630      -5.43630       0.00000      -2.00000       2.00000
+* New vector    46   0 2-1         2.71815       2.71815      -5.43630      -1.00000      -1.00000       2.00000
+* New vector    47   0 2 0         5.43630       0.00000      -5.43630      -2.00000       0.00000       2.00000
+* New vector    48   1-2 0        -5.43630      -2.71815       2.71815       1.00000       0.00000      -2.00000
+* New vector    49   1-2 1        -2.71815      -5.43630       2.71815       0.00000       1.00000      -2.00000
+* New vector    50   1 0-2        -5.43630       2.71815      -2.71815       1.00000      -2.00000       0.00000
+* New vector    51   1 1-2        -2.71815       2.71815      -5.43630       0.00000      -2.00000       1.00000
+* New vector    52   2-2 0        -5.43630      -5.43630       0.00000       0.00000       0.00000      -2.00000
+* New vector    53   2-1-1        -5.43630      -2.71815      -2.71815       0.00000      -1.00000      -1.00000
+* New vector    54   2-1 0        -2.71815      -5.43630      -2.71815      -1.00000       0.00000      -1.00000
+* New vector    55   2 0-2        -5.43630       0.00000      -5.43630       0.00000      -2.00000       0.00000
+* New vector    56   2 0-1        -2.71815      -2.71815      -5.43630      -1.00000      -1.00000       0.00000
+* New vector    57   2 0 0         0.00000      -5.43630      -5.43630      -2.00000       0.00000       0.00000
+* New vector    58  -3 1 1         5.43630       5.43630       5.43630       1.00000       1.00000       1.00000
+* New vector    59  -1-1 3         5.43630      -5.43630       5.43630      -1.00000       3.00000      -1.00000
+* New vector    60  -1 3-1         5.43630       5.43630      -5.43630      -1.00000      -1.00000       3.00000
+* New vector    61   1-3 1        -5.43630      -5.43630       5.43630       1.00000       1.00000      -3.00000
+* New vector    62   1 1-3        -5.43630       5.43630      -5.43630       1.00000      -3.00000       1.00000
+* New vector    63   3-1-1        -5.43630      -5.43630      -5.43630      -1.00000      -1.00000      -1.00000
+           1 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           2 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+           3 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           4 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           5 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           6 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           7 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           8 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           9 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          10 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          11 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          12 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          13 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          14 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          15 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          16 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          17 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          18 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          19 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          20 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          21 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          22 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          23 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          24 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          25 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          26 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          27 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+          28 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          29 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          30 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          31 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          32 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          33 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          34 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          35 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          36 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          37 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          38 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          39 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          40 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          41 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          42 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          43 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          44 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          45 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          46 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          47 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          48 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          49 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          50 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          51 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          52 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          53 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          54 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          55 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          56 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          57 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          58 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+          59 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+          60 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+          61 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+          62 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+          63 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+  sum of the weights=om/om0=   32.000000000000000     
+ gmax,vol,junk,radius,diameter=   2.0018758725831933        6.1757476981848400        1.8346809448663575                2           5
+ 26SHORTEST_SHELL: diameter**3-1=d3=         124
+ 26SHORTEST_SHELL: counted=         124
+ 26SHORTEST_SHELL2: j, area=           3   3.7783138425062184     
+ 26SHORTEST_SHELL3: j, volume=           4   6.1757476981848400     
+26SHORTEST_SHELL: final smallest vector1=(     -1.1558     -1.1558     -1.1558)(
+26SHORTEST_SHELL: final smallest vector2=(      1.1558     -1.1558     -1.1558)(
+26SHORTEST_SHELL: final smallest vector3=(     -1.1558      1.1558     -1.1558)(
+ 26SHORTEST_SHELL: final smallest volume=   6.1757476981848400     
+ gmax,vol,junk,radius,diameter=  0.57789178700258281       0.19299211561087701       0.57789495084790510                2           5
+ 26SHORTEST_SHELL: diameter**3-1=d3=         124
+ 26SHORTEST_SHELL: counted=         124
+ 26SHORTEST_SHELL2: j, area=           3  0.33395891748503853     
+ 26SHORTEST_SHELL3: j, volume=           4  0.19299211561087701     
+26SHORTEST_SHELL: final smallest vector1=(     -0.5779      0.0000      0.0000)(
+26SHORTEST_SHELL: final smallest vector2=(      0.0000     -0.5779      0.0000)(
+26SHORTEST_SHELL: final smallest vector3=(      0.0000      0.0000     -0.5779)(
+ 26SHORTEST_SHELL: final smallest volume=  0.19299211561087701     
+* New vector     1   0 0 0         0.00000       0.00000       0.00000       0.00000       0.00000       0.00000
+* New vector     2  -1-1-1         0.57789       0.57789       0.57789       0.50000       0.50000       0.50000
+* New vector     3  -1-1 0         0.57789       0.57789      -0.00000       0.25000       0.25000       0.50000
+* New vector     4  -1-1 1         0.57789       0.57789      -0.57789       0.00000       0.00000       0.50000
+* New vector     5  -1 0-1         0.57789      -0.00000       0.57789       0.25000       0.50000       0.25000
+* New vector     6  -1 0 0         0.57789       0.00000       0.00000       0.00000       0.25000       0.25000
+* New vector     7  -1 0 1         0.57789       0.00000      -0.57789      -0.25000       0.00000       0.25000
+* New vector     8  -1 1-1         0.57789      -0.57789       0.57789       0.00000       0.50000       0.00000
+* New vector     9  -1 1 0         0.57789      -0.57789       0.00000      -0.25000       0.25000       0.00000
+* New vector    10  -1 1 1         0.57789      -0.57789      -0.57789      -0.50000       0.00000       0.00000
+* New vector    11   0-1-1        -0.00000       0.57789       0.57789       0.50000       0.25000       0.25000
+* New vector    12   0-1 0         0.00000       0.57789       0.00000       0.25000       0.00000       0.25000
+* New vector    13   0-1 1         0.00000       0.57789      -0.57789       0.00000      -0.25000       0.25000
+* New vector    14   0 0-1         0.00000       0.00000       0.57789       0.25000       0.25000       0.00000
+* New vector    15   0 0 1         0.00000       0.00000      -0.57789      -0.25000      -0.25000       0.00000
+* New vector    16   0 1-1         0.00000      -0.57789       0.57789       0.00000       0.25000      -0.25000
+* New vector    17   0 1 0         0.00000      -0.57789       0.00000      -0.25000       0.00000      -0.25000
+* New vector    18   0 1 1         0.00000      -0.57789      -0.57789      -0.50000      -0.25000      -0.25000
+* New vector    19   1-1-1        -0.57789       0.57789       0.57789       0.50000       0.00000       0.00000
+* New vector    20   1-1 0        -0.57789       0.57789       0.00000       0.25000      -0.25000       0.00000
+* New vector    21   1-1 1        -0.57789       0.57789      -0.57789       0.00000      -0.50000       0.00000
+* New vector    22   1 0-1        -0.57789       0.00000       0.57789       0.25000       0.00000      -0.25000
+* New vector    23   1 0 0        -0.57789       0.00000       0.00000       0.00000      -0.25000      -0.25000
+* New vector    24   1 0 1        -0.57789       0.00000      -0.57789      -0.25000      -0.50000      -0.25000
+* New vector    25   1 1-1        -0.57789      -0.57789       0.57789       0.00000       0.00000      -0.50000
+* New vector    26   1 1 0        -0.57789      -0.57789       0.00000      -0.25000      -0.25000      -0.50000
+* New vector    27   1 1 1        -0.57789      -0.57789      -0.57789      -0.50000      -0.50000      -0.50000
+* New vector    28  -2-1 0         1.15578       0.57789      -0.00000       0.25000       0.50000       0.75000
+* New vector    29  -2 0-1         1.15578      -0.00000       0.57789       0.25000       0.75000       0.50000
+* New vector    30  -2 0 0         1.15578       0.00000       0.00000       0.00000       0.50000       0.50000
+* New vector    31  -2 0 1         1.15578       0.00000      -0.57789      -0.25000       0.25000       0.50000
+* New vector    32  -2 1 0         1.15578      -0.57789       0.00000      -0.25000       0.50000       0.25000
+* New vector    33  -1-2 0         0.57789       1.15578      -0.00000       0.50000       0.25000       0.75000
+* New vector    34  -1 0-2         0.57789      -0.00000       1.15578       0.50000       0.75000       0.25000
+* New vector    35  -1 0 2         0.57789       0.00000      -1.15578      -0.50000      -0.25000       0.25000
+* New vector    36  -1 2 0         0.57789      -1.15578       0.00000      -0.50000       0.25000      -0.25000
+* New vector    37   0-2-1        -0.00000       1.15578       0.57789       0.75000       0.25000       0.50000
+* New vector    38   0-2 0         0.00000       1.15578       0.00000       0.50000       0.00000       0.50000
+* New vector    39   0-2 1         0.00000       1.15578      -0.57789       0.25000      -0.25000       0.50000
+* New vector    40   0-1-2        -0.00000       0.57789       1.15578       0.75000       0.50000       0.25000
+* New vector    41   0-1 2         0.00000       0.57789      -1.15578      -0.25000      -0.50000       0.25000
+* New vector    42   0 0-2         0.00000       0.00000       1.15578       0.50000       0.50000       0.00000
+* New vector    43   0 0 2         0.00000       0.00000      -1.15578      -0.50000      -0.50000       0.00000
+* New vector    44   0 1-2         0.00000      -0.57789       1.15578       0.25000       0.50000      -0.25000
+* New vector    45   0 1 2         0.00000      -0.57789      -1.15578      -0.75000      -0.50000      -0.25000
+* New vector    46   0 2-1         0.00000      -1.15578       0.57789      -0.25000       0.25000      -0.50000
+* New vector    47   0 2 0         0.00000      -1.15578       0.00000      -0.50000       0.00000      -0.50000
+* New vector    48   0 2 1         0.00000      -1.15578      -0.57789      -0.75000      -0.25000      -0.50000
+* New vector    49   1-2 0        -0.57789       1.15578       0.00000       0.50000      -0.25000       0.25000
+* New vector    50   1 0-2        -0.57789       0.00000       1.15578       0.50000       0.25000      -0.25000
+* New vector    51   1 0 2        -0.57789       0.00000      -1.15578      -0.50000      -0.75000      -0.25000
+* New vector    52   1 2 0        -0.57789      -1.15578       0.00000      -0.50000      -0.25000      -0.75000
+* New vector    53   2-1 0        -1.15578       0.57789       0.00000       0.25000      -0.50000      -0.25000
+* New vector    54   2 0-1        -1.15578       0.00000       0.57789       0.25000      -0.25000      -0.50000
+* New vector    55   2 0 0        -1.15578       0.00000       0.00000       0.00000      -0.50000      -0.50000
+* New vector    56   2 0 1        -1.15578       0.00000      -0.57789      -0.25000      -0.75000      -0.50000
+* New vector    57   2 1 0        -1.15578      -0.57789       0.00000      -0.25000      -0.50000      -0.75000
+           1 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           2 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           3 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           4 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           5 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           6 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           7 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           8 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           9 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          10 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          11 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          12 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          13 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          14 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          15 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          16 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          17 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          18 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          19 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          20 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          21 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          22 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          23 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          24 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          25 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          26 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          27 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          28 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          29 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          30 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          31 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          32 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          33 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          34 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          35 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          36 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          37 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          38 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          39 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          40 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          41 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          42 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          43 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          44 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          45 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          46 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          47 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          48 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          49 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          50 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          51 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          52 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          53 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          54 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          55 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          56 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          57 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+  sum of the weights=om/om0=   32.000000000000000     
+shell#, nb#, j, dij=    1   2   3        2.354
+shell#, nb#, j, dij=    1   3   4        2.354
+shell#, nb#, j, dij=    1   4   5        2.354
+shell#, nb#, j, dij=    2   2   7        3.844
+shell#, nb#, j, dij=    2   3   8        3.844
+shell#, nb#, j, dij=    2   4   9        3.844
+shell#, nb#, j, dij=    2   5  10        3.844
+shell#, nb#, j, dij=    2   6  11        3.844
+shell#, nb#, j, dij=    2   7  12        3.844
+shell#, nb#, j, dij=    2   8  13        3.844
+shell#, nb#, j, dij=    2   9  14        3.844
+shell#, nb#, j, dij=    2  10  15        3.844
+shell#, nb#, j, dij=    2  11  16        3.844
+shell#, nb#, j, dij=    2  12  17        3.844
+shell#, nb#, j, dij=    3   2  19        4.508
+shell#, nb#, j, dij=    3   3  20        4.508
+shell#, nb#, j, dij=    3   4  21        4.508
+shell#, nb#, j, dij=    3   5  22        4.508
+shell#, nb#, j, dij=    3   6  23        4.508
+shell#, nb#, j, dij=    3   7  24        4.508
+shell#, nb#, j, dij=    3   8  25        4.508
+shell#, nb#, j, dij=    3   9  26        4.508
+shell#, nb#, j, dij=    3  10  27        4.508
+shell#, nb#, j, dij=    3  11  28        4.508
+shell#, nb#, j, dij=    3  12  29        4.508
+shell#, nb#, j, dij=    4   2  31        5.436
+shell#, nb#, j, dij=    4   3  32        5.436
+shell#, nb#, j, dij=    4   4  33        5.436
+shell#, nb#, j, dij=    4   5  34        5.436
+shell#, nb#, j, dij=    4   6  35        5.436
+shell#, nb#, j, dij=    5   2  37        5.924
+shell#, nb#, j, dij=    5   3  38        5.924
+shell#, nb#, j, dij=    5   4  39        5.924
+shell#, nb#, j, dij=    5   5  40        5.924
+shell#, nb#, j, dij=    5   6  41        5.924
+shell#, nb#, j, dij=    5   7  42        5.924
+shell#, nb#, j, dij=    5   8  43        5.924
+shell#, nb#, j, dij=    5   9  44        5.924
+shell#, nb#, j, dij=    5  10  45        5.924
+shell#, nb#, j, dij=    5  11  46        5.924
+shell#, nb#, j, dij=    5  12  47        5.924
+shell#, nb#, j, dij=    6   2  49        6.658
+shell#, nb#, j, dij=    6   3  50        6.658
+shell#, nb#, j, dij=    6   4  51        6.658
+shell#, nb#, j, dij=    6   5  52        6.658
+shell#, nb#, j, dij=    6   6  53        6.658
+shell#, nb#, j, dij=    6   7  54        6.658
+shell#, nb#, j, dij=    6   8  55        6.658
+shell#, nb#, j, dij=    6   9  56        6.658
+shell#, nb#, j, dij=    6  10  57        6.658
+shell#, nb#, j, dij=    6  11  58        6.658
+shell#, nb#, j, dij=    6  12  59        6.658
+shell#, nb#, j, dij=    6  13  60        6.658
+shell#, nb#, j, dij=    6  14  61        6.658
+shell#, nb#, j, dij=    6  15  62        6.658
+shell#, nb#, j, dij=    6  16  63        6.658
+shell#, nb#, j, dij=    6  17  64        6.658
+shell#, nb#, j, dij=    6  18  65        6.658
+shell#, nb#, j, dij=    6  19  66        6.658
+shell#, nb#, j, dij=    6  20  67        6.658
+shell#, nb#, j, dij=    6  21  68        6.658
+shell#, nb#, j, dij=    6  22  69        6.658
+shell#, nb#, j, dij=    6  23  70        6.658
+shell#, nb#, j, dij=    6  24  71        6.658
+shell#, nb#, j, dij=    7   2  73        7.062
+shell#, nb#, j, dij=    7   3  74        7.062
+shell#, nb#, j, dij=    7   4  75        7.062
+shell#, nb#, j, dij=    7   5  76        7.062
+shell#, nb#, j, dij=    7   6  77        7.062
+shell#, nb#, j, dij=    7   7  78        7.062
+shell#, nb#, j, dij=    7   8  79        7.062
+shell#, nb#, j, dij=    7   9  80        7.062
+shell#, nb#, j, dij=    7  10  81        7.062
+shell#, nb#, j, dij=    7  11  82        7.062
+shell#, nb#, j, dij=    7  12  83        7.062
+shell#, nb#, j, dij=    7  13  84        7.062
+shell#, nb#, j, dij=    7  14  85        7.062
+shell#, nb#, j, dij=    7  15  86        7.062
+shell#, nb#, j, dij=    7  16  87        7.062
+shell#, nb#, j, dij=    8   2  89        7.688
+          57  shells completed up to distance    20.834222130566765     
+ It  corresponds to         1534  th nearest atom
+ allocating atom0(           1 )%shells(:) to size           57
+ i0,shel_count,mxshell=           1          57          57
+shell#, nb#, j, dij=    1   2   3        2.354
+shell#, nb#, j, dij=    1   3   4        2.354
+shell#, nb#, j, dij=    1   4   5        2.354
+shell#, nb#, j, dij=    2   2   7        3.844
+shell#, nb#, j, dij=    2   3   8        3.844
+shell#, nb#, j, dij=    2   4   9        3.844
+shell#, nb#, j, dij=    2   5  10        3.844
+shell#, nb#, j, dij=    2   6  11        3.844
+shell#, nb#, j, dij=    2   7  12        3.844
+shell#, nb#, j, dij=    2   8  13        3.844
+shell#, nb#, j, dij=    2   9  14        3.844
+shell#, nb#, j, dij=    2  10  15        3.844
+shell#, nb#, j, dij=    2  11  16        3.844
+shell#, nb#, j, dij=    2  12  17        3.844
+shell#, nb#, j, dij=    3   2  19        4.508
+shell#, nb#, j, dij=    3   3  20        4.508
+shell#, nb#, j, dij=    3   4  21        4.508
+shell#, nb#, j, dij=    3   5  22        4.508
+shell#, nb#, j, dij=    3   6  23        4.508
+shell#, nb#, j, dij=    3   7  24        4.508
+shell#, nb#, j, dij=    3   8  25        4.508
+shell#, nb#, j, dij=    3   9  26        4.508
+shell#, nb#, j, dij=    3  10  27        4.508
+shell#, nb#, j, dij=    3  11  28        4.508
+shell#, nb#, j, dij=    3  12  29        4.508
+shell#, nb#, j, dij=    4   2  31        5.436
+shell#, nb#, j, dij=    4   3  32        5.436
+shell#, nb#, j, dij=    4   4  33        5.436
+shell#, nb#, j, dij=    4   5  34        5.436
+shell#, nb#, j, dij=    4   6  35        5.436
+shell#, nb#, j, dij=    5   2  37        5.924
+shell#, nb#, j, dij=    5   3  38        5.924
+shell#, nb#, j, dij=    5   4  39        5.924
+shell#, nb#, j, dij=    5   5  40        5.924
+shell#, nb#, j, dij=    5   6  41        5.924
+shell#, nb#, j, dij=    5   7  42        5.924
+shell#, nb#, j, dij=    5   8  43        5.924
+shell#, nb#, j, dij=    5   9  44        5.924
+shell#, nb#, j, dij=    5  10  45        5.924
+shell#, nb#, j, dij=    5  11  46        5.924
+shell#, nb#, j, dij=    5  12  47        5.924
+shell#, nb#, j, dij=    6   2  49        6.658
+shell#, nb#, j, dij=    6   3  50        6.658
+shell#, nb#, j, dij=    6   4  51        6.658
+shell#, nb#, j, dij=    6   5  52        6.658
+shell#, nb#, j, dij=    6   6  53        6.658
+shell#, nb#, j, dij=    6   7  54        6.658
+shell#, nb#, j, dij=    6   8  55        6.658
+shell#, nb#, j, dij=    6   9  56        6.658
+shell#, nb#, j, dij=    6  10  57        6.658
+shell#, nb#, j, dij=    6  11  58        6.658
+shell#, nb#, j, dij=    6  12  59        6.658
+shell#, nb#, j, dij=    6  13  60        6.658
+shell#, nb#, j, dij=    6  14  61        6.658
+shell#, nb#, j, dij=    6  15  62        6.658
+shell#, nb#, j, dij=    6  16  63        6.658
+shell#, nb#, j, dij=    6  17  64        6.658
+shell#, nb#, j, dij=    6  18  65        6.658
+shell#, nb#, j, dij=    6  19  66        6.658
+shell#, nb#, j, dij=    6  20  67        6.658
+shell#, nb#, j, dij=    6  21  68        6.658
+shell#, nb#, j, dij=    6  22  69        6.658
+shell#, nb#, j, dij=    6  23  70        6.658
+shell#, nb#, j, dij=    6  24  71        6.658
+shell#, nb#, j, dij=    7   2  73        7.062
+shell#, nb#, j, dij=    7   3  74        7.062
+shell#, nb#, j, dij=    7   4  75        7.062
+shell#, nb#, j, dij=    7   5  76        7.062
+shell#, nb#, j, dij=    7   6  77        7.062
+shell#, nb#, j, dij=    7   7  78        7.062
+shell#, nb#, j, dij=    7   8  79        7.062
+shell#, nb#, j, dij=    7   9  80        7.062
+shell#, nb#, j, dij=    7  10  81        7.062
+shell#, nb#, j, dij=    7  11  82        7.062
+shell#, nb#, j, dij=    7  12  83        7.062
+shell#, nb#, j, dij=    7  13  84        7.062
+shell#, nb#, j, dij=    7  14  85        7.062
+shell#, nb#, j, dij=    7  15  86        7.062
+shell#, nb#, j, dij=    7  16  87        7.062
+shell#, nb#, j, dij=    8   2  89        7.688
+          57  shells completed up to distance    20.834222130566765     
+ It  corresponds to          751  th nearest atom
+ allocating atom0(           2 )%shells(:) to size           57
+ i0,shel_count,mxshell=           2          57          57
+ mx=          60
+  size  of shells=          57
+  size  of shells=          57
+           1 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           2 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+           3 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           4 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           5 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           6 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           7 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           8 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+           9 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          10 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          11 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          12 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          13 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          14 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          15 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          16 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          17 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          18 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          19 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          20 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          21 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          22 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          23 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          24 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          25 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          26 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          27 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+          28 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          29 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          30 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          31 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          32 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          33 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          34 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          35 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          36 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          37 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          38 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          39 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          40 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          41 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          42 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          43 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          44 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          45 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          46 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          47 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          48 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          49 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          50 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          51 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          52 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          53 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          54 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          55 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          56 'th grid point has weight;1/weight=  0.50000000000000000        2.0000000000000000     
+          57 'th grid point has weight;1/weight=  0.25000000000000000        4.0000000000000000     
+          58 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+          59 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+          60 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+At line 65 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 95 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 65 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 95 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 65 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 95 of file others.f90
+Fortran runtime warning: An array temporary was created
+          61 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+          62 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+          63 'th grid point has weight;1/weight=  0.12500000000000000        8.0000000000000000     
+  sum of the weights=om/om0=   32.000000000000000     
+ Entering setup_maps routine with read nshells as:
+ ***** FOR rank =     1
+SIZE_FORCE_CONSTANTS: rank,ngroups,ntermszero=       1       0       6
+EXACT SIZES: rank,ngroups,max nterm,max ntindep,ntermszero=    1    0    0    0    6
+  INPUTS OF COLLECT_FORCE_CONSTANTS 
+  nrank=           1
+  iatom,nshell(iatom)=           1           1
+  iatom,nshell(iatom)=           2           1
+  mxtrm,mxtrmindp,maxtermszero,maxgroups=          64          16           7           2
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     1     1
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     4     1     0
+OUTPUT OF FORCE_CONSTANTS: ntermsindep=
+OUTPUT OF FORCE_CONSTANTS: nterms     =
+OUTPUT OF FORCE_CONSTANTS: ntermszero =     6
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     2     4     1     0
+OUTPUT OF FORCE_CONSTANTS: ntermsindep=
+OUTPUT OF FORCE_CONSTANTS: nterms     =
+OUTPUT OF FORCE_CONSTANTS: ntermszero =     6
+ ***** FOR rank =     2
+ Warning: in force_constants: maxterms too small
+ Warning3: in fcs: maxterms too small         128
+SIZE_FORCE_CONSTANTS: rank,ngroups,ntermszero=       2      17      42
+EXACT SIZES: rank,ngroups,max nterm,max ntindep,ntermszero=    2   17  192    1   42
+  INPUTS OF COLLECT_FORCE_CONSTANTS 
+  nrank=           2
+  iatom,nshell(iatom)=           1           5
+  iatom,nshell(iatom)=           2           5
+  mxtrm,mxtrmindp,maxtermszero,maxgroups=         256          16          43          18
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2     1
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     2     2
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2     2
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     2     3
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2     4
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     2     5
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     2     6
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     2     7
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2     8
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     2     9
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     2     9
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     2     9
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2    10
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     2    11
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     5     2    12
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     6     2    13
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     2    14
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     2    15
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     2    16
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     9     2    17
+ ***** FOR rank =     3
+ Warning: in force_constants: maxterms too small
+ Warning3: in fcs: maxterms too small         128
+ Warning: in fcs: maxterms too small         256
+ Warning3: in fcs: maxterms too small         512
+SIZE_FORCE_CONSTANTS: rank,ngroups,ntermszero=       3      36      90
+EXACT SIZES: rank,ngroups,max nterm,max ntindep,ntermszero=    3   36  864    1   90
+  INPUTS OF COLLECT_FORCE_CONSTANTS 
+  nrank=           3
+  iatom,nshell(iatom)=           1           2
+  iatom,nshell(iatom)=           2           2
+  mxtrm,mxtrmindp,maxtermszero,maxgroups=        1024          16          91          37
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3     1
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     3     1
+At line 65 of file others.f90
+Fortran runtime warning: An array temporary was created
+At line 95 of file others.f90
+Fortran runtime warning: An array temporary was created
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     6     3     1
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3     2
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     3     3
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     5     3     4
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     6     3     5
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3     6
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     3     7
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     5     3     8
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     6     3     9
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    10     3    10
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    11     3    11
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    12     3    12
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    14     3    13
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    15     3    14
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    18     3    15
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    16
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     3    17
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     4     3    17
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     5     3    18
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     6     3    19
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    13     3    20
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    14     3    21
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    15     3    21
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    16     3    21
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    17     3    22
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    23
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     3    24
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    25
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     6     3    26
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     8     3    27
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    10     3    28
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    16     3    29
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     3    30
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     3    31
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     3     3    32
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     6     3    33
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     8     3    34
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    10     3    35
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    16     3    36
+ ***** FOR rank =     4
+ Warning: in force_constants: maxterms too small
+ Warning3: in fcs: maxterms too small         128
+ Warning3: in fcs: maxterms too small         256
+ Warning: in fcs: maxterms too small         512
+SIZE_FORCE_CONSTANTS: rank,ngroups,ntermszero=       4      14      18
+EXACT SIZES: rank,ngroups,max nterm,max ntindep,ntermszero=    4   14 1008    1   18
+  INPUTS OF COLLECT_FORCE_CONSTANTS 
+  nrank=           4
+  iatom,nshell(iatom)=           1           1
+  iatom,nshell(iatom)=           2           1
+  mxtrm,mxtrmindp,maxtermszero,maxgroups=        1024          16          19          15
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4     1
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     4     2
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     5     4     2
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     6     4     3
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4     3
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     4     4
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     5     4     5
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     6     4     6
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    14     4     7
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    15     4     8
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     1     4     9
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     2     4    10
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     5     4    11
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1     6     4    12
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    11     4    13
+OUTPUT OF FORCE_CONSTANTS FOR atom,xyz RANK/ngroups=     1    12     4    14
+ SETUP_MAPS: Exited the main rank loop , and going to write by calling ustring
+ exiting setup_maps routine
+g,ti,counter,keep,current=   1   1   1   1   1
+g,ti,counter,keep,current=   2   1   2   1   2
+g,ti,counter,keep,current=   3   1   3   1   3
+g,ti,counter,keep,current=   4   1   4   1   4
+g,ti,counter,keep,current=   5   1   5   1   5
+g,ti,counter,keep,current=   6   1   6   1   6
+g,ti,counter,keep,current=   7   1   7   1   7
+g,ti,counter,keep,current=   8   1   8   1   8
+g,ti,counter,keep,current=   9   1   9   1   9
+g,ti,counter,keep,current=  10   1  10   1  10
+g,ti,counter,keep,current=  11   1  11   1  11
+g,ti,counter,keep,current=  12   1  12   1  12
+g,ti,counter,keep,current=  13   1  13   1  13
+g,ti,counter,keep,current=  14   1  14   1  14
+g,ti,counter,keep,current=  15   1  15   1  15
+g,ti,counter,keep,current=  16   1  16   1  16
+g,ti,counter,keep,current=  17   1  17   1  17
+ all_matched was true for i0=isave=           1
+THE shift vector is=       0.00000       0.00000       0.00000
+It maps atom 1 in SC to primitive atom whose number is=        1
+ calling write_correspondance
+  opening FORCEDISP file
+  reached the end of FORCEDISP file which had            6  configurations 
+  Allocation of energy, dsp and frc arrays DONE!
+  Re Opening FORCEDISP file
+ j=t,nlines,engy=           1           1         192   6.9517222189188870E-310
+ j=t,nlines,engy=           2           2         192   6.9517222189188870E-310
+ j=t,nlines,engy=           3           3         192   6.9517222189188870E-310
+ j=t,nlines,engy=           4           4         192   6.9517222189188870E-310
+ j=t,nlines,engy=           5           5         192   6.9517222189188870E-310
+ j=t,nlines,engy=           6           6         192   6.9517222189188870E-310
+Energy assigned    0.000       0.000       0.000       0.000       0.000       0.000    
+ Calling calculate_and_write_displacements
+ ncfg,step=           6           5
+ ncfg,step=           6           5
+ exiting read_force_position_data 
+ entering set_force_displacements routine,nindepfc=          67
+ exiting set_force_displacements routine
+ entering translational invce constraints routine with estimate         4989
+ exiting translational invce constraints routine
+ entering rotational invce constraints routine with estimate         4989
+ exiting rotational invce constraints routine
+  allocating           15  lines and           67  columns
+Dimension of extracted FCS is=   67
+  dimensions of ahuang=          15 x          67
+  # of huang constraints is=          15
+  The largest atom number found in atompos was          225
+  FOR RANK=           1  format=31
+  FOR RANK=           2  format=32
+  FOR RANK=           3  format=33
+  FOR RANK=           4  format=34
+ EXTENDED G-vector#           1  is not in GGRID!
+ EXTENDED G-vector#           2  is not in GGRID!
+ EXTENDED G-vector#           3  is not in GGRID!
+ EXTENDED G-vector#           4  is not in GGRID!
+ EXTENDED G-vector#           5  is not in GGRID!
+ EXTENDED G-vector#           6  is not in GGRID!
+ EXTENDED G-vector#           7  is not in GGRID!
+ EXTENDED G-vector#           8  is not in GGRID!
+ EXTENDED G-vector#           9  is not in GGRID!
+ EXTENDED G-vector#          10  is not in GGRID!
+ EXTENDED G-vector#          11  is not in GGRID!
+ EXTENDED G-vector#          12  is not in GGRID!
+ EXTENDED G-vector#          13  is not in GGRID!
+ EXTENDED G-vector#          14  is not in GGRID!
+ EXTENDED G-vector#          15  is not in GGRID!
+ EXTENDED G-vector#          16  is not in GGRID!
+ EXTENDED G-vector#          17  is not in GGRID!
+ EXTENDED G-vector#          18  is not in GGRID!
+ EXTENDED G-vector#          19  is not in GGRID!
+ EXTENDED G-vector#          20  is not in GGRID!
+ EXTENDED G-vector#          21  is not in GGRID!
+ EXTENDED G-vector#          22  is not in GGRID!
+ EXTENDED G-vector#          23  is not in GGRID!
+ EXTENDED G-vector#          24  is not in GGRID!
+ EXTENDED G-vector#          25  is not in GGRID!
+ EXTENDED G-vector#          26  is not in GGRID!
+ EXTENDED G-vector#          27  is not in GGRID!
+ EXTENDED G-vector#          28  is not in GGRID!
+ EXTENDED G-vector#          29  is not in GGRID!
+ EXTENDED G-vector#          30  is not in GGRID!
+ EXTENDED G-vector#          31  is not in GGRID!
+ EXTENDED G-vector#          32  is not in GGRID!
+ EXTENDED G-vector#          33  is not in GGRID!
+ EXTENDED G-vector#          34  is not in GGRID!
+ EXTENDED G-vector#          35  is not in GGRID!
+ EXTENDED G-vector#          36  is not in GGRID!
+ EXTENDED G-vector#          37  is not in GGRID!
+ EXTENDED G-vector#          38  is not in GGRID!
+ EXTENDED G-vector#          39  is not in GGRID!
+ EXTENDED G-vector#          40  is not in GGRID!
+ EXTENDED G-vector#          41  is not in GGRID!
+ EXTENDED G-vector#          42  is not in GGRID!
+ EXTENDED G-vector#          43  is not in GGRID!
+ EXTENDED G-vector#          44  is not in GGRID!
+ EXTENDED G-vector#          45  is not in GGRID!
+ EXTENDED G-vector#          46  is not in GGRID!
+ EXTENDED G-vector#          47  is not in GGRID!
+ EXTENDED G-vector#          48  is not in GGRID!
+ EXTENDED G-vector#          49  is not in GGRID!
+ EXTENDED G-vector#          50  is not in GGRID!
+ EXTENDED G-vector#          51  is not in GGRID!
+ EXTENDED G-vector#          52  is not in GGRID!
+ EXTENDED G-vector#          53  is not in GGRID!
+ EXTENDED G-vector#          54  is not in GGRID!
+ EXTENDED G-vector#          55  is not in GGRID!
+ EXTENDED G-vector#          56  is not in GGRID!
+ EXTENDED G-vector#          57  is not in GGRID!
+ EXTENDED G-vector#          58  is not in GGRID!
+ EXTENDED G-vector#          59  is not in GGRID!
+ EXTENDED G-vector#          60  is not in GGRID!
+ EXTENDED G-vector#          61  is not in GGRID!
+ EXTENDED G-vector#          62  is not in GGRID!
+ EXTENDED G-vector#          64  is not in GGRID!
+ EXTENDED G-vector#          65  is not in GGRID!
+ EXTENDED G-vector#          66  is not in GGRID!
+ EXTENDED G-vector#          67  is not in GGRID!
+ EXTENDED G-vector#          68  is not in GGRID!
+ EXTENDED G-vector#          69  is not in GGRID!
+ EXTENDED G-vector#          70  is not in GGRID!
+ EXTENDED G-vector#          71  is not in GGRID!
+ EXTENDED G-vector#          72  is not in GGRID!
+ EXTENDED G-vector#          73  is not in GGRID!
+ EXTENDED G-vector#          74  is not in GGRID!
+ EXTENDED G-vector#          75  is not in GGRID!
+ EXTENDED G-vector#          76  is not in GGRID!
+ EXTENDED G-vector#          77  is not in GGRID!
+ EXTENDED G-vector#          78  is not in GGRID!
+ EXTENDED G-vector#          79  is not in GGRID!
+ EXTENDED G-vector#          80  is not in GGRID!
+ EXTENDED G-vector#          81  is not in GGRID!
+ EXTENDED G-vector#          82  is not in GGRID!
+ EXTENDED G-vector#          83  is not in GGRID!
+ EXTENDED G-vector#          84  is not in GGRID!
+ EXTENDED G-vector#          85  is not in GGRID!
+ EXTENDED G-vector#          86  is not in GGRID!
+ EXTENDED G-vector#          87  is not in GGRID!
+ EXTENDED G-vector#          88  is not in GGRID!
+ EXTENDED G-vector#          89  is not in GGRID!
+ EXTENDED G-vector#          90  is not in GGRID!
+ EXTENDED G-vector#          91  is not in GGRID!
+ EXTENDED G-vector#          92  is not in GGRID!
+ EXTENDED G-vector#          93  is not in GGRID!
+ EXTENDED G-vector#          94  is not in GGRID!
+ EXTENDED G-vector#          95  is not in GGRID!
+ EXTENDED G-vector#          96  is not in GGRID!
+ EXTENDED G-vector#          97  is not in GGRID!
+ EXTENDED G-vector#          98  is not in GGRID!
+ EXTENDED G-vector#          99  is not in GGRID!
+ EXTENDED G-vector#         100  is not in GGRID!
+ EXTENDED G-vector#         101  is not in GGRID!
+ EXTENDED G-vector#         102  is not in GGRID!
+ EXTENDED G-vector#         103  is not in GGRID!
+ EXTENDED G-vector#         104  is not in GGRID!
+ EXTENDED G-vector#         105  is not in GGRID!
+ EXTENDED G-vector#         106  is not in GGRID!
+ EXTENDED G-vector#         107  is not in GGRID!
+ EXTENDED G-vector#         108  is not in GGRID!
+ EXTENDED G-vector#         109  is not in GGRID!
+ EXTENDED G-vector#         110  is not in GGRID!
+ EXTENDED G-vector#         111  is not in GGRID!
+ EXTENDED G-vector#         112  is not in GGRID!
+ EXTENDED G-vector#         113  is not in GGRID!
+ EXTENDED G-vector#         114  is not in GGRID!
+ EXTENDED G-vector#         115  is not in GGRID!
+ EXTENDED G-vector#         116  is not in GGRID!
+ EXTENDED G-vector#         117  is not in GGRID!
+ EXTENDED G-vector#         118  is not in GGRID!
+ EXTENDED G-vector#         119  is not in GGRID!
+ EXTENDED G-vector#         120  is not in GGRID!
+ EXTENDED G-vector#         121  is not in GGRID!
+ EXTENDED G-vector#         122  is not in GGRID!
+ EXTENDED G-vector#         123  is not in GGRID!
+ EXTENDED G-vector#         124  is not in GGRID!
+ EXTENDED G-vector#         125  is not in GGRID!
+           1 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           2 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           3 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           4 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           5 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           6 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           7 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           8 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+           9 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          10 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          11 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          12 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          13 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          14 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          15 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          16 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          17 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          18 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          19 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          20 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          21 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          22 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          23 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          24 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          25 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          26 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          27 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          28 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          29 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          30 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          31 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          32 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          33 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          34 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          35 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          36 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          37 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          38 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          39 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          40 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          41 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          42 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          43 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          44 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          45 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          46 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          47 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          48 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          49 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          50 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          51 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          52 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          53 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          54 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          55 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          56 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          57 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          58 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          59 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          60 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          61 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          62 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          63 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          64 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          65 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          66 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          67 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          68 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          69 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          70 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          71 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          72 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          73 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          74 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          75 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          76 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          77 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          78 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          79 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          80 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          81 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          82 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          83 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          84 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          85 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          86 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          87 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          88 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          89 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          90 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          91 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          92 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          93 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          94 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          95 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          96 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          97 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          98 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+          99 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         100 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         101 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         102 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         103 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         104 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         105 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         106 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         107 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         108 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         109 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         110 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         111 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         112 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         113 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         114 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         115 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         116 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         117 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         118 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         119 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         120 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         121 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         122 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         123 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         124 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+         125 'th grid point has weight;1/weight=   1.0000000000000000        1.0000000000000000     
+  sum of the weights=om/om0=   125.00000000000000     
+MAKE_GRID_SHELL, maxx(g_ewald), mxshl for gcut=     218   4.000000       2.336002    
+MAIN before LD: eta,rcut_ewa,gcut_ewa=    1.9782   13.6986    2.3360
+ nr_ewa,ng_ewa=        2302           1
+dn0=    0.1028   0.0000   -0.0000   0.0000   -0.0000   0.0000   -0.0000   0.0000    0.1028   0.0000   -0.0000   0.0000   -0.0000   0.0000   -0.0000   0.0000    0.1028   0.0000
+dn0=    0.1028   0.0000   -0.0000  -0.0000   -0.0000   0.0000   -0.0000  -0.0000    0.1028   0.0000   -0.0000   0.0000   -0.0000   0.0000   -0.0000   0.0000    0.1028   0.0000
+dn0=    0.1028   0.0000   -0.0000   0.0000   -0.0000   0.0000   -0.0000   0.0000    0.1028   0.0000   -0.0000   0.0000   -0.0000   0.0000   -0.0000   0.0000    0.1028   0.0000
+dn0=    0.1028   0.0000   -0.0000   0.0000   -0.0000   0.0000   -0.0000   0.0000    0.1028   0.0000   -0.0000   0.0000   -0.0000   0.0000   -0.0000   0.0000    0.1028   0.0000
+ FC terms found in grid:         762
+ FC terms MISSING from grid:           0
+ check_herm_sym_R PASSED! phi was hermitian!
+  Largest imaginary part of phi_bare(should be ZERO!)=   0.0000000000000000     
+ Entering set_band_structure 
+ entering MAKE_KP_BS
+ reading            1
+ reading           30
+ reading nkp_bs=          330
+    1 "G  "    0.0000    0.0000    0.0000
+    2 "X  "    0.5000    0.0000    0.5000
+    3 "W  "    0.5000    0.2500    0.7500
+    4 "K  "    0.3750    0.3750    0.7500
+    5 "G  "    0.0000    0.0000    0.0000
+    6 "L  "    0.5000    0.5000    0.5000
+    7 "U  "    0.6250    0.2500    0.6250
+    8 "W  "    0.5000    0.2500    0.7500
+    9 "L  "    0.5000    0.5000    0.5000
+   10 "K  "    0.3750    0.3750    0.7500
+   11 "U  "    0.6250    0.2500    0.6250
+   12 "X  "    0.5000    0.0000    0.5000
+  Kpoints for band structure generated from kpbs.params
+  MAKE_KP_BS: Done! with          330  points
+  calling get_freqs
+ get_freq k=    0.0003   0.0005   0.0001
+ get_freq k=    0.0003   0.0403   0.0001
+ get_freq k=    0.0003   0.0802   0.0001
+ get_freq k=    0.0003   0.1200   0.0001
+ get_freq k=    0.0003   0.1599   0.0001
+ get_freq k=    0.0003   0.1997   0.0001
+ get_freq k=    0.0003   0.2396   0.0001
+ get_freq k=    0.0003   0.2794   0.0001
+ get_freq k=    0.0003   0.3193   0.0001
+ get_freq k=    0.0003   0.3592   0.0001
+ get_freq k=    0.0003   0.3990   0.0001
+ get_freq k=    0.0003   0.4389   0.0001
+ get_freq k=    0.0003   0.4787   0.0001
+ get_freq k=    0.0003   0.5186   0.0001
+ get_freq k=    0.0003   0.5584   0.0001
+ get_freq k=    0.0003   0.5983   0.0001
+ get_freq k=    0.0003   0.6381   0.0001
+ get_freq k=    0.0003   0.6780   0.0001
+ get_freq k=    0.0003   0.7178   0.0001
+ get_freq k=    0.0003   0.7577   0.0001
+ get_freq k=    0.0003   0.7976   0.0001
+ get_freq k=    0.0003   0.8374   0.0001
+ get_freq k=    0.0003   0.8773   0.0001
+ get_freq k=    0.0003   0.9171   0.0001
+ get_freq k=    0.0003   0.9570   0.0001
+ get_freq k=    0.0003   0.9968   0.0001
+ get_freq k=    0.0003   1.0367   0.0001
+ get_freq k=    0.0003   1.0765   0.0001
+ get_freq k=    0.0003   1.1164   0.0001
+ get_freq k=    0.0003   1.1562   0.0001
+ get_freq k=    0.0003   1.1562   0.0001
+ get_freq k=    0.0202   1.1562   0.0001
+ get_freq k=    0.0401   1.1562   0.0001
+ get_freq k=    0.0600   1.1562   0.0001
+ get_freq k=    0.0800   1.1562   0.0001
+ get_freq k=    0.0999   1.1562   0.0001
+ get_freq k=    0.1198   1.1562   0.0001
+ get_freq k=    0.1398   1.1562   0.0001
+ get_freq k=    0.1597   1.1562   0.0001
+ get_freq k=    0.1796   1.1562   0.0001
+ get_freq k=    0.1995   1.1562   0.0001
+ get_freq k=    0.2195   1.1562   0.0001
+ get_freq k=    0.2394   1.1562   0.0001
+ get_freq k=    0.2593   1.1562   0.0001
+ get_freq k=    0.2792   1.1562   0.0001
+ get_freq k=    0.2992   1.1562   0.0001
+ get_freq k=    0.3191   1.1562   0.0001
+ get_freq k=    0.3390   1.1562   0.0001
+ get_freq k=    0.3590   1.1562   0.0001
+ get_freq k=    0.3789   1.1562   0.0001
+ get_freq k=    0.3988   1.1562   0.0001
+ get_freq k=    0.4187   1.1562   0.0001
+ get_freq k=    0.4387   1.1562   0.0001
+ get_freq k=    0.4586   1.1562   0.0001
+ get_freq k=    0.4785   1.1562   0.0001
+ get_freq k=    0.4984   1.1562   0.0001
+ get_freq k=    0.5184   1.1562   0.0001
+ get_freq k=    0.5383   1.1562   0.0001
+ get_freq k=    0.5582   1.1562   0.0001
+ get_freq k=    0.5782   1.1562   0.0001
+ get_freq k=    0.5782   1.1562   0.0001
+ get_freq k=    0.5881   1.1463   0.0001
+ get_freq k=    0.5981   1.1363   0.0001
+ get_freq k=    0.6080   1.1264   0.0001
+ get_freq k=    0.6180   1.1164   0.0001
+ get_freq k=    0.6280   1.1064   0.0001
+ get_freq k=    0.6379   1.0965   0.0001
+ get_freq k=    0.6479   1.0865   0.0001
+ get_freq k=    0.6579   1.0765   0.0001
+ get_freq k=    0.6678   1.0666   0.0001
+ get_freq k=    0.6778   1.0566   0.0001
+ get_freq k=    0.6878   1.0466   0.0001
+ get_freq k=    0.6977   1.0367   0.0001
+ get_freq k=    0.7077   1.0267   0.0001
+ get_freq k=    0.7176   1.0168   0.0001
+ get_freq k=    0.7276   1.0068   0.0001
+ get_freq k=    0.7376   0.9968   0.0001
+ get_freq k=    0.7475   0.9869   0.0001
+ get_freq k=    0.7575   0.9769   0.0001
+ get_freq k=    0.7675   0.9669   0.0001
+ get_freq k=    0.7774   0.9570   0.0001
+ get_freq k=    0.7874   0.9470   0.0001
+ get_freq k=    0.7974   0.9370   0.0001
+ get_freq k=    0.8073   0.9271   0.0001
+ get_freq k=    0.8173   0.9171   0.0001
+ get_freq k=    0.8272   0.9072   0.0001
+ get_freq k=    0.8372   0.8972   0.0001
+ get_freq k=    0.8472   0.8872   0.0001
+ get_freq k=    0.8571   0.8773   0.0001
+ get_freq k=    0.8671   0.8673   0.0001
+ get_freq k=    0.8671   0.8673   0.0001
+ get_freq k=    0.8372   0.8374   0.0001
+ get_freq k=    0.8073   0.8075   0.0001
+ get_freq k=    0.7774   0.7776   0.0001
+ get_freq k=    0.7475   0.7477   0.0001
+ get_freq k=    0.7176   0.7178   0.0001
+ get_freq k=    0.6878   0.6880   0.0001
+ get_freq k=    0.6579   0.6581   0.0001
+ get_freq k=    0.6280   0.6282   0.0001
+ get_freq k=    0.5981   0.5983   0.0001
+ get_freq k=    0.5682   0.5684   0.0001
+ get_freq k=    0.5383   0.5385   0.0001
+ get_freq k=    0.5084   0.5086   0.0001
+ get_freq k=    0.4785   0.4787   0.0001
+ get_freq k=    0.4486   0.4488   0.0001
+ get_freq k=    0.4187   0.4189   0.0001
+ get_freq k=    0.3888   0.3890   0.0001
+ get_freq k=    0.3590   0.3592   0.0001
+ get_freq k=    0.3291   0.3293   0.0001
+ get_freq k=    0.2992   0.2994   0.0001
+ get_freq k=    0.2693   0.2695   0.0001
+ get_freq k=    0.2394   0.2396   0.0001
+ get_freq k=    0.2095   0.2097   0.0001
+ get_freq k=    0.1796   0.1798   0.0001
+ get_freq k=    0.1497   0.1499   0.0001
+ get_freq k=    0.1198   0.1200   0.0001
+ get_freq k=    0.0899   0.0901   0.0001
+ get_freq k=    0.0600   0.0602   0.0001
+ get_freq k=    0.0302   0.0304   0.0001
+ get_freq k=    0.0003   0.0005   0.0001
+ get_freq k=    0.0003   0.0005   0.0001
+ get_freq k=    0.0202   0.0204   0.0201
+ get_freq k=    0.0401   0.0403   0.0400
+ get_freq k=    0.0600   0.0602   0.0599
+ get_freq k=    0.0800   0.0802   0.0799
+ get_freq k=    0.0999   0.1001   0.0998
+ get_freq k=    0.1198   0.1200   0.1197
+ get_freq k=    0.1398   0.1400   0.1396
+ get_freq k=    0.1597   0.1599   0.1596
+ get_freq k=    0.1796   0.1798   0.1795
+ get_freq k=    0.1995   0.1997   0.1994
+ get_freq k=    0.2195   0.2197   0.2193
+ get_freq k=    0.2394   0.2396   0.2393
+ get_freq k=    0.2593   0.2595   0.2592
+ get_freq k=    0.2792   0.2794   0.2791
+ get_freq k=    0.2992   0.2994   0.2991
+ get_freq k=    0.3191   0.3193   0.3190
+ get_freq k=    0.3390   0.3392   0.3389
+ get_freq k=    0.3590   0.3592   0.3588
+ get_freq k=    0.3789   0.3791   0.3788
+ get_freq k=    0.3988   0.3990   0.3987
+ get_freq k=    0.4187   0.4189   0.4186
+ get_freq k=    0.4387   0.4389   0.4385
+ get_freq k=    0.4586   0.4588   0.4585
+ get_freq k=    0.4785   0.4787   0.4784
+ get_freq k=    0.4984   0.4986   0.4983
+ get_freq k=    0.5184   0.5186   0.5183
+ get_freq k=    0.5383   0.5385   0.5382
+ get_freq k=    0.5582   0.5584   0.5581
+ get_freq k=    0.5782   0.5784   0.5780
+ get_freq k=    0.5782   0.5784   0.5780
+ get_freq k=    0.5682   0.5983   0.5681
+ get_freq k=    0.5582   0.6182   0.5581
+ get_freq k=    0.5483   0.6381   0.5481
+ get_freq k=    0.5383   0.6581   0.5382
+ get_freq k=    0.5283   0.6780   0.5282
+ get_freq k=    0.5184   0.6979   0.5183
+ get_freq k=    0.5084   0.7178   0.5083
+ get_freq k=    0.4984   0.7378   0.4983
+ get_freq k=    0.4885   0.7577   0.4884
+ get_freq k=    0.4785   0.7776   0.4784
+ get_freq k=    0.4686   0.7976   0.4684
+ get_freq k=    0.4586   0.8175   0.4585
+ get_freq k=    0.4486   0.8374   0.4485
+ get_freq k=    0.4387   0.8573   0.4385
+ get_freq k=    0.4287   0.8773   0.4286
+ get_freq k=    0.4187   0.8972   0.4186
+ get_freq k=    0.4088   0.9171   0.4087
+ get_freq k=    0.3988   0.9370   0.3987
+ get_freq k=    0.3888   0.9570   0.3887
+ get_freq k=    0.3789   0.9769   0.3788
+ get_freq k=    0.3689   0.9968   0.3688
+ get_freq k=    0.3590   1.0168   0.3588
+ get_freq k=    0.3490   1.0367   0.3489
+ get_freq k=    0.3390   1.0566   0.3389
+ get_freq k=    0.3291   1.0765   0.3289
+ get_freq k=    0.3191   1.0965   0.3190
+ get_freq k=    0.3091   1.1164   0.3090
+ get_freq k=    0.2992   1.1363   0.2991
+ get_freq k=    0.2892   1.1562   0.2891
+ get_freq k=    0.2892   1.1562   0.2891
+ get_freq k=    0.2992   1.1562   0.2791
+ get_freq k=    0.3091   1.1562   0.2692
+ get_freq k=    0.3191   1.1562   0.2592
+ get_freq k=    0.3291   1.1562   0.2492
+ get_freq k=    0.3390   1.1562   0.2393
+ get_freq k=    0.3490   1.1562   0.2293
+ get_freq k=    0.3590   1.1562   0.2193
+ get_freq k=    0.3689   1.1562   0.2094
+ get_freq k=    0.3789   1.1562   0.1994
+ get_freq k=    0.3888   1.1562   0.1895
+ get_freq k=    0.3988   1.1562   0.1795
+ get_freq k=    0.4088   1.1562   0.1695
+ get_freq k=    0.4187   1.1562   0.1596
+ get_freq k=    0.4287   1.1562   0.1496
+ get_freq k=    0.4387   1.1562   0.1396
+ get_freq k=    0.4486   1.1562   0.1297
+ get_freq k=    0.4586   1.1562   0.1197
+ get_freq k=    0.4686   1.1562   0.1097
+ get_freq k=    0.4785   1.1562   0.0998
+ get_freq k=    0.4885   1.1562   0.0898
+ get_freq k=    0.4984   1.1562   0.0799
+ get_freq k=    0.5084   1.1562   0.0699
+ get_freq k=    0.5184   1.1562   0.0599
+ get_freq k=    0.5283   1.1562   0.0500
+ get_freq k=    0.5383   1.1562   0.0400
+ get_freq k=    0.5483   1.1562   0.0300
+ get_freq k=    0.5582   1.1562   0.0201
+ get_freq k=    0.5682   1.1562   0.0101
+ get_freq k=    0.5782   1.1562   0.0001
+ get_freq k=    0.5782   1.1562   0.0001
+ get_freq k=    0.5782   1.1363   0.0201
+ get_freq k=    0.5782   1.1164   0.0400
+ get_freq k=    0.5782   1.0965   0.0599
+ get_freq k=    0.5782   1.0765   0.0799
+ get_freq k=    0.5782   1.0566   0.0998
+ get_freq k=    0.5782   1.0367   0.1197
+ get_freq k=    0.5782   1.0168   0.1396
+ get_freq k=    0.5782   0.9968   0.1596
+ get_freq k=    0.5782   0.9769   0.1795
+ get_freq k=    0.5782   0.9570   0.1994
+ get_freq k=    0.5782   0.9370   0.2193
+ get_freq k=    0.5782   0.9171   0.2393
+ get_freq k=    0.5782   0.8972   0.2592
+ get_freq k=    0.5782   0.8773   0.2791
+ get_freq k=    0.5782   0.8573   0.2991
+ get_freq k=    0.5782   0.8374   0.3190
+ get_freq k=    0.5782   0.8175   0.3389
+ get_freq k=    0.5782   0.7976   0.3588
+ get_freq k=    0.5782   0.7776   0.3788
+ get_freq k=    0.5782   0.7577   0.3987
+ get_freq k=    0.5782   0.7378   0.4186
+ get_freq k=    0.5782   0.7178   0.4385
+ get_freq k=    0.5782   0.6979   0.4585
+ get_freq k=    0.5782   0.6780   0.4784
+ get_freq k=    0.5782   0.6581   0.4983
+ get_freq k=    0.5782   0.6381   0.5183
+ get_freq k=    0.5782   0.6182   0.5382
+ get_freq k=    0.5782   0.5983   0.5581
+ get_freq k=    0.5782   0.5784   0.5780
+ get_freq k=    0.5782   0.5784   0.5780
+ get_freq k=    0.5881   0.5883   0.5581
+ get_freq k=    0.5981   0.5983   0.5382
+ get_freq k=    0.6080   0.6082   0.5183
+ get_freq k=    0.6180   0.6182   0.4983
+ get_freq k=    0.6280   0.6282   0.4784
+ get_freq k=    0.6379   0.6381   0.4585
+ get_freq k=    0.6479   0.6481   0.4385
+ get_freq k=    0.6579   0.6581   0.4186
+ get_freq k=    0.6678   0.6680   0.3987
+ get_freq k=    0.6778   0.6780   0.3788
+ get_freq k=    0.6878   0.6880   0.3588
+ get_freq k=    0.6977   0.6979   0.3389
+ get_freq k=    0.7077   0.7079   0.3190
+ get_freq k=    0.7176   0.7178   0.2991
+ get_freq k=    0.7276   0.7278   0.2791
+ get_freq k=    0.7376   0.7378   0.2592
+ get_freq k=    0.7475   0.7477   0.2393
+ get_freq k=    0.7575   0.7577   0.2193
+ get_freq k=    0.7675   0.7677   0.1994
+ get_freq k=    0.7774   0.7776   0.1795
+ get_freq k=    0.7874   0.7876   0.1596
+ get_freq k=    0.7974   0.7976   0.1396
+ get_freq k=    0.8073   0.8075   0.1197
+ get_freq k=    0.8173   0.8175   0.0998
+ get_freq k=    0.8272   0.8274   0.0799
+ get_freq k=    0.8372   0.8374   0.0599
+ get_freq k=    0.8472   0.8474   0.0400
+ get_freq k=    0.8571   0.8573   0.0201
+ get_freq k=    0.8671   0.8673   0.0001
+ get_freq k=    0.8671   0.8673   0.0001
+ get_freq k=    0.8472   0.8773   0.0101
+ get_freq k=    0.8272   0.8872   0.0201
+ get_freq k=    0.8073   0.8972   0.0300
+ get_freq k=    0.7874   0.9072   0.0400
+ get_freq k=    0.7675   0.9171   0.0500
+ get_freq k=    0.7475   0.9271   0.0599
+ get_freq k=    0.7276   0.9370   0.0699
+ get_freq k=    0.7077   0.9470   0.0799
+ get_freq k=    0.6878   0.9570   0.0898
+ get_freq k=    0.6678   0.9669   0.0998
+ get_freq k=    0.6479   0.9769   0.1097
+ get_freq k=    0.6280   0.9869   0.1197
+ get_freq k=    0.6080   0.9968   0.1297
+ get_freq k=    0.5881   1.0068   0.1396
+ get_freq k=    0.5682   1.0168   0.1496
+ get_freq k=    0.5483   1.0267   0.1596
+ get_freq k=    0.5283   1.0367   0.1695
+ get_freq k=    0.5084   1.0466   0.1795
+ get_freq k=    0.4885   1.0566   0.1895
+ get_freq k=    0.4686   1.0666   0.1994
+ get_freq k=    0.4486   1.0765   0.2094
+ get_freq k=    0.4287   1.0865   0.2193
+ get_freq k=    0.4088   1.0965   0.2293
+ get_freq k=    0.3888   1.1064   0.2393
+ get_freq k=    0.3689   1.1164   0.2492
+ get_freq k=    0.3490   1.1264   0.2592
+ get_freq k=    0.3291   1.1363   0.2692
+ get_freq k=    0.3091   1.1463   0.2791
+ get_freq k=    0.2892   1.1562   0.2891
+ get_freq k=    0.2892   1.1562   0.2891
+ get_freq k=    0.2792   1.1562   0.2791
+ get_freq k=    0.2693   1.1562   0.2692
+ get_freq k=    0.2593   1.1562   0.2592
+ get_freq k=    0.2494   1.1562   0.2492
+ get_freq k=    0.2394   1.1562   0.2393
+ get_freq k=    0.2294   1.1562   0.2293
+ get_freq k=    0.2195   1.1562   0.2193
+ get_freq k=    0.2095   1.1562   0.2094
+ get_freq k=    0.1995   1.1562   0.1994
+ get_freq k=    0.1896   1.1562   0.1895
+ get_freq k=    0.1796   1.1562   0.1795
+ get_freq k=    0.1696   1.1562   0.1695
+ get_freq k=    0.1597   1.1562   0.1596
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'u' of procedure 'cross3'
+At line 3475 of file dynamical.f90
+Fortran runtime warning: An array temporary was created for argument 'v' of procedure 'cross3'
+ get_freq k=    0.1497   1.1562   0.1496
+ get_freq k=    0.1398   1.1562   0.1396
+ get_freq k=    0.1298   1.1562   0.1297
+ get_freq k=    0.1198   1.1562   0.1197
+ get_freq k=    0.1099   1.1562   0.1097
+ get_freq k=    0.0999   1.1562   0.0998
+ get_freq k=    0.0899   1.1562   0.0898
+ get_freq k=    0.0800   1.1562   0.0799
+ get_freq k=    0.0700   1.1562   0.0699
+ get_freq k=    0.0600   1.1562   0.0599
+ get_freq k=    0.0501   1.1562   0.0500
+ get_freq k=    0.0401   1.1562   0.0400
+ get_freq k=    0.0302   1.1562   0.0300
+ get_freq k=    0.0202   1.1562   0.0201
+ get_freq k=    0.0102   1.1562   0.0101
+ get_freq k=    0.0003   1.1562   0.0001
+ Projection Band Sorting for band structures!
+  ********** ENTERING get_phi_zeta_x *************
+  GET_PHI_ZETA: symmetrizing atld0
+ SYMMETRIZE2: max|M-M^T|=   19.576298131421254     
+ SYMMETRIZE2: max|M-M^T|=   19.576298131421254     
+ SYMMETRIZE2: max|M-M^T|=   19.576298131421254     
+ SYMMETRIZE2: max|M-M^T|=   19.576298131421254     
+ SYMMETRIZE2: max|M-M^T|=   19.576298131421254     
+ SYMMETRIZE2: max|M-M^T|=   19.576298131421254     
+  ********** ENTERING cubic elastic *************
+  ********** ENTERING RESIDUALS *************, ndyn=           6
+  symmetrizing QGQ
+  calling gruneisen
+  entering get_weights
+  w2,k2,mapinv,mapibz allocated
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      1      1      1      1     0.00000   0.00000   0.00000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      2      2      2      2     0.00000   0.00000   0.07143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      3      3      3      3     0.00000   0.00000   0.14286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      4      4      4      4     0.00000   0.00000   0.21429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      5      5      5      5     0.00000   0.00000   0.28571
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      6      6      6      6    -0.00000  -0.00000   0.35714
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      7      7      7      7     0.00000   0.00000   0.42857
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      8      8      8      8    -0.00000  -0.00000   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :      9     16      9      9     0.00000   0.07143   0.07143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     10     17     10     10     0.00000   0.07143   0.14286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     11     18     11     11     0.00000   0.07143   0.21429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     12     19     12     12     0.00000   0.07143   0.28571
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     13     20     13     13     0.00000   0.07143   0.35714
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     14     21     14     14     0.00000   0.07143   0.42857
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     15     22     15     15     0.00000   0.07143   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     16     23      9     16    -0.00000   0.07143   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     17     24     10     17    -0.00000   0.07143   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     18     25     11     18    -0.00000   0.07143   0.71429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     19     26     12     19    -0.00000   0.07143   0.78571
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     20     27     13     20    -0.00000   0.07143   0.85714
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     21     28     14     21    -0.00000   0.07143   0.92857
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     22     31     15     22     0.00000   0.14286   0.14286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     23     32      9     23     0.00000   0.14286   0.21429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     24     33     10     24     0.00000   0.14286   0.28571
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     25     34     11     25     0.00000   0.14286   0.35714
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     26     35     12     26     0.00000   0.14286   0.42857
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     27     36     13     27    -0.00000   0.14286   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     28     37     14     28     0.00000   0.14286   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     29     38     29     29     0.00000   0.14286   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     30     39     30     30     0.00000   0.14286   0.71429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     31     40     15     31    -0.00000   0.14286   0.78571
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     32     41      9     32     0.00000   0.14286   0.85714
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     33     46     10     33     0.00000   0.21429   0.21429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     34     47     11     34     0.00000   0.21429   0.28571
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     35     48     12     35    -0.00000   0.21429   0.35714
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     36     49     13     36     0.00000   0.21429   0.42857
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     37     50     14     37     0.00000   0.21429   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     38     51     29     38     0.00000   0.21429   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     39     52     30     39     0.00000   0.21429   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     40     53     15     40    -0.00000   0.21429   0.71429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     41     54      9     41     0.00000   0.21429   0.78571
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     42     61     42     42     0.00000   0.28571   0.28571
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     43     62     43     43     0.00000   0.28571   0.35714
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     44     63     44     44     0.00000   0.28571   0.42857
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     45     64     45     45     0.00000   0.28571   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     46     65     10     46     0.00000   0.28571   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     47     66     11     47     0.00000   0.28571   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     48     67     12     48     0.00000   0.28571   0.71429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     49     76     13     49     0.00000   0.35714   0.35714
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     50     77     14     50    -0.00000   0.35714   0.42857
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     51     78     29     51     0.00000   0.35714   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     52     79     30     52    -0.00000   0.35714   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     53     80     15     53    -0.00000   0.35714   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     54     91      9     54     0.00000   0.42857   0.42857
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     55     92     55     55     0.00000   0.42857   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     56     93     56     56     0.00000   0.42857   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     57    106     57     57     0.00000   0.50000   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     58    228     58     58     0.07143   0.14286   0.21429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     59    229     59     59     0.07143   0.14286   0.28571
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     60    230     60     60     0.07143   0.14286   0.35714
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     61    231     42     61     0.07143   0.14286   0.42857
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     62    232     43     62     0.07143   0.14286   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     63    233     44     63     0.07143   0.14286   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     64    243     45     64     0.07143   0.21429   0.28571
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     65    244     10     65     0.07143   0.21429   0.35714
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     66    245     11     66     0.07143   0.21429   0.42857
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     67    246     12     67     0.07143   0.21429   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     68    247     68     68     0.07143   0.21429   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     69    248     69     69     0.07143   0.21429   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     70    249     70     70     0.07143   0.21429   0.71429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     71    250     71     71     0.07143   0.21429   0.78571
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     72    251     72     72     0.07143   0.21429   0.85714
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     73    258     73     73     0.07143   0.28571   0.35714
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     74    259     74     74     0.07143   0.28571   0.42857
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     75    260     75     75     0.07143   0.28571   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     76    261     13     76     0.07143   0.28571   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     77    262     14     77     0.07143   0.28571   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     78    263     29     78     0.07143   0.28571   0.71429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     79    264     30     79     0.07143   0.28571   0.78571
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     80    273     15     80     0.07143   0.35714   0.42857
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     81    274     81     81     0.07143   0.35714   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     82    275     82     82     0.07143   0.35714   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     83    276     83     83     0.07143   0.35714   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     84    277     84     84     0.07143   0.35714   0.71429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     85    288     85     85     0.07143   0.42857   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     86    289     86     86     0.07143   0.42857   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     87    290     87     87     0.07143   0.42857   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     88    303     88     88     0.07143   0.50000   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     89    455     89     89     0.14286   0.28571   0.42857
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     90    456     90     90     0.14286   0.28571   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     91    457      9     91     0.14286   0.28571   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     92    458     55     92     0.14286   0.28571   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     93    470     56     93     0.14286   0.35714   0.50000
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     94    471     94     94     0.14286   0.35714   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     95    472     95     95     0.14286   0.35714   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     96    473     96     96     0.14286   0.35714   0.71429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     97    474     97     97     0.14286   0.35714   0.78571
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     98    485     98     98     0.14286   0.42857   0.57143
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :     99    486     99     99     0.14286   0.42857   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :    100    487    100    100     0.14286   0.42857   0.71429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :    101    500    101    101     0.14286   0.50000   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :    102    682    102    102     0.21429   0.42857   0.64286
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :    103    683    103    103     0.21429   0.42857   0.71429
+* GET_WEIGHTS: New vector; nibz,i,mapinv(i), mapibz(i), k in reduced units :    104    697    104    104     0.21429   0.50000   0.71429
+ exited iloop with NIBZ=         104  and allocating now WIBZ and KIBZ 
+  calling get_freq in IBZ with nibz=         104
+ get_freq k=    0.0003   0.0005   0.0001
+ get_freq k=    0.0828   0.0830  -0.0824
+ get_freq k=    0.1654   0.1656  -0.1650
+ get_freq k=    0.2479   0.2481  -0.2475
+ get_freq k=    0.3305   0.3307  -0.3301
+ get_freq k=    0.4130   0.4132   0.4129
+ get_freq k=    0.4956   0.4958  -0.4952
+ get_freq k=    0.5782   0.5784  -0.5777
+ get_freq k=    0.1654   0.0005   0.0001
+ get_freq k=    0.2479   0.0830  -0.0824
+ get_freq k=    0.3305   0.1656  -0.1650
+ get_freq k=    0.4130   0.2481  -0.2475
+ get_freq k=    0.4956   0.3307  -0.3301
+ get_freq k=    0.5782   0.4132  -0.4126
+ get_freq k=    0.6607   0.4958  -0.4952
+ get_freq k=    0.7433   0.5784   0.5780
+ get_freq k=    0.8258   0.6609   0.6606
+ get_freq k=    0.9084   0.7435   0.7432
+ get_freq k=    0.9909   0.8260   0.8257
+ get_freq k=    1.0735   0.9086   0.9083
+ get_freq k=    1.1560   0.9911   0.9908
+ get_freq k=    0.3305   0.0005   0.0001
+ get_freq k=    0.4130   0.0830  -0.0824
+ get_freq k=    0.4956   0.1656  -0.1650
+ get_freq k=    0.5782   0.2481  -0.2475
+ get_freq k=    0.6607   0.3307  -0.3301
+ get_freq k=    0.7433   0.4132   0.4129
+ get_freq k=    0.8258   0.4958  -0.4952
+ get_freq k=    0.9084   0.5784  -0.5777
+ get_freq k=    0.9909   0.6609  -0.6603
+ get_freq k=    1.0735   0.7435   0.7432
+ get_freq k=    1.1560   0.8260  -0.8254
+ get_freq k=    0.4956   0.0005   0.0001
+ get_freq k=    0.5782   0.0830  -0.0824
+ get_freq k=    0.6607   0.1656   0.1653
+ get_freq k=    0.7433   0.2481  -0.2475
+ get_freq k=    0.8258   0.3307  -0.3301
+ get_freq k=    0.9084   0.4132  -0.4126
+ get_freq k=    0.9909   0.4958  -0.4952
+ get_freq k=    1.0735   0.5784   0.5780
+ get_freq k=    1.1560   0.6609  -0.6603
+ get_freq k=    0.6607   0.0005   0.0001
+ get_freq k=    0.7433   0.0830  -0.0824
+ get_freq k=    0.8258   0.1656  -0.1650
+ get_freq k=    0.9084   0.2481  -0.2475
+ get_freq k=    0.9909   0.3307  -0.3301
+ get_freq k=    1.0735   0.4132  -0.4126
+ get_freq k=    1.1560   0.4958  -0.4952
+ get_freq k=    0.8258   0.0005   0.0001
+ get_freq k=    0.9084   0.0830   0.0827
+ get_freq k=    0.9909   0.1656  -0.1650
+ get_freq k=    1.0735   0.2481   0.2478
+ get_freq k=    1.1560   0.3307   0.3304
+ get_freq k=    0.9909   0.0005   0.0001
+ get_freq k=    1.0735   0.0830  -0.0824
+ get_freq k=    1.1560   0.1656  -0.1650
+ get_freq k=    1.1560   0.0005   0.0001
+ get_freq k=    0.3305   0.1656   0.0001
+ get_freq k=    0.4130   0.2481  -0.0824
+ get_freq k=    0.4956   0.3307  -0.1650
+ get_freq k=    0.5782   0.4132  -0.2475
+ get_freq k=    0.6607   0.4958  -0.3301
+ get_freq k=    0.7433   0.5784  -0.4126
+ get_freq k=    0.4956   0.1656   0.0001
+ get_freq k=    0.5782   0.2481  -0.0824
+ get_freq k=    0.6607   0.3307  -0.1650
+ get_freq k=    0.7433   0.4132  -0.2475
+ get_freq k=    0.8258   0.4958  -0.3301
+ get_freq k=    0.9084   0.5784  -0.4126
+ get_freq k=    0.9909   0.6609  -0.4952
+ get_freq k=    1.0735   0.7435  -0.5777
+ get_freq k=    1.1560   0.8260  -0.6603
+ get_freq k=    0.6607   0.1656   0.0001
+ get_freq k=    0.7433   0.2481  -0.0824
+ get_freq k=    0.8258   0.3307  -0.1650
+ get_freq k=    0.9084   0.4132  -0.2475
+ get_freq k=    0.9909   0.4958  -0.3301
+ get_freq k=    1.0735   0.5784  -0.4126
+ get_freq k=    1.1560   0.6609  -0.4952
+ get_freq k=    0.8258   0.1656   0.0001
+ get_freq k=    0.9084   0.2481  -0.0824
+ get_freq k=    0.9909   0.3307  -0.1650
+ get_freq k=    1.0735   0.4132  -0.2475
+ get_freq k=    1.1560   0.4958  -0.3301
+ get_freq k=    0.9909   0.1656   0.0001
+ get_freq k=    1.0735   0.2481  -0.0824
+ get_freq k=    1.1560   0.3307  -0.1650
+ get_freq k=    1.1560   0.1656   0.0001
+ get_freq k=    0.6607   0.3307   0.0001
+ get_freq k=    0.7433   0.4132  -0.0824
+ get_freq k=    0.8258   0.4958  -0.1650
+ get_freq k=    0.9084   0.5784  -0.2475
+ get_freq k=    0.8258   0.3307   0.0001
+ get_freq k=    0.9084   0.4132  -0.0824
+ get_freq k=    0.9909   0.4958  -0.1650
+ get_freq k=    1.0735   0.5784  -0.2475
+ get_freq k=    1.1560   0.6609  -0.3301
+ get_freq k=    0.9909   0.3307   0.0001
+ get_freq k=    1.0735   0.4132  -0.0824
+ get_freq k=    1.1560   0.4958  -0.1650
+ get_freq k=    1.1560   0.3307   0.0001
+ get_freq k=    0.9909   0.4958   0.0001
+ get_freq k=    1.0735   0.5784  -0.0824
+ get_freq k=    1.1560   0.4958   0.0001
+ DIELECTRIC:q=0 imag(eivec) is=
+       0.00000      -0.00000      -0.00000      -0.00000       0.00000       0.00000
+      -0.00000      -0.00000       0.00000      -0.00000       0.00000      -0.00000
+       0.00000       0.00000       0.00000       0.00000      -0.00000       0.00000
+       0.00000       0.00000      -0.00000       0.00000       0.00000      -0.00000
+      -0.00000       0.00000       0.00000       0.00000       0.00000       0.00000
+       0.00000       0.00000       0.00000       0.00000       0.00000       0.00000
+ vol0,cvt2,boft=   40.417872025335093        0.0000000000000000        105.65642161413048     
+imin,T,strain,Approximate pmin,eq_free=   22    2.000       0.2500E-02   0.3944E-01    5.814    
+ vol0,cvt2,boft=   40.417872337812518        0.0000000000000000        93.046989712275078     
+imin,T,strain,Approximate pmin,eq_free=   22    4.000       0.2500E-02   0.3943E-01    5.814    
+ vol0,cvt2,boft=   40.417874450820598        0.0000000000000000        84.105125311722574     
+imin,T,strain,Approximate pmin,eq_free=   22    6.000       0.2500E-02   0.3943E-01    5.814    
+ vol0,cvt2,boft=   40.417874450820598        1.8094261616807827E-008   79.501855315551978     
+imin,T,strain,Approximate pmin,eq_free=   22    8.000       0.2500E-02   0.3943E-01    5.814    
+ vol0,cvt2,boft=   40.417874450820598        4.3069199140433054E-008   79.735396072029971     
+imin,T,strain,Approximate pmin,eq_free=   22    10.00       0.2500E-02   0.3943E-01    5.814    
+ vol0,cvt2,boft=   40.417874450820598        7.6013301283002946E-008   81.942964594280994     
+imin,T,strain,Approximate pmin,eq_free=   22    12.00       0.2500E-02   0.3943E-01    5.814    
+ vol0,cvt2,boft=   40.417874450820598        1.1819466583240512E-007   81.432465932873967     
+imin,T,strain,Approximate pmin,eq_free=   22    14.00       0.2500E-02   0.3943E-01    5.814    
+ vol0,cvt2,boft=   40.417874450820598        1.7120761300337684E-007   82.688486129942675     
+imin,T,strain,Approximate pmin,eq_free=   22    16.00       0.2500E-02   0.3943E-01    5.814    
+ vol0,cvt2,boft=   40.417874450820598        2.3691527069787574E-007   85.022318531550184     
+imin,T,strain,Approximate pmin,eq_free=   22    18.00       0.2500E-02   0.3943E-01    5.814    
+ vol0,cvt2,boft=   40.417874450820598        3.1727716000018446E-007   87.691288595233431     
+imin,T,strain,Approximate pmin,eq_free=   22    20.00       0.2500E-02   0.3943E-01    5.814    
+ vol0,cvt2,boft=   40.417874450820598        4.1412576873794454E-007   90.216945698414548     
+imin,T,strain,Approximate pmin,eq_free=   22    22.00       0.2500E-02   0.3943E-01    5.814    
+ vol0,cvt2,boft=   40.417874450820598        5.2896408511693416E-007   92.391676284196322     
+imin,T,strain,Approximate pmin,eq_free=   22    24.00       0.2500E-02   0.3943E-01    5.814    
+ vol0,cvt2,boft=   40.417874450820598        6.6283005694368365E-007   94.179210649299975     
+imin,T,strain,Approximate pmin,eq_free=   22    26.00       0.2500E-02   0.3943E-01    5.813    
+ vol0,cvt2,boft=   40.417874450820598        8.1623946106081285E-007   95.620983863571283     
+imin,T,strain,Approximate pmin,eq_free=   22    28.00       0.2500E-02   0.3943E-01    5.813    
+ vol0,cvt2,boft=   40.417874450820598        9.8919545861904834E-007   96.780357877552575     
+imin,T,strain,Approximate pmin,eq_free=   22    30.00       0.2500E-02   0.3943E-01    5.813    
+ vol0,cvt2,boft=   40.417874450820598        1.1812438783995183E-006   97.719210933997815     
+imin,T,strain,Approximate pmin,eq_free=   22    32.00       0.2500E-02   0.3943E-01    5.812    
+ vol0,cvt2,boft=   40.417874450820598        1.3915533841629364E-006   98.482995172785849     
+imin,T,strain,Approximate pmin,eq_free=   22    34.00       0.2500E-02   0.3943E-01    5.812    
+ vol0,cvt2,boft=   40.417874450820598        1.6190040652008797E-006   99.113881224261149     
+imin,T,strain,Approximate pmin,eq_free=   22    36.00       0.2500E-02   0.3944E-01    5.811    
+ vol0,cvt2,boft=   40.417874450820598        1.8622733212473495E-006   99.639300203698483     
+imin,T,strain,Approximate pmin,eq_free=   22    38.00       0.2500E-02   0.3944E-01    5.810    
+ vol0,cvt2,boft=   40.417874450820598        2.1199125790516417E-006   100.08184674098055     
+imin,T,strain,Approximate pmin,eq_free=   22    40.00       0.2500E-02   0.3944E-01    5.809    
+ vol0,cvt2,boft=   40.417874450820598        2.8169563935648905E-006   100.92410055851568     
+imin,T,strain,Approximate pmin,eq_free=   22    45.00       0.2500E-02   0.3944E-01    5.805    
+ vol0,cvt2,boft=   40.417874450820598        3.5712297938728100E-006   101.51276151277092     
+imin,T,strain,Approximate pmin,eq_free=   22    50.00       0.2500E-02   0.3945E-01    5.801    
+ vol0,cvt2,boft=   40.417874450820598        4.3620651566822490E-006   101.94231479503999     
+imin,T,strain,Approximate pmin,eq_free=   22    55.00       0.2500E-02   0.3945E-01    5.794    
+ vol0,cvt2,boft=   40.417874450820598        5.1724801129360289E-006   102.26768900398403     
+imin,T,strain,Approximate pmin,eq_free=   22    60.00       0.2500E-02   0.3946E-01    5.787    
+ vol0,cvt2,boft=   40.417874450820598        5.9892776416774316E-006   102.52229335031427     
+imin,T,strain,Approximate pmin,eq_free=   22    65.00       0.2500E-02   0.3947E-01    5.777    
+ vol0,cvt2,boft=   40.417874450820598        6.8026205037144802E-006   102.72714177962759     
+imin,T,strain,Approximate pmin,eq_free=   22    70.00       0.2500E-02   0.3947E-01    5.766    
+ vol0,cvt2,boft=   40.417874450820598        7.6054318184670676E-006   102.89573116310561     
+imin,T,strain,Approximate pmin,eq_free=   22    75.00       0.2500E-02   0.3948E-01    5.753    
+ vol0,cvt2,boft=   40.417874450820598        8.3927974376896138E-006   103.03684287763494     
+imin,T,strain,Approximate pmin,eq_free=   22    80.00       0.2500E-02   0.3949E-01    5.738    
+ vol0,cvt2,boft=   40.417874450820598        9.1614439995952745E-006   103.15625136860912     
+imin,T,strain,Approximate pmin,eq_free=   22    85.00       0.2500E-02   0.3950E-01    5.722    
+ vol0,cvt2,boft=   40.417874450820598        9.9093136981112354E-006   103.25780672176917     
+imin,T,strain,Approximate pmin,eq_free=   22    90.00       0.2500E-02   0.3950E-01    5.703    
+ vol0,cvt2,boft=   40.417874450820598        1.0635232179835366E-005   103.34413597533076     
+imin,T,strain,Approximate pmin,eq_free=   22    95.00       0.2500E-02   0.3951E-01    5.682    
+ vol0,cvt2,boft=   40.417874450820598        1.1338656356001397E-005   103.41709809606326     
+imin,T,strain,Approximate pmin,eq_free=   22    100.0       0.2500E-02   0.3952E-01    5.660    
+ vol0,cvt2,boft=   40.417874450820598        1.2019486679920852E-005   103.47807573423255     
+imin,T,strain,Approximate pmin,eq_free=   22    105.0       0.2500E-02   0.3953E-01    5.635    
+ vol0,cvt2,boft=   40.417874450820598        1.2677929490641353E-005   103.52815820200132     
+imin,T,strain,Approximate pmin,eq_free=   22    110.0       0.2500E-02   0.3953E-01    5.609    
+ vol0,cvt2,boft=   40.417874450820598        1.3314397268690910E-005   103.56825296852243     
+imin,T,strain,Approximate pmin,eq_free=   22    115.0       0.2500E-02   0.3954E-01    5.580    
+ vol0,cvt2,boft=   40.417874450820598        1.3929437092239742E-005   103.59915131851470     
+imin,T,strain,Approximate pmin,eq_free=   22    120.0       0.2500E-02   0.3955E-01    5.550    
+ vol0,cvt2,boft=   40.417874450820598        1.4523679794773869E-005   103.62156556922953     
+imin,T,strain,Approximate pmin,eq_free=   22    125.0       0.2500E-02   0.3955E-01    5.517    
+ vol0,cvt2,boft=   40.417874450820598        1.5097804166549404E-005   103.63614932059662     
+imin,T,strain,Approximate pmin,eq_free=   22    130.0       0.2500E-02   0.3956E-01    5.482    
+ vol0,cvt2,boft=   40.417874450820598        1.5652511999344311E-005   103.64350805689250     
+imin,T,strain,Approximate pmin,eq_free=   22    135.0       0.2500E-02   0.3956E-01    5.445    
+ vol0,cvt2,boft=   40.417874450820598        1.6188510894897336E-005   103.64420458952161     
+imin,T,strain,Approximate pmin,eq_free=   22    140.0       0.2500E-02   0.3957E-01    5.406    
+ vol0,cvt2,boft=   40.417874450820598        1.6706502598245831E-005   103.63876197501536     
+imin,T,strain,Approximate pmin,eq_free=   22    145.0       0.2500E-02   0.3957E-01    5.365    
+ vol0,cvt2,boft=   40.417874450820598        1.7207175241657306E-005   103.62766537113517     
+imin,T,strain,Approximate pmin,eq_free=   22    150.0       0.2500E-02   0.3958E-01    5.322    
+ vol0,cvt2,boft=   40.417874450820598        2.1397185246587735E-005   103.28873776554850     
+imin,T,strain,Approximate pmin,eq_free=   23    200.0       0.5000E-02   0.3959E-01    4.777    
+ vol0,cvt2,boft=   40.417874450820598        2.4446920387916295E-005   102.70511625743069     
+imin,T,strain,Approximate pmin,eq_free=   23    250.0       0.5000E-02   0.3957E-01    4.012    
+ vol0,cvt2,boft=   40.417874450820598        2.6710360428707039E-005   102.00565417734440     
+imin,T,strain,Approximate pmin,eq_free=   23    300.0       0.5000E-02   0.3948E-01    3.061    
+ vol0,cvt2,boft=   40.417874450820598        2.8415185032330774E-005   101.24842695752805     
+imin,T,strain,Approximate pmin,eq_free=   23    350.0       0.5000E-02   0.3934E-01    1.943    
+ vol0,cvt2,boft=   40.417874450820598        2.9712045021237921E-005   100.46276078019898     
+imin,T,strain,Approximate pmin,eq_free=   23    400.0       0.5000E-02   0.3914E-01   0.6729    
+ vol0,cvt2,boft=   40.417874450820598        3.0703160646382936E-005   99.665084067432687     
+imin,T,strain,Approximate pmin,eq_free=   24    450.0       0.7500E-02   0.3888E-01  -0.7543    
+ vol0,cvt2,boft=   40.417874450820598        3.1461304481845697E-005   98.864970045434447     
+imin,T,strain,Approximate pmin,eq_free=   24    500.0       0.7500E-02   0.3856E-01   -2.309    
+ vol0,cvt2,boft=   40.417874450820598        3.2038710445711647E-005   98.068403588329232     
+imin,T,strain,Approximate pmin,eq_free=   24    550.0       0.7500E-02   0.3819E-01   -3.978    
+ vol0,cvt2,boft=   40.417874450820598        3.2474110964648692E-005   97.279143106617326     
+imin,T,strain,Approximate pmin,eq_free=   24    600.0       0.7500E-02   0.3777E-01   -5.754    
+ vol0,cvt2,boft=   40.417874450820598        3.2796710512692168E-005   96.499581989468297     
+imin,T,strain,Approximate pmin,eq_free=   25    650.0       0.1000E-01   0.3732E-01   -7.644    
+ vol0,cvt2,boft=   40.417874450820598        3.3029447806725327E-005   95.731014502237642     
+imin,T,strain,Approximate pmin,eq_free=   25    700.0       0.1000E-01   0.3683E-01   -9.630    
+ vol0,cvt2,boft=   40.417874450820598        3.3190204253664328E-005   94.974118315637838     
+imin,T,strain,Approximate pmin,eq_free=   25    750.0       0.1000E-01   0.3633E-01   -11.70    
+ vol0,cvt2,boft=   40.417874450820598        3.3293109347779795E-005   94.229142037311362     
+imin,T,strain,Approximate pmin,eq_free=   25    800.0       0.1000E-01   0.3580E-01   -13.85    
+ vol0,cvt2,boft=   40.417874450820598        3.3349445881880729E-005   93.496038207893946     
+imin,T,strain,Approximate pmin,eq_free=   26    850.0       0.1250E-01   0.3528E-01   -16.09    
+ vol0,cvt2,boft=   40.417874450820598        3.3368329874719923E-005   92.774537503100433     
+imin,T,strain,Approximate pmin,eq_free=   26    900.0       0.1250E-01   0.3476E-01   -18.41    

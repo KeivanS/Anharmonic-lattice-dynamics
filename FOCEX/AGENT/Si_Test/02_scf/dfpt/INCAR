@@ -1,0 +1,32 @@
+# VASP DFPT — Born effective charges + static dielectric tensor
+SYSTEM = Si_Test
+
+PREC = Normal
+ENCUT  = 450
+EDIFF = 1E-8
+NELM   = 100
+
+# DFPT linear-response
+IBRION = 8      ! density-functional perturbation theory
+NSW    = 1
+POTIM  = 0
+
+LEPSILON = .TRUE.    ! Born charges + macroscopic dielectric tensor
+LRPA     = .FALSE.   ! include local-field effects (use .TRUE. for RPA)
+
+ICHARG = 1           ! read converged CHGCAR from SCF
+ISYM   = 2           ! symmetry imposed — perturbation theory needs it;
+                     ! never inherit ISYM=0/-1 from NSCF/LOBSTER steps
+
+ISMEAR = 0
+SIGMA  = 0.01
+
+GGA = PS
+
+# Linear response / PEAD supports neither k-point nor band
+# parallelisation: KPAR and NCORE must both be 1
+KPAR  = 1
+NCORE = 1
+
+LWAVE  = .FALSE.
+LCHARG = .FALSE.

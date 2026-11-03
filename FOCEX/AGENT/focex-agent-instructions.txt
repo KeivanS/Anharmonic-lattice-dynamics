@@ -1,6 +1,6 @@
 # focex-agent instruction file: copy it next to your POSCAR and edit it for your material.
 #
-#   source ~/dftphonon-env/bin/activate
+#   source ~/myenv/bin/activate
 #   python ~/PROJECTS/Anharmonic-lattice-dynamics/FOCEX/AGENT/focex-agent.py --profile mycluster
 #   cd <PROJECT_DIR> && sbatch run_workflow.sh          # bash run_workflow.sh without SLURM
 #

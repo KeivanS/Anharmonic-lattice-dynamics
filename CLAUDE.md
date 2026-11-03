@@ -105,14 +105,16 @@ pre-2026-10-23 projects; removed 2026-10-30 (user: one copy only). A project who
 (or a fresh setup). The script
 finds FOCEX/ (templates, utility/) as the parent of its folder (realpath, so symlinks work);
 `make python-tools` (part of the top-level `make`) links them as `focex-agent`, `focex-diagnose` in DESTDIR.
-Run it with `~/dftphonon-env/bin/python` (numpy, spglib, pymatgen; Homebrew python3 has none). That one
+Run it with `~/myenv/bin/python` (numpy, spglib, pymatgen; Homebrew python3 has none). That one
 environment serves VASP-Flow too (made 2026-10-23 with the 50 packages of the old `~/vaspenv`).
-`~/vaspenv` and `~/venvs` are gone (2026-11-03); the paths that named them -- all commented
-examples -- now say `dftphonon-env` (VASP-Flow's `HT_1-10/env.sh`, `ht-semimetals.py`,
-`HT_1-10/README_HPC.md`, and some `testinst`/instruction headers). The remaining Pythons are
-`~/dftphonon-env` (the project env), anaconda `base` (the login shell's, 7.6 GB) and the
-unreferenced conda env `vasp` (660 MB, holds the only phonopy). `dftphonon-env` lacks flask,
-sumo, phonopy, ase and seekpath.
+Renamed `~/dftphonon-env` -> `~/myenv` on 2026-11-03 (user): `mv`, then the 52 shebangs in
+`bin/`, the `activate` scripts and `pyvenv.cfg` rewritten, and the ~25 files naming the path.
+`bin/python3` is a symlink to `~/anaconda3/bin/python3`, so the venv rides on anaconda base.
+`~/vaspenv` and `~/venvs` are gone (2026-11-03). It already has flask 3.1.3, sumo 3.0.0,
+phonopy 4.8.6 and seekpath 2.2.2 besides numpy 2.4.6 / scipy / spglib 2.8.0 / pymatgen
+2026.9.24 / matplotlib; only `ase` is absent (an earlier note here claimed otherwise).
+The other Pythons: anaconda `base` (the login shell's, 7.6 GB) and the unreferenced conda
+env `vasp` (660 MB).
 
 - Command line (2026-10-23, user's spec): `focex-agent.py [--instr FILE] [--coord FILE]
   [--profile NAME] [--force]` sets up; defaults `focex-agent-instructions.txt` (not

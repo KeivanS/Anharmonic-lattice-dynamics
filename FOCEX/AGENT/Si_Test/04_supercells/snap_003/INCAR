@@ -1,0 +1,34 @@
+# supercell snapshot, static (focex-agent)
+SYSTEM = Si_Test
+
+# Electronic structure
+PREC = Normal
+ENCUT = 450
+EDIFF = 1E-6
+NELM = 100
+ALGO = Normal
+
+# Static run
+IBRION = -1
+ISIF = 1
+NSW = 0
+
+# Electronic smearing
+ISMEAR = 0
+SIGMA = 0.05
+
+ISTART = 0
+ICHARG = 2
+
+GGA = PS
+
+
+# MPI parallelization
+KPAR  = 4
+NCORE = 1
+# Output
+LWAVE = .FALSE.
+LCHARG = .FALSE.
+
+# User INCAR overrides (from instructions file)
+ISYM = 0
