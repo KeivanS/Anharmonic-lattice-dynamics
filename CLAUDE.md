@@ -584,6 +584,18 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   formula's FC (Z1 Z2)_ac d_b d_c phi is not symmetric (xz 0.170, zx 0.188) and differs from the Z1 T Z2^T
   added back to D (xz = zx = 0.179); q=0 sums agree only by symmetry. So born_flag 2 subtracts a harmonic part
   /= the D_NA added back when Z is anisotropic (possibly the BZO zone-boundary OPEN item; not tested).
+- BUG fixed 2026-11-03 (GaN, user's run): dfc_hyb (Phi_B - Phi_m, ewald_born.f90) was a saved array computed on the
+  first subtract_coulomb_force call only; with two POSCAR/FORCEDISP pairs (24 and 72 atoms) the second supercell read
+  past its end: bforce of structure 2 garbage (-3.6e5), fit error 2.98 / 3.24 / 712 / 4.95 % on identical runs
+  (user's 655 %), one segfault, one hang. Now computed per call (per supercell) and freed. GaN born 2: 1.719 % on
+  3 runs, byte-identical; single-supercell runs byte-identical to before. Found by FOCEX_DUMP_AMAT: only bforce rows
+  of structure 2 differed between runs. -fcheck=all did not report the out-of-bounds read (not checked why).
+  The exact-model tests used one supercell only, so they could not see it.
+- GaN (2026-11-03, open): enforce_inv=1 with rotational rows conflicts with the data: set 2 alone, ranks 1-2:
+  born 0 13.3 %, born 2 22.4 % (translational only, born 2: 7.7 %); ranks 1-3 (FC3 2 shells): born 0 36 %, born 2
+  123 %; translational only, ranks 1-3, both sets: 1.20 %. Cause not found (truncated FC2 of a polar crystal for
+  born 0; for born 2 possibly the Coulomb RHS of the rotational rows, rank 3 in particular). Long-wave C of the
+  born 2 fit: C11 186 < C12 228, C66 -21 GPa, small imaginary TA near Gamma along G-M.
 - born_flag 2 hybrid (2026-11-03, user: "go ahead with the hybrid"; details and tests in
   REFERENCE/exact_model/coulomb/README.md): subtracted F = F_m(x) - F_m(x0) - (Phi_B - Phi_m)u, F_m = Ewald force of
   charges tr(Zi Zj^T)/3 (ewaldforce), Phi_B = Born-dipole FCs (= D_NA added back), Phi_m its trace-model harmonic part

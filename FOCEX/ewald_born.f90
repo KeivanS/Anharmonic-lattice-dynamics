@@ -9,7 +9,7 @@
  use constants, only : r15,pi,ci
  use ios, only : ulog
  use ewald
- real(r15), allocatable, save :: dfc_hyb(:,:,:,:)   ! Phi_B - Phi_m in the supercell (hybrid_harmonic)
+ real(r15), allocatable :: dfc_hyb(:,:,:,:)   ! Phi_B - Phi_m in the current supercell (hybrid_harmonic); set per call
  contains
  subroutine dewapot(x,dpot)
 !! calculates the -d/dx(sum_R 1/|R+x| -background) = force  with the corrected metric
@@ -448,6 +448,15 @@
 
 ! calculate non-analytical part DYN_NA(q) and subtract from dny_na(G*) ; no mass factor
 !
+! hybrid (born_flag 2): Phi_B - Phi_m of THIS supercell, computed on every call (one call per POSCARi/FORCEDISPi
+! pair). Kept from the first call until 2026-11-03, a second supercell read past the end of the first one's
+! array (GaN, 24- and 72-atom supercells: garbage forces, fit errors changing from run to run).
+  if (born_flag.eq.2) then
+     if (allocated(dfc_hyb)) deallocate(dfc_hyb)
+     allocate(dfc_hyb(3,3,natom_super_cell,natom_super_cell))
+     call hybrid_harmonic(natom_super_cell,dfc_hyb)
+  endif
+
 ! ----------------   NOW DO SUBTRACTION FOR EVERY CONFIGURATION    ----------------
   config_sum: do icfg=1,ncfg
 
@@ -489,10 +498,6 @@
          coulmb_force = coulmb_force- coulmb_force0 
 ! hybrid (born_flag 2): replace the harmonic part of the pair model by the Born-dipole one, - (Phi_B - Phi_m) u
          if (born_flag.eq.2) then
-            if (.not.allocated(dfc_hyb)) then
-               allocate(dfc_hyb(3,3,natom_super_cell,natom_super_cell))
-               call hybrid_harmonic(natom_super_cell,dfc_hyb)
-            endif
             do i=1,natom_super_cell
                do j=1,natom_super_cell
                   coulmb_force(:,i)=coulmb_force(:,i)-matmul(dfc_hyb(:,:,i,j),dsp(:,j,icfg))
@@ -675,7 +680,7 @@
       endif
 
   enddo config_sum
-
+  if (allocated(dfc_hyb)) deallocate(dfc_hyb)
 
 3 format(i4,99(1x,f9.4))
 4 format(3i4,99(2x,3(1x,g10.3)))
