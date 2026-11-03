@@ -100,11 +100,11 @@ def main():
     out = [' vasp.fake (focex-agent test: nearest-neighbour Lennard-Jones)',
            f'   number of dos      NEDOS =    301   number of ions     NIONS = {len(X):6d}',
            ' ------------------------ aborting loop because EDIFF is reached ----------------------------',
-           f'  free  energy   TOTEN  = {E:20.8f} eV',
            ' POSITION                                       TOTAL-FORCE (eV/Angst)',
            ' -----------------------------------------------------------------------------------']
     out += [' %12.5f %12.5f %12.5f    %14.6f %14.6f %14.6f' % (*x, *f) for x, f in zip(X, F)]
-    out += [' -----------------------------------------------------------------------------------']
+    out += [' -----------------------------------------------------------------------------------',
+            f'  free  energy   TOTEN  = {E:20.8f} eV']   # after the forces, as VASP (read_outcar.x needs it)
     if isif >= 2:   # VASP prints -dE/(V d eps) in kB (positive: the cell wants to expand), XX YY ZZ XY YZ ZX
         kb = -S * 1602.1766208
         out += [f'   ISIF   =      {isif}    stress and relaxation',

@@ -215,6 +215,9 @@
  call herm_eig(ndn,pdp,lam,vv)
  lmax=maxval(abs(lam))
  g=0; ns=0
+ if (nat.eq.1) then        ! Bravais lattice: no optical modes, P D0 P = 0 and G = 0 (else 0/0 = NaN)
+    ns=ndn; return
+ endif
  do i=1,ndn
     if (abs(lam(i)).lt.1d-9*lmax) then
        ns=ns+1; cycle

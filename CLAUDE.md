@@ -512,6 +512,12 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   fitted FC2 only): with born_flag 2 its PHI can be indefinite and C wrong (user's ZnO: C33 -58, C44 -33 GPa).
   User's ZnO born 2: the brackets imply s_zz - p = 0.91 GPa vs 0.01 from FOCEX's stress (born 0: consistent);
   cause not checked (possibly the Huang rows constrain only the short-range FC2). Open.
+- Bravais lattices: longwave_parts divided by 0 (P D0 P = 0, no optical modes) -> NaN, zheev in elastic_longwave
+  looped forever (argon agent test, 2026-11-02); now G = 0 for nat = 1. Argon: long-wave C = mechanical0's
+  bracket C (3.074/1.540/1.537 GPa), B - B^T 2e-11. mechanical0's cubic group-velocity block and the unused
+  get_cij removed (user, 2026-11-02): elastic_longwave covers them.
+- Argon test (AGENT/tests/fake_vasp.py): TOTEN now after the force block, as VASP; read_outcar.f90 since
+  8d633ee writes a step only when TOTEN follows TOTAL-FORCE, so the test stopped at collect.
 
 ## Elastic constants, B0', QHA (FOCEX 9.2, 2026-11-01; user's questions)
 

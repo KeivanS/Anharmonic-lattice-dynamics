@@ -1924,9 +1924,8 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  end subroutine check_huang_stress
 !============================================================
  subroutine mechanical0(atld0,uio)
-!! calculates elastic constants, only in the cubic case, from sound velocities atlong 110
-!! also calculates the standard term -0.5*phi_ik R_jl R_jl (translationally invariant formulation)
-!! it is called for a bravais lattice natom_prim_cell=1
+!! Born-Huang brackets -0.5*phi_ik R_jl R_jl and the elastic constants of a Bravais lattice
+!! (natom_prim_cell=1); the sound-speed route for any lattice is elastic_longwave
 
  use ios
  use lattice
@@ -1938,73 +1937,13 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  implicit none
  integer, intent(in) :: uio
  real(r15), intent(out) :: atld0(3,3,3,3) 
- integer tau,taup,al,be,ga,de,i,j,t,g,ti,ired,voigt,la,nl,nc,nu,g1,g2,mu,nq,s,n1,n2,ndn,ier
- integer delta_k
+ integer tau,taup,al,be,ga,de,j,t,g,ti,ired,la,nl,nc,ier
  logical ex
- real(r15)  rij(3),junk,c11,c12,c44,constr(3,3,3),sref(3,3) &
-         ,c1(6,6),c2(6,6),c3(6,6),q(3)   &
- &       ,ct(3,3,3,3),halfsum,halfdif  &
- &       ,vg(3,3*natom_prim_cell),eivl(3*natom_prim_cell),eivl0(3*natom_prim_cell)
- complex(r15) eivc(3*natom_prim_cell,3*natom_prim_cell),eivc0(3*natom_prim_cell,3*natom_prim_cell)
+ real(r15)  rij(3),junk,constr(3,3,3),sref(3,3)
 
  write(  * ,*)' ********** ENTERING MECHANICAL0 *************'
  write(uio,*)' ********** ENTERING MECHANICAL0 *************'
- write(uio,*)' Elastic constant of a cubic crystal from group velocities '
- ndn=3*natom_prim_cell
  write(uio,*)'density in kg/m^3 is=',rho_SI
- q=(/1d-6,1d-6,0d0/)
- call get_freq(q,ndn,vg,eivl0,eivc0)
- call write_out(uio,'Vg from perturbation q=1d-6 ',vg)
- write(uio,*)'Length(Vg_pert) is=',(length(vg(:,j)),j=1,3)
-
- q=(/1d-3,1d-3,0d0/)
-! from FD or perturbation group velocities
- call get_freq(q,ndn,vg,eivl,eivc); eivl=eivl-eivl0
- call write_out(uio,'Vg from PERT q=1d-3(1,1,0) ',vg)
- write(uio,3)'Length(Vg_pert) for 3 acoustic modes =',(length(vg(:,j)),j=1,3)
- write(uio,3)'Corresponding rho v^2 (GPa)           =',(rho_SI * 1d-9*length(vg(:,j))**2 , j=1,3)
-
-3 format(a,9(1x,g11.4))
-
-! eivl is the square of phonon frequencies eivl=omega^2 -> convert to eV
-      eivl=eivl/(q.dot.q)*rho_SI  *ee/uma*1d-9
-      call write_out(uio,'rho_cell*w^2 /q^2 (GPa) ',eivl)
-
-      c44    =rho_SI*(length(vg(:,1)))**2 *1d-9  ! assumes eivc(z,1)=1
-      halfdif=rho_SI*(length(vg(:,2)))**2 *1d-9
-      halfsum=rho_SI*(length(vg(:,3)))**2 *1d-9 - c44
-      c12=halfsum-halfdif
-      c11=halfsum+halfdif
-      call write_out(uio,'cij from rho vg^2 if e_1=z :',(/c11,c12,c44/))
-
-      c44    =rho_SI*(length(vg(:,2)))**2 *1d-9  ! assumes eivc(z,2)=1
-      halfdif=rho_SI*(length(vg(:,1)))**2 *1d-9
-      halfsum=rho_SI*(length(vg(:,3)))**2 *1d-9 - c44
-      c12=halfsum-halfdif
-      c11=halfsum+halfdif
-      call write_out(uio,'cij from rho vg^2 if e_2=z :',(/c11,c12,c44/))
-
-! call write_out(uio,'GF dyn_mat eivals (eV/Ang^2) ',eivl)
-  call finitedif_vel(q,ndn,vg,eivl,eivc); eivl=eivl-eivl0
-  call write_out(uio,'Vg from FD q=1d-3(1,1,0) ',vg)
-  write(uio,*)'Length(Vg_FD) is=',(length(vg(:,j)),j=1,3)
-  write(uio,*)'rho v^2 (GPa) is=',(rho_SI * 1d-9*length(vg(:,j))**2 , j=1,3)
-      c44    =rho_SI*(length(vg(:,1)))**2 *1d-9  ! assumes eivc(z,1)=1
-      halfdif=rho_SI*(length(vg(:,2)))**2 *1d-9
-      halfsum=rho_SI*(length(vg(:,3)))**2 *1d-9 - c44
-      c12=halfsum-halfdif
-      c11=halfsum+halfdif
-      call write_out(uio,'CUBIC_ONLY: cij from rho vg^2 if e_1=z :',(/c11,c12,c44/))
-
-      c44    =rho_SI*(length(vg(:,2)))**2 *1d-9  ! assumes eivc(z,2)=1
-      halfdif=rho_SI*(length(vg(:,1)))**2 *1d-9
-      halfsum=rho_SI*(length(vg(:,3)))**2 *1d-9 - c44
-      c12=halfsum-halfdif
-      c11=halfsum+halfdif
-      call write_out(uio,'CUBIC_ONLY: cij from rho vg^2 if e_2=z :',(/c11,c12,c44/))
-
- write(uio,*)' ********************************************'
-
 
 ! calculation of the standard Bravais formula in atld0
  atld0=0; constr=0  ! atld0 = -0.25 sum_r,tau,taup phi(tau;R+taup)*(R+taup-tau)  ------------
@@ -3311,60 +3250,6 @@ end subroutine band_sort_bs
 3 format(i5,9(3x,g11.4))
 
  end subroutine calculate_dos
-!==========================================================
- subroutine get_cij(eivl,eivc,ndn,c11,c12,c44)
-!! reads eigenvalues of L_ik = C_ij,kl qhat_j qhat_l in eV along 110 and
-!! outputs the elastic constants of a CUBIC crystal
- use atoms_force_constants , only : natom_prim_cell
- use lattice, only : volume_r0
- use constants, only : ee,r15  !c_light,uma,
- use ios !, only : ulog
- implicit none
- integer, intent(in) :: ndn
- real(r15), intent(inout) :: eivl(ndn)
- complex(r15), intent(in) :: eivc(ndn,ndn)
- real(r15), intent(out) :: c11,c12,c44
- real(r15) pol,polt,junk,junt,q(3),halfdif,halfsum
- integer la,i,transz,longt
-
- ! if polarization is out of plane, i.e. along z, we get c44
- ! which polarization is along z
-     call write_out(ulog,'mass_cell w^2 /q^2 ',eivl)
-     q=(/1,1,0/)/sqrt(2d0)  ! normalized wave vector
-     pol=-3; polt=-3 ! longitudinal and transverse polarizations of the mode
-     do la=1,3  ! look at the 3 transverse modes la
-! dentify transverse shear and in-plane modes by calculting the
-! dot product of eigenvector polarizations summed over all atoms with q
-        junk=0; junt=0;
-        do i=1,natom_prim_cell
-           junk=junk+abs(dot_product(q,eivc(3*(i-1)+1:3*(i-1)+3 ,la))) ! long q which is in xy plane
-           junt=junt+abs(eivc(3*(i-1)+3,la))  ! along z
-           write(*,7)'mode,iatom,projected polalong 110 and 001=',la,i,junk,junt
-        enddo
-! find the modes with in-plane polarizations (junk) and those along z(junt)
-        if(junt.gt.polt) then  ! save the largest projections perp to q
-          polt=junt
-          transz=la
-        endif
-        if(junk.gt.pol) then  ! save the largest projections || to q
-          pol=junk
-          longt=la
-        endif
-     enddo
-     write(*,*)'transverse mode in the z direction is',transz
-     write(*,*)'transverse mode in the 1-10 direction is',6-longt-transz
-     write(*,*)'longitudinal mode in the 110 direction is',longt
- ! rescale eivl from eV to GPA
-     eivl = eivl * ee*1d21/volume_r0
-     c44 = eivl(transz)
-     halfsum = eivl(longt)-c44
-     halfdif = eivl(6-longt-transz)
-     c11=halfsum+halfdif
-     c12=halfsum-halfdif
-     call write_out(6   ,'c11,c12,c44(GPa)',(/c11,c12,c44/))
-7 format(a,2i6,2(1x,g11.4))
-
- end subroutine get_cij
 !============================================================
  subroutine dielectric(n,eival,eivec,mesh,om,epsilon0)
 ! takes the eigenvalues and eigenvectors at the gamma point and calculates the susceptibility
