@@ -430,7 +430,7 @@ end function fold_ws
 ! use atoms_force_constants, only : xmatinv
  implicit none
  external xmatinv
- real(r15) latp(6)
+ real(r15) latp(6),d2r,ca,cb,cg,sg
  integer ier
 
 !k1
@@ -449,12 +449,24 @@ end function fold_ws
       endif
       latp=latticeparameters ! for short
 !      latp(4:6) = latp(4:6)*d2r   ! convert angles from degree to radian
+! cos and sin of the angles, which are in degrees. dcosd/dsind are a GNU extension
+! that some compilers do not have (Rivanna's gfortran, 2026-10-30); this is standard.
+      d2r = pi/180d0
+      ca = cos(latp(4)*d2r)
+      cb = cos(latp(5)*d2r)
+      cg = cos(latp(6)*d2r)
+      sg = sin(latp(6)*d2r)
+! exact at the right angles, as dcosd/dsind were (cos(90*pi/180) is 6d-17, not 0)
+      if(abs(ca).lt.1d-15) ca=0
+      if(abs(cb).lt.1d-15) cb=0
+      if(abs(cg).lt.1d-15) cg=0
+      if(abs(sg-1).lt.1d-15) sg=1
       conv_to_cart(1,1)=latp(1)
-      conv_to_cart(1,2)=latp(2)*dcosd(latp(6))
-      conv_to_cart(2,2)=latp(2)*dsind(latp(6))
-      conv_to_cart(1,3)=latp(3)*dcosd(latp(5))
-      conv_to_cart(2,3)=latp(3)*(dcosd(latp(4))   &
-     &     -dcosd(latp(6))*dcosd(latp(5)))  /dsind(latp(6))
+      conv_to_cart(1,2)=latp(2)*cg
+      conv_to_cart(2,2)=latp(2)*sg
+      conv_to_cart(1,3)=latp(3)*cb
+      conv_to_cart(2,3)=latp(3)*(ca   &
+     &     -cg*cb)  /sg
       conv_to_cart(3,3)=sqrt(latp(3)**2-conv_to_cart(1,3)**2   &
      &     -conv_to_cart(2,3)**2)
       write(*,*)'conv_to_cart has conventional vectors on its columns='

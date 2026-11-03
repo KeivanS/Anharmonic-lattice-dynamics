@@ -588,6 +588,13 @@ snapshots, sqrt(4/5 sum (x_i - xbar)^2) / SVD sigma: median FC2 1.04, FC3 0.91; 
 
 ## Things that bite
 
+- No GNU-extension intrinsics: `transform_input_structure` (`common/lattice.f90`) used
+  `dcosd/dsind`, which Rivanna's gfortran does not have (`Function 'dcosd' has no IMPLICIT
+  type`; the Mac's gfortran 10.3 accepts them, so it built here). Standard `cos/sin` with
+  `d2r = pi/180` since 2026-11-03, with the near-zeros snapped to 0/1 so right angles stay
+  exact as `dcosd` made them. No Makefile flag can help: `-fall-intrinsics` only matters when
+  `-std=` has switched extensions off, and the Makefiles pass no `-std`. All 16 `common/`
+  modules compile under `-std=f2008`; keep it that way.
 - `sc_snaps.x` built before 2026-10-22 aborts with `Recursive call to nonrecursive
   procedure 'findif'` when compiled with `-fcheck=all` (`d2v` called `findif(r,d1v)`, and
   `d1v` calls `findif`). Fixed in SC_SNAPS: `d2v` writes the same central difference out;
