@@ -20,9 +20,9 @@
 !!
 !! One pass over the terms of every group adds (key, column, value) contributions; sorting the
 !! keys gathers each row. Column of independent term ti of group g of rank n: column_of.
-!! born_flag 2 (2026-11-03, user): the fit sees FC2 - Phi_B (Born-dipole FCs subtracted with the forces,
+!! born_flag 2 (2026-11-03, user): the fit sees FC2 - Phi_C (Coulomb dipole FCs subtracted with the forces,
 !! no FC1 subtracted), so the rank-2 rotational rows get the right-hand side -sum_{a,mu} M(i1;a1,a,mu) eps(a,mu,nu),
-!! M = sum_j Phi_B(i1 a1, j a) (X_j - X_i1)_mu from coulomb_lr. Rank-3 rows (i1 a1, i2 a2; nu): b = -A_full x_sub with
+!! M = sum_j Phi_C(i1 a1, j a) (X_j - X_i1)_mu from coulomb_lr. Rank-3 rows (i1 a1, i2 a2; nu): b = -A_full x_sub with
 !! x_sub's FC3 = that of the pair model tr(Z_i Z_j^T)/3 phi_eps (lr_rot3_pair, lr_rot3_onsite).
  use constants, only : r15
  implicit none
@@ -200,7 +200,7 @@
           brot(ir) = brot(ir) - cf
        enddo
        b2max = maxval(abs(brot))
-       write(ulog,'(a,es12.4,a)')'  born_flag 2: rank-2 rotational right-hand sides from the Born-dipole FCs, max|b| =', &
+       write(ulog,'(a,es12.4,a)')'  born_flag 2: rank-2 rotational right-hand sides from the Coulomb dipole FCs, max|b| =', &
  &        b2max,' eV/A'
        deallocate(mo)
     endif
@@ -227,7 +227,7 @@
  &              atompos(:,i2)-atompos(:,i1), cf
           endif
        enddo
-       write(ulog,'(a,es12.4,a)')'  born_flag 2: rank-3 rotational right-hand sides (Phi_B and the pair-model FC3), max|b| =', &
+       write(ulog,'(a,es12.4,a)')'  born_flag 2: rank-3 rotational right-hand sides (Phi_C and the pair-model FC3), max|b| =', &
  &        b3max,' eV/A^2'
        deallocate(mo)
     endif

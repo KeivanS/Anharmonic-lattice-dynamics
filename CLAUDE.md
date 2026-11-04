@@ -584,7 +584,7 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   formula's FC (Z1 Z2)_ac d_b d_c phi is not symmetric (xz 0.170, zx 0.188) and differs from the Z1 T Z2^T
   added back to D (xz = zx = 0.179); q=0 sums agree only by symmetry. So born_flag 2 subtracts a harmonic part
   /= the D_NA added back when Z is anisotropic (possibly the BZO zone-boundary OPEN item; not tested).
-- BUG fixed 2026-11-03 (GaN, user's run): dfc_hyb (Phi_B - Phi_m, ewald_born.f90) was a saved array computed on the
+- BUG fixed 2026-11-03 (GaN, user's run): dfc_hyb (Phi_C - Phi_m, ewald_born.f90) was a saved array computed on the
   first subtract_coulomb_force call only; with two POSCAR/FORCEDISP pairs (24 and 72 atoms) the second supercell read
   past its end: bforce of structure 2 garbage (-3.6e5), fit error 2.98 / 3.24 / 712 / 4.95 % on identical runs
   (user's 655 %), one segfault, one hang. Now computed per call (per supercell) and freed. GaN born 2: 1.719 % on
@@ -620,7 +620,7 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   u0(atom 2)_z = 1.05e-6 A (cause unknown). Exact ZnO+Coulomb ranks 1-4 regression: FCs 8e-10 rel, freqs identical.
 - enforce_inv=1, born_flag 2: max|C xpart - d| = 2.5e-3 eV (GaN): rotational rows' Coulomb RHS (|b| <= 0.22)
   inconsistent with the translational rows at ~1 %; Huang rows consistent (2e-7). Z*, eps replaced by their traces:
-  2.4e-7. So the cause is the tensor anisotropy (subtracted model: harmonic part full-tensor Phi_B, anharmonic part
+  2.4e-7. So the cause is the tensor anisotropy (subtracted model: harmonic part full-tensor Phi_C, anharmonic part
   trace charges). OPEN, user to decide the treatment. User first said no 9.6 until resolved;
   on 2026-11-04 the user asked to tag 9.6 now with these items open.
 - 9.6 (2026-11-04, user): which positions are used where (read from the code). symmetry_init builds atompos from
@@ -629,11 +629,29 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   translational rows have no positions. Displacements stay FORCEDISP - POSCAR (read_force_position_data:
   dsp - atom_sc%equilibrium_pos) and forces as read. FC1: the irreducible FC1 obey the symmetry, but sum_tau
   Phi_tau = 0 is the rank-1 translational row, exact only with enforce_inv 1/2 (GaN enforce_inv 0: -2e-5 eV/A).
+- After 9.6 (2026-11-04, user): (1) relax_reference subtracts the average force per atom from FC1 before relaxing
+  (sum Pi = 0; logged before/after); fc1_unrelaxed.dat keeps the fit; pi_prime still removes the net force of the
+  Phi S + ... terms (FC2-4 ASR inexact with enforce_inv 0), printed at the end. Wording corrected: the relaxation
+  never removed the net force from the FCs, only ignored it. (2) Born charges on (born_flag /= 0, Z /= 0): the
+  bracket-route C and everything from it (moduli, sound speeds, Debye T, B, B0') go to the log only, with a
+  warning; mech.dat keeps ELASTIC_LONGWAVE and the moduli table without the bracket column. Bracket sums use the
+  fitted FC2 only (get_phi_zeta_Xi: fcs). NOT changed: QHA uses rbulkmod/hbulkmod and B0' of the bracket route.
+  (3) cubic_elastic call commented: b0p always overwritten by pressure_derivative_b (no early return) when FC3 is
+  in, and the QHA uses 1+2 gamma without FC3; its value was wrong (ZnO -216.6 vs 3.57).
+  (4) Log comments for the Huang numbers and the Qiu lines. (5) ELASTIC_LONGWAVE: pass label (E = 0 / NA) now
+  before its rho v^2 < 0 warnings (they used to appear under the previous block). ZnO (user's DFT, relaxed,
+  1 1 0 1): the E = 0 C is unstable along 101/111 (C33 45, C13 141); negative log sound speeds come from the
+  bracket C (C44 -31.5, C66 -33.2), sound_speeds itself checked by hand (mysqrt = -sqrt|x|).
+  (6) fc2range = 0 range from the largest-volume supercell: confirmed by swapping the GaN POSCAR/FORCEDISP order
+  (same lgridmax, 186 kept FC2, fc2 to 1.2e-8); log line of find_WS_largest_SC printed i instead of imax (fixed).
+  (7) sound_speeds: log note for rho v^2 < 0. (8) OPEN: relax_reference has no Coulomb/Born term: with born_flag 2
+  it relaxes with the short-range FC2 only (gradient misses Phi_C S, strain Hessian misses the Born brackets).
+  Relaxation tested only on the exact ZnO model without Coulomb; not on monoclinic or with charges.
 - Night 2026-11-04 (user asleep; asked: commit and push if diagnosed and fixed, report what/how/tests):
   exact monoclinic HfO2 (ranks 1-3, stressed, +/- point charges), structure.params positions perturbed by 5e-5 A:
   9.5 fits 92.5 % / 1429 %, FC2 wrong by 0.91 / 7.6 rel; new code 0.000 %, FC2 1.7e-6 rel (the undetectable
-  symmetric part of the perturbation). relax_reference pi_prime removes the net force (soft-fit ASR error;
-  had left 1e-6 A between equivalent Ga). Cross-validation: Huang neutral for force prediction, rotational rows
+  symmetric part of the perturbation). relax_reference pi_prime ignores the net force (it cannot be
+  relaxed; soft-fit ASR error had left 1e-6 A between equivalent Ga; the fitted FCs keep it). Cross-validation: Huang neutral for force prediction, rotational rows
   double the held-out error (open). Record: FOCEX/REFERENCE/exact_model/symmetrize/README.md. Manual entry
   "After 9.5 (not tagged)"; Makefile ver stays 9.5 (user: no 9.6 until everything is resolved).
 - Z*/eps symmetrization (check_born_symmetry, ios.f90; 2026-11-03, user; uncommitted): group average after the ASR,
@@ -647,10 +665,10 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   born 0; for born 2 possibly the Coulomb RHS of the rotational rows, rank 3 in particular). Long-wave C of the
   born 2 fit: C11 186 < C12 228, C66 -21 GPa, small imaginary TA near Gamma along G-M.
 - born_flag 2 hybrid (2026-11-03, user: "go ahead with the hybrid"; details and tests in
-  REFERENCE/exact_model/coulomb/README.md): subtracted F = F_m(x) - F_m(x0) - (Phi_B - Phi_m)u, F_m = Ewald force of
-  charges tr(Zi Zj^T)/3 (ewaldforce), Phi_B = Born-dipole FCs (= D_NA added back), Phi_m its trace-model harmonic part
+  REFERENCE/exact_model/coulomb/README.md): subtracted F = F_m(x) - F_m(x0) - (Phi_C - Phi_m)u, F_m = Ewald force of
+  charges tr(Zi Zj^T)/3 (ewaldforce), Phi_C = Coulomb dipole FCs (= D_NA added back), Phi_m its trace-model harmonic part
   (hybrid_harmonic, d2ewapot). Invariance rows get RHS -A x_sub whenever they are included (no switch, user):
-  Huang -(S_B(ab,gd)-S_B(gd,ab)) (setup_amatrix), rank-2 rotational -M:eps (invariance_ranks), S_B and M from
+  Huang -(S_C(ab,gd)-S_C(gd,ab)) (setup_amatrix), rank-2 rotational -M:eps (invariance_ranks), S_C and M from
   coulomb_lr.f90 (small-q E=0 Ewald). mech.dat Huang/rotational checks add the same terms. Exact tests (point charges,
   ZnO ranks 1-4, HfO2 cubic ranks 1-3): exact to the printed digits; each RHS is needed. Rank-3+ rotational rows still
   homogeneous at first; since 2026-11-03 rank-3 rows get -A_full x_sub too (lr_rot3_pair / lr_rot3_onsite; checked

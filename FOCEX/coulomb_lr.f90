@@ -1,18 +1,18 @@
 !============================================================
  module coulomb_lr
 !! Long-range (Born-charge) corrections of the invariance rows for born_flag 2 (2026-11-03, user's design).
-!! born_flag 2 subtracts from the DFT forces the force of the Born-dipole FCs Phi_B (+ the anharmonic part of a
+!! born_flag 2 subtracts from the DFT forces the force of the Coulomb dipole FCs Phi_C (+ the anharmonic part of a
 !! Coulomb pair model, see subtract_coulomb_force), so the fit sees x_fit = x_total - x_sub and the rows
 !! A x_total = b become A x_fit = b - A x_sub. x_sub has no FC1 (the reference force is subtracted) and its FC2 is
-!! Phi_B(t a, u b; R) = e^2 Z_t T(R + x_u - x_t) Z_u^T, T = -grad grad phi_eps (the D_NA added back, E = 0).
-!!   Huang:            A x_sub = S_B(ab,gd) - S_B(gd,ab),  S(ab,gd) = sum_{t in cell, j} Phi(t a, j b) r_g r_d
+!! Phi_C(t a, u b; R) = e^2 Z_t T(R + x_u - x_t) Z_u^T, T = -grad grad phi_eps (the D_NA added back, E = 0).
+!!   Huang:            A x_sub = S_C(ab,gd) - S_C(gd,ab),  S(ab,gd) = sum_{t in cell, j} Phi(t a, j b) r_g r_d
 !!   rank-2 rotation:  A x_sub = sum_{a,m} M(t; a1, a, m) eps(a, m, nu),  M = sum_j Phi(t a1, j a) r_m
 !! Both lattice sums are conditionally convergent; they are taken from the small-q expansion of
-!! C_tu(q) = sum_R Phi_B exp(i q.(R + x_u - x_t)) (Ewald, E = 0: the bare G = 0 term left out):
+!! C_tu(q) = sum_R Phi_C exp(i q.(R + x_u - x_t)) (Ewald, E = 0: the bare G = 0 term left out):
 !!   S(ab,gd) = - d^2/dq_g dq_d sum_tu Re C_ab(q) at 0,   M(t;a1,a,m) = d/dq_m sum_u Im C_t,u(q)_(a1,a) at 0,
 !! by central differences with Richardson extrapolation. Same kernel as REFERENCE/exact_model/longwave/
 !! coul_brackets.py (checked there: independent of the Ewald parameter to 4e-11).
-!! Rank-3 rotational rows (lr_rot3_pair, lr_rot3_onsite): b = -A_full x_sub, x_sub = Phi_B (rank 2) + the FC3 of the
+!! Rank-3 rotational rows (lr_rot3_pair, lr_rot3_onsite): b = -A_full x_sub, x_sub = Phi_C (rank 2) + the FC3 of the
 !! pair model c_ij phi_eps, c_ij = tr(Z_i Z_j^T)/3 (rank 3). Row (i1 a1, i2 a2; nu), r = X_i1 - X_i2, e2 = 1/eps0scale:
 !!   pair (i2 /= i1):  b = e2 [ c phi_(a1 a2 a)(r) r_mu eps(a,mu,nu) + P_(g a2) eps(g,a1,nu) + P_(a1 g) eps(g,a2,nu) ],
 !!                     P = Z_i1 H Z_i2^T - c H, H = grad grad phi_eps (bare: one pair of the crystal);
@@ -20,7 +20,7 @@
 !!                     E = 0 Ewald lattice sum. Its first part uses c phi_(a1 a2 a) r_mu eps(a,mu,nu) + c (H eps terms)
 !!                     = c D_eps H [eps J_nu - J_nu eps], J_nu(a,mu) = eps(a,mu,nu) (rotating r at fixed eps =
 !!                     rotating eps the other way), so it is the eps-derivative of the E = 0 sum of c H.
-!! For scalar Z and eps all of it vanishes (the pair model is then rotationally invariant and Phi_B = Phi_m).
+!! For scalar Z and eps all of it vanishes (the pair model is then rotationally invariant and Phi_C = Phi_m).
  use constants, only : r15, pi, ci, eps0scale
  implicit none
  private
@@ -317,7 +317,7 @@
  end subroutine csum
 !------------------------------------------------------------
  subroutine lr_brackets(s)
-!! s(a,b,g,d) = sum_{t in cell, j} Phi_B(t a, j b) r_g r_d (eV), Phi_B the Born-dipole FCs (E = 0)
+!! s(a,b,g,d) = sum_{t in cell, j} Phi_C(t a, j b) r_g r_d (eV), Phi_C the Coulomb dipole FCs (E = 0)
  real(r15), intent(out) :: s(3,3,3,3)
  real(r15) h, eg(3), ed(3), d1(3,3), d2(3,3)
  complex(r15) f0(3,3)
@@ -350,7 +350,7 @@
  end subroutine lr_brackets
 !------------------------------------------------------------
  subroutine lr_moments(mo)
-!! mo(t, a1, a, m) = sum_j Phi_B(t a1, j a) (x_j - x_t)_m (eV/A), t in the primitive cell
+!! mo(t, a1, a, m) = sum_j Phi_C(t a1, j a) (x_j - x_t)_m (eV/A), t in the primitive cell
  real(r15), intent(out) :: mo(:,:,:,:)
  complex(r15), allocatable :: cp(:,:,:,:), cm(:,:,:,:), c2p(:,:,:,:), c2m(:,:,:,:)
  real(r15) h, e(3), d1(3,3), d2(3,3)

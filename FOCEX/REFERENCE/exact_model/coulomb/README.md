@@ -1,20 +1,20 @@
 # Exact test of born_flag 2 (Coulomb subtraction), 2026-11-03
 
 What FOCEX does with born_flag 2 (ewald_born.f90, coulomb_lr.f90):
-- Subtracted from the forces: F_sub = F_m(x) - F_m(x0) - (Phi_B - Phi_m) u, where
+- Subtracted from the forces: F_sub = F_m(x) - F_m(x0) - (Phi_C - Phi_m) u, where
   - F_m is the Ewald force of point charges with strength c_ij = tr(Z_i Z_j^T)/3, screened by eps;
   - Phi_m = -e^2 c_ij H_ij is its harmonic part (H = grad grad phi, image-summed);
-  - Phi_B = -e^2 Z_i H_ij Z_j^T is the Born-dipole term (the same D_NA that is added back to D).
+  - Phi_C = -e^2 Z_i H_ij Z_j^T is the Coulomb dipole term (the same D_NA that is added back to D).
   So the harmonic part subtracted = the one added back, and the anharmonic part is the trace model's.
 - Invariance rows of the short-range fit, x_fit = x_total - x_sub, become A x_fit = -A x_sub:
   - translational: unchanged (F_sub is exactly translation-invariant);
-  - Huang: b = -2V(d_ab s_gd - d_gd s_ab) - (S_B(ab,gd) - S_B(gd,ab)), with S_B = sum Phi_B r_g r_d;
-  - rank-2 rotational: b = -sum_{a,mu} M(i;a1,a,mu) eps(a,mu,nu), M = sum_j Phi_B(i a1, j a)(x_j - x_i)_mu.
-  S_B and M are conditionally convergent: small-q expansion of the E = 0 Ewald C(q) (lr_brackets,
+  - Huang: b = -2V(d_ab s_gd - d_gd s_ab) - (S_C(ab,gd) - S_C(gd,ab)), with S_C = sum Phi_C r_g r_d;
+  - rank-2 rotational: b = -sum_{a,mu} M(i;a1,a,mu) eps(a,mu,nu), M = sum_j Phi_C(i a1, j a)(x_j - x_i)_mu.
+  S_C and M are conditionally convergent: small-q expansion of the E = 0 Ewald C(q) (lr_brackets,
   lr_moments; central differences, Richardson).
   - FC1 is not subtracted: the fitted FC1 = total FC1, i.e. it includes -F_C(x0).
-- The mech.dat checks (Huang, rank-2 rotational) add the same Phi_B brackets/moments.
-- Rank-3 rotational rows (i1 a1, i2 a2; nu): b = -A_full x_sub (lr_rot3_pair, lr_rot3_onsite), x_sub = Phi_B (rank 2)
+- The mech.dat checks (Huang, rank-2 rotational) add the same Phi_C brackets/moments.
+- Rank-3 rotational rows (i1 a1, i2 a2; nu): b = -A_full x_sub (lr_rot3_pair, lr_rot3_onsite), x_sub = Phi_C (rank 2)
   + the pair model's FC3 (rank 3), r = X_i1 - X_i2:
   - pair, i2 /= i1 (bare, one pair of the crystal): b = e2 [c phi_(a1 a2 a) r_mu eps(a,mu,nu) + (Z H Z^T)_(g a2) eps(g,a1,nu)
     + (Z H Z^T)_(a1 g) eps(g,a2,nu)];
@@ -77,7 +77,7 @@ F_C(x0) up to 0.376 eV/A, Coulomb stress yz -0.53 GPa):
   Richardson in the angle) instead of FOCEX's eps-derivative: <= 5.2e-7 (3e-6 relative); FOCEX's ASR-enforced Z.
   A double-precision finite-difference third derivative was not enough: the row is the difference of two terms of
   ~7 eV/A^2 and ends at ~0.04.
-- No exact end-to-end test with anisotropic Z: the hybrid's subtracted FC3 is not the rotational partner of Phi_B,
+- No exact end-to-end test with anisotropic Z: the hybrid's subtracted FC3 is not the rotational partner of Phi_C,
   so the true short-range FC3 has a 1/r^4 tail and no finite-range fit is exact.
 
 ## include_fc = 2 (read FCs), tests (2026-11-03; scratch coul_cubic/rf_*)

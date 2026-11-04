@@ -9,7 +9,7 @@
  use constants, only : r15,pi,ci
  use ios, only : ulog
  use ewald
- real(r15), allocatable :: dfc_hyb(:,:,:,:)   ! Phi_B - Phi_m in the current supercell (hybrid_harmonic); set per call
+ real(r15), allocatable :: dfc_hyb(:,:,:,:)   ! Phi_C - Phi_m in the current supercell (hybrid_harmonic); set per call
  contains
  subroutine dewapot(x,dpot)
 !! calculates the -d/dx(sum_R 1/|R+x| -background) = force  with the corrected metric
@@ -98,10 +98,10 @@
  end subroutine d2ewapot
 !===========================================================
  subroutine hybrid_harmonic(n,dfc)
-!! dfc(:,:,i,j) = Phi_B(i,j) - Phi_m(i,j) (eV/A^2) in the supercell at the reference: Phi_B = -e^2 Z_i H_ij Z_j^T the
-!! Born-dipole FCs (the D_NA added back to D), Phi_m = -e^2 c_ij H_ij the harmonic part of ewaldforce's pair model,
+!! dfc(:,:,i,j) = Phi_C(i,j) - Phi_m(i,j) (eV/A^2) in the supercell at the reference: Phi_C = -e^2 Z_i H_ij Z_j^T the
+!! Coulomb dipole FCs (the D_NA added back to D), Phi_m = -e^2 c_ij H_ij the harmonic part of ewaldforce's pair model,
 !! H_ij = grad grad phi(r_ij) (d2ewapot, images summed); on-site blocks by the sum rule. The born_flag 2 subtraction
-!! uses F_m(x) - F_m(x0) - dfc u: harmonic part = Phi_B exactly, anharmonic part from the pair model (user, 2026-11-03).
+!! uses F_m(x) - F_m(x0) - dfc u: harmonic part = Phi_C exactly, anharmonic part from the pair model (user, 2026-11-03).
  use constants, only : ee, eps0,pi
  use atoms_force_constants
  use geometry, only : v2a
@@ -140,7 +140,7 @@
     err=maxval(abs(hf-h))/max(maxval(abs(h)),1d-30)
     write(ulog,'(a,es10.2)')' HYBRID_HARMONIC: d2ewapot vs differences of dewapot (relative) =',err
  endif
- write(ulog,'(a,es12.4,a)')' HYBRID_HARMONIC: max|Phi_B - Phi_m| =',maxval(abs(dfc)),' eV/A^2'
+ write(ulog,'(a,es12.4,a)')' HYBRID_HARMONIC: max|Phi_C - Phi_m| =',maxval(abs(dfc)),' eV/A^2'
  end subroutine hybrid_harmonic
 !===========================================================
  subroutine ewaldforce(n,pos,fewald)
@@ -448,7 +448,7 @@
 
 ! calculate non-analytical part DYN_NA(q) and subtract from dny_na(G*) ; no mass factor
 !
-! hybrid (born_flag 2): Phi_B - Phi_m of THIS supercell, computed on every call (one call per POSCARi/FORCEDISPi
+! hybrid (born_flag 2): Phi_C - Phi_m of THIS supercell, computed on every call (one call per POSCARi/FORCEDISPi
 ! pair). Kept from the first call until 2026-11-03, a second supercell read past the end of the first one's
 ! array (GaN, 24- and 72-atom supercells: garbage forces, fit errors changing from run to run).
   if (born_flag.eq.2) then
@@ -496,7 +496,7 @@
 !        endif
          write(ulog,5)'######## sum(Ftot),sum(dfewa),Sdfewa/SFtot=',ftot,dfewa,dfewa/ftot
          coulmb_force = coulmb_force- coulmb_force0 
-! hybrid (born_flag 2): replace the harmonic part of the pair model by the Born-dipole one, - (Phi_B - Phi_m) u
+! hybrid (born_flag 2): replace the harmonic part of the pair model by the Coulomb dipole one, - (Phi_C - Phi_m) u
          if (born_flag.eq.2) then
             do i=1,natom_super_cell
                do j=1,natom_super_cell

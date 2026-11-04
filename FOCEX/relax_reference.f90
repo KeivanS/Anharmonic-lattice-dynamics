@@ -29,7 +29,8 @@
  integer, allocatable :: g2(:),t2(:),g3(:),t3(:),g1(:),t1(:)
  integer, allocatable :: pidx(:,:),pt(:),pj(:),p3of4(:)
  real(r15), allocatable :: v1(:),v2(:),v3(:),v4(:),x(:,:),kmat(:,:,:),kmat0(:,:,:),pip(:,:),psip(:)
- real(r15) pnet(3)   ! net force removed by pi_prime (nonzero when the fit's ASR is not exact)
+ real(r15) pnet(3)   ! net force removed by pi_prime (from the FC2-FC4 terms when their ASR is not exact)
+ real(r15) pnet1(3)  ! sum of the fitted FC1, removed before relaxing
  real(r15), allocatable :: phi_(:,:),q_(:,:,:),u0(:,:),xc(:,:),um(:,:),dum3(:,:),ustart(:,:)
  real(r15) eta(3,3),e6(6),s0(3,3),xi0(3,3),a_(3,3,3,3),gsim(3,3),w(3),dd(3),dl(3),em(3,3),minv(3,3)
  real(r15) gconv,uconv,sgpa,dmax,prmax,rel,v0,fac,pmax0,sig_in(3,3),kdrop,resmax(3),fmax(3),detm
@@ -97,6 +98,27 @@
     enddo
  enddo
  write(ulog,*)'RELAX_REFERENCE: number of FC terms of ranks 1-4 with the first atom in the primitive cell =',nfct
+
+! sum_tau Pi_tau = 0 (rank-1 translational invariance) is exact only with enforce_inv >= 1. A net force
+! cannot be relaxed (it would translate the crystal), so it is removed from FC1 before relaxing: the
+! average force per atom is subtracted from every atom (user, 2026-11-04). The fitted FC1 is kept in
+! fc1_unrelaxed.dat; fc1.dat is then the relaxed FC1, with this correction.
+ pnet1=0
+ do n=1,nfct(1)
+    pnet1(ix1(n))=pnet1(ix1(n))+v1(n)
+ enddo
+ pnet1=pnet1/nprim
+ write(ulog,'(a,3es12.4)')' RELAX_REFERENCE: fitted sum_tau FC1(tau) (eV/A; 0 if the ASR is exact) =',pnet1*nprim
+ do n=1,nfct(1)
+    v1(n)=v1(n)-pnet1(ix1(n))
+ enddo
+ pnet1=0
+ do n=1,nfct(1)
+    pnet1(ix1(n))=pnet1(ix1(n))+v1(n)
+ enddo
+ write(ulog,'(a,3es12.4)')' RELAX_REFERENCE: sum_tau FC1(tau) after removing the average force per atom   =',pnet1
+ if(maxval(abs(pnet1)).gt.1d-12) call warn3(ulog, &
+ &  'RELAX_REFERENCE: sum of FC1 not zero after the correction (an atom lacks that FC1 component)',maxval(abs(pnet1)))
 
 ! reference positions
  allocate(x(3,natoms))
@@ -172,7 +194,6 @@
     uconv=0
     if(nprim.gt.1) uconv=maxval(abs(pip(:,2:nprim)))   ! atom 1 fixed: its force is -sum of the others (ASR)
     if(itr.eq.0) pmax0=uconv
-    if(itr.eq.0) write(ulog,'(a,3es12.4)')' RELAX_REFERENCE: net force per atom removed (eV/A; 0 if the ASR is exact) =',pnet
     write(ulog,'(a,i4,1x,es12.4)')' RELAX_REFERENCE: ',itr,uconv
     if(uconv.lt.1d-12 .or. nprim.eq.1) exit
     call build_aq(x,.true.)
@@ -256,8 +277,8 @@
     write(ulog,'(a,i4,3(1x,es20.12))')' RELAX_REFERENCE: tau, u0(tau) (A) =',tau,u0(:,tau)
  enddo
  write(ulog,'(a,es12.4,a,es12.4)')' RELAX_REFERENCE: max|FC1| (atoms 2..) before ',pmax0,' after ',uconv
- write(ulog,'(a,3(1x,es12.4))')' RELAX_REFERENCE: total force sum_tau FC1(tau) after (ASR of the fitted FCs, eV/A) =', &
- &     (sum(pip(al,:)),al=1,3)
+ write(ulog,'(a,3(1x,es12.4))')' RELAX_REFERENCE: net force per atom from the FC2-FC4 terms at the relaxed state, '// &
+ &     'removed (eV/A; 0 if their ASR is exact) =',pnet
  write(ulog,'(a,es12.4)')' RELAX_REFERENCE: max|stress| after (GPa) =',maxval(abs(sig))*sgpa
 
 ! re-expanded FCs at the relaxed state (kmat, pip already there): Psi' = Psi + Chi (S_l - S_tau)
@@ -471,7 +492,8 @@
  enddo
 ! A net force on the cell cannot be relaxed (it would translate the crystal); with atom 1 held fixed it would
 ! push equivalent atoms apart (GaN, enforce_inv 0: FC1 summing to -2e-5 eV/A left u0 = 1e-6 A between the two
-! Ga, 2026-11-04). It is removed: sum_tau Pi'_tau = 0, as for FCs with exact translational invariance.
+! Ga, 2026-11-04). FC1 is corrected before relaxing (above); what is left here comes from Phi S + Psi S S/2 + ...
+! when the FC2-FC4 translational invariance is not exact. It is not relaxed: sum_tau Pi'_tau = 0.
  pnet=sum(pip,dim=2)/nprim
  do m=1,nprim
     pip(:,m)=pip(:,m)-pnet

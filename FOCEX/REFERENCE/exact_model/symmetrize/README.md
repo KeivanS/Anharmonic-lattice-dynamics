@@ -41,7 +41,8 @@ the scripts in this folder.
     The displacements and forces are used as read.
 - `pointgroup_average2`: stress.params is averaged over the point group (Huang rows and read_stress_params).
 - Z* and eps are averaged over the group (check_born_symmetry, ios.f90; 2026-11-03).
-- `relax_reference`: the net force on the cell is removed in pi_prime.
+- `relax_reference`: the net force on the cell is ignored in pi_prime (it cannot be relaxed; the fitted FCs keep
+  it). Since after 9.6 the average force per atom is also subtracted from FC1 before relaxing.
   - With enforce_inv 0 the translational rows are not exact; GaN FC1 summed to -2e-5 eV/A.
   - With atom 1 held fixed, this net force left the two Ga 1.05e-6 A apart.
   - Now: soft fit 3.5e-14 A; exact fit 1.4e-16 A (5e-10 before).

@@ -15,7 +15,9 @@
  use ewald, only : ewald_no_macro
  implicit none
  integer i,j,k,uio,tau,taup,l,ier
- logical to_modes
+ logical to_modes,zon
+ integer um
+ real(r15) c_lw(6,6),tab_lw(11)
  real(r15) vkms(3),vavg(3),qr(3),q2(3),sf,etot,free,cv,cp,entropy,eq_vol,tempk,cvte
  real(r15) rotc(3,3),atldc(3,3,3,3),elasticc(6,6),atld_sym(3,3,3,3),asym_c
  character(len=12) csys
@@ -70,14 +72,34 @@
 ! ------------ Mechanical properties ------------------------------------------------------
   uio=321
   open(uio,file='mech.dat')
+! With Born charges the Born-Huang brackets of the fitted FC2 miss the long-range dipole part (born_flag 2:
+! only the short-range FC2 is fitted; other born_flags: the FC2 is cut at its range), so the bracket-route
+! elastic constants and what is derived from them are not reliable. They go to the log only, and mech.dat
+! keeps the long-wave (sound-speed) ones, of which E = 0 is the relaxed-ion value (user, 2026-11-04).
+  zon=.false.
+  if(born_flag.ne.0) then
+     do tau=1,natom_prim_cell
+        if(maxval(abs(atom0(tau)%charge)).gt.0) zon=.true.
+     enddo
+  endif
+  um=uio
+  if(zon) then
+     um=ulog
+     write(ulog,*)'MECHANICAL: WARNING: Born charges are on. The elastic constants below are calculated from the', &
+ &     ' short-range part of FC2 only (without the long-range Coulomb part), and so are the moduli, sound speeds,', &
+ &     ' Debye T, B and B0'' derived from them: they are not accurate and are not written to mech.dat. Use the', &
+ &     ' long-wave E = 0 elastic constants of mech.dat (ELASTIC_LONGWAVE), which include the Coulomb part.'
+     write(uio,*)'Born charges are on: the elastic constants from the short-range part of FC2 alone are not accurate', &
+ &     ' and are only in the log; use the ELASTIC_LONGWAVE E = 0 elastic constants below (Coulomb part included).'
+  endif
   call allocate_mech(ndyn)
   if(ndyn.gt.3) then ! only makes sense for non-bravais lattices
     allocate(gama(ndyn-3,ndyn-3))
     call get_phi_zeta_Xi(uio) 
     call residuals (uio) 
-    call mechanical(uio) 
+    call mechanical(um) 
   else
-    call mechanical0(atld0,uio)
+    call mechanical0(atld0,um)
   endif
 
 ! the elastic tensor in the crystal's conventional frame (symmetry axes along x,y,z: the fewest
@@ -86,68 +108,67 @@
   call crystal_frame(rotc,csys)
   call symmetrize_tensor4(atld0,atldc,asym_c)     ! average over the crystal's point group
   write(ulog,*)'CRYSTAL FRAME: largest symmetry-forbidden part of the elastic tensor removed (GPa)=',asym_c
-  write(uio ,*)'CRYSTAL FRAME: largest symmetry-forbidden part of the elastic tensor removed (GPa)=',asym_c
+  if(.not.zon) write(uio,*)'CRYSTAL FRAME: largest symmetry-forbidden part of the elastic tensor removed (GPa)=',asym_c
   atld_sym=atldc
   call rotate_tensor4(rotc,atld_sym,atldc)
   call convert_to_voigt(atldc,elasticc)
-  call report_crystal_frame(uio,rotc,csys,elasticc)
+  call report_crystal_frame(uio,rotc,csys,elasticc,.not.zon)
 
 ! bulk mod(cubic)=B=(C11+2*C12+P)/3 ; shear modulus: G=(C11-C12+3C44)/5  
 ! Young Modulus E=9BG/(3B+G) ; Poisson=(3B-2G)/(6B+2G)
 
-  write( uio,8)'B0P=dB/dP from cubic_elastic (will be overwritten) =',b0p
 
   vbulkmod = sum(elastic(1:3,1:3))/9
   write(ulog,8)'Voigt Bulk modulus(GPa) from elastic tensor=',vbulkmod
-  write( uio,8)'Voigt Bulk modulus(GPa) from elastic tensor=',vbulkmod
+  if(.not.zon) write(uio,8)'Voigt Bulk modulus(GPa) from elastic tensor=',vbulkmod
   rbulkmod = 1/sum(compliance(1:3,1:3))
   write(ulog,8)'Reuss Bulk modulus(GPa) from complnc tensor=',rbulkmod
-  write(uio ,8)'Reuss Bulk modulus(GPa) from complnc tensor=',rbulkmod
+  if(.not.zon) write(uio,8)'Reuss Bulk modulus(GPa) from complnc tensor=',rbulkmod
   hbulkmod=(vbulkmod+rbulkmod)/2
   write(ulog,8)'Hill  Bulk modulus(GPa) from        average=',hbulkmod
-  write(uio ,8)'Hill  Bulk modulus(GPa) from        average=',hbulkmod
+  if(.not.zon) write(uio,8)'Hill  Bulk modulus(GPa) from        average=',hbulkmod
 
-! B0' = dB/dP at T=0 from FC2 and FC3 (FOCEX/notes/generalized_huang.tex, Eq. Bp); overwrites cubic_elastic's
-  if(include_fc(3).ne.0) call pressure_derivative_b(uio)
+! B0' = dB/dP at T=0 from FC2 and FC3 (FOCEX/notes/generalized_huang.tex, Eq. Bp)
+  if(include_fc(3).ne.0) call pressure_derivative_b(um)
 
   vshearmod =(elastic(1,1)+elastic(2,2)+elastic(3,3)  &
 &            -elastic(1,2)-elastic(2,3)-elastic(3,1)  &
 &         +3*(elastic(4,4)+elastic(5,5)+elastic(6,6)) )/15d0
   write(ulog,8)'Voigt shear modulus(GPa) from elastic tensor=',vshearmod
-  write( uio,8)'Voigt shear modulus(GPa) from elastic tensor=',vshearmod
+  if(.not.zon) write(uio,8)'Voigt shear modulus(GPa) from elastic tensor=',vshearmod
   rshearmod = 15/(4*(compliance(1,1)+compliance(2,2)+compliance(3,3))  &
 &                -4*(compliance(1,2)+compliance(2,3)+compliance(3,1))  &
 &                +3*(compliance(4,4)+compliance(5,5)+compliance(6,6)) )
   write(ulog,8)'Reuss shear modulus(GPa) from complnc tensor=',rshearmod
-  write(uio ,8)'Reuss shear modulus(GPa) from complnc tensor=',rshearmod
+  if(.not.zon) write(uio,8)'Reuss shear modulus(GPa) from complnc tensor=',rshearmod
   hshearmod=(vshearmod+rshearmod)/2
   write(ulog,8)'Isotropic Hill  shear modulus(GPa) from    average=',hshearmod
-  write(uio ,8)'Isotropic Hill  shear modulus(GPa) from    average=',hshearmod
+  if(.not.zon) write(uio,8)'Isotropic Hill  shear modulus(GPa) from    average=',hshearmod
   write(ulog,8)'Shear modulus(GPa) 1/S44,55,66  compliance tensor =',  &
  &        1/(compliance(4,4)),  1/(compliance(5,5)),  1/(compliance(6,6))  
-  write(uio ,8)'Shear modulus(GPa) 1/S44,55,66  compliance tensor =',  &
+  if(.not.zon) write(uio,8)'Shear modulus(GPa) 1/S44,55,66  compliance tensor =',  &
  &        1/(compliance(4,4)),  1/(compliance(5,5)),  1/(compliance(6,6))  
 
 
   Youngmod=9*hbulkmod*hshearmod/(3*hbulkmod+hshearmod)
   write(ulog,8)'Average (from Hill) Young modulus(GPa) =9BG/(3B+G)=',youngmod
-  write(uio ,8)'Average (from Hill) Young modulus(GPa) =9BG/(3B+G)=',youngmod
+  if(.not.zon) write(uio,8)'Average (from Hill) Young modulus(GPa) =9BG/(3B+G)=',youngmod
   write(ulog,8)'single crystal Young modulus(GPa) from 1/S11,22,33=',1/compliance(1,1),  &
 &     1/compliance(2,2),1/compliance(3,3)
-  write(uio ,8)'single crystal Young modulus(GPa) from 1/S11,22,33=',1/compliance(1,1),  &
+  if(.not.zon) write(uio,8)'single crystal Young modulus(GPa) from 1/S11,22,33=',1/compliance(1,1),  &
 &     1/compliance(2,2),1/compliance(3,3)
 
 
   poisson=(1.5*hbulkmod-hshearmod)/(3*hbulkmod+hshearmod)
   write(ulog,8)'Hill Poisson ratio=(1.5B-G)/(3B+G) for isotropic  =',poisson
-  write(uio ,8)'Hill Poisson ratio=(1.5B-G)/(3B+G) for isotropic  =',poisson
+  if(.not.zon) write(uio,8)'Hill Poisson ratio=(1.5B-G)/(3B+G) for isotropic  =',poisson
   poisson = -compliance(1,2)/compliance(1,1)
   write(ulog,8)'Poisson ratio from -S12/S11 for single crystals   =',poisson
-  write(uio ,8)'Poisson ratio from -S12/S11 for single crystals   =',poisson
+  if(.not.zon) write(uio,8)'Poisson ratio from -S12/S11 for single crystals   =',poisson
 
   anisotropy_ratio=2*elasticc(4,4)/(elasticc(1,1)-elasticc(1,2))   ! crystal frame
   write(ulog,8)'Anisotropy ratio from 2C44/(C11-C12)              =',anisotropy_ratio
-  write(uio ,8)'Anisotropy ratio from 2C44/(C11-C12)              =',anisotropy_ratio
+  if(.not.zon) write(uio,8)'Anisotropy ratio from 2C44/(C11-C12)              =',anisotropy_ratio
 
   vl_iso=sqrt((hbulkmod+4/3d0*hshearmod)*1d9/rho_si) / 1000d0
   if (hshearmod.gt.0) then
@@ -158,13 +179,32 @@
   v_mean=1d0/((1d0/vl_iso**3+2d0/vt_iso**3)/3d0)**0.333333
   t_debye=hbar/k_b*(6*pi*pi*natom_prim_cell/volume_r0)**0.33333 *1d10 * v_mean*1000
   write(ulog,8)'isotropic V_l, V_t, V_mean (km/s) = ',vl_iso, vt_iso,v_mean
-  write( uio,8)'isotropic V_l, V_t, V_mean (km/s) = ',vl_iso, vt_iso,v_mean
+  if(.not.zon) write(uio,8)'isotropic V_l, V_t, V_mean (km/s) = ',vl_iso, vt_iso,v_mean
   xagne=vt_iso/vl_iso
   write(ulog,8)' xagne, T_D(K) =',xagne,t_debye
-  write(uio ,8)' xagne, T_D(K) =',xagne,t_debye
+  if(.not.zon) write(uio,8)' xagne, T_D(K) =',xagne,t_debye
 
 
-  call elastic_longwave(uio,rotc,elasticc)   ! C_ij from the sound speeds, E = 0 and with the NA term; moduli table
+  call elastic_longwave(uio,rotc,elasticc,.not.zon,c_lw)   ! C_ij from the sound speeds, E = 0 and with the NA term; moduli table
+! Born charges on: the moduli used later (QHA: B0 Reuss, B_T start, Leont'ev gamma from v_t/v_l) are taken
+! from the long-wave elastic tensor (E = 0 when available), which includes the Coulomb part, instead of the
+! one from the short-range FC2 sums (user, 2026-11-04)
+  if(zon) then
+     call moduli_from_c(c_lw,tab_lw)
+     rbulkmod=tab_lw(2); hbulkmod=tab_lw(3); hshearmod=tab_lw(6)
+     vl_iso=sqrt((hbulkmod+4/3d0*hshearmod)*1d9/rho_si)/1000d0
+     vt_iso=1d-1
+     if (hshearmod.gt.0) vt_iso=sqrt(1d9*hshearmod/rho_SI)/1000d0
+     v_mean=1d0/((1d0/vl_iso**3+2d0/vt_iso**3)/3d0)**0.333333
+     t_debye=hbar/k_b*(6*pi*pi*natom_prim_cell/volume_r0)**0.33333 *1d10 * v_mean*1000
+     xagne=vt_iso/vl_iso
+     write(ulog,8)'MECHANICAL: Born charges on; QHA moduli from the long-wave elastic tensor: B_Reuss, B_Hill, G_Hill =', &
+ &        rbulkmod,hbulkmod,hshearmod
+     write(ulog,8)'MECHANICAL: from it: V_l, V_t, V_mean (km/s), T_D (K) =',vl_iso,vt_iso,v_mean,t_debye
+     write(uio,*)'QHA: Born charges on: the QHA takes B0 and the isotropic sound speeds from the first long-wave C above'
+     write(uio,8)'QHA: B0 Reuss, B Hill, G Hill (GPa), V_l, V_t (km/s), T_D (K) =', &
+ &        rbulkmod,hbulkmod,hshearmod,vl_iso,vt_iso,t_debye
+  endif
   close(uio)
 
 ! now calculating average sound speeds and Debye temperature along 100, 110, and 111
@@ -1754,6 +1794,11 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 ! the antisymmetric part of qiu in its last 2 indices is fixed by the residual forces (rotational
 ! invariance); it is checked in residuals (from teta), where pi0 is known. Only the symmetric part
 ! couples to the (Cauchy) strain: qiu is symmetrized here, before xi, the residual stress and QGQ
+ write(ulog,*)'GET_PHI_ZETA: Qiu(s;ga,la) = sum_j phi(s;j ga) (x_j-x_tau)_la, s = (tau,al): coupling of the internal'
+ write(ulog,*)'GET_PHI_ZETA:   displacements to strain. Its antisymmetric part (next lines) need not be 0: rotational'
+ write(ulog,*)'GET_PHI_ZETA:   invariance fixes it by the residual forces pi0 (and, born_flag 2, the Coulomb dipole'
+ write(ulog,*)'GET_PHI_ZETA:   moments); that relation is checked in RESIDUALS (rotational invariance violation).'
+ write(ulog,*)'GET_PHI_ZETA:   Only the symmetric part couples to strain; Qiu is symmetrized here.'
  do s=1,ndyn
     matr=qiu(s,:,:)
     write(ulog,*)'GET_PHI_ZETA: s, max |Qiu(s,:,:)-Qiu(s,:,:)^T|=',s,maxval(abs(matr-transpose(matr)))
@@ -1805,6 +1850,8 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  enddo
  enddo
  write(ulog,*)'GET_PHI_ZETA: max |sum_tau Qiu(tau,:;:,:)| (eV/Ang)=',maxval(abs(constr))
+ write(ulog,*)'GET_PHI_ZETA:   (0 by translational invariance: exact with enforce_inv >= 1, a fit residual with 0;'
+ write(ulog,*)'GET_PHI_ZETA:   a nonzero sum means a net force on the cell under strain)'
  if(maxval(abs(constr)).gt.1d-5) then
     call warn3(   6,'ASR/rotational invariance violated: max |sum_tau Qiu| (eV/Ang)=',maxval(abs(constr)))
     call warn3(ulog,'ASR/rotational invariance violated: max |sum_tau Qiu| (eV/Ang)=',maxval(abs(constr)))
@@ -1820,7 +1867,10 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  call write_out (ulog,' GET_PHI_ZETA_XI: Bulk modulus(GPa)  ',bulkmod)
  call write_out (ulog,' Elastic Tensor (standard term; old formula) in GPa, in voigt ',c0)
 
- call cubic_elastic
+! cubic_elastic (b0p = -1/(27 B V) sum Psi R R R) not called since 2026-11-04 (user): its b0p is always
+! overwritten by pressure_derivative_b when FC3 is included, and without FC3 the QHA uses 1 + 2 gamma;
+! b0s is local. Its value was also wrong (user's ZnO: -216.6 against 3.57 from FC2+FC3).
+! call cubic_elastic
 
 1 format(a,99(1x,f10.4))
 5 format(a,i5, 99(1x,f10.4))
@@ -1864,7 +1914,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 !! Huang conditions, generalized to a stressed reference (FOCEX/notes/generalized_huang.tex; the same
 !! relation as the Huang rows of set_huang_inv_constraints): [ab,gl]-[gl,ab] = d_ab s_gl - d_gl s_ab,
 !! [ab,gl] = -1/(2V) sum phi_ab x_g x_l = atld_raw(a,g,b,l) (GPa); s the reference stress (GPa).
-!! born_flag 2: the fitted FC2 is the total minus the Born-dipole FCs, whose brackets
+!! born_flag 2: the fitted FC2 is the total minus the Coulomb dipole FCs, whose brackets
 !! [ab,gl]_B (coulomb_lr) carry their own asymmetry; the relation is then that of the sum (as the Huang rows).
  use ios, only : ulog
  use constants, only : r15
@@ -1881,8 +1931,8 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  sb=0
  if (born_flag.eq.2) then
     call lr_brackets(sb)
-    sb=-sb/(2*volume_r0)*160.21766208d0       ! S_B (eV) -> brackets [ab,gd]_B = sb(a,b,g,d) (GPa)
-    write(uio,*)'Huang check: born_flag 2, the Born-dipole brackets are added to the fitted ones'
+    sb=-sb/(2*volume_r0)*160.21766208d0       ! S_C (eV) -> brackets [ab,gd]_C = sb(a,b,g,d) (GPa)
+    write(uio,*)'Huang check: born_flag 2, the Coulomb dipole brackets are added to the fitted ones'
  endif
  do al=1,3
  do be=1,3
@@ -1900,6 +1950,12 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  &            hmax,hdev,amax
  write(uio ,4)'Huang: max|[ab,gl]-[gl,ab]|, max|[ab,gl]-[gl,ab]-(d_ab s_gl-d_gl s_ab)|, max|[ab,gl]| (GPa)=', &
  &            hmax,hdev,amax
+ write(ulog,*)'Huang: 1st number = asymmetry of the brackets; it equals the stress term, so it is 0 only for a'
+ write(ulog,*)'Huang:   stress-free or hydrostatic reference (s = stress.params, 0 after RELAX_REFERENCE).'
+ write(ulog,*)'Huang: 2nd number = violation of the Huang conditions with that stress; 0 (round-off) when ihuang = 1'
+ write(ulog,*)'Huang:   and enforce_inv >= 1; otherwise compare it with the 3rd number, the size of the brackets'
+ write(ulog,*)'Huang:   (warning above 1e-3 of it): it measures how far the fitted FC2 is from a consistent long-wave'
+ write(ulog,*)'Huang:   (elastic) limit.'
  if(hdev.gt.1d-3*amax) then
     call warn3(   6,'Huang conditions (with the reference stress) violated by (GPa)',hdev)
     call warn3(ulog,'Huang conditions (with the reference stress) violated by (GPa)',hdev)
@@ -2107,13 +2163,13 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 ! + pi0(tau,be) eps(be,al,nu) = 0, i.e. Qiu(tau al;be,ga)-Qiu(tau al;ga,be) + pi0(tau,be) delta(al,ga)
 ! - pi0(tau,ga) delta(al,be) = 0  (teta and qiu sums differ by tau*sum_taup phi = 0 by ASR)
 ! enforces mat2(a,b)-mat2(b,a)=res(a,b)-res(b,a); consider mat=mat2-res ; symmetrize mat then mat2=sym(mat)+res
-! born_flag 2: the fitted FC2 is the total minus the Born-dipole FCs; the relation holds
-! for the sum (as the rotational rows, invariance_ranks), so their moments mo(tau,al,be,ga) = sum_j Phi_B(tau al,j be)
-! (x_j-x_tau)_ga (coulomb_lr) are added (x_tau sum_j Phi_B = 0 by ASR, as for teta)
+! born_flag 2: the fitted FC2 is the total minus the Coulomb dipole FCs; the relation holds
+! for the sum (as the rotational rows, invariance_ranks), so their moments mo(tau,al,be,ga) = sum_j Phi_C(tau al,j be)
+! (x_j-x_tau)_ga (coulomb_lr) are added (x_tau sum_j Phi_C = 0 by ASR, as for teta)
  allocate(mo(natom_prim_cell,3,3,3)); mo=0
  if (born_flag.eq.2) then
     call lr_moments(mo)
-    write(uio,*)'Rotational check: born_flag 2, the Born-dipole moments are added to the fitted ones'
+    write(uio,*)'Rotational check: born_flag 2, the Coulomb dipole moments are added to the fitted ones'
  endif
  s=0; rotmax=0
  do al=1,3
@@ -2310,6 +2366,8 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 ! eivals are in units of phi*R^2, i.e. in eV
   vkms(:)=mysqrt(eivl(:))/sqrt(rho_SI)/1000 ! to convert to (km/s)
   write(ulog,3)' sound speeds along ',q,' in (km/s)=',vkms
+  if (minval(eivl).lt.0) write(ulog,*)' sound speeds: a negative value is -sqrt(|rho v^2|): rho v^2 < 0, i.e. the', &
+ &   ' elastic tensor used here (from the FC2 sums of mechanical, crystal frame) is not positive definite along q'
 
   vbar = (3d0/sum(1d0/vkms**3))**0.3333333
   td=hbar/k_b*(6*pi*pi*natom_prim_cell/volume_r0)**0.3333333 *1d10 * vbar*1000
@@ -2320,7 +2378,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
 
  end subroutine sound_speeds
 !============================================================
- subroutine elastic_longwave(uio,rotc,cbr)
+ subroutine elastic_longwave(uio,rotc,cbr,withbr,c_lw)
 !! elastic constants and the deviatoric stress from the long-wave limit of the code's own dynamical matrix
 !! (the one of the band structure: fitted FC2 + Ewald/NA term), 2026-11-02 (user's request).
 !! Along 13 directions qh (axes, face and body diagonals) the acoustic matrix A(qh) (omega^2 = q^2 eig A,
@@ -2349,6 +2407,8 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  implicit none
  integer, intent(in) :: uio
  real(r15), intent(in) :: rotc(3,3),cbr(6,6)   ! cbr: the bracket-route C (crystal frame) printed above, for the table
+ logical, intent(in) :: withbr   ! .false. (Born charges on): the bracket column is left out of the table
+ real(r15), intent(out) :: c_lw(6,6)   ! the first long-wave C (E = 0 when available), crystal frame
  procedure(dynmat_routine) :: get_dynmat
  integer, parameter :: nd=13
  real(r15) cmod(6,6,3),tab(11,3)
@@ -2357,7 +2417,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  &   ata(36,36),atai(36,36),atb(36),row(36),x(36),bb(6,6),b4(3,3,3,3),dl(3,3), &
  &   sm(6,6),smi(6,6),sb(6),sr(6),sl(3,3),sf(3,3),sfd(3,3),pr,res,nrm, &
  &   ca(21,21),cai(21,21),cb(21),cr(21),cx(21),cv(6,6),c4(3,3,3,3),cs(3,3,3,3),cro(3,3,3,3),cc(6,6),dev,dif
- integer i,j,k,l,a,b,c,d,n,ns,mode,nmode,ip(6,6),np,ii,jj,voigt,ier,vij,vil
+ integer i,j,k,l,a,b,c,d,n,ns,mode,nmode,ip(6,6),np,ii,jj,voigt,ier,vij,vil,m0
  complex(r15) am(3,3),ev(3,3)
  logical e0,ex
  character(len=40) lab
@@ -2403,6 +2463,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
     else
        lab='with the non-analytic term (as bands)'
     endif
+    write(uio,*)'ELASTIC_LONGWAVE: ',trim(lab)   ! before the rho v^2 < 0 warnings of this pass (2026-11-04)
 ! Christoffel tensors and the fit of the 36 brackets B[(ik),(jl)]
     ata=0; atb=0; nrm=0
     do n=1,nd
@@ -2492,7 +2553,6 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
     call symmetrize_tensor4(c4,cs,dev)
     call rotate_tensor4(rotc,cs,cro)
     call convert_to_voigt(cro,cc)
-    write(uio,*)'ELASTIC_LONGWAVE: ',trim(lab)
     call write_out(uio,' ELASTIC_LONGWAVE: brackets B[(ik),(jl)] (GPa), rows ik, columns jl, Voigt order',bb)
     write(uio,'(a,es10.2)')' ELASTIC_LONGWAVE: max |B - B^T| (GPa) =',maxval(abs(bb-transpose(bb)))
     call write_out(uio,' ELASTIC_LONGWAVE: deviatoric stress from the asymmetry of B (GPa)',sl)
@@ -2513,23 +2573,25 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  ewald_no_macro=.false.
 
 ! moduli of each C (crystal frame), same formulas as the bracket-route lines above (2026-11-03, user)
- cmod(:,:,1)=cbr; colh(1)='brackets'
+ cmod(:,:,1)=cbr; colh(1)='FC2 sums'
+ c_lw=cmod(:,:,2)
  do mode=1,nmode+1
     call moduli_from_c(cmod(:,:,mode),tab(:,mode))
  enddo
+ m0=1; if(.not.withbr) m0=2
  write(uio,*)'ELASTIC_MODULI: from each C_ij above (GPa; crystal frame; Hill = (Voigt+Reuss)/2)'
- write(uio,'(a,3(1x,a14))')'                                        ',(colh(mode),mode=1,nmode+1)
- write(uio,'(a,3(1x,f14.4))')' Voigt bulk modulus                     ',(tab(1,mode),mode=1,nmode+1)
- write(uio,'(a,3(1x,f14.4))')' Reuss bulk modulus                     ',(tab(2,mode),mode=1,nmode+1)
- write(uio,'(a,3(1x,f14.4))')' Hill  bulk modulus B                   ',(tab(3,mode),mode=1,nmode+1)
- write(uio,'(a,3(1x,f14.4))')' Voigt shear modulus                    ',(tab(4,mode),mode=1,nmode+1)
- write(uio,'(a,3(1x,f14.4))')' Reuss shear modulus                    ',(tab(5,mode),mode=1,nmode+1)
- write(uio,'(a,3(1x,f14.4))')' Hill  shear modulus G                  ',(tab(6,mode),mode=1,nmode+1)
- write(uio,'(a,3(1x,f14.4))')' Hill  Young modulus 9BG/(3B+G)         ',(tab(7,mode),mode=1,nmode+1)
- write(uio,'(a,3(1x,f14.4))')' Hill  Poisson ratio (1.5B-G)/(3B+G)    ',(tab(8,mode),mode=1,nmode+1)
- write(uio,'(a,3(1x,f14.4))')' Poisson ratio -S12/S11                 ',(tab(9,mode),mode=1,nmode+1)
- write(uio,'(a,3(1x,f14.4))')' Anisotropy ratio 2C44/(C11-C12)        ',(tab(10,mode),mode=1,nmode+1)
- write(uio,'(a,3(1x,f14.4))')' Universal anisotropy 5GV/GR+BV/BR-6    ',(tab(11,mode),mode=1,nmode+1)
+ write(uio,'(a,3(1x,a14))')'                                        ',(colh(mode),mode=m0,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Voigt bulk modulus                     ',(tab(1,mode),mode=m0,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Reuss bulk modulus                     ',(tab(2,mode),mode=m0,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Hill  bulk modulus B                   ',(tab(3,mode),mode=m0,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Voigt shear modulus                    ',(tab(4,mode),mode=m0,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Reuss shear modulus                    ',(tab(5,mode),mode=m0,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Hill  shear modulus G                  ',(tab(6,mode),mode=m0,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Hill  Young modulus 9BG/(3B+G)         ',(tab(7,mode),mode=m0,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Hill  Poisson ratio (1.5B-G)/(3B+G)    ',(tab(8,mode),mode=m0,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Poisson ratio -S12/S11                 ',(tab(9,mode),mode=m0,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Anisotropy ratio 2C44/(C11-C12)        ',(tab(10,mode),mode=m0,nmode+1)
+ write(uio,'(a,3(1x,f14.4))')' Universal anisotropy 5GV/GR+BV/BR-6    ',(tab(11,mode),mode=m0,nmode+1)
 
  contains
  real(r15) function e6(m,p,q)
@@ -4098,9 +4160,10 @@ end subroutine band_sort_bs
  enddo ; enddo ; enddo ; enddo ; enddo
  end subroutine rotate_tensor4
 !===========================================================
- subroutine report_crystal_frame(uio,rot,csys,cc)
+ subroutine report_crystal_frame(uio,rot,csys,cc,showc)
 !! writes the rotation into the crystal frame, the rotated cell (reduced coordinates do not
-!! change) and the elastic constants there, with the number of distinct nonzero ones
+!! change) and the elastic constants there, with the number of distinct nonzero ones;
+!! showc = .false.: the elastic constants go to the log only (bracket route with Born charges)
  use ios, only : ulog
  use lattice, only : r01,r02,r03,r1conv,r2conv,r3conv
  use atoms_force_constants, only : natom_prim_cell,atom0
@@ -4110,6 +4173,7 @@ end subroutine band_sort_bs
  integer, intent(in) :: uio
  real(r15), intent(in) :: rot(3,3),cc(6,6)
  character(len=*), intent(in) :: csys
+ logical, intent(in) :: showc
  real(r15) cmax,vals(21),c
  integer i,j,k,nv,u,iu
  logical new
@@ -4137,6 +4201,7 @@ end subroutine band_sort_bs
     do i=1,natom_prim_cell
        write(u,'(i4,1x,a,3(1x,f13.7))') i,atom0(i)%name,matmul(rot,v2a(atom0(i)%equilibrium_pos))
     enddo
+    if (iu.eq.2 .and. .not.showc) cycle
     write(u,*)'CRYSTAL FRAME: elastic constants C_ij (GPa), entries below 1e-3 of the largest set to 0'
     do i=1,6
        write(u,'(6(1x,f10.3))') (merge(cc(i,j),0d0,abs(cc(i,j)).ge.1d-3*cmax),j=1,6)

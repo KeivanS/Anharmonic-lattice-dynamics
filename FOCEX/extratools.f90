@@ -1924,7 +1924,7 @@ end subroutine create_extended_rgrid
 
      enddo
 
-     write(ulog,*) 'largest volume is found for ',i,' th supercell; volmax=',volmax
+     write(ulog,*) 'largest volume is found for ',imax,' th supercell; volmax=',volmax   ! was i (= fdfiles+1)
 
 ! work with this POSCAR
      write(xt,'(i1)')imax

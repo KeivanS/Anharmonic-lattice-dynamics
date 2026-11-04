@@ -687,7 +687,7 @@ only the first line matters.
   non-analytical term is added back when the dynamical matrix is built. This is
   the recommended setting for polar materials. The subtracted force is that of point charges
   with strength tr(Z_i Z_j^T)/3 (Ewald sum, screened by epsilon), with its harmonic part replaced by the
-  Born-dipole term Z_i T Z_j^T, so that what is subtracted at small displacements equals
+  Coulomb dipole term Z_i T Z_j^T, so that what is subtracted at small displacements equals
   what is added back. The rotational and Huang invariance rows then apply to the sum of the
   short-range and Coulomb parts: their right-hand sides carry the Coulomb contribution.
 * ``born_flag`` larger than 2 — not recommended (development variants of the subtraction scheme);
@@ -804,7 +804,10 @@ constants (since 2026-11-02):
 FOCEX then minimizes the energy of the fitted Taylor expansion with respect to a homogeneous strain
 :math:`\eta` and the internal displacements :math:`u^0` (static displacement
 :math:`S = \eta (R+\tau) + u^0`, as in the ALATDYN paper and SCOP8), starting from the residual forces
-(FC1) and the reference stress of ``stress.params`` (without that file: estimated from FC1). The force
+(FC1) and the reference stress of ``stress.params`` (without that file: estimated from FC1). A net force
+cannot be relaxed (it would translate the crystal): before relaxing, the average force per atom is
+subtracted from FC1, so that :math:`\sum_\tau \Pi_\tau = 0` (already exact with ``enforce_inv`` 1-3; with
+0 the fitted sum is printed in the log). The force
 constants are re-expanded about the relaxed structure, :math:`\Phi' = \Phi + \Psi S + \chi S S/2`,
 :math:`\Psi' = \Psi + \chi S`, :math:`\Pi' \approx 0`, and everything after the fit (phonons,
 elastic constants, Grüneisen parameters, QHA, ``fcN.dat``) uses the relaxed structure and these FCs;
@@ -1000,9 +1003,15 @@ Phonons and thermodynamics
     seen in sound speeds and is taken from the residual stress. A negative :math:`\rho v^2` is
     reported as a warning (unstable long waves). ``ELASTIC_MODULI`` (last): the Voigt/Reuss/Hill
     bulk and shear moduli, Young modulus, Poisson ratios, :math:`2C_{44}/(C_{11}-C_{12})` and the
-    universal anisotropy :math:`5G_V/G_R+B_V/B_R-6` of each of these C side by side (brackets,
-    long-wave, and with Born charges long-wave E = 0 and with the NA term), all in the crystal
-    frame. They are averages of a stable crystal: meaningless if C is not positive definite.
+    universal anisotropy :math:`5G_V/G_R+B_V/B_R-6` of each of these C side by side (``FC2 sums``:
+    the elastic tensor above, from lattice sums of the fitted FC2; long-wave; with Born charges
+    long-wave E = 0 and with the NA term), all in the crystal frame. They are averages of a stable
+    crystal: meaningless if C is not positive definite.
+    With Born charges (``born_flag`` not 0 and charges not zero) the fitted FC2 is only the
+    short-range part (``born_flag = 2``) or is cut at its range, so the elastic tensor from its
+    sums, and what is derived from it (moduli, sound speeds, Debye temperature), are written to the
+    log only, with a warning: use the long-wave E = 0 constants, which include the Coulomb part.
+    The QHA then also takes its bulk modulus and sound speeds from the E = 0 constants.
 
 ``thermo_QHA.dat``
     Quasi-harmonic thermodynamics versus temperature, one line per temperature:
@@ -1310,14 +1319,22 @@ needs.
 Version history
 ---------------
 
+After 9.6 (2026-11-04, not tagged)
+    Before relaxing, the average force per atom is removed from FC1 (:math:`\sum_\tau \Pi_\tau = 0`);
+    the fitted FC1 stays in ``fc1_unrelaxed.dat``. With Born charges the elastic constants from the short-range part of FC2 alone
+    are in the log only, not in ``mech.dat``. The unused and wrong :math:`B_0'` of ``cubic_elastic`` is no
+    longer computed or printed. The log explains the Huang and :math:`Q` checks. With Born charges the
+    QHA takes B0 and the sound speeds from the long-wave E = 0 elastic tensor. Coulomb FCs are written
+    :math:`\Phi_C` (was :math:`\Phi_B`).
+
 9.6 (2026-11-04)
     Positions, Born charges, dielectric tensor and stress averaged over the space group. Positions
     a few :math:`10^{-5}` Å off the symmetry (GaN, ZnO from DFT) made rotational and Huang rows
     that vanish by symmetry nonzero, and the fit or the elastic constants were nonsense (ZnO,
     ``enforce_inv = 1``: 59 %, now 1.3 %). The symmetric positions enter those rows and the
-    relaxation; displacements and forces are used as read. The relaxation removes the net force
-    left when the translational rows (including :math:`\sum_\tau \Phi_\tau = 0` for FC1) are
-    only fitted (``enforce_inv = 0``). Also: the ``born_flag = 2`` correction computed for each
+    relaxation; displacements and forces are used as read. The relaxation ignores a net force (it
+    cannot be relaxed) left when the translational rows (including :math:`\sum_\tau \Pi_\tau = 0`
+    for FC1) are only fitted (``enforce_inv = 0``); the fitted FCs keep it. Also: the ``born_flag = 2`` correction computed for each
     supercell (several supercells gave wrong forces); :math:`\chi(\omega)` from the TO modes;
     elastic moduli for each elastic tensor in ``mech.dat``.
 
