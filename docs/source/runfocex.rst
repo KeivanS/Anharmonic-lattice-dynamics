@@ -15,7 +15,9 @@ The extraction proceeds in three stages:
 1. **Symmetry analysis.** From the primitive cell described in
    ``structure.params``, FOCEX finds the space-group operations of the crystal
    (atoms matched within :math:`10^{-3}` Å), replaces the positions by their exact group average
-   (``SYMMETRIZE_POSITIONS`` in the log, with the positions to put back in ``structure.params``),
+   (``SYMMETRIZE_POSITIONS`` in the log, with the positions to put back in ``structure.params``);
+   these are used in the rotational and Huang rows and as the relaxation reference, while the
+   displacements stay ``FORCEDISP`` minus ``POSCAR`` and the forces stay as read,
    builds the neighbor shells around each atom of the primitive cell, and
    determines which FCs of each requested rank are *irreducible* (independent).
    All remaining FCs are expressed as linear combinations of these.
@@ -89,7 +91,7 @@ conventional cubic cell, :math:`a = 5.7022565` Å) and 36 snapshots.
    # after compiling (see the Installation chapter)
    mkdir -p ~/runs/Ge && cd ~/runs/Ge
    cp <path-to-repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
-   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.5.x
+   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.6.x
 
 On a single modern core the run takes a few minutes. It should end with
 
@@ -841,7 +843,7 @@ input files in one directory, ``cd`` into it and run the binary.
    ls
    # default.params  dielectric.params  kpbs.params  latdyn.params
    # structure.params  POSCAR1  FORCEDISP1
-   ~/ALADYN/bin/focex-9.5.x | tee focex.out
+   ~/ALADYN/bin/focex-9.6.x | tee focex.out
 
 The run is serial and memory-bound: the largest array is the fit matrix, of
 size (number of force components + constraints) × (number of independent FCs).
@@ -1308,12 +1310,16 @@ needs.
 Version history
 ---------------
 
-After 9.5 (2026-11-04, not tagged)
+9.6 (2026-11-04)
     Positions, Born charges, dielectric tensor and stress averaged over the space group. Positions
-    a few :math:`10^{-5}` Å off the symmetry (GaN, ZnO from DFT) made rows that vanish by symmetry
-    nonzero: with Huang or rotational rows the fit or the elastic constants were nonsense (ZnO,
-    ``enforce_inv = 1``: 59 %, now 1.3 %). The relaxation removes a net force left by an inexact
-    translational invariance (``enforce_inv = 0``).
+    a few :math:`10^{-5}` Å off the symmetry (GaN, ZnO from DFT) made rotational and Huang rows
+    that vanish by symmetry nonzero, and the fit or the elastic constants were nonsense (ZnO,
+    ``enforce_inv = 1``: 59 %, now 1.3 %). The symmetric positions enter those rows and the
+    relaxation; displacements and forces are used as read. The relaxation removes the net force
+    left when the translational rows (including :math:`\sum_\tau \Phi_\tau = 0` for FC1) are
+    only fitted (``enforce_inv = 0``). Also: the ``born_flag = 2`` correction computed for each
+    supercell (several supercells gave wrong forces); :math:`\chi(\omega)` from the TO modes;
+    elastic moduli for each elastic tensor in ``mech.dat``.
 
 9.5 (2026-11-03)
     Some ranks read, the others fitted (``include_fc = 2``; the read terms go to the right-hand

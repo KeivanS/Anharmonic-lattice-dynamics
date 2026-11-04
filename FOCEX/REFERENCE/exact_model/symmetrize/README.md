@@ -35,6 +35,10 @@ the scripts in this folder.
   - The log line SYMMETRIZE_POSITIONS gives the deviation, the shift and the positions to put back in
     structure.params.
   - The displacements are FORCEDISP - POSCAR (read_force_position_data), so the force data are unchanged.
+  - Where the symmetric positions enter (read from the code, 2026-11-04): symmetry_init builds atompos from
+    them, so the rotational rows (invariance_ranks.f90, atompos(mu,l)), the Huang rows (setup_amatrix.f90,
+    rr = atompos(j)-atompos(i)) and the relaxation use them. The translational rows contain no positions.
+    The displacements and forces are used as read.
 - `pointgroup_average2`: stress.params is averaged over the point group (Huang rows and read_stress_params).
 - Z* and eps are averaged over the group (check_born_symmetry, ios.f90; 2026-11-03).
 - `relax_reference`: the net force on the cell is removed in pi_prime.

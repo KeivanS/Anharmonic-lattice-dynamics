@@ -621,7 +621,14 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
 - enforce_inv=1, born_flag 2: max|C xpart - d| = 2.5e-3 eV (GaN): rotational rows' Coulomb RHS (|b| <= 0.22)
   inconsistent with the translational rows at ~1 %; Huang rows consistent (2e-7). Z*, eps replaced by their traces:
   2.4e-7. So the cause is the tensor anisotropy (subtracted model: harmonic part full-tensor Phi_B, anharmonic part
-  trace charges). OPEN, user to decide the treatment. User: no tag/9.6 until the open items are resolved.
+  trace charges). OPEN, user to decide the treatment. User first said no 9.6 until resolved;
+  on 2026-11-04 the user asked to tag 9.6 now with these items open.
+- 9.6 (2026-11-04, user): which positions are used where (read from the code). symmetry_init builds atompos from
+  the symmetrized atompos0, so the rotational rows (invariance_ranks build_inv_rows: atompos(mu,l)), the Huang rows
+  (setup_amatrix: rr = atompos(j)-atompos(i)) and relax_reference (x = atompos) use symmetric positions. The
+  translational rows have no positions. Displacements stay FORCEDISP - POSCAR (read_force_position_data:
+  dsp - atom_sc%equilibrium_pos) and forces as read. FC1: the irreducible FC1 obey the symmetry, but sum_tau
+  Phi_tau = 0 is the rank-1 translational row, exact only with enforce_inv 1/2 (GaN enforce_inv 0: -2e-5 eV/A).
 - Night 2026-11-04 (user asleep; asked: commit and push if diagnosed and fixed, report what/how/tests):
   exact monoclinic HfO2 (ranks 1-3, stressed, +/- point charges), structure.params positions perturbed by 5e-5 A:
   9.5 fits 92.5 % / 1429 %, FC2 wrong by 0.91 / 7.6 rel; new code 0.000 %, FC2 1.7e-6 rel (the undetectable
