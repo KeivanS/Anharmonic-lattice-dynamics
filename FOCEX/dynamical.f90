@@ -1838,6 +1838,7 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  real(r15), intent(out) :: s(3,3)
  logical, intent(out) :: ex
  integer i
+ real(r15) schange
  s=0
  if(ref_relaxed) then  ! relax_reference relaxed the structure: the stress of the new reference is 0
     ex=.true.
@@ -1854,6 +1855,9 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  call write_out(uio ,' stress.params: stress of the reference structure (GPa) ',s)
  call write_out(ulog,' stress.params: stress of the reference structure (GPa) ',s)
  call symmetrize2(3,s)
+ call pointgroup_average2(s,schange)   ! the stress must have the point-group symmetry (2026-11-04)
+ write(uio ,'(a,es10.2,a)')' stress.params: averaged over the point group, change ',schange,' GPa'
+ write(ulog,'(a,es10.2,a)')' stress.params: averaged over the point group, change ',schange,' GPa'
  end subroutine read_stress_params
 !============================================================
  subroutine check_huang_stress(uio,s)

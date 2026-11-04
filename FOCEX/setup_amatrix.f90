@@ -24,7 +24,7 @@
 ! use force_constants_module
  implicit none
  integer i,j,al,be,ga,de,t,ti,mterm,cnt,cnt2,g,rnk,voigt,vab,vcd,counter,ired,res,dim_h
- real(r15) huang,rr(3),term,sig(3,3),dl(3,3)
+ real(r15) huang,rr(3),term,sig(3,3),dl(3,3),schange
  real(r15), allocatable:: ared1d(:),zero(:)
  logical ex, lrcor
  real(r15) sb(3,3,3,3)
@@ -59,6 +59,11 @@
  else
     write(ulog,*)' HUANG: no stress.params, the reference is taken as stress free (GPa):'
  endif
+ do i=1,3
+    write(ulog,'(3f14.6)') sig(i,:)
+ enddo
+ call pointgroup_average2(sig,schange)
+ write(ulog,'(a,es10.2,a)')'  stress averaged over the point group (change',schange,' GPa), used:'
  do i=1,3
     write(ulog,'(3f14.6)') sig(i,:)
  enddo

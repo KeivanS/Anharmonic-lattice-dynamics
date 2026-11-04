@@ -596,10 +596,45 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   now both 10.0065, peaks at E1(TO) 553.9 and A1(TO) 529.9, the transverse modes of the old q||x run). Acoustic modes
   left out by translation_weight, not as bands 1-3. gamma_mode_symmetry(ndn,to): to=.true. writes chi_modes.dat
   (TO modes, irreps), chi.plt labels the IR-active peaks from it. gamma_modes.dat unchanged.
+- GaN instability located (2026-11-03, open): the Huang rows. Soft rows (enforce_inv 0), born 2, both sets:
+  transl+rot 1.714 %, C11/C12/C33/C44/C66 = 313.6/99.5/303.7/91.6/107.1 GPa, no imaginary modes; transl+Huang
+  1.213 %, C66 -51.3, -17 1/cm; all three (user's) C66 -21. Not the stress (no stress.params: same) and not the
+  Coulomb part of the RHS (max 0.18 eV). Set 2 alone: Huang rows give -3425 1/cm, without them C66 83 GPa, stable.
+  The stable solution violates Huang rows 14, 15 ([zz,xx]-[xx,zz] type) by -6.2 eV (RHS 0.12); mech.dat
+  |[ab,gl]-[gl,ab]| 10.5 of 504 GPa. Cause not found. ZnO: same symptoms (user).
+- SOLVED 2026-11-04: GaN/ZnO Huang and rotational failures were caused by positions slightly off the symmetry,
+  not by ill-conditioning (the 2026-11-03 entry saying so was wrong). GaN Ga z 0.5005917/0.0005866 (6_3 screw off by
+  2.7e-5 A), ZnO 8.4e-5 A: below tol_sym 1e-3, so the ops are found and the FCs symmetrized exactly, but the
+  Huang/rotational rows use the actual positions: rows zero by symmetry ([xy,xz],[yz,xx],[yz,yy] in 6mm, odd under
+  C2z) got coefficients 1.4e-3 (max 334) and acted as spurious constraints (dFC2 1.0 eV/A^2 even with their RHS 0;
+  only the real row [zz,xx]: dFC2 3e-3, fit 1.202 -> 1.214 %). Checked from FOCEX_DUMP_AMAT in Python and by runs.
+  Fix: symmetrize_positions (force_constant_symmetries.f90, called after make_unitcell, symmetry_init rerun) and
+  pointgroup_average2 on stress.params (setup_amatrix, read_stress_params). GaN 1 1 1 0: C66 -7288 -> 110, stable;
+  1 1 1 1: 1.94 %, stable. ZnO 1 1 0 1: 58.7 % (-2e5 1/cm) -> 1.30 %; enforce_inv 0/1/2 agree within 4 GPa.
+  Exact models: positions symmetric to 1.6e-10 A, hence never affected. Still open: ZnO long-wave C33 45-49 GPa
+  (exp ~210) in all enforce_inv; GaN/ZnO bracket-route C not positive definite (short-range FC2 only, born 2).
+- Checks of the fix (2026-11-04): FCs about the symmetric reference (POSCAR supercells shifted by the same delta, so
+  u is measured from it): FC2 changes 7e-4 eV/A^2 (4e-5 rel), FC3 4e-4 rel, C <= 0.5 GPa: no re-expansion needed.
+  relax_reference K vs Phi, Huang check (GPa): 1100 Phi 9.15 -> K 9.11; 1110 2.4e-4 -> 1.2e-2; 1111 4e-7 -> 2.0e-2
+  (relaxation does not repair Huang; why K loses 2e-2: unknown). Relaxation from symmetric positions leaves
+  u0(atom 2)_z = 1.05e-6 A (cause unknown). Exact ZnO+Coulomb ranks 1-4 regression: FCs 8e-10 rel, freqs identical.
+- enforce_inv=1, born_flag 2: max|C xpart - d| = 2.5e-3 eV (GaN): rotational rows' Coulomb RHS (|b| <= 0.22)
+  inconsistent with the translational rows at ~1 %; Huang rows consistent (2e-7). Z*, eps replaced by their traces:
+  2.4e-7. So the cause is the tensor anisotropy (subtracted model: harmonic part full-tensor Phi_B, anharmonic part
+  trace charges). OPEN, user to decide the treatment. User: no tag/9.6 until the open items are resolved.
+- Night 2026-11-04 (user asleep; asked: commit and push if diagnosed and fixed, report what/how/tests):
+  exact monoclinic HfO2 (ranks 1-3, stressed, +/- point charges), structure.params positions perturbed by 5e-5 A:
+  9.5 fits 92.5 % / 1429 %, FC2 wrong by 0.91 / 7.6 rel; new code 0.000 %, FC2 1.7e-6 rel (the undetectable
+  symmetric part of the perturbation). relax_reference pi_prime removes the net force (soft-fit ASR error;
+  had left 1e-6 A between equivalent Ga). Cross-validation: Huang neutral for force prediction, rotational rows
+  double the held-out error (open). Record: FOCEX/REFERENCE/exact_model/symmetrize/README.md. Manual entry
+  "After 9.5 (not tagged)"; Makefile ver stays 9.5 (user: no 9.6 until everything is resolved).
+- Z*/eps symmetrization (check_born_symmetry, ios.f90; 2026-11-03, user; uncommitted): group average after the ASR,
+  epsinv recomputed. Exact ZnO+Coulomb: change 4e-16, FCs equal to 1e-9 relative, sorted frequencies identical.
 - Band Gruneisen divergence (GaN, user's question): gamma = -<e|W|e>/(6 omega^2); the numerator omega^2*gamma is
   smooth along G-M (-239, -772, -1573, -2553, -3640 1/cm^2), omega^2 crosses 0 between dk 0.052 and 0.069: the spike
   (-116) is the 1/omega^2 of an unstable harmonic branch, not large anharmonicity.
-- GaN (2026-11-03, open): enforce_inv=1 with rotational rows conflicts with the data: set 2 alone, ranks 1-2:
+- GaN (2026-11-03; cause found 2026-11-04: positions off the symmetry, see SOLVED above): enforce_inv=1 with rotational rows conflicts with the data: set 2 alone, ranks 1-2:
   born 0 13.3 %, born 2 22.4 % (translational only, born 2: 7.7 %); ranks 1-3 (FC3 2 shells): born 0 36 %, born 2
   123 %; translational only, ranks 1-3, both sets: 1.20 %. Cause not found (truncated FC2 of a polar crystal for
   born 0; for born 2 possibly the Coulomb RHS of the rotational rows, rank 3 in particular). Long-wave C of the

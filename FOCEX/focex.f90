@@ -76,7 +76,7 @@ complex(r15) d2ew(3,3), d3ew(3,3,3), d0(3,3),sum
 real(r15) q(3)
 character(len=16) invcmp
 real(r15), allocatable :: xpart(:), bshift(:)
-real(r15) presid
+real(r15) presid, dev0pos, dpos
 
  call date_and_time(date=today,time=now,zone=zone)
  call cpu_time(tim)
@@ -105,6 +105,16 @@ real(r15) presid
    call read_latdyn
 
    call make_unitcell
+
+! positions made exactly symmetric under the space group found, then the neighbour lists and
+! fractional translations rebuilt from them (2026-11-04, user; see symmetrize_positions)
+   call symmetrize_positions(dev0pos,dpos)
+   if (dpos .gt. 0) then
+      imaxnei=1
+      do while(imaxnei.eq.1)
+         call symmetry_init(natom_prim_cell,atom_type,atompos0)
+      enddo
+   endif
 ! the number of shells is based on nshells in the structure.params file 
 ! inputs: natom_prim_cell,latticeparameters,primitivelattice,atom_type,atompos0
 ! outputs: r0i, atompos (cart coord of atoms and natoms neighbor shells),

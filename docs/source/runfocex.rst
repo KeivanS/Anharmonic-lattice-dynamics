@@ -13,7 +13,9 @@ energy with respect to atomic displacements (see :doc:`theory`).
 The extraction proceeds in three stages:
 
 1. **Symmetry analysis.** From the primitive cell described in
-   ``structure.params``, FOCEX finds the space-group operations of the crystal,
+   ``structure.params``, FOCEX finds the space-group operations of the crystal
+   (atoms matched within :math:`10^{-3}` Å), replaces the positions by their exact group average
+   (``SYMMETRIZE_POSITIONS`` in the log, with the positions to put back in ``structure.params``),
    builds the neighbor shells around each atom of the primitive cell, and
    determines which FCs of each requested rank are *irreducible* (independent).
    All remaining FCs are expressed as linear combinations of these.
@@ -702,7 +704,7 @@ stops the run; then FOCEX tries every reassignment of the blocks among atoms of
 the same species, and if one obeys the symmetry it prints that order (and the
 equivalent atom order for ``structure.params``) and writes
 ``dielectric.params.symmetric``. Smaller deviations (DFT tensors not quite
-symmetric) only give a warning.
+symmetric) give a warning, and the tensors are replaced by their group average.
 
 ``latdyn.params``
 ^^^^^^^^^^^^^^^^^
@@ -824,8 +826,8 @@ elastic constants) and the Huang rows, which for a stressed reference read
 -2\Omega(\delta_{\alpha\beta}\sigma_{\gamma\delta} -
 \delta_{\gamma\delta}\sigma_{\alpha\beta})`, with :math:`\Omega` the volume of
 the primitive cell. Without the file the stress is taken as zero. The log
-prints the stress used either way. Give it when the reference is not relaxed
-and ``ihuang = 1``.
+prints the stress used either way; it is averaged over the point group (the change is
+logged). Give it when the reference is not relaxed and ``ihuang = 1``.
 
 Running FOCEX
 -------------
@@ -1305,6 +1307,13 @@ needs.
 
 Version history
 ---------------
+
+After 9.5 (2026-11-04, not tagged)
+    Positions, Born charges, dielectric tensor and stress averaged over the space group. Positions
+    a few :math:`10^{-5}` Å off the symmetry (GaN, ZnO from DFT) made rows that vanish by symmetry
+    nonzero: with Huang or rotational rows the fit or the elastic constants were nonsense (ZnO,
+    ``enforce_inv = 1``: 59 %, now 1.3 %). The relaxation removes a net force left by an inexact
+    translational invariance (``enforce_inv = 0``).
 
 9.5 (2026-11-03)
     Some ranks read, the others fitted (``include_fc = 2``; the read terms go to the right-hand

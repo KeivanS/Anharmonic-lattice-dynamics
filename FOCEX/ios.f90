@@ -237,8 +237,12 @@
 !! obeys the symmetry, the reordered file is written to dielectric.params.symmetric and the
 !! equivalent atom order of structure.params is printed (nothing is changed in the run).
 !! Called after symmetry_init, only if born_flag /= 0.
+!! Below the stop threshold the tensors are then symmetrized (2026-11-03, user): group averages
+!!   Z(k) <- (1/|G|) sum_g R_g^T Z(img(k,g)) R_g ,   eps <- (1/|G|) sum_g R_g eps R_g^T
+!! (DFPT tensors of a structure slightly off its symmetry, or not converged). The acoustic sum rule imposed by
+!! read_dielectric is kept (the average of a set summing to 0 sums to 0); epsinv is recomputed.
  use ios, only : ulog
- use born, only : epsil, born_flag
+ use born, only : epsil, epsinv, born_flag
  use lattice, only : cart_to_prim, prim_to_cart
  use atoms_force_constants, only : atom0, natom_prim_cell, op_matrix, isgop, isgopcount, sgfract
  use geometry, only : v2a
@@ -251,6 +255,8 @@
  real(r15), parameter :: tol_stop = 5d-2, tol_warn = 1d-4
  integer, parameter :: maxperm = 1000000
  logical more
+ real(r15), allocatable :: zsym(:,:,:)
+ real(r15) esym(3,3), aux3(3,3), zchange, echange, zsum(3,3)
 
  if (born_flag .eq. 0) return
  n = natom_prim_cell
@@ -310,6 +316,43 @@
     write(*,'(a,2es10.2)')' WARNING: Z*, eps deviate from the crystal symmetry by ',devmax,edevmax
     write(ulog,'(a,2es10.2)')' WARNING: Z*, eps deviate from the crystal symmetry by ',devmax,edevmax
  endif
+
+! symmetrize Z* and eps by averaging over the space group (see the header)
+ allocate(zsym(3,3,n))
+ zsym = 0 ; esym = 0
+ do isg = 1, isgopcount
+    r = op_matrix(:,:,isgop(isg))
+    esym = esym + matmul(matmul(r, epsil), transpose(r))
+    do k = 1, n
+       zsym(:,:,k) = zsym(:,:,k) + matmul(matmul(transpose(r), atom0(img(k,isg))%charge), r)
+    enddo
+ enddo
+ zsym = zsym/isgopcount ; esym = esym/isgopcount
+ zchange = 0 ; zsum = 0
+ do k = 1, n
+    zchange = max(zchange, maxval(abs(zsym(:,:,k) - atom0(k)%charge)))
+    atom0(k)%charge = zsym(:,:,k)
+    zsum = zsum + zsym(:,:,k)
+ enddo
+ echange = maxval(abs(esym - epsil))
+ epsil = esym
+ aux3 = epsil
+ call inverse_real(aux3, epsinv, 3)
+ do k = 1, n
+    perm(k) = k
+ enddo
+ write(ulog,'(a,es10.2,a,es10.2,a,es10.2,a)')' CHECK_BORN_SYMMETRY: symmetrized: max change of Z* ',zchange, &
+&     ' e, of eps ',echange,'; deviation now ',deviation(perm,.false.),' (sum rule: max|sum Z*| = '
+ write(ulog,'(es10.2,a)') maxval(abs(zsum)),')'
+ write(ulog,*)' CHECK_BORN_SYMMETRY: symmetrized eps (rows):'
+ write(ulog,'(3f12.6)') transpose(epsil)
+ do k = 1, n
+    write(ulog,*)' CHECK_BORN_SYMMETRY: symmetrized Z* of atom ',k,' (rows):'
+    write(ulog,'(3f12.6)') transpose(atom0(k)%charge)
+ enddo
+ if (zchange .gt. 1d-12 .or. echange .gt. 1d-12) write(*,'(a,2es10.2)') &
+&    ' CHECK_BORN_SYMMETRY: Z*, eps symmetrized; max change ',zchange,echange
+ deallocate(zsym)
  deallocate(img, perm, best, idx)
 
  contains

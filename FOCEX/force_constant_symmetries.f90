@@ -317,6 +317,117 @@
 
 !-------------------------------------------------------------------------------
 
+ subroutine symmetrize_positions(dev0,change)
+!! Makes the positions of structure.params exactly symmetric under the space group found by
+!! symmetry_init (2026-11-04, user). symmetry_init accepts an operation {R|t} when every atom
+!! is mapped within tol_sym (1e-3 A), and the fractional translations t are fixed by atom 1
+!! alone, while the FC symmetry relations hold exactly. Geometric quantities built from the
+!! positions (Huang and rotational rows, brackets) then break the symmetry by the position
+!! errors: in GaN (Ga z 0.5005917 and 0.0005866, 6_3 screw off by 2.7e-5 A) rows that vanish by
+!! symmetry got coefficients 1e-3 of the largest and acted as spurious constraints (C11 -7000
+!! GPa, -210 1/cm with Huang; 119 % fit with rotational rows). Each pass:
+!!   t_g <- t_g - mean_k [R_g x_k + t_g - L_gk - x_img(k,g)]   (best translation for all atoms)
+!!   x_j <- (1/|G|) sum_g (R_g x_k + t_g - L_gk),  img(k,g) = j,
+!! repeated until the positions change by < 1e-13 A (at most 50 passes); the centroid is kept
+!! (a uniform shift is a change of origin). The displacements of FORCEDISP are taken from the
+!! POSCAR positions (read_force_position_data), so the force data are not affected.
+!! dev0 = max deviation of the input positions from the group (A), change = max shift of an atom.
+!! Updates atompos0 and atom0%equilibrium_pos; the caller reruns symmetry_init.
+ use ios, only : ulog
+ use lattice, only : cart_to_prim, prim_to_cart, cart_to_conv
+ use atoms_force_constants, only : atom0, atompos0, natom_prim_cell, op_matrix, isgop, isgopcount, sgfract
+ use params, only : tol_sym
+ use constants, only : r15
+ use geometry, only : assignment(=)
+ implicit none
+ real(r15), intent(out) :: dev0, change
+ integer n, g, k, kp, it, img
+ real(r15) r(3,3), d(3), x0(3,natom_prim_cell), x(3,natom_prim_cell), xnew(3,natom_prim_cell), &
+&          y(3,natom_prim_cell), res(3,natom_prim_cell), tcor(3), dev, step, cen(3)
+ integer im(natom_prim_cell)
+
+ n = natom_prim_cell
+ x0 = atompos0(:,1:n)
+ x = x0
+ dev0 = -1
+ do it = 1, 50
+    xnew = 0 ; dev = 0
+    do g = 1, isgopcount
+       r = op_matrix(:,:,isgop(g))
+       do k = 1, n
+          im(k) = 0
+          do kp = 1, n
+             if (atom0(kp)%at_type .ne. atom0(k)%at_type) cycle
+             d = matmul(cart_to_prim, matmul(r, x(:,k)) + sgfract(:,g) - x(:,kp))
+             if (sqrt(sum(matmul(prim_to_cart, d - nint(d))**2)) .le. tol_sym) then
+                im(k) = kp
+                y(:,k) = matmul(r, x(:,k)) + sgfract(:,g) - matmul(prim_to_cart, dble(nint(d)))  ! image near x(kp)
+                res(:,k) = y(:,k) - x(:,kp)
+                exit
+             endif
+          enddo
+          if (im(k) .eq. 0) then
+             write(ulog,*)'SYMMETRIZE_POSITIONS: no image of atom ',k,' under op ',g
+             error stop 'SYMMETRIZE_POSITIONS: atom not mapped by a space-group operation'
+          endif
+       enddo
+       tcor = sum(res, dim=2)/n
+       do k = 1, n
+          dev = max(dev, sqrt(sum((res(:,k) - tcor)**2)))
+          img = im(k)
+          xnew(:,img) = xnew(:,img) + y(:,k) - tcor
+       enddo
+    enddo
+    if (dev0 .lt. 0) dev0 = dev
+    xnew = xnew/isgopcount
+    step = maxval(abs(xnew - x))
+    x = xnew
+    if (step .lt. 1d-13) exit
+ enddo
+ cen = sum(x - x0, dim=2)/n
+ do k = 1, n
+    x(:,k) = x(:,k) - cen
+ enddo
+ change = 0
+ do k = 1, n
+    change = max(change, sqrt(sum((x(:,k) - x0(:,k))**2)))
+ enddo
+ write(ulog,'(a,es10.2,a,i3,a,es10.2,a,es10.2,a)')' SYMMETRIZE_POSITIONS: max deviation from the space group', &
+&     dev0,' A; after',it,' passes',dev,' A; max shift of an atom',change,' A'
+ write(*   ,'(a,es10.2,a,es10.2,a)')' SYMMETRIZE_POSITIONS: max deviation from the space group',dev0, &
+&     ' A; max shift of an atom',change,' A'
+ write(ulog,*)' SYMMETRIZE_POSITIONS: symmetrized positions (units of the conventional vectors), as for structure.params:'
+ do k = 1, n
+    write(ulog,'(i4,i3,3f16.12)') k, atom0(k)%at_type, matmul(cart_to_conv, x(:,k))
+    atompos0(:,k) = x(:,k)
+    atom0(k)%equilibrium_pos = x(:,k)
+ enddo
+ end subroutine symmetrize_positions
+
+!-------------------------------------------------------------------------------
+
+ subroutine pointgroup_average2(t,change)
+!! Cartesian rank-2 tensor t <- (1/|G|) sum_g R_g t R_g^T over the point operations of the
+!! space group (the stress of stress.params, 2026-11-04); change = max|t_new - t_old|.
+ use atoms_force_constants, only : op_matrix, isgop, isgopcount
+ use constants, only : r15
+ implicit none
+ real(r15), intent(inout) :: t(3,3)
+ real(r15), intent(out) :: change
+ real(r15) s(3,3), r(3,3)
+ integer g
+ s = 0
+ do g = 1, isgopcount
+    r = op_matrix(:,:,isgop(g))
+    s = s + matmul(matmul(r, t), transpose(r))
+ enddo
+ s = s/isgopcount
+ change = maxval(abs(s - t))
+ t = s
+ end subroutine pointgroup_average2
+
+!-------------------------------------------------------------------------------
+
       subroutine set_atompos(mxshl)
 !! uses maxatoms and mxshl to construct atoms around the primitive unitcell
       use lattice

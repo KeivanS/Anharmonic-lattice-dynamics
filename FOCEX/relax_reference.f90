@@ -29,6 +29,7 @@
  integer, allocatable :: g2(:),t2(:),g3(:),t3(:),g1(:),t1(:)
  integer, allocatable :: pidx(:,:),pt(:),pj(:),p3of4(:)
  real(r15), allocatable :: v1(:),v2(:),v3(:),v4(:),x(:,:),kmat(:,:,:),kmat0(:,:,:),pip(:,:),psip(:)
+ real(r15) pnet(3)   ! net force removed by pi_prime (nonzero when the fit's ASR is not exact)
  real(r15), allocatable :: phi_(:,:),q_(:,:,:),u0(:,:),xc(:,:),um(:,:),dum3(:,:),ustart(:,:)
  real(r15) eta(3,3),e6(6),s0(3,3),xi0(3,3),a_(3,3,3,3),gsim(3,3),w(3),dd(3),dl(3),em(3,3),minv(3,3)
  real(r15) gconv,uconv,sgpa,dmax,prmax,rel,v0,fac,pmax0,sig_in(3,3),kdrop,resmax(3),fmax(3),detm
@@ -171,6 +172,7 @@
     uconv=0
     if(nprim.gt.1) uconv=maxval(abs(pip(:,2:nprim)))   ! atom 1 fixed: its force is -sum of the others (ASR)
     if(itr.eq.0) pmax0=uconv
+    if(itr.eq.0) write(ulog,'(a,3es12.4)')' RELAX_REFERENCE: net force per atom removed (eV/A; 0 if the ASR is exact) =',pnet
     write(ulog,'(a,i4,1x,es12.4)')' RELAX_REFERENCE: ',itr,uconv
     if(uconv.lt.1d-12 .or. nprim.eq.1) exit
     call build_aq(x,.true.)
@@ -466,6 +468,13 @@
  do m=1,nfct(4)
     d1=dvec(iat4(1,m),iat4(2,m)); d2=dvec(iat4(1,m),iat4(3,m)); d3=dvec(iat4(1,m),iat4(4,m))
     pip(ix4(1,m),iat4(1,m))=pip(ix4(1,m),iat4(1,m))+v4(m)*d1(ix4(2,m))*d2(ix4(3,m))*d3(ix4(4,m))/6
+ enddo
+! A net force on the cell cannot be relaxed (it would translate the crystal); with atom 1 held fixed it would
+! push equivalent atoms apart (GaN, enforce_inv 0: FC1 summing to -2e-5 eV/A left u0 = 1e-6 A between the two
+! Ga, 2026-11-04). It is removed: sum_tau Pi'_tau = 0, as for FCs with exact translational invariance.
+ pnet=sum(pip,dim=2)/nprim
+ do m=1,nprim
+    pip(:,m)=pip(:,m)-pnet
  enddo
  end subroutine pi_prime
 
