@@ -10,7 +10,8 @@ output in DIR (default .), writes the filled copies into DIR and runs gnuplot on
   - the 'set xtics ( ... )' line of the dispersion plots is replaced by KTICS.BS, the k range by its
     last value;
   - bounds from the data, capped: frequency <= 2000 1/cm, group velocity <= 20 km/s, Gruneisen
-    parameters within [-10:10];
+    parameters within [-10:10]; GRUN_TICS (tic step of the Gruneisen axis of all.plt) =
+    max(1, (GRUNEISEN_MAX - GRUNEISEN_MIN)/10);
   - NAME (titles, file names) is the folder above 05_focex in DIR's path (MATERIAL/05_focex/...), else
     the name of DIR's parent folder; --name overrides it (allplots --name LaP).
 A template is skipped when a data file it needs is missing. Only the Python standard library is used.
@@ -80,6 +81,8 @@ def bounds(d):
             sub[key + '_MIN'], sub[key + '_MAX'] = grun_range(os.path.join(d, f))
         else:                                   # all.plt: used only when the file exists
             sub[key + '_MIN'], sub[key + '_MAX'] = str(-int(GLIM)), str(int(GLIM))
+    # all.plt: x-tic (and grid line) step of the Gruneisen axis, about 10 lines (user, 2026-11-04)
+    sub['GRUN_TICS'] = f"{max(1, (float(sub['GRUNEISEN_MAX']) - float(sub['GRUNEISEN_MIN'])) / 10):g}"
     return sub
 
 

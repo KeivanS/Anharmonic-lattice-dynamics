@@ -11,7 +11,7 @@ from itertools import product
 from scipy.spatial import cKDTree
 here = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, here)
-from model3 import Model
+from model3 import Model, PAR
 from model import read_structure, cluster
 
 d = sys.argv[1]
@@ -54,7 +54,7 @@ cl = {u: int(m) for u, m in zip(used, im)}            # atompos index -> cluster
 models = {}
 def model_for(c0):
     if c0 not in models:
-        models[c0] = Model(info['rL'], info['Ra']).build(X, None, [c0])
+        models[c0] = Model(info['rL'], info['Ra'], dict(info.get('par', PAR))).build(X, None, [c0])
     return models[c0]
 blocks = {}
 def fc_block(at):

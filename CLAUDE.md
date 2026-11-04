@@ -647,6 +647,14 @@ primitive cell only) and its dynamical matrix (`get_dynmat`, `get_dynmat_tc`: NA
   (7) sound_speeds: log note for rho v^2 < 0. (8) OPEN: relax_reference has no Coulomb/Born term: with born_flag 2
   it relaxes with the short-range FC2 only (gradient misses Phi_C S, strain Hessian misses the Born brackets).
   Relaxation tested only on the exact ZnO model without Coulomb; not on monoclinic or with charges.
+- 2026-11-04 (afternoon): relax_reference now has Phi_C (born_flag 2): phi_c (lr_c at q = 0, E = 0, self term
+  by ASR -- first version overwrote it: sum_tau phi_c 4.6, Ga pair split 1.6e-5 A; fixed, 6e-15), q_c (lr_moments),
+  a_c (lr_brackets), r -> F r when deformed; Psi_C, Chi_C empty term lists. GaN strain xx/zz 1.46e-3/-2.35e-3
+  -> 5.9e-6/6.8e-4. sgfract re-derived after relaxing (GaN relaxed had no gamma_modes.dat/chi_modes.dat: 6_3
+  translation off by 1.7e-3 > tol_sym, also in 9.6). Supercell inconsistency messages (read_supercell volume
+  check, report_unmapped in check_input_poscar_consistency_new). Monoclinic test model HfO2r (setup.py, model3
+  'Rb' option), run_HfO2r(_q): results pending at this commit. Note: coulomb_lr keeps the reference positions
+  after a relaxation (ready flag), used by the mech.dat Huang/rotational checks.
 - Night 2026-11-04 (user asleep; asked: commit and push if diagnosed and fixed, report what/how/tests):
   exact monoclinic HfO2 (ranks 1-3, stressed, +/- point charges), structure.params positions perturbed by 5e-5 A:
   9.5 fits 92.5 % / 1429 %, FC2 wrong by 0.91 / 7.6 rel; new code 0.000 %, FC2 1.7e-6 rel (the undetectable

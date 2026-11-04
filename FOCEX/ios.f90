@@ -609,8 +609,8 @@
  use constants, only : r15
  implicit none
  character line*90, poscar*(*)
- integer i,ierr
- real(r15) latt_const,om,a,b,c
+ integer i,ierr,iu
+ real(r15) latt_const,om,a,b,c,vrat,ared(3,3)
  type(vector) pos
  logical exst
 
@@ -722,10 +722,31 @@
 
 
   if (abs(volume_r/natom_super_cell-volume_r0/natom_prim_cell) .gt. 1d-5*volume_r0) then
-     write(ulog,*)' supercell inconsistency; check input coordinates again'
-     write(ulog,5)' natom_prim_cell, volume_r0,density0=',natom_prim_cell,volume_r0,natom_prim_cell/volume_r0
-     write(ulog,5)' natom_sc, volume_r,density=',natom_super_cell,volume_r,natom_super_cell/volume_r
-     stop
+! explain the mismatch (user, 2026-11-04): volume ratio against the atom count ratio, the supercell vectors in
+! units of the primitive ones (not integer if the lattices differ), and the uniform scale relating the lattices
+     vrat=volume_r/volume_r0
+     ared(:,1)=matmul(cart_to_prim,v2a(rs1)); ared(:,2)=matmul(cart_to_prim,v2a(rs2)); ared(:,3)=matmul(cart_to_prim,v2a(rs3))
+     do iu=1,2
+        i=ulog; if(iu.eq.2) i=6
+        write(i,*)'SUPERCELL INCONSISTENCY in ',trim(poscar),': its volume per atom differs from that of structure.params'
+        write(i,5)'   primitive cell: atoms, volume (A^3), volume per atom =',natom_prim_cell,volume_r0, &
+ &                volume_r0/natom_prim_cell
+        write(i,5)'   supercell     : atoms, volume (A^3), volume per atom =',natom_super_cell,volume_r, &
+ &                volume_r/natom_super_cell
+        write(i,'(a,f12.6,a,i6)')'    volume ratio V_sc/V_prim =',vrat,'   (should be the integer natom_sc/natom_prim =', &
+ &                natom_super_cell/natom_prim_cell
+        write(i,*)'   supercell vectors in units of the primitive vectors of structure.params (should be integers):'
+        write(i,'(a,3f12.6)')'      rs1 =',ared(:,1)
+        write(i,'(a,3f12.6)')'      rs2 =',ared(:,2)
+        write(i,'(a,3f12.6)')'      rs3 =',ared(:,3)
+        write(i,'(a,3(1x,3i3,a))')'    nearest integer supercell: rs_i = sum_j n_ij r0j, n =', &
+ &                nint(ared(:,1)),' ;',nint(ared(:,2)),' ;',nint(ared(:,3)),' ;'
+        write(i,'(a,f10.6,a)')'    a uniform scale of the supercell by (V_prim natom_sc/(V_sc natom_prim))^(1/3) =', &
+ &        (dble(natom_super_cell)/natom_prim_cell/vrat)**(1d0/3),' would remove the volume mismatch:'
+        write(i,*)'   was this POSCAR made from a lattice relaxed differently (other functional, k-mesh, cutoff)?'
+        write(i,*)'   Use POSCARi built on the lattice of structure.params, or adapt structure.params lines 1-2.'
+     enddo
+     stop 'SUPERCELL INCONSISTENCY: volume per atom of POSCAR differs from structure.params (see log)'
   endif
 
  write(ulog,*)'RECIPROCAL_LATTICE: '
@@ -916,7 +937,31 @@
  else
     write(ulog,*)' NO SHIFT VECTOR COULD BE DEFINED!, check your coordinates again'
     write(6   ,*)' NO SHIFT VECTOR COULD BE DEFINED!, check your coordinates again'
-    error stop 'NO SHIFT VECTOR COULD BE DEFINED'
+! the shift taking POSCAR atom 1 to a primitive atom of its species; the first POSCAR atom it leaves unmatched
+    write(ulog,*)' POSCAR atom 1 is the reference: if the same offset is reported for every trial, atom 1 itself'
+    write(ulog,*)' may be the one off its site.'
+    do i=1,natom_prim_cell
+       if (atom0(i)%at_type .ne. poscar_type(1)) cycle
+       shift0 = atom0(i)%equilibrium_pos - atom_sc(1)%equilibrium_pos
+       do k=2,natom_super_cell
+          matched=.false.
+          do j=1,natom_prim_cell
+             if (atom0(j)%at_type .ne. poscar_type(k)) cycle
+             vec = shift0 + atom_sc(k)%equilibrium_pos - atom0(j)%equilibrium_pos
+             call check_int(vec, a, ier, g01, g02, g03)
+             if (ier.eq.0) then
+                matched=.true.; exit
+             endif
+          enddo
+          if (.not.matched) then
+             write(ulog,*)' with POSCAR atom 1 on primitive atom ',i,':'
+             write(6   ,*)' with POSCAR atom 1 on primitive atom ',i,':'
+             call report_unmapped(k)
+             exit
+          endif
+       enddo
+    enddo
+    error stop 'NO SHIFT VECTOR COULD BE DEFINED (see log)'
  endif
 
 ! shifting vector has been identified. We can now identify all SC atoms
@@ -960,11 +1005,8 @@
          enddo PRIM2
 
          if (counter.eq. 0) then
-            call write_out(ulog,'SC ATOM which can not be mapped to the prim cell ',k)
-            write(ulog,*)' check your coordinates '
-            write(ulog,3)atom_sc(k)%equilibrium_pos
-            write(*,*)'SC ATOM ',k,' can not be mapped to the primitive cell'
-            error stop 'SC ATOM can not be mapped to the primitive cell'
+            call report_unmapped(k)
+            error stop 'SC ATOM can not be mapped to the primitive cell (see log)'
          elseif ( counter .ge. 2) then
             write(ulog,*)' CHECK: more than one atom matched! check your coordinates'
             write(*   ,*)' CHECK: more than one atom matched! check your coordinates'
@@ -1040,6 +1082,40 @@
  close(173)
 
  contains
+
+ subroutine report_unmapped(k)
+!! POSCAR atom k matches no site n1 r01 + n2 r02 + n3 r03 + tau (shift0 applied): print the supercell found
+!! (n_sc), the nearest site of its species and the distance to it (user, 2026-11-04)
+ integer, intent(in) :: k
+ integer jb, jj, iu, un
+ real(r15) ab(3), aa(3), d, db
+ db=1d30; jb=0; ab=0
+ do jj=1,natom_prim_cell
+    if (atom0(jj)%at_type .ne. poscar_type(k)) cycle
+    aa=matmul(cart_to_prim, v2a(shift0 + atom_sc(k)%equilibrium_pos - atom0(jj)%equilibrium_pos))
+    d=sqrt(sum(matmul(prim_to_cart, aa-nint(aa))**2))
+    if (d.lt.db) then
+       db=d; jb=jj; ab=aa
+    endif
+ enddo
+ do iu=1,2
+    un=ulog; if(iu.eq.2) un=6
+    write(un,'(a,3(1x,3i3,a))')'  supercell identified: rs_i = sum_j n_ij r0j, n =', &
+ &      (n_sc(:,jj),' ;',jj=1,3)
+    write(un,'(a,i6,a,a,a,3f12.6)')'  but POSCAR atom ',k,' (',trim(atom0(max(jb,1))%name),') at (A)', &
+ &      atom_sc(k)%equilibrium_pos
+    if (jb.gt.0) then
+       write(un,'(a,3i4,a,i3,a,f10.6,a)')'  is nearest to the site n1,n2,n3 =',nint(ab),' tau =',jb,', at ',db, &
+ &        ' A from it'
+       write(un,'(a,3f12.6,a,es9.2,a)')'  (reduced coordinates n + ',ab-nint(ab),'; tolerance',tolerance, &
+ &        ' in reduced units, default.params line 1)'
+    else
+       write(un,*)' and structure.params has no atom of its species'
+    endif
+    write(un,*)' check the coordinates of this atom, the species order of the counts line, and that POSCAR'
+    write(un,*)' and structure.params use the same lattice and origin.'
+ enddo
+ end subroutine report_unmapped
 
  subroutine stop_not_commensurate(k,a)
  integer, intent(in) :: k

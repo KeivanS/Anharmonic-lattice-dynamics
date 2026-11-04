@@ -12,10 +12,9 @@ set  multiplot layout 1,3 margins 0.10 ,0.95,0.15,0.90 spacing 0.13,0.02  title 
 a=MAX_FREQUENCY_IN_INVERSE_CM
 set yrange [0:a]
 set ylabel 'Frequency (1/cm)'
-#set label  'Gruneisen' at graph 0.2,0.8 font ',8'
 set ytics nomirror
-set grid xtics ytics x2tics lt 1 lw 0.6 lc rgb "#303030"   # k-path lines dark enough to see
-set xtics in 1
+set grid xtics ytics x2tics lt 1 lw 0.5 lc rgb "#303030"   # k-path lines dark enough to see
+set xtics in GRUN_TICS
 set xlabel "Gruneisen"
 set xrange [GRUNEISEN_MIN:GRUNEISEN_MAX]
 
@@ -41,8 +40,6 @@ plot 'fbz_dos.dat' u 4:1  w l title "Total" ,\
      'fbz_dos.dat' u ($6+$5):1  w filledcurve  above y=0 title  "TA2" ,\
      'fbz_dos.dat' u 5:1  w filledcurve above y=0 title  "TA1"
 
-#pause -1
-
 # band structure  =================================
 
 #set origin 0.56 ,0
@@ -60,7 +57,7 @@ set format y ""
 set xrange [0 : MAX_K_VALUE ]
 set grid xtics
 set xlabel "Wavenumbers"
-set palette maxcolors 30  # adjust the number of colors as needed
+set palette maxcolors 50
 set palette defined       # model RGB
 set cbtics
 #set bmargin 5

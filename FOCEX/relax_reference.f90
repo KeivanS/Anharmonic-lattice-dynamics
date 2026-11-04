@@ -13,6 +13,11 @@
 !! dependent when Pi /= 0). eta symmetric (6 Voigt components), u0(atom 1) = 0.
 !! On exit: atompos, lattice vectors, grids strained by M = 1+eta and shifted by u0; fcs = Pi', K, Psi'
 !! projected on the irreducible FCs of the same groups; FC4 unchanged. stress.params is then read as 0.
+!! Coulomb (born_flag 2, 2026-11-04, user): the fitted FC2/FC3/FC4 are then the short-range part; the Coulomb
+!! FCs Phi_C, Psi_C, Chi_C are added. Phi_C (Z* tensors and eps, E = 0, Ewald; coulomb_lr) enters through its
+!! lattice sums: phi_c (q = 0 matrix, internal relaxation), q_c (moments, strain-displacement coupling) and a_c
+!! (brackets, strain-strain); a deformation F transforms the position factors (q_c F^T, F a_c F^T). Psi_C and
+!! Chi_C are term lists of the FC3/FC4 form (psi_c, chi_c): empty (zero) for now, so K_C = Phi_C.
  use ios
  use params
  use lattice
@@ -21,6 +26,8 @@
  use svd_stuff
  use fourier
  use constants
+ use born, only : born_flag
+ use coulomb_lr, only : lr_c, lr_brackets, lr_moments
  implicit none
  integer, parameter :: vg(2,6)=reshape([1,1, 2,2, 3,3, 2,3, 1,3, 1,2],[2,6])
  integer nprim,r,g,t,ti,i,j,k,l,n,it,np,nu,nvar,al,be,ga,de,a,b,c,d,tau,taup,kk,ll,ier,ip,itr
@@ -31,6 +38,16 @@
  real(r15), allocatable :: v1(:),v2(:),v3(:),v4(:),x(:,:),kmat(:,:,:),kmat0(:,:,:),pip(:,:),psip(:)
  real(r15) pnet(3)   ! net force removed by pi_prime (from the FC2-FC4 terms when their ASR is not exact)
  real(r15) pnet1(3)  ! sum of the fitted FC1, removed before relaxing
+! Coulomb FCs (born_flag 2): harmonic Phi_C through its lattice sums; Psi_C, Chi_C as term lists (empty for now)
+ logical coul,zon
+ real(r15), allocatable :: phi_c(:,:),q_c(:,:,:),mo_c(:,:,:,:),psi_c(:),chi_c(:)
+ complex(r15), allocatable :: c0_c(:,:,:,:)
+ integer, allocatable :: iat3c(:,:),ix3c(:,:),iat4c(:,:),ix4c(:,:)
+ real(r15) a_c(3,3,3,3),sb_c(3,3,3,3),f1(3,3)
+ integer nfct3c,nfct4c
+ integer, allocatable :: imgsg(:,:)
+ integer isg,ntn
+ real(r15) tnew(3),tref(3),sgmax
  real(r15), allocatable :: phi_(:,:),q_(:,:,:),u0(:,:),xc(:,:),um(:,:),dum3(:,:),ustart(:,:)
  real(r15) eta(3,3),e6(6),s0(3,3),xi0(3,3),a_(3,3,3,3),gsim(3,3),w(3),dd(3),dl(3),em(3,3),minv(3,3)
  real(r15) gconv,uconv,sgpa,dmax,prmax,rel,v0,fac,pmax0,sig_in(3,3),kdrop,resmax(3),fmax(3),detm
@@ -141,6 +158,51 @@
  write(ulog,*)'RELAX_REFERENCE: atom pairs of FC2, and of FC3/FC4 beyond them =',nu,np-nu
  allocate(kmat(3,3,np),kmat0(3,3,np),pip(3,nprim),psip(nfct(3)))
 
+! Coulomb FCs (born_flag 2: the fit saw the forces minus those of Phi_C, so its FC2 is the short-range part)
+ zon=.false.
+ do tau=1,nprim
+    if(maxval(abs(atom0(tau)%charge)).gt.0) zon=.true.
+ enddo
+ coul = born_flag.eq.2 .and. zon
+ f1=0; do i=1,3; f1(i,i)=1; enddo
+ allocate(phi_c(3*nprim,3*nprim),q_c(3*nprim,3,3)); phi_c=0; q_c=0; a_c=0
+ nfct3c=0; nfct4c=0
+ allocate(iat3c(3,nfct3c),ix3c(3,nfct3c),psi_c(nfct3c),iat4c(4,nfct4c),ix4c(4,nfct4c),chi_c(nfct4c))
+ if(coul) then
+    allocate(c0_c(3,3,nprim,nprim),mo_c(nprim,3,3,3))
+    call lr_c((/0d0,0d0,0d0/),c0_c)                  ! sum_R Phi_C(t,u;R) without the self term (E = 0)
+    do tau=1,nprim
+    do taup=1,nprim
+       phi_c(3*tau-2:3*tau,3*taup-2:3*taup)=real(c0_c(:,:,tau,taup))
+    enddo
+    enddo
+    do tau=1,nprim            ! self term Phi_C(t,t;0) = -sum of the others (ASR), after all blocks are set
+    do taup=1,nprim
+       phi_c(3*tau-2:3*tau,3*tau-2:3*tau)=phi_c(3*tau-2:3*tau,3*tau-2:3*tau)-real(c0_c(:,:,tau,taup))
+    enddo
+    enddo
+    call lr_moments(mo_c)                              ! sum_j Phi_C(t a1, j a) (x_j - x_t)_m
+    do tau=1,nprim
+       do al=1,3
+          q_c(al+3*(tau-1),:,:)=mo_c(tau,al,:,:)
+       enddo
+    enddo
+    call lr_brackets(sb_c)                             ! sum_{t,j} Phi_C(t a, j b) r_g r_d (eV)
+    do a=1,3; do b=1,3; do c=1,3; do d=1,3
+       a_c(a,c,b,d)=-sb_c(a,b,c,d)/2                   ! same index order as a_ of build_aq
+    enddo; enddo; enddo; enddo
+    write(ulog,'(a,3es12.4)')' RELAX_REFERENCE: Coulomb Phi_C added (born_flag 2): max|phi_c|, max|q_c|, max|a_c| =', &
+ &        maxval(abs(phi_c)),maxval(abs(q_c)),maxval(abs(a_c))
+    write(ulog,'(a,3es12.4)')' RELAX_REFERENCE: checks of phi_c: max|phi-phi^T|, max|sum_tau phi_c|, max|sum_tau q_c| =', &
+ &        maxval(abs(phi_c-transpose(phi_c))),maxval(abs(sum(reshape(phi_c,[3,nprim,3*nprim]),dim=2))), &
+ &        maxval(abs(sum(reshape(q_c,[3,nprim,3,3]),dim=2)))
+    write(ulog,*)'RELAX_REFERENCE: Coulomb Psi_C, Chi_C: not included yet (zero); number of terms =',nfct3c,nfct4c
+    deallocate(c0_c,mo_c)
+ elseif(zon .and. born_flag.ne.0) then
+    call warn3(ulog,'RELAX_REFERENCE: Born charges with this born_flag: the relaxation has no Coulomb term; born_flag =', &
+ &       dble(born_flag))
+ endif
+
 ! FC3 term of the first three atoms and directions of each FC4 term (hash table)
  nh=1
  do while(nh.lt.2*max(1,nfct(3)))
@@ -196,13 +258,13 @@
     if(itr.eq.0) pmax0=uconv
     write(ulog,'(a,i4,1x,es12.4)')' RELAX_REFERENCE: ',itr,uconv
     if(uconv.lt.1d-12 .or. nprim.eq.1) exit
-    call build_aq(x,.true.)
+    call build_aq(x,.true.,f1)
     call solve_u(dum3)
 ! stress change over the step, Simpson in t (K quadratic in t up to FC4)
     um=u0
     do k=1,3
        u0=um+tsimp(k)*dum3
-       call kfill(1d0); call build_aq(x,.false.)
+       call kfill(1d0); call build_aq(x,.false.,f1)
        do a=1,3
        do b=1,3
           do tau=2,nprim
@@ -315,6 +377,21 @@
  do i=1,natoms
     atompos(:,i)=matmul(em,x(:,i))+u0(:,iatomcell0(i))
  enddo
+! space-group images of the reference atoms (old positions, old fractional translations), for the
+! fractional translations of the relaxed structure below
+ allocate(imgsg(nprim,isgopcount))
+ do isg=1,isgopcount
+    do tau=1,nprim
+       imgsg(tau,isg)=0
+       do taup=1,nprim
+          if(atom0(taup)%at_type.ne.atom0(tau)%at_type) cycle
+          dl=matmul(cart_to_prim,matmul(op_matrix(:,:,isgop(isg)),atompos0(:,tau))+sgfract(:,isg)-atompos0(:,taup))
+          if(sqrt(sum(matmul(prim_to_cart,dl-nint(dl))**2)).le.tol_sym) then
+             imgsg(tau,isg)=taup; exit
+          endif
+       enddo
+    enddo
+ enddo
  do tau=1,nprim
     atompos0(:,tau)=matmul(em,atompos0(:,tau))+u0(:,tau)
     atom0(tau)%equilibrium_pos=atompos0(:,tau)
@@ -335,6 +412,29 @@
  if(allocated(subgrid)) subgrid=matmul(em,subgrid)
  if(allocated(ggrid)) ggrid=matmul(transpose(minv),ggrid)
  volume_r0=volume_r0*detm; volume_r=volume_r*detm
+! fractional translations (Cartesian) of the relaxed structure: the strain changes them (GaN, strain zz
+! -2.3e-3: the 6_3 translation c/2 off by 6e-3 A > tol_sym, so gamma_mode_symmetry found no images; user's
+! report, 2026-11-04). t = mean over the atoms of x'(image) - S x', each reduced to the nearest lattice vector.
+ sgmax=0
+ do isg=1,isgopcount
+    tnew=0; ntn=0
+    do tau=1,nprim
+       if(imgsg(tau,isg).eq.0) cycle
+       dl=atompos0(:,imgsg(tau,isg))-matmul(op_matrix(:,:,isgop(isg)),atompos0(:,tau))
+       if(ntn.eq.0) tref=dl
+       dd=matmul(cart_to_prim,dl-tref)
+       tnew=tnew+dl-matmul(prim_to_cart,dble(nint(dd)))
+       ntn=ntn+1
+    enddo
+    if(ntn.eq.0) cycle
+    tnew=tnew/ntn
+    dd=matmul(cart_to_prim,tnew-matmul(em,sgfract(:,isg)))
+    tnew=tnew-matmul(prim_to_cart,dble(nint(dd)))      ! the lattice image nearest the strained old one
+    sgmax=max(sgmax,maxval(abs(tnew-sgfract(:,isg))))
+    sgfract(:,isg)=tnew
+ enddo
+ deallocate(imgsg)
+ write(ulog,'(a,es12.4)')' RELAX_REFERENCE: fractional translations updated to the relaxed cell; max change (A) =',sgmax
  volume_g0=volume_g0/detm; volume_g=volume_g/detm
  box=[length(r01),length(r02),length(r03)]; boxg=[length(g01),length(g02),length(g03)]
  density=density/detm
@@ -348,6 +448,7 @@
  call write_poscar_relaxed
  write(*,'(a,6(1x,es10.3))')' RELAX_REFERENCE: done; strain (Voigt) =',e6
 
+ deallocate(phi_c,q_c,iat3c,ix3c,psi_c,iat4c,ix4c,chi_c)
  deallocate(iat1,ix1,v1,g1,t1,iat2,ix2,v2,g2,t2,iat3,ix3,v3,g3,t3,iat4,ix4,v4,x,pidx,pt,pj,kmat,kmat0, &
  &          pip,psip,hkey,hval,p3of4,u0,phi_,q_,xc,um,dum3,ustart)
 
@@ -442,13 +543,25 @@
     d1=dvec(iat4(1,m),iat4(3,m)); d2=dvec(iat4(1,m),iat4(4,m))
     kmat(ix4(1,m),ix4(2,m),p)=kmat(ix4(1,m),ix4(2,m),p)+ts*ts*v4(m)*d1(ix4(3,m))*d2(ix4(4,m))/2
  enddo
+! Coulomb Psi_C, Chi_C (empty for now; their pairs must then be in pidx, added with addpair)
+ do m=1,nfct3c
+    p=pidx(iat3c(1,m),iat3c(2,m))
+    d1=dvec(iat3c(1,m),iat3c(3,m))
+    kmat(ix3c(1,m),ix3c(2,m),p)=kmat(ix3c(1,m),ix3c(2,m),p)+ts*psi_c(m)*d1(ix3c(3,m))
+ enddo
+ do m=1,nfct4c
+    p=pidx(iat4c(1,m),iat4c(2,m))
+    d1=dvec(iat4c(1,m),iat4c(3,m)); d2=dvec(iat4c(1,m),iat4c(4,m))
+    kmat(ix4c(1,m),ix4c(2,m),p)=kmat(ix4c(1,m),ix4c(2,m),p)+ts*ts*chi_c(m)*d1(ix4c(3,m))*d2(ix4c(4,m))/2
+ enddo
  end subroutine kfill
 
 ! A(ab,cd) = -1/2 sum K(tau a, j c) r_b r_d ; Q(tau al; a,b) = sum_j K(tau al, j a) r_b ; phi(tau al, tau' be)
- subroutine build_aq(xx,wphi)
- real(r15), intent(in) :: xx(:,:)
+! fd: deformation of the positions xx relative to the reference x (for the Coulomb lattice sums)
+ subroutine build_aq(xx,wphi,fd)
+ real(r15), intent(in) :: xx(:,:),fd(3,3)
  logical, intent(in) :: wphi
- integer p,m1,m2,m3,m4,i1,j1
+ integer p,m1,m2,m3,m4,i1,j1,n1,n2
  real(r15) rr(3)
  a_=0; q_=0
  if(wphi) phi_=0
@@ -468,6 +581,17 @@
     enddo
     enddo
  enddo
+ if(coul) then   ! Phi_C: r -> fd r in the moments and brackets
+    do m1=1,3*nprim
+       q_(m1,:,:)=q_(m1,:,:)+matmul(q_c(m1,:,:),transpose(fd))
+    enddo
+    do m1=1,3; do m2=1,3; do m3=1,3; do m4=1,3
+       do n1=1,3; do n2=1,3
+          a_(m1,m2,m3,m4)=a_(m1,m2,m3,m4)+fd(m2,n1)*fd(m4,n2)*a_c(m1,n1,m3,n2)
+       enddo; enddo
+    enddo; enddo; enddo; enddo
+    if(wphi) phi_=phi_+phi_c
+ endif
  end subroutine build_aq
 
 ! Pi' = Pi + Phi d + Psi d d/2 + Chi d d d/6
@@ -489,6 +613,21 @@
  do m=1,nfct(4)
     d1=dvec(iat4(1,m),iat4(2,m)); d2=dvec(iat4(1,m),iat4(3,m)); d3=dvec(iat4(1,m),iat4(4,m))
     pip(ix4(1,m),iat4(1,m))=pip(ix4(1,m),iat4(1,m))+v4(m)*d1(ix4(2,m))*d2(ix4(3,m))*d3(ix4(4,m))/6
+ enddo
+! Coulomb: Phi_C d = phi_c u0 + q_c : eta (lattice sums), + Psi_C d d/2 + Chi_C d d d/6 (empty for now)
+ if(coul) then
+    do m=1,3*nprim
+       pip(mod(m-1,3)+1,(m-1)/3+1)=pip(mod(m-1,3)+1,(m-1)/3+1)+dot_product(phi_c(m,:),reshape(u0,[3*nprim])) &
+ &                                  +sum(q_c(m,:,:)*eta)
+    enddo
+ endif
+ do m=1,nfct3c
+    d1=dvec(iat3c(1,m),iat3c(2,m)); d2=dvec(iat3c(1,m),iat3c(3,m))
+    pip(ix3c(1,m),iat3c(1,m))=pip(ix3c(1,m),iat3c(1,m))+psi_c(m)*d1(ix3c(2,m))*d2(ix3c(3,m))/2
+ enddo
+ do m=1,nfct4c
+    d1=dvec(iat4c(1,m),iat4c(2,m)); d2=dvec(iat4c(1,m),iat4c(3,m)); d3=dvec(iat4c(1,m),iat4c(4,m))
+    pip(ix4c(1,m),iat4c(1,m))=pip(ix4c(1,m),iat4c(1,m))+chi_c(m)*d1(ix4c(2,m))*d2(ix4c(3,m))*d3(ix4c(4,m))/6
  enddo
 ! A net force on the cell cannot be relaxed (it would translate the crystal); with atom 1 held fixed it would
 ! push equivalent atoms apart (GaN, enforce_inv 0: FC1 summing to -2e-5 eV/A left u0 = 1e-6 A between the two
@@ -558,7 +697,7 @@
     uconv=0
     if(nprim.gt.1) uconv=maxval(abs(pip(:,2:nprim)))
     if(uconv.lt.1d-12 .or. nprim.eq.1) exit
-    call build_aq(x,.true.)
+    call build_aq(x,.true.,f1)
     call solve_u(dun)
     u0=u0+dun
  enddo
@@ -580,7 +719,7 @@
     xc(:,m)=matmul(fmat,x(:,m))+u0(:,iatomcell0(m))
  enddo
  vv=v0*det3(fmat)
- call build_aq(xc,.true.)
+ call build_aq(xc,.true.,fmat)
  araw=a_/vv
  call elastic_born_huang(araw,sg,cc)
  do m=1,3*nprim

@@ -38,10 +38,10 @@ file0 = 'atompos.xyz'
 file2 = 'rgrid_raw.xyz'
 file3 = 'supercell_1.xyz'
 file4 = 'WSR_boundary.xyz'
-splot file0 u 2:3:4 with p pt 9 ps 0.35 title 'Atompos'   ,\
-      file2 u 2:3:4 with p pt 7 ps 0.6 title 'R-vectors' ,\
-      file3 u 2:3:4 with p pt 4 ps 0.25 title 'SC atoms ' ,\
-      file4 u 2:3:4 with p pt 2 ps 0.1 title 'WScell of SC'
+splot file0 u 2:3:4 with p pt 7 ps 0.2 lc rgb "yellow" title 'Atompos'   ,\
+      file2 u 2:3:4 with p pt 7 ps 0.4 lc rgb "blue"   title 'R-vectors' ,\
+      file3 u 2:3:4 with p pt 4 ps 0.3 lc rgb "green"  title 'SC atoms ' ,\
+      file4 u 2:3:4 with p pt 2 ps 0.1 lc rgb "gray"   title 'WScell of SC'
 pause -1
 # one plot per primitive atom i: its FC2 bonds (springs<i>.dat: r_i - r_j) drawn from atom i to each
 # neighbour j, and those neighbours. Atom i is put at the centre of the Wigner-Seitz cell of the supercell
@@ -53,8 +53,9 @@ do for [i=1:nat] {
     xi = 0.0; yi = 0.0; zi = 0.0
     set title sprintf("FC2 neighbours of atom %d", i)
     splot fs u (xi):(yi):(zi):(-$4):(-$5):(-$6) with vectors nohead lt 1 title sprintf("%d-j", i) ,\
-          fs u (xi-$4):(yi-$5):(zi-$6) with p pt 7 ps 0.25 lc rgb "black" title 'neighbours' ,\
-          '+' u (xi):(yi):(zi) every ::0::0 with p pt 7 ps 0.75 lc rgb "red" title sprintf('atom %d', i) ,\
+          '+' u (xi):(yi):(zi) every ::0::0 with p pt 7 ps 0.5 lc rgb "red" title sprintf('atom %d', i) ,\
+          file2 u 2:3:4 with p pt 7 ps 0.3 lc rgb "blue" title 'R-vectors' ,\
           file4 u 2:3:4 with p pt 2 ps 0.1 lc rgb "gray" title 'WScell of SC'
-    pause -1
+#         fs u (xi-$4):(yi-$5):(zi-$6) with p pt 7 ps 0.3 lc rgb "black" title 'neighbours' ,\
+#   pause -1
 }

@@ -66,16 +66,18 @@ class Model:
                 if np.linalg.norm(Y[m] - X[i]) < Ra:
                     nb[i].append((j, nj, Y[m]))
         seen, tl, ql = set(), [], []
+        Rb = self.p.get('Rb', Ra)   # optional shorter range of the 3- and 4-body terms (default Ra)
         for i in centers:
             me = (i, (0, 0, 0), X[i])
-            for a, b in combinations(nb[i], 2):
-                if np.linalg.norm(a[2] - b[2]) >= Ra:
+            nbb = [a for a in nb[i] if np.linalg.norm(a[2] - X[i]) < Rb]
+            for a, b in combinations(nbb, 2):
+                if np.linalg.norm(a[2] - b[2]) >= Rb:
                     continue
                 at = [me, a, b]; key = canon(at)
                 if key not in seen:
                     seen.add(key); tl.append([pid(at[p][0], at[p][1], at[q][0], at[q][1]) for p, q in Q3])
-            for a, b, c in combinations(nb[i], 3):
-                if max(np.linalg.norm(a[2] - b[2]), np.linalg.norm(a[2] - c[2]), np.linalg.norm(b[2] - c[2])) >= Ra:
+            for a, b, c in combinations(nbb, 3):
+                if max(np.linalg.norm(a[2] - b[2]), np.linalg.norm(a[2] - c[2]), np.linalg.norm(b[2] - c[2])) >= Rb:
                     continue
                 at = [me, a, b, c]; key = canon(at)
                 if key not in seen:

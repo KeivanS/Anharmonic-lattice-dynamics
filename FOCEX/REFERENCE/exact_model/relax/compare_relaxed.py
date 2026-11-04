@@ -5,7 +5,7 @@ import sys, os, json, re, numpy as np
 from scipy.spatial import cKDTree
 EM = os.path.expanduser('~/PROJECTS/Anharmonic-lattice-dynamics/FOCEX/REFERENCE/exact_model')
 sys.path.insert(0, EM)
-from model3 import Model
+from model3 import Model, PAR
 from model import read_structure, cluster
 d, mj, mat = sys.argv[1], sys.argv[2], sys.argv[3]
 info = json.load(open(f'{EM}/run_{mat}/setup.json')); mn = json.load(open(mj))
@@ -41,7 +41,7 @@ def fc_block(at):
     key = tuple(at)
     if key in blocks: return blocks[key]
     if at[0] not in models:
-        models[at[0]] = Model(info['rL'], info['Ra']).build(X, None, [at[0]])
+        models[at[0]] = Model(info['rL'], info['Ra'], dict(info.get('par', PAR))).build(X, None, [at[0]])
     m = models[at[0]]; r = len(at)
     dd, s = m._s(Xr)
     sg = np.array([(m.pj == a).astype(float) - (m.pi == a).astype(float) for a in at])

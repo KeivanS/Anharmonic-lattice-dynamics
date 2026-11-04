@@ -11,12 +11,17 @@ CFG = {   # supercell (conventional units), rL (harmonic pair range), Ra (anharm
     'CaF2': dict(sc=[[2, 0, 0], [0, 2, 0], [0, 0, 2]], rL=5.0, Ra=4.2),
     'ZnO':  dict(sc=[[3, 0, 0], [0, 3, 0], [0, 0, 2]], rL=4.72, Ra=3.5),
     'HfO2': dict(sc=[[2, 0, 0], [0, 2, 0], [0, 0, 2]], rL=3.87, Ra=3.22),
+    # HfO2 with a short anharmonic range (Hf-O bonds and O-O < 2.6 A): few FC3/FC4, for the relaxation
+    # test of a monoclinic cell (2026-11-04, user: as few FC4 as possible)
+    # pair anharmonicity to Ra as HfO2 (stable reference, minimum ~2-3 % away), the 3-body term only within
+    # Rb = 2.6 A, no 4-body term: FOCEX needs FC4 only for 2-atom clusters (fcflag 4 = 0) and compact ones
+    'HfO2r': dict(sc=[[2, 0, 0], [0, 2, 0], [0, 0, 2]], rL=3.87, Ra=3.22, src='HfO2', par=dict(Rb=2.6, C=0.0)),
 }
 MASS = {'Ca': 40.078, 'F': 18.9984, 'Zn': 65.409, 'O': 15.9994, 'Hf': 178.49}
 mat, run = sys.argv[1], sys.argv[2]
 nsnap = int(sys.argv[3]) if len(sys.argv) > 3 else 100
 target = float(sys.argv[4]) if len(sys.argv) > 4 else 0.04      # rms displacement (A)
-cfg = CFG[mat]; src = os.path.abspath(mat)
+cfg = CFG[mat]; src = os.path.abspath(cfg.get('src', mat))
 os.makedirs(run, exist_ok=True); os.chdir(run)
 conv, prim, atoms = read_structure(f'{src}/structure.params')
 SL = open(f'{src}/structure.params').read().split('\n')
@@ -29,11 +34,13 @@ nt = np.linalg.norm(T, axis=1); inr = nt[nt > 1e-6].min() / 2
 assert cfg['rL'] < inr, (cfg['rL'], inr)
 sh = shells(prim, atoms, inr + 0.5)
 alld = np.concatenate(sh)
-for r in (cfg['rL'], cfg['Ra']):
+for r in (cfg['rL'], cfg['Ra']) + ((cfg['par']['Rb'],) if 'Rb' in cfg.get('par', {}) else ()):
     gap = np.abs(alld - r).min()
     assert gap > 0.02, f'range {r} only {gap} from a neighbour distance'
 nsh2 = [int((s < cfg['rL']).sum()) for s in sh]
 nsh3 = [int((s < cfg['Ra']).sum()) for s in sh]
+Rb = cfg.get('par', {}).get('Rb')
+nsh4 = [int((s < Rb).sum()) for s in sh] if Rb else nsh3
 
 # SC_SNAPS
 cell = [SL[0].split('#')[0].strip(), SL[1].split('#')[0].strip(), '1.0 0   # scale, convcoord=0',
@@ -75,11 +82,13 @@ for n, x in enumerate(X0):
     dev.append(best[0]); Xi[n] = best[2]
 print(f'poscar_000 vs exact sites: {max(dev):.2e} A')
 
-mod = Model(cfg['rL'], cfg['Ra']).build(Xi, latx)
+from model3 import PAR
+par = dict(PAR); par.update(cfg.get('par', {}))      # model parameters (stored in setup.json)
+mod = Model(cfg['rL'], cfg['Ra'], par).build(Xi, latx)
 vol = abs(np.linalg.det(latx))
 sig = mod.stress(Xi, vol)
 F0 = mod.forces(Xi)
-info = dict(mat=mat, rL=cfg['rL'], Ra=cfg['Ra'], inradius=inr, T=Tk, rms=float(rms), natom=len(Xi),
+info = dict(mat=mat, rL=cfg['rL'], Ra=cfg['Ra'], par=par, inradius=inr, T=Tk, rms=float(rms), natom=len(Xi),
             npairs=len(mod.pi), ntrip=len(mod.trip), nquad=len(mod.quad), nsh2=nsh2, nsh3=nsh3,
             stress_eV_A3=sig.tolist(), stress_GPa=(sig * 160.21766).tolist(), maxF0=float(np.abs(F0).max()))
 print(json.dumps(info))
@@ -117,9 +126,10 @@ open('dielectric.params', 'w').write('\n'.join(diel) + '\n')
 L = list(SL)
 L[3] = '1 1 1 1 0 0 0 0   # ranks 1-4 (exact-model test)'
 L[4] = '1 1 0 1            # transl, rot, Huang off (model is stressed), enforce_inv'
-L[11] = '1                  # fc2range=1: FC2 shells from the next line'
+L[11] = ('1 1 0              # fc2range=1 (FC2 shells from the next line), fc3flag 1, fc4flag 0 (2-atom FC4 to the FC2 range)'
+         if Rb else '1                  # fc2range=1: FC2 shells from the next line')
 L[12] = ' '.join(map(str, nsh2)) + f'   # rank-2 shells: r < rL={cfg["rL"]}'
 L[13] = ' '.join(map(str, nsh3)) + f'   # rank-3 shells: r < Ra={cfg["Ra"]}'
-L[14] = ' '.join(map(str, nsh3)) + f'   # rank-4 shells: r < Ra={cfg["Ra"]}'
+L[14] = ' '.join(map(str, nsh4)) + (f'   # rank-4 shells: r < Rb={Rb}' if Rb else f'   # rank-4 shells: r < Ra={cfg["Ra"]}')
 open('structure.params', 'w').write('\n'.join(L))
 json.dump(info, open('setup.json', 'w'), indent=1)

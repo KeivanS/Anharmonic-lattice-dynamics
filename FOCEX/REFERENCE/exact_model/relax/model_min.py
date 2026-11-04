@@ -8,7 +8,7 @@ from model import read_structure
 mat = sys.argv[1]; run = f'{EM}/run_{mat}'
 info = json.load(open(f'{run}/setup.json'))
 Xi, latx = np.load(f'{run}/Xi.npy'), np.load(f'{run}/latx.npy')
-m = Model(info['rL'], info['Ra'], dict(PAR)).build(Xi, latx)
+m = Model(info['rL'], info['Ra'], dict(info.get('par', PAR))).build(Xi, latx)
 ps_ref = m.ps.copy(); N = len(Xi); n = 6 + 3 * N
 VOIGT = [(0, 0), (1, 1), (2, 2), (1, 2), (0, 2), (0, 1)]
 def eta_of(e):
@@ -41,7 +41,9 @@ for it in range(40):
         break
     q = q - np.linalg.pinv(hess(q), rcond=1e-10) @ g
 # primitive-cell index of each supercell atom, from structure.params of the run
-conv, prim, atoms = read_structure(f'{run}/e1all/structure.params')
+sp = f'{run}/e1all/structure.params'
+if not os.path.exists(sp): sp = f'{run}/structure.params'
+conv, prim, atoms = read_structure(sp)
 tau = []
 for x in Xi:
     t = [k for k, (_, p) in enumerate(atoms) if np.allclose(np.round(np.linalg.solve(prim.T, x - p)), np.linalg.solve(prim.T, x - p), atol=1e-6)]

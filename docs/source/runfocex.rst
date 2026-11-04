@@ -811,7 +811,9 @@ subtracted from FC1, so that :math:`\sum_\tau \Pi_\tau = 0` (already exact with 
 constants are re-expanded about the relaxed structure, :math:`\Phi' = \Phi + \Psi S + \chi S S/2`,
 :math:`\Psi' = \Psi + \chi S`, :math:`\Pi' \approx 0`, and everything after the fit (phonons,
 elastic constants, Grüneisen parameters, QHA, ``fcN.dat``) uses the relaxed structure and these FCs;
-``stress.params`` is then taken as zero. The fit of the unrelaxed reference is kept in
+``stress.params`` is then taken as zero. With ``born_flag = 2`` the Coulomb FCs :math:`\Phi_C` (at zero
+macroscopic field, as in a periodic DFT cell) are added to the fitted short-range ones; their cubic and
+quartic parts are not included yet. The fit of the unrelaxed reference is kept in
 ``fcN_unrelaxed.dat``, ``fcN_irr_unrelaxed.dat`` and ``lat_fc_unrelaxed.dat``; the relaxed cell and
 positions are written to ``POSCAR_relaxed``; the log lines start with ``RELAX_REFERENCE``. It needs FC3
 (and FC4 for :math:`\Psi'`) to change the FCs. The Born charges and dielectric tensor are not changed.
@@ -1325,7 +1327,11 @@ After 9.6 (2026-11-04, not tagged)
     are in the log only, not in ``mech.dat``. The unused and wrong :math:`B_0'` of ``cubic_elastic`` is no
     longer computed or printed. The log explains the Huang and :math:`Q` checks. With Born charges the
     QHA takes B0 and the sound speeds from the long-wave E = 0 elastic tensor. Coulomb FCs are written
-    :math:`\Phi_C` (was :math:`\Phi_B`).
+    :math:`\Phi_C` (was :math:`\Phi_B`). The relaxation includes the Coulomb FCs (``born_flag = 2``:
+    :math:`\Phi_C` through its lattice sums at E = 0; :math:`\Psi_C`, :math:`\chi_C` zero for now) and
+    updates the fractional translations of the space group to the relaxed cell (before, a strained cell
+    lost the Gamma-mode symmetry: no ``gamma_modes.dat``). A POSCAR inconsistent with ``structure.params``
+    is explained in the log (volume ratio, supercell matrix, the atom off its site and by how much).
 
 9.6 (2026-11-04)
     Positions, Born charges, dielectric tensor and stress averaged over the space group. Positions
