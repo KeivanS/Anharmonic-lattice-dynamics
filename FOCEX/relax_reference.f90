@@ -18,6 +18,18 @@
 !! lattice sums: phi_c (q = 0 matrix, internal relaxation), q_c (moments, strain-displacement coupling) and a_c
 !! (brackets, strain-strain); a deformation F transforms the position factors (q_c F^T, F a_c F^T). Psi_C and
 !! Chi_C are term lists of the FC3/FC4 form (psi_c, chi_c): empty (zero) for now, so K_C = Phi_C.
+!! Exact Coulomb (born_flag 2 with Z* = z 1, 2026-11-04, user): the route above keeps the Coulomb energy to second order
+!! about the reference, which is not rotationally invariant and misses its higher orders (exact HfO2r model with point
+!! charges: strain off by 1.4e-4, u0 by 6e-3 A). Instead E = E_SR(X) + E_C(X) - E_C(0) with E_SR the Taylor series of
+!! the fitted FCs with FC1 - F_C(0) and stress.params - sigma_C(0) (short-range alone, rotationally invariant) and
+!! E_C the Ewald energy of the pair model that the
+!! born_flag-2 subtraction uses (ewaldforce: c_ij = tr(Z_i Z_j^T)/3, phi_eps) at the deformed cell and positions
+!! (ewald_cell). X = (6 Voigt strains, u0 of atoms 2..), G(X) = dE/dX = 0 solved by modified Broyden (bro90 of SCOP8,
+!! module broyden_mix) on f = -H0^-1 G, H0 the Hessian at the reference with Phi_C. dE_SR/du0 = Pi' (pi_prime, short-range
+!! terms). dE_SR/deta: the stress formula (elastic_born_huang) holds only at force-free states, so the short-range stress
+!! is integrated (dsdt, Coulomb off) along the path where the short-range forces vanish, u0*(eta), and then carried from
+!! u0* to u0 at fixed eta by int Q^T du (Q with reference vectors; exact by Simpson, Q is quadratic in t). At that
+!! force-free state dE/deta = V sigma F^-T. For anisotropic Z* the second-order route is kept (warning).
  use ios
  use params
  use lattice
@@ -27,7 +39,10 @@
  use fourier
  use constants
  use born, only : born_flag
- use coulomb_lr, only : lr_c, lr_brackets, lr_moments
+ use coulomb_lr, only : lr_c, lr_brackets, lr_moments, lr_moments_pairs
+ use born, only : epsil
+ use ewald_cell, only : ewald_cell_efw
+ use broyden_mix
  implicit none
  integer, parameter :: vg(2,6)=reshape([1,1, 2,2, 3,3, 2,3, 1,3, 1,2],[2,6])
  integer nprim,r,g,t,ti,i,j,k,l,n,it,np,nu,nvar,al,be,ga,de,a,b,c,d,tau,taup,kk,ll,ier,ip,itr
@@ -40,11 +55,16 @@
  real(r15) pnet1(3)  ! sum of the fitted FC1, removed before relaxing
 ! Coulomb FCs (born_flag 2): harmonic Phi_C through its lattice sums; Psi_C, Chi_C as term lists (empty for now)
  logical coul,zon
- real(r15), allocatable :: phi_c(:,:),q_c(:,:,:),mo_c(:,:,:,:),psi_c(:),chi_c(:)
+ real(r15), allocatable :: phi_c(:,:),q_c(:,:,:),mo_c(:,:,:,:),psi_c(:),chi_c(:),mop_c(:,:,:,:,:)
  complex(r15), allocatable :: c0_c(:,:,:,:)
  integer, allocatable :: iat3c(:,:),ix3c(:,:),iat4c(:,:),ix4c(:,:)
  real(r15) a_c(3,3,3,3),sb_c(3,3,3,3),f1(3,3)
  integer nfct3c,nfct4c
+! exact Coulomb route (coulx): short-range force-free path state, Coulomb couplings, gradients at the reference
+ logical coulx
+ integer nx
+ real(r15) fpth(3,3),spth(3,3),e2c,alph,zan,zmx,ztr,zz(3,3)
+ real(r15), allocatable :: upth(:,:),cmat(:,:),gc0(:),gu0h(:,:)
  integer, allocatable :: imgsg(:,:)
  integer isg,ntn
  real(r15) tnew(3),tref(3),sgmax
@@ -165,7 +185,7 @@
  enddo
  coul = born_flag.eq.2 .and. zon
  f1=0; do i=1,3; f1(i,i)=1; enddo
- allocate(phi_c(3*nprim,3*nprim),q_c(3*nprim,3,3)); phi_c=0; q_c=0; a_c=0
+ allocate(phi_c(3*nprim,3*nprim),q_c(3*nprim,3,3),mop_c(nprim,nprim,3,3,3)); phi_c=0; q_c=0; a_c=0; mop_c=0
  nfct3c=0; nfct4c=0
  allocate(iat3c(3,nfct3c),ix3c(3,nfct3c),psi_c(nfct3c),iat4c(4,nfct4c),ix4c(4,nfct4c),chi_c(nfct4c))
  if(coul) then
@@ -187,6 +207,7 @@
           q_c(al+3*(tau-1),:,:)=mo_c(tau,al,:,:)
        enddo
     enddo
+    call lr_moments_pairs(mop_c)                       ! the same per sublattice pair (t,u)
     call lr_brackets(sb_c)                             ! sum_{t,j} Phi_C(t a, j b) r_g r_d (eV)
     do a=1,3; do b=1,3; do c=1,3; do d=1,3
        a_c(a,c,b,d)=-sb_c(a,b,c,d)/2                   ! same index order as a_ of build_aq
@@ -198,7 +219,27 @@
  &        maxval(abs(sum(reshape(q_c,[3,nprim,3,3]),dim=2)))
     write(ulog,*)'RELAX_REFERENCE: Coulomb Psi_C, Chi_C: not included yet (zero); number of terms =',nfct3c,nfct4c
     deallocate(c0_c,mo_c)
- elseif(zon .and. born_flag.ne.0) then
+ endif
+ coulx=.false.
+ if(coul) then
+    zan=0; zmx=0
+    do tau=1,nprim
+       zz=atom0(tau)%charge; zmx=max(zmx,maxval(abs(zz)))
+       ztr=(zz(1,1)+zz(2,2)+zz(3,3))/3
+       do i=1,3
+          zz(i,i)=zz(i,i)-ztr
+       enddo
+       zan=max(zan,maxval(abs(zz)))
+    enddo
+    coulx = zan.le.1d-6*max(1d0,zmx)
+    if(coulx) then
+       write(ulog,'(a,es10.2,a)')' RELAX_REFERENCE: Z* = z 1 (max|Z - tr Z/3| = ',zan, &
+ &         '): Coulomb part exact (Ewald at the deformed cell and positions), solved by Broyden'
+    else
+       call warn3(ulog,'RELAX_REFERENCE: anisotropic Z*: Coulomb only to second order (Phi_C); max|Z - tr Z/3| =',zan)
+    endif
+ endif
+ if(zon .and. born_flag.ne.0 .and. .not.coul) then
     call warn3(ulog,'RELAX_REFERENCE: Born charges with this born_flag: the relaxation has no Coulomb term; born_flag =', &
  &       dble(born_flag))
  endif
@@ -251,6 +292,15 @@
  u0=0; eta=0
  gm=s0
  call hess6_reference
+ if(coulx) then
+! Short-range part = the fitted FCs with FC1 and stress of the short-range energy alone: FC1 - Coulomb force and
+! stress.params - Coulomb stress at the reference. Only then is it rotationally invariant, which the stress formula
+! on its force-free path needs (with the total FC1 and stress the short-range dE/deta came out 0.17 eV per cell off,
+! HfO2r_q, 2026-11-05). The Coulomb part is then E_C(X) - E_C(0).
+    call coulx_setup
+    coul=.false.   ! stage 1 then relaxes u0 with the short-range forces only: start of the path u0*(eta)
+    write(ulog,'(a)')' RELAX_REFERENCE: stage 1 with the short-range terms only (start of the short-range force-free path)'
+ endif
  write(ulog,'(a)')' RELAX_REFERENCE: stage 1, internal relaxation in the reference cell: iter, max|FC1| (eV/A)'
  do itr=0,50
     call kfill(1d0); call pi_prime
@@ -283,6 +333,11 @@
  sig=(gm+transpose(gm))/2/v0                 ! eV/A^3
  call write_out(ulog,' RELAX_REFERENCE: stress after the internal relaxation (GPa) ',sig*sgpa)
 
+ if(coulx) then
+    allocate(upth(3,nprim))
+    fpth=f1; upth=u0; spth=sig
+    call relax_broyden
+ else
  write(ulog,'(a)')' RELAX_REFERENCE: stage 2, strain: iter, max|stress| (GPa), max|strain step|, max|FC1| (eV/A)'
  do itr=0,60
     call elastic_at(ft,u0,sig,crel,vol)
@@ -329,8 +384,10 @@
     sig=matmul(transpose(rot),matmul(sig,rot))
     sig=(sig+transpose(sig))/2
  enddo
+ endif
  eta=ft; do i=1,3; eta(i,i)=eta(i,i)-1; enddo
  call kfill(1d0); call pi_prime
+ if(coulx) call add_coul_pip   ! FC1 at the relaxed state = total gradient (short-range + exact Coulomb)
  uconv=0
  if(nprim.gt.1) uconv=maxval(abs(pip(:,2:nprim)))
  e6=[eta(1,1),eta(2,2),eta(3,3),eta(2,3),eta(1,3),eta(1,2)]
@@ -449,11 +506,250 @@
  call write_poscar_relaxed
  write(*,'(a,6(1x,es10.3))')' RELAX_REFERENCE: done; strain (Voigt) =',e6
 
- deallocate(phi_c,q_c,iat3c,ix3c,psi_c,iat4c,ix4c,chi_c)
+ deallocate(phi_c,q_c,mop_c,iat3c,ix3c,psi_c,iat4c,ix4c,chi_c)
+ if(allocated(upth)) deallocate(upth)
+ if(allocated(cmat)) deallocate(cmat,gc0,gu0h)
  deallocate(iat1,ix1,v1,g1,t1,iat2,ix2,v2,g2,t2,iat3,ix3,v3,g3,t3,iat4,ix4,v4,x,pidx,pt,pj,kmat,kmat0, &
  &          pip,psip,hkey,hval,p3of4,u0,phi_,q_,xc,um,dum3,ustart)
 
  contains
+
+! Exact-Coulomb route (coulx): relaxation by Broyden on G(X) = dE/dX, X = (6 Voigt strains, u0 of atoms 2..)
+ subroutine relax_broyden
+ integer it,m,k,l,tau,al
+ real(r15), allocatable :: xv(:),gv(:),fv(:),hlu(:,:)
+ integer, allocatable :: ihl(:)
+ real(r15) ek(3,3),el(3,3),ar(3,3,3,3),cc(3,3,3,3),dd8,fmaxv,smaxv,fnew(3,3),volx,uz(3,nprim),gtmp(3,nprim)
+ logical conv
+ allocate(xv(nx),gv(nx),fv(nx),hlu(nx,nx),ihl(nx))
+! preconditioner: Hessian at the reference (atoms fixed strain block, Q coupling, phi), Coulomb to second order
+ coul=.true.; eta=0; u0=0
+ call kfill(1d0); call build_aq(x,.true.,f1); ar=a_/v0; call elastic_born_huang(ar,s0/v0,cc)
+ hlu=0
+ do k=1,6
+    call eta_of(unit6(k),ek)
+    do l=1,6
+       call eta_of(unit6(l),el)
+       hlu(k,l)=v0*(contract(cc,ek,el)+sum(s0/v0*(matmul(ek,el)+matmul(el,ek)))/2)
+    enddo
+    do tau=2,nprim
+    do al=1,3
+       m=6+3*(tau-2)+al
+       hlu(k,m)=sum(q_(al+3*(tau-1),:,:)*ek); hlu(m,k)=hlu(k,m)
+    enddo
+    enddo
+ enddo
+ if(nx.gt.6) hlu(7:nx,7:nx)=phi_(4:3*nprim,4:3*nprim)
+ coul=.false.
+ call ludcmp(hlu,nx,nx,ihl,dd8)
+ call broyden_init(nx,200,1d0)
+ write(ulog,'(a)')' RELAX_REFERENCE: Broyden, exact Coulomb: iter, max|dE/de_k|/V (GPa), max|dE/du0| (eV/A)'
+ xv=0; conv=.false.
+ do it=1,199
+    call gradfun(xv,gv,fnew,volx)
+    fmaxv=0
+    if(nx.gt.6) fmaxv=maxval(abs(gv(7:nx)))
+    smaxv=maxval(abs(gv(1:6)))/volx*sgpa
+    write(ulog,'(a,i4,2(1x,es12.4))')' RELAX_REFERENCE: ',it,smaxv,fmaxv
+    if(fmaxv.lt.1d-10 .and. smaxv.lt.1d-8) then
+       conv=.true.; exit
+    endif
+    fv=-gv
+    call lubksb(hlu,nx,nx,ihl,fv)
+    call bro90(nx,xv,fv,it)
+ enddo
+ if(.not.conv) then
+    call warn3(ulog,'RELAX_REFERENCE: Broyden not converged in 199 steps; max|dE/de|/V (GPa) =',smaxv)
+    call warn3(   6,'RELAX_REFERENCE: Broyden not converged in 199 steps; max|dE/de|/V (GPa) =',smaxv)
+ endif
+ call broyden_free
+ uz=0
+ if(nx.gt.6) uz(:,2:nprim)=reshape(xv(7:nx),[3,nprim-1])
+ call coul_grad(fnew,uz,fv,gtmp)      ! fv reused: Coulomb gradient at the relaxed state
+ write(ulog,'(a,6es16.8)')' RELAX_REFERENCE: Coulomb dE/de_k at the reference (eV)          ',gc0(1:6)
+ write(ulog,'(a,6es16.8)')' RELAX_REFERENCE: Coulomb dE/de_k at the relaxed state (eV)      ',fv(1:6)
+ write(ulog,'(a,6es16.8)')' RELAX_REFERENCE: short-range dE/de_k at the relaxed state (eV)  ',gv(1:6)-fv(1:6)
+ ft=fnew
+ u0=0
+ if(nx.gt.6) u0(:,2:nprim)=reshape(xv(7:nx),[3,nprim-1])
+ eta=ft; do m=1,3; eta(m,m)=eta(m,m)-1; enddo
+ sig=0                                   ! stress of the relaxed state from dE/de_k (= V sigma at a force-free state)
+ do m=1,6
+    if(m.le.3) then
+       sig(vg(1,m),vg(2,m))=gv(m)/volx
+    else
+       sig(vg(1,m),vg(2,m))=gv(m)/volx/2; sig(vg(2,m),vg(1,m))=sig(vg(1,m),vg(2,m))
+    endif
+ enddo
+ deallocate(xv,gv,fv,hlu,ihl)
+ end subroutine relax_broyden
+
+! Coulomb couplings and gradient at the reference; FC1 and s0 made short-range (v1 - g_C,u(0), s0 - g_C,eta(0))
+ subroutine coulx_setup
+ integer k,l,n1
+ real(r15) uz(3,nprim),gq0(3,3),rest(3,nprim)
+ nx=6+3*(nprim-1)
+ allocate(cmat(nprim,nprim),gc0(nx),gu0h(3,nprim))
+ e2c=ee*1d10/(4*pi*eps0)
+ do k=1,nprim
+ do l=1,nprim
+    cmat(k,l)=sum(atom0(k)%charge*atom0(l)%charge)/3      ! tr(Z_k Z_l^T)/3, as ewaldforce
+ enddo
+ enddo
+ alph=sqrt(pi)*(dble(nprim)/v0**2)**(1d0/6)
+ uz=0
+ call coul_grad(f1,uz,gc0,gu0h,gq0)
+ call ewald_check
+ rest=gu0h
+ do n1=1,nfct(1)
+    v1(n1)=v1(n1)-gu0h(ix1(n1),iat1(n1))
+    rest(ix1(n1),iat1(n1))=0
+ enddo
+ write(ulog,'(a,es12.4)')' RELAX_REFERENCE: Coulomb force at the reference (eV/A), max =',maxval(abs(gu0h))
+ if(maxval(abs(rest)).gt.1d-8) call warn3(ulog, &
+ &  'RELAX_REFERENCE: Coulomb force on an FC1 component not in the FC1 groups (not subtracted), max =',maxval(abs(rest)))
+ call write_out(ulog,' RELAX_REFERENCE: Coulomb stress at the reference (GPa) ',(gq0+transpose(gq0))/2/v0*sgpa)
+ s0=s0-(gq0+transpose(gq0))/2
+ gm=s0
+ end subroutine coulx_setup
+
+! total gradient at X: short-range (Taylor of the fitted FCs) + exact Coulomb change
+ subroutine gradfun(xv,gv,fnew,volx)
+ real(r15), intent(in) :: xv(:)
+ real(r15), intent(out) :: gv(:),fnew(3,3),volx
+ real(r15) em1(3,3),fi(3,3),gq(3,3),uu(3,nprim),du(3,nprim),ek(3,3),gcv(nx),gu(3,nprim)
+ integer k,tau,al,ie
+ call eta_of(xv(1:6),em1); fnew=f1+em1
+ call sr_path_to(fnew)                         ! (fpth,upth,spth): short-range force-free state at fnew
+ volx=v0*det3(fnew); call xmatinv(3,fnew,fi,ie)
+ gq=volx*matmul(spth,transpose(fi))            ! dE_SR/deta there (forces 0)
+ uu=0
+ if(nx.gt.6) uu(:,2:nprim)=reshape(xv(7:nx),[3,nprim-1])
+ du=uu-upth
+ eta=em1
+ if(maxval(abs(du)).gt.0) then                 ! carry dE/deta from u0* to u0: int Q^T du (Simpson)
+    do k=1,3
+       u0=upth+tsimp(k)*du
+       call kfill(1d0); call build_aq(x,.false.,f1)
+       do tau=1,nprim
+       do al=1,3
+          gq=gq+wsimp(k)*q_(al+3*(tau-1),:,:)*du(al,tau)
+       enddo
+       enddo
+    enddo
+ endif
+ u0=uu; call kfill(1d0); call pi_prime
+ do k=1,6
+    call eta_of(unit6(k),ek); gv(k)=sum(gq*ek)
+ enddo
+ if(nx.gt.6) gv(7:nx)=reshape(pip(:,2:nprim),[3*(nprim-1)])
+ call coul_grad(fnew,uu,gcv,gu)
+ gv=gv+gcv
+ end subroutine gradfun
+
+! moves the short-range force-free state (fpth,upth,spth) to F = fnew along F(t) = (1 + t dstr) fpth (Coulomb off)
+ subroutine sr_path_to(fnew)
+ real(r15), intent(in) :: fnew(3,3)
+ real(r15) fi(3,3),ssl(3,3),fmm(3,3),q1(3,3),q2(3,3),q3(3,3),q4(3,3),tt,jd
+ integer kk,ns,ie,m
+ call xmatinv(3,fpth,fi,ie)
+ dstr=matmul(fnew,fi); do m=1,3; dstr(m,m)=dstr(m,m)-1; enddo
+ if(maxval(abs(dstr)).lt.1d-15) return
+ ft=fpth; ssl=spth; ustart=upth
+ ns=max(nsub,ceiling(maxval(abs(dstr))/2d-3))
+ do kk=1,ns
+    tt=dble(kk-1)/ns
+    call dsdt(tt,ssl,ustart,q1)
+    call dsdt(tt+0.5d0/ns,ssl+q1/(2*ns),ustart,q2)
+    call dsdt(tt+0.5d0/ns,ssl+q2/(2*ns),ustart,q3)
+    call dsdt(tt+1d0/ns,ssl+q3/ns,ustart,q4)
+    ssl=ssl+(q1+2*q2+2*q3+q4)/(6*ns)
+ enddo
+ fmm=dstr; do m=1,3; fmm(m,m)=fmm(m,m)+1; enddo
+ jd=det3(fmm)
+ spth=matmul(fmm,matmul(ssl,transpose(fmm)))/jd
+ spth=(spth+transpose(spth))/2
+ fpth=fnew
+ u0=ustart; call relax_u(fnew,u0); upth=u0
+ end subroutine sr_path_to
+
+! exact Coulomb gradient at positions fmat x + uu, cell fmat a: gcv = (dE/de_k, dE/du0 atoms 2..), gu = dE/du0 all atoms
+ subroutine coul_grad(fmat,uu,gcv,gu,gqo)
+ real(r15), intent(in) :: fmat(3,3),uu(3,nprim)
+ real(r15), intent(out) :: gcv(:),gu(3,nprim)
+ real(r15), intent(out), optional :: gqo(3,3)
+ real(r15) ec,fc(3,nprim),wc(3,3),fi(3,3),gq(3,3),ek(3,3),v(3)
+ integer m,a,ie
+ call coul_energy(fmat,uu,alph,ec,fc,wc)
+ gu=-fc
+ call xmatinv(3,fmat,fi,ie)
+ gq=matmul(wc,transpose(fi))            ! dE/deta at fixed u0: W F^-T + sum_i f_i (F^-1 u_i)
+ do m=1,nprim
+    v=matmul(fi,uu(:,m))
+    do a=1,3
+       gq(a,:)=gq(a,:)+fc(a,m)*v
+    enddo
+ enddo
+ do m=1,6
+    call eta_of(unit6(m),ek); gcv(m)=sum(gq*ek)
+ enddo
+ if(nx.gt.6) gcv(7:nx)=reshape(gu(:,2:nprim),[3*(nprim-1)])
+ if(present(gqo)) gqo=gq
+ end subroutine coul_grad
+
+ subroutine coul_energy(fmat,uu,al0,ec,fc,wc)
+ real(r15), intent(in) :: fmat(3,3),uu(3,nprim),al0
+ real(r15), intent(out) :: ec,fc(3,nprim),wc(3,3)
+ real(r15) pos(3,nprim),cell(3,3)
+ integer m
+ do m=1,nprim
+    pos(:,m)=matmul(fmat,x(:,m))+uu(:,m)
+ enddo
+ cell(:,1)=matmul(fmat,v2a(r01)); cell(:,2)=matmul(fmat,v2a(r02)); cell(:,3)=matmul(fmat,v2a(r03))
+ call ewald_cell_efw(nprim,pos,cell,cmat,epsil,al0,ec,fc,wc)
+ ec=ec*e2c; fc=fc*e2c; wc=wc*e2c
+ end subroutine coul_energy
+
+! checks of ewald_cell at a deformed, displaced state: energy independent of the Ewald parameter; analytic gradient
+! = 4-point differences of the energy (h = 1e-4)
+ subroutine ewald_check
+ real(r15) f2(3,3),ut(3,nprim),g1(nx),g2(nx),gu(3,nprim),ea,eb,ep(4),fc(3,nprim),wc(3,3),ek(3,3),h,fp(3,3),up(3,nprim)
+ integer k,j,m
+ real(r15), parameter :: st(4)=[-2d0,-1d0,1d0,2d0]
+ f2=reshape([1d-2,2d-3,1d-3, 2d-3,-5d-3,3d-3, 1d-3,3d-3,7d-3],[3,3])
+ do m=1,3; f2(m,m)=f2(m,m)+1; enddo
+ ut=0
+ do m=2,nprim
+    ut(:,m)=2d-2*[sin(1d0*m),cos(2d0*m),sin(3d0*m+1)]
+ enddo
+ call coul_energy(f2,ut,alph,ea,fc,wc)
+ call coul_energy(f2,ut,1.3d0*alph,eb,fc,wc)
+ call coul_grad(f2,ut,g1,gu)
+ h=1d-4
+ do k=1,nx
+    do j=1,4
+       fp=f2; up=ut
+       if(k.le.6) then
+          call eta_of(unit6(k),ek); fp=f2+st(j)*h*ek
+       else
+          up(mod(k-7,3)+1,(k-7)/3+2)=up(mod(k-7,3)+1,(k-7)/3+2)+st(j)*h
+       endif
+       call coul_energy(fp,up,alph,ep(j),fc,wc)
+    enddo
+    g2(k)=(ep(1)-8*ep(2)+8*ep(3)-ep(4))/(12*h)
+ enddo
+ write(ulog,'(a,3es12.4)')' RELAX_REFERENCE: Ewald check: E (eV), E(1.3 alpha) - E, max|grad|          =', &
+ &     ea,eb-ea,maxval(abs(g1))
+ write(ulog,'(a,2es12.4)')' RELAX_REFERENCE: Ewald check: max|analytic - numerical| strain, u0 (eV, eV/A) =', &
+ &     maxval(abs(g1(1:6)-g2(1:6))),maxval(abs(g1(7:nx)-g2(7:nx)))
+ end subroutine ewald_check
+
+! FC1 at the relaxed state for the exact-Coulomb route: Pi' (short-range) + Coulomb change of the forces
+ subroutine add_coul_pip
+ real(r15) gcv(nx),gu(3,nprim)
+ call coul_grad(ft,u0,gcv,gu)
+ pip=pip+gu                     ! v1 holds the short-range FC1 (coulx_setup)
+ end subroutine add_coul_pip
 
  subroutine addpair(i1,j1)
  integer, intent(in) :: i1,j1
@@ -592,11 +888,14 @@
 
 ! A(ab,cd) = -1/2 sum K(tau a, j c) r_b r_d ; Q(tau al; a,b) = sum_j K(tau al, j a) r_b ; phi(tau al, tau' be)
 ! fd: deformation of the positions xx relative to the reference x (for the Coulomb lattice sums)
+! Coulomb (Phi_C fixed): r = fd r0 + du, du = u_t' - u_t the internal displacements in xx (u = xx - fd x on
+! the primitive atoms; 0 when xx = x). 2026-11-04: the du terms were missing, so the strain moments and
+! brackets of Phi_C were those of the unrelaxed atoms (HfO2r with charges: strain off by 1.4e-4).
  subroutine build_aq(xx,wphi,fd)
  real(r15), intent(in) :: xx(:,:),fd(3,3)
  logical, intent(in) :: wphi
- integer p,m1,m2,m3,m4,i1,j1,n1,n2
- real(r15) rr(3)
+ integer p,m1,m2,m3,m4,i1,j1,n1,n2,t1,t2
+ real(r15) rr(3),uu(3,nprim),du(3),fm(3)
  a_=0; q_=0
  if(wphi) phi_=0
  do p=1,np
@@ -624,6 +923,27 @@
           a_(m1,m2,m3,m4)=a_(m1,m2,m3,m4)+fd(m2,n1)*fd(m4,n2)*a_c(m1,n1,m3,n2)
        enddo; enddo
     enddo; enddo; enddo; enddo
+    do t1=1,nprim
+       uu(:,t1)=xx(:,t1)-matmul(fd,x(:,t1))
+    enddo
+    do t1=1,nprim
+    do t2=1,nprim
+       du=uu(:,t2)-uu(:,t1)
+       if(maxval(abs(du)).eq.0) cycle
+       do m1=1,3
+       do m3=1,3
+          do m2=1,3
+             q_(m1+3*(t1-1),m3,m2)=q_(m1+3*(t1-1),m3,m2)+phi_c(m1+3*(t1-1),m3+3*(t2-1))*du(m2)
+          enddo
+          fm=matmul(fd,mop_c(t1,t2,m1,m3,:))           ! sum_{j in t2} Phi_C(t1 m1, j m3) (fd r0)
+          do m2=1,3; do m4=1,3
+             a_(m1,m2,m3,m4)=a_(m1,m2,m3,m4)-(fm(m2)*du(m4)+du(m2)*fm(m4) &
+ &                           +phi_c(m1+3*(t1-1),m3+3*(t2-1))*du(m2)*du(m4))/2
+          enddo; enddo
+       enddo
+       enddo
+    enddo
+    enddo
     if(wphi) phi_=phi_+phi_c
  endif
  end subroutine build_aq
@@ -786,7 +1106,10 @@
  uu=ust
  call relax_u(fs,uu)
  call elastic_at(fs,uu,sg,cr,vv)
- del=(matmul(dstr,ff)+matmul(ff,dstr))/2
+! Lagrangian strain rate of F(t) = 1 + t dstr: (dstr^T F + F^T dstr)/2. Until 2026-11-05 (dstr F + F dstr)/2, right only
+! for a symmetric dstr (the Newton steps); the Broyden path step F_new F_old^-1 - 1 is not symmetric (HfO2r_q:
+! short-range dE/deta off by 0.17 eV per cell).
+ del=(matmul(transpose(dstr),ff)+matmul(transpose(ff),dstr))/2
  cl=0
  do i1=1,3; do i2=1,3; do i3=1,3; do i4=1,3
     do j1=1,3; do j2=1,3; do j3=1,3; do j4=1,3

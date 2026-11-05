@@ -52,6 +52,8 @@ SUBF90 = \
   fc34_maps.f90 \
   setup_amatrix.f90 \
   force_constant_symmetries.f90 \
+  ewald_cell.f90 \
+  broyden.f90 \
   relax_reference.f90 \
   dynamical.f90 \
   zhegv.f
@@ -85,7 +87,7 @@ M=`date "+%F-%k_%M"`
 # below contains seconds as well as minutes and everything else
 A=`date "+%F_%T"`
 B=`date "+%F"`
-ver=9.7
+ver=9.8
 backup=FCX_$(ver)_$(M)
 arch=focex_$(ver)_$(M)
 exe=focex-$(ver).x

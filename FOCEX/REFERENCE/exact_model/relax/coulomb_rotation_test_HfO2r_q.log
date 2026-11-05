@@ -1,0 +1,7 @@
+FOCEX relaxed F - 1 (should be symmetric):
+ [[-0.0393763 -0.         0.       ]
+ [-0.        -0.0456062 -0.0118683]
+ [ 0.        -0.0118683 -0.0346865]]
+w_yz: torque of exact Ewald 1.184e-11 eV,  of Ewald to 2nd order 2.084e-02 eV
+w_xz: torque of exact Ewald -4.737e-11 eV,  of Ewald to 2nd order -1.973e-08 eV
+w_xy: torque of exact Ewald 4.145e-11 eV,  of Ewald to 2nd order -1.319e-08 eV

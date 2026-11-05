@@ -68,6 +68,7 @@ extra supercells).
 ## Speed: OpenMP, -O3, large files (2026-11-04, user)
 
 - Released as FOCEX 9.7 (tag focex-9.7, 2026-11-04, user approved); the "After 9.6" items are in 9.7.
+- FOCEX 9.8 (2026-11-05): exact Coulomb relaxation by Broyden, relax-only reruns (see the relaxation section).
 
 - Rule (user): OpenMP loops must give the same numbers as the serial code. Every parallel loop is over
   independent outputs (each element computed by one iteration, sums kept in their old order), checked
@@ -934,6 +935,13 @@ myfc2_value%phi / myfc3_value%psi / myfc4_value%chi, GradientV_utau / GradientV_
 - TO CHECK 4: mechanical2 uses atld0 - QGQ - sigma0(be,ga) delta(al,de): the pre-9.2 FOCEX form (Sym(A) -
   stress term) gave wrong off-diagonal/shear constants; not compared.
 - Cubic "gradient w.r.t strain, term 2" (IF found ... END IF) is empty; intent unknown.
+- PROBLEM 5 (2026-11-05, read, not run; user: fix later): the static energy in GetV_avg_And_GradientV_avg
+  (VA_math.f95 ~1440) is -1/4 (S_j-S_i) Phi (S_j-S_i) = 1/2 u Phi_sym u, the form found wrong in FOCEX on
+  2026-11-02 (drops the Cartesian-antisymmetric part of each FC2 block; exact ZnO model 49.91 vs 53.96 eV), so the
+  strain energy and GradientV_eta are wrong off the Cauchy case; the cubic static term uses a similar difference
+  form (-1/12 Psi ...) and GradientV_eta absolute R+tau factors (not checked to be the derivative of its V).
+  GradientV_utau (Phi (S_j - S_tau)) is right. Fix with FOCEX's route (relax_reference: Born-Huang c at force-free
+  states, Broyden on (strain, u0)).
 
 ## Relaxing an unrelaxed reference with the fitted FCs (relax_reference.f90, 2026-11-02, user)
 default.params line 5 = 1 (only 1 switches it on; absent/other = off). After the fit: minimize the Taylor
@@ -962,6 +970,23 @@ fit kept as fcN_unrelaxed.dat, fcN_irr_unrelaxed.dat, lat_fc_unrelaxed.dat; POSC
   model_min.py, compare_relaxed.py): FOCEX vs the model's own minimum: strain 7.8e-10, u0 1.3e-9 A, FC2 at the
   minimum 2.7e-6 eV/A^2 (7 printed digits), FC3 5e-7; residual stress 2e-10 GPa, Huang 2e-8 GPa; 3 strain
   steps. Ranks 1-3 only: strain off 1e-5 (FC4 missing). Ge (line 5 absent): elastic constants identical.
+
+- Exact Coulomb in the relaxation (FOCEX 9.8, 2026-11-05, user's design): born_flag 2 with Z* = z 1 (coulx; anisotropic Z*
+  keeps the 2nd-order Phi_C route with a warning). E = E_SR + E_C(X) - E_C(0); E_C = Ewald of the born-2 pair model
+  (c_ij = tr(Zi Zj^T)/3, eps fixed) in the deformed primitive cell (ewald_cell.f90: energy, forces, dE/d eps analytic;
+  log check vs 4-point differences 9e-10 and alpha-independence 2e-13). E_SR = Taylor of the fitted FCs with FC1 -
+  F_C(0) and s0 - sigma_C(0) (coulx_setup). That split is required: with the total FC1/stress the short-range part is
+  not rotationally invariant and the stress formula on its force-free path was 0.17 eV/cell off (found by Python on the
+  exact model: path state force-free to 8.5e-9, its dE/deta wrong). X = (6 Voigt strains, u0 atoms 2..), G = dE/dX,
+  bro90 (SCOP8, broyden.f90) on -H0^-1 G (H0 = reference Hessian with Phi_C). dE_SR/deta at X: short-range force-free
+  path u0*(eta) (dsdt/relax_u, Coulomb off; sr_path_to) gives V sigma F^-T, then + int Q^T du from u0* to u0 (Simpson).
+  dsdt's strain rate is now (dstr^T F + F^T dstr)/2 (was (dstr F + F dstr)/2: same for the symmetric Newton steps).
+  Checked (compare_relaxed.py, exact HfO2r + point charges): strain 2.7e-9, u0 6.5e-9 A, FC2 1.1e-7, FC3 9.4e-8
+  (was 1.4e-4, 6.4e-3, 5.8e-3, 1.6e-2); Broyden 14 steps; FOCEX's Coulomb dE/de at reference and relaxed state =
+  Python Ewald to 7 digits. No-charge HfO2r unchanged (relax-only rerun: 1.3e-9 / 2.3e-9 / 9e-8 / 9e-8).
+- Relax-only rerun (9.8): every included rank include_fc=2 -> focex.f90 skips force data, invariance rows and fit
+  (nindepfc = 0), then merge_given_fcs and relax_reference. Use fcN_unrelaxed.dat -> fcN.dat, lat_fc_unrelaxed.dat ->
+  lat_fc.dat. HfO2r: 219 s instead of 33 min; same strain as the full run to 1e-7 (FCs read at 8 digits).
 
 ## IR / Raman activity at Gamma (gamma_mode_symmetry, dynamical.f90, 2026-11-02, user)
 Called after dielectric; writes gamma_modes.dat. D at exactly q = 0 (NA term direction-averaged: keeps the

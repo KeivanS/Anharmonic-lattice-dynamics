@@ -91,7 +91,7 @@ conventional cubic cell, :math:`a = 5.7022565` Å) and 36 snapshots.
    # after compiling (see the Installation chapter)
    mkdir -p ~/runs/Ge && cd ~/runs/Ge
    cp <path-to-repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
-   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.7.x
+   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.8.x
 
 On a single modern core the run takes a few minutes. It should end with
 
@@ -811,9 +811,14 @@ subtracted from FC1, so that :math:`\sum_\tau \Pi_\tau = 0` (already exact with 
 constants are re-expanded about the relaxed structure, :math:`\Phi' = \Phi + \Psi S + \chi S S/2`,
 :math:`\Psi' = \Psi + \chi S`, :math:`\Pi' \approx 0`, and everything after the fit (phonons,
 elastic constants, Grüneisen parameters, QHA, ``fcN.dat``) uses the relaxed structure and these FCs;
-``stress.params`` is then taken as zero. With ``born_flag = 2`` the Coulomb FCs :math:`\Phi_C` (at zero
-macroscopic field, as in a periodic DFT cell) are added to the fitted short-range ones; their cubic and
-quartic parts are not included yet. The fit of the unrelaxed reference is kept in
+``stress.params`` is then taken as zero. With ``born_flag = 2`` and Born charges proportional to the
+identity (:math:`Z^* = z\,\mathbb{1}`), the energy is the Taylor expansion of the fitted short-range FCs plus the
+full Ewald energy of the charges at the deformed cell and positions (the Coulomb model the fit subtracts);
+strain and :math:`u^0` are found together by Broyden's method. With anisotropic :math:`Z^*` the Coulomb FCs
+:math:`\Phi_C` (at zero macroscopic field) are added to second order only (warning in the log). To relax
+again without refitting, put the ``fcN_unrelaxed.dat`` and ``lat_fc_unrelaxed.dat`` of the earlier run in a
+new folder as ``fcN.dat`` and ``lat_fc.dat`` and set ``include_fc = 2`` for every fitted rank (line 4):
+FOCEX then reads the FCs, skips the fit (``FORCEDISP`` is not read) and relaxes. The fit of the unrelaxed reference is kept in
 ``fcN_unrelaxed.dat``, ``fcN_irr_unrelaxed.dat`` and ``lat_fc_unrelaxed.dat``; the relaxed cell and
 positions are written to ``POSCAR_relaxed``; the log lines start with ``RELAX_REFERENCE``. It needs FC3
 (and FC4 for :math:`\Psi'`) to change the FCs. The Born charges and dielectric tensor are not changed.
@@ -848,7 +853,7 @@ input files in one directory, ``cd`` into it and run the binary.
    ls
    # default.params  dielectric.params  kpbs.params  latdyn.params
    # structure.params  POSCAR1  FORCEDISP1
-   ~/ALADYN/bin/focex-9.7.x | tee focex.out
+   ~/ALADYN/bin/focex-9.8.x | tee focex.out
 
 The run is serial and memory-bound: the largest array is the fit matrix, of
 size (number of force components + constraints) × (number of independent FCs).
@@ -1321,6 +1326,13 @@ needs.
 
 Version history
 ---------------
+
+9.8 (2026-11-05)
+    Relaxation with ``born_flag = 2`` and :math:`Z^* = z\,\mathbb{1}`: full Ewald energy of the charges at
+    the deformed cell and positions instead of the Coulomb energy to second order, strain and positions
+    solved together by Broyden's method. Exact charged HfO\ :sub:`2` model: strain off by 3e-9 (was 1.4e-4),
+    positions by 6e-9 Å (was 6e-3 Å). With every rank read (``include_fc = 2``) the fit is skipped, so a
+    relaxation can be rerun from earlier FCs in minutes.
 
 9.7 (2026-11-04)
     OpenMP: the SVDs of the fit run on threads, and the default build is ``-O3 -fopenmp``

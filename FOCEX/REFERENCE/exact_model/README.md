@@ -260,15 +260,19 @@ python relax/compare_relaxed.py run_ZnO/e1relax relax/zno_model_min.json ZnO
 - With Coulomb (`run_HfO2r_q`: charges +1/−0.5, ε 5, born_flag 2; `coulomb/mkcoulomb.py run_HfO2r run_HfO2r_q
   1,-0.5 5`). The exact minimum with Ewald (`relax/model_min_c.py`, `relax/hfo2r_q_model_min.json`): strain
   −3.95, −4.56, −3.47 %, yz −1.20 %.
-- FOCEX against it (`relax/compare_relaxed_HfO2r_q.log`): strain 1.4e-4 (of ~4e-2), u0 6.4e-3 Å, FC2 5.8e-3 of
-  6.07, FC3 1.6e-2 of 2.54. FOCEX itself converged (forces 4e-12 eV/Å, stress 1e-11 GPa).
+- FOCEX 9.7, Coulomb to 2nd order (`relax/compare_relaxed_HfO2r_q_2ndorder.log`): strain 1.4e-4 (of ~4e-2), u0
+  6.4e-3 Å, FC2 5.8e-3 of 6.07, FC3 1.6e-2 of 2.54. FOCEX itself converged (forces 4e-12 eV/Å, stress 1e-11 GPa).
+- FOCEX 9.8, exact Ewald + Broyden (`relax/compare_relaxed_HfO2r_q.log`; relax-only rerun from the fitted FCs,
+  include_fc 2 2 2 2): strain 2.7e-9, u0 6.5e-9 Å, FC2 1.1e-7, FC3 9.4e-8 (8-digit FCs). The 2nd-order energy is
+  not rotationally invariant: `relax/coulomb_rotation_test.py` (log `relax/coulomb_rotation_test_HfO2r_q.log`)
+  gives a torque of 2.1e-2 eV at the 9.7 state, 1e-11 eV for the exact Ewald energy.
 - Why (`relax/coulomb_order_test.py`, log `relax/coulomb_order_test_HfO2r_q.log`): at FOCEX's state, model + Ewald
   to 2nd order about the reference (what Phi_C, q_c, a_c represent) gives forces 8e-10 eV/Å, but dE/deta 0.153
   eV (96-atom cell); Coulomb beyond 2nd order gives 6e-3 eV/Å and 0.141 eV. So the u0 error is the missing
   Psi_C, chi_C; the strain has a second error of the same size.
 - The strain Hessian at the reference, atoms fixed (`relax/coulomb_hess6.py`; FOCEX log "RELAX_REFERENCE: H6",
   hess6_reference): FOCEX = exact to 7e-7 eV per primitive cell. So a_c and the stress terms are right at the
-  reference, and the strain error builds up along the path (open).
+  reference, and the strain error builds up along the path (resolved in 9.8 by the exact Ewald energy).
 
 ## Reproducing
 

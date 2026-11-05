@@ -24,7 +24,7 @@
  use constants, only : r15, pi, ci, eps0scale
  implicit none
  private
- public :: lr_c, lr_brackets, lr_moments, lr_rot3_pair, lr_rot3_onsite
+ public :: lr_c, lr_brackets, lr_moments, lr_moments_pairs, lr_rot3_pair, lr_rot3_onsite
 
  logical, save :: ready=.false.
  integer, save :: nrs=0, ngs=0
@@ -371,5 +371,27 @@
     enddo
  enddo
  end subroutine lr_moments
+!------------------------------------------------------------
+ subroutine lr_moments_pairs(mo)
+!! mo(t, u, a1, a, m) = sum_{j in sublattice u} Phi_C(t a1, j a) (x_j - x_t)_m (eV/A), t, u in the
+!! primitive cell: lr_moments before the sum over u (2026-11-04; relax_reference needs them for the
+!! internal displacements, r = F r0 + u0_u - u0_t)
+ real(r15), intent(out) :: mo(:,:,:,:,:)
+ complex(r15), allocatable :: cp(:,:,:,:), cm(:,:,:,:), c2p(:,:,:,:), c2m(:,:,:,:)
+ real(r15) h, e(3)
+ integer m, it, iu
+ call setup
+ allocate(cp(3,3,nat,nat), cm(3,3,nat,nat), c2p(3,3,nat,nat), c2m(3,3,nat,nat))
+ h = 0.04d0/vol**(1d0/3)
+ do m=1,3
+    e = 0; e(m) = 1
+    call lr_c(h*e, cp); call lr_c(-h*e, cm); call lr_c(2*h*e, c2p); call lr_c(-2*h*e, c2m)
+    do it=1,nat
+    do iu=1,nat
+       mo(it,iu,:,:,m) = (4*aimag(cp(:,:,it,iu)-cm(:,:,it,iu))/(2*h) - aimag(c2p(:,:,it,iu)-c2m(:,:,it,iu))/(4*h))/3
+    enddo
+    enddo
+ enddo
+ end subroutine lr_moments_pairs
 
  end module coulomb_lr

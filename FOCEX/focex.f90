@@ -267,6 +267,16 @@ real(r15) presid, dev0pos, dpos
 !@@@@@@@@@@@@@@  read supercell force-displacements and setup the matrices @@@@@@@@@@@@@@@@
 !
 
+! Every included rank is read (include_fc=2): nothing to fit, so the force rows, invariance rows and the fit are
+! skipped (2026-11-05, user: reruns that only relax the reference with the FCs of an earlier fit).
+   if (nindepfc.eq.0 .and. any(include_fc.eq.2)) then
+      write(ulog,*)'MAIN: all included FC ranks are read (include_fc=2): no fit, FORCEDISP not read'
+      write(*,*)'MAIN: all included FC ranks are read (include_fc=2): no fit'
+      dim_ac=0
+      if(allocated(fcs)) deallocate(fcs)
+      if(allocated(sigma)) deallocate(sigma)
+      allocate(fcs(0),sigma(0))
+   else
    allocate(frc_constr(fdfiles))  ! for each of the supercell files
 
  ! Read force-displacements from FORCEDISPi (OUTCARi) and construct aforce,bforce matrices
@@ -537,6 +547,7 @@ real(r15) presid, dev0pos, dpos
       endif
 
    endif
+   endif   ! fit (not done when every rank is read)
    close(uio)
    close(umatrx)
 
