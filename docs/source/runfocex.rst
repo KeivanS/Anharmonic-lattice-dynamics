@@ -91,7 +91,7 @@ conventional cubic cell, :math:`a = 5.7022565` Å) and 36 snapshots.
    # after compiling (see the Installation chapter)
    mkdir -p ~/runs/Ge && cd ~/runs/Ge
    cp <path-to-repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
-   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.6.x
+   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.7.x
 
 On a single modern core the run takes a few minutes. It should end with
 
@@ -848,7 +848,7 @@ input files in one directory, ``cd`` into it and run the binary.
    ls
    # default.params  dielectric.params  kpbs.params  latdyn.params
    # structure.params  POSCAR1  FORCEDISP1
-   ~/ALADYN/bin/focex-9.6.x | tee focex.out
+   ~/ALADYN/bin/focex-9.7.x | tee focex.out
 
 The run is serial and memory-bound: the largest array is the fit matrix, of
 size (number of force components + constraints) × (number of independent FCs).
@@ -1085,14 +1085,15 @@ Diagnostics
     see where the error turns over. See :ref:`LASSO <focex-lasso>`.
 
 ``times.dat``
-    Wall/CPU time after each stage of the run — the place to look when a run
-    seems stuck.
+    CPU time after each stage of the run (summed over the threads), wall time after the
+    SVDs, and the number of threads — the place to look when a run seems stuck.
 
 ``maps.dat``, ``corresp.dat``, ``amatrx.dat``, ``matrix_svd-all.dat``, ``symmetry.dat``, ``elimination.dat``
     Internal tables (symmetry mapping of the FCs, the fit matrix itself, the U
     and V matrices of the SVD, the space-group operations, the kernel used to
-    enforce invariances). They can be very large and are only needed for
-    debugging.
+    enforce invariances), only needed for debugging. The U and V matrices
+    (``matrix_svd-*.dat`` and most of ``elimination.dat``, GB for thousands of FCs) are
+    written only with verbose on (``structure.params``, line 7).
 
 ``atompos.xyz``, ``poscar.xyz``, ``primlatt.xyz``, ``supercell_*.xyz``, ``latfc.xyz``, ``rgrid*.xyz``, ``ggrid*.xyz``, ``WS*_boundary.xyz``
     Structures, real- and reciprocal-space grids and Wigner-Seitz cell
@@ -1321,7 +1322,14 @@ needs.
 Version history
 ---------------
 
-After 9.6 (2026-11-04, not tagged)
+9.7 (2026-11-04)
+    OpenMP: the SVDs of the fit run on threads, and the default build is ``-O3 -fopenmp``
+    (``make DEBUG=1``: the checked build). The number of threads is chosen by the program
+    (``FOCEX_NUM_THREADS``; see :ref:`installation <focex-install>`). The results are
+    unchanged; HfO2 (12 atoms, 5760 FCs) 2 h 11 min -> 27 min on 8 threads. The kernel and the
+    particular solution come from one SVD (were two). The U and V matrices of the SVDs are
+    written only with verbose on (they were several GB). THERMACOND (same version) runs V3,
+    V3·delta, the collision matrix and the iterative update on threads, results unchanged.
     Before relaxing, the average force per atom is removed from FC1 (:math:`\sum_\tau \Pi_\tau = 0`);
     the fitted FC1 stays in ``fc1_unrelaxed.dat``. With Born charges the elastic constants from the short-range part of FC2 alone
     are in the log only, not in ``mech.dat``. The unused and wrong :math:`B_0'` of ``cubic_elastic`` is no

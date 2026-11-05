@@ -1,0 +1,4 @@
+0      tolerance for equating to zero (1d-4)   # if 0 take the default value
+0      force error value for inversion/regularization (1d-5)
+0      cutoff for how many cells away (6 cells)
+0      margin for eliminating small force constants (1d-6)

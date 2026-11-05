@@ -246,6 +246,30 @@ cd run_ZnO/e1relax && ~/ALADYN/bin/focex-9.3.x > focex.out && cd ../..
 python relax/compare_relaxed.py run_ZnO/e1relax relax/zno_model_min.json ZnO
 ```
 
+### Monoclinic HfO2 (`HfO2r`, 12 atoms, FOCEX ad77194, 2026-11-04)
+
+- Model (setup.py config `HfO2r`): 2x2x2 supercell, rL 3.87, Ra 3.22, and the 3- and 4-body terms cut at
+  Rb 2.6 Å (C 0), so few FC4. fcflag(4) = 0. Ranks 1–4, enforce_inv 1. FC terms with the first atom in the
+  primitive cell: 36, 2232, 26568, 228096. Reference: FC1 4.7e-2 eV/Å, stress 5.1–5.35 GPa with yz −0.22 (stress.params); 5.32 GPa after the internal
+  relaxation.
+- Exact minimum, `model_min.py HfO2r relax/hfo2r_model_min.json` (log `relax/model_min_HfO2r.log`): strain
+  −2.16, −2.91, −2.36 %, yz −0.72 %.
+- FOCEX against it, `relax/compare_relaxed_HfO2r.log`: strain 1.3e-9, u0 2.9e-9 Å, FC2 7.4e-8 eV/Å² of 6.55,
+  FC3 5.1e-8 of 2.37 (printed digits). Stress after 8.7e-15 GPa, max FC1 1.5e-16 eV/Å; volume 138.30 →
+  128.27 Å^3. FOCEX run 2 h 11 min.
+- With Coulomb (`run_HfO2r_q`: charges +1/−0.5, ε 5, born_flag 2; `coulomb/mkcoulomb.py run_HfO2r run_HfO2r_q
+  1,-0.5 5`). The exact minimum with Ewald (`relax/model_min_c.py`, `relax/hfo2r_q_model_min.json`): strain
+  −3.95, −4.56, −3.47 %, yz −1.20 %.
+- FOCEX against it (`relax/compare_relaxed_HfO2r_q.log`): strain 1.4e-4 (of ~4e-2), u0 6.4e-3 Å, FC2 5.8e-3 of
+  6.07, FC3 1.6e-2 of 2.54. FOCEX itself converged (forces 4e-12 eV/Å, stress 1e-11 GPa).
+- Why (`relax/coulomb_order_test.py`, log `relax/coulomb_order_test_HfO2r_q.log`): at FOCEX's state, model + Ewald
+  to 2nd order about the reference (what Phi_C, q_c, a_c represent) gives forces 8e-10 eV/Å, but dE/deta 0.153
+  eV (96-atom cell); Coulomb beyond 2nd order gives 6e-3 eV/Å and 0.141 eV. So the u0 error is the missing
+  Psi_C, chi_C; the strain has a second error of the same size.
+- The strain Hessian at the reference, atoms fixed (`relax/coulomb_hess6.py`; FOCEX log "RELAX_REFERENCE: H6",
+  hess6_reference): FOCEX = exact to 7e-7 eV per primitive cell. So a_c and the stress terms are right at the
+  reference, and the strain error builds up along the path (open).
+
 ## Reproducing
 
 ```bash

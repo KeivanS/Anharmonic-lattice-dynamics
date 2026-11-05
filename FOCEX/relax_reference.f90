@@ -250,6 +250,7 @@
  ft=0; do i=1,3; ft(i,i)=1; enddo
  u0=0; eta=0
  gm=s0
+ call hess6_reference
  write(ulog,'(a)')' RELAX_REFERENCE: stage 1, internal relaxation in the reference cell: iter, max|FC1| (eV/A)'
  do itr=0,50
     call kfill(1d0); call pi_prime
@@ -489,6 +490,39 @@
     h=mod(h+1,nh)
  enddo
  end function hget
+
+! d^2E/de_k de_l (eV) at the reference (F = 1, u0 = 0, atoms held fixed), Voigt e (eta_of), as the Newton
+! step builds it: V [c(brackets, s0) (E^k,E^l) + s0:(E^k E^l + E^l E^k)/2], and its Coulomb part (the a_c
+! brackets of Phi_C). Printed for comparison with the exact model (REFERENCE/exact_model/relax/
+! coulomb_hess6.py).
+ subroutine hess6_reference
+ real(r15) ar(3,3,3,3),cc(3,3,3,3),cc0(3,3,3,3),ek(3,3),el(3,3),hh(6,6),hc(6,6)
+ logical csave
+ integer k,l
+ call kfill(1d0)
+ call build_aq(x,.false.,f1); ar=a_/v0; call elastic_born_huang(ar,s0/v0,cc)
+ csave=coul; coul=.false.
+ call build_aq(x,.false.,f1); ar=a_/v0; call elastic_born_huang(ar,s0/v0,cc0)
+ coul=csave
+ do k=1,6
+    call eta_of(unit6(k),ek)
+    do l=1,6
+       call eta_of(unit6(l),el)
+       hh(k,l)=v0*(contract(cc,ek,el)+sum(s0/v0*(matmul(ek,el)+matmul(el,ek)))/2)
+       hc(k,l)=v0*contract(cc-cc0,ek,el)
+    enddo
+ enddo
+ write(ulog,'(a)')' RELAX_REFERENCE: d2E/de_k de_l at the reference, atoms fixed (eV; Voigt xx yy zz yz xz xy), total:'
+ do k=1,6
+    write(ulog,'(a,6es16.8)')' RELAX_REFERENCE: H6 ',hh(k,:)
+ enddo
+ if(coul) then
+    write(ulog,'(a)')' RELAX_REFERENCE: its Coulomb part (a_c brackets of Phi_C):'
+    do k=1,6
+       write(ulog,'(a,6es16.8)')' RELAX_REFERENCE: H6C ',hc(k,:)
+    enddo
+ endif
+ end subroutine hess6_reference
 
  subroutine eta_of(e,et)
  real(r15), intent(in) :: e(6)

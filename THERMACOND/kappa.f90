@@ -31,7 +31,11 @@
  use tetrahedron
  use mpi
  use iso_c_binding
+!$ use omp_lib
  implicit none
+ integer nthreads
+ integer(8) wclock0,wclock1,wrate
+ character(64) thrsrc
 
  interface
     integer(c_int) function c_chdir(path) bind(C,name='chdir')
@@ -82,6 +86,7 @@
 
  call date_and_time(date=today,time=now,zone=zone)
  call cpu_time(cputim)
+ call system_clock(wclock0,wrate)
 
   open(ulog,file='phonlog.dat',status='unknown')
   open(utimes,file='times.dat' ,status='unknown')
@@ -93,6 +98,16 @@
  write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' THERMACOND 2.0 launched at  ',today(1:4)//'/'  &
 &  //today(5:6)//'/'//today(7:8),now(1:2)//':'//now(3:4)//':'//now(5:10),zone
  write(ulog,*)' MPI processes: ',nprocs
+! OpenMP threads (common/omp_threads.f90): with more than one MPI process, 1 unless TCOND_NUM_THREADS is set
+ call omp_threads_choose('TCOND_NUM_THREADS',nthreads,thrsrc)
+ if (nprocs.gt.1 .and. trim(thrsrc).ne.'TCOND_NUM_THREADS') then
+    nthreads=1 ; thrsrc='more than one MPI process'
+!$  call omp_set_num_threads(1)
+ endif
+ write(ulog,'(a,i4,a)')' OpenMP threads per process: ',nthreads,'  ('//trim(thrsrc)//'; set TCOND_NUM_THREADS to choose)'
+ if (root) write(*,'(a,i4,a)')' OpenMP threads per process: ',nthreads,'  ('//trim(thrsrc)//'; set TCOND_NUM_THREADS to choose)'
+ write(utimes,'(a,i4,a)')' OpenMP threads per process: ',nthreads,'  ('//trim(thrsrc)//')'
+ write(utimes,'(a)')' (TIME: CPU seconds, summed over the OpenMP threads; WALL: elapsed seconds)'
  write(utimes,'(a,f12.4)')' At the start of the Program,        TIME IS ',cputim
 
 ! this is used to convert v33 to cm^_1
@@ -209,7 +224,8 @@
  subroutine timing(what)
  character(*), intent(in) :: what
  call cpu_time(cputim)
- write(utimes,'(a,a,f12.4)') what,',  TIME IS ',cputim
+ call system_clock(wclock1)
+ write(utimes,'(a,a,f12.4,a,f12.4)') what,',  TIME IS ',cputim,'   WALL ',dble(wclock1-wclock0)/wrate
  end subroutine timing
 
 !---------------------------------------------------------------

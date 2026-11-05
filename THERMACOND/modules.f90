@@ -517,6 +517,8 @@ module tetrahedron
 
         real(8), allocatable :: calct(:,:),doswt(:,:)
         type(tetra), allocatable :: tet(:)
+! one copy per OpenMP thread (calculate_FGR_mpi2 weights it on threads; copyin from the master)
+!$omp threadprivate(tet)
 
 !        integer num1_tet, num2_tet, num3_tet, num4_tet, num5_tet
 

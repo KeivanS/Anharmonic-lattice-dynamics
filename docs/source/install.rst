@@ -47,7 +47,7 @@ FOCEX and THERMACOND set their own compiler options in their Makefiles. Then
 .. code-block:: bash
 
    make                    # = make all: everything below except SCOP8
-   make focex              # FOCEX (focex-9.6.x) and its utilities (read_outcar.x, ...)
+   make focex              # FOCEX (focex-9.7.x) and its utilities (read_outcar.x, ...)
    make sc_snaps           # SC-SNAPS (sc_snaps.x, poscar2xyz.py)
    make thermacond         # THERMACOND with MPI (tcond-2.0.x); thermacond-serial: without
    make anfomod            # ANFOMOD
@@ -74,7 +74,7 @@ FOCEX
 .. code-block:: bash
 
    cd FOCEX
-   make                      # -> ~/ALADYN/bin/focex-9.6.x
+   make                      # -> ~/ALADYN/bin/focex-9.7.x
 
 This compiles the sources listed in ``FOCEX/Makefile`` and produces a single
 executable. Two details of that Makefile are worth knowing:
@@ -84,16 +84,19 @@ executable. Two details of that Makefile are worth knowing:
 * it is moved to ``DESTDIR``, ``~/ALADYN/bin`` by default (``make DESTDIR=...`` for another
   place; the top-level ``make`` passes the ``DESTDIR`` of ``make.inc``).
 
-``FOCEX/Makefile`` also has its own ``FF`` and ``FLAGS`` variables. The default
+``FOCEX/Makefile`` also has its own ``FF`` and ``FLAGS`` variables. Since 2026-11-04 the
+default is ``-O3 -fopenmp``: the SVDs of the fit run on OpenMP threads. ``make DEBUG=1``
+gives the earlier ``-O2 -fcheck=all`` build with array-bound checks (slower; for finding
+bugs). Run ``make clean`` when switching between the two. Both give the same force
+constants and frequencies.
 
-.. code-block:: makefile
+Threads (FOCEX and THERMACOND): the program chooses the number itself and writes it in the
+log and in ``times.dat``. It does not use ``OMP_NUM_THREADS``.
 
-   FF = gfortran
-   FLAGS = -O2 -fcheck=all
-
-is a good compromise between speed and safety. Useful alternatives, commented
-out in the file, are ``-fbacktrace -g`` (for debugging) and
-``-Wall -Wextra -fimplicit-none`` (for development).
+* ``FOCEX_NUM_THREADS`` (``TCOND_NUM_THREADS``) if set;
+* 1 when started by ``mpirun`` with more than one process;
+* ``SLURM_CPUS_PER_TASK`` in a Slurm job (``#SBATCH --cpus-per-task=N``);
+* otherwise all cores but about 20 %, so that the machine stays usable (8 of 10).
 
 The utility programs
 ^^^^^^^^^^^^^^^^^^^^

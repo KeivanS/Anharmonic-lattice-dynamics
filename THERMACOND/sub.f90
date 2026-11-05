@@ -1161,10 +1161,15 @@ s=s+1
  write(utemp,'(a,f12.4)')'  TIME IS ',cputim
 
  cputim_matrix_elt=0.0
+ call cpu_time(cputim2)
 
-
+! OpenMP (2026-11-04): the q2 loop on threads; every v33s8(s,n2,l1,l2,l3) is computed by one iteration
+! exactly as before, so the result is identical. "cputime for matrix_elt" is now the CPU time of the
+! whole loop (all threads, get_k_info included).
 do l1=1,ndn
 
+!$omp parallel do private(n2,q2,q3,nk2,i2,j2,k2,nk3,i3,j3,k3,inside,l2,l3,xx,v33sq1_temp) &
+!$omp&   reduction(+:indx) schedule(dynamic)
  loop2: do n2=1,nk
     q2 = kp(:,n2)   ! third argument is in the whole FBZ coarse mesh
     !write(debug,*) 'q3=', q3
@@ -1186,13 +1191,7 @@ do l1=1,ndn
  do l2=1 ,ndn
  do l3=1 ,ndn
 
-call cpu_time(cputim2)
-
-
 call matrix_elt_simplified(q1,q2,l1,l2,l3,xx,inside,ndn)    ! same as matrix_elt but efficiency is improved.
-
-call cpu_time(cputim3)
-cputim_matrix_elt=cputim_matrix_elt + (cputim3-cputim2)
 
 v33sq1_temp=xx*conjg(xx)
 !write(*,*)xx,v33sq1_temp
@@ -1219,9 +1218,12 @@ v33sq1_temp=xx*conjg(xx)
  enddo
 !    write(ulog,5)n2,n3,l1-1,l2-1,l3-1,v3(n2,n3,l1-1,l2-1,l3-1)
  enddo loop2
+!$omp end parallel do
 !    write(*,5)n2,n3-1,l1-1,l2-1,l3-1,v3(n2,n3-1,l1-1,l2-1,l3-1)
 
  enddo
+ call cpu_time(cputim3)
+ cputim_matrix_elt=cputim3-cputim2
 
  write(ulog,*) 'leaving q1...',n1,q1
  write(ulog,'(a,f12.4)')'  cputime for matrix_elt ',cputim_matrix_elt
@@ -2411,6 +2413,11 @@ loop1 : do ibz=1,ksubsize3 !ibz_subset(1),ibz_subset(2)
            call get_k_info(q1,NC,nk1,i1,j1,k1,g1,g2,g3,inside)
 
 
+! OpenMP (2026-11-04): (l1,xyz) on threads; Avalue(ibz,l1,xyz) is summed over n2, s, l2, l3 by one
+! thread in the same order as before, so the result is identical.
+!$omp parallel do collapse(2) schedule(dynamic) private(l1,xyz,n2,q2,n2i0,nk2,i2,j2,k2,inside,narms, &
+!$omp&   kvecstar,kvecop,s,q3_proc1,q3_proc2,ns,i3,j3,k3,nk3_proc1,nk3_proc2,nk3_proc1_i,nk3_proc2_i, &
+!$omp&   ns_star_i,q3_proc1_i,q3_proc2_i,sq2,sp1f,sp2f,l2,l3,Fsq2,Fsp1,Fsp2)
        do l1=1,ndn
     loopxyz : do xyz=1,3
 
@@ -2473,6 +2480,7 @@ loop1 : do ibz=1,ksubsize3 !ibz_subset(1),ibz_subset(2)
     enddo loopxyz
 
     enddo
+!$omp end parallel do
 
 !    if (n1 .eq. ksubset2(indx2,2)) then
 !         indx2=indx2+1
@@ -3136,17 +3144,20 @@ k_shift=ksbst(1)-1
 !    do n1=1,nibbz
        n1i=mapinv(n1+k_shift)
     do l1=1,ndn
-      s1=s1+1
-      d1=s1
+! first row of the 3x3 blocks of (n1,l1) and first column of (n2,l2): the values the running counters s1, s2
+! had (2026-11-04: closed form, so that the n2 loop can run on OpenMP threads; each n2 owns its columns
+! and every element is summed over the arms in the same order as before)
+      d1=3*((n1-1)*ndn+l1-1)+1
 
+!$omp parallel do schedule(dynamic) private(n2,q,ni0,narms,kvecstars,kvecops,l2,d2,s1,s2,ns,n0,i3,j3,k3, &
+!$omp&   inside,C,nl2,l3,n22,q1,q2,q3_p1,q3_p2,nk3_p1,nk3_p2,nl3,i,j)
       do n2=1,nibz
            q=kibz(:,n2)
            ni0=mapinv(n2)
            call kstarsinfbz1(q,nkc,kpc,narms,kvecstars,kvecops)
  !     write(701,*) '**************',n2,narms
        do l2=1,ndn
-          s2=s2+1
-          d2=s2
+          d2=3*((n2-1)*ndn+l2-1)+1
          !C_d=0
          !C_of=0
  !      write(701,*)'n1,  n1i,  l1,  n2,  ni0,  n0,  l2,  narms,  ns,  s1,  s2,C_d,  C_of,   Cs(s1,s2)'
@@ -3242,6 +3253,7 @@ k_shift=ksbst(1)-1
 !      s2=d2
 !      s1=s1+1
       enddo     !n2 loop
+!$omp end parallel do
 
 !   if (s1.le.(kil-3)) then
 !    s1=s1+3
@@ -7428,6 +7440,12 @@ do n1=1,ksub_size2
 
     omega1=frequency(i,ii)        ! set fixed omega1 in delta(omega1-omega2+-omega3)
 
+! OpenMP (2026-11-04): (jj,kk) on threads. Each P1smpi/P2smpi(n1,:,ii,jj,kk) belongs to one (jj,kk) and is
+! summed in the same order as before, so the result is identical. tet is threadprivate (module
+! tetrahedron): every thread fills and weights its own copy, taken from the master's (copyin).
+!$omp parallel do collapse(2) copyin(tet) schedule(dynamic) &
+!$omp&   private(jj,kk,j,j_tet,k_tet,w,q1,q2,q2n,q3,q3_proc1,q3_proc2,nk2,i2,j2,k2,nk2n,i2n,j2n,k2n, &
+!$omp&           nk3,i3,j3,k3,nk3_proc1,nk3_proc2,inside,inside1,inside2,V3sq1,F_arbi)
            laF2_loop: do jj=1,ndn
            laF3_loop: do kk=1,ndn
 
@@ -7555,6 +7573,7 @@ do n1=1,ksub_size2
 
            enddo laF3_loop
            enddo laF2_loop
+!$omp end parallel do
 
 
     enddo laF1_loop

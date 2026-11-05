@@ -18,17 +18,19 @@ MPIFC ?= mpif90
 # serial: the compiler mpif90 uses (Open MPI's --showme:command), so that serial and MPI builds give
 # the same numbers; gfortran if that does not answer.  make serial FC=... overrides it.
 FC    := $(or $(shell $(MPIFC) --showme:command 2>/dev/null | head -1),gfortran)
+# -fopenmp (2026-11-04): V3 and V3 x delta on threads (TCOND_NUM_THREADS; default the cores minus about
+# 20 %; 1 per process when run with more than one MPI process). Switching flags: make clean first.
 ifeq ($(DEBUG),1)
   OPT = -g -fbounds-check -fbacktrace
 else
   OPT = -O2
 endif
-FLAGS = $(OPT) -ffree-line-length-0
+FLAGS = $(OPT) -fopenmp -ffree-line-length-0
 
 # modules shared with FOCEX (../common, one file per module) first, then modules.f90 (the
 # THERMACOND modules); kappa.f90 (the main program) last
 vpath %.f90 ../common
-COMMON = constants.f90 params.f90 geometry.f90 ios_mod.f90 born.f90 ibz.f90
+COMMON = constants.f90 params.f90 geometry.f90 ios_mod.f90 born.f90 ibz.f90 omp_threads.f90
 # shared sources that use THERMACOND's own modules (lattice, atoms_force_constants): after them
 COMMON2 = tools.f90 ewald.f90 nonanal.f90 dielectric.f90 phonons.f90 gruneisen.f90
 SRC  = $(COMMON) modules.f90 $(COMMON2) zhegv.f force_constants.f90 sub.f90 rest.f90 extratools.f90 svd.f90 \

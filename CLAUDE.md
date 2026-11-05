@@ -35,7 +35,8 @@ Old utility builds were kept in `~/ALADYN/bin/old_2026-10-23/`. Tags (2026-10-23
 versioned separately, focex-agent-1.0, focex-agent-1.1 (thermacond task; `__version__` in focex-agent.py and diagnose.py, manual title and
 its Version history section); 1.2 (2026-10-27, snap_000 ISIF=2 -> stress.params; no tag); VASP-Flow v2.6 (at ef92326) and v2.7.
 `FOCEX/Makefile` does **not** include the top-level `make.inc`: it hardcodes
-`FF=gfortran`, `FLAGS=-O2 -fcheck=all`, `exe=focex-$(ver).x`, `DESTDIR ?= ~/ALADYN/bin`
+`FF=gfortran`, `FLAGS=-O3 -fopenmp` (since 2026-11-04; `make DEBUG=1`: `-O2 -fcheck=all -fbacktrace -fopenmp`,
+`make clean` when switching), `exe=focex-$(ver).x`, `DESTDIR ?= ~/ALADYN/bin`
 (a test build in a copied tree still moves its binary there: use `make DESTDIR=<scratch>`; 2026-11-03 a test
 build replaced the installed focex-9.5.x). It has
 CRLF line endings. The utility programs are separate
@@ -63,6 +64,31 @@ FOCEX takes no arguments and no stdin. Run it in a directory holding:
 `structure.params`, `dielectric.params`, `latdyn.params`, `kpbs.params`,
 `default.params`, `POSCAR1`, `FORCEDISP1` (plus `POSCARi`/`FORCEDISPi` for
 extra supercells).
+
+## Speed: OpenMP, -O3, large files (2026-11-04, user)
+
+- Released as FOCEX 9.7 (tag focex-9.7, 2026-11-04, user approved); the "After 9.6" items are in 9.7.
+
+- Rule (user): OpenMP loops must give the same numbers as the serial code. Every parallel loop is over
+  independent outputs (each element computed by one iteration, sums kept in their old order), checked
+  byte for byte with `cmp` on the outputs. A change that only reorders sums is reported with its size.
+- Threads: `common/omp_threads.f90` (FOCEX and THERMACOND). `FOCEX_NUM_THREADS` / `TCOND_NUM_THREADS` if
+  set; 1 under an MPI launcher (OMPI_COMM_WORLD_SIZE, PMI_SIZE, MPI_LOCALNRANKS; THERMACOND also nprocs > 1);
+  `SLURM_CPUS_PER_TASK`; else cores - max(1,cores/5), i.e. leave ~20 % for other work (user: 8 of the Mac's
+  10). OMP_NUM_THREADS is not used (the user's ~/.bashrc sets it to 1 for MPI codes). Printed in log/times.dat.
+- FOCEX svdcmp (svd_ridge.f90): right Householder step by column blocks + OpenMP over columns, bit-identical
+  (scratch driver 3000x1200, 6000x2400; HfO2r all outputs). Batching the QR rotations was tried: slower, dropped.
+  `kernel_and_particular`: one SVD gives the kernel and xpart (particular_solution did a second SVD of the
+  same matrix). U, V dumps (elimination.dat, matrix_svd-*.dat; 2.1 GB + 572 MB for HfO2r) only with verbose.
+- -O3 vs -O2 -fcheck=all: FCs, frequencies, thermo identical (4 regression cases, HfO2r); mech.dat/log
+  differ only in quantities that are 0 (1e-9). HfO2r relax: 7843 s -> 6520 s (-O3) -> 1596 s (8 threads).
+  Left: building the rotational rows (735 s), translational rows (247 s), force rows, all serial.
+- THERMACOND (`-fopenmp`, -O2 kept): threads in calculate_w3_ibz_split_sq (q2 loop), calculate_FGR_mpi2
+  ((jj,kk); module array `tet` is `!$omp threadprivate`, copyin), CollisionMatrix_mpi (n2 loop, block offsets
+  in closed form d=3((n-1)ndn+l-1)+1), update_mpi ((l1,xyz)). Ge j2_6, j3_4 serial and MPI -np 3: every
+  output file byte-identical to the old build. 8 threads: j2_6 83.2 -> 12.5 s, j3_4 27.6 -> 6.3 s.
+  CG (cg.f90, dense matmul on root) left serial: ~2 ms here ("direct solution" in times.dat).
+- THERMACOND prints `reading 0 <garbage>` (modules.f90:853): nkdir, ndir printed before they are read. Harmless.
 
 ## The Ge example — verified reference
 

@@ -51,6 +51,13 @@ a set of degenerate modes do.
 Rank 0 writes all output in the run folder; the other processes work in
 ``.mpi_rank_NNN/``, which are removed at the end.
 
+A single process (``tcond-2.0-serial.x``, or ``tcond-2.0.x`` without ``mpirun``) runs the
+V3, V3·delta, collision-matrix and iterative-update loops on OpenMP threads (since
+2026-11-04; same output files, bit for bit). The number of threads is chosen as for FOCEX
+(:ref:`installation <focex-install>`): ``TCOND_NUM_THREADS`` if set, 1 per process with more
+than one MPI process, ``SLURM_CPUS_PER_TASK``, otherwise the cores minus about 20 %. It is
+written in ``phonlog.dat`` and ``times.dat``; ``times.dat`` also gives the wall time.
+
 Input files
 -----------
 

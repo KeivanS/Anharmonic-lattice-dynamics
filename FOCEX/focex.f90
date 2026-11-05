@@ -71,6 +71,7 @@ integer, allocatable :: frc_constr(:),mp(:)
 real(r15) error,ermax,sd(4),sig, volmax,sf,dsf(3) ,q2(3),qr(3),largestcutoff,matr(3,3)
 type(vector):: y1,y2,y3,k1,k2,k3
 real tim
+integer(8) wc0,wc1,wrate   ! wall clock (the SVDs run on OpenMP threads; cpu_time sums the threads)
 real(r15) gmax,ene,grad,pos(3,64) ,ewald_force(3,64),deteps3, etaewa,xx,asr
 complex(r15) d2ew(3,3), d3ew(3,3,3), d0(3,3),sum
 real(r15) q(3)
@@ -80,6 +81,7 @@ real(r15) presid, dev0pos, dpos
 
  call date_and_time(date=today,time=now,zone=zone)
  call cpu_time(tim)
+ call system_clock(wc0,wrate)
 
  open(utimes,file='times.dat' ,status='unknown')
  open(umap  ,file='maps.dat'  ,status='unknown')
@@ -90,6 +92,7 @@ real(r15) presid, dev0pos, dpos
  write(utimes,'(a30,3x,a10,3x,a12,3x,a)')' Program FOCEX was launched at ',today(1:4)//'/'  &
 &  //today(5:6)//'/'//today(7:8),now(1:2)//':'//now(3:4)//':'//now(5:10),zone
  write(utimes,'(a,f12.4)')' At the start of the Program FOCEX the  TIME  IS ',tim
+ write(utimes,'(a)')' (TIME: CPU seconds, summed over the OpenMP threads of the SVDs; WALL: elapsed seconds)'
 !
 !@@@@@@@@@@@@@@@@@@@@@@  read inputs and set up cell information  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 !
@@ -98,6 +101,7 @@ real(r15) presid, dev0pos, dpos
 ! outputs: lattparams,primlat,nshells,include_fc,itrans,irot,natom_prim_cell,mas,atname,
 ! atompos0 (reduced coords within the primitive cell) and object atom0(natom_prim_cell)
    call read_structure("log")
+   call set_omp_threads(ulog,utimes)
 
 ! reads dielectric constant and Born charges (=0 if unknown)
    call read_dielectric
@@ -374,14 +378,17 @@ real(r15) presid, dev0pos, dpos
 !     a_hom=amat(1:n_hom,1:dim_ac)
 !     call write_out(uio,'#####     HOMOGENEOUS PART OF A ',amat(1:n_hom,1:dim_ac))
 !     call get_kernel(n_hom,dim_ac,amat(1:n_hom,1:dim_ac),svdcut,nkernel,kernelbasis,uio)
-      call get_kernel(n_hom,dim_ac,ahom,svdcut,nkernel,kernelbasis,uio)
+! kernel basis K and, for rows with a right-hand side (Huang rows of a stressed reference, Coulomb
+! parts), the particular solution: x = xpart + K y. One SVD of ahom gives both.
+      allocate(xpart(dim_ac))
+      call kernel_and_particular(n_hom,dim_ac,ahom,bhom,any(bhom .ne. 0),svdcut,nkernel,kernelbasis, &
+     &     xpart,presid,uio)
+      call cpu_time(tim) ; call system_clock(wc1)
+      write(utimes,'(a,f12.4,a,f12.4)')' After the kernel SVD (and xpart),      TIME  IS ',tim,'   WALL ',dble(wc1-wc0)/wrate
       write(ulog,*)' Kernel of A, of dim ',n_hom,'x',dim_ac,' is of dimension ',nkernel
       write(ulog,*)' The number of eliminated components is ',dim_ac-nkernel
 !     deallocate(a_hom)
-! rows with a right-hand side (Huang rows of a stressed reference): x = xpart + K y
-      allocate(xpart(dim_ac)) ; xpart = 0
       if (any(bhom .ne. 0)) then
-         call particular_solution(n_hom,dim_ac,ahom,bhom,svdcut,xpart,presid)
          write(ulog,*)'MAIN: invariance rows with a right-hand side: x = xpart + K y; max|C xpart - d|=',presid
          write(*   ,*)'MAIN: invariance rows with a right-hand side: x = xpart + K y; max|C xpart - d|=',presid
          if (itemp.eq.1) write(*,*)'WARNING: itemp=1 projects on the kernel and ignores the stress of stress.params'
@@ -611,7 +618,8 @@ real(r15) presid, dev0pos, dpos
    call get_phiSR_5D
 
   call cpu_time(tim)  !date_and_time(time=tim)
-  write(utimes,'(a,f12.4)')' After SVD and writing of FCs,          TIME  IS ',tim
+  call system_clock(wc1)
+  write(utimes,'(a,f12.4,a,f12.4)')' After SVD and writing of FCs,          TIME  IS ',tim,'   WALL ',dble(wc1-wc0)/wrate
 
    close(ufit1)
    close(ufit2)
@@ -639,7 +647,8 @@ real(r15) presid, dev0pos, dpos
 
   call date_and_time(date=today,time=now,zone=zone)
   call cpu_time(tim)
-  write(utimes,'(a,f12.4)')' ENDING TIME OF THE PROGRAM                   IS ',tim
+  call system_clock(wc1)
+  write(utimes,'(a,f12.4,a,f12.4)')' ENDING TIME OF THE PROGRAM                   IS ',tim,'   WALL ',dble(wc1-wc0)/wrate
   write(ulog  ,'(a,f10.4)')' ENDING TIME OF THE PROGRAM                   IS ',tim
 
 

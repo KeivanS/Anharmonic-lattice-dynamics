@@ -1,0 +1,9 @@
+FOCEX relaxed state : strain [-0.0393763, -0.0456062, -0.0346865, -0.0118683, 0.0, -0.0]
+  exact model, full Ewald                        max|dE/deta| 2.212e-01 eV   max|force| 5.952e-03 eV/A
+  exact model, Ewald to 2nd order                max|dE/deta| 1.528e-01 eV   max|force| 8.273e-10 eV/A
+  Coulomb beyond 2nd order (full - 2nd order)    max|dE/deta| 1.406e-01 eV   max|force| 5.952e-03 eV/A
+exact minimum (model_min_c) : strain [-0.0394651, -0.0456233, -0.0347003, -0.012011, -0.0, 0.0]
+  exact model, full Ewald                        max|dE/deta| 4.974e-09 eV   max|force| 6.191e-11 eV/A
+  exact model, Ewald to 2nd order                max|dE/deta| 1.489e-01 eV   max|force| 5.986e-03 eV/A
+  Coulomb beyond 2nd order (full - 2nd order)    max|dE/deta| 1.489e-01 eV   max|force| 5.986e-03 eV/A
+difference step check at q_F: max|H_C q (t=0.01) - H_C q (t=0.005)| = 5.921189464852539e-07

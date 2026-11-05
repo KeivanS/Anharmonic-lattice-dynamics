@@ -6,6 +6,7 @@
 !! variance per row and f(w) = w^4/(w^6+wcut^6) (= 1/w^2 above the cutoff, the regularization of svbksb);
 !! vs = V diag(s sqrt(f(w))), so that the covariance of x is vs vs^T (callers with x = K y map it by K)
  use constants, only : r15
+ use params, only : verbose
  implicit none
  integer , intent(in):: m3,n
  real(r15), intent(inout) :: a(m3,n)
@@ -21,7 +22,9 @@
  uio = 345
  umat= 346
  open(uio,file=fnsvd,status='unknown')
- open(umat,file="matrix_"//fnsvd,status='unknown')
+! matrix_<fnsvd> holds W and the full U and V (hundreds of MB for thousands of FCs; read by no
+! code): written only with verbose. W is also in fnsvd.
+ if (verbose) open(umat,file="matrix_"//fnsvd,status='unknown')
 ! eye=0
 ! do i=1,n
 !    eye(i,i)=1d0   ! make the identity matrix
@@ -36,19 +39,19 @@
 
 ! write svd matrices in a file
  write(uio,*)' W (better not be too small) is:  '
- write(umat,*)' W (better not be too small) is:  '
+ if (verbose) write(umat,*)' W (better not be too small) is:  '
  do k=1,n
     write(uio,*)'k,w(k)=',k,w(k)
-    write(umat,*)'k,w(k)=',k,w(k)
+    if (verbose) write(umat,*)'k,w(k)=',k,w(k)
  enddo
  wmin=minval(abs(w))
  wmax=maxval(abs(w))
  wcut = wmax*svdcut
  write(uio,*)' Its condition number w_max/w_min = ',wmax/wmin
  write(uio,*)' w larger than ',wcut,' will be used in the inversion'
- write(umat,*)' Its condition number w_max/w_min = ',wmax/wmin
- write(umat,*)' w larger than ',wcut,' will be used in the inversion'
-
+ if (verbose) then
+  write(umat,*)' Its condition number w_max/w_min = ',wmax/wmin
+  write(umat,*)' w larger than ',wcut,' will be used in the inversion'
   write(umat,*)' Matrix u is  '
   do i=1,m3
     write(umat,9)i,(a(i,j),j=1,n)
@@ -57,6 +60,7 @@
   do i=1,n
     write(umat,9)i,(v(i,j),j=1,n)
   enddo
+ endif
 
 ! test for orthogonality of u
 ! aux=matmul(transpose(u),u)
@@ -132,7 +136,7 @@
 7 format(i8,1x,99(1x,g11.4))
 
   close(uio)
-  close(umat)
+  if (verbose) close(umat)
 
  end subroutine svd_set
 !===================================================
@@ -226,6 +230,10 @@
       SUBROUTINE svdcmp(a,m,n,w,v)
 !! performs SVD decomposition of A in  the form A=U*W*transpose(V)
 !! on output U is written into A
+!! (Numerical Recipes svdcmp. 2026-11-04: the right Householder step runs over blocks of rows
+!! column by column instead of row by row, and the column loops run in parallel with OpenMP;
+!! every element gets the same operations in the same order, so U, W, V are bit-identical to
+!! the serial row-by-row version, for any number of threads; checked on 3000x1200 and 6000x2400.)
  use constants, only : r15
       implicit none
       INTEGER, intent(in) :: m,n
@@ -233,6 +241,10 @@
       real(r15), intent(out) :: v(n,n),w(n)
       INTEGER i,its,j,jj,k,l,nm
       real(r15) anorm,c,f,g,h,s,scale,x,y,z,rv1(n),pythag2
+      real(r15), allocatable :: sr(:)
+      integer jb,je
+      integer, parameter :: blk=256
+      allocate(sr(m))
 
       g=0.d0
       scale=0.d0
@@ -256,6 +268,7 @@
             g=-sign(sqrt(s),f)
             h=f*g-s
             a(i,i)=f-g
+!$omp parallel do private(j,k,s,f) schedule(static)
             do j=l,n
               s=0.d0
               do k=i,m
@@ -266,6 +279,7 @@
                 a(k,j)=a(k,j)+f*a(k,i)
               enddo
             enddo
+!$omp end parallel do
             do k=i,m
               a(k,i)=scale*a(k,i)
             enddo
@@ -291,15 +305,25 @@
             do k=l,n
               rv1(k)=a(i,k)/h
             enddo
-            do j=l,m
-              s=0.d0
+! row j: s(j) = sum_k a(j,k) a(i,k) (k = l..n in this order), then a(j,k) += s(j) rv1(k). Done
+! column by column over blocks of rows (contiguous memory); every element gets the same operations
+! in the same order as the row loop, so the result is identical.
+!$omp parallel do private(jb,je,j,k) schedule(static)
+            do jb=l,m,blk
+              je=min(jb+blk-1,m)
+              sr(jb:je)=0.d0
               do k=l,n
-                s=s+a(j,k)*a(i,k)
+                do j=jb,je
+                  sr(j)=sr(j)+a(j,k)*a(i,k)
+                enddo
               enddo
               do k=l,n
-                a(j,k)=a(j,k)+s*rv1(k)
+                do j=jb,je
+                  a(j,k)=a(j,k)+sr(j)*rv1(k)
+                enddo
               enddo
             enddo
+!$omp end parallel do
             do k=l,n
               a(i,k)=scale*a(i,k)
             enddo
@@ -313,6 +337,7 @@
             do j=l,n
               v(j,i)=(a(i,j)/a(i,l))/g
             enddo
+!$omp parallel do private(j,k,s) schedule(static)
             do j=l,n
               s=0.d0
               do k=l,n
@@ -322,6 +347,7 @@
                 v(k,j)=v(k,j)+s*v(k,i)
               enddo
             enddo
+!$omp end parallel do
           endif
           do j=l,n
             v(i,j)=0.d0
@@ -340,6 +366,7 @@
         enddo
         if(g.ne.0.d0)then
           g=1.0/g
+!$omp parallel do private(j,k,s,f) schedule(static)
           do j=l,n
             s=0.d0
             do k=l,m
@@ -350,6 +377,7 @@
               a(k,j)=a(k,j)+f*a(k,i)
             enddo
           enddo
+!$omp end parallel do
           do j=i,m
             a(j,i)=a(j,i)*g
           enddo
@@ -451,6 +479,7 @@
 ! 3       continue
       enddo L49
 
+      deallocate(sr)
       END SUBROUTINE svdcmp
 !  (C) Copr. 1986-92 Numerical Recipes Software !+!).
 !===================================================
@@ -597,13 +626,32 @@
 !======================================================
  subroutine get_kernel(m0,n,amat,svdcut,nkernel,kernel,uio)
 !! calculates the kernel space of the matrix amat(m0,n) and stores the basis vectors in kernel(n,n)
- use ios
  use constants, only : r15
  implicit none
  integer, intent(in) :: m0,n,uio
  integer, intent(out):: nkernel
- real(r15), intent(in) :: amat(m0,n)
+ real(r15), intent(in) :: amat(m0,n),svdcut
  real(r15), intent(out):: kernel(n,n)
+ real(r15) bz(m0),xp(n),resid
+ bz=0
+ call kernel_and_particular(m0,n,amat,bz,.false.,svdcut,nkernel,kernel,xp,resid,uio)
+ end subroutine get_kernel
+!======================================================
+ subroutine kernel_and_particular(m0,n,amat,b,dopart,svdcut,nkernel,kernel,xp,resid,uio)
+!! kernel basis of amat(m0,n) in kernel(n,n) (get_kernel) and, if dopart, the minimum-norm
+!! solution xp of amat xp = b with resid = max|amat xp - b| (particular_solution), from ONE SVD.
+!! (2026-11-04: before, particular_solution did a second SVD of the same matrix. Same cut, same
+!! formula, same svdcmp of the same matrix, so xp is bit-identical. If m0 < n, particular_solution
+!! pads the matrix with zero rows; that case still calls it.)
+ use ios
+ use params, only : verbose
+ use constants, only : r15
+ implicit none
+ integer, intent(in) :: m0,n,uio
+ logical, intent(in) :: dopart
+ integer, intent(out):: nkernel
+ real(r15), intent(in) :: amat(m0,n),b(m0)
+ real(r15), intent(out):: kernel(n,n),xp(n),resid
  integer j,nb
  integer,allocatable :: r(:)
  real(r15),allocatable :: u(:,:),v(:,:),w(:)
@@ -616,6 +664,18 @@
 ! SVD the homogeneous part of A to find the kernel basis and project x2 in it
     u=amat !(1:m0,1:n)
     call svdcmp(u,m0,n,w,v)
+
+    xp=0 ; resid=0
+    if (dopart) then
+       if (m0.ge.n) then
+          do j=1,n
+             if (abs(w(j)) .gt. svdcut*maxval(abs(w))) xp = xp + v(:,j)*dot_product(u(:,j),b)/w(j)
+          enddo
+          resid = maxval(abs(matmul(amat,xp)-b))
+       else
+          call particular_solution(m0,n,amat,b,svdcut,xp,resid)
+       endif
+    endif
 
     wmax=maxval(abs(w))
     wmin=minval(abs(w))
@@ -645,8 +705,11 @@
 ! also store vector components that belong to the kernel of w (where x is free)
 ! the solution of the inhomogeneous part belongs to the Kernel of the Homogeneous part.
 
-    call write_out(uio,'#####  GET_KERNEL: Umatrix',u)
-    call write_out(uio,'#####  GET_KERNEL: Vmatrix',v)
+! U, V and the kernel basis (GB for thousands of FCs; read by no code) only with verbose
+    if (verbose) then
+       call write_out(uio,'#####  GET_KERNEL: Umatrix',u)
+       call write_out(uio,'#####  GET_KERNEL: Vmatrix',v)
+    endif
     kernel=0
     nb=0
     do j=1,n
@@ -661,8 +724,22 @@
       write(uio,*)'ERROR in GET_KERNEL, nb,nkernel=',nb,nkernel
       stop
     endif
-    call write_out(uio,'#####  GET_KERNEL: kernel_basis',kernel)
+    if (verbose) call write_out(uio,'#####  GET_KERNEL: kernel_basis',kernel)
+    deallocate(u,v,w,r)
 
 4 format(a,99(1x,g11.4))
 
- end subroutine get_kernel
+ end subroutine kernel_and_particular
+!======================================================
+ subroutine set_omp_threads(u1,u2)
+!! OpenMP threads for the SVDs: common/omp_threads.f90 (FOCEX_NUM_THREADS, MPI launch, Slurm, or
+!! the cores minus about 20 %). Written to units u1, u2 and the screen.
+ implicit none
+ integer, intent(in) :: u1,u2
+ integer nthr
+ character(64) src
+ call omp_threads_choose('FOCEX_NUM_THREADS',nthr,src)
+ write(u1,'(a,i4,a)')' OpenMP threads for the SVDs: ',nthr,'  ('//trim(src)//'; set FOCEX_NUM_THREADS to choose)'
+ write(u2,'(a,i4,a)')' OpenMP threads for the SVDs: ',nthr,'  ('//trim(src)//'; set FOCEX_NUM_THREADS to choose)'
+ write(*,'(a,i4,a)')' OpenMP threads for the SVDs: ',nthr,'  ('//trim(src)//'; set FOCEX_NUM_THREADS to choose)'
+ end subroutine set_omp_threads

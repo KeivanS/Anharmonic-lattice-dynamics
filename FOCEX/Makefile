@@ -1,5 +1,15 @@
 FF=gfortran 
-FLAGS =-O2 -fcheck=all #-fimplicit-none  -fbacktrace -Wimplicit-interface -Wimplicit-procedure
+# make: optimised, the SVDs on OpenMP threads (OMP_NUM_THREADS; default all cores).
+# make DEBUG=1: the earlier build with array-bound checks (slower; for finding bugs).
+# -O3 against -O2 -fcheck=all (2026-11-04): frequencies, FCs, thermo identical in the 4 regression
+# cases and HfO2 (exact model); mech.dat and log differ only in quantities that are 0 (1e-9);
+# HfO2 7843 s -> 6520 s before the OpenMP SVD. Switching between the two: make clean first.
+ifeq ($(DEBUG),1)
+  FLAGS = -O2 -fcheck=all -fbacktrace -fopenmp
+else
+  FLAGS = -O3 -fopenmp
+endif
+#FLAGS =-O2 -fcheck=all #-fimplicit-none  -fbacktrace -Wimplicit-interface -Wimplicit-procedure
 #         -Wall -Wextra #-MMD -MP
 
 -include $(OBJ:.o=.d)
@@ -12,7 +22,7 @@ FLAGS =-O2 -fcheck=all #-fimplicit-none  -fbacktrace -Wimplicit-interface -Wimpl
 # the modules shared with THERMACOND are in ../common (one file per module)
 vpath %.f90 ../common
 COMMON = constants.f90 params.f90 geometry.f90 ios_mod.f90 atoms_force_constants.f90 \
-  lattice.f90 svd_stuff.f90 linalgb.f90 phonons.f90 gruneisen.f90 point_group.f90 ibz.f90
+  lattice.f90 svd_stuff.f90 linalgb.f90 phonons.f90 gruneisen.f90 point_group.f90 ibz.f90 omp_threads.f90
 
 SUBF90 = \
   $(COMMON) \
@@ -75,7 +85,7 @@ M=`date "+%F-%k_%M"`
 # below contains seconds as well as minutes and everything else
 A=`date "+%F_%T"`
 B=`date "+%F"`
-ver=9.6
+ver=9.7
 backup=FCX_$(ver)_$(M)
 arch=focex_$(ver)_$(M)
 exe=focex-$(ver).x
