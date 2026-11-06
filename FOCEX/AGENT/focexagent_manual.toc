@@ -1,25 +1,24 @@
 \contentsline {section}{\numberline {1}What the FOCEX agent does}{2}{section.1}%
-\contentsline {section}{\numberline {2}What you need, and how to install it}{2}{section.2}%
-\contentsline {subsection}{\numberline {2.1}The programs}{3}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}Install, once}{3}{subsection.2.2}%
-\contentsline {subsection}{\numberline {2.3}Tell VASP-Flow where VASP, MPI and the POTCARs are}{4}{subsection.2.3}%
-\contentsline {subsection}{\numberline {2.4}Check the set-up}{4}{subsection.2.4}%
-\contentsline {subsection}{\numberline {2.5}When is the Python environment needed?}{4}{subsection.2.5}%
-\contentsline {section}{\numberline {3}Quick start}{4}{section.3}%
-\contentsline {section}{\numberline {4}Mode from\_scratch: from a POSCAR to phonons}{5}{section.4}%
-\contentsline {subsection}{\numberline {4.1}Defaults}{7}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}The supercell}{7}{subsection.4.2}%
-\contentsline {subsection}{\numberline {4.3}The FOCEX frame}{8}{subsection.4.3}%
-\contentsline {subsection}{\numberline {4.4}The k-mesh of the supercells}{8}{subsection.4.4}%
-\contentsline {section}{\numberline {5}Mode extract\_only: FOCEX on existing data}{8}{section.5}%
-\contentsline {paragraph}{\nonumberline The data folder}{8}{paragraph*.3}%
-\contentsline {paragraph}{\nonumberline What the agent does.}{8}{paragraph*.5}%
-\contentsline {section}{\numberline {6}The instruction file: every keyword}{9}{section.6}%
-\contentsline {section}{\numberline {7}Changing the files the agent writes}{10}{section.7}%
-\contentsline {paragraph}{\nonumberline Example.}{11}{paragraph*.7}%
-\contentsline {section}{\numberline {8}Born charges and the dielectric constant}{11}{section.8}%
-\contentsline {section}{\numberline {9}The project folder and the results}{12}{section.9}%
-\contentsline {section}{\numberline {10}When a run stops: diagnose.py}{12}{section.10}%
-\contentsline {section}{\numberline {11}Thermal conductivity}{13}{section.11}%
-\contentsline {section}{\numberline {12}Version history}{14}{section.12}%
+\contentsline {section}{\numberline {2}Installation, step by step}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}What you need}{3}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Settings outside the instruction file}{5}{subsection.2.2}%
+\contentsline {section}{\numberline {3}Quick start}{6}{section.3}%
+\contentsline {section}{\numberline {4}Mode from\_scratch: from a POSCAR to phonons}{7}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Defaults}{9}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}The supercell}{9}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}The FOCEX frame}{9}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}The k-mesh of the supercells}{10}{subsection.4.4}%
+\contentsline {section}{\numberline {5}Mode extract\_only: FOCEX on existing data}{10}{section.5}%
+\contentsline {paragraph}{\nonumberline The data folder}{10}{paragraph*.1}%
+\contentsline {paragraph}{\nonumberline What the agent does.}{10}{paragraph*.2}%
+\contentsline {section}{\numberline {6}The instruction file}{10}{section.6}%
+\contentsline {subsection}{\numberline {6.1}The minimal file}{11}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Everything else: the defaults, and how to change them}{11}{subsection.6.2}%
+\contentsline {section}{\numberline {7}Changing the files the agent writes}{13}{section.7}%
+\contentsline {paragraph}{\nonumberline Example.}{13}{paragraph*.3}%
+\contentsline {section}{\numberline {8}Born charges and the dielectric constant}{14}{section.8}%
+\contentsline {section}{\numberline {9}The project folder and the results}{14}{section.9}%
+\contentsline {section}{\numberline {10}When a run stops: diagnose.py}{15}{section.10}%
+\contentsline {section}{\numberline {11}Thermal conductivity}{16}{section.11}%
+\contentsline {section}{\numberline {12}Version history}{16}{section.12}%
 \providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 
