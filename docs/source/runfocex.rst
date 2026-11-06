@@ -520,17 +520,32 @@ problems.
    * - ``0``
      - The invariance relations are appended as extra rows of the
        force-displacement system and the whole thing is solved by SVD. The
-       invariances are then satisfied only in the least-squares sense. This is
-       the default and the usual choice.
+       invariances are then satisfied only in the least-squares sense, traded
+       against the force rows. This is the default.
    * - ``1``
      - The force equations are fitted *subject to* the invariances, by working
        in the kernel of the constraint matrix. The invariances hold **exactly**.
+       **Recommended.**
    * - ``2``
      - As ``1``, but the reduced problem is solved by LASSO, which also decides
        which force constants the data actually supports. See below.
    * - ``3``
      - As ``2``, followed by a least-squares refit of the selected force
        constants under the same invariances. Use it when the forces are accurate.
+
+**Which value to use.** Use ``1``: an ordinary least-squares fit with the
+invariances exact (``1``, ``2`` and ``3`` all hold them to round-off,
+~10\ :sup:`-10`) and a standard error for every force constant. With ``0`` the
+invariance rows are a few hundred among up to 10\ :sup:`5` force rows, and how
+well they hold depends on the data: the largest :math:`|Ax-b|` of the
+invariance rows was 10\ :sup:`-6` for LaP (2 × 10\ :sup:`4` force rows) but
+2 × 10\ :sup:`-3` (translational) and 7 × 10\ :sup:`-3` (rotational) for
+BaZrO\ :sub:`3` (2.7 × 10\ :sup:`5` rows); check the violation tables in the
+log. Use ``3`` to find out which force constants the data need when the
+candidate set is large (long FC3 range, FC4) and the forces are accurate; ``2``
+only as a diagnostic, since its values are shrunk. For ``2`` and ``3`` the
+standard errors are those of the least-squares fit on the selected force
+constants; they do not include the selection itself.
 
 **How ``1`` works.** The invariance relations are linear, so the force
 constants that satisfy them all form an affine subspace. If ``K`` is an
@@ -935,9 +950,19 @@ and its fields are, from left to right:
     range of FC2 is trimmed to the supercell.
 
 ``trace_fc.dat``
-    Trace of the harmonic FC tensor for every pair, versus pair distance — the
-    quickest way to see how fast the harmonic interaction decays and whether
-    your range is sufficient. Plot it with ``fcs.plt``.
+    Three blocks (gnuplot ``index`` 0, 1, 2). Block 0: the trace of the harmonic
+    FC tensor for every pair, versus pair distance — the quickest way to see how
+    fast the harmonic interaction decays and whether your range is sufficient.
+    Block 1: for every triplet (i, j, k), the norm
+    :math:`\|\Psi\| = (\sum_{abc} \Psi_{abc}^2)^{1/2}` (eV/Å³) against the largest
+    of its three pair distances (column 5; norm in column 6, number of distinct
+    atoms in column 8). Block 2: the same for every quadruplet (eV/Å⁴), plus the
+    isotropic part :math:`\sum_{ab}(\chi_{aabb}+\chi_{abab}+\chi_{abba})/3`
+    (column 7, signed; 5 times the average of :math:`\chi(n,n,n,n)` over
+    directions :math:`n`). Both are invariant under rotations, so
+    symmetry-equivalent clusters have the same values; triplets and quadruplets
+    that differ only in the order of the last atoms are listed once. Blocks 1, 2
+    are empty when FC3, FC4 are not included. Plot them with ``fcs.plt``.
 
 ``bond_fci.dat``, ``springs1.dat``, ``springs2.dat``, ``pairs.dat``
     The pairs connected by FC2, and the shell radii and their multiplicities,
@@ -1076,10 +1101,15 @@ Diagnostics
 
 ``svd-all.dat`` (``enforce_inv = 0``) or ``svd-kernel.dat`` (``enforce_inv = 1``)
     The singular values of the fit matrix, its condition number, the cutoff
-    applied, the solution with its error bars, the residual ``Ax-b`` for every
+    applied, the residual ``Ax-b`` for every
     equation, and the summary line ``MAE, largest errors in force(eV/Ang),
     percent deviation``. With ``enforce_inv = 1`` the matrix is the reduced one,
-    so there are as many singular values as there are free parameters.
+    so there are as many singular values as there are free parameters. Each
+    force constant with its standard error is in the log, and ``sd(rank)``, the
+    mean standard error of each rank, at its end. ``svd-lasso.dat``
+    (``enforce_inv = 2, 3``): the same for the least-squares fit on the force
+    constants LASSO kept, which gives their standard errors (for 2, the errors
+    the refit would have; neither includes the selection or the shrinkage).
 
 ``lasso.dat`` (``enforce_inv = 2, 3``)
     The cross-validation scan used to pick :math:`\lambda`: one line per value

@@ -1325,8 +1325,8 @@
  subroutine write_independent_fcs(n,sig,sd,ulog)
 !! write independent or irreducible force constants in file fci_irr.dat (i=rank)
 !! sd(rank) = mean standard error of the irreducible FCs of that rank (sig = standard error of each,
-!! from the least-squares fit: enforce_inv=0 svd_set, 1 fit_kernel_basis; 0 = not estimated: LASSO,
-!! itemp=1)
+!! from the least-squares fit: enforce_inv=0 svd_set, 1 fit_kernel_basis, 2 and 3 lasso_support_errors
+!! (least squares on the FCs LASSO kept); 0 = not estimated: itemp=1)
  use svd_stuff
  use atoms_force_constants
  use params
@@ -1384,7 +1384,7 @@
       res=res+map(rnk)%nkeptind
    enddo
    write(ulog,5)' !==== sd(rank) = mean standard error of the FCs of each rank=1,8 ',(sd(rnk),rnk=1,maxrank)
-   if(all(sig.eq.0)) write(ulog,*)' sd(rank): no standard errors for this fit (LASSO or itemp=1)'
+   if(all(sig.eq.0)) write(ulog,*)' sd(rank): no standard errors for this fit (itemp=1, or no FC fitted)'
 
 
 3 format(a,i6,3(2x,g14.7))
@@ -1487,12 +1487,19 @@
  implicit none
  integer rnk,t,ti,i,res,j,rs,k,taup
  integer iat(maxrank),ixyz(maxrank),g,ng,term,term2,cnt2,frm,cnt3,ntind(maxrank),ngroup(maxrank)
- real(r15) rij,bunit,one,fcd,trace_fc,dij(3) 
+ real(r15) rij,bunit,one,fcd,trace_fc,dij(3)
 ! character frmt*2,goh*48,ln*1,geh*47
  character frmt*2,lm*1,goh*60,ln*1,geh*60,goh2*71,geh2*71
+! FC3, FC4 invariants (trace_fc.dat blocks 1, 2): every dependent term, keyed by its atoms
+ integer(8), allocatable :: ikey3(:,:),ikey4(:,:)
+ real(r15), allocatable :: ival3(:,:),ival4(:,:)
+ integer ninv3,ninv4,ntrm
+ integer(8) nb8
 
  bunit = ryd/ab/ab
  one =1d0
+ nb8 = int(natoms,8)+1
+ ninv3=0; ninv4=0
 
 6 format(2x,i5,1x,a2,2x,i5,9(2x,f19.10))
 7 format(1(2x,i5),3(2x,f19.10),4(2x,i5),2x,f9.5)
@@ -1530,6 +1537,15 @@
     cnt2=0  ! cumulative # of indep terms of given rnk up to g and excluding group g
     term = 0
     term2= 0
+    ntrm = 0
+    if(ng.gt.0) ntrm = sum(map(rnk)%nt(1:ng))
+    if(rnk.eq.3) then
+       if(allocated(ikey3)) deallocate(ikey3,ival3)
+       allocate(ikey3(2,ntrm),ival3(2,ntrm)); ninv3=0
+    elseif(rnk.eq.4) then
+       if(allocated(ikey4)) deallocate(ikey4,ival4)
+       allocate(ikey4(2,ntrm),ival4(2,ntrm)); ninv4=0
+    endif
     groups: do g=1,map(rnk)%ngr  ! index of a given group of given rank
          
        cnt2=0
@@ -1587,6 +1603,19 @@
                 fcd = fcd + fcs(res+cnt2+ti)*map(rnk)%gr(g)%mat(t,ti)
              endif
           enddo
+! FC3: sum of squares; FC4: also the isotropic part (delta_ab delta_cd + delta_ac delta_bd + delta_ad delta_bc)/3
+          if(rnk.eq.3) then
+             ninv3=ninv3+1
+             ikey3(1,ninv3)=iat(1)*nb8+iat(2); ikey3(2,ninv3)=iat(3)*nb8
+             ival3(1,ninv3)=fcd*fcd; ival3(2,ninv3)=0
+          elseif(rnk.eq.4) then
+             ninv4=ninv4+1
+             ikey4(1,ninv4)=iat(1)*nb8+iat(2); ikey4(2,ninv4)=iat(3)*nb8+iat(4)
+             ival4(1,ninv4)=fcd*fcd
+             ival4(2,ninv4)=fcd*(merge(1,0,ixyz(1).eq.ixyz(2) .and. ixyz(3).eq.ixyz(4)) +  &
+       &                         merge(1,0,ixyz(1).eq.ixyz(3) .and. ixyz(2).eq.ixyz(4)) +  &
+       &                         merge(1,0,ixyz(1).eq.ixyz(4) .and. ixyz(2).eq.ixyz(3)))/3d0
+          endif
           if(abs(fcd).lt.margin) cycle
           if(rnk.eq.2 ) then
              write(ufc1-1+rnk,geh2)t,g, (iat(j),ixyz(j),j=1,rnk),fcd,  &  !one
@@ -1660,6 +1689,22 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
     enddo
   enddo iloop
 
+! FC3 and FC4 invariants, as gnuplot index blocks 1 and 2 of trace_fc.dat (block 0 = FC2 above;
+! the blocks are written, with their header, even when the rank is not included, so the index
+! numbers do not change; 2026-11-06, user)
+  write(456,'(/)')
+  write(456,'(a)')'# FC3 ||Psi|| = sqrt(sum_abc Psi_abc^2) (eV/Ang^3), one line per triplet (i,j,k), i in the'
+  write(456,'(a)')'# primitive cell, permutations of j,k listed once; dmax = largest of the 3 pair distances'
+  write(456,'(a)')'# tau_i tau_j tau_k 0 dmax ||Psi|| 0 nbody(distinct atoms) i j k 0'
+  if(include_fc(3).eq.1 .and. allocated(ikey3)) call write_fc_invariants(456,3,ninv3,ikey3,ival3,nb8)
+  write(456,'(/)')
+  write(456,'(a)')'# FC4 ||Chi|| = sqrt(sum_abcd Chi_abcd^2) (eV/Ang^4) and iso = sum_ab (Chi_aabb+Chi_abab+Chi_abba)/3'
+  write(456,'(a)')'# (= 5 x the average over directions n of Chi(n,n,n,n)); one line per quadruplet (i,j,k,l)'
+  write(456,'(a)')'# tau_i tau_j tau_k tau_l dmax ||Chi|| iso nbody(distinct atoms) i j k l'
+  if(include_fc(4).eq.1 .and. allocated(ikey4)) call write_fc_invariants(456,4,ninv4,ikey4,ival4,nb8)
+  if(allocated(ikey3)) deallocate(ikey3,ival3)
+  if(allocated(ikey4)) deallocate(ikey4,ival4)
+
   close(456)
   close(457)
 
@@ -1671,6 +1716,88 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
 
 
  end subroutine write_output_fcs
+!============================================================
+ subroutine write_fc_invariants(u,rnk,n,key,val,nb8)
+!! FC3/FC4 rotational invariants per atom tuple (2026-11-06, user's request), written to unit u:
+!! key(:,t) = (i*nb8+j, k*nb8+l) of each dependent term t, val(1,t) = its value squared, val(2,t) its
+!! isotropic contribution (rank 4). Terms of the same tuple are summed: ||tensor|| = sqrt(sum val(1)),
+!! iso = sum val(2). Tuples that differ only by the order of j,k(,l) have the same invariants (index
+!! permutation symmetry of the FCs) and are written once. dmax = largest pair distance of the tuple.
+ use given_fcs, only : sort_i8
+ use atoms_force_constants
+ use params, only : margin
+ use geometry, only : length
+ use constants, only : r15
+ implicit none
+ integer, intent(in) :: u,rnk,n
+ integer(8), intent(in) :: key(2,n),nb8
+ real(r15), intent(in) :: val(2,n)
+ integer, allocatable :: ord(:),ord2(:)
+ integer(8), allocatable :: uk(:,:),ck(:,:)
+ real(r15), allocatable :: us(:,:)
+ integer i,m,p,q,r,a(4),c(4),tau(4),nbody
+ real(r15) dmax
+
+ if(n.le.0) return
+ allocate(ord(n),uk(2,n),us(2,n))
+ call sort_i8(n,key,ord)
+! sum the Cartesian components of each tuple
+ m=0
+ do i=1,n
+    if(m.gt.0) then
+       if(all(key(:,ord(i)).eq.uk(:,m))) then
+          us(:,m)=us(:,m)+val(:,ord(i)); cycle
+       endif
+    endif
+    m=m+1; uk(:,m)=key(:,ord(i)); us(:,m)=val(:,ord(i))
+ enddo
+! canonical key: j,k(,l) in ascending order, so permutations are written once
+ allocate(ck(2,m),ord2(m))
+ do i=1,m
+    call decode(uk(:,i),a)
+    c=a; call sort_tail(c)
+    ck(1,i)=c(1)*nb8+c(2); ck(2,i)=c(3)*nb8+c(4)
+ enddo
+ call sort_i8(m,ck,ord2)
+ do q=1,m
+    i=ord2(q)
+    if(q.gt.1) then
+       if(all(ck(:,i).eq.ck(:,ord2(q-1)))) cycle
+    endif
+    if(sqrt(us(1,i)).lt.margin) cycle
+    call decode(uk(:,i),a)
+    dmax=0; tau=0
+    do p=1,rnk
+       tau(p)=iatomcell0(a(p))
+       do r=p+1,rnk
+          dmax=max(dmax,length(atompos(:,a(r))-atompos(:,a(p))))
+       enddo
+    enddo
+    nbody=0
+    do p=1,rnk
+       if(all(a(1:p-1).ne.a(p))) nbody=nbody+1
+    enddo
+    write(u,3) tau,dmax,sqrt(us(1,i)),us(2,i),nbody,a
+ enddo
+ deallocate(ord,uk,us,ck,ord2)
+3 format(4i5,1x,f10.4,2(1x,es14.6),i4,4i7)
+
+ contains
+  subroutine decode(k,a)
+  integer(8), intent(in) :: k(2)
+  integer, intent(out) :: a(4)
+  a(1)=int(k(1)/nb8); a(2)=int(mod(k(1),nb8)); a(3)=int(k(2)/nb8); a(4)=int(mod(k(2),nb8))
+  end subroutine decode
+  subroutine sort_tail(c)
+  integer, intent(inout) :: c(4)
+  integer x,y,t
+  do x=2,rnk-1
+     do y=x+1,rnk
+        if(c(y).lt.c(x)) then; t=c(x); c(x)=c(y); c(y)=t; endif
+     enddo
+  enddo
+  end subroutine sort_tail
+ end subroutine write_fc_invariants
 !============================================================
  subroutine write_springs
  use svd_stuff

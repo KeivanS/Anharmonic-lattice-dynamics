@@ -124,10 +124,8 @@
      vs(:,k)=v(:,k)*s*sqrt(w(k)**4/(w(k)**6+wcut**6))
   enddo
   write(uio,3)' residual standard deviation per row s=||Ax-b||/sqrt(m-n) (eV/Ang)=',s
-  write(uio,*)'# Results of SVD solution : i, x(i), standard error sigma(i)'
-  do j=1,n
-     write(uio,7) j,x(j),sigma(j)
-  enddo
+! x(j) and sigma(j) are no longer listed here (2026-11-06, user): the log has every irreducible FC
+! with its standard error (write_independent_fcs) and sd(rank), the mean error of each rank
 
 6 format(i6,3(1x,g13.6),3x,g11.4)
 3 format(a,3(1x,g13.6))

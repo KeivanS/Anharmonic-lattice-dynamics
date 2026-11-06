@@ -465,6 +465,11 @@ all FCs = exact to the 7 written digits. Pre-existing failures found (original r
   FOCEX_LASSO=old. History: memory lasso-work-log, FOCEX/notes/constrained_lasso.tex. The MoTe2/GeSe
   numbers once given here (88 kept, 789 of 795) were the old LASSO.
 
+Recommendation in the manual (runfocex.rst "Which value to use", 2026-11-06, user asked): use 1. With 0 the
+invariances hold only as well as the data allow: max |Ax-b| 1e-6 for LaP but 2e-3 (trans) / 7e-3 (rot) for
+BZO (2.7e5 force rows), from the violation tables of the 2026-11 logs. 3 for selection with accurate forces,
+2 only as a diagnostic. Not yet confirmed by an enforce_inv=1 run on LaP or BZO.
+
 `svd_set` declares its matrix `intent(inout)` and `svdcmp` returns U in it, so
 **it destroys the matrix you pass**. Give it a copy.
 
@@ -745,6 +750,19 @@ s = 0.9948e-3 / 1.0005e-3 / 0.9776e-3 (seeds 1, 2; enforce_inv=1, 0); (x-x_exact
 FC3 0.84-0.90 (FC3 errors 10-15 % below the estimate, cause not known), 72-76 % within 1 sigma.
 Jackknife (user's idea, done once, not in the code): 5 refits each leaving out 20 of the 100 noisy ZnO
 snapshots, sqrt(4/5 sum (x_i - xbar)^2) / SVD sigma: median FC2 1.04, FC3 0.91; rms ratio 0.96.
+- 2026-11-06 (user: "enforce_inv>0 prints sd=0"; it was LASSO, enforce_inv=1 already had sd):
+  enforce_inv=2,3 now get sigma from `lasso_support_errors` (constrained_fit.f90): support |w x| > 1e-8 max
+  (as lasso_constrained), N = null space of the kernel rows off the support (null_space_qr, now public),
+  fit_kernel_basis on K N with b - A x -> sigma; file svd-lasso.dat; x unchanged. enforce_inv=3: that is the
+  refit's own error (MoTe2: its refit reproduces LASSO's refit to 1.4e-6); 2: the error the refit would have.
+  Neither includes the selection or shrinkage. itemp=1 still 0. MoTe2 sd(1..3): ei0 2.8e-5/0.033/142,
+  ei2 3.0e-5/0.034/62.8, ei3 3.0e-5/0.029/47.8; FCs byte-identical to 9.8.
+- focex.f90 declared sd(4) while write_independent_fcs writes sd(8) (out of bounds); now sd(8), log end
+  line prints 8 values. svd_set no longer lists x(j), sigma(j) in svd-*.dat (user: the log has them).
+- trace_fc.dat blocks 1, 2 (2026-11-06, user): FC3/FC4 rotational invariants per triplet/quadruplet
+  (write_fc_invariants, ios.f90): Frobenius norm, FC4 also iso = sum_ab (Chi_aabb+Chi_abab+Chi_abba)/3,
+  vs the largest pair distance, nbody = distinct atoms; tail permutations listed once. Plotted by fcs.plt
+  (index 0 = FC2 now explicit). MoTe2 check (python from fc3.dat): 506 triplets, norms to 3e-5 (rounding).
 
 ## Things that bite
 

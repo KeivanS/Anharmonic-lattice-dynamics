@@ -111,6 +111,65 @@
 
  end subroutine fit_kernel_basis
 !===============================================================================
+ subroutine lasso_support_errors(nrow,ncol,nker,a,b,kernel,x,svdcut,sigx)
+!! Standard errors of a LASSO solution x (enforce_inv=2,3; 2026-11-06, user: sd was 0 there).
+!! Support S as in lasso_constrained: |w_j x_j| > 1d-8 max, w_j = column rms of a (floored).
+!! Least squares on S with the invariances exact: x + K N z, N = null space of the rows of K
+!! off S (null_space_qr, as refit_support), by fit_kernel_basis on the basis K N; s^2 from the
+!! residual of that refit. enforce_inv=3: x is that refit, so this is its standard error.
+!! enforce_inv=2: the error the refit would have; neither includes the selection itself or
+!! the LASSO shrinkage. x is not changed.
+ use constants, only : r15
+ use ios, only : ulog
+ use lasso_constrained, only : null_space_qr
+ implicit none
+ integer, intent(in) :: nrow,ncol,nker
+ real(r15), intent(in) :: a(nrow,ncol),b(nrow),kernel(ncol,nker),x(ncol),svdcut
+ real(r15), intent(out):: sigx(ncol)
+ real(r15), allocatable :: w(:),bt(:,:),nb(:,:),kn(:,:),dx(:)
+ logical, allocatable :: sel(:)
+ real(r15) error,ermax,sig
+ integer i,j,m,p
+
+ sigx=0
+ if(nker.le.0) return
+ allocate(w(ncol),sel(ncol))
+ do j=1,ncol
+    w(j)=sqrt(dot_product(a(:,j),a(:,j))/nrow)
+ enddo
+ if(maxval(w).le.0) then
+    w=1
+ else
+    w=max(w,1d-8*maxval(w))
+ endif
+ sel = abs(w*x) .gt. 1d-8*maxval(abs(w*x))
+ m = count(.not.sel)
+ allocate(nb(nker,nker))
+ if(m.eq.0) then
+    p=nker ; nb=0
+    do j=1,nker ; nb(j,j)=1 ; enddo
+ else
+    allocate(bt(nker,m)) ; i=0
+    do j=1,ncol
+       if(sel(j)) cycle
+       i=i+1 ; bt(:,i)=kernel(j,:)
+    enddo
+    call null_space_qr(nker,m,bt,1d-9,p,nb)
+    deallocate(bt)
+ endif
+ write(ulog,'(a,i7,a,i7,a,i7)')'LASSO_SUPPORT_ERRORS: FCs kept',count(sel),' of',ncol, &
+ &     ', free parameters of the refit on them',p
+ if(p.gt.0) then
+    allocate(kn(ncol,p),dx(ncol))
+    kn = matmul(kernel,nb(:,1:p))
+    call fit_kernel_basis(nrow,ncol,p,a,b-matmul(a,x),kn,svdcut,dx,sigx,error,ermax,sig,'svd-lasso.dat')
+    write(ulog,'(a,g12.4)')'LASSO_SUPPORT_ERRORS: max |refit - LASSO| (not applied)=',maxval(abs(dx))
+    deallocate(kn,dx)
+ endif
+ deallocate(w,sel,nb)
+
+ end subroutine lasso_support_errors
+!===============================================================================
  subroutine lasso_kernel_basis(nrow,ncol,nker,a,b,kernel,x0,nfold,nlam,epsratio,refit, &
  &                             x,mu_opt,nnz,uio)
 !! LASSO on the force constants x themselves with the invariances exact

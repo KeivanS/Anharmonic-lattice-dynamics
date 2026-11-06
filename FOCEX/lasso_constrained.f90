@@ -51,7 +51,7 @@
  module lasso_constrained
  implicit none
  private
- public classo_cv, classo_path, ipm_classo, refit_support, classo_setup
+ public classo_cv, classo_path, ipm_classo, refit_support, classo_setup, null_space_qr
  integer, parameter :: dp = kind(1d0)
  real(dp), parameter :: sel_tol = 1d-8, null_tol = 1d-9, refit_cut = 1d-13, w_floor = 1d-8, &
 &     eps_min = 1d-8

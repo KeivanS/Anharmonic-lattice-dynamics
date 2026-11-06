@@ -68,7 +68,8 @@ real(r15), allocatable :: xout(:),foldedk(:,:),rand(:),rand2(:),phi_naq0(:,:,:,:
 complex(r15), allocatable :: auxr(:),auxg(:),aravg(:),axavg(:),ax1(:),ax2(:),dynmat(:,:),ddyn(:,:,:)
 real(r15), allocatable :: mat(:,:),qmat(:),vsdum(:,:)
 integer, allocatable :: frc_constr(:),mp(:) 
-real(r15) error,ermax,sd(4),sig, volmax,sf,dsf(3) ,q2(3),qr(3),largestcutoff,matr(3,3)
+! sd(8): write_independent_fcs fills sd(1:8) (was sd(4), 2026-11-06)
+real(r15) error,ermax,sd(8),sig, volmax,sf,dsf(3) ,q2(3),qr(3),largestcutoff,matr(3,3)
 type(vector):: y1,y2,y3,k1,k2,k3
 real tim
 integer(8) wc0,wc1,wrate   ! wall clock (the SVDs run on OpenMP threads; cpu_time sums the threads)
@@ -450,7 +451,9 @@ real(r15) presid, dev0pos, dpos
       &       kernelbasis(1:dim_ac,1:nkernel),xpart,lasso_nfold,lasso_nlambda,   &
       &       lasso_epsratio,enforce_inv.eq.3,fcs,lasso_mu,nnzero,ulasso)
          close(ulasso)
-         sigma=0    ! LASSO returns no singular-value error estimate
+! standard errors: least squares on the FCs LASSO kept, invariances exact (was sigma=0, sd(rank)=0)
+         call lasso_support_errors(force_constraints,dim_ac,nkernel,aforce,bforce, &
+      &       kernelbasis(1:dim_ac,1:nkernel),fcs,svdcut,sigma)
          write(ulog,'(a,i6,a,i6)')'LASSO: selected terms (FCs; kernel coefficients if FOCEX_LASSO=old)=',nnzero
          write(*   ,'(a,i6,a,i6)')'LASSO: selected terms (FCs; kernel coefficients if FOCEX_LASSO=old)=',nnzero
        else
