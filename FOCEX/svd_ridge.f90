@@ -6,7 +6,8 @@
 !! variance per row and f(w) = w^4/(w^6+wcut^6) (= 1/w^2 above the cutoff, the regularization of svbksb);
 !! vs = V diag(s sqrt(f(w))), so that the covariance of x is vs vs^T (callers with x = K y map it by K)
  use constants, only : r15
- use params, only : verbose
+ use params, only : verbose, svd_noise_check
+ use ios, only : ulog
  implicit none
  integer , intent(in):: m3,n
  real(r15), intent(inout) :: a(m3,n)
@@ -17,7 +18,8 @@
  real(r15) s
  character(LEN=*), intent(in) :: fnsvd
  integer i,j,k,uio,umat
- real(r15) wmax,wmin,wcut,num,denom ,y(n) !,prod,junk
+ real(r15) wmax,wmin,wcut,num,denom ,y(n),cutrel,eps2,cut2,rss0,rss1,p0,dp,wc2,x0(n),sig0(n) !,prod,junk
+ integer moved,moved2
 
  uio = 345
  umat= 346
@@ -46,7 +48,21 @@
  enddo
  wmin=minval(abs(w))
  wmax=maxval(abs(w))
- wcut = wmax*svdcut
+! the cut is moved into a gap of the singular values when some lie close to svdcut (gap_cut)
+ call gap_cut(n,w,svdcut,cutrel,moved)
+ wcut = wmax*cutrel
+ if(moved.eq.1) then
+    write(*  ,'(a,es9.2,a,es9.2,a,a)')' SVD: singular values next to the cut ',svdcut,'; cut moved to the gap at ', &
+ &        cutrel,' (relative to w_max) in ',trim(fnsvd)
+    write(uio,'(a,es9.2,a,es9.2)')' SVD: singular values next to the cut; cut moved from ',svdcut,' to the gap at ',cutrel
+    write(ulog,'(a,es9.2,a,es9.2,a,a)')' SVD: singular values next to the cut ',svdcut,'; cut moved to the gap at ', &
+ &        cutrel,' (relative to w_max) in ',trim(fnsvd)
+ elseif(moved.eq.-1) then
+    write(*  ,'(a,es9.2,a,a)')' SVD: singular values near the cut ',svdcut, &
+ &        ', no gap above them: cut unchanged, in ',trim(fnsvd)
+    write(ulog,'(a,es9.2,a,a)')' SVD: singular values near the cut ',svdcut, &
+ &        ', no gap above them: cut unchanged, in ',trim(fnsvd)
+ endif
  write(uio,*)' Its condition number w_max/w_min = ',wmax/wmin
  write(uio,*)' w larger than ',wcut,' will be used in the inversion'
  if (verbose) then
@@ -99,6 +115,44 @@
 ! Solve the system using x=V(1/W)(U^T) b; after eliminating w=0 terms
    call svbksb(a,w,v,m3,n,b,x,wcut,sigma)   ! sigma here: sqrt([V f(W) V^T]_jj), for unit noise
 
+! noise check (2026-11-06, user): eps = ||Ax-b||/||b||, the measured relative noise of the forces (and of
+! the model). If eps^2 > 100 svdcut, the guess of default.params line 2 was too small: the solution is redone
+! with the cut eps^2 (and gap_cut on it), from the same SVD. The cut is only ever raised, and the refit is
+! kept only if it passes the noise test: RSS_new - RSS_old <= s^2 (dp + 2 sqrt(2 dp)), s^2 = RSS_old/(m - p),
+! p = sum of the filter factors phi_k (trace of the hat matrix), dp its decrease. Otherwise (the misfit is
+! model error, not noise: MoTe2 with FC2 only, eps 0.18) the first solution is kept.
+  y = w*matmul(transpose(v),x)
+  ax = matmul(a,y)
+  eps2 = dot_product(ax-b,ax-b)/max(dot_product(b,b),tiny(1d0))
+  if (svd_noise_check .and. eps2 .gt. 100*svdcut .and. eps2 .gt. cutrel) then
+     call gap_cut(n,w,eps2,cut2,moved2)
+     write(*  ,'(a,es9.2,a,es9.2,a,es9.2,a,a)')' SVD: measured relative noise ',sqrt(eps2),' (line 2 gave ',sqrt(svdcut), &
+ &        '): refit with the cut ',cut2,' in ',trim(fnsvd)
+     write(ulog,'(a,es9.2,a,es9.2,a,es9.2,a,a)')' SVD: measured relative noise ',sqrt(eps2),' (line 2 gave ',sqrt(svdcut), &
+ &        '): refit with the cut ',cut2,' in ',trim(fnsvd)
+     write(uio,'(a,es9.2,a,es9.2)')' SVD: measured relative noise eps =',sqrt(eps2),'; refit with the cut ',cut2
+     if (cut2 .gt. cutrel) then
+        rss0 = dot_product(ax-b,ax-b)
+        p0 = sum(phif(w,wcut)) ; x0 = x ; sig0 = sigma
+        wc2 = wmax*cut2
+        call svbksb(a,w,v,m3,n,b,x,wc2,sigma)
+        ax = matmul(a, w*matmul(transpose(v),x))
+        rss1 = dot_product(ax-b,ax-b)
+        dp = max(p0 - sum(phif(w,wc2)), 0d0)
+        if (rss1 - rss0 .le. rss0/max(m3-p0,1d0)*(dp + 2*sqrt(2*dp)) + 1d-13*dot_product(b,b)) then
+           cutrel = cut2 ; wcut = wc2
+           write(ulog,'(a,f10.2,a,es10.3)')' SVD: refit kept (noise test passed): parameters dropped',dp, &
+ &              ', RSS increase relative',(rss1-rss0)/max(rss0,tiny(1d0))
+        else
+           x = x0 ; sigma = sig0
+           write(*  ,'(a,f10.2,a,es10.3,a)')' SVD: refit rejected: dropping',dp,' parameters raised RSS by', &
+ &              (rss1-rss0)/max(rss0,tiny(1d0)),' (relative), more than the noise allows: model error; cut unchanged'
+           write(ulog,'(a,f10.2,a,es10.3,a)')' SVD: refit rejected: dropping',dp,' parameters raised RSS by', &
+ &              (rss1-rss0)/max(rss0,tiny(1d0)),' (relative), more than the noise allows: model error; cut unchanged'
+        endif
+     endif
+  endif
+
 ! deallocate(v,w,u) !,aux,eye)
 
  write(uio,*)' residual of SVD solution is: Ax,b,|Ax-b|,|Ax-b|/Ax'
@@ -136,6 +190,13 @@
   close(uio)
   if (verbose) close(umat)
 
+ contains
+   function phif(ww,wc) result(ph)
+! filter factors of svbksb: phi = w^3/sqrt(w^6+wc^6) (x_k = phi_k (u_k.b)/w_k)
+   real(r15), intent(in) :: ww(:),wc
+   real(r15) ph(size(ww))
+   ph = abs(ww)**3/sqrt(ww**6 + wc**6)
+   end function phif
  end subroutine svd_set
 !===================================================
  subroutine solve_by_elimination(m3,n,m0,a,b,x,sigma,svdcut,nconfigs,nlines,energies,itemp,tempk)
@@ -741,3 +802,57 @@
  write(u2,'(a,i4,a)')' OpenMP threads for the SVDs: ',nthr,'  ('//trim(src)//'; set FOCEX_NUM_THREADS to choose)'
  write(*,'(a,i4,a)')' OpenMP threads for the SVDs: ',nthr,'  ('//trim(src)//'; set FOCEX_NUM_THREADS to choose)'
  end subroutine set_omp_threads
+!===========================================================
+ subroutine gap_cut(n,w,svdcut,cut,moved)
+!! relative cut of the SVD filter (2026-11-06, user): svdcut, unless a singular value is dangerous for the
+!! smooth filter x_k = r^2/sqrt(r^6+c^6) (u_k.b)/w_max (r = w/w_max, c = cut): below the cut its gain is
+!! ~ r^2/c^3, so it is dangerous if r^2 > gdang c^3 (gdang = 10: ~ the gain 1/r of a resolved mode at
+!! r ~ 0.1), and just above the cut (c <= r < fwin c, fwin = 1e3) the gain is ~ 1/r. The cut is then moved
+!! up into the first gap above those values (ratio >= gmin = 1e3 between consecutive sorted values; user
+!! 2026-11-06: was 1e4): bad =
+!! below the gap (top r_lo), good = above it (bottom r_hi); new cut c = r_lo^(1-alpha) r_hi^alpha, alpha = 0.9
+!! (user, 2026-11-06: nearer the good values). Then the top bad mode has gain (r_lo/r_hi)^1.7/r_hi and the
+!! smallest good mode is changed by 1/2 (r_lo/r_hi)^0.6 (<= 8e-3 for a gap of 1e3; 3e-6 for MgO's 6e8).
+!! Without such a gap the cut is left at svdcut (moved = -1). A cut merely above the small values is not
+!! enough with this filter (user's MgO test: c = 1.6e-9 over r = 1.6e-10 gave FC2 ~ 300-500).
+!! MgO kernel fit (default.params line 2 default 1e-5 -> svdcut 1e-10): w/w_max up to 1.6e-10 next to the
+!! cut, then 9.1e-2; with svdcut those modes were amplified ~1e5 (FC2 1e5 eV/A^2). moved: 1 if moved.
+ use constants, only : r15
+ implicit none
+ integer, intent(in) :: n
+ real(r15), intent(in) :: w(n),svdcut
+ real(r15), intent(out) :: cut
+ integer, intent(out) :: moved
+ real(r15), parameter :: fwin=1d3, gmin=1d3, gdang=1d1, alpha=0.9d0
+ real(r15) r(n),t,wmax
+ integer i,j,kn,k
+ cut=svdcut ; moved=0
+ wmax=maxval(abs(w))
+ if(n.lt.2 .or. wmax.le.0) return
+ r=abs(w)/wmax
+ do i=2,n                          ! insertion sort, ascending
+    t=r(i) ; j=i-1
+    do while (j.ge.1)
+       if(r(j).le.t) exit
+       r(j+1)=r(j) ; j=j-1
+    enddo
+    r(j+1)=t
+ enddo
+ if(.not.any((r.lt.svdcut .and. r*r.gt.gdang*svdcut**3) .or. (r.ge.svdcut .and. r.lt.svdcut*fwin))) return
+ kn=0
+ do i=1,n
+    if((r(i).lt.svdcut .and. r(i)**2.gt.gdang*svdcut**3) .or. (r(i).ge.svdcut .and. r(i).lt.svdcut*fwin)) kn=i
+ enddo                               ! kn: the largest dangerous value
+ do k=max(kn,1),n-1
+    if(r(k+1).ge.gmin*max(r(k),tiny(1d0))) then
+       t=max(r(k),tiny(1d0))**(1-alpha)*r(k+1)**alpha
+       if(t.gt.svdcut) then
+          cut=t ; moved=1
+       else
+          moved=-1
+       endif
+       return
+    endif
+ enddo
+ moved=-1
+ end subroutine gap_cut

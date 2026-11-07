@@ -91,7 +91,7 @@ conventional cubic cell, :math:`a = 5.7022565` Å) and 36 snapshots.
    # after compiling (see the Installation chapter)
    mkdir -p ~/runs/Ge && cd ~/runs/Ge
    cp <path-to-repo>/FOCEX/example/Ge/{structure.params,dielectric.params,latdyn.params,kpbs.params,default.params,POSCAR1,FORCEDISP1} .
-   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.8.x
+   <path-to-your-binary>          # e.g.  ~/ALADYN/bin/focex-9.9.x
 
 On a single modern core the run takes a few minutes. It should end with
 
@@ -493,12 +493,19 @@ the fit is solved and takes the values 0 to 3.
   * ``itrans`` — translational invariance (acoustic sum rule). Keep it on;
     without it the acoustic branches will not go to zero at :math:`\Gamma`.
   * ``irot`` — rotational invariance. Relates rank :math:`n` to rank
-    :math:`n+1`; useful when several ranks are fitted together. There are no
+    :math:`n+1`; useful when several ranks are fitted together. If the FC3 range is much shorter
+    than the FC2 range, the relations cannot hold and can distort soft modes; if the dispersion
+    turns unstable with ``irot = 1`` but not with ``irot = 0``, keep it off (layered MoTe\ :sub:`2`,
+    FC2 10 shells and FC3 2 shells: the interlayer breathing mode at −29 cm\ :sup:`-1` with it,
+    37 cm\ :sup:`-1` without). There are no
     rank-1 rows: the torque of FC1 changes when an atom is replaced by its
     lattice image, so it is not an invariance of a crystal.
   * ``ihuang`` — Huang: makes sure the elastic tensor is symmetric; needed for
     low-symmetry crystals. For a stressed reference structure, give its stress
-    in ``stress.params`` (see :ref:`below <focex-stress-params>`).
+    in ``stress.params`` (see :ref:`below <focex-stress-params>`). If the reference is not
+    relaxed and you do not have its stress, set ``ihuang = 0``: the Huang relations then
+    assume zero stress, which can make soft modes unstable (layered MoTe\ :sub:`2`: the
+    interlayer shear mode came out at −65 cm\ :sup:`-1` with Huang on, 26 cm\ :sup:`-1` with it off).
   * ``enforce_inv`` — how the fit is solved: ``0`` SVD of the stacked system (default),
     ``1`` fit inside the kernel of the invariances (exact), ``2`` the same with LASSO,
     ``3`` LASSO followed by a refit; see the explanation just below.
@@ -533,19 +540,12 @@ problems.
      - As ``2``, followed by a least-squares refit of the selected force
        constants under the same invariances. Use it when the forces are accurate.
 
-**Which value to use.** Use ``1``: an ordinary least-squares fit with the
-invariances exact (``1``, ``2`` and ``3`` all hold them to round-off,
-~10\ :sup:`-10`) and a standard error for every force constant. With ``0`` the
-invariance rows are a few hundred among up to 10\ :sup:`5` force rows, and how
-well they hold depends on the data: the largest :math:`|Ax-b|` of the
-invariance rows was 10\ :sup:`-6` for LaP (2 × 10\ :sup:`4` force rows) but
-2 × 10\ :sup:`-3` (translational) and 7 × 10\ :sup:`-3` (rotational) for
-BaZrO\ :sub:`3` (2.7 × 10\ :sup:`5` rows); check the violation tables in the
-log. Use ``3`` to find out which force constants the data need when the
-candidate set is large (long FC3 range, FC4) and the forces are accurate; ``2``
-only as a diagnostic, since its values are shrunk. For ``2`` and ``3`` the
-standard errors are those of the least-squares fit on the selected force
-constants; they do not include the selection itself.
+**Which value to use.** Use ``1``: the invariances hold exactly and every force constant
+gets an error bar. With ``0`` they hold only approximately, and how well depends on the
+data (check the violation tables in the log). Use ``3`` when you include many force
+constants (long FC3 range, FC4) and want FOCEX to keep only those the data need; ``2``
+only as a diagnostic, since its values are shrunk. The methods are described in the
+technical notes ``FOCEX/notes/focex_9x_algorithms.tex``.
 
 **How ``1`` works.** The invariance relations are linear, so the force
 constants that satisfy them all form an affine subspace. If ``K`` is an
@@ -806,30 +806,19 @@ They are:
   are considered equal when identifying symmetry-equivalent atoms. Increase it
   if a slightly distorted or loosely converged structure makes FOCEX miss
   symmetry operations.
-* **force error** (default :math:`10^{-5}`) — the estimated noise level of the
-  DFT forces. Its square is used as the SVD cutoff: singular values smaller than
-  ``w_max × force_error²`` are discarded in the inversion.
+* **force error** (default :math:`10^{-5}`) — the expected noise of the DFT forces (eV/Å),
+  which sets the SVD cutoff. You rarely need to change it: FOCEX compares it with the noise
+  it measures in the fit and with gaps in the singular values, raises the cutoff when that is
+  needed and safe, and says so on the screen and in the log (``cut moved``, ``refit``).
 * **cutoff** (default 6) — how many cells away neighbors are searched for; it
   sets the size of the internal ``atompos`` list.
 * **margin** (default :math:`10^{-6}`) — FCs smaller than this are not written
   to the ``fcN.dat`` files.
 
-An optional **line 6** (absent or 0: smallest cross-validation error) sets how the LASSO weight
-:math:`\lambda` is chosen for ``enforce_inv = 2, 3``. With ``1`` (noise test) FOCEX takes the
-largest :math:`\lambda` whose least-squares refit on the selected force constants is still
-consistent with the noise in the forces: dropping :math:`\Delta p` free parameters may raise the
-residual by at most :math:`s^2(\Delta p + 2\sqrt{2\Delta p})`, where :math:`s^2` is the residual
-variance of the least-squares fit on all of them. The scan, with these numbers, is in
-``lasso.dat``. With exact forces (:math:`s = 0`) the two choices agree.
-
-An optional **line 7** (absent or 0: off; 1: on) adds to the LASSO an :math:`L_2` term
-:math:`(s^2/N)\sum_j x_j^2/(2\tau_{r(j)}^2)`: the Gaussian prior of ridge regression, with the noise
-:math:`s^2` of the least-squares fit and a prior width :math:`\tau_r` for each rank, the rms of the
-rank-:math:`r` force constants of that fit. Experimental (2026-11).
-
-For ``enforce_inv = 2, 3`` the singular values of the force matrix are regularised with the same
-smooth filter as the SVD fit of ``enforce_inv = 0, 1``, entered as a penalty, so all four values use
-one regularisation.
+Optional **lines 6 and 7** matter only for LASSO (``enforce_inv = 2, 3``). Line 6 = ``1``: FOCEX
+keeps as few force constants as the noise in your forces allows (otherwise it uses
+cross-validation). Line 7 = ``1``: adds a mild ridge penalty; experimental. Both are explained in
+the technical notes.
 
 An optional **line 5** (absent or 0: off) relaxes the reference structure with the fitted force
 constants (since 2026-11-02): ``1`` on that line.
@@ -886,7 +875,7 @@ input files in one directory, ``cd`` into it and run the binary.
    ls
    # default.params  dielectric.params  kpbs.params  latdyn.params
    # structure.params  POSCAR1  FORCEDISP1
-   ~/ALADYN/bin/focex-9.8.x | tee focex.out
+   ~/ALADYN/bin/focex-9.9.x | tee focex.out
 
 The run is serial and memory-bound: the largest array is the fit matrix, of
 size (number of force components + constraints) × (number of independent FCs).
@@ -1125,9 +1114,8 @@ Diagnostics
     so there are as many singular values as there are free parameters. Each
     force constant with its standard error is in the log, and ``sd(rank)``, the
     mean standard error of each rank, at its end. ``svd-lasso.dat``
-    (``enforce_inv = 2, 3``): the same for the least-squares fit on the force
-    constants LASSO kept, which gives their standard errors (for 2, the errors
-    the refit would have; neither includes the selection or the shrinkage).
+    (``enforce_inv = 2, 3``): the same for the force constants LASSO kept, from
+    which their error bars are computed.
 
 ``lasso.dat`` (``enforce_inv = 2, 3``)
     The cross-validation scan used to pick :math:`\lambda`: one line per value
@@ -1374,6 +1362,19 @@ needs.
 
 Version history
 ---------------
+
+9.9 (2026-11-06)
+    The SVD cutoff adapts to the data. If the fit shows more noise than ``default.params`` line 2
+    assumes, or nearly undetermined force constants sit next to the cutoff, it is raised, but only
+    when the fit stays within the noise; the screen and the log say so. This removes spurious force
+    constants of 10\ :sup:`2`–10\ :sup:`5` eV/Å\ :sup:`2` that appeared when the data cannot fix
+    some of them (MgO: two displacements in a 4×4×4 cell, pairs on the supercell boundary).
+    ``enforce_inv = 2, 3``: error bars for the kept force constants; optional noise-based choice of
+    the LASSO weight (line 6) and ridge term (line 7); the same SVD regularisation as 0 and 1.
+    ``trace_fc.dat`` and ``fcs.plt`` also show the strength of FC3 and FC4 versus distance.
+    ``sd(rank)`` for all ranks. ``svd-*.dat`` no longer list every force constant (the log does).
+    Every ``default.params`` comes with a comment on each line. Technical details:
+    ``FOCEX/notes/focex_9x_algorithms.tex``.
 
 9.8 (2026-11-05)
     Relaxation with ``born_flag = 2`` and :math:`Z^* = z\,\mathbb{1}`: full Ewald energy of the charges at

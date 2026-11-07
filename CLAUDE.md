@@ -69,6 +69,10 @@ extra supercells).
 
 - Released as FOCEX 9.7 (tag focex-9.7, 2026-11-04, user approved); the "After 9.6" items are in 9.7.
 - FOCEX 9.8 (2026-11-05): exact Coulomb relaxation by Broyden, relax-only reruns (see the relaxation section).
+- FOCEX 9.9 (2026-11-06): SVD cut in a gap (gap_cut) and automatic refit with the measured noise (svd_set,
+  only for the force fits: params svd_noise_check; kept only if it passes the noise test), LASSO errors,
+  noise test for lambda (line 6), SVD filter in LASSO, L2 prior (line 7), FC3/FC4 invariants in trace_fc.dat,
+  sd(8). Technical paper: FOCEX/notes/focex_9x_algorithms.tex.
 
 - Rule (user): OpenMP loops must give the same numbers as the serial code. Every parallel loop is over
   independent outputs (each element computed by one iteration, sums kept in their old order), checked
@@ -114,7 +118,7 @@ code/scripts instead (collection scripts in FOCEX/utility now start FORCEDISP1 a
 
 Every `default.params` put on GitHub or shown in the docs has a comment after the value on EVERY line saying
 what it is and its default (FOCEX reads only the first number of a line). Canonical form: `FOCEX/default.params`
-(6 lines: tolerance, force error, icutoff, margin, relax_ref, lasso_rule). All tracked FOCEX default.params were
+(7 lines: tolerance, force error, icutoff, margin, relax_ref, lasso_rule, lasso_l2). All tracked FOCEX default.params were
 rewritten in that form with their values unchanged (the old 36-line files had "maxterms" comments on lines 5, 6,
 which FOCEX reads as relax_ref and lasso_rule = 0). SCOP8/input_sample/default.params is SCOP8's own format.
 
@@ -487,6 +491,30 @@ exact model, FC3 7 shells vs model 5 (job scratch, not kept): exact forces -> ex
 1e-3 noise: noise test FC3 nz 374 (LS 624, CV 390), lost 10 (<= 3.2 sigma), false 155 (< 1.8 sigma),
 rms err 0.64 sigma (LS 0.99); filter = hard cut there (no direction below the filter scale); L2 negligible.
 
+SVD cut in a gap (gap_cut, svd_ridge.f90; 2026-11-06, user): if a singular value is amplified by the filter
+(r = w/w_max < c with r^2 > 10 c^3, the filter gain below the cut being r^2/c^3; or c <= r < 1e3 c),
+the filter scale moves into the first gap (>= 1e3; user, was 1e4) above them, to r_lo^0.1 r_hi^0.9 (user: alpha = 0.9, nearer
+the good values; was the geometric mean with a 1e-3 cap); used by svd_set
+and the LASSO filter. MgO-Safoura Born (fc2range 0, ei=1, 2 FD snapshots): kernel w/w_max up to 1.6e-10,
+then 9.1e-2; cut 1.6e-9 -> 1.21e-2 (alpha 0.9; 3.82e-6 with the geometric mean, same FCs to 4-5 digits); FC2 group 9 (Mg-O 6.991 A on the 4x4x4 WS boundary, image sum rank 2 of
+5) went from 3.85e5 to <= 5e-3 eV/A^2, fit 0.933 % unchanged; also with the user's line 2 = 4e-5 (c = 1.6e-9,
+above every small value, where the filter alone still gave FC2 300-500: gain 5e7 on the mode at 1.6e-10).
+ZnO X1, N1: byte-identical apart from timing (cut not moved).
+
+Automatic refit (2026-11-06, user): eps^2 = |Ax-b|^2/|b|^2 of the first fit; if eps^2 > 100 svdcut the
+solution is redone from the same SVD with the cut eps^2 (gap_cut on it), kept only if RSS_new - RSS_old <=
+s^2 (dp + 2 sqrt(2 dp)), dp = decrease of sum phi_k (filter factors w^3/sqrt(w^6+wc^6)). Same in the LASSO
+filter (classo_cv_res). Without that test a model misfit is taken for noise: MoTe2 FC2-only (eps 0.18) went
+to 97.8 % residual; with it the refit is rejected there. Off for fits of residuals (lasso_support_errors:
+eps ~ 1 by construction).
+MoTe2/TEST findings (2026-11-06, job scratch runs): FORCEDISP1 snapshots 2-4 (0.0100 A) were computed with
+other settings than the reference: atoms > 9 A from the moved one feel ~0 force (rms 6e-4) instead of the
+reference's Te +-4.906e-3 (snapshots 5-7 and 402/409 of FORCEDISP2 agree to < 2e-4). Without them FC2-only fits
+improve (10 shells 12.7 -> 3.2 %). Exact Huang with zero stress (no stress.params; the reference has residual
+Te forces) makes the interlayer shear E2g^2 -64.8 1/cm and 93 k unstable; ihuang=0: +26.3 1/cm, none unstable,
+residual 1.63 %. FC2 10 shells (ihuang 0): C11 150.3, C12 92.9, C13 15.6, C33 46.4, C44 25.0, C66 28.7 GPa.
+The default FC2 range (fc2range 0) stops in force_constants ("atom not found"; needs a larger icutoff).
+
 `svd_set` declares its matrix `intent(inout)` and `svdcmp` returns U in it, so
 **it destroys the matrix you pass**. Give it a copy.
 
@@ -796,7 +824,7 @@ snapshots, sqrt(4/5 sum (x_i - xbar)^2) / SVD sigma: median FC2 1.04, FC3 0.91; 
   identical freqs.dat/modes.dat, any flags work. Rebuilt copies in `~/BIN` and `~/ALADYN/bin`.
 - The parameter files are read positionally by list-directed `read`. A missing
   line or a missing value silently swallows the next record and crashes later
-  with a confusing message. `default.params` has 4 lines (the 32 maxterms/maxtermzero/maxtermsindep/maxgroups lines were
+  with a confusing message. `default.params` has 4 lines plus optional lines 5-7 (the 32 maxterms/maxtermzero/maxtermsindep/maxgroups lines were
   removed 2026-10-27: setup_maps sizes its arrays itself; an old 36-line file still works); line 2 of
   `latdyn.params` must carry **six** numbers (shift *and* normal).
 - `bands.dat` columns 6+ are ω², not ω (`bandgen.plt` applies `521.1*sqrt()`). Plot scripts and `bandplot` are in
@@ -898,7 +926,7 @@ snapshots, sqrt(4/5 sum (x_i - xbar)^2) / SVD sigma: median FC2 1.04, FC3 0.91; 
   assignment on |<e(k-1)|e(k)>|^2 after aligning degenerate subspaces (polar decomposition),
   5 x mean level spacing window as before. The old greedy version left unconnected bands at
   their initial index: GeSe had a copied row at 179 of 180 k-points. Ge/BZO/MoTe2 unchanged.
-- Array sizes: no user-set limits (default.params has 4 lines); size_force_constants grows its own
+- Array sizes: no user-set limits (default.params has 4 lines, optional 5-7); size_force_constants grows its own
   work arrays (start 64/16/64, doubling). The "maxterms too small" retry messages of force_constants
   are no longer printed (2026-10-27); the final work sizes are in the log (SIZE_FORCE_CONSTANTS:
   work bounds). A real mismatch still stops: "SETUP_MAPS: sizing disagreement".

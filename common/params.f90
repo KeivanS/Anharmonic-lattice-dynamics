@@ -23,6 +23,10 @@ module params
 ! lasso_l2 (default.params line 7, absent or 0 = off): L2 term with prior width tau_r = lasso_l2 x rms of the
 ! rank-r FCs of the least-squares fit (classo_cv_res)
  real(r15):: lasso_l2 = 0
+! svd_noise_check: svd_set compares the measured relative noise of its fit with line 2's guess and raises the
+! cut (svd_ridge.f90). Only for fits of the forces themselves: focex.f90 sets it around them (off for fits of
+! residuals, e.g. lasso_support_errors, whose relative residual is ~1 by construction)
+ logical  :: svd_noise_check = .false.
 ! relax_ref (default.params line 5, absent = 0): 1 = relax the reference with the fitted FCs and use the
 ! re-expanded FCs downstream (FOCEX relax_reference); ref_relaxed is set once that is done
  integer  :: relax_ref = 0

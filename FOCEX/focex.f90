@@ -464,8 +464,10 @@ real(r15) presid, dev0pos, dpos
 ! ---- constrained least squares inside the kernel basis ----------------------
          allocate(bshift(force_constraints))
          bshift = bforce - matmul(aforce,xpart)
+         svd_noise_check = .true.    ! a fit of the forces: svd_set may raise the cut (measured noise)
          call fit_kernel_basis(force_constraints,dim_ac,nkernel,aforce,bshift,  &
       &       kernelbasis(1:dim_ac,1:nkernel),svdcut,fcs,sigma,error,ermax,sig,'svd-kernel.dat')
+         svd_noise_check = .false.
          fcs = fcs + xpart
          deallocate(bshift)
        endif
@@ -541,7 +543,9 @@ real(r15) presid, dev0pos, dpos
          deallocate (aforce,bforce)
 
          allocate(vsdum(dim_ac,dim_ac))
+         svd_noise_check = .true.
          call svd_set(dim_al,dim_ac,amat,bmat,fcs,sigma,vsdum,svdcut,error,ermax,sig,'svd-all.dat')
+         svd_noise_check = .false.
          deallocate(vsdum)
          write(ulog,'(a,f9.3,a)')'Percent error, || F_dft-F_fit || / || F_dft || =',sig,' %'
          call write_invariance_violations(ulog,dim_ac,fcs)
