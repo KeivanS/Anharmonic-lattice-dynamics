@@ -1,0 +1,352 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>10. FAQ &mdash; ALADYN 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="9. FOCEX agent: from a crystal structure to phonons" href="runfocexagent.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ALADYN
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">2. Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">3. Download and installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscsnaps.html">4. Running SC-SNAPS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runfocex.html">5. Running FOCEX</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runthermacond.html">6. Running THERMACOND</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscop8.html">7. Running SCOP8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="focexagent_guide.html">8. FOCEX agent: user’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runfocexagent.html">9. FOCEX agent: from a crystal structure to phonons</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">10. FAQ</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#general">10.1. General</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">10.2. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#preparing-the-input">10.3. Preparing the input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#choosing-the-ranges-and-the-ranks">10.4. Choosing the ranges and the ranks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#invariances-and-the-fitting-method">10.5. Invariances and the fitting method</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#judging-the-result">10.6. Judging the result</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#messages-during-the-run">10.7. Messages during the run</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#output-files">10.8. Output files</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ALADYN</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">10. </span>FAQ</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/faq.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="faq">
+<h1><span class="section-number">10. </span>FAQ<a class="headerlink" href="#faq" title="Link to this heading"></a></h1>
+<p>Questions that came up while using FOCEX, with the answers we found. The main manual describes
+the input and the output; the advice and the explanations of the subtler points are here.</p>
+<section id="general">
+<h2><span class="section-number">10.1. </span>General<a class="headerlink" href="#general" title="Link to this heading"></a></h2>
+<p><strong>Which code do I need for what?</strong></p>
+<p>Start with FOCEX: every other code in the suite consumes its force constants.
+Then use THERMACOND for phonon lifetimes and lattice thermal conductivity,
+SCOP8 for the temperature-dependent equilibrium structure and free energy of an
+anharmonic crystal, and ANFOMOD to run molecular dynamics with the extracted
+force field.</p>
+<p><strong>Can I use a DFT code other than VASP or Quantum Espresso?</strong></p>
+<p>Yes. FOCEX only reads the two plain-text files <code class="docutils literal notranslate"><span class="pre">POSCARi</span></code> and <code class="docutils literal notranslate"><span class="pre">FORCEDISPi</span></code>;
+the converters for VASP and QE are a convenience, not a requirement. Any code
+that gives you forces on all atoms of a supercell will do — write the results in
+the format described in <a class="reference internal" href="runfocex.html#focex-forcedisp"><span class="std std-ref">Format of FORCEDISPi</span></a> (positions in Å, forces in eV/Å).</p>
+<p><strong>Does FOCEX run in parallel?</strong></p>
+<p>The SVDs of the fit run on OpenMP threads (since 9.7); FOCEX chooses the number itself (about
+80 % of the cores) and <code class="docutils literal notranslate"><span class="pre">FOCEX_NUM_THREADS</span></code> overrides it. The rest is serial. The expensive part
+of a study is the DFT calculation of the snapshots: run them as independent jobs
+(<code class="docutils literal notranslate"><span class="pre">FOCEX/utility/runall-slurm.sh</span></code>).</p>
+</section>
+<section id="installation">
+<h2><span class="section-number">10.2. </span>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<p><strong>``make`` fails on the last line with “No such file or directory”.</strong></p>
+<p>The Makefile moves the executable to a directory that must already exist: the
+<code class="docutils literal notranslate"><span class="pre">DESTDIR</span></code> of <code class="docutils literal notranslate"><span class="pre">make.inc</span></code> (<code class="docutils literal notranslate"><span class="pre">~/ALADYN/bin</span></code>) for the utility programs. FOCEX and
+THERMACOND create theirs. Create it with <code class="docutils literal notranslate"><span class="pre">mkdir</span> <span class="pre">-p</span></code> and re-run <code class="docutils literal notranslate"><span class="pre">make</span></code>.</p>
+<p><strong>Where are the programs after</strong> <code class="docutils literal notranslate"><span class="pre">make</span></code> <strong>?</strong></p>
+<p>In <code class="docutils literal notranslate"><span class="pre">~/ALADYN/bin</span></code>, named with their version (<code class="docutils literal notranslate"><span class="pre">focex-9.9.x</span></code>, <code class="docutils literal notranslate"><span class="pre">tcond-2.0.x</span></code>). <code class="docutils literal notranslate"><span class="pre">make</span>
+<span class="pre">python-tools</span></code> links the Python tools there: <code class="docutils literal notranslate"><span class="pre">focex-agent</span></code>, <code class="docutils literal notranslate"><span class="pre">allplots</span></code>, <code class="docutils literal notranslate"><span class="pre">bandplot</span></code> and
+<code class="docutils literal notranslate"><span class="pre">shell-optimizer</span></code>. Job scripts that call an older <code class="docutils literal notranslate"><span class="pre">focex-9.x.x</span></code> must be updated by hand.</p>
+<p><strong>After a</strong> <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">pull</span></code> <strong>the build fails or the results look like the old version.</strong></p>
+<p>Run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span> <span class="pre">&amp;&amp;</span> <span class="pre">make</span></code> once when the compiler flags changed (9.7 introduced OpenMP and
+<code class="docutils literal notranslate"><span class="pre">-O3</span></code>), and check with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">describe</span> <span class="pre">--tags</span></code> which version you have.</p>
+</section>
+<section id="preparing-the-input">
+<h2><span class="section-number">10.3. </span>Preparing the input<a class="headerlink" href="#preparing-the-input" title="Link to this heading"></a></h2>
+<p><strong>How large must the supercell be?</strong></p>
+<p>The range of the harmonic force constants can never exceed the largest sphere
+inscribed in the Wigner-Seitz cell of the supercell. As a rule of thumb, aim for
+a supercell of at least ~10 Å in each direction, or about 100 atoms, and check convergence by
+repeating the fit with a larger one. FOCEX prints the cutoff it derived from
+your supercell in the log file. A mode at a wavevector that the supercell does not contain (for
+example the R point of a cubic perovskite in a 3×3×3 supercell) is only interpolated: to decide
+whether it is stable, add a supercell that contains it (2×2×2) or compute it directly.</p>
+<p><strong>How many snapshots do I need?</strong></p>
+<p>Enough that the number of force components, <span class="math notranslate nohighlight">\(3 N_{sc}\)</span> per snapshot,
+comfortably exceeds the number of independent force constants (printed in the
+log as <code class="docutils literal notranslate"><span class="pre">total</span> <span class="pre">#</span> <span class="pre">of</span> <span class="pre">independent</span> <span class="pre">FCs</span> <span class="pre">of</span> <span class="pre">all</span> <span class="pre">rank</span></code>). 10–20 snapshots are usually
+sufficient for a harmonic fit in a large supercell, 30–50 when cubic and quartic
+terms are included. With single-atom displacements every inequivalent atom must be displaced at
+least once, or its force constants are not determined at all.</p>
+<p><strong>At which temperature should I sample the snapshots?</strong></p>
+<p>At, or somewhat above, the temperature at which you intend to use the force
+constants. The displacements must be large enough for the anharmonic terms to
+show up in the forces, but small enough that the Taylor expansion truncated at
+your highest rank is still accurate. Room temperature or lower is a reasonable default
+for the sampling temperature in <code class="docutils literal notranslate"><span class="pre">snaps.inp</span></code>. For harmonic force constants only, a typical
+displacement amplitude of 0.01–0.02 Å is good. Displacements of 0.01 Å determine FC2 very well
+but long-range FC3 and FC4 hardly at all.</p>
+<p><strong>Should I displace one atom at a time instead?</strong></p>
+<p>You can — FOCEX accepts any set of displaced configurations, including the
+single-atom displacements of the frozen-phonon method. But thermal snapshots in
+which all atoms move at once carry far more information per DFT run, which is
+why SC-SNAPS generates them (<a class="reference internal" href="runscsnaps.html"><span class="doc">Running SC-SNAPS</span></a>).</p>
+<p><strong>All my snapshots must come from the same DFT settings — how can I check that?</strong></p>
+<p>Every snapshot must use the same functional, pseudopotentials, cutoff, k-mesh and convergence
+criteria, and the same reference structure. A quick test: in a snapshot where one or two atoms
+are displaced, atoms far from them (say more than 9 Å) must feel the same forces as in the
+undisplaced reference. In a MoTe<sub>2</sub> data set three of seven snapshots failed this test
+(far forces ~0 instead of the reference’s ±4.9×10<sup>-3</sup> eV/Å, everywhere else agreement to
+5×10<sup>-5</sup>); without them the FC2 fit error went from 12.7 % to 3.2 %. Remove such snapshots
+(and make sure every inequivalent atom is still displaced somewhere).</p>
+<p><strong>Do I need the Born effective charges?</strong></p>
+<p>Only for polar materials, where the long-range dipole-dipole interaction makes
+the force constants decay slowly and produces the LO-TO splitting. For non-polar
+crystals (Si, Ge) or for metals set <code class="docutils literal notranslate"><span class="pre">born_flag</span> <span class="pre">=</span> <span class="pre">0</span></code> and leave the charge blocks at
+zero. For polar crystals compute <span class="math notranslate nohighlight">\(\epsilon^\infty\)</span> and <span class="math notranslate nohighlight">\(Z^*\)</span> with
+your DFT code (DFPT), put them in <code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code> and use
+<code class="docutils literal notranslate"><span class="pre">born_flag</span> <span class="pre">=</span> <span class="pre">2</span></code>. The DFPT run must be consistent with the supercell runs: same functional,
+pseudopotentials and cutoff (ENCUT), and a k-mesh commensurate with the supercell ones. The fit
+only sees the combination <span class="math notranslate nohighlight">\(Z^*/\sqrt{\epsilon}\)</span>, so inconsistent values leave a long-range
+error in the forces that the short-range force constants cannot absorb.</p>
+</section>
+<section id="choosing-the-ranges-and-the-ranks">
+<h2><span class="section-number">10.4. </span>Choosing the ranges and the ranks<a class="headerlink" href="#choosing-the-ranges-and-the-ranks" title="Link to this heading"></a></h2>
+<p><strong>How do I choose the number of neighbour shells for each atom?</strong></p>
+<p>Look at the shells of each atom (<code class="docutils literal notranslate"><span class="pre">pairs.dat</span></code>, or the shell table in the log: radius, number of
+neighbours, gap to the previous shell) and put the cutoff where the gap between consecutive shells
+is large. Then check convergence: increase the range until the fit error, the phonons and the
+elastic constants stop changing. <code class="docutils literal notranslate"><span class="pre">shell-optimizer</span> <span class="pre">DIR</span></code> does this for you: it reads the shells,
+proposes cutoffs at the large gaps, runs FOCEX for increasing FC2 and then FC3 ranges, and reports
+the smallest FC2 range that is converged, stable and has a small fit error, and the largest FC3 range
+whose added force constants are still determined by the data, together with the lines to put in
+<code class="docutils literal notranslate"><span class="pre">structure.params</span></code>. If no range is stable with your invariances, it tells you which one to switch off. <code class="docutils literal notranslate"><span class="pre">shell-optimizer</span> <span class="pre">--dry</span> <span class="pre">DIR</span></code> only lists the shells and the candidates.</p>
+<p><strong>Should I use the default FC2 range</strong> (<code class="docutils literal notranslate"><span class="pre">fc2range</span> <span class="pre">=</span> <span class="pre">0</span></code>) <strong>?</strong></p>
+<p>It takes every pair inside the supercell. That is often too many: in layered crystals it includes
+many weak interlayer pairs that the data barely determine, and the neighbour search may not reach
+them (the run stops with <code class="docutils literal notranslate"><span class="pre">atom</span> <span class="pre">not</span> <span class="pre">found</span> <span class="pre">...</span> <span class="pre">increase</span> <span class="pre">the</span> <span class="pre">cutoff</span> <span class="pre">length</span> <span class="pre">in</span> <span class="pre">3rd</span> <span class="pre">line</span> <span class="pre">of</span>
+<span class="pre">default.params</span></code>). Pairs that sit exactly on the boundary of the supercell can only be determined
+in part; FOCEX now limits the damage (see “cut moved” below), but a range chosen from the shell
+gaps is safer.</p>
+<p><strong>Which ranks should I include?</strong></p>
+<p>FC2 for phonons and elastic constants; FC3 for Grüneisen parameters, thermal expansion and thermal
+conductivity; FC4 only when the displacements are large enough to see it and the data determine it
+(check its error bars: in BaZrO<sub>3</sub> with 0.01–0.02 Å displacements only 38 of 399 FC4 were
+larger than twice their error, and adding them made the fit and the bulk modulus worse). The range
+of FC3 is usually much shorter than that of FC2.</p>
+</section>
+<section id="invariances-and-the-fitting-method">
+<h2><span class="section-number">10.5. </span>Invariances and the fitting method<a class="headerlink" href="#invariances-and-the-fitting-method" title="Link to this heading"></a></h2>
+<p id="faq-enforce-inv"><strong>Which</strong> <code class="docutils literal notranslate"><span class="pre">enforce_inv</span></code> <strong>should I use?</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">1</span></code>. The invariances then hold exactly and every force constant gets an error bar. With <code class="docutils literal notranslate"><span class="pre">0</span></code>
+they hold only approximately, and how well depends on the data (check the violation tables in the
+log). <code class="docutils literal notranslate"><span class="pre">3</span></code> (LASSO with a refit) is for selecting force constants when you include many of them and
+the forces are accurate; <code class="docutils literal notranslate"><span class="pre">2</span></code> only as a diagnostic. In MgO with two snapshots, <code class="docutils literal notranslate"><span class="pre">1</span></code> fitted the
+forces 25 times better than <code class="docutils literal notranslate"><span class="pre">3</span></code> (0.17 % against 4.3 %) with the same phonons: LASSO removed force
+constants the data support.</p>
+<p><strong>What do</strong> <code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">2</span></code> <strong>and</strong> <code class="docutils literal notranslate"><span class="pre">3</span></code> <strong>actually do?</strong></p>
+<p>For each value <span class="math notranslate nohighlight">\(\lambda\)</span> of the weight of the <span class="math notranslate nohighlight">\(L_1\)</span> term, FOCEX computes the LASSO
+solution (many force constants exactly zero) and, on the force constants it kept, a “refit”: an
+ordinary least-squares fit with all the others held at zero and the invariances still exact. It
+then chooses <span class="math notranslate nohighlight">\(\lambda\)</span> (by cross-validation, or by the noise test of <code class="docutils literal notranslate"><span class="pre">default.params</span></code> line
+6) and returns the LASSO solution (<code class="docutils literal notranslate"><span class="pre">2</span></code>) or the refit (<code class="docutils literal notranslate"><span class="pre">3</span></code>) at that <span class="math notranslate nohighlight">\(\lambda\)</span>. The LASSO
+values are shrunk towards zero; the refit removes that shrinkage. Flowcharts of both are in the
+technical notes <code class="docutils literal notranslate"><span class="pre">FOCEX/notes/focex_9x_algorithms.pdf</span></code>.</p>
+<p><strong>Should the fit error go down when I add an invariance?</strong></p>
+<p>No — on the data being fitted it can only stay the same or go up, because the invariances restrict
+the fit. What they should do is make the model more physical and its predictions on data not used
+in the fit better. So compare the fit error with and without the invariance: a small increase is
+normal; a large increase means the model is not consistent with that invariance, and the ranks,
+the ranges, the stress or the Born charges need to be reconsidered. Examples from MoTe<sub>2</sub>:</p>
+<ul class="simple">
+<li><p>Huang on, with an unrelaxed reference and no <code class="docutils literal notranslate"><span class="pre">stress.params</span></code> (Huang then assumes zero stress):
+fit 3.2 % and the interlayer shear mode at −65 cm<sup>-1</sup>; Huang off: 1.6 % and 26 cm<sup>-1</sup>.</p></li>
+<li><p>rotational invariance on, with FC3 to 2 shells and FC2 to 10 shells (the rotational relations tie
+FC2 to FC3 and cannot hold when FC3 is cut much shorter): fit 2.8 %, the breathing mode at
+−29 cm<sup>-1</sup> and a negative C<sub>33</sub>; off: 0.84 %, 37 cm<sup>-1</sup>, all stable. With FC3 to
+3 shells it was stable again with it on.</p></li>
+</ul>
+<p><strong>When should I switch Huang</strong> (<code class="docutils literal notranslate"><span class="pre">ihuang</span></code>) <strong>or rotational</strong> (<code class="docutils literal notranslate"><span class="pre">irot</span></code>) <strong>invariance off?</strong></p>
+<p>Huang: when the reference is not relaxed and you do not have its stress from the DFT run (give
+it in <code class="docutils literal notranslate"><span class="pre">stress.params</span></code> if you have it). Rotational: when the FC3 range is much shorter than the FC2
+range and switching it off removes instabilities or lowers the fit error a lot.
+<code class="docutils literal notranslate"><span class="pre">shell-optimizer</span></code> reruns its chosen model with each of them off and tells you if one is a problem.</p>
+<p><strong>My acoustic branches are imaginary near</strong> <span class="math notranslate nohighlight">\(\Gamma\)</span> <strong>.</strong></p>
+<p>The acoustic sum rule is not satisfied. Set <code class="docutils literal notranslate"><span class="pre">itrans</span> <span class="pre">=</span> <span class="pre">1</span></code> and use <code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">1</span></code>, which holds
+the invariances exactly. If only a few points very close to <span class="math notranslate nohighlight">\(\Gamma\)</span> are slightly negative
+with Born charges on, compare with <code class="docutils literal notranslate"><span class="pre">born_flag</span> <span class="pre">=</span> <span class="pre">0</span></code>: it is then a long-range (q→0) effect rather
+than an instability.</p>
+</section>
+<section id="judging-the-result">
+<h2><span class="section-number">10.6. </span>Judging the result<a class="headerlink" href="#judging-the-result" title="Link to this heading"></a></h2>
+<p><strong>How do I know whether the fit is good?</strong></p>
+<ul class="simple">
+<li><p>the fit error (<code class="docutils literal notranslate"><span class="pre">Relative</span> <span class="pre">residual</span></code> or <code class="docutils literal notranslate"><span class="pre">Percent</span> <span class="pre">error</span></code> in the log): a few percent at most;</p></li>
+<li><p>the error bars: each force constant with its standard error is in the log, the mean per rank
+(<code class="docutils literal notranslate"><span class="pre">sd(rank)</span></code>) at its end; force constants smaller than twice their error are not determined;</p></li>
+<li><p>the invariance violations in the log (with <code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">1</span></code> at round-off level);</p></li>
+<li><p>the phonons: no imaginary frequencies (other than where expected), acoustic branches linear at
+<span class="math notranslate nohighlight">\(\Gamma\)</span>;</p></li>
+<li><p>the elastic constants: positive, symmetric, and for a hexagonal crystal
+<span class="math notranslate nohighlight">\(C_{66} = (C_{11}-C_{12})/2\)</span>;</p></li>
+<li><p>the Grüneisen parameters: of order 1; very large values belong to modes with very low frequency
+(<span class="math notranslate nohighlight">\(\gamma \propto 1/\omega^2\)</span>) — for soft modes look at <span class="math notranslate nohighlight">\(d\omega^2/d\ln V\)</span> instead;</p></li>
+<li><p>predictions on snapshots that were not used in the fit, if you can spare a few: the force error
+there should be close to the fit error.</p></li>
+</ul>
+<p><strong>Different ranges give very different results for one mode.</strong></p>
+<p>Then the data do not determine that mode. Example: BaZrO<sub>3</sub> in a 3×3×3 supercell gave the
+R-point tilt mode at +49 cm<sup>-1</sup> with one setting and −34 cm<sup>-1</sup> with another; R is not in
+that supercell. Add data that contain the mode.</p>
+<p><strong>The fit residual got worse when I turned on LASSO</strong> (<code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">2,</span> <span class="pre">3</span></code>).</p>
+<p>Expected: the residual is measured on the snapshots the model was fitted to, and LASSO uses fewer
+force constants. Judge the result on the phonons and on the error bars. If it is much worse (as in
+the MgO example above), use <code class="docutils literal notranslate"><span class="pre">enforce_inv</span> <span class="pre">=</span> <span class="pre">1</span></code>.</p>
+<p><strong>The optical frequencies are wrong for my polar material.</strong></p>
+<p>The long-range electrostatics is missing or incomplete: provide
+<span class="math notranslate nohighlight">\(\epsilon^\infty\)</span> and the Born charges in <code class="docutils literal notranslate"><span class="pre">dielectric.params</span></code> and set
+<code class="docutils literal notranslate"><span class="pre">born_flag</span> <span class="pre">=</span> <span class="pre">2</span></code>, consistent with the supercell runs (see above). The LDA or GGA underestimation
+of the bandgap can also lead to a larger dielectric constant and a lower LO-TO splitting. In some
+materials with transition metals, adding a Hubbard U term may improve the accuracy, otherwise use
+of hybrid functionals such as HSE will also improve accuracy of <span class="math notranslate nohighlight">\(\epsilon^\infty\)</span>.</p>
+</section>
+<section id="messages-during-the-run">
+<h2><span class="section-number">10.7. </span>Messages during the run<a class="headerlink" href="#messages-during-the-run" title="Link to this heading"></a></h2>
+<p><strong>“SVD: singular values next to the cut …; cut moved to the gap at …”</strong></p>
+<p>Some combinations of force constants are (almost) not determined by the data, and their singular
+values sat next to the SVD cutoff, where they would have been amplified. FOCEX moved the cutoff into
+the gap above them. Nothing to do; it is the cure for force constants of 10<sup>2</sup>–10<sup>5</sup>
+eV/Å<sup>2</sup> that appeared before 9.9 (MgO with two displacements and the default range).</p>
+<p><strong>“SVD: measured relative noise … refit with the cut …” and then “refit kept” or “refit rejected”</strong></p>
+<p>The fit error is larger than the force noise of <code class="docutils literal notranslate"><span class="pre">default.params</span></code> line 2 assumes. FOCEX tried a
+larger cutoff and kept it only if the fit stayed within the noise. “Rejected … model error” means
+the misfit comes from the model (too short a range, missing ranks, an inconsistent invariance), not
+from noise: improve the model.</p>
+<p><strong>“WARNING: the invariance rows with a right-hand side cannot all hold”</strong></p>
+<p>The invariance relations that carry a right-hand side (from <code class="docutils literal notranslate"><span class="pre">stress.params</span></code>, from ranks read with
+<code class="docutils literal notranslate"><span class="pre">include_fc</span> <span class="pre">=</span> <span class="pre">2</span></code>, or from the Coulomb terms with <code class="docutils literal notranslate"><span class="pre">born_flag</span> <span class="pre">=</span> <span class="pre">2</span></code>) contradict each other or the
+other relations. Check that the read force constants, the stress and the Born charges belong to this
+structure and these settings.</p>
+<p><strong>“atom not found … increase the cutoff length in 3rd line of default.params”</strong></p>
+<p>The requested range (often the default FC2 range of a large supercell) reaches beyond the
+neighbour list. Choose a shorter range, or increase line 3 of <code class="docutils literal notranslate"><span class="pre">default.params</span></code>.</p>
+<p><strong>“CHECK_BORN_SYMMETRY: Born charges or dielectric tensor break the crystal symmetry”</strong> and
+<strong>POSCAR atoms that are “nearest to the site … at … A from it”</strong></p>
+<p>The Born charges are on the wrong atoms or in another frame, or POSCAR and <code class="docutils literal notranslate"><span class="pre">structure.params</span></code> do
+not describe the same lattice, origin or atom order. The messages give the details; see
+<a class="reference internal" href="runfocex.html"><span class="doc">Running FOCEX</span></a> (“Error messages”).</p>
+<p><strong>FOCEX stops immediately with an end-of-file or “bad real number” message.</strong></p>
+<p>One of the parameter files has the wrong number of lines or values. These files
+are read positionally: <code class="docutils literal notranslate"><span class="pre">default.params</span></code> has 4 lines (optional 5th to 7th) and line 2 of
+<code class="docutils literal notranslate"><span class="pre">latdyn.params</span></code> must contain six numbers (mesh shift <em>and</em> surface normal).
+Start from the templates in the <code class="docutils literal notranslate"><span class="pre">FOCEX</span></code> directory.</p>
+</section>
+<section id="output-files">
+<h2><span class="section-number">10.8. </span>Output files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<p><strong>Which output files do the other ALATDYN codes need?</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">lat_fc.dat</span></code> together with <code class="docutils literal notranslate"><span class="pre">fc1.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc2.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">fc3.dat</span></code> and, if you
+fitted it, <code class="docutils literal notranslate"><span class="pre">fc4.dat</span></code>.</p>
+<p><strong>Why is the log file named</strong> <code class="docutils literal notranslate"><span class="pre">log1dfB00_00_03_0_tr00.dat</span></code> <strong>?</strong></p>
+<p>The name encodes the settings of the run — the number of data files, the FC2
+range mode, the Born flag, the shells used for ranks 2/3/4 and the invariances
+imposed — so that runs with different options do not overwrite each other. The
+decoding is given in <a class="reference internal" href="runfocex.html#focex-logname"><span class="std std-ref">The log file name</span></a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="runfocexagent.html" class="btn btn-neutral float-left" title="9. FOCEX agent: from a crystal structure to phonons" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, University of Virginia.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
