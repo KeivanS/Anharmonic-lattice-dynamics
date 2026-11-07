@@ -1103,7 +1103,8 @@
 ! no independent terms: all terms are zero
       if(ntermsindep.eq.0)then
         if(ntermall.gt.maxtermszero)then
-         write(6,*)'Warning: in force_constants: maxtermszero too small'
+! no message here (2026-11-06, user): in the sizing passes an overflow is expected and the caller doubles
+! the scratch and retries; in the collect passes the caller reports it and stops
           ierz=ierz+1
           deallocate(ipermute,eqs,eqs2)
           return !stop
@@ -1195,7 +1196,8 @@
 ! zero terms
         if(zero(n))then
           if(ntermszero+m-msave.gt.maxtermszero)then
-         write(6,*)'Warning: in force_constants: maxtermszero too small'
+! no message here (2026-11-06, user): in the sizing passes an overflow is expected and the caller doubles
+! the scratch and retries; in the collect passes the caller reports it and stops
             ierz=ierz+1
             deallocate(ipermute,eqs,eqs2)
             return     !       stop

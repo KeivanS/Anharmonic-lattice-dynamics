@@ -187,6 +187,8 @@
  use ios, only : ulog
  use lasso_constrained, only : classo_cv
  use svd_stuff, only : svdcut
+ use params, only : lasso_rule, lasso_l2, include_fc
+ use svd_stuff, only : map
  implicit none
  integer, intent(in) :: nrow,ncol,nker,nfold,nlam,uio
  real(r15), intent(in) :: a(nrow,ncol),b(nrow),kernel(ncol,nker),x0(ncol),epsratio
@@ -194,7 +196,7 @@
  real(r15), intent(out):: x(ncol),mu_opt
  integer, intent(out)  :: nnz
  character(len=16) envv
- integer info
+ integer info, r, colrank(ncol)
 
  call get_environment_variable('FOCEX_LASSO',envv)
  if(trim(envv).eq.'old') then
@@ -213,8 +215,20 @@
     x=x0 ; nnz=0 ; mu_opt=0
     return
  endif
+ colrank=0 ; info=0
+ do r=1,8
+    if(include_fc(r).ne.1) cycle
+    colrank(info+1:min(ncol,info+map(r)%nkeptind))=r ; info=info+map(r)%nkeptind
+ enddo
+ if(info.ne.ncol) then
+    write(ulog,*)'LASSO: FC counts per rank',info,' differ from',ncol,'; one prior width tau for all FCs'
+    colrank=1
+ endif
  call classo_cv(nrow,ncol,nker,a,b,kernel,x0,svdcut,nfold,nlam,epsratio,1d-10,300,refit, &
- &    x,mu_opt,nnz,info,uio)
+ &    x,mu_opt,nnz,info,uio,lasso_rule,colrank,lasso_l2)
+ if(lasso_l2.gt.0) write(ulog,*)'LASSO: L2 (ridge) term on, tau = ',lasso_l2,' x rms of each rank (default.params line 7)' 
+ if(lasso_rule.eq.1) write(ulog,*)'LASSO: lam by the noise test (default.params line 6 = 1), see lasso.dat'
+ if(lasso_rule.eq.1) write(*   ,*)'LASSO: lam by the noise test (default.params line 6 = 1), see lasso.dat' 
  write(ulog,'(a,i6,a,i6,a,es12.4,a,i2)')'LASSO: force constants selected=',nnz,' of ',ncol, &
  &    '  lam=',mu_opt,'  info=',info
  write(*   ,'(a,i6,a,i6,a,i2)')'LASSO: force constants selected=',nnz,' of ',ncol,'  info=',info

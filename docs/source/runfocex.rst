@@ -785,15 +785,20 @@ next. The label is a short string used for the tick marks in ``KTICS.BS`` file u
 ``default.params``
 ^^^^^^^^^^^^^^^^^^
 
-Four numerical thresholds, one per line. **A zero means "use the built-in default"**, given in
-the comment on that line — so in practice you copy this file unchanged.
+Four numerical thresholds and two optional switches, one per line; only the first number of a
+line is read, the rest is a comment saying what the number means. **A zero means "use the built-in
+default"**, given in that comment, so in practice you copy this file unchanged
+(``FOCEX/default.params``).
 
 .. code-block:: text
 
-   0      tolerance for equating to zero (1d-4)   # if 0 take the default value
-   0      force error value for inversion/regularization (1d-5)
-   0      cutoff for how many cells away (6 cells)
-   0      margin for eliminating small force constants (1d-6)
+   0      tolerance (Ang): coordinates closer than this are equal, for the symmetry search (0 = default 1d-4)
+   0      force error: expected noise of the forces; its square is the SVD cutoff (0 = default 1d-5)
+   0      icutoff: range of the neighbour search (0 = default 6)
+   0      margin: FCs smaller than this are not written to the fcN.dat files (0 = default 1d-6)
+   0      relax the reference with the fitted FCs: 1 = yes, 0 = no (default 0)
+   0      LASSO (enforce_inv=2,3) lambda: 1 = noise test, 0 = smallest cross-validation error (default 0)
+   0      LASSO L2 (ridge) prior term: 1 = add it, 0 = no (default 0)
 
 They are:
 
@@ -809,12 +814,25 @@ They are:
 * **margin** (default :math:`10^{-6}`) — FCs smaller than this are not written
   to the ``fcN.dat`` files.
 
+An optional **line 6** (absent or 0: smallest cross-validation error) sets how the LASSO weight
+:math:`\lambda` is chosen for ``enforce_inv = 2, 3``. With ``1`` (noise test) FOCEX takes the
+largest :math:`\lambda` whose least-squares refit on the selected force constants is still
+consistent with the noise in the forces: dropping :math:`\Delta p` free parameters may raise the
+residual by at most :math:`s^2(\Delta p + 2\sqrt{2\Delta p})`, where :math:`s^2` is the residual
+variance of the least-squares fit on all of them. The scan, with these numbers, is in
+``lasso.dat``. With exact forces (:math:`s = 0`) the two choices agree.
+
+An optional **line 7** (absent or 0: off; 1: on) adds to the LASSO an :math:`L_2` term
+:math:`(s^2/N)\sum_j x_j^2/(2\tau_{r(j)}^2)`: the Gaussian prior of ridge regression, with the noise
+:math:`s^2` of the least-squares fit and a prior width :math:`\tau_r` for each rank, the rms of the
+rank-:math:`r` force constants of that fit. Experimental (2026-11).
+
+For ``enforce_inv = 2, 3`` the singular values of the force matrix are regularised with the same
+smooth filter as the SVD fit of ``enforce_inv = 0, 1``, entered as a penalty, so all four values use
+one regularisation.
+
 An optional **line 5** (absent or 0: off) relaxes the reference structure with the fitted force
-constants (since 2026-11-02):
-
-.. code-block:: text
-
-   1      relax the reference with the fitted FCs (1) or not (0)
+constants (since 2026-11-02): ``1`` on that line.
 
 FOCEX then minimizes the energy of the fitted Taylor expansion with respect to a homogeneous strain
 :math:`\eta` and the internal displacements :math:`u^0` (static displacement
@@ -1286,7 +1304,7 @@ Troubleshooting
 
 ``End of file`` while reading ``default.params`` or ``latdyn.params``
     The file has fewer lines than expected. Start from the template in the ``FOCEX``
-    directory: ``default.params`` has 4 lines (an optional 5th), and line 2 of ``latdyn.params`` contains six
+    directory: ``default.params`` has 4 lines (optional 5th to 7th), and line 2 of ``latdyn.params`` contains six
     numbers (shift **and** normal).
 
 ``Bad real number in item 4 of list input`` (``latdyn.params``)

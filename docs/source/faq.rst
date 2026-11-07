@@ -124,7 +124,7 @@ such as HSE will also improve accuracy of :math:`\epsilon^\infty` .
 **FOCEX stops immediately with an end-of-file or "bad real number" message.**
 
 One of the parameter files has the wrong number of lines or values. These files
-are read positionally: ``default.params`` has 4 lines (an optional 5th) and line 2 of
+are read positionally: ``default.params`` has 4 lines (optional 5th to 7th) and line 2 of
 ``latdyn.params`` must contain six numbers (mesh shift *and* surface normal).
 Start from the templates in the ``FOCEX`` directory.
 

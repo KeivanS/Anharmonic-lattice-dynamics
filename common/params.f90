@@ -17,6 +17,12 @@ module params
  integer  :: lasso_nlambda = 40     ! points on the mu path
  real(r15):: lasso_epsratio= 1d-4   ! smallest mu, as a fraction of the largest
  real(r15):: lasso_mu               ! the selected value (output)
+! lasso_rule (default.params line 6, absent = 0; 2026-11-06, user): how lam is chosen. 0 = smallest CV
+! error; 1 = noise test, the largest lam whose refit is consistent with the force noise (classo_cv_res)
+ integer  :: lasso_rule = 0
+! lasso_l2 (default.params line 7, absent or 0 = off): L2 term with prior width tau_r = lasso_l2 x rms of the
+! rank-r FCs of the least-squares fit (classo_cv_res)
+ real(r15):: lasso_l2 = 0
 ! relax_ref (default.params line 5, absent = 0): 1 = relax the reference with the fitted FCs and use the
 ! re-expanded FCs downstream (FOCEX relax_reference); ref_relaxed is set once that is done
  integer  :: relax_ref = 0

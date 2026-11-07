@@ -110,6 +110,14 @@ match the table. structure.params line 12 there is `0 1 1 1 1 1 1` (outputs iden
 User's rule for the manual: show the working path only, no history or failure lists; fix the
 code/scripts instead (collection scripts in FOCEX/utility now start FORCEDISP1 afresh).
 
+## Input files shown to users (rule, 2026-11-06, user)
+
+Every `default.params` put on GitHub or shown in the docs has a comment after the value on EVERY line saying
+what it is and its default (FOCEX reads only the first number of a line). Canonical form: `FOCEX/default.params`
+(6 lines: tolerance, force error, icutoff, margin, relax_ref, lasso_rule). All tracked FOCEX default.params were
+rewritten in that form with their values unchanged (the old 36-line files had "maxterms" comments on lines 5, 6,
+which FOCEX reads as relax_ref and lasso_rule = 0). SCOP8/input_sample/default.params is SCOP8's own format.
+
 ## Regression testing FOCEX
 
 Build a reference binary from an untouched checkout and a second from the working
@@ -469,6 +477,15 @@ Recommendation in the manual (runfocex.rst "Which value to use", 2026-11-06, use
 invariances hold only as well as the data allow: max |Ax-b| 1e-6 for LaP but 2e-3 (trans) / 7e-3 (rot) for
 BZO (2.7e5 force rows), from the violation tables of the 2026-11 logs. 3 for selection with accurate forces,
 2 only as a diagnostic. Not yet confirmed by an enforce_inv=1 run on LaP or BZO.
+
+LASSO lam rule and filter (2026-11-06, user): default.params line 6 = 1 -> noise test (largest lam whose
+refit satisfies RSS - RSS_full <= s^2 (dp + 2 sqrt(2 dp)), dp from the trace of the filtered hat matrix);
+line 7 = 1 -> L2 prior (s^2/N) sum x^2/(2 tau_rank^2), tau = rms per rank of the LS FCs (FOCEX_L2_TAU env
+scales tau, tests only). The SVD filter of svbksb (w^2/sqrt(w^6+wc^6)) replaced the hard cut in the LASSO
+(penalty g_k = s_k^2 (sqrt(1+(sc/s_k)^6)-1) on the singular directions of A K). Tested on the ZnO cubic
+exact model, FC3 7 shells vs model 5 (job scratch, not kept): exact forces -> exact model, 229/229, 0 false;
+1e-3 noise: noise test FC3 nz 374 (LS 624, CV 390), lost 10 (<= 3.2 sigma), false 155 (< 1.8 sigma),
+rms err 0.64 sigma (LS 0.99); filter = hard cut there (no direction below the filter scale); L2 negligible.
 
 `svd_set` declares its matrix `intent(inout)` and `svdcmp` returns U in it, so
 **it destroys the matrix you pass**. Give it a copy.

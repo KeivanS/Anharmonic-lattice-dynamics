@@ -11,6 +11,7 @@
  use constants, only : r15
  implicit none
  integer i,counter,tau ,rnk,ios_cc,n_cc
+ character(len=32) l2env
  real(r15) scal,force_error
  character fdf*1,r4*7,invr*4,incl*8,it*2,zone*5,now*10,today*8,bornflg*3
  character, intent(in):: fn1*(*)
@@ -34,6 +35,28 @@
 ! (only the value 1 switches it on: older long default.params files have other numbers on line 5)
    read(uparams,*,iostat=ios_cc) relax_ref
    if(ios_cc.ne.0 .or. relax_ref.ne.1) relax_ref = 0
+! line 6 (optional, absent = 0): 1 = choose the LASSO lam by the noise test (enforce_inv=2,3); only the
+! value 1 switches it on, for the same reason as line 5
+   lasso_rule = 0
+   if(ios_cc.eq.0) then
+      read(uparams,*,iostat=ios_cc) lasso_rule
+      if(ios_cc.ne.0 .or. lasso_rule.ne.1) lasso_rule = 0
+   endif
+! line 7 (optional, absent = 0): 1 = add the L2 (ridge) prior term to the LASSO, prior width = rms of each
+! rank of the least-squares FCs; any other value = off (a switch, user 2026-11-06: no tuning numbers)
+   lasso_l2 = 0
+   if(ios_cc.eq.0) then
+      read(uparams,*,iostat=ios_cc) lasso_l2
+      if(ios_cc.ne.0 .or. lasso_l2.ne.1) lasso_l2 = 0
+   endif
+! tests only (not documented): FOCEX_L2_TAU scales the prior width when line 7 = 1
+   if(lasso_l2.eq.1) then
+      call get_environment_variable('FOCEX_L2_TAU',l2env)
+      if(len_trim(l2env).gt.0) then
+         read(l2env,*,iostat=ios_cc) lasso_l2
+         if(ios_cc.ne.0 .or. lasso_l2.le.0) lasso_l2 = 1
+      endif
+   endif
  close(uparams)
 
  open(uparams,file='structure.params',status='old')

@@ -198,7 +198,7 @@
     end function mstep
  end subroutine ipm_classo
 !-------------------------------------------------------------------------------
- subroutine refit_support(n, nx, G, c, Q, z0, sel, t)
+ subroutine refit_support(n, nx, G, c, Q, z0, sel, t, pf, Gd)
 !! least squares 1/2 t^T G t - c^T t over t with (z0 + Q t)_i = 0 for .not. sel(i):
 !! t = tp + N s, N the null space of B = Q(not sel,:), tp = pinv(B) (-z0(not sel)) (0 if z0 = 0);
 !! s = pinv(N^T G N) N^T (c - G tp) (cutoff refit_cut relative on the eigenvalues of N^T G N;
@@ -207,7 +207,11 @@
  real(dp), intent(in) :: G(n,n), c(n), Q(nx,n), z0(nx)
  logical, intent(in) :: sel(nx)
  real(dp), intent(out) :: t(n)
- real(dp), allocatable :: B(:,:), Nb(:,:), Hm(:,:), Vh(:,:), wh(:), hv(:), s(:), tp(:)
+ real(dp), intent(out), optional :: pf     ! effective free parameters of the refit (noise test): trace of
+                                           ! the hat matrix (N^T G N)^+ N^T Gd N, Gd = G of the data alone
+                                           ! (G may hold penalties); without Gd the rank of N^T G N
+ real(dp), intent(in), optional :: Gd(n,n)
+ real(dp), allocatable :: B(:,:), Nb(:,:), Hm(:,:), Vh(:,:), wh(:), hv(:), s(:), tp(:), Hd(:,:)
  integer m, i, j, p
  m = count(.not. sel)
  t = 0
@@ -227,7 +231,7 @@
     allocate(Nb(n,n))
     call null_space_qr(n, m, B, null_tol, p, Nb)
     deallocate(B)
-    if (p == 0) then ; t = tp ; return ; endif
+    if (p == 0) then ; t = tp ; if (present(pf)) pf = 0 ; return ; endif
  endif
  allocate(Hm(p,p), Vh(p,p), wh(p), hv(p), s(p))
  Hm = matmul(transpose(Nb(:,1:p)), matmul(G, Nb(:,1:p)))
@@ -239,6 +243,17 @@
     s = s + Vh(:,j)*dot_product(Hm(:,j), hv)/wh(j)
  enddo
  t = tp + matmul(Nb(:,1:p), s)
+ if (present(pf)) then
+    if (present(Gd)) then
+       Hd = matmul(transpose(Nb(:,1:p)), matmul(Gd, Nb(:,1:p)))
+       pf = 0
+       do j = 1, p
+          if (wh(j) > refit_cut*maxval(wh)) pf = pf + dot_product(Vh(:,j), matmul(Hd, Vh(:,j)))/wh(j)
+       enddo
+    else
+       pf = count(wh > refit_cut*maxval(wh))
+    endif
+ endif
  deallocate(Nb, Hm, Vh, wh, hv, s, tp)
  contains
     subroutine shift_part(tq)
@@ -288,7 +303,7 @@
     end subroutine shift_part
  end subroutine refit_support
 !-------------------------------------------------------------------------------
- subroutine classo_path(n, nx, G, c, Q, z0, nlam, lam, tol, maxit, Tl, Tr, nsel, nits, nconv)
+ subroutine classo_path(n, nx, G, c, Q, z0, nlam, lam, tol, maxit, Tl, Tr, nsel, nits, nconv, npf, Gd)
 !! constrained LASSO at every lam of the decreasing grid (warm starts) and the refit
 !! on each support: Tl(:,k) LASSO, Tr(:,k) refit, nsel(k) = |support|, nits(k)
 !! interior-point iterations, nconv = number of lam where it did not converge.
@@ -296,10 +311,13 @@
  real(dp), intent(in) :: G(n,n), c(n), Q(nx,n), z0(nx), lam(nlam), tol
  real(dp), intent(out) :: Tl(n,nlam), Tr(n,nlam)
  integer, intent(out) :: nsel(nlam), nits(nlam), nconv
+ real(dp), intent(out), optional :: npf(nlam)  ! effective free parameters of each refit (noise test)
+ real(dp), intent(in), optional :: Gd(n,n)      ! G of the data alone (for npf)
  real(dp) t(n), z(nx), gap
  logical sel(nx), selold(nx), conv
  integer k
- nconv = 0 ; selold = .false.
+ real(dp) pk
+ nconv = 0 ; selold = .false. ; pk = 0
  do k = 1, nlam
     call ipm_classo(n, nx, G, c, Q, z0, lam(k), tol, maxit, t, z, gap, nits(k), conv)
     if (.not. conv) then
@@ -312,29 +330,53 @@
     if (k > 1 .and. all(sel .eqv. selold)) then
        Tr(:,k) = Tr(:,k-1)
     elseif (nsel(k) == 0 .and. all(z0 == 0)) then
-       Tr(:,k) = 0
+       Tr(:,k) = 0 ; pk = 0
     else
-       call refit_support(n, nx, G, c, Q, z0, sel, Tr(:,k))
+       if (present(Gd)) then
+          call refit_support(n, nx, G, c, Q, z0, sel, Tr(:,k), pk, Gd)
+       else
+          call refit_support(n, nx, G, c, Q, z0, sel, Tr(:,k), pk)
+       endif
     endif
+    if (present(npf)) npf(k) = pk
     selold = sel
  enddo
  end subroutine classo_path
 !-------------------------------------------------------------------------------
  subroutine classo_cv_res(nrow, ncol, nker, A, b, Kb, x0, nfold, nlam, epsratio, tol, maxit, refit, &
-&                     x, lam_best, nsel_best, info, uio)
+&                     x, lam_best, nsel_best, info, uio, rule, colrank, l2fac, gfil)
 !! the whole procedure. refit: x = refit on all rows at the lam of smallest refit CV
 !! error; otherwise x = the constrained LASSO solution at the lam of smallest LASSO CV error.
 !! info: 0 ok, 1 W Kb rank deficient, 2 the interior point did not converge somewhere (see log),
 !! 3 CV minimum at the smallest lam of the grid. Table written to unit uio (if > 0).
- integer, intent(in) :: nrow, ncol, nker, nfold, nlam, maxit, uio
+!! rule (2026-11-06, user): 0 = the lam of smallest CV error (as before); 1 = noise test: the largest lam
+!! whose refit on all rows is consistent with the force noise, i.e. dropping dp = p_full - p(lam) free
+!! parameters raises the residual by no more than chi^2_dp allows, RSS(lam) - RSS_full <= s^2 (dp +
+!! 2 sqrt(2 dp)) (mean + 2 standard deviations of chi^2_dp), s^2 = RSS_full/(N - p_full) from the
+!! constrained least-squares fit on all resolved parameters. With exact forces s = 0: only refits
+!! that reproduce the full fit pass. info 3 with rule 1: no lam of the grid passes.
+!! l2fac > 0 (default.params line 7; 2026-11-06, user): adds the L2 (ridge) term of a Gaussian prior,
+!! (s^2/N) sum_j x_j^2 / (2 tau_r(j)^2), tau_r = l2fac * rms of the rank-r FCs of the full least-squares
+!! fit, s^2 its residual variance (lam_2 = s^2/tau^2: Bayesian MAP with noise s and prior width tau).
+!! It enters the LASSO, the refits and the CV training fits; the residuals (CV errors, noise test) are
+!! those of the forces alone. colrank(j): rank of FC j.
+ integer, intent(in) :: nrow, ncol, nker, nfold, nlam, maxit, uio, rule, colrank(ncol)
+ real(dp), intent(in) :: l2fac
+!! gfil(k) (2026-11-06, user): the penalty of the SVD filter of svbksb on the k-th column of Kb (a right
+!! singular direction of A Kb, singular value s_k): g_k = s_k^2 (sqrt(1+(s_c/s_k)^6) - 1), so that
+!! without the L1 term the fit is exactly svd_set's, x_k = s_k^2/sqrt(s_k^6+s_c^6) (u_k.b). It replaces
+!! the hard cut s_k > svdcut s_max of before and enters the LASSO, the refits and the CV training fits.
+ real(dp), intent(in) :: gfil(nker)
  real(dp), intent(in) :: A(nrow,ncol), b(nrow), Kb(ncol,nker), x0(ncol), epsratio, tol
  logical, intent(in) :: refit
  real(dp), intent(out) :: x(ncol), lam_best
  integer, intent(out) :: nsel_best, info
  real(dp), allocatable :: z0(:), w(:), Q(:,:), Gf(:,:,:), cf(:,:), G(:,:), c(:), Tl(:,:), Tr(:,:), &
 &     lam(:), el(:,:), er(:,:), mr(:), sr(:), ml(:)
- real(dp) bf(nfold), bt, lmax
- integer fold(nrow), nf(nfold), nsel(nlam), nits(nlam), nconv, i, k, f, ibest, inf0
+ real(dp) bf(nfold), bt, lmax, rssf, s2, dp_, rssk(nlam), tfull(nker), xls(ncol), tau(8), dpen(ncol), pfull, npf(nlam)
+ real(dp), allocatable :: Gp(:,:), cp(:), P(:,:), cpz(:), Bm(:,:), Vb(:,:), sb(:), Mi(:,:)
+ integer fold(nrow), nf(nfold), nsel(nlam), nits(nlam), nconv, i, k, f, ibest, inf0, knoise
+ logical selall(ncol)
  allocate(w(ncol), Q(ncol,nker), Gf(nker,nker,nfold), cf(nker,nfold), G(nker,nker), c(nker), &
 &     Tl(nker,nlam), Tr(nker,nlam), lam(nlam), el(nlam,nfold), er(nlam,nfold), mr(nlam), &
 &     sr(nlam), ml(nlam))
@@ -345,7 +387,50 @@
  info = inf0
  allocate(z0(ncol)) ; z0 = w*x0
  G = sum(Gf, 3) ; c = sum(cf, 2) ; bt = sum(bf)
- lmax = maxval(abs(matmul(Q, c)))
+! full constrained least-squares fit on all resolved parameters: noise s^2 (noise test, L2 term)
+ allocate(Gp(nker,nker), cp(nker), P(nker,nker), cpz(nker))
+! SVD filter as a penalty: x - x0 = Kb y, W Kb y = Q t, so y = B^-1 t with B = Q^T W Kb; the penalty
+! (1/2N) sum_k g_k y_k^2 is 1/2 t^T P t with P = B^-T diag(g) B^-1 / N
+ allocate(Bm(nker,nker), Vb(nker,nker), sb(nker), Mi(nker,nker))
+ do k = 1, nker
+    Bm(:,k) = matmul(w*Kb(:,k), Q)
+ enddo
+ call svdcmp(Bm, nker, nker, sb, Vb)                ! Bm = U S V^T on return: U
+ do k = 1, nker
+    Mi(:,k) = Vb(:,k)/sb(k)
+ enddo
+ Mi = matmul(Mi, transpose(Bm))                     ! B^-1 = V S^-1 U^T
+ do k = 1, nker
+    Bm(:,k) = gfil*Mi(:,k)
+ enddo
+ P = matmul(transpose(Mi), Bm)/nrow
+ deallocate(Bm, Vb, sb, Mi)
+ cpz = 0
+! full fit on all directions (= svd_set's filtered least squares): noise s^2 with its effective
+! number of free parameters (noise test, L2 term)
+ selall = .true.
+ call refit_support(nker, ncol, G + P, c, Q, z0, selall, tfull, pfull, G)
+ rssf = rssof(tfull)
+ s2 = rssf/max(nrow - pfull, 1d0)
+ if (l2fac > 0) then
+    xls = (z0 + matmul(Q, tfull))/w
+    tau = 0
+    do k = 1, 8
+       if (count(colrank == k) > 0) tau(k) = l2fac*sqrt(sum(xls**2, mask=colrank == k)/count(colrank == k))
+    enddo
+! penalty (s^2/N) sum x_j^2/(2 tau_j^2) with x = z/w, z = z0 + Q t: in t, 1/2 t^T P t + cpz^T t + const
+    do i = 1, ncol
+       dpen(i) = 0
+       if (tau(colrank(i)) > 0) dpen(i) = s2/nrow/(w(i)*tau(colrank(i)))**2
+    enddo
+    do k = 1, nker
+       P(:,k) = P(:,k) + matmul(dpen*Q(:,k), Q)
+    enddo
+    cpz = matmul(dpen*z0, Q)
+    if (uio > 0) write(uio,'(a,es12.4,a,8es11.3)') '# L2 term: s^2', s2, '  tau(rank 1..8)', tau
+ endif
+ Gp = G + P ; cp = c - cpz
+ lmax = maxval(abs(matmul(Q, cp)))   ! cp = c with the L2 term (= c without it)
  do k = 1, nlam
     lam(k) = lmax*exp(log(epsratio)*dble(k-1)/dble(max(nlam-1,1)))
  enddo
@@ -353,7 +438,7 @@
 &    '  FCs', ncol, '  kernel', nker, '  lam_max', lmax
  do f = 1, nfold
 ! training Gram = total - fold; lam scaled to the training rows' 1/(2 N_train) form
-    call classo_path(nker, ncol, (G - Gf(:,:,f))*nrow/(nrow-nf(f)), (c - cf(:,f))*nrow/(nrow-nf(f)), &
+    call classo_path(nker, ncol, (G - Gf(:,:,f))*nrow/(nrow-nf(f)) + P, (c - cf(:,f))*nrow/(nrow-nf(f)) - cpz, &
 &        Q, z0, nlam, lam, tol, maxit, Tl, Tr, nsel, nits, nconv)
     if (nconv > 0) info = max(info, 2)
     if (uio > 0) write(uio,'(a,i3,a,i4,a,i8)') '# fold', f, '  lam not converged', nconv, &
@@ -374,12 +459,34 @@
  do k = 1, ibest
     if (mr(k) <= mr(ibest) + 1d-13*bt) then ; ibest = k ; exit ; endif
  enddo
- if (ibest == nlam) info = max(info, 3)
+ knoise = 0
+ if (rule == 1) then
+! noise test on the all-rows path (whole grid): full constrained LS fit, its noise s^2, then the
+! largest lam whose refit passes
+    call classo_path(nker, ncol, Gp, cp, Q, z0, nlam, lam, tol, maxit, Tl, Tr, nsel, nits, nconv, npf, G)
+    if (nconv > 0) info = max(info, 2)
+    do k = 1, nlam
+       rssk(k) = rssof(Tr(:,k))
+       dp_ = max(pfull - npf(k), 0d0)
+       if (rssk(k) - rssf <= s2*(dp_ + 2*sqrt(2*dp_)) + 1d-13*nrow*bt) then ; knoise = k ; exit ; endif
+    enddo
+    if (uio > 0) write(uio,'(a,es12.4,a,f10.2,a,es12.4,a,i4)') '# noise test: RSS_full', rssf, '  p_full', pfull, &
+&       '  s^2', s2, '  first passing k', knoise
+    if (knoise == 0) then
+       info = max(info, 3)                     ! extend the grid (classo_cv); keep the CV choice meanwhile
+    else
+       ibest = knoise
+    endif
+ elseif (ibest == nlam) then
+    info = max(info, 3)
+ endif
  lam_best = lam(ibest)
+ if (rule /= 1) then
 ! all rows, down to lam_best
- call classo_path(nker, ncol, G, c, Q, z0, ibest, lam(1:ibest), tol, maxit, Tl(:,1:ibest), &
-&     Tr(:,1:ibest), nsel(1:ibest), nits(1:ibest), nconv)
- if (nconv > 0) info = max(info, 2)
+    call classo_path(nker, ncol, Gp, cp, Q, z0, ibest, lam(1:ibest), tol, maxit, Tl(:,1:ibest), &
+&        Tr(:,1:ibest), nsel(1:ibest), nits(1:ibest), nconv)
+    if (nconv > 0) info = max(info, 2)
+ endif
  nsel_best = nsel(ibest)
  if (refit) then
     x = x0 + matmul(Q, Tr(:,ibest))/w
@@ -387,19 +494,28 @@
     x = x0 + matmul(Q, Tl(:,ibest))/w
  endif
  if (uio > 0) then
-    write(uio,'(a)') '#   k        lam/lam_max  CV err LASSO   CV err refit   std err   (all rows:) selected  IPM it'
+    write(uio,'(a)') '#   k        lam/lam_max  CV err LASSO   CV err refit   std err   (all rows:) selected  IPM it' &
+&                    //'  [rule 1: RSS refit - RSS_full, free parameters]'
     do k = 1, nlam
-       if (k <= ibest) then
+       if (rule == 1) then
+          write(uio,'(i5,es16.6,3es15.6,i10,i9,es15.6,f10.2)') k, lam(k)/lmax, ml(k), mr(k), sr(k), nsel(k), nits(k), &
+&               rssk(k) - rssf, npf(k)
+       elseif (k <= ibest) then
           write(uio,'(i5,es16.6,3es15.6,i10,i9)') k, lam(k)/lmax, ml(k), mr(k), sr(k), nsel(k), nits(k)
        else
           write(uio,'(i5,es16.6,3es15.6)') k, lam(k)/lmax, ml(k), mr(k), sr(k)
        endif
     enddo
-    write(uio,'(a,i4,a,es12.4,a,i6,a,i2,a,l1)') '# selected k', ibest, '  lam/lam_max', lam_best/lmax, &
-&       '  FCs kept', nsel_best, '  info', info, '  refit ', refit
+    write(uio,'(a,i4,a,es12.4,a,i6,a,i2,a,l1,a,i2)') '# selected k', ibest, '  lam/lam_max', lam_best/lmax, &
+&       '  FCs kept', nsel_best, '  info', info, '  refit ', refit, '  rule', rule
  endif
- deallocate(z0, w, Q, Gf, cf, G, c, Tl, Tr, lam, el, er, mr, sr, ml)
+ deallocate(z0, w, Q, Gf, cf, G, c, Tl, Tr, lam, el, er, mr, sr, ml, Gp, cp, P, cpz)
  contains
+    real(dp) function rssof(tt)
+! ||A x - b||^2 over all rows for x = x0 + Q tt / w: N (t^T G t - 2 c^T t + |q|^2)
+    real(dp), intent(in) :: tt(:)
+    rssof = max(dot_product(tt, matmul(G, tt)) - 2*dot_product(c, tt) + bt, 0d0)*nrow
+    end function rssof
     real(dp) function vgerr(tt)
 ! mean squared held-out residual per row of fold f: (t^T G_f t - 2 c_f^T t + b_f^T b_f) N / n_f
     real(dp), intent(in) :: tt(:)
@@ -409,26 +525,30 @@
  end subroutine classo_cv_res
 !-------------------------------------------------------------------------------
  subroutine classo_cv(nrow, ncol, nker, A, b, Kb, x0, svdcut, nfold, nlam, epsratio, tol, maxit, refit, &
-&                     x, lam_best, nsel_best, info, uio)
-!! The whole procedure (see classo_cv_res), after restricting x to the part of the
-!! invariance kernel the data resolve: right singular vectors of A Kb with singular
-!! value > svdcut * the largest (the cut svd_set makes, so the unresolved directions
-!! are zero as in the SVD fit). Without it, FCs the snapshots do not see (zero or
-!! 1e-20 columns of A, Ge example) carry ~zero L1 weight w_j and grow without bound
-!! through the invariance couplings (Ge: phonons ~1e8 1/cm).
- integer, intent(in) :: nrow, ncol, nker, nfold, nlam, maxit, uio
- real(dp), intent(in) :: A(nrow,ncol), b(nrow), Kb(ncol,nker), x0(ncol), svdcut, epsratio, tol
+&                     x, lam_best, nsel_best, info, uio, rule, colrank, l2fac)
+!! The whole procedure (see classo_cv_res) in the basis of the right singular vectors of A Kb.
+!! Their singular values s_k get the SVD filter of svbksb as a penalty g_k (2026-11-06, user; it replaces
+!! the hard cut s_k > svdcut s_max): directions the data do not resolve are damped as in the SVD fit.
+!! Without that, FCs the snapshots do not see (zero or 1e-20 columns of A, Ge example) carry ~zero L1
+!! weight w_j and grow without bound through the invariance couplings (Ge: phonons ~1e8 1/cm).
+!! Directions with s_k <= 1e-15 s_max (numerically zero; the filter gives them 0) are left out.
+ integer, intent(in) :: nrow, ncol, nker, nfold, nlam, maxit, uio, rule, colrank(ncol)
+ real(dp), intent(in) :: A(nrow,ncol), b(nrow), Kb(ncol,nker), x0(ncol), svdcut, epsratio, tol, l2fac
  logical, intent(in) :: refit
  real(dp), intent(out) :: x(ncol), lam_best
  integer, intent(out) :: nsel_best, info
- real(dp), allocatable :: Kr(:,:)
- real(dp) eps
+ real(dp), allocatable :: Kr(:,:), sv(:), gfil(:)
+ real(dp) eps, sc
  integer nres, nl
- allocate(Kr(ncol,nker))
- call resolved_kernel(nrow, ncol, nker, A, Kb, svdcut, nres, Kr)
- if (uio > 0) write(uio,'(a,i6,a,i6,a,es10.2)') '# kernel', nker, '  resolved by the data', nres, &
-&    '  (svdcut', svdcut, ')'
- write(*,'(a,i6,a,i6)') ' LASSO: invariance kernel', nker, ', resolved by the data', nres
+ allocate(Kr(ncol,nker), sv(nker), gfil(nker))
+ call resolved_kernel(nrow, ncol, nker, A, Kb, 1d-15, nres, Kr, sv)
+ sc = svdcut*maxval(sv(1:max(nres,1)))
+ gfil = 0
+ if (nres > 0) gfil(1:nres) = sv(1:nres)**2*(sqrt(1 + (sc/sv(1:nres))**6) - 1)
+ if (uio > 0) write(uio,'(a,i6,a,i6,a,i6,a,es10.2,a)') '# kernel', nker, '  non-zero directions', nres, &
+&    '  of them below the filter scale', count(sv(1:nres) < sc), '  (svdcut', svdcut, ', SVD filter of svbksb)'
+ write(*,'(a,i6,a,i6,a,i6)') ' LASSO: invariance kernel', nker, ', directions', nres, ', below the SVD filter scale', &
+&    count(sv(1:nres) < sc)
  if (nres == 0) then
     x = x0 ; lam_best = 0 ; nsel_best = 0 ; info = 0 ; return
  endif
@@ -437,7 +557,7 @@
  eps = epsratio ; nl = nlam
  do
     call classo_cv_res(nrow, ncol, nres, A, b, Kr(:,1:nres), x0, nfold, nl, eps, tol, maxit, refit, &
-&        x, lam_best, nsel_best, info, uio)
+&        x, lam_best, nsel_best, info, uio, rule, colrank, l2fac, gfil(1:nres))
     if (info /= 3 .or. eps <= eps_min*(1 + 1d-12)) exit
     nl = nl + nint(2*(nlam - 1)/log10(1/epsratio))
     eps = max(eps*1d-2, eps_min)
@@ -446,10 +566,10 @@
     if (uio > 0) write(uio,'(a,es9.2,a,i4,a)') '# CV minimum at the smallest lam; grid extended to', &
 &       eps, ' lam_max (', nl, ' points)'
  enddo
- deallocate(Kr)
+ deallocate(Kr, sv, gfil)
  end subroutine classo_cv
 !-------------------------------------------------------------------------------
- subroutine resolved_kernel(nrow, ncol, nker, A, Kb, svdcut, nres, Kr)
+ subroutine resolved_kernel(nrow, ncol, nker, A, Kb, svdcut, nres, Kr, svo)
 !! Kr(:,1:nres) = Kb V_r, V_r the right singular vectors of A Kb with sigma > svdcut
 !! sigma_max. A Kb is reduced row by row to its triangular factor R by Givens
 !! rotations (A Kb is never stored; R has the singular values of A Kb, so nothing
@@ -458,6 +578,7 @@
  real(dp), intent(in) :: A(nrow,ncol), Kb(ncol,nker), svdcut
  integer, intent(out) :: nres
  real(dp), intent(out) :: Kr(ncol,nker)
+ real(dp), intent(out), optional :: svo(nker)     ! singular values of the kept directions
  real(dp), allocatable :: R(:,:), row(:), V(:,:), sv(:), tmp(:)
  real(dp) cg, sg, h
  integer i, k, j
@@ -479,6 +600,7 @@
  do j = 1, nker
     if (sv(j) > svdcut*maxval(sv)) then
        nres = nres + 1 ; Kr(:,nres) = matmul(Kb, V(:,j))
+       if (present(svo)) svo(nres) = sv(j)
     endif
  enddo
  deallocate(R, row, V, sv, tmp)
