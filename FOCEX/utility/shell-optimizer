@@ -1,0 +1,489 @@
+#!/usr/bin/env python3
+"""shell-optimizer DIR [options]: choose the neighbour shells of FC2 and FC3 for a FOCEX run (2026-11-06, user's idea).
+
+DIR holds a working FOCEX input (structure.params, default.params, dielectric.params, latdyn.params, kpbs.params,
+POSCARi, FORCEDISPi). The program
+  1. runs FOCEX once on the first snapshot only (a probe) and reads, for every atom of the primitive cell, its
+     neighbour shells (radius, number of neighbours, gap to the previous shell) from the log;
+  2. takes as candidate cutoff radii the middles of the large gaps between shells (relative gap >= --gap,
+     over all atoms), and converts each radius to a number of shells for every atom;
+  3. fits for increasing FC2 radius -- with a short FC3 (the smallest candidate radius) when FC3 is requested,
+     because an FC2-only model fitted to pair or random snapshots absorbs the FC3 part of the forces -- and
+     records the fit error, unstable phonons, the change of the dispersion to the next radius and the
+     elastic constants. If no radius gives stable phonons, the best-fitting radius is rerun with Huang off,
+     rotational off and both off, and the FC2 loop is redone with the first setting that is stable;
+  4. with the chosen FC2 shells, fits for increasing FC3 radius (--nfc3 0 skips this) and records the fit
+     error, unstable phonons, the Gruneisen parameters (1st percentile, median, 99th percentile) and how many
+     FC3 are larger than twice their standard error;
+  5. reruns the chosen model with the rotational and with the Huang invariance switched off (if they are on);
+     if one of them makes the fit much better or the phonons stable, the FC3 loop is redone with it off;
+  6. writes a table and the recommended line 5 and lines 12-14 of structure.params (DIR/shellopt/report.txt).
+FC2 choice: the smallest radius whose phonons are stable, whose fit error is within --tol-fit of the best one
+and whose dispersion changes by less than --tol-freq (1/cm) to the next radius (a warning if that is the
+largest radius tried). FC3 choice (the fit and the dispersion hardly depend on FC3): go to the next radius as
+long as at least 25 % of the FC3 it adds are larger than twice their standard error, the phonons stay stable
+and the Gruneisen parameters (1%..99%) stay within 10. Ranks above 3 are switched off; enforce_inv is kept.
+Options:
+  --focex FILE    FOCEX binary (default: the newest ~/ALADYN/bin/focex-*.x)
+  --threads N     FOCEX_NUM_THREADS for the runs (default 2)
+  --gap G         relative gap between shells that counts as large (default 0.08)
+  --nfc2 N        number of FC2 radii tried (default 6), --nfc3 N for FC3 (default 3; 0 = FC2 only)
+  --rmax R        largest FC2 radius (Angstrom; default: no limit beyond the shells the probe lists)
+  --tol-fit P     fit-error tolerance in percentage points (default 0.15)
+  --tol-freq W    dispersion-convergence tolerance (1/cm, default 2)
+  --dry           only list the shells and the candidate radii
+Runs are kept in DIR/shellopt/<name>; outputs there are ordinary FOCEX outputs.
+"""
+import glob, math, os, re, shutil, subprocess, sys
+
+INPUTS = ['structure.params', 'default.params', 'dielectric.params', 'latdyn.params', 'kpbs.params', 'stress.params']
+
+
+def newest_focex():
+    xs = glob.glob(os.path.expanduser('~/ALADYN/bin/focex-*.x'))
+    def ver(x):
+        m = re.search(r'focex-([\d.]+)\.x$', x)
+        return [int(t) for t in m.group(1).split('.')] if m else [0]
+    return max(xs, key=ver) if xs else None
+
+
+def read_lines(p):
+    return open(p).read().splitlines()
+
+
+def set_line(lines, i, text):           # i: 1-based line number of structure.params
+    while len(lines) < i:
+        lines.append('')
+    lines[i - 1] = text
+
+
+def make_run(src, dst, sp, nfiles, first_only=False):
+    if os.path.isdir(dst):
+        shutil.rmtree(dst)
+    os.makedirs(dst)
+    for f in INPUTS:
+        if os.path.isfile(os.path.join(src, f)) and f != 'structure.params':
+            shutil.copy(os.path.join(src, f), dst)
+    open(os.path.join(dst, 'structure.params'), 'w').write('\n'.join(sp) + '\n')
+    for i in range(1, nfiles + 1):
+        shutil.copy(os.path.join(src, f'POSCAR{i}'), dst)
+        fd = os.path.join(src, f'FORCEDISP{i}')
+        if first_only and i == 1:
+            L = read_lines(fd)
+            idx = [k for k, l in enumerate(L) if 'POSITION' in l]
+            end = idx[1] if len(idx) > 1 else len(L)
+            open(os.path.join(dst, 'FORCEDISP1'), 'w').write('\n'.join(L[:end]) + '\n')
+        else:
+            shutil.copy(fd, dst)
+
+
+def run(dst, focex, threads):
+    env = dict(os.environ, FOCEX_NUM_THREADS=str(threads))
+    with open(os.path.join(dst, 'focex.out'), 'w') as out:
+        r = subprocess.run([focex], cwd=dst, stdout=out, stderr=subprocess.STDOUT, env=env)
+    return r.returncode
+
+
+def log_of(d):
+    g = sorted(glob.glob(os.path.join(d, 'log*.dat')), key=os.path.getmtime)
+    return read_lines(g[-1]) if g else []
+
+
+def shells_from_log(L, nat):
+    """per atom: list of (shell, n, radius) from '# i0,shel#,ngbrs ,radius' lines (first listing only)"""
+    sh = {}
+    for l in L:
+        m = re.match(r'#\s*i0,shel#,ngbrs ,radius(?:,gap)?\s*=\s*(\d+)\s+(\d+)\s+(\d+)\s+([\d.Ee+-]+)', l)
+        if m:
+            i, k, n, r = int(m.group(1)), int(m.group(2)), int(m.group(3)), float(m.group(4))
+            lst = sh.setdefault(i, [])
+            if not lst or k == lst[-1][0] + 1:
+                lst.append((k, n, r))
+    return {i: sh[i] for i in sorted(sh) if i <= nat}
+
+
+def fnum(t):
+    """float of a FOCEX output field; Fortran overflow (*****) and nan count as infinite"""
+    try:
+        v = float(t)
+        return v if v == v else float('inf')
+    except ValueError:
+        return float('inf')
+
+
+def summarize(d, rank3):
+    L = log_of(d)
+    out = {'ok': bool(L) and any('ENDING TIME' in l for l in L)}
+    if not out['ok']:
+        return out
+    res = [l for l in L if 'Relative residual' in l or 'Percent error, ||' in l]
+    out['fit'] = fnum(res[-1].split('=')[-1].split()[0]) if res else float('nan')
+    neg, mn, freq = set(), 0.0, {}
+    for l in open(os.path.join(d, 'bs_freq.dat')):
+        p = l.split()
+        if not p or p[0].startswith('#'):
+            continue
+        k, b, w = int(p[0]), int(p[1]), fnum(p[6])
+        if w == float('inf'):
+            w = -1e9                     # overflow: count the point as unstable
+        freq.setdefault(k, []).append(w)
+        mn = min(mn, w)
+        if w < -0.5:
+            neg.add(k)
+    out['nneg'], out['wmin'] = len(neg), mn
+    out['freq'] = {k: sorted(v) for k, v in freq.items()}
+    try:
+        G = read_lines(os.path.join(d, 'gamma_modes.dat'))
+        i = next(k for k, l in enumerate(G) if l.startswith('# modes'))
+        out['gamma'] = [(l.split()[-1], fnum(l.split()[2])) for l in G[i + 1:] if l.strip() and not l.startswith('#')]
+    except (StopIteration, OSError, ValueError, IndexError):
+        out['gamma'] = []
+    n = [i for i, l in enumerate(L) if 'CRYSTAL FRAME: elastic constants C_ij' in l]
+    if n:
+        m = [[fnum(x) for x in L[n[-1] + 1 + k].split()[:6]] for k in range(6)]
+        out['cij'] = (m[0][0], m[0][1], m[0][2], m[2][2], m[3][3], m[5][5])
+    if rank3:
+        g = []
+        try:
+            for l in open(os.path.join(d, 'ibz_grun.dat')):
+                p = l.split()
+                if not p or p[0].startswith('#'):
+                    continue
+                v = [fnum(x) for x in p]
+                nb = (len(v) - 5) // 2
+                for w, gm in zip(v[5:5 + nb], v[5 + nb:5 + 2 * nb]):
+                    if w > 20:
+                        g.append(gm)
+        except OSError:
+            pass
+        g.sort()
+        # 1st percentile, median, 99th percentile: a few very soft modes (gamma ~ 1/omega^2) do not decide
+        out['grun'] = (g[len(g) // 100], g[len(g) // 2], g[min(len(g) - 1, (99 * len(g)) // 100)]) if g else None
+        out['fc3sig'] = fc3_resolved(L)
+    return out
+
+
+def fc3_resolved(L):
+    try:
+        nt = [int(x) for x in [l for l in L if 'map(ntotind)=' in l][0].split('=')[1].split()]
+        nk2 = int([l for l in L if 'Old, and new number of fc2' in l][0].split()[-1])
+        j0 = next(i for i, l in enumerate(L) if 'indepterm, fcs, sigma' in l) + 1
+    except (IndexError, StopIteration):
+        return None
+    rows = []
+    for l in L[j0:]:
+        p = l.split()
+        if len(p) != 3 or not p[0].isdigit():
+            break
+        rows.append((fnum(p[1]), fnum(p[2])))
+    blk = rows[nt[0] + nk2:nt[0] + nk2 + nt[2]]
+    if not blk:
+        return None
+    return sum(1 for x, s in blk if s > 0 and abs(x) > 2 * s), len(blk)
+
+
+def dfreq(a, b):
+    """largest change of the sorted frequencies between two dispersions on the same path"""
+    if not a or not b:
+        return float('nan')
+    return max(max(abs(x - y) for x, y in zip(a['freq'][k], b['freq'][k])) for k in a['freq'] if k in b['freq'])
+
+
+def choose(runs, tol_fit, tol_freq):
+    """smallest radius: stable, fit within tol_fit of the best, dispersion converged to the next radius"""
+    ok = [r for r in runs if r['s'].get('ok') and r['s']['nneg'] == 0]
+    if not ok:
+        return None, 'no run with stable phonons'
+    best = min(r['s']['fit'] for r in ok)
+    for i, r in enumerate(runs):
+        s = r['s']
+        if not (s.get('ok') and s['nneg'] == 0 and s['fit'] <= best + tol_fit):
+            continue
+        nxt = next((q for q in runs[i + 1:] if q['s'].get('ok')), None)
+        if nxt is None or r.get('dw', 0) <= tol_freq:
+            return r, f'fit {s["fit"]:.3f} % (best {best:.3f} %), dispersion change to the next radius ' \
+                      f'{r.get("dw", float("nan")):.2f} 1/cm'
+    r = min(ok, key=lambda q: q['s']['fit'])
+    return r, 'not converged within the tolerances: the run with the smallest fit error'
+
+
+def choose_fc3(runs3, fsig=0.25):
+    """FC3: the fit and the dispersion barely depend on FC3, so the range is chosen from the data support: go to
+    the next radius as long as the FC3 it adds are mostly determined (a fraction >= fsig of them larger than twice
+    their standard error), the phonons stay stable and the Gruneisen parameters stay bounded (1%..99% within 10)"""
+    ok = [r for r in runs3 if r['s'].get('ok') and r['s']['nneg'] == 0 and r['s'].get('grun') and r['s'].get('fc3sig')
+          and max(abs(r['s']['grun'][0]), abs(r['s']['grun'][2])) < 10]
+    if not ok:
+        return None, 'no FC3 model with stable phonons, bounded Gruneisen parameters and error bars'
+    c = ok[0]
+    why = f'smallest radius ({c["s"]["fc3sig"][0]}/{c["s"]["fc3sig"][1]} FC3 > 2 sigma)'
+    for r in ok[1:]:
+        dn = r['s']['fc3sig'][1] - c['s']['fc3sig'][1]
+        ds = r['s']['fc3sig'][0] - c['s']['fc3sig'][0]
+        if dn <= 0:
+            continue
+        if ds / dn < fsig:
+            why += f'; the {dn} FC3 added at {r["R"]:.2f} A are mostly undetermined ({ds} > 2 sigma)'
+            break
+        c = r
+        why = f'the {dn} FC3 added here are determined by the data ({ds} > 2 sigma)'
+    return c, why
+
+
+def main(argv):
+    opt = {'focex': None, 'threads': 2, 'gap': 0.08, 'nfc2': 6, 'nfc3': 3, 'rmax': None, 'tol-fit': 0.15,
+           'tol-freq': 2.0, 'dry': False}
+    args, it = [], iter(argv)
+    for a in it:
+        if a in ('-h', '--help'):
+            print(__doc__)
+            return 0
+        if a == '--dry':
+            opt['dry'] = True
+        elif a.startswith('--'):
+            k = a[2:]
+            v = next(it)
+            opt[k] = v if k == 'focex' else float(v) if k in ('gap', 'rmax', 'tol-fit', 'tol-freq') else int(v)
+        else:
+            args.append(a)
+    src = os.path.abspath(args[0] if args else '.')
+    focex = opt['focex'] or newest_focex()
+    if not focex or not os.path.isfile(focex):
+        print('shell-optimizer: no FOCEX binary found (give --focex)')
+        return 1
+    sp0 = read_lines(os.path.join(src, 'structure.params'))
+    nat = int(sp0[10].split()[0])
+    nfiles = int(sp0[6].split()[0])
+    work = os.path.join(src, 'shellopt')
+    os.makedirs(work, exist_ok=True)
+    rep = []
+    def say(s=''):
+        print(s)
+        rep.append(s)
+    say(f'shell-optimizer: {src}   FOCEX {focex}   {nat} atoms in the primitive cell, {nfiles} FORCEDISP file(s)')
+
+    # 1. probe: FC2 only, 2 shells, first snapshot only
+    sp = list(sp0)
+    set_line(sp, 4, '1 1 0 0 0 0 0 0   ranks (shell-optimizer probe)')
+    set_line(sp, 7, '1 .false.   number of POSCARi/FORCEDISPi pairs, verbosity')
+    set_line(sp, 12, '1   fc2range')
+    set_line(sp, 13, ' '.join(['2'] * nat) + '   FC2 shells')
+    probe = os.path.join(work, 'probe')
+    make_run(src, probe, sp, 1, first_only=True)
+    run(probe, focex, opt['threads'])
+    sh = shells_from_log(log_of(probe), nat)
+    if len(sh) < nat:
+        say('shell-optimizer: the probe run did not list the neighbour shells; see ' + probe)
+        return 1
+    say('\nNeighbour shells (radius in Angstrom, number of neighbours, relative gap to the previous shell):')
+    cand = set()
+    for i in range(1, nat + 1):
+        row = []
+        for j, (k, n, r) in enumerate(sh[i]):
+            g = (r - sh[i][j - 1][2]) / sh[i][j - 1][2] if j else 0.0
+            row.append(f'{k}:{r:.3f}({n}{"," + format(g, ".2f") if j else ""})')
+            if j + 1 < len(sh[i]):
+                r2 = sh[i][j + 1][2]
+                if (r2 - r) / r >= opt['gap'] and (opt['rmax'] is None or r <= opt['rmax']):
+                    cand.add(round(0.5 * (r + r2), 3))
+        say(f'  atom {i}: ' + '  '.join(row[:16]) + ('  ...' if len(row) > 16 else ''))
+    rlist = sorted(cand)
+
+    def nsh(R):
+        return [max(1, sum(1 for k, n, r in sh[i] if r <= R)) for i in range(1, nat + 1)]
+    # radii that give distinct shell sets
+    seen, radii = set(), []
+    for R in rlist:
+        t = tuple(nsh(R))
+        if t not in seen:
+            seen.add(t)
+            radii.append(R)
+    say(f'\nCandidate cutoff radii (middles of gaps >= {opt["gap"]:.2f}): ' + ', '.join(f'{R:.2f}' for R in radii))
+    for R in radii:
+        say(f'  R = {R:6.2f} A: shells per atom {nsh(R)}')
+    if opt['dry']:
+        open(os.path.join(work, 'report.txt'), 'w').write('\n'.join(rep) + '\n')
+        return 0
+
+    # 2. FC2 loop
+    r2 = radii[1:opt['nfc2'] + 1] if len(radii) > opt['nfc2'] else radii[:opt['nfc2']]
+
+    want3 = opt['nfc3'] > 0
+    r3min = radii[0]
+
+    def fc2_loop(spb, tag):
+        # with FC3 requested, the FC2 loop carries a short FC3 (the smallest candidate radius): with pair or
+        # random snapshots an FC2-only model absorbs the FC3 part of the forces and its FC2 jump with the range
+        if want3:
+            say(f'\nFC2 loop (ranks 1-3, FC3 fixed at R = {r3min:.2f} A; invariances "{spb[4].split("#")[0].strip()}"):')
+        else:
+            say(f'\nFC2 loop (ranks 1-2; invariances "{spb[4].split("#")[0].strip()}"):')
+        runs2 = []
+        for R in r2:
+            sp = list(spb)
+            if want3:
+                set_line(sp, 4, '1 1 1 0 0 0 0 0   ranks (shell-optimizer)')
+                set_line(sp, 14, ' '.join(map(str, nsh(r3min))) + '   FC3 shells')
+            else:
+                set_line(sp, 4, '1 1 0 0 0 0 0 0   ranks (shell-optimizer)')
+            set_line(sp, 12, '1   fc2range')
+            set_line(sp, 13, ' '.join(map(str, nsh(R))) + '   FC2 shells')
+            d = os.path.join(work, f'fc2{tag}_R{R:.2f}')
+            make_run(src, d, sp, nfiles)
+            run(d, focex, opt['threads'])
+            runs2.append({'R': R, 'd': d, 'sh': nsh(R), 's': summarize(d, False)})
+        for a, b in zip(runs2, runs2[1:]):
+            if a['s'].get('ok') and b['s'].get('ok'):
+                a['dw'] = dfreq(a['s'], b['s'])
+        say(f'  {"R(A)":>6s} {"fit %":>8s} {"unstable k":>10s} {"min w":>8s} {"dw next":>8s}  lowest Gamma modes / C11 C12 C13 C33 C44 C66 (GPa)')
+        for r in runs2:
+            s = r['s']
+            if not s.get('ok'):
+                say(f'  {r["R"]:6.2f}  FOCEX did not finish (see {r["d"]}/focex.out)')
+                continue
+            gm = ' '.join(f'{w:.1f}' for _, w in s['gamma'][:6])
+            cij = ' '.join(f'{c:.1f}' for c in s.get('cij', ()))
+            say(f'  {r["R"]:6.2f} {s["fit"]:8.3f} {s["nneg"]:10d} {s["wmin"]:8.1f} {r.get("dw", float("nan")):8.2f}  {gm} / {cij}')
+        return runs2
+
+    runs2 = fc2_loop(sp0, '')
+    c2, why2 = choose(runs2, opt['tol-fit'], opt['tol-freq'])
+    if c2 is None:
+        # no stable model: try the invariances one by one on the best-fitting run, and if switching one (or
+        # both) off gives stable phonons, redo the FC2 loop with that setting
+        say('  no stable FC2 model with these invariances; trying them off on the best-fitting radius:')
+        okr = [r for r in runs2 if r['s'].get('ok')]
+        if not okr:
+            say('  no FC2 run finished: check the data (see the FAQ of the manual)')
+            open(os.path.join(work, 'report.txt'), 'w').write('\n'.join(rep) + '\n')
+            return 1
+        bestr = min(okr, key=lambda q: q['s']['fit'])
+        inv0 = sp0[4].split()[:4]
+        variants = []
+        for off, name in (((2,), 'Huang off'), ((1,), 'rotational off'), ((1, 2), 'rotational and Huang off')):
+            if all(inv0[k] == '1' for k in off):
+                f = list(inv0)
+                for k in off:
+                    f[k] = '0'
+                variants.append((f, name))
+        found = None
+        for f, name in variants:
+            sp = read_lines(os.path.join(bestr['d'], 'structure.params'))
+            set_line(sp, 5, ' '.join(f) + '   itrans irot ihuang enforce_inv (shell-optimizer)')
+            d = bestr['d'] + '_' + name.replace(' ', '_')
+            make_run(bestr['d'], d, sp, nfiles)
+            run(d, focex, opt['threads'])
+            s = summarize(d, False)
+            if s.get('ok'):
+                say(f'    R {bestr["R"]:.2f}, {name}: fit {s["fit"]:.3f} % (was {bestr["s"]["fit"]:.3f} %), unstable k {s["nneg"]}'
+                    f' (was {bestr["s"]["nneg"]})')
+                if s['nneg'] == 0 and found is None:
+                    found = (f, name)
+        if found is None:
+            say('  none of them gives stable phonons: check the data, the ranks and the Born charges (FAQ)')
+            open(os.path.join(work, 'report.txt'), 'w').write('\n'.join(rep) + '\n')
+            return 1
+        say(f'  -> the model is not consistent with these invariances; continuing with {found[1]} '
+            f'(structure.params line 5: {" ".join(found[0])}). See the FAQ: "When should I switch Huang or rotational invariance off?"')
+        sp0 = list(sp0)
+        set_line(sp0, 5, ' '.join(found[0]) + '   itrans irot ihuang enforce_inv (chosen by shell-optimizer)')
+        runs2 = fc2_loop(sp0, '_inv')
+        c2, why2 = choose(runs2, opt['tol-fit'], opt['tol-freq'])
+        if c2 is None:
+            say('  still no stable FC2 model')
+            open(os.path.join(work, 'report.txt'), 'w').write('\n'.join(rep) + '\n')
+            return 1
+    say(f'  chosen FC2 radius {c2["R"]:.2f} A, shells {c2["sh"]}: {why2}')
+    if c2 is runs2[-1] and len(runs2) > 1:
+        say('  WARNING: the largest radius tried was chosen: the fit may not be converged; rerun with a larger --nfc2')
+
+    # 3. FC3 loop
+    c3 = None
+    r3 = [R for R in radii if R <= c2['R']][:opt['nfc3']]
+
+    def fc3_loop(spb, tag):
+        say(f'\nFC3 loop (ranks 1-3, FC2 as chosen; invariances "{spb[4].split("#")[0].strip()}"):')
+        runs3 = []
+        for R in r3:
+            sp = list(spb)
+            set_line(sp, 4, '1 1 1 0 0 0 0 0   ranks (shell-optimizer)')
+            set_line(sp, 12, '1   fc2range')
+            set_line(sp, 13, ' '.join(map(str, c2['sh'])) + '   FC2 shells')
+            set_line(sp, 14, ' '.join(map(str, nsh(R))) + '   FC3 shells')
+            d = os.path.join(work, f'fc3{tag}_R{R:.2f}')
+            make_run(src, d, sp, nfiles)
+            run(d, focex, opt['threads'])
+            runs3.append({'R': R, 'd': d, 'sh': nsh(R), 's': summarize(d, True)})
+        for a, b in zip(runs3, runs3[1:]):
+            if a['s'].get('ok') and b['s'].get('ok'):
+                a['dw'] = dfreq(a['s'], b['s'])
+        say(f'  {"R(A)":>6s} {"fit %":>8s} {"unstable k":>10s} {"min w":>8s} {"dw next":>8s}  Gruneisen (w>20: 1% median 99%)  FC3 > 2 sigma')
+        for r in runs3:
+            s = r['s']
+            if not s.get('ok'):
+                say(f'  {r["R"]:6.2f}  FOCEX did not finish (see {r["d"]}/focex.out)')
+                continue
+            g = s.get('grun')
+            gs = f'{g[0]:.2f} {g[1]:.2f} {g[2]:.2f}' if g else '-'
+            fs = f'{s["fc3sig"][0]}/{s["fc3sig"][1]}' if s.get('fc3sig') else '-'
+            say(f'  {r["R"]:6.2f} {s["fit"]:8.3f} {s["nneg"]:10d} {s["wmin"]:8.1f} {r.get("dw", float("nan")):8.2f}  {gs:>22s}  {fs}')
+        ok3 = [r for r in runs3 if r['s'].get('ok') and r['s']['nneg'] == 0 and r['s'].get('grun')
+               and max(abs(r['s']['grun'][0]), abs(r['s']['grun'][2])) < 10]
+        if ok3:
+            c, why = choose_fc3(runs3)
+            if c is not None:
+                g = c['s']['grun']
+                say(f'  chosen FC3 radius {c["R"]:.2f} A, shells {c["sh"]}: {why}; Gruneisen median {g[1]:.2f}')
+                return c
+        say('  no FC3 model with stable phonons and |gamma| (1%..99%) < 10: see the invariance check below and the FAQ')
+        return None
+
+    if opt['nfc3'] > 0:
+        c3 = fc3_loop(sp0, '')
+
+    # 4. invariance check on the chosen model
+    best = c3 or c2
+    inv = sp0[4].split()
+    say('\nInvariance check on the chosen model (switching one off at a time):')
+    say(f'  as given ({" ".join(inv[:4])}): fit {best["s"]["fit"]:.3f} %, unstable k {best["s"]["nneg"]}')
+    flagged = []
+    for pos, name in ((1, 'rotational'), (2, 'Huang')):
+        if len(inv) > pos and inv[pos] == '1':
+            sp = read_lines(os.path.join(best['d'], 'structure.params'))
+            f = list(inv[:4])
+            f[pos] = '0'
+            set_line(sp, 5, ' '.join(f) + '   itrans irot ihuang enforce_inv (shell-optimizer check)')
+            d = best['d'] + f'_no{name[:3]}'
+            make_run(best['d'], d, sp, nfiles)
+            run(d, focex, opt['threads'])
+            s = summarize(d, c3 is not None)
+            if s.get('ok'):
+                flag = ''
+                if s['fit'] < 0.7 * best['s']['fit'] or (best['s']['nneg'] > 0 and s['nneg'] == 0):
+                    flag = '  <- the fit or the phonons are much better without it: the model is not consistent ' \
+                           f'with the {name} relations (range, ranks, stress or Born charges); consider {"irot" if pos == 1 else "ihuang"} = 0'
+                    flagged.append(pos)
+                say(f'  {name} off: fit {s["fit"]:.3f} %, unstable k {s["nneg"]}{flag}')
+    if flagged and c3 is not None:
+        f = list(inv[:4])
+        for k in flagged:
+            f[k] = '0'
+        sp0 = list(sp0)
+        set_line(sp0, 5, ' '.join(f) + '   itrans irot ihuang enforce_inv (chosen by shell-optimizer)')
+        say(f'  -> redoing the FC3 loop with line 5 = {" ".join(f)} (FC2 shells kept)')
+        c3n = fc3_loop(sp0, '_inv3')
+        if c3n is not None:
+            c3 = c3n
+    say('\nRecommended structure.params line 5 and lines 12-14:')
+    say(sp0[4].split('#')[0].strip() + '   # itrans irot ihuang enforce_inv')
+    say('1                                  # fc2range: shells from the next lines')
+    say(' '.join(map(str, c2['sh'])) + '   # rank-2 shells (R = %.2f A)' % c2['R'])
+    say((' '.join(map(str, c3['sh'])) + '   # rank-3 shells (R = %.2f A)' % c3['R']) if c3 else
+        ' '.join(['0'] * nat) + '   # rank-3 shells')
+    open(os.path.join(work, 'report.txt'), 'w').write('\n'.join(rep) + '\n')
+    print(f'\nreport: {os.path.join(work, "report.txt")}')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

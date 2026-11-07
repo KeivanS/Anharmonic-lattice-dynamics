@@ -57,6 +57,7 @@ python-tools:
 	ln -sf $(CURDIR)/FOCEX/AGENT/diagnose.py $(DESTDIR)/focex-diagnose
 	ln -sf $(CURDIR)/FOCEX/PLOTTING/bandplot $(DESTDIR)/bandplot
 	ln -sf $(CURDIR)/FOCEX/PLOTTING/allplots $(DESTDIR)/allplots
+	ln -sf $(CURDIR)/FOCEX/utility/shell-optimizer $(DESTDIR)/shell-optimizer
 
 # the parts' clean rules fail when there is nothing to remove; carry on regardless
 clean:

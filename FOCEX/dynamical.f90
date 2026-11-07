@@ -1772,8 +1772,10 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  endif
 
 ! check if phi is symmetric
- junk=maxval((phi-transpose(phi))*(phi-transpose(phi)))
- if (junk.gt.1d-12) then
+ junk=maxval(abs(phi-transpose(phi)))
+! symmetry tests are relative (user's rule, 2026-11-07): max|A-A^T| > 1e-6 max|A|; an absolute 1e-12 stopped
+! badly fitted models on round-off
+ if (junk.gt.1d-6*max(maxval(abs(phi)),tiny(1d0))) then
     call write_out(   6,' PHI NOT SYMMETRIC ',phi)
     call write_out(ulog,' PHI NOT SYMMETRIC ',phi)
     stop
@@ -1783,8 +1785,10 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
  do la =1,3 ! for each la, zeta(:,:,la) is ANTIsymmetric wrt first 2 indices
     call write_out(uio,' ZETA=sum_R phi(tau,R+taup)(R+taup-tau) (eV/Ang)',zeta(:,:,la))
     aux=zeta(:,:,la)+transpose(zeta(:,:,la))
-    junk=maxval(aux*aux)
-    if (junk.gt.1d-12) then
+    junk=maxval(abs(aux))
+! scale: the larger of max|zeta| and max|phi| (zeta = sum phi R vanishes by symmetry in centrosymmetric
+! crystals, MgO, where max|zeta| is itself round-off and a purely relative test stops on round-off)
+    if (junk.gt.1d-6*max(maxval(abs(zeta(:,:,la))),maxval(abs(phi)),tiny(1d0))) then
        call warn5(   6,' Zeta NOT ANTISYMMETRIC:z+z^T ',aux)
        call warn5(ulog,' Zeta NOT ANTISYMMETRIC:z+z^T ',aux)
        stop
@@ -1819,8 +1823,8 @@ write(ulog,*) 'FC terms MISSING from grid:', nmissing
      gam(1:3,:)=0 ; gam(:,1:3)=0
      gam(4:ndyn,4:ndyn)=tm  
      gama=tm  
-     junk=maxval((gam-transpose(gam))*(gam-transpose(gam)))
-     if (junk.gt.1d-12) then
+     junk=maxval(abs(gam-transpose(gam)))
+     if (junk.gt.1d-6*max(maxval(abs(gam)),maxval(abs(phi)),tiny(1d0))) then   ! scale as for zeta
         call write_out(   6,' |G-G^T|^2 ',junk)
         call write_out(ulog,' |G-G^T|^2 ',junk)
         call write_out(   6,' GAMA NOT SYMMETRIC ',gam)

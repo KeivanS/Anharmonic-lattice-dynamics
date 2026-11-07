@@ -100,8 +100,9 @@ particular solution; then $\min_\by\|\bA\bK\by-(\bb-\bA\bx_p)\|$ by SVD (\code{f
 \item 2 and 3: a LASSO on $\bx$ inside the same affine space, without and with a least-squares refit on
 the selected FCs (Section~\ref{sec:lasso}, Figs.~\ref{fig:lassoouter}, \ref{fig:lassoinner}).
 \end{itemize}
-All SVD solutions use the regularized back-substitution of \code{svbksb} (\code{svd\_ridge.f90}),
-Section~\ref{sec:filter}. The relative cut is $c=\epsilon_F^2$, with $\epsilon_F$ the force error of
+The least-squares SVD fits (\code{svd\_ridge.f90:svd\_set}) use the regularized back-substitution of \code{svbksb},
+Section~\ref{sec:filter}; the kernel of the invariance rows is found with a hard cut
+(\code{kernel\_and\_particular}). The relative cut is $c=\epsilon_F^2$, with $\epsilon_F$ the force error of
 \code{default.params} line~2 (default $10^{-5}$, so $c=10^{-10}$; \code{ios.f90}).
 \code{default.params} has 7 lines, each with a comment after its value: symmetry tolerance, force error,
 \code{icutoff} (range of the neighbour search), margin (smallest FC written), \code{relax\_ref} (line 5),
@@ -246,8 +247,9 @@ reading of \code{default.params} is part of \code{read\_structure}; there is no 
 \node[box=6.6cm, below=of c6] (c7) {\textbf{Only if} \code{enforce\_inv}$\ge1$ or \code{itemp}=1:
   \code{kernel\_and\_particular} (\code{svd\_ridge.f90}), one SVD $\bC=\mathbf U\bW\mathbf V^T$.
   Kernel $\bK=\{\bv_k:\ w_k<c\,w_{\max}\}$ (hard cut, no filter); if $\bd\ne0$:
-  $\bx_p=\sum_{w_k>c\,w_{\max}}\bv_k(\bu_k\cdot\bd)/w_k$, \code{presid} $=\max|\bC\bx_p-\bd|$.
-  Then every $\bx=\bx_p+\bK\by$ satisfies $\bC\bx=\bd$.};
+  $\bx_p=\sum_{w_k>c\,w_{\max}}\bv_k(\bu_k\cdot\bd)/w_k$, \code{presid} $=\max|\bC\bx_p-\bd|$ (WARNING if
+  $>10^{-6}\max|\bd|+10^{-8}$). No invariance rows: $\bK$ = identity.
+  Then every $\bx=\bx_p+\bK\by$ satisfies $\bC\bx=\bd$ (Section~\ref{sec:inhom}).};
 \node[box=13.8cm, below=5mm of c7.south east, anchor=north east, fill=gray!10] (c8) {To the solver: \code{enforce\_inv}=0 uses $\bA,\bb,\bC,\bd$ (Fig.~\ref{fig:solve01});
   1, 2, 3 use $\bA,\bb,\bK,\bx_p$ (Figs.~\ref{fig:solve01}--\ref{fig:lassoinner}).};
 \draw[arr] (c1) -- (c2); \draw[arr] (c3) -- (c4); \draw[arr] (c4) -- (c5); \draw[arr] (c5) -- (c6);
@@ -280,7 +282,7 @@ reading of \code{default.params} is part of \code{read\_structure}; there is no 
 \node[fit=(z3)(o3)(l3),inner sep=0pt] (bot) {};
 \node[box=14.8cm, anchor=north west, fill=gray!10] (f) at ([yshift=-6mm]bot.south -| z1.west) {\code{fit\_residual}: $\|\bA\bx-\bb\|/\|\bb\|$
   (enforce\_inv $\ge1$), violations of the invariance rows in the log; then step 8 of Fig.~\ref{fig:main}.
-  \textbf{itemp = 1} (not shown): \code{implement\_temperature}, \code{solve\_svd}, \code{project\_on} the kernel; $\sigma=0$.};
+  \textbf{itemp = 1} (not shown): \code{implement\_temperature}, \code{solve\_svd}, then $\bx=\bx_p+\bK\bK^T(\bx_{\rm out}-\bx_p)$ (\code{project\_on}); $\sigma=0$.};
 \draw[arr] (t.south -| z1) -- (z1); \draw[arr] (t.south -| o1) -- (o1); \draw[arr] (t.south -| l1) -- (l1);
 \draw[arr] (z1)--(z2); \draw[arr] (z2)--(z3); \draw[arr] (o1)--(o2); \draw[arr] (o2)--(o3);
 \draw[arr] (l1)--(l2); \draw[arr] (l2)--(l3);
@@ -314,6 +316,87 @@ fits of 1, 2 and 3; the invariances enter through $\bK$ and $\bx_p$.}
 \caption{\code{svd\_ridge.f90:svd\_set}, the SVD solver of \code{enforce\_inv}=0 and 1 (and of
 \code{lasso\_support\_errors}, with \code{svd\_noise\_check} off).}
 \label{fig:svdset}
+\end{figure}
+
+%==============================================================================
+\section{Homogeneous and inhomogeneous rows}\label{sec:inhom}
+%==============================================================================
+\paragraph{Design.} The linear system has a homogeneous part, the invariance rows with right-hand side 0, and an
+inhomogeneous part: the force rows, and every invariance row that has a right-hand side. The invariance rows of
+both kinds are exact constraints; only the force rows are fitted by least squares.
+
+\paragraph{How a row becomes inhomogeneous} (read in the code):
+\begin{enumerate}
+\item \code{include\_fc}(r)=2. The read FCs are not unknowns. Their contribution moves to the right-hand side of the
+force rows (\code{setup\_amatrix.f90:set\_force\_displacement\_matrix}, lines 223--226:
+$b\leftarrow b-u\,\mathrm{mat}\,x_{\rm read}$) and of every translational and rotational row that contains rank $r$
+(\code{invariance\_ranks.f90}: a read term gets column $-1$, and \code{gather\_rows} sums those contributions into the
+row's right-hand side, near line 304). A row with no fitted column left is dropped, and the largest residual of the
+read FCs in such rows is logged.
+\item A stressed reference (\code{stress.params}). The Huang rows get the right-hand side
+$-2\Omega(\delta_{\alpha\beta}\sigma_{\gamma\delta}-\delta_{\gamma\delta}\sigma_{\alpha\beta})$, $\Omega$ the volume of the primitive cell
+(\code{setup\_amatrix.f90:set\_huang\_inv\_constraints}, lines 125--126; the stress is point-group averaged there first).
+Huang rows exist only when FC2 is fitted (\code{include\_fc}(2)=1).
+\item \code{born\_flag}=2. Rank-2 rotational rows get $-\sum_{a\mu}M(i_1;\alpha_1,a,\mu)\varepsilon_{a\mu\nu}$ from \code{lr\_moments};
+rank-3 rows get the \code{lr\_rot3\_pair} / \code{lr\_rot3\_onsite} terms
+(\code{invariance\_ranks.f90:set\_rotational\_inv\_constraints}, lines 188--233). The Huang right-hand side is corrected by
+$-(S_C-S_C^T)$. Translational rows stay homogeneous: the subtracted harmonic Coulomb part obeys the sum rule in the
+supercell. Rotational rows of rank $\ge4$ get no Coulomb right-hand side (open point for anisotropic $Z^*$).
+\end{enumerate}
+
+\begin{table}[htbp]
+\centering
+\caption{Right-hand side $d$ of each kind of invariance row. ``0'': the row is homogeneous in that case.}
+\label{tab:inhom}
+\small
+\begin{tabular}{@{}p{2.9cm}p{3.6cm}p{3.1cm}p{4.2cm}@{}}
+\toprule
+row & \code{include\_fc}(r)=2 & \code{stress.params} & \code{born\_flag}=2\\
+\midrule
+translational, rank $n$ & $-\bC_{\rm read}\bx_{\rm read}$ if $r=n$ & 0 & 0\\
+rotational, rank $n$ & $-\bC_{\rm read}\bx_{\rm read}$ if $r\in\{n-1,n\}$ & 0 & $n=2$: $-M\!:\!\varepsilon$; $n=3$: \code{lr\_rot3}; $n\ge4$: 0\\
+Huang (rank 2) & no rows if $r=2$ & $-2\Omega(\delta\sigma-\delta\sigma)$ & $-(S_C-S_C^T)$\\
+force rows & $\bb-\bA_{\rm read}\bx_{\rm read}$ & $\bb$ & $\bb$ minus the Coulomb force\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{How the code solves it.} All invariance rows, homogeneous or not, are kept in one matrix \code{ahom} with
+right-hand side \code{bhom} (\code{others.f90:homogeneous\_constraints\_overlap}). One SVD of \code{ahom}
+(\code{svd\_ridge.f90:kernel\_and\_particular}) gives the kernel $\bK$ and, only when some \code{bhom} $\ne0$, the
+particular solution $\bx_p$; every $\bx=\bx_p+\bK\by$ satisfies all invariance rows exactly. This is the two-part
+design as long as the inhomogeneous invariance rows remain exact constraints, which they do: they are not moved into
+the least-squares block. The solvers then use it as follows (Fig.~\ref{fig:inhom}):
+\code{enforce\_inv}=1 fits $\bb-\bA\bx_p$ in $\bK$ and returns $\bx=\bx_p+\bK\by$; 2 and 3 pass $\bx_0=\bx_p$ to the LASSO
+($\bz_0=\bW\bx_0$, and \code{refit\_support} keeps $(\bz_0+\bQ\bt)_j=0$ off the support through its \code{shift\_part});
+0 stacks $[\code{ahom};\code{aforce}]$ with $[\code{bhom};\code{bforce}]$, so that there all rows, homogeneous or not,
+are fitted together. Since the audit of 6 November 2026 (Section~\ref{sec:audit}) a WARNING is printed when
+$\max|\bC\bx_p-\bd|>10^{-6}\max|\bd|+10^{-8}$: inconsistent inhomogeneous rows (read FCs, stress or Coulomb terms that
+contradict the other rows).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\draw[fill=blue!6] (0,2.2) rectangle (4,3.4); \node[font=\footnotesize,align=center] at (2,2.8) {$\bC_{\rm hom}$};
+\draw[fill=orange!15] (0,1.2) rectangle (4,2.2); \node[font=\footnotesize,align=center] at (2,1.7) {$\bC_{\rm inh}$};
+\draw[fill=gray!10] (0,-1.6) rectangle (4,1.0); \node[font=\footnotesize] at (2,-0.3) {$\bA$ (force rows)};
+\draw[fill=blue!6] (4.4,2.2) rectangle (4.9,3.4); \node[font=\scriptsize] at (4.65,2.8) {0};
+\draw[fill=orange!15] (4.4,1.2) rectangle (4.9,2.2); \node[font=\scriptsize] at (4.65,1.7) {$\bd$};
+\draw[fill=gray!10] (4.4,-1.6) rectangle (4.9,1.0); \node[font=\scriptsize] at (4.65,-0.3) {$\bb$};
+\node[font=\scriptsize] at (2,3.65) {columns: fitted irreducible FCs $\bx$};
+\draw[thick] (5.1,3.4) -- (5.1,1.2);
+\node[box=6.2cm, anchor=west] at (5.4,2.3) {\code{ahom}, \code{bhom}: exact constraints.
+  \code{kernel\_and\_particular}: $\bK$ from all of $\bC$, $\bx_p$ from $\bd$ (if $\bd\ne0$). $\bx=\bx_p+\bK\by$.};
+\node[box=6.2cm, anchor=west] at (5.4,-0.3) {\code{aforce}, \code{bforce}: least squares.
+  \code{enforce\_inv}=1: $\bA\bK\by\approx\bb-\bA\bx_p$; 2, 3: LASSO with $\bx_0=\bx_p$.
+  \code{enforce\_inv}=0: all three blocks stacked and fitted together.};
+\draw[thick] (5.1,3.4) -- (5.2,3.4); \draw[thick] (5.1,1.2) -- (5.2,1.2);
+\draw[thick] (5.1,1.0) -- (5.1,-1.6); \draw[thick] (5.1,1.0) -- (5.2,1.0); \draw[thick] (5.1,-1.6) -- (5.2,-1.6);
+\end{tikzpicture}
+\caption{Homogeneous rows $\bC_{\rm hom}$ (right-hand side 0), inhomogeneous invariance rows $\bC_{\rm inh}$
+(right-hand side $\bd$, Table~\ref{tab:inhom}) and force rows. The code keeps $\bC_{\rm hom}$ and $\bC_{\rm inh}$ in one
+matrix; the row order in the figure is only schematic.}
+\label{fig:inhom}
 \end{figure}
 
 %==============================================================================
@@ -1080,7 +1163,7 @@ earlier MgO runs came from the SVD cut (Sections~\ref{sec:gap}, \ref{sec:noisech
   (\code{filter\_penalty}). Full fit (all directions, \code{refit\_support} with every FC selected) $\to$
   $\mathrm{RSS}_{\rm full}$, $p_{\rm full}$. Measured-noise refit of the filter cut, kept only if it passes the noise test.
   $s^2=\mathrm{RSS}_{\rm full}/(N-p_{\rm full})$. Line 7 = 1: add $(s^2/N)\sum_jx_j^2/(2\tau_{r(j)}^2)$, $\tau_r$ = rms of rank $r$ of the full fit.};
-\node[box=12.4cm, below=of g4] (g5) {$\lambda$ grid: $\lambda_{\max}=\|\bQ\bc\|_\infty$ down to \code{epsratio}$\cdot\lambda_{\max}$, log-spaced.};
+\node[box=12.4cm, below=of g4] (g5) {$\lambda$ grid: $\lambda_{\max}=\|\bQ\bc'\|_\infty$ ($\bc'=\bc$ minus the linear part of the $L_2$ term, if on) down to \code{epsratio}$\cdot\lambda_{\max}$, log-spaced.};
 \node[box=12.4cm, below=of g5] (g6) {\textbf{Cross-validation.} For each fold $f$: training data = all rows but fold $f$;
   \code{classo\_path} over the whole grid (Fig.~\ref{fig:lassoinner}) gives, for every $\lambda$, the LASSO solution and its refit;
   their mean squared errors on the held-out fold $f$: $e^{\rm L}(\lambda)$, $e^{\rm R}(\lambda)$.};
@@ -1447,6 +1530,26 @@ along $z$. Snapshots 5--7, and 402 of the 409 \code{FORCEDISP2} snapshots, agree
 (median $4\times10^{-5}$). Without snapshots 2--4 the FC2-only fit with 10 shells goes from 12.7\,\% to 3.2\,\%. This
 check is recommended as a data diagnostic; it is not part of FOCEX.
 
+\subsection{Prediction of snapshots not used in the fit}
+Fit: FC2 10 shells, FC3 2 shells, invariances \code{1 0 0 1}, on the 413 consistent snapshots. Then the forces of the 7
+\code{FORCEDISP1} snapshots are predicted with
+\begin{equation}
+F_I=-\Pi(I)-\sum_J\Phi(I,J)\,u_J-\tfrac12\sum_{JK}\Psi(I,J,K)\,u_Ju_K ,
+\end{equation}
+using only terms whose first atom is in the primitive cell, with the images folded into the supercell (the formulas of
+ANFOMOD's \code{calculate\_potential}, \code{anfomod.f90} lines 183--243, checked by reading). Relative errors: the reference
+0.17\,\%, snapshots 5--7 0.83--1.00\,\% (fit error 0.84\,\%); the three inconsistent snapshots 2--4 29.2, 30.3, 18.2\,\%
+(rms $1.72\times10^{-3}$\,eV/\AA). Predicted without FC1, snapshots 2--4 give 10.3, 10.7, 6.5\,\% (rms $6\times10^{-4}$) while the
+consistent snapshots then give 30--33\,\%. So about two thirds of their discrepancy is that they show none of the
+reference's residual forces at the same geometry (other DFT settings; the cause is not known: the data came from
+another person's calculations). These snapshots were removed from \code{MoTe2/FORCEDISP1} and \code{MoTe2/TEST/FORCEDISP1}
+(originals kept as \code{FORCEDISP1.with\_snaps2-4}); the remaining \code{FORCEDISP1} snapshots displace only Te, so
+\code{FORCEDISP1} alone no longer fixes the Mo FC2.
+
+\paragraph{Recommended data diagnostics.} (1) The far-atom check above: forces on atoms far from every displaced atom
+must equal the reference forces. (2) A held-out prediction: fit without some snapshots and predict their forces; a
+prediction error far above the fit error flags inconsistent data or a model that is too short.
+
 \subsection{Huang rows with zero stress at a reference out of equilibrium}
 Without \code{stress.params} the Huang rows impose Eq.~\eqref{eq:huang} with $\sigma=0$, but this reference
 is not at equilibrium (Te forces above). FC2 to 10 shells, \code{enforce\_inv}=1: interlayer shear mode
@@ -1503,9 +1606,153 @@ $c$; largest stress after relaxation $1.4\times10^{-12}$\,GPa; 97\,s. The $\Gamm
 0.05\,cm$^{-1}$; the $C_{ij}$ are unchanged.
 
 \paragraph{Lessons.} For MoTe$_2$ the problems came from the inputs and the constraints, not from the fitting
-algorithm: three inconsistent snapshots, Huang rows with $\sigma=0$ at a reference out of equilibrium, and
+algorithm (see also Section~\ref{sec:invfit}): three inconsistent snapshots, Huang rows with $\sigma=0$ at a reference out of equilibrium, and
 rotational rows of rank 3 with FC3 truncated short. Check the data first (far-atom forces); give the reference
 stress, or switch the Huang rows off; switch the rotational rows off when FC3 is much shorter than FC2.
+
+%==============================================================================
+\section{Code audit of 6--7 November 2026}\label{sec:audit}
+%==============================================================================
+An audit of the solver paths (Section~\ref{sec:inhom}, Figs.~\ref{fig:linsys}--\ref{fig:lassoinner}) found and fixed:
+\begin{itemize}
+\item \code{itemp}=1 projected the Boltzmann-weighted solution on the kernel without the particular solution, so it
+gave $\bC\bx=0$ instead of $\bC\bx=\bd$ (wrong with \code{stress.params}, \code{include\_fc}=2 or \code{born\_flag}=2). Now
+$\bx=\bx_p+\bK\bK^T(\bx_{\rm out}-\bx_p)$ (\code{focex.f90}, \code{itemp} branch). Not run: there is no \code{itemp}=1 test case.
+\item With no invariance rows (\code{itrans}=\code{irot}=\code{ihuang}=0) and \code{enforce\_inv}$\ge1$ the SVD of an empty matrix
+gave an empty kernel and all FCs zero. Now $\bK$ = identity. Checked: MoTe$_2$ FC2-only with \code{0 0 0 1}: fit 1.614\,\%
+with non-zero FCs.
+\item $\max|\bC\bx_p-\bd|$ was only logged. Now a WARNING if it exceeds $10^{-6}\max|\bd|+10^{-8}$. The absolute floor is
+needed: the Coulomb right-hand sides of MgO are round-off (about $5\times10^{-15}$).
+\item The violation tables of the log now all print row, $\bC\bx-\bd$ and $\bd$ (the translational table printed $\bC\bx$
+without $\bd$, wrong with \code{include\_fc}=2; the rotational one printed $\bC\bx$ and $\bd$).
+\end{itemize}
+Regression: ZnO cubic exact model (exact and noisy forces): \code{fc2.dat}, \code{fc3.dat} byte-identical; MgO with Born
+charges: identical results.
+
+\paragraph{Relative symmetry tests (7 November 2026).} The symmetry tests on matrices built from the fitted FCs are now
+relative: a matrix $A$ fails if $\max|A-A^T|>10^{-6}\max|A|$ (antisymmetry likewise). This applies to
+\code{dynamical.f90:get\_phi\_zeta\_Xi} ($\Phi$ and $\Gamma$ symmetric, each $\zeta(:,:,\lambda)$ antisymmetric; these stop the
+run), \code{extratools.f90:check\_herm\_sym\_R} and \code{check\_herm\_sym\_G} (were $10^{-8}$ absolute) and the warning of
+\code{common/linalgb.f90:symmetrize2} (was $10^{-4}$ absolute); \code{make\_hermitian} was already relative ($10^{-6}$).
+A matrix that vanishes by symmetry needs a physical scale instead of its own largest element, which is then round-off:
+$\zeta=\sum\Phi R$ and $\Gamma=\sum\Phi RR$ are tested against $10^{-6}\max(\max|\zeta|\ \text{or}\ \max|\Gamma|,\ \max|\Phi|)$.
+With the purely relative test, MgO ($\zeta=0$ by inversion symmetry, entries $\sim10^{-15}$) stopped at ``Zeta NOT
+ANTISYMMETRIC''. The
+absolute test $10^{-12}$ on the squared differences had stopped a badly fitted MoTe$_2$ model, with entries of about
+$6\times10^5$, at ``GAMA NOT SYMMETRIC'' on round-off. That case (FC2 with 2 or 3 shells, Huang rows on) now runs to the end
+and is reported normally: fit 25.8\,\%, a useless model, which the fit error and the phonons show.
+
+\paragraph{Remaining (not fixed).}
+\begin{itemize}
+\item The removal of repeated rows (\code{compare2previous\_lines}, called in \code{gather\_rows}) compares only the
+coefficients of the fitted columns, not the right-hand sides.
+\item \code{born\_flag} 3--9 subtract a Coulomb force but give the rotational and Huang rows no right-hand side.
+\item Read FCs are not checked against the reference structure of the run that wrote them (the old positions are read
+but not compared).
+\end{itemize}
+
+%==============================================================================
+\section{Invariances and the fit error}\label{sec:invfit}
+%==============================================================================
+Adding an exact constraint to a least-squares problem can never lower its residual on the fitted data: the
+constrained minimum is taken over a subset of the unconstrained one (for the plain least-squares problem; the
+regularization filter of Section~\ref{sec:filter} is small where the data resolve the FCs). A constraint can lower the
+error on data \emph{not} used in the fit: less noise is fitted and the model is more physical. Hence the diagnostic:
+a small increase of the fit error when an invariance is imposed is normal; a large one means that the model is
+inconsistent with that invariance. Typical causes: ranges or ranks too short; a wrong (or missing) reference stress;
+Born charges and dielectric tensor inconsistent with the supercell calculations (DFPT must use the same functional,
+pseudopotentials, cutoff energy and a commensurate $k$-mesh as the supercell runs).
+
+MoTe$_2$ (Section~\ref{sec:mote2}) shows both cases. Imposing the Huang rows with $\sigma=0$ at a reference out of
+equilibrium raised the fit error from 1.63\,\% to 3.23\,\% and made the shear mode unstable: the model (zero stress) is
+inconsistent with the data. Imposing the rotational rows with FC3 truncated to 2 shells raised it from 0.84\,\% to
+2.79\,\% with unstable modes, and with 3 FC3 shells from 0.84\,\% to 1.24\,\% with stable modes: the inconsistency shrinks as
+the FC3 range grows.
+
+%==============================================================================
+\section{Shell selection tool: \code{shell-optimizer}}\label{sec:shellopt}
+%==============================================================================
+\paragraph{Motivation.} The FC2 and FC3 ranges are set by numbers of neighbour shells per atom
+(\code{structure.params} lines 13, 14). The MoTe$_2$ study (Section~\ref{sec:mote2}) shows how much the results depend
+on them, and choosing them by hand takes many runs. Two observations shaped the tool. First, with pair (or random)
+snapshots an FC2-only fit absorbs the FC3 part of the forces: in an earlier run of the tool its FC2 changed with
+the range so much that $C_{11}$ jumped between 54 and 153\,GPa from one radius to the next. So when FC3 is requested
+the FC2 loop already carries a short FC3. Second, the fit error and the dispersion barely depend on the FC3 range,
+so they cannot decide it; the FC3 range is chosen from the data support instead (how many of the added FC3 the
+data determine).
+
+\paragraph{Algorithm} (\code{FOCEX/utility/shell-optimizer DIR}, Python, standard library only; read from the current
+file; its docstring still describes an older FC2 loop without FC3):
+\begin{enumerate}
+\item Probe: one FOCEX run on the first snapshot only (FC2, 2 shells) gives, from the log, the neighbour shells of every
+atom of the primitive cell (radius, number of neighbours).
+\item Candidate radii: the middles of the gaps between consecutive shells whose relative size is at least \code{--gap}
+(default 0.08), over all atoms, each converted to a number of shells per atom; radii giving the same shell set are
+merged.
+\item FC2 loop over up to \code{--nfc2} radii (default 6; the smallest candidate is skipped when there are more than
+\code{--nfc2}). With FC3 requested (\code{--nfc3} $>0$) ranks 1--3 are fitted with FC3 fixed at the smallest candidate
+radius; otherwise ranks 1--2. Recorded: fit error, unstable $k$-points on the band path, lowest frequency, largest
+change of the dispersion to the next radius, lowest $\Gamma$ modes, elastic constants. Overflowed output fields
+(\code{*****}) and NaN count as infinite (\code{fnum}).
+\item FC2 choice (\code{choose}): the smallest radius whose phonons are stable, whose fit error is within \code{--tol-fit}
+(default 0.15 percentage points) of the best stable one, and whose dispersion changes by less than \code{--tol-freq}
+(default 2\,cm$^{-1}$) to the next radius; if none qualifies, the stable run with the smallest fit error. A warning is
+printed if the largest radius tried is chosen.
+\item If no FC2 radius is stable: the best-fitting radius is rerun with the Huang rows off, the rotational rows off,
+and both off (those that are on); the first setting with stable phonons is taken, and the FC2 loop is redone with it.
+\item FC3 loop (ranks 1--3, FC2 as chosen) over up to \code{--nfc3} radii (default 3) not beyond the FC2 radius. Recorded:
+fit error, unstable $k$, dispersion change, the Gr\"uneisen parameters (IBZ, $\omega>20$\,cm$^{-1}$) as 1st percentile,
+median and 99th percentile, and the number of FC3 above twice their standard error.
+\item FC3 choice by data support (\code{choose\_fc3}): among the models with stable phonons and Gr\"uneisen 1\,\%--99\,\% within
+$\pm10$, start at the smallest radius and go to the next one as long as at least 25\,\% of the FC3 it adds exceed twice
+their standard error.
+\item Invariance check on the chosen model: rerun with the rotational rows off and with the Huang rows off (those that
+are on); an invariance is flagged if the fit error falls below 0.7 of its value or unstable phonons become stable
+(Section~\ref{sec:invfit}). If one is flagged, the FC3 loop is redone with it off (FC2 shells kept).
+\item Report \code{DIR/shellopt/report.txt}: the tables and the recommended line 5 and lines 12--14 of
+\code{structure.params}.
+\end{enumerate}
+
+\paragraph{Validation: MoTe$_2$.} Consistent data (\code{FORCEDISP1} without snapshots 2--4, and \code{FORCEDISP2}: 413
+snapshots), started from the author's invariances \code{1 1 1 1}, options \code{--gap 0.05 --nfc2 9 --nfc3 3}. The run used
+the build before the FC3 data-support rule; that rule was then applied to the same run directories with
+\code{choose\_fc3}.
+\begin{itemize}
+\item With \code{1 1 1 1} no FC2 radius was stable (e.g.\ 9.83\,\AA: fit 2.275\,\%, 203 unstable $k$). At 9.83\,\AA: Huang off
+2.269\,\%, 9 unstable; rotational off 1.556\,\%, 81 unstable; both off 0.620\,\%, 0 unstable. The tool continued with
+\code{1 0 0 1}.
+\item FC2 loop with \code{1 0 0 1} (FC3 fixed at 3.10\,\AA), all radii stable:
+\begin{center}
+\small
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+$R$ (\AA) & 3.80 & 4.21 & 4.72 & 5.45 & 5.85 & 6.66 & 7.76 & 8.52 & 9.83\\
+\midrule
+fit (\%) & 4.824 & 4.527 & 3.597 & 2.636 & 1.927 & 1.454 & 0.752 & 0.647 & 0.620\\
+$\Delta\omega$ to next (cm$^{-1}$) & 43.98 & 6.00 & 17.14 & 9.31 & 17.16 & 4.11 & 2.57 & 1.53 & --\\
+\bottomrule
+\end{tabular}
+\end{center}
+Chosen 8.52\,\AA{} (shells 13 13 21 21 21 21): $C_{11}$ 115.9, $C_{12}$ 26.2, $C_{13}$ 11.5, $C_{33}$ 44.2, $C_{44}$ 24.9,
+$C_{66}$ 44.8\,GPa; lowest $\Gamma$ modes 25.6 (shear), 36.6 (breathing), 119.1, 120.9\,cm$^{-1}$.
+\item FC3 loop:
+\begin{center}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+$R$ (\AA) & 3.10 & 3.80 & 4.21\\
+\midrule
+fit (\%) & 0.647 & 0.614 & 0.612\\
+Gr\"uneisen (1\,\%, median, 99\,\%) & $(-0.68, 0.17, 0.58)$ & $(-0.28, 0.61, 1.30)$ & $(0.10, 0.83, 7.25)$\\
+FC3 $>2\sigma$ & 24/24 & 77/140 & 80/179\\
+\bottomrule
+\end{tabular}
+\end{center}
+The former rule (fit within tolerance) picked 3.10\,\AA. The data-support rule picks 3.80\,\AA{} (shells 2 2 3 3 3 3): the
+116 FC3 added at 3.80\,\AA{} have 53 above $2\sigma$, the 39 added at 4.21\,\AA{} only 3. The Gr\"uneisen median 0.61 agrees
+with the hand-chosen model of Section~\ref{sec:mote2} (FC2 10 shells, FC3 2 shells: median 0.60).
+\item Recommended: line 5 = \code{1 0 0 1}; FC2 shells 13 13 21 21 21 21; FC3 shells 2 2 3 3 3 3.
+\end{itemize}
 
 %==============================================================================
 \section{Conclusions}
@@ -1524,7 +1771,10 @@ model matter more than the fitting method. Table~\ref{tab:summary} lists the cha
 
 \paragraph{Open points recorded in the sources.}
 \begin{itemize}
-\item The data consistency check of Section~\ref{sec:mote2} is not part of FOCEX.
+\item The data consistency checks of Section~\ref{sec:mote2} (far-atom forces, held-out prediction) are not part of FOCEX.
+\item From the audit (Section~\ref{sec:audit}): duplicate-row removal ignores the right-hand sides; \code{born\_flag} 3--9
+have no Coulomb right-hand sides; read FCs are not checked against the reference of the run that wrote them;
+the \code{itemp}=1 fix is not tested.
 \item MoTe$_2$: the explanation of the rank-3 rotational rows is an interpretation, not proven.
 \item Noise test and ridge prior: tested only on one exact model with $10^{-3}$ noise; noisier data or fewer
 snapshots not tested.
@@ -1573,6 +1823,9 @@ Version & Change & Switch\\
 9.9 & SVD cut moved into a singular-value gap & --\\
 9.9 & Refit when measured noise $>100\times$(l.\,2)$^2$, kept if it passes the noise test & -- (force fits)\\
 9.9 & FC3/FC4 invariants in \code{trace\_fc.dat} & --\\
+9.9 & Audit fixes: $\bx_p$ in \code{itemp}=1, $\bK=1$ without rows, \code{presid} warning, violation tables & --\\
+9.9 & \code{shell-optimizer} (FC2/FC3 shell selection; FC3 range from data support) & \code{FOCEX/utility}\\
+9.9 & Relative symmetry tests ($10^{-6}\max|A|$) in \code{get\_phi\_zeta\_Xi}, \code{check\_herm\_sym}, \code{symmetrize2} & --\\
 \bottomrule
 \end{tabular}
 

@@ -122,7 +122,8 @@
 ! n=size(mat2,1)
  allocate(mean(n,n))
  dif=maxval(abs(mat2-transpose(mat2)))
- if(dif.gt.1d-4) write(*,*)'SYMMETRIZE2: max|M-M^T|=',dif
+! relative (user's rule 2026-11-07): warn if max|M-M^T| > 1e-6 max|M| (was 1e-4 absolute)
+ if(dif.gt.1d-6*max(maxval(abs(mat2)),tiny(1d0))) write(*,*)'SYMMETRIZE2: max|M-M^T|/max|M|=',dif/maxval(abs(mat2))
  mean=(mat2+transpose(mat2))/2
  mat2=mean
  deallocate(mean)

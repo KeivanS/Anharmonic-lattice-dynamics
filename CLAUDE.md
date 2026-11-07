@@ -114,6 +114,23 @@ match the table. structure.params line 12 there is `0 1 1 1 1 1 1` (outputs iden
 User's rule for the manual: show the working path only, no history or failure lists; fix the
 code/scripts instead (collection scripts in FOCEX/utility now start FORCEDISP1 afresh).
 
+## Symmetry tests of matrices (rule, 2026-11-07, user)
+
+Relative tolerance 1e-6 or larger: a matrix is "not symmetric" only if max|A - A^T| / max|A| > 1e-6 (never an
+absolute threshold; a badly fitted MoTe2 model with entries ~6e5 stopped on round-off at "GAMA NOT SYMMETRIC").
+A matrix that vanishes by symmetry needs a physical scale instead of its own (round-off) largest element: zeta
+(sum phi R) and gama (sum phi R R) use max(max|zeta or gama|, max|phi|) -- with the purely relative test MgO
+(zeta = 0 by inversion) stopped at "Zeta NOT ANTISYMMETRIC" on 1e-15 round-off.
+Applied: dynamical.f90 (phi, zeta, gama in get_phi_zeta...), extratools.f90 check_herm_sym_R/G (were 1e-8
+absolute), common/linalgb.f90 symmetrize2 warning (was 1e-4 absolute); make_hermitian was already relative 1e-6.
+
+## Writing documentation and the technical notes (rule, 2026-11-07, user)
+
+Everything written in the paper (FOCEX/notes/*.tex), the manual and the FAQ about what the code does must be read
+from the code as it is at that moment (re-read the routine, cite file:routine), not recalled: the code changes
+many times in a session. Before committing documentation, re-check the parts that describe code changed since
+they were written.
+
 ## Input files shown to users (rule, 2026-11-06, user)
 
 Every `default.params` put on GitHub or shown in the docs has a comment after the value on EVERY line saying
@@ -517,6 +534,25 @@ improve (10 shells 12.7 -> 3.2 %). Exact Huang with zero stress (no stress.param
 Te forces) makes the interlayer shear E2g^2 -64.8 1/cm and 93 k unstable; ihuang=0: +26.3 1/cm, none unstable,
 residual 1.63 %. FC2 10 shells (ihuang 0): C11 150.3, C12 92.9, C13 15.6, C33 46.4, C44 25.0, C66 28.7 GPa.
 The default FC2 range (fc2range 0) stops in force_constants ("atom not found"; needs a larger icutoff).
+
+Constraint rows (audit 2026-11-06, user's design checked): all invariance rows in one ahom/bhom; d /= 0 from
+include_fc=2 (read-FC contributions, setup_amatrix.f90:223-226 for force rows, invariance_ranks gather_rows for
+invariance rows), stress (Huang, setup_amatrix.f90:125-126), born_flag 2 (rotational rank 2/3, Huang); solved as
+x = x_p + K y (exact; equals the homogeneous/inhomogeneous split). Fixed: itemp=1 now adds x_p; n_hom = 0 with
+enforce_inv >= 1 gives K = I (was: all FCs 0); WARNING when max|C x_p - d| > 1e-6 max|d| + 1e-8; violation
+tables print row, Cx-d, d. Open: compare2previous_lines ignores rhs; born_flag 3-9 no Coulomb rhs; read FCs not
+checked against their reference. (The audit also listed "Huang rows use an unsymmetrized stress.params"; wrong:
+setup_amatrix.f90:65 averages it over the point group, pointgroup_average2.)
+shell-optimizer (FOCEX/utility, linked by make python-tools): gap-based candidate radii; FC2 loop with a short
+FC3 (smallest radius) when FC3 is requested (FC2-only fits on pair snapshots absorbed FC3: C11 54..153 GPa across
+radii); if no radius is stable, invariances switched off one by one on the best radius and the loop redone;
+FC2 choice: stable, fit within tol of the best, dispersion change < tol to the next radius; FC3 choice by data
+support (choose_fc3: next radius while >= 25 % of the added FC3 are > 2 sigma); flagged invariance -> FC3 loop
+redone; Fortran overflow (*****) counted as infinite. MoTe2 (from 1 1 1 1): -> 1 0 0 1, FC2 13/21 shells
+(8.52 A, fit 0.647 %, C11 115.9 C33 44.2 C44 24.9), FC3 2/3 shells (3.80 A, 53 of 116 added FC3 > 2 sigma,
+gamma median 0.61). Job scratch mote2/opt/shellopt. Force predictor for held-out snapshots: job scratch mote2/predict.py (same formulas as
+ANFOMOD calculate_potential; only terms with the first atom in the primitive cell: fcN.dat also lists translated
+copies with the first atom outside, which must be skipped).
 
 `svd_set` declares its matrix `intent(inout)` and `svdcmp` returns U in it, so
 **it destroys the matrix you pass**. Give it a copy.

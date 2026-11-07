@@ -392,8 +392,18 @@ real(r15) presid, dev0pos, dpos
 ! kernel basis K and, for rows with a right-hand side (Huang rows of a stressed reference, Coulomb
 ! parts), the particular solution: x = xpart + K y. One SVD of ahom gives both.
       allocate(xpart(dim_ac))
-      call kernel_and_particular(n_hom,dim_ac,ahom,bhom,any(bhom .ne. 0),svdcut,nkernel,kernelbasis, &
-     &     xpart,presid,uio)
+      if (n_hom .eq. 0) then
+! no invariance rows (itrans=irot=ihuang=0): every FC is free, K = identity (2026-11-06 audit: the SVD of an
+! empty matrix gave an empty kernel and all FCs zero)
+         kernelbasis = 0 ; xpart = 0 ; presid = 0 ; nkernel = dim_ac
+         do i=1,dim_ac
+            kernelbasis(i,i) = 1
+         enddo
+         write(ulog,*)'MAIN: no invariance rows: the kernel is the whole FC space'
+      else
+         call kernel_and_particular(n_hom,dim_ac,ahom,bhom,any(bhom .ne. 0),svdcut,nkernel,kernelbasis, &
+     &        xpart,presid,uio)
+      endif
       call cpu_time(tim) ; call system_clock(wc1)
       write(utimes,'(a,f12.4,a,f12.4)')' After the kernel SVD (and xpart),      TIME  IS ',tim,'   WALL ',dble(wc1-wc0)/wrate
       write(ulog,*)' Kernel of A, of dim ',n_hom,'x',dim_ac,' is of dimension ',nkernel
@@ -402,7 +412,13 @@ real(r15) presid, dev0pos, dpos
       if (any(bhom .ne. 0)) then
          write(ulog,*)'MAIN: invariance rows with a right-hand side: x = xpart + K y; max|C xpart - d|=',presid
          write(*   ,*)'MAIN: invariance rows with a right-hand side: x = xpart + K y; max|C xpart - d|=',presid
-         if (itemp.eq.1) write(*,*)'WARNING: itemp=1 projects on the kernel and ignores the stress of stress.params'
+! the rows with a right-hand side must be consistent (2026-11-06 audit: this was only logged)
+         if (presid .gt. 1d-6*maxval(abs(bhom)) + 1d-8) then   ! absolute floor: round-off right-hand sides (MgO ~5e-15)
+            write(ulog,*)'WARNING: the invariance rows with a right-hand side cannot all hold: max|C xpart - d|=', &
+     &           presid,' (read FCs, stress.params or Coulomb terms inconsistent with the other rows)'
+            write(*   ,*)'WARNING: the invariance rows with a right-hand side cannot all hold: max|C xpart - d|=', &
+     &           presid,' (read FCs, stress.params or Coulomb terms inconsistent with the other rows)'
+         endif
       endif
 
    endif
@@ -426,7 +442,10 @@ real(r15) presid, dev0pos, dpos
 ! of the projected FCs: none is reported (sd(rank) = 0)
       sigma=0
       call write_out(ulog,'TEMP: SVD solution before kernel projection',xout)
-      call project_on(dim_ac,nkernel,xout,kernelbasis(1:dim_ac,1:nkernel),fcs)
+! x = xpart + K K^T (xout - xpart): the invariance rows with a right-hand side hold (2026-11-06 audit: xpart was
+! not added, so C x = 0 instead of C x = d with stress.params, include_fc=2 or Coulomb right-hand sides)
+      call project_on(dim_ac,nkernel,xout-xpart,kernelbasis(1:dim_ac,1:nkernel),fcs)
+      fcs = fcs + xpart
       deallocate(kernelbasis,mat,qmat)
 
    else

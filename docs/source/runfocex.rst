@@ -493,19 +493,14 @@ the fit is solved and takes the values 0 to 3.
   * ``itrans`` — translational invariance (acoustic sum rule). Keep it on;
     without it the acoustic branches will not go to zero at :math:`\Gamma`.
   * ``irot`` — rotational invariance. Relates rank :math:`n` to rank
-    :math:`n+1`; useful when several ranks are fitted together. If the FC3 range is much shorter
-    than the FC2 range, the relations cannot hold and can distort soft modes; if the dispersion
-    turns unstable with ``irot = 1`` but not with ``irot = 0``, keep it off (layered MoTe\ :sub:`2`,
-    FC2 10 shells and FC3 2 shells: the interlayer breathing mode at −29 cm\ :sup:`-1` with it,
-    37 cm\ :sup:`-1` without). There are no
+    :math:`n+1`; useful when several ranks are fitted together. When to switch it off: see the
+    :doc:`faq`. There are no
     rank-1 rows: the torque of FC1 changes when an atom is replaced by its
     lattice image, so it is not an invariance of a crystal.
   * ``ihuang`` — Huang: makes sure the elastic tensor is symmetric; needed for
     low-symmetry crystals. For a stressed reference structure, give its stress
-    in ``stress.params`` (see :ref:`below <focex-stress-params>`). If the reference is not
-    relaxed and you do not have its stress, set ``ihuang = 0``: the Huang relations then
-    assume zero stress, which can make soft modes unstable (layered MoTe\ :sub:`2`: the
-    interlayer shear mode came out at −65 cm\ :sup:`-1` with Huang on, 26 cm\ :sup:`-1` with it off).
+    in ``stress.params`` (see :ref:`below <focex-stress-params>`); without it, for an
+    unrelaxed reference, set ``ihuang = 0`` (see the :doc:`faq`).
   * ``enforce_inv`` — how the fit is solved: ``0`` SVD of the stacked system (default),
     ``1`` fit inside the kernel of the invariances (exact), ``2`` the same with LASSO,
     ``3`` LASSO followed by a refit; see the explanation just below.
@@ -540,12 +535,7 @@ problems.
      - As ``2``, followed by a least-squares refit of the selected force
        constants under the same invariances. Use it when the forces are accurate.
 
-**Which value to use.** Use ``1``: the invariances hold exactly and every force constant
-gets an error bar. With ``0`` they hold only approximately, and how well depends on the
-data (check the violation tables in the log). Use ``3`` when you include many force
-constants (long FC3 range, FC4) and want FOCEX to keep only those the data need; ``2``
-only as a diagnostic, since its values are shrunk. The methods are described in the
-technical notes ``FOCEX/notes/focex_9x_algorithms.tex``.
+**Which value to use.** ``1`` (see the :doc:`faq` for why, and for what ``2`` and ``3`` do).
 
 **How ``1`` works.** The invariance relations are linear, so the force
 constants that satisfy them all form an affine subspace. If ``K`` is an
@@ -658,7 +648,9 @@ primitive cell (not per type).
 primitive cell are included for that rank. ``0`` means "no FC of this rank on
 this atom". Ranks whose flag on line 4 is ``0`` are ignored, but their line must
 still be present. The radius of each shell is listed in the log file and in
-``pairs.dat``, so you can convert shells to Å after a first run.
+``pairs.dat``, so you can convert shells to Å after a first run. ``shell-optimizer DIR`` chooses
+them for you: it puts the cutoffs at large gaps between shells, runs FOCEX for increasing ranges
+and reports a converged choice (see the :doc:`faq`).
 
 **20…** — one line per atom of the primitive cell: ``index type x y z``, where
 the index must run 1, 2, 3 … in order, ``type`` refers to lines 8–10, and
@@ -1373,8 +1365,12 @@ Version history
     the LASSO weight (line 6) and ridge term (line 7); the same SVD regularisation as 0 and 1.
     ``trace_fc.dat`` and ``fcs.plt`` also show the strength of FC3 and FC4 versus distance.
     ``sd(rank)`` for all ranks. ``svd-*.dat`` no longer list every force constant (the log does).
-    Every ``default.params`` comes with a comment on each line. Technical details:
-    ``FOCEX/notes/focex_9x_algorithms.tex``.
+    Every ``default.params`` comes with a comment on each line. New tool ``shell-optimizer`` chooses the
+    FC2 and FC3 shells (and tells you when an invariance does not fit your model). Fixes: Boltzmann weighting
+    (``itemp = 1``) now keeps the invariance relations with a right-hand side; ``enforce_inv = 1`` without any
+    invariance rows no longer returns zero force constants; a warning when invariance relations contradict
+    each other; symmetry checks are relative (no more stops on round-off). A FAQ collects the advice.
+    Technical details: ``FOCEX/notes/focex_9x_algorithms.tex``.
 
 9.8 (2026-11-05)
     Relaxation with ``born_flag = 2`` and :math:`Z^* = z\,\mathbb{1}`: full Ewald energy of the charges at

@@ -4607,7 +4607,7 @@ end function is_in_wedge
           p1=phi(tau,taup,:,:,i)
           p2=phi(taup,tau,:,:,j)
           eps=maxval(abs(p1-transpose(p2)))
-          if (eps.gt.1d-8) then
+          if (eps.gt.1d-6*max(maxval(abs(phi)),tiny(1d0))) then   ! relative (user's rule 2026-11-07; was 1d-8 absolute)
              write(*,*)'CHECK_HERM_SYM_R violation: R,-R,t,tp ',i,j,tau,taup
              call write_out(6,'phi(t,tp, R)',p1)
              call write_out(6,'phi(tp,t,-R)',p2)
@@ -4650,7 +4650,7 @@ end function is_in_wedge
           p1=dyn(tau,taup,:,:,i)
           p2=dyn(taup,tau,:,:,j)
           eps=maxval(abs(p1-transpose(p2)))
-          if (eps.gt.1d-8) then
+          if (eps.gt.1d-6*max(maxval(abs(dyn)),tiny(1d0))) then   ! relative (user's rule 2026-11-07; was 1d-8 absolute)
              write(*,*)'CHECK_HERM_SYM_G violation: G,-G,t,tp ',i,j,tau,taup
              call write_out(6,'dyn(t,tp, G)',p1)
              call write_out(6,'dyn(tp,t,-G)',p2)

@@ -2671,7 +2671,7 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
  end subroutine write_supercell
 !============================================================
  subroutine write_invariance_violations(ulog,n,fcs)
- use svd_stuff, only : atransl,arot,brot,ahuang,bhuang, amat,bmat,transl_constraints, &
+ use svd_stuff, only : atransl,btransl,arot,brot,ahuang,bhuang, amat,bmat,transl_constraints, &
  &  rot_constraints,huang_constraints,inv_constraints,dim_al,itrans,irot,ihuang
  use ios, only : umatrx
  use constants, only : r15
@@ -2689,16 +2689,17 @@ write(ulog,*)'******* Trace for the harmonic FCs ********'
    write(*,   *)' # of huang constraints is=',huang_constraints
    write(ulog,*)' # of huang constraints is=',huang_constraints
 
-   write(ulog,3)'******* Violation of translational invariance relations: enforced? ',itrans
+! every table: row, C x - d (the violation), d (the right-hand side; 0 for homogeneous rows). 2026-11-06 audit:
+! the translational table printed C x without d (wrong with include_fc=2), the rotational one C x and d.
+   write(ulog,3)'******* Violation of translational invariance relations (row, Cx-d, d): enforced? ',itrans
    do i=1,transl_constraints
-      write(ulog,*)i,dot_product(atransl(i,:),fcs(:))
+      write(ulog,*)i,dot_product(atransl(i,:),fcs(:))-btransl(i),btransl(i)
    enddo
-   write(ulog,3)'******* Violation of rotational invariance relations: enforced? ',irot
+   write(ulog,3)'******* Violation of rotational invariance relations (row, Cx-d, d): enforced? ',irot
    do i=1,rot_constraints
-      write(ulog,*)i,dot_product(arot(i,:),fcs(:)),brot(i)
+      write(ulog,*)i,dot_product(arot(i,:),fcs(:))-brot(i),brot(i)
    enddo
-   write(ulog,3)'******* Violation of Huang invariance relations: enforced? ',ihuang
-   write(ulog,*)' if not=15, it means there were some that were exactly zero and removed'
+   write(ulog,3)'******* Violation of Huang invariance relations (row, Cx-d, d): enforced? ',ihuang
    do i=1,huang_constraints
       write(ulog,*)i,dot_product(ahuang(i,:),fcs(:))-bhuang(i),bhuang(i)
    enddo
