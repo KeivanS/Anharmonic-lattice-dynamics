@@ -128,7 +128,10 @@ Build a reference binary from an untouched checkout and a second from the workin
 tree, run both on the same inputs, and compare **every** output file, not just
 `fc*.dat`. Test inputs are in `~/PROJECTS/MATERIALS`; the three that span the
 symmetry range are **BZO** (cubic perovskite, ~2 min), **MoTe2/TEST**
-(hexagonal, deliberately short range, ~20 s) and **TEST_GeSe** (orthorhombic,
+(hexagonal, deliberately short range, ~20 s; 2026-11-06, user: its FORCEDISP1 snapshots 2-4 were inconsistent
+with the reference and were dropped -- original kept as FORCEDISP1.with_snaps2-4; the remaining snapshots all
+move one Te atom, so FORCEDISP1 alone no longer fixes the Mo FC2: use fdfiles 2 with FORCEDISP2, or compare
+regressions on FORCEDISP1.with_snaps2-4) and **TEST_GeSe** (orthorhombic,
 low symmetry, ~7 min). `NaCl` has no POSCAR/FORCEDISP and cannot run a fit.
 
 Runs are reproducible as of 2026-08-07. Before the `finitedif_vel` fix they were

@@ -1,7 +1,18 @@
 \documentclass[11pt,a4paper]{article}
 \usepackage[margin=2.4cm]{geometry}
 \usepackage{amsmath,amssymb,booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\tikzset{
+  box/.style={draw, rounded corners=1.5pt, align=left, text width=#1, inner sep=2.5pt, font=\footnotesize, fill=white},
+  box/.default=9cm,
+  dec/.style={box=#1, fill=blue!7, sharp corners},
+  sr/.style={box=#1, fill=red!8},
+  hl/.style={box=#1, fill=red!8, very thick},
+  sw/.style={draw, dashed, align=left, text width=4.3cm, inner sep=2pt, font=\scriptsize, fill=yellow!15},
+  arr/.style={-{Stealth[length=1.8mm]}, semithick},
+}
 
 \newcommand{\bA}{\mathbf A}
 \newcommand{\bC}{\mathbf C}
@@ -81,12 +92,13 @@ conditions on FC2. $\bd=0$ except where the reference is stressed or a Coulomb p
 (Sections~\ref{sec:huang} and~\ref{sec:hybrid}). The switch \code{enforce\_inv} (\code{structure.params}
 line~5, fourth value) chooses how the two systems are combined:
 \begin{itemize}
-\item 0: the invariance rows are stacked with the force rows and the whole system is solved by SVD;
+\item 0: the invariance rows are stacked with the force rows and the whole system is solved by SVD
+(Figs.~\ref{fig:svdset}, \ref{fig:solve01});
 \item 1: $\bx=\bx_p+\bK\by$, with $\bK$ an orthonormal basis of the kernel of $\bC$ and $\bx_p$ a
 particular solution; then $\min_\by\|\bA\bK\by-(\bb-\bA\bx_p)\|$ by SVD (\code{fit\_kernel\_basis},
-\code{constrained\_fit.f90}). The invariances hold exactly;
+\code{constrained\_fit.f90}). The invariances hold exactly (Fig.~\ref{fig:solve01});
 \item 2 and 3: a LASSO on $\bx$ inside the same affine space, without and with a least-squares refit on
-the selected FCs (Section~\ref{sec:lasso}).
+the selected FCs (Section~\ref{sec:lasso}, Figs.~\ref{fig:lassoouter}, \ref{fig:lassoinner}).
 \end{itemize}
 All SVD solutions use the regularized back-substitution of \code{svbksb} (\code{svd\_ridge.f90}),
 Section~\ref{sec:filter}. The relative cut is $c=\epsilon_F^2$, with $\epsilon_F$ the force error of
@@ -109,6 +121,200 @@ Many tests below use the \emph{exact model} of \code{FOCEX/REFERENCE/exact\_mode
 polynomial of degree 4 in the positions (pair, three-body and four-body terms in squared distances), so
 FC1 to FC4 are known exactly and FC5 and higher vanish. Its reference is stressed. It is set up for
 fluorite CaF$_2$, wurtzite ZnO and monoclinic HfO$_2$, with 100 snapshots each.
+
+%==============================================================================
+\section{Program flow of FOCEX 9.9}\label{sec:flow}
+%==============================================================================
+Figures~\ref{fig:main}--\ref{fig:solve01} show the program as it is coded in 9.9, with the routine names (file:routine)
+in the boxes; they were drawn from the code, not from the manual. Figure~\ref{fig:main} is the main program
+\code{focex.f90} in the order of its calls, with the input switches beside the step where each acts.
+Figure~\ref{fig:setup} expands the setup: inputs, symmetry, neighbour shells, FC groups and the FC2 keep rule,
+supercells and snapshots, and the Coulomb subtraction. Figure~\ref{fig:linsys} shows how the two linear systems are
+built: the force rows $\bA\bx\approx\bb$ and the invariance rows $\bC\bx=\bd$, and, for \code{enforce\_inv}$\ge1$,
+the kernel $\bK$ and the particular solution $\bx_p$. Figure~\ref{fig:solve01} shows the solver branches. The SVD
+solver \code{svd\_set} that \code{enforce\_inv}=0 and 1 share is in Fig.~\ref{fig:svdset}; the LASSO branch
+(\code{enforce\_inv}=2, 3) is in Figs.~\ref{fig:lassoouter} and~\ref{fig:lassoinner} (Section~\ref{sec:lasso}). How
+to read the branches: with 0 the invariance rows are just more rows of one least-squares problem; with 1, 2 and 3
+only the force rows are fitted, and the invariances are built in by writing $\bx=\bx_p+\bK\by$ before the fit.
+The lattice-dynamics part (\code{set\_band\_structure}) is in Figs.~\ref{fig:ld} and~\ref{fig:mech}, the
+relaxation in Fig.~\ref{fig:relax}.
+%------------------------------------------------------------------------------
+\begin{figure}[p]
+\centering
+\begin{tikzpicture}[node distance=2.4mm]
+\node[box=9.3cm] (a1) {\textbf{1. Read inputs.} \code{read\_structure} (\code{ios.f90}: \code{default.params}, \code{structure.params}),
+  \code{read\_dielectric}, \code{read\_latdyn}.};
+\node[box=9.3cm, below=of a1] (a2) {\textbf{2. Cell, symmetry, neighbours.} \code{make\_unitcell} (\code{symmetry\_init}),
+  \code{symmetrize\_positions}, \code{find\_WS\_largest\_SC}, \code{make\_grids}, \code{set\_neighbor\_list},
+  \code{check\_born\_symmetry}. Fig.~\ref{fig:setup}.};
+\node[box=9.3cm, below=of a2] (a3) {\textbf{3. FC groups and unknowns.} \code{setup\_maps} or \code{setup\_maps\_fc34};
+  FC2 keep rule (\code{setup\_FC2\_in\_supercell} / \code{exclude\_beyond\_sc}); $n_x$ = kept irreducible FCs of the
+  ranks with \code{include\_fc}=1.};
+\node[box=9.3cm, below=of a3] (a4) {\textbf{4.} \code{read\_fcs}: irreducible values of the read ranks (\code{include\_fc}=2).};
+\node[dec=9.3cm, below=of a4] (d5) {\textbf{Every included rank read?} ($n_x=0$ and some \code{include\_fc}=2)};
+\node[box=9.3cm, below=8mm of d5] (a6) {\textbf{5. Force rows.} \code{read\_snaps\_set\_aforce}: POSCAR$i$/FORCEDISP$i$,
+  \code{subtract\_coulomb\_force}, \code{set\_force\_displacement\_matrix} $\Rightarrow \bA,\bb$. Fig.~\ref{fig:linsys}.};
+\node[box=9.3cm, below=of a6] (a7) {\textbf{6. Invariance rows.} \code{set\_translational\_inv\_constraints},
+  \code{set\_rotational\_inv\_constraints}, \code{set\_huang\_inv\_constraints}, \code{homogeneous\_constraints\_overlap}
+  $\Rightarrow \bC,\bd$. Fig.~\ref{fig:linsys}.};
+\node[box=9.3cm, below=of a7] (a8) {\textbf{7. Solve for the FCs} (one branch per \code{enforce\_inv}; Figs.~\ref{fig:svdset}--\ref{fig:lassoinner})
+  $\Rightarrow \bx$ (\code{fcs}), $\sigma_j$ (\code{sigma}).};
+\node[box=9.3cm, below=8mm of a8] (a9) {\textbf{8. Write FCs.} \code{merge\_given\_fcs} (read + fitted ranks),
+  \code{write\_independent\_fcs} (log, sd), \code{write\_output\_fcs}: \code{fcN.dat}, \code{fcN\_irr.dat}, \code{lat\_fc.dat},
+  \code{trace\_fc.dat}.};
+\node[box=9.3cm, below=of a9] (a10) {\textbf{9. Relax the reference} (optional): \code{relax\_reference}; unrelaxed files renamed
+  \code{*\_unrelaxed.dat}, FCs written again. Fig.~\ref{fig:relax}.};
+\node[box=9.3cm, below=of a10] (a11) {\textbf{10.} \code{create\_extended\_rgrid}; if \code{born\_flag}$\ge1$: Ewald grids
+  (\code{cuts}, \code{make\_grid\_shell\_ewald}), \code{non\_analq0}; \code{get\_phiSR\_5D}.};
+\node[box=9.3cm, below=of a11] (a12) {\textbf{11.} \code{set\_band\_structure} (\code{dynamical.f90}): bands; mechanical properties;
+  Gr\"uneisen; IBZ, DOS; $\Gamma$ modes; conductance; QHA. Figs.~\ref{fig:ld}, \ref{fig:mech}.};
+\foreach \u/\v in {a1/a2,a2/a3,a3/a4,a4/d5,a6/a7,a7/a8,a9/a10,a10/a11,a11/a12} \draw[arr] (\u) -- (\v);
+\draw[arr] (d5) -- node[right,font=\scriptsize]{no} (a6);
+\draw[arr] (a8) -- (a9);
+\draw[arr] (d5.west) -- ++(-4mm,0) node[above,font=\scriptsize,pos=0.5]{yes} |- (a9.west);
+% switches
+\node[sw, right=4mm of a1] (s1) {\code{default.params} l.\,2: force error $\epsilon_F$, cut $c=\epsilon_F^2$;
+  l.\,5 \code{relax\_ref}; l.\,6 \code{lasso\_rule}; l.\,7 \code{lasso\_l2}. \code{dielectric.params}: \code{born\_flag}, $\epsilon$, $Z^*$.};
+\node[sw, right=4mm of a3] (s3) {\code{structure.params} l.\,12: \code{fc2range}; \code{fcflag}(3:8)=0 $\to$ \code{setup\_maps\_fc34}.};
+\node[sw, right=4mm of a4] (s4) {\code{include\_fc}(rank)=2 (\code{structure.params} l.\,4).};
+\node[sw, right=4mm of a6] (s6) {\code{born\_flag}=2: hybrid Coulomb force subtracted ($\le1$: nothing).};
+\node[sw, right=4mm of a7] (s7) {\code{itrans}, \code{irot}, \code{ihuang} (l.\,5); \code{stress.params}; Coulomb right-hand sides (\code{born\_flag}=2).};
+\node[sw, right=4mm of a8] (s8) {\code{enforce\_inv} (l.\,5, 4th value): 0 stacked SVD, 1 kernel fit, 2/3 LASSO (lines 6, 7); \code{itemp}=1: temperature weighting.};
+\node[sw, right=4mm of a10] (s10) {\code{default.params} l.\,5 = 1.};
+\node[sw, right=4mm of a11] (s11) {\code{born\_flag}$\ne0$: dipole (NA) term in $D(k)$.};
+\foreach \s/\t in {s1/a1,s3/a3,s4/a4,s6/a6,s7/a7,s8/a8,s10/a10,s11/a11} \draw[densely dotted] (\s.west) -- (\t.east);
+\end{tikzpicture}
+\caption{Main program \code{FOCEX/focex.f90} in the order of its calls. Dotted: the input switches that act at each
+step (yellow). If every included rank is read, steps 5--7 are skipped (relax-only rerun, 9.8).}
+\label{fig:main}
+\end{figure}
+%------------------------------------------------------------------------------
+\begin{figure}[p]
+\centering
+\begin{tikzpicture}[node distance=2.4mm]
+\node[box=10cm] (b1) {\code{read\_structure} (\code{ios.f90}). \code{default.params}: tolerance, force error ($c=\epsilon_F^2$),
+  \code{icutoff}, margin, \code{relax\_ref}, \code{lasso\_rule}, \code{lasso\_l2}. \code{structure.params}: cell, atoms,
+  \code{include\_fc}, shells per rank, \code{itrans irot ihuang enforce\_inv}, \code{itemp}, \code{fc2range} + \code{fcflag}s.
+  \code{read\_dielectric}: \code{born\_flag}, $\epsilon$, $Z^*$.};
+\node[box=10cm, below=of b1] (b2) {\code{make\_unitcell} (\code{common/lattice.f90}): Cartesian positions;
+  \code{symmetry\_init}: space-group operations accepted within \code{tol\_sym} $=10^{-3}$\,\AA.};
+\node[box=10cm, below=of b2] (b3) {\code{symmetrize\_positions} (\code{force\_constant\_symmetries.f90}): positions averaged over the group;
+  if any moved, \code{symmetry\_init} again.};
+\node[box=10cm, below=of b3] (b4) {\code{find\_WS\_largest\_SC} (\code{extratools.f90}): the largest-volume POSCAR$i$ sets the supercell
+  Wigner--Seitz cell (\code{rws26}, \code{lgridmax}); \code{make\_grids}.};
+\node[box=10cm, below=of b4] (b5) {\code{set\_neighbor\_list}: neighbour shells. \code{check\_born\_symmetry}: $Z^*$, $\epsilon$ against the group
+  (stop $>5\times10^{-2}$, warn $>10^{-4}$), then group-averaged.};
+\node[box=10cm, below=of b5] (b6) {If \code{fc2range}=0 or the FC2 shells reach beyond \code{lgridmax}: \code{update\_nshells}
+  (FC2 shells inside the Wigner--Seitz cell of the largest supercell).};
+\node[box=10cm, below=of b6] (b7) {\code{setup\_maps} (\code{others.f90}), or \code{setup\_maps\_fc34} (\code{fc34\_maps.f90}, rule of
+  \code{fc34\_range.f90}) if some \code{fcflag}=0: groups of FCs of each rank, their irreducible terms, and the map
+  FC $=\sum$ \code{mat} $\times\,x$.};
+\node[box=10cm, below=of b7] (b8) {FC2 keep rule. \code{fc2range}=0: \code{setup\_FC2\_in\_supercell} keeps an irreducible FC2 term if some term
+  of its group (non-zero coefficient) has its bond vector inside or on the supercell Wigner--Seitz cell
+  (\code{check\_inside\_ws}). Otherwise \code{exclude\_beyond\_sc}. Dropped terms: their coefficients are set to 0.};
+\node[box=10cm, below=of b8] (b9) {\code{include\_fc}=2: \code{read\_fcs} (\code{fcN.dat} + earlier \code{lat\_fc.dat}, atoms matched by
+  (sublattice, cell)) $\to$ \code{xfull}.};
+\node[box=10cm, below=of b9] (b10) {\code{read\_snaps\_set\_aforce} (\code{focex.f90}), for each supercell $i$: \code{read\_supercell} (POSCAR$i$),
+  \code{identify\_atoms\_in\_supercell}, \code{count\_configs}, \code{read\_force\_position\_data} (FORCEDISP$i$:
+  $u$ = position $-$ POSCAR, forces, energies).};
+\node[box=10cm, below=of b10] (b11) {\code{subtract\_coulomb\_force} (\code{ewald\_born.f90}). \code{born\_flag}$\le1$: nothing.
+  \code{born\_flag}=2: $F\leftarrow F-[F_m(x)-F_m(x_0)-(\Phi_C-\Phi_m)u]$, with $\Phi_C-\Phi_m$ from \code{hybrid\_harmonic}
+  for this supercell. Then \code{set\_force\_displacement\_matrix} (Fig.~\ref{fig:linsys}).};
+\foreach \u/\v in {b1/b2,b2/b3,b3/b4,b4/b5,b5/b6,b6/b7,b7/b8,b8/b9,b9/b10,b10/b11} \draw[arr] (\u) -- (\v);
+\end{tikzpicture}
+\caption{Setup (steps 1--5 of Fig.~\ref{fig:main}). All routines are in \code{FOCEX/} unless a path is given. The
+reading of \code{default.params} is part of \code{read\_structure}; there is no separate \code{read\_params}.}
+\label{fig:setup}
+\end{figure}
+%------------------------------------------------------------------------------
+\begin{figure}[p]
+\centering
+\begin{tikzpicture}[node distance=2.4mm]
+\node[box=6.6cm] (c1) {\textbf{Force rows} (\code{set\_force\_displacement\_matrix}, \code{setup\_amatrix.f90}), one per snapshot
+  $s$, atom $i$, direction $\alpha$:
+  $F^{(s)}_{i\alpha}=-\Pi_{i\alpha}-\sum\Phi u-\tfrac12\sum\Psi uu-\dots$, each FC replaced by $\sum$\code{mat}$\,x$.
+  $\Rightarrow$ $\bA$ ($N\times n_x$).};
+\node[box=6.6cm, below=of c1] (c2) {$\bb$ = DFT forces (Coulomb part subtracted if \code{born\_flag}=2) $-\,\bA_{\rm read}\bx_{\rm read}$ (\code{include\_fc}=2).};
+\node[box=6.6cm, right=6mm of c1.north east, anchor=north west] (c3) {\code{set\_translational\_inv\_constraints}
+  (\code{invariance\_ranks.f90}): all included ranks.};
+\node[box=6.6cm, below=of c3] (c4) {\code{set\_rotational\_inv\_constraints}: rows of rank $n\ge2$ (rank 1 dropped); right-hand side
+  $-\bC_{\rm read}\bx_{\rm read}$ and, \code{born\_flag}=2, the Coulomb moments (ranks 2, 3; \code{coulomb\_lr.f90}).};
+\node[box=6.6cm, below=of c4] (c5) {\code{set\_huang\_inv\_constraints} (\code{setup\_amatrix.f90}): rank 2; right-hand side from
+  \code{stress.params} and, \code{born\_flag}=2, $-(S_C-S_C^T)$; dropped when FC2 is read.};
+\node[box=6.6cm, below=of c5] (c6) {\code{homogeneous\_constraints\_overlap} (\code{others.f90}): the rows of the switched-on
+  invariances (\code{itrans}, \code{irot}, \code{ihuang}) $\Rightarrow$ \code{ahom} $=\bC$, \code{bhom} $=\bd$.};
+\node[box=6.6cm, below=of c6] (c7) {\textbf{Only if} \code{enforce\_inv}$\ge1$ or \code{itemp}=1:
+  \code{kernel\_and\_particular} (\code{svd\_ridge.f90}), one SVD $\bC=\mathbf U\bW\mathbf V^T$.
+  Kernel $\bK=\{\bv_k:\ w_k<c\,w_{\max}\}$ (hard cut, no filter); if $\bd\ne0$:
+  $\bx_p=\sum_{w_k>c\,w_{\max}}\bv_k(\bu_k\cdot\bd)/w_k$, \code{presid} $=\max|\bC\bx_p-\bd|$.
+  Then every $\bx=\bx_p+\bK\by$ satisfies $\bC\bx=\bd$.};
+\node[box=13.8cm, below=5mm of c7.south east, anchor=north east, fill=gray!10] (c8) {To the solver: \code{enforce\_inv}=0 uses $\bA,\bb,\bC,\bd$ (Fig.~\ref{fig:solve01});
+  1, 2, 3 use $\bA,\bb,\bK,\bx_p$ (Figs.~\ref{fig:solve01}--\ref{fig:lassoinner}).};
+\draw[arr] (c1) -- (c2); \draw[arr] (c3) -- (c4); \draw[arr] (c4) -- (c5); \draw[arr] (c5) -- (c6);
+\draw[arr] (c6) -- (c7);
+\draw[arr] (c2.south) -- (c2 |- c8.north);
+\draw[arr] (c7) -- (c7 |- c8.north);
+\end{tikzpicture}
+\caption{The linear system: force rows $\bA\bx\approx\bb$ (left) and invariance rows $\bC\bx=\bd$ (right).}
+\label{fig:linsys}
+\end{figure}
+%------------------------------------------------------------------------------
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[node distance=2.4mm]
+\node[dec=14.8cm] (t) {\code{focex.f90}: \code{itemp}=1? \quad else \code{enforce\_inv} = 0 \,/\, 1 \,/\, 2, 3};
+\node[box=4.6cm, below=7mm of t.south west, anchor=north west] (z1) {\textbf{enforce\_inv = 0}\\
+  $\begin{pmatrix}\bC\\ \bA\end{pmatrix}\bx\approx\begin{pmatrix}\bd\\ \bb\end{pmatrix}$ (\code{amat}, \code{bmat}).};
+\node[box=4.6cm, below=of z1] (z2) {\code{svd\_set}\\(\code{'svd-all.dat'}), noise check on (Fig.~\ref{fig:svdset}).
+  Invariances hold only as well as the data allow.};
+\node[box=4.6cm, below=of z2] (z3) {\code{write\_invariance\_violations}.};
+\node[box=4.6cm, right=4.5mm of z1.north east, anchor=north west] (o1) {\textbf{enforce\_inv = 1}\\
+  $\bK$, $\bx_p$ from \code{kernel\_and\_particular}; $\bb'=\bb-\bA\bx_p$.};
+\node[box=4.6cm, below=of o1] (o2) {\code{constrained\_fit.f90:}\\\code{fit\_kernel\_basis}: $\bA\bK\by\approx\bb'$ by \code{svd\_set}
+  (\code{'svd-kernel.dat'}), noise check on.};
+\node[box=4.6cm, below=of o2] (o3) {$\bx=\bK\by+\bx_p$; $\sigma$ from $\bK\,\mathbf V\mathrm{diag}(s\sqrt f)$. Invariances exact.};
+\node[box=4.6cm, right=4.5mm of o1.north east, anchor=north west] (l1) {\textbf{enforce\_inv = 2, 3}\\
+  \code{lasso\_kernel\_basis} with $\bA,\bb,\bK,\bx_p$ (Figs.~\ref{fig:lassoouter}, \ref{fig:lassoinner}).};
+\node[box=4.6cm, below=of l1] (l2) {\code{lasso\_support\_errors}: $\sigma$ of the least-squares fit on the support.};
+\node[box=4.6cm, below=of l2] (l3) {Invariances exact.};
+\node[fit=(z3)(o3)(l3),inner sep=0pt] (bot) {};
+\node[box=14.8cm, anchor=north west, fill=gray!10] (f) at ([yshift=-6mm]bot.south -| z1.west) {\code{fit\_residual}: $\|\bA\bx-\bb\|/\|\bb\|$
+  (enforce\_inv $\ge1$), violations of the invariance rows in the log; then step 8 of Fig.~\ref{fig:main}.
+  \textbf{itemp = 1} (not shown): \code{implement\_temperature}, \code{solve\_svd}, \code{project\_on} the kernel; $\sigma=0$.};
+\draw[arr] (t.south -| z1) -- (z1); \draw[arr] (t.south -| o1) -- (o1); \draw[arr] (t.south -| l1) -- (l1);
+\draw[arr] (z1)--(z2); \draw[arr] (z2)--(z3); \draw[arr] (o1)--(o2); \draw[arr] (o2)--(o3);
+\draw[arr] (l1)--(l2); \draw[arr] (l2)--(l3);
+\draw[arr] (z3) -- (z3 |- f.north); \draw[arr] (o3) -- (o3 |- f.north); \draw[arr] (l3) -- (l3 |- f.north);
+\end{tikzpicture}
+\caption{Solving for the FCs: the branches of \code{focex.f90} for \code{enforce\_inv}. Only the force rows enter the
+fits of 1, 2 and 3; the invariances enter through $\bK$ and $\bx_p$.}
+\label{fig:solve01}
+\end{figure}
+%------------------------------------------------------------------------------
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[node distance=2.4mm]
+\node[box=12cm] (e1) {\textbf{In:} matrix $\mathbf M$ ($m\times n$; destroyed), right-hand side $\mathbf r$, cut $c$ ($=\epsilon_F^2$).
+  \code{svdcmp} (OpenMP): $\mathbf M=\mathbf U\bW\mathbf V^T$.};
+\node[box=12cm, below=of e1] (e2) {\code{gap\_cut}$(c)\to c_{\rm rel}$: moved into a gap of the singular values if some lie
+  dangerously close to $c$ (Fig.~\ref{fig:gap}); else $c_{\rm rel}=c$. $w_c=c_{\rm rel}\,w_{\max}$.};
+\node[box=12cm, below=of e2] (e3) {\code{svbksb}: $\by=\sum_k\phi_k\,(\bu_k\cdot\mathbf r)\,\bv_k/w_k$, \quad
+  $\phi_k=w_k^3/\sqrt{w_k^6+w_c^6}$ (smooth filter).};
+\node[dec=12cm, below=of e3] (e4) {\code{svd\_noise\_check} set (fit of the forces) \textbf{and} $\varepsilon^2=\|\mathbf M\by-\mathbf r\|^2/\|\mathbf r\|^2>100c$
+  \textbf{and} $\varepsilon^2>c_{\rm rel}$?};
+\node[box=12cm, below=7mm of e4] (e5) {\code{gap\_cut}$(\varepsilon^2)\to c_2$. If $c_2>c_{\rm rel}$: solve again with $w_c'=c_2w_{\max}$;
+  \textbf{noise test}: keep it if $\mathrm{RSS}'-\mathrm{RSS}\le s^2(\Delta p+2\sqrt{2\Delta p})$, $p=\sum_k\phi_k$,
+  $s^2=\mathrm{RSS}/(m-p)$; else restore $\by$ (log: \code{refit kept} / \code{refit rejected}).};
+\node[box=12cm, below=of e5] (e6) {\textbf{Out:} $\by$; residual, $s^2=\|\mathbf M\by-\mathbf r\|^2/(m-n)$;
+  $\sigma_j=s\,[\sum_kV_{jk}^2w_k^4/(w_k^6+w_c^6)]^{1/2}$; $\mathbf V\mathrm{diag}(s\sqrt{f})$ for the caller; file \code{svd-*.dat}.};
+\draw[arr] (e1) -- (e2); \draw[arr] (e2) -- (e3); \draw[arr] (e3) -- (e4);
+\draw[arr] (e4) -- node[right,font=\scriptsize]{yes} (e5); \draw[arr] (e5) -- (e6);
+\draw[arr] (e4.east) -- ++(4mm,0) node[above,font=\scriptsize,pos=0.5]{no} |- (e6.east);
+\end{tikzpicture}
+\caption{\code{svd\_ridge.f90:svd\_set}, the SVD solver of \code{enforce\_inv}=0 and 1 (and of
+\code{lasso\_support\_errors}, with \code{svd\_noise\_check} off).}
+\label{fig:svdset}
+\end{figure}
 
 %==============================================================================
 \section{Invariance rows of all ranks in one loop (9.0)}\label{sec:invrows}
@@ -270,7 +476,8 @@ the volume of the reciprocal primitive cell and $\hat u$ a fixed direction. A po
 the band-path segment (incoming if the previous point differs, else outgoing) or $\hat u$ on a mesh. The
 three rigid translations there get $\omega^2=0$ exactly and are left out of the thermodynamics.
 
-\paragraph{Implementation.} \code{freq\_vel} and \code{gamma\_limit} (\code{common/phonons.f90}). The old
+\paragraph{Implementation.} \code{freq\_vel} and \code{gamma\_limit} (\code{common/phonons.f90}); where they sit in the
+lattice-dynamics part is shown in Fig.~\ref{fig:ld}. The old
 value of the translations is written to the log (\code{FREQ\_VEL}). In the same version an FC2 group with
 members outside the supercell Wigner--Seitz cell no longer stops the run
 (\code{set\_dynamical\_matrix\_std}, \code{fourier\_fc2fit\_4D}); members outside are logged once
@@ -281,6 +488,31 @@ off $\Gamma$ the frequencies change by the removed shift, at most 1.25\,cm$^{-1}
 $\langle\gamma\rangle$ 0.7856$\to$0.7683, the value of the old data without the $\Gamma$ acoustic modes
 (0.7682). In 9.4 the $\Gamma$ test was unified to $10^{-5}$: a LaP path ended at $|k|=2.7\times10^{-10}$,
 which \code{freq\_vel} treated as $\Gamma$ and \code{gamma\_limit} (then $10^{-12}$) did not.
+
+%------------------------------------------------------------------------------
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[node distance=2.4mm]
+\node[box=13cm] (k1) {\code{set\_band\_structure} (\code{dynamical.f90}). \code{make\_kp\_bs}: $k$-path of \code{kpbs.params}.};
+\node[box=13cm, below=of k1] (k2) {\code{get\_frequencies} on the path. For each $k$: \code{gamma\_limit} ($|k|<10^{-5}$: $q=10^{-6}\hat d$ along the
+  segment) and \code{freq\_vel} (\code{common/phonons.f90}): $\omega^2$ at $q$, eigenvectors and Hellmann--Feynman velocities at
+  $q+3\times10^{-4}|G|\hat u$; at $\Gamma$ the 3 translations set to $\omega^2=0$.};
+\node[box=13cm, below=of k2] (k3) {\code{get\_freq} $\to$ \code{set\_dynamical\_matrix\_std}: $D(k)$ from the fitted FC2; if \code{born\_flag}$\ne0$
+  the dipole term $Z^*\,\partial^2E_{\rm Ewald}\,Z^{*T}$ (\code{ewald\_2nd\_deriv\_hat}) minus its $q=0$ sum (\code{dyn\_naq0}) is added;
+  \code{make\_hermitian}.};
+\node[box=13cm, below=of k3] (k4) {\code{band\_sort\_bs}; \code{bs\_freq.dat}, \code{bands.dat}.};
+\node[box=13cm, below=of k4, fill=gray!10] (k5) {Mechanical properties (Fig.~\ref{fig:mech}); then \code{gruneisen} on the path if FC3 is fitted (\code{bs\_grun.dat}).};
+\node[box=13cm, below=of k5] (k6) {Mesh: \code{make\_kp\_reg\_tet}; \code{get\_weights} $\to$ \code{common/ibz.f90:ibz\_reduce} (Laue group);
+  \code{get\_frequencies} on the irreducible points; \code{gruneisen} there if FC3; Gaussian DOS (\code{calculate\_dos}).};
+\node[box=13cm, below=of k6] (k7) {$\Gamma$: \code{dielectric} ($\chi(\omega)$; TO modes from $D(0)$ without the macroscopic term, \code{ewald\_no\_macro},
+  for \code{born\_flag} 2, 3, 6, 7, 8); \code{gamma\_mode\_symmetry} (irreps, IR/Raman; \code{gamma\_modes.dat}, \code{chi\_modes.dat}).};
+\node[box=13cm, below=of k7] (k8) {Tetrahedron DOS (\code{tet\_sum}); ballistic conductance (\code{conductance.dat}).};
+\node[box=13cm, below=of k8, fill=gray!10] (k9) {QHA temperature loop: \code{QHA\_free\_energy\_vs\_strain} (Fig.~\ref{fig:mech}); \code{thermo\_QHA.dat}.};
+\foreach \u/\v in {k1/k2,k2/k3,k3/k4,k4/k5,k5/k6,k6/k7,k7/k8,k8/k9} \draw[arr] (\u) -- (\v);
+\end{tikzpicture}
+\caption{Lattice dynamics, in the order of \code{dynamical.f90:set\_band\_structure}. Grey: parts shown in Fig.~\ref{fig:mech}.}
+\label{fig:ld}
+\end{figure}
 
 %==============================================================================
 \section{Elastic constants from the Born--Huang brackets (9.2)}\label{sec:elastic}
@@ -348,7 +580,8 @@ $\alpha_V=(\partial P/\partial T)_V/B_T=d\ln V/dT$; the linear coefficient is $\
 $C_p=C_v+VTB_T\alpha_V^2$. Harmonic-only fits use Leont'ev's $\gamma$ for all modes plus the term
 $P=NkT/V$ ($F=-NkT\ln(V/V_0)$).
 
-\paragraph{Implementation.} \code{pressure\_derivative\_b} and \code{QHA\_free\_energy\_vs\_strain}
+\paragraph{Implementation.} Figure~\ref{fig:mech} shows the order of these steps in the code and which of them use the
+short-range FC2 only when Born charges are on. \code{pressure\_derivative\_b} and \code{QHA\_free\_energy\_vs\_strain}
 (\code{dynamical.f90}); \code{thermo\_QHA.dat} (column 11 $B_T(T)/B_T(T{<}8\,\mathrm K)$ since 9.3, columns 12,
 13 $B_T$ and $B_0$). The wrong $B_0'$ of \code{cubic\_elastic} is no longer computed (9.7). With Born charges
 the QHA takes $B_0$ and the sound speeds from the long-wave $E=0$ tensor (9.7). The FC2-only rule
@@ -359,6 +592,33 @@ $1+2\gamma$ is commit \code{3b638a7}, contained in the tag \code{focex-9.2} (\co
 full relaxations under pressure. Evaluating the second-order term with the plain bracket sum instead gives
 $B'=-0.064$ for ZnO (wrong, same cause as Section~\ref{sec:elastic}). $\alpha$ equals the numerical
 $d\ln L/dT$ of the table to 0.8\,\% (ZnO model with FC3) and 0.7\,\% (FC2 only).
+
+%------------------------------------------------------------------------------
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[node distance=2.4mm]
+\node[dec=13cm] (m0) {Born charges on? (\code{zon}: \code{born\_flag}$\ne0$ and some $Z^*\ne0$). If yes, the red boxes use the
+  short-range (fitted) FC2 only: their results go to the log, not to \code{mech.dat}.};
+\node[sr=13cm, below=of m0] (m1) {\code{get\_phi\_zeta\_Xi}, \code{residuals}, \code{mechanical} (or \code{mechanical0}, one atom per cell):
+  brackets $[\alpha\beta,\gamma\delta]$, $Q$, $\Gamma$ from the fitted FC2; \code{elastic\_born\_huang}: $c_{\alpha\beta\gamma\delta}$ (Section~\ref{sec:elastic}).};
+\node[sr=13cm, below=of m1] (m2) {\code{crystal\_frame}, \code{symmetrize\_tensor4}: $C_{ij}$ in the crystal frame; Voigt/Reuss/Hill $B$, $G$, Young, Poisson;
+  sound speeds, Debye $T$.};
+\node[sr=13cm, below=of m2] (m3) {If FC3: \code{pressure\_derivative\_b}: $B_0'$ from FC2 + FC3 (Section~\ref{sec:qha}). Used by the QHA in both cases.};
+\node[box=13cm, below=of m3] (m4) {\code{elastic\_longwave}: $C_{ij}$ from the long-wave acoustic matrix of the full $D(k)$ (dipole term included;
+  $E=0$ and with the NA term); \code{moduli\_from\_c}. If \code{zon}: $B_0$ (Reuss), $B$, $G$ (Hill), sound speeds and Debye $T$
+  for the QHA are taken from the first long-wave $C$ ($E=0$).};
+\node[box=13cm, below=of m4] (m5) {\code{gruneisen} (\code{common/gruneisen.f90:mode\_gruneisen}, \code{gruneisen\_longwave} at $\Gamma$ and
+  $|k|V^{1/3}<0.05$), on the path and on the irreducible mesh; needs FC3 (Section~\ref{sec:grun}).};
+\node[box=13cm, below=of m5] (m6) {For each $T$: \code{QHA\_free\_energy\_vs\_strain}: $F(V,T)=E_{\rm Murnaghan}(V;B_0,B_0',P_0)+F_{\rm ph}(V,T)$ on
+  61 strains, $\omega(V)$ from the mesh $\gamma$ (no FC3: Leont'ev $\gamma$, $B_0'=1+2\gamma$, $NkT/V$ term);
+  $V(T)$ from $P=0$, $B_T$, $\alpha=d\ln L/dT$, $C_p$ $\to$ \code{thermo\_QHA.dat}, \code{temp\_free.dat}.};
+\foreach \u/\v in {m0/m1,m1/m2,m2/m3,m3/m4,m4/m5,m5/m6} \draw[arr] (\u) -- (\v);
+\end{tikzpicture}
+\caption{Mechanical properties, Gr\"uneisen parameters and QHA, in the order of \code{dynamical.f90:set\_band\_structure}
+(mechanical properties come right after the band structure, before the Gr\"uneisen parameters). Red: short-range FC2 only
+when Born charges are on; $B_0'$ is then still from the short-range FCs.}
+\label{fig:mech}
+\end{figure}
 
 %==============================================================================
 \section{Mode Gr\"uneisen parameters (9.2)}\label{sec:grun}
@@ -454,7 +714,7 @@ is removed from the accumulated deformation gradient after each step by polar de
 paper's strain Hessian $A=-\tfrac12\sum K\,d\,d$ is not used: it is the symmetrized form of
 Section~\ref{sec:elastic} and is wrong off the Cauchy case.
 
-\paragraph{Implementation.} \code{relax\_reference} (\code{FOCEX/relax\_reference.f90}), switched on by
+\paragraph{Implementation.} \code{relax\_reference} (\code{FOCEX/relax\_reference.f90}; flow in Fig.~\ref{fig:relax}), switched on by
 \code{default.params} line 5 = 1 (any other value is off). After it, the lattice, positions and grids are
 strained by $1+\eta$ and shifted by $u_0$; the re-expanded FCs are projected on the irreducible FCs and used
 downstream; \code{stress.params} is then read as 0. The unrelaxed fit is kept as \code{fcN\_unrelaxed.dat},
@@ -469,6 +729,35 @@ With ranks 1--3 the strain is off by $10^{-5}$ (FC4 missing). With the paper's $
 strain $-0.01831$ against the exact $-0.017837$. Monoclinic HfO$_2$ model (\code{HfO2r}, 12 atoms, no
 charges, 4 November): strain $1.3\times10^{-9}$, $u_0$ $2.9\times10^{-9}$\,\AA, FC2 $7.4\times10^{-8}$ (of 6.55),
 FC3 $5.1\times10^{-8}$ (of 2.37); stress after $8.7\times10^{-15}$\,GPa.
+
+%------------------------------------------------------------------------------
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[node distance=2.4mm]
+\node[box=13cm] (r1) {\code{relax\_reference.f90:relax\_reference}: term lists of ranks 1--4; average force per atom removed from FC1;
+  \code{born\_flag}=2 with charges: Coulomb lattice sums $\Phi_C$ (\code{lr\_c}, \code{lr\_moments}, \code{lr\_brackets});
+  \code{coulx} = (all $Z^*=z\mathbb 1$). Reference stress: \code{stress.params}, else from FC1.};
+\node[box=13cm, below=of r1] (r2) {\code{hess6\_reference}; if \code{coulx}: \code{coulx\_setup} (FC1 $-F_C(0)$, stress $-\sigma_C(0)$; short-range only from here).};
+\node[box=13cm, below=of r2] (r3) {\textbf{Stage 1}: relax $u_0$ in the reference cell (\code{kfill}, \code{pi\_prime}, \code{build\_aq}, \code{solve\_u});
+  stress change $\int Q^T du$ (Simpson).};
+\node[dec=13cm, below=of r3] (r4) {\code{coulx}?};
+\node[box=6.3cm, below=7mm of r4.south west, anchor=north west] (r5) {\textbf{no}: \textbf{stage 2}, Newton in the 6 strains
+  (at most 60 steps): \code{elastic\_at} ($\sigma$, $c^{\rm rel}$); step from $H=V[c^{\rm rel}+\dots]$; stress along the step
+  by RK4 (\code{dsdt}, $u_0$ relaxed at each point, \code{relax\_u}); \code{polar} removes the rotation.};
+\node[box=6.3cm, below=7mm of r4.south east, anchor=north east] (r6) {\textbf{yes}: \code{relax\_broyden}: $X$ = (6 strains, $u_0$),
+  $E=E_{\rm SR}+E_C(X)-E_C(0)$, $E_C$ by \code{ewald\_cell\_efw}; \code{bro90} on $-H_0^{-1}G$; $\partial E_{\rm SR}/\partial\eta$ along
+  the short-range force-free path (\code{sr\_path\_to}).};
+\node[fit=(r5)(r6),inner sep=0pt] (rb) {};
+\node[box=13cm, anchor=north west] (r7) at ([yshift=-6mm]rb.south -| r1.west) {Re-expanded FCs at the relaxed state ($\Pi'$, $K$, $\Psi'$; FC4 unchanged; \code{add\_coul\_pip} if \code{coulx}),
+  projected on the irreducible FCs (\code{project}); lattice, positions, grids $\times(1+\eta)$, $+u_0$; space-group translations
+  re-derived; \code{POSCAR\_relaxed} (\code{write\_poscar\_relaxed}).};
+\draw[arr] (r1)--(r2); \draw[arr] (r2)--(r3); \draw[arr] (r3)--(r4);
+\draw[arr] (r4.south) -- ++(0,-3mm) -| (r5.north); \draw[arr] (r4.south) -- ++(0,-3mm) -| (r6.north);
+\draw[arr] (r5) -- (r5 |- r7.north); \draw[arr] (r6) -- (r6 |- r7.north);
+\end{tikzpicture}
+\caption{Relaxation of the reference (\code{default.params} line 5 = 1; Sections~\ref{sec:relax}, \ref{sec:coulrelax}).}
+\label{fig:relax}
+\end{figure}
 
 %==============================================================================
 \section{\texorpdfstring{IR/Raman activity and irreducible representations at $\Gamma$ (9.4)}{IR/Raman activity and irreducible representations at Gamma (9.4)}}
@@ -734,11 +1023,23 @@ Let $\bz=\bW\bx$ and $\bQ$ an orthonormal basis of the range of $\bW\bK$, $\bz=\
 For $\lambda\ge\lambda_{\max}=\|\bQ\bc\|_\infty$ (and $\bz_0=0$) the solution is $\bt=0$. The problem is solved as a
 quadratic program by a primal--dual interior-point method (Mehrotra predictor--corrector): the Newton step
 reduces to $(\bG+\bQ^T\mathbf D\bQ)\delta\bt=\mathrm{rhs}$ with $D_i=4A_iB_i/(A_i+B_i)$, positive definite,
-solved by Cholesky. The support is $S=\{j:|z_j|>10^{-8}\max|z|\}$. The refit (\code{enforce\_inv}=3) is least
-squares over $\bt$ in the null space of $\bQ_{S^c,:}$ (Householder QR with column pivoting). $\lambda$ is chosen
-by 5-fold cross-validation on interleaved rows over 40 log-spaced values from $\lambda_{\max}$ to
-$10^{-4}\lambda_{\max}$; while the minimum is at the end the grid is extended by two decades, down to
-$10^{-8}\lambda_{\max}$; ties within $10^{-13}\langle b^2\rangle$ take the largest $\lambda$.
+solved by Cholesky. Here $\bx_0=\bx_p$, and $\bK$ is restricted to the directions $\bK_r$ the data resolve
+(Section~\ref{sec:filter}). The support is $S=\{j:|z_j|>10^{-8}\max|z|\}$. The \emph{refit} on a support $S$ is the
+least-squares problem with the same quadratic terms but without the $L_1$ term, over the FCs in $S$ only
+($x_j=0$ exactly for $j\notin S$) and with the invariances still exact: $\bt$ in the null space of $\bQ_{S^c,:}$
+(Householder QR with column pivoting). For every $\lambda$ of the grid the code computes both the LASSO solution and
+its refit. $\lambda$ is chosen by 5-fold cross-validation on interleaved rows over 40 log-spaced values from
+$\lambda_{\max}$ to $10^{-4}\lambda_{\max}$, by the smallest mean held-out error of the model that is returned: the
+refit for \code{enforce\_inv}=3, the LASSO solution for 2. Ties within $10^{-13}\langle b^2\rangle$ take the largest
+$\lambda$. While the minimum is at the end the grid is extended by two decades, down to $10^{-8}\lambda_{\max}$.
+
+\paragraph{How to read Figs.~\ref{fig:lassoouter} and~\ref{fig:lassoinner}.} Figure~\ref{fig:lassoouter} is the outer
+level: the resolved kernel, the variables $\bt$, the quadratic penalties (SVD filter, optional $L_2$ term), the $\lambda$
+grid, the cross-validation, the choice of $\lambda^*$ and the final answer. Figure~\ref{fig:lassoinner} is what happens at
+one $\lambda$: the LASSO solution, its support $S(\lambda)$, and the refit on $S(\lambda)$. \code{enforce\_inv}=2 and 3 run
+exactly the same computation; they differ only in which of the two solutions is used, to score $\lambda$ in the
+cross-validation and as the answer (red boxes). With \code{enforce\_inv}=2 the kept FCs are shrunk towards 0 by the
+$L_1$ term; with 3 they are the unbiased least-squares values on the selected set.
 
 \paragraph{Implementation.} Module \code{lasso\_constrained} (\code{lasso\_constrained.f90}): \code{classo\_setup},
 \code{ipm\_classo}, \code{refit\_support}, \code{classo\_path}, \code{classo\_cv\_res}, \code{classo\_cv},
@@ -761,6 +1062,78 @@ of Section~\ref{sec:noisecheck}. \code{enforce\_inv}=3 kept 74 of 556 FCs, fit 4
 phonons are the same ($T_{1u}$ 534.9, maximum 748.9\,cm$^{-1}$, none unstable); Gr\"uneisen median 1.59
 (\code{enforce\_inv}=3) against 1.73 (1). Here LASSO removed FCs the data support; the improvement over the
 earlier MgO runs came from the SVD cut (Sections~\ref{sec:gap}, \ref{sec:noisecheck}), not from LASSO.
+
+%------------------------------------------------------------------------------
+\begin{figure}[p]
+\centering
+\begin{tikzpicture}[node distance=2.4mm]
+\node[box=12.4cm] (g1) {\code{constrained\_fit.f90:lasso\_kernel\_basis}($\bA,\bb,\bK,\bx_p$). \code{FOCEX\_LASSO=old}: old LASSO on $\by$.
+  Otherwise: rank of each column (\code{colrank}, for the $L_2$ term), then \code{classo\_cv} with 5 folds, 40 values of
+  $\lambda$, \code{epsratio} $=10^{-4}$, tolerance $10^{-10}$, at most 300 iterations, \code{refit} = (\code{enforce\_inv}=3),
+  \code{rule} = line 6, \code{l2fac} = line 7.};
+\node[box=12.4cm, below=of g1] (g2) {\code{lasso\_constrained.f90:classo\_cv}. \code{resolved\_kernel}: $\bA\bK$ reduced by Givens rotations
+  to $\mathbf R$, SVD of $\mathbf R$; keep the directions with $s_k>10^{-15}s_{\max}$: $\bK_r=\bK\mathbf V_r$, singular values $s_k$.};
+\node[box=12.4cm, below=of g2] (g3) {\code{classo\_cv\_res}, set-up. \code{classo\_setup}: $w_j$ = rms of column $j$ of $\bA$ (floor $10^{-8}\max w$);
+  $\bQ$ = orthonormal basis of the range of $\bW\bK_r$; $\bz=\bW\bx=\bz_0+\bQ\bt$, $\bz_0=\bW\bx_p$; rows dealt
+  into 5 folds ($i\mapsto1+\bmod(i-1,5)$); Gram matrices $\bG_f$, $\bc_f$ per fold; $\bG=\sum_f\bG_f$.};
+\node[box=12.4cm, below=of g3] (g4) {\textbf{Quadratic penalties} $\tfrac12\bt^T\mathbf P\bt$. SVD filter: \code{gap\_cut} on $c$, $g_k=s_k^2(\sqrt{1+(s_c/s_k)^6}-1)$
+  (\code{filter\_penalty}). Full fit (all directions, \code{refit\_support} with every FC selected) $\to$
+  $\mathrm{RSS}_{\rm full}$, $p_{\rm full}$. Measured-noise refit of the filter cut, kept only if it passes the noise test.
+  $s^2=\mathrm{RSS}_{\rm full}/(N-p_{\rm full})$. Line 7 = 1: add $(s^2/N)\sum_jx_j^2/(2\tau_{r(j)}^2)$, $\tau_r$ = rms of rank $r$ of the full fit.};
+\node[box=12.4cm, below=of g4] (g5) {$\lambda$ grid: $\lambda_{\max}=\|\bQ\bc\|_\infty$ down to \code{epsratio}$\cdot\lambda_{\max}$, log-spaced.};
+\node[box=12.4cm, below=of g5] (g6) {\textbf{Cross-validation.} For each fold $f$: training data = all rows but fold $f$;
+  \code{classo\_path} over the whole grid (Fig.~\ref{fig:lassoinner}) gives, for every $\lambda$, the LASSO solution and its refit;
+  their mean squared errors on the held-out fold $f$: $e^{\rm L}(\lambda)$, $e^{\rm R}(\lambda)$.};
+\node[hl=12.4cm, below=of g6] (g7) {\textbf{Choice of $\lambda^*$.} Line 6 = 0: smallest mean CV error \emph{of the model returned}:
+  $e^{\rm R}$ if \code{enforce\_inv}=3, $e^{\rm L}$ if 2; ties within $10^{-13}\langle b^2\rangle$: the largest $\lambda$.
+  Line 6 = 1: noise test on the all-rows path: the largest $\lambda$ whose refit has
+  $\mathrm{RSS}(\lambda)-\mathrm{RSS}_{\rm full}\le s^2(\Delta p+2\sqrt{2\Delta p})$.};
+\node[hl=12.4cm, below=of g7] (g8) {\textbf{Final answer.} All rows, path down to $\lambda^*$ (\code{classo\_path}).
+  \code{enforce\_inv}=2: $\bx=\bx_p+\bW^{-1}\bQ\,\bt^{\rm LASSO}(\lambda^*)$. \quad
+  \code{enforce\_inv}=3: $\bx=\bx_p+\bW^{-1}\bQ\,\bt^{\rm refit}(\lambda^*)$.};
+\node[dec=12.4cm, below=7mm of g8] (g9) {CV minimum (or, line 6 = 1, no passing $\lambda$) at the smallest $\lambda$ of the grid (\code{info}=3)
+  and grid floor $>10^{-8}\lambda_{\max}$?};
+\node[box=12.4cm, below=7mm of g9] (g10) {Back to \code{focex.f90}: \code{lasso\_support\_errors} (Section~\ref{sec:lassoerr}); \code{lasso.dat} has the table.};
+\foreach \u/\v in {g1/g2,g2/g3,g3/g4,g4/g5,g5/g6,g6/g7,g7/g8,g8/g9} \draw[arr] (\u) -- (\v);
+\draw[arr] (g9) -- node[right,font=\scriptsize]{no} (g10);
+\draw[arr] (g9.west) -- ++(-5mm,0) node[left,font=\scriptsize,pos=1]{} |- (g3.west)
+  node[pos=0.25,left,font=\scriptsize,align=right]{yes: floor $\times10^{-2}$,\\ more points; redo};
+\end{tikzpicture}
+\caption{\code{enforce\_inv}=2 and 3, outer level: \code{lasso\_kernel\_basis} $\to$ \code{classo\_cv} $\to$
+\code{classo\_cv\_res}. Red: the two places where 2 and 3 differ. Each extension of the grid redoes the whole
+\code{classo\_cv\_res}.}
+\label{fig:lassoouter}
+\end{figure}
+%------------------------------------------------------------------------------
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[node distance=2.4mm]
+\node[box=13cm] (h1) {\code{classo\_path}($\bG,\bc,\bQ,\bz_0$, grid): for $\lambda_1>\lambda_2>\dots$ in turn (\code{ipm\_classo} starts each from $\bt=0$):};
+\node[box=13cm, below=of h1] (h2) {\textbf{LASSO} (\code{ipm\_classo}, interior point, Mehrotra):
+  $\bt^{\rm LASSO}=\arg\min_\bt\ \tfrac12\bt^T(\bG+\mathbf P)\bt-\bc^T\bt+\lambda\|\bz_0+\bQ\bt\|_1$,
+  i.e.\ $\tfrac1{2N}\|\bA\bx-\bb\|^2+\lambda\sum_jw_j|x_j|$ + quadratic penalties, with $\bx\in\bx_p+\mathrm{range}(\bK_r)$.};
+\node[box=13cm, below=of h2] (h3) {\textbf{Support} $S(\lambda)=\{j:\ |z_j|>10^{-8}\max_i|z_i|\}$, $\bz=\bz_0+\bQ\bt^{\rm LASSO}$
+  (the FCs the LASSO keeps).};
+\node[hl=13cm, below=of h3] (h4) {\textbf{Refit} (\code{refit\_support}): $\bt^{\rm refit}=\arg\min_\bt\ \tfrac12\bt^T(\bG+\mathbf P)\bt-\bc^T\bt$
+  \ subject to $(\bz_0+\bQ\bt)_j=0$ for $j\notin S$:
+  least squares \emph{without the $L_1$ term}, over the FCs in $S$ only (all others exactly 0), the invariances still exact
+  ($\bx$ stays in $\bx_p+\mathrm{range}(\bK_r)$). $\bt=\bt_p+\bN\mathbf s$, $\bN$ = null space of $\bQ_{S^c,:}$ (pivoted QR).
+  It removes the shrinkage of the kept FCs. Same support as the previous $\lambda$: refit reused.};
+\node[box=13cm, below=of h4] (h5) {Both $\bt^{\rm LASSO}(\lambda)$ and $\bt^{\rm refit}(\lambda)$ are kept for every $\lambda$, with the
+  effective number of parameters of the refit (trace of its hat matrix; noise test).};
+\node[hl=13cm, below=6mm of h5] (h6) {\textbf{The only difference between \code{enforce\_inv} = 2 and 3:} 2 returns $\bt^{\rm LASSO}$ and
+  chooses $\lambda$ by the CV error of the LASSO solutions; 3 returns $\bt^{\rm refit}$ and chooses $\lambda$ by the CV error of
+  the refits (with line 6 = 1 both choose $\lambda$ by the noise test on the refits). The support, the penalties and the
+  invariances are the same.};
+\foreach \u/\v in {h1/h2,h2/h3,h3/h4,h4/h5,h5/h6} \draw[arr] (\u) -- (\v);
+\draw[arr] (h5.east) -- ++(4mm,0) |- node[pos=0.25,right,font=\scriptsize]{next $\lambda$} (h2.east);
+\end{tikzpicture}
+\caption{\code{enforce\_inv}=2 and 3, inner level: one LASSO path (\code{lasso\_constrained.f90:classo\_path},
+\code{ipm\_classo}, \code{refit\_support}), used on each training set and on all rows. $\mathbf P$: the filter
+penalty and, with line 7, the $L_2$ term (the CV training sets use their own Gram matrices with the same
+$\mathbf P$).}
+\label{fig:lassoinner}
+\end{figure}
 
 %==============================================================================
 \section{Standard errors for LASSO fits (9.9)}\label{sec:lassoerr}
@@ -903,7 +1276,8 @@ has gain $(r_{\rm lo}/r_{\rm hi})^{1.7}/r_{\rm hi}$ and the smallest good mode i
 $\tfrac12(r_{\rm lo}/r_{\rm hi})^{0.6}$, at most $8\times10^{-3}$ for a gap of $10^3$ (code comment). Without such a
 gap the cut is left unchanged and a message is printed. The cut is never lowered.
 
-\paragraph{Implementation.} \code{gap\_cut} (\code{svd\_ridge.f90}), called by \code{svd\_set} and by
+\paragraph{Implementation.} Figure~\ref{fig:gap} shows the rule on the sorted singular values.
+\code{gap\_cut} (\code{svd\_ridge.f90}), called by \code{svd\_set} and by
 \code{classo\_cv\_res} for the LASSO filter. Screen and log: \code{SVD: singular values next to the cut ...;
 cut moved to the gap at ...} (or \code{no gap above them: cut unchanged}). The minimum gap was $10^4$ and the new cut the geometric mean of the edges (capped at
 $10^{-3}$) in earlier versions of the same day.
@@ -913,6 +1287,33 @@ snapshots): small singular values up to $1.6\times10^{-10}$ of $w_{\max}$, the n
 $1.6\times10^{-9}\to1.21\times10^{-2}$ ($3.82\times10^{-6}$ with the geometric mean; the FCs agree to 4--5 digits); FC2
 group 9 from $3.85\times10^5$ to $\le5\times10^{-3}$\,eV/\AA$^2$; fit 0.933\,\% unchanged; largest FC2 11.66. The same
 with line 2 = $4\times10^{-5}$. ZnO runs without small values: byte-identical apart from timing.
+
+%------------------------------------------------------------------------------
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[x=0.75cm,y=1cm]
+\draw[->] (-17,0) -- (0.6,0) node[right,font=\scriptsize]{$\log_{10}(w/w_{\max})$};
+\foreach \e in {-16,-14,...,0} \draw (\e,0.08) -- (\e,-0.08) node[below,font=\scriptsize]{\e};
+% round-off modes and the small value
+\foreach \e in {-16.3,-15.6,-14.0,-13.2} \fill[red] (\e,0) circle (2pt);
+\fill[red] (-9.8,0) circle (2.4pt) node[above=2pt,font=\scriptsize,text=red]{$r_{\rm lo}$};
+\foreach \e in {-1.04,-0.8,-0.5,-0.3,0} \fill[blue] (\e,0) circle (2pt);
+\node[above right=1pt,font=\scriptsize,text=blue] at (-1.04,0) {$r_{\rm hi}$};
+% cut and window
+\draw[thick] (-10,-0.45) -- (-10,0.5) node[above left=-1pt,font=\scriptsize]{$c=10^{-10}$};
+\fill[orange,opacity=0.25] (-10,-0.25) rectangle (-7,0.25);
+\node[font=\scriptsize,align=center] at (-8.5,-0.8) {$c\le r<10^3c$:\\ dangerous};
+\fill[orange,opacity=0.25] (-14.5,-0.25) rectangle (-10,0.25);
+\node[font=\scriptsize,align=center] at (-12.25,-0.8) {$r<c$, $r^2>10\,c^3$:\\ dangerous};
+\draw[<->] (-9.8,1.15) -- node[above,font=\scriptsize]{first gap $\ge10^3$ above $r_{\rm lo}$} (-1.04,1.15);
+\draw[very thick,green!50!black] (-1.92,-0.45) -- (-1.92,0.5) node[above left=-1pt,font=\scriptsize,text=green!40!black]{new $c=r_{\rm lo}^{0.1}r_{\rm hi}^{0.9}$};
+\end{tikzpicture}
+\caption{\code{svd\_ridge.f90:gap\_cut} on the sorted relative singular values, with the MgO numbers of
+Section~\ref{sec:gap}: $c=10^{-10}$, $r_{\rm lo}=1.6\times10^{-10}$, $r_{\rm hi}=9.1\times10^{-2}$, new cut
+$1.21\times10^{-2}$. Shaded: the dangerous windows; the largest dangerous value, $r_{\rm lo}$, is where the search for
+a gap starts. The positions of the round-off values on the left are schematic.}
+\label{fig:gap}
+\end{figure}
 
 %==============================================================================
 \section{Refit when the measured noise exceeds the guess (9.9)}\label{sec:noisecheck}
@@ -940,7 +1341,7 @@ and $\Delta p=p(w_c)-p(w_c')$, the refit is kept if
 (plus a round-off allowance $10^{-13}\|\bb\|^2$); otherwise the first solution and its errors are kept. The cut
 is only raised.
 
-\paragraph{Implementation.} \code{svd\_set} (\code{svd\_ridge.f90}; filter factors in its internal function
+\paragraph{Implementation.} \code{svd\_set} (\code{svd\_ridge.f90}; Fig.~\ref{fig:svdset}; filter factors in its internal function
 \code{phif}), active only when the flag \code{svd\_noise\_check} (\code{common/params.f90}) is set.
 \code{focex.f90} sets it around the force fits of \code{enforce\_inv}=0 (\code{svd\_set}) and 1
 (\code{fit\_kernel\_basis}). It is off for \code{lasso\_support\_errors}: there the fitted vector is a
