@@ -321,9 +321,10 @@ The supercell tasks are checked again before they are skipped:
    enters the Huang rows and the elastic constants (:ref:`focex-stress-params`).
 ``focex``
    The five input files of FOCEX are written in ``05_focex`` (``structure.params``,
-   ``latdyn.params``, ``kpbs.params``, ``dielectric.params``, ``default.params``) and FOCEX is run.
-   With Born charges a second run without them is made in ``05_focex/NOBORN``, for comparison; with
-   fewer than ``LASSO_RATIO`` (2) equations per unknown, a third run with LASSO, which keeps only
+   ``latdyn.params``, ``kpbs.params``, ``dielectric.params``, ``default.params``) and FOCEX is run
+   with the invariances held exactly (``enforce_inv = 1``). With Born charges a second run without
+   them is made in ``05_focex/NOBORN``, for comparison; with fewer than ``LASSO_RATIO`` (2)
+   equations per unknown, a third run with LASSO and a refit (``enforce_inv = 3``), which keeps only
    the force constants the data need, is made in ``05_focex/LASSO``. The report gives the fit
    error, the numbers of equations and unknowns, the lowest ω² (a warning below −25 cm⁻²:
    imaginary modes) and the highest frequency. If the DOS range of ``latdyn.params`` does not fit

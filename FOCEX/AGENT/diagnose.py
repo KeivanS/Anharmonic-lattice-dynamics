@@ -40,7 +40,7 @@ import subprocess
 import sys
 
 sys.dont_write_bytecode = True
-__version__ = '1.2'
+__version__ = '1.4'
 AGENT = os.path.dirname(os.path.realpath(__file__))
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
 TASKS = ('relax', 'poscar0', 'scf', 'dfpt', 'snaps', 'supercells', 'vasp_snaps', 'collect',
@@ -313,7 +313,7 @@ def focex_findings(pr, msg):
         logs = sorted(glob.glob(os.path.join(d, 'log*.dat')), key=os.path.getmtime)
         if logs:
             text += '\n' + read(logs[-1], tail=200000)
-        if re.search(r'Percent error', text) and os.path.isfile(os.path.join(d, 'bands.dat')) \
+        if re.search(r'Percent error|Relative residual', text) and os.path.isfile(os.path.join(d, 'bands.dat')) \
                 and os.path.isfile(os.path.join(d, 'KTICS.BS')):
             continue
         where = os.path.relpath(d, pr.path)

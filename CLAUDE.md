@@ -157,6 +157,13 @@ outputs differ for no reason.
 
 ## focex-agent.py (FOCEX/AGENT/, since 2026-10-21; moved there 2026-10-23)
 
+focex-agent 1.4 (2026-11-07, user): FOCEX runs with structure.params line 5 = 1 1 1 1 (enforce_inv 1; NOBORN
+too) and the LASSO run with 1 1 1 3 (was 0 and 2). The fit-error parser (run_focex) and diagnose.py now accept
+both log lines: "Percent error, || F_dft-F_fit || / || F_dft || =" (enforce_inv 0) and "Relative residual
+||F_dft-F_fit||/||F_dft|| =" (1-3) -- without that every run was reported "FOCEX did not finish". Checked:
+extract_only on the Ge example data (POSCAR1 + FORCEDISP1): main 0.041 %, max omega 297 1/cm; with
+LASSO_RATIO 300 the LASSO run (1 1 1 3) also 0.041 %; plots made. diagnose.py __version__ was 1.2, now 1.4.
+
 POSCAR -> VASP relax/SCF/DFPT -> SC_SNAPS -> supercell VASP runs -> FORCEDISP1 -> FOCEX ->
 plots, restartable (`state.json`, `report.log`). Everything is in `FOCEX/AGENT/`: the script,
 `diagnose.py`, `focexagent_manual.tex/.pdf` (same content as `docs/source/runfocexagent.rst`: change

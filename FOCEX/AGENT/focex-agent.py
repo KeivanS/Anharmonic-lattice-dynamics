@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""focex-agent.py 1.3 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
+"""focex-agent.py 1.4 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
 structure (MODE: from_scratch, VASP + SC_SNAPS + FOCEX) or from existing force-displacement data
 (MODE: extract_only, FOCEX only).  Manual: FOCEX/AGENT/focexagent_manual.pdf
 
@@ -23,7 +23,7 @@ Tasks (each is recorded in <PROJECT_DIR>/report.log and skipped once done):
   supercells one folder per snapshot (INCAR as the SCF + ISYM=0, commensurate KPOINTS)
   vasp_snaps the supercell VASP runs, one after the other
   collect    read_outcar.x -> FORCEDISP1, POSCAR1 = poscar_000; all runs checked
-  focex      the five *.params files, FOCEX (+ NOBORN and LASSO runs when needed)
+  focex      the five *.params files, FOCEX with enforce_inv 1 (+ NOBORN, and LASSO with refit, when needed)
   plots      PDF plots by PLOTTING/allplots (bands, Gruneisen, velocities, QHA, ...), makeplots.sh
   thermacond THERMACOND in 06_thermacond if THERMACOND_JOB (latdyn.params line 8) is 1, 2 or 3
 MODE: extract_only (DATA: <folder> with POSCAR1, FORCEDISP1, [POSCAR2, FORCEDISP2, ...],
@@ -59,7 +59,7 @@ os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 os.environ.setdefault('OMP_NUM_THREADS', os.environ.get('VASP_OMP_NUM_THREADS', '1'))
 import numpy as np
 
-__version__ = '1.3'
+__version__ = '1.4'
 AGENT = os.path.dirname(os.path.realpath(__file__))          # FOCEX/AGENT (realpath: works through a symlink)
 HERE = os.path.dirname(AGENT)                                # the FOCEX folder: templates, utility/
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
@@ -1078,7 +1078,7 @@ class Agent:
         return True, msg
 
     # ---- task 6: FOCEX -------------------------------------------------------
-    def structure_params(self, line5='1 1 1 0'):
+    def structure_params(self, line5='1 1 1 1'):
         b = self.fx['blocks'].get('structure_params')
         if b:
             return b
@@ -1090,7 +1090,7 @@ class Agent:
              + '   # primitive vectors in units of the conventional vectors',
              '1.0 0   # scale; 0 = atomic coordinates in units of the conventional vectors',
              ' '.join(str(x) for x in fx['ranks']) + '   # ranks 1..8 included',
-             line5 + '   # translational, rotational, Huang invariances; enforce_inv (2 = LASSO)',
+             line5 + '   # translational, rotational, Huang invariances; enforce_inv (1 = exact, 3 = LASSO + refit)',
              '0 300   # itemp, tempk',
              f"{self.state.get('npairs', 1)} .false.   # number of POSCARi/FORCEDISPi pairs, verbosity",
              f"{len(p['species'])}   # number of atom types",
@@ -1191,7 +1191,10 @@ class Agent:
             res['why'] = 'no log file; see focex.out: ' + ' / '.join(open(os.path.join(d, 'focex.out')).read().splitlines()[-3:])
             return res
         t = open(logs[-1], errors='replace').read()
-        m = re.findall(r'Percent error, \|\| F_dft-F_fit \|\| / \|\| F_dft \|\| =\s*([-\d.Ee+]+)', t)
+        # enforce_inv 0 prints 'Percent error, || F_dft-F_fit || / || F_dft || =', 1-3 'Relative residual
+        # ||F_dft-F_fit||/||F_dft|| =' (focex-agent 1.4 runs enforce_inv 1 and 3)
+        m = re.findall(r'(?:Percent error, \|\| F_dft-F_fit \|\| / \|\| F_dft \|\||Relative residual \|\|F_dft-F_fit\|\|/\|\|F_dft\|\|)'
+                       r'\s*=\s*([-\d.Ee+]+)', t)
         res['err'] = float(m[-1]) if m else None
         m = re.search(r'Force_constraints, # of independent FCs\s*=\s*(\d+)\s+(\d+)', t)
         if m:
@@ -1241,11 +1244,13 @@ class Agent:
         born = 1 if self.state.get('Z') or self.fx['blocks'].get('dielectric_params') else 0
         runs = {}
         if born:
-            runs['NOBORN'] = self.run_focex(os.path.join(top, 'NOBORN'), 0, '1 1 1 0', 'NOBORN (born_flag=0)')
-        runs['main'] = main = self.run_focex(top, born, '1 1 1 0', f'main (born_flag={born})')
+            runs['NOBORN'] = self.run_focex(os.path.join(top, 'NOBORN'), 0, '1 1 1 1', 'NOBORN (born_flag=0)')
+        # enforce_inv = 1 (invariances exact, error bars) for the main fit; LASSO with the refit (3)
+        # (focex-agent 1.4, 2026-11-07, user: was 0 and 2; see the FOCEX FAQ)
+        runs['main'] = main = self.run_focex(top, born, '1 1 1 1', f'main (born_flag={born})')
         if main['ok'] and main['eq'] and main['unk'] and main['eq'] / main['unk'] < self.fx['lasso_ratio']:
             self.rep(f"  equations/unknowns = {main['eq'] / main['unk']:.2f} < {self.fx['lasso_ratio']}: LASSO run")
-            runs['LASSO'] = self.run_focex(os.path.join(top, 'LASSO'), born, '1 1 1 2', 'LASSO (enforce_inv=2)')
+            runs['LASSO'] = self.run_focex(os.path.join(top, 'LASSO'), born, '1 1 1 3', 'LASSO (enforce_inv=3)')
         self.state['focex'] = runs
         if 'LASSO' in runs:
             self.rep('  comparison (positive = min omega^2 > -10 1/cm^2):')

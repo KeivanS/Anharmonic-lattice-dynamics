@@ -89,7 +89,7 @@
   \normalsize Force constants and phonons from a crystal structure: VASP $\cdot$ SC-SNAPS $\cdot$
   FOCEX $\cdot$ Diagnosis \& repair\\[6pt]{\color{mainblue}\rule{\linewidth}{0.5pt}}}
 \author{Keivan Esfarjani}
-\date{v1.3 $\cdot$ November 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
+\date{v1.4 $\cdot$ November 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
 
 \begin{document}
 \maketitle
@@ -267,7 +267,7 @@ settings are kept as \cmd{~/.focex-agent.env.bak}.
 \begin{doit}
 echo $VASP_POTCAR_DIR                 # the POTCAR library found in step 5
 source ~/myenv/bin/activate
-focex-agent --version                 # prints: focex-agent 1.3
+focex-agent --version                 # prints: focex-agent 1.4
 \end{doit}
 \begin{explain}
 An empty first line means the start-up file was not read: on a Mac, check that the terminal runs
@@ -459,9 +459,10 @@ The supercell tasks are checked again before they are skipped:
   enters the Huang rows and the elastic constants.
 \item[focex] The five input files of FOCEX are written in \cmd{05_focex} (\cmd{structure.params},
   \cmd{latdyn.params}, \cmd{kpbs.params}, \cmd{dielectric.params}, \cmd{default.params}) and FOCEX
-  is run. With Born charges a second run without them is made in \cmd{05_focex/NOBORN}, for
-  comparison; with fewer than \cmd{LASSO_RATIO} (2) equations per unknown, a third run with LASSO,
-  which keeps only the force constants the data need, is made in \cmd{05_focex/LASSO}. The report
+  is run with the invariances held exactly (\cmd{enforce_inv = 1}). With Born charges a second run
+  without them is made in \cmd{05_focex/NOBORN}, for comparison; with fewer than \cmd{LASSO_RATIO} (2)
+  equations per unknown, a third run with LASSO and a refit (\cmd{enforce_inv = 3}), which keeps only
+  the force constants the data need, is made in \cmd{05_focex/LASSO}. The report
   gives the fit error, the numbers of equations and unknowns, the lowest $\omega^2$ (a warning
   below $-25$\,cm$^{-2}$: imaginary modes) and the highest frequency. If the DOS range of
   \cmd{latdyn.params} does not fit the frequencies, FOCEX is run again with one that does.
@@ -968,6 +969,9 @@ is read back from \cmd{06_thermacond/V3DELTA} when the force constants and the m
 \section{Version history}
 % ============================================================
 \begin{description}
+\item[1.4] 2026-11-07: the FOCEX fits hold the invariances exactly (\cmd{enforce_inv = 1}; was 0) and the
+  extra LASSO run uses the refit (\cmd{enforce_inv = 3}; was 2), as the FOCEX FAQ recommends;
+  \cmd{diagnose.py} reports the same version.
 \item[1.3] 2026-11-06: \cmd{focex-configure.sh} finds the programs, the POTCAR library, VASP and MPI
   and writes \cmd{~/.focex-agent.env}; installation and quick start as numbered steps (commands in
   blue boxes, explanations in amber boxes); the minimal instruction file and a table of every
