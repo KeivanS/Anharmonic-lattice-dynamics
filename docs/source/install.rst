@@ -1,5 +1,5 @@
-Installation
-============
+Download and installation
+=========================
 
 Requirements
 ------------
@@ -17,10 +17,25 @@ diagonalisation (``zhegv``) is bundled with the source.
 Getting the code
 ----------------
 
+The source is on GitHub: https://github.com/KeivanS/Anharmonic-lattice-dynamics
+(in a browser: *Code* → *Download ZIP*). From a terminal, clone the repository once (this also
+brings SC-SNAPS, in ``SC_SNAPS/``):
+
 .. code-block:: bash
 
    git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
    cd Anharmonic-lattice-dynamics
+
+To update it later, from inside that folder:
+
+.. code-block:: bash
+
+   git pull
+   make            # rebuild
+
+If you have edited files of your own, ``git pull`` keeps them; it stops, changing nothing, when the
+update touches a file you edited. Then ``git stash``, ``git pull``, ``git stash pop`` puts your
+edits aside, updates, and puts them back.
 
 Building everything at once
 ---------------------------
@@ -51,7 +66,7 @@ FOCEX and THERMACOND set their own compiler options in their Makefiles. Then
    make sc_snaps           # SC-SNAPS (sc_snaps.x, poscar2xyz.py)
    make thermacond         # THERMACOND with MPI (tcond-2.0.x); thermacond-serial: without
    make anfomod            # ANFOMOD
-   make python-tools       # links focex-agent, focex-diagnose to FOCEX/AGENT
+   make python-tools       # links focex-agent, focex-diagnose, bandplot, allplots, shell-optimizer
    make scop8              # SCOP8, not part of "make": it does not compile at present
    make clean              # removes the object and module files
 
@@ -80,7 +95,7 @@ This compiles the sources listed in ``FOCEX/Makefile`` and produces a single
 executable. Two details of that Makefile are worth knowing:
 
 * the name of the executable is ``focex-<ver>.x``, with the version number ``ver`` set
-  near the top (currently 9.0; 8.18 and earlier were installed as ``~/BIN/v<ver>``), and
+  near the top (currently 9.9; 8.18 and earlier were installed as ``~/BIN/v<ver>``), and
 * it is moved to ``DESTDIR``, ``~/ALADYN/bin`` by default (``make DESTDIR=...`` for another
   place; the top-level ``make`` passes the ``DESTDIR`` of ``make.inc``).
 
@@ -110,7 +125,7 @@ separately:
    cd FOCEX/utility
    make
 
-This produces three executables and moves them to ``DESTDIR``:
+This produces four executables and moves them to ``DESTDIR``:
 
 .. list-table::
    :header-rows: 1
@@ -206,6 +221,41 @@ THERMACOND
   compiler and MPI (``make serial``: no MPI). The binary is named after the version,
   ``tcond-2.0.x`` (serial: ``tcond-2.0-serial.x``), and installed in ``~/ALADYN/bin``. It takes no input from the
   terminal: ``tcond-2.0.x``, or ``mpirun -np N tcond-2.0.x`` (:doc:`runthermacond`).
+
+.. _focex-configure:
+
+Setting up the FOCEX agent: ``focex-configure.sh``
+---------------------------------------------------
+
+The FOCEX agent (:doc:`focexagent_guide`) also runs the DFT calculations, so it has to know where
+VASP, MPI, the POTCAR library, VASP-Flow and a suitable Python are. The configuration script finds
+them and writes the settings once:
+
+.. code-block:: bash
+
+   cd FOCEX/AGENT
+   bash focex-configure.sh               # look and report only; writes ~/.focex-agent.env
+   bash focex-configure.sh --install     # the same, and adds one line to your shell start-up file
+                                         # that reads ~/.focex-agent.env in every terminal and job
+
+It looks at, in this order: the computer (operating system, processor, cores, Slurm), the compilers
+(``gfortran``, ``mpif90``; needed only to build FOCEX and SC-SNAPS), the FOCEX, SC-SNAPS and
+``read_outcar.x`` binaries, Python with numpy, spglib and pymatgen, VASP-Flow, the POTCAR library,
+``vasp_std``, MPI and ``gnuplot``. It then writes the settings to ``~/.focex-agent.env`` and checks
+them by building a POTCAR with VASP-Flow's own functions and by starting ``focex-agent.py
+--version``. It ends with ``Ready`` and the number of warnings. When the search finds the wrong
+program or nothing, tell it where to look:
+
+.. code-block:: text
+
+   --potcar DIR     the POTCAR library (PBE): the folder with Si/, O/, Zn/, ... each holding a POTCAR
+   --vasp FILE      the vasp_std executable
+   --python FILE    the Python interpreter of the environment with numpy, spglib, pymatgen
+   --env FILE       where to write the settings (default ~/.focex-agent.env)
+
+Run it again after installing or moving any of these programs. FOCEX alone (without the agent)
+needs none of this: ``make`` and the ``PATH`` line above are enough. The step-by-step installation
+of the agent is in its manual, ``FOCEX/AGENT/focexagent_manual.pdf``.
 
 Checking the installation
 -------------------------

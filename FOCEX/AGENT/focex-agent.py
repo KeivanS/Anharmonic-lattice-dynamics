@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""focex-agent.py 1.2 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
+"""focex-agent.py 1.3 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
 structure (MODE: from_scratch, VASP + SC_SNAPS + FOCEX) or from existing force-displacement data
 (MODE: extract_only, FOCEX only).  Manual: FOCEX/AGENT/focexagent_manual.pdf
 

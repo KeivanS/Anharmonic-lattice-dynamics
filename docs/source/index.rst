@@ -11,7 +11,6 @@ Anharmonic-LATtice-DYNamics (ALATDYN)
 
    intro
    theory
-   download
    install
    runscsnaps
    runfocex

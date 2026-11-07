@@ -22,6 +22,9 @@
 %  Colours (the palette of the VASP-Flow manual)
 % ============================================================
 \definecolor{mainblue}   {RGB}{  0,  74, 153}
+\definecolor{rungray}    {RGB}{110, 110, 110}   % folder tree: written by the runs
+\definecolor{fixamber}   {RGB}{185, 105,   0}   % folder tree: written by the repairs
+\definecolor{youteal}    {RGB}{  0, 128, 110}   % folder tree: made by you
 \definecolor{accentblue} {RGB}{ 30, 120, 210}
 \definecolor{lightblue}  {RGB}{210, 228, 255}
 \definecolor{codebg}     {RGB}{245, 248, 252}
@@ -729,6 +732,123 @@ prints them; you should not need it.
 % ============================================================
 \section{The project folder and the results}\label{sec:results}
 % ============================================================
+Figure~\ref{fig:project-tree} shows the folders the agent makes; the table lists what each holds.
+
+\begin{figure}[p]
+\centering
+\textbf{The project folder (\cmd{focex-agent.py}, mode \cmd{from_scratch})}\par\medskip
+\footnotesize
+\textcolor{mainblue}{\textbf{folder}} \quad written at set-up \quad
+\textcolor{rungray}{written by the runs} \quad \textcolor{youteal}{made by you} \quad
+\textcolor{fixamber}{written by the repairs}\par\bigskip
+\raggedright
+\begin{tikzpicture}[x=1mm, y=1mm, every node/.style={inner sep=0pt, anchor=west, font=\footnotesize}]
+\node at (0.0,-0.0) {\color{mainblue}\bfseries\texttt{\textasciitilde{}/calc/}};
+\node at (84.0,-0.0) {\color{black!65}where you call \cmd{focex-agent.py}};
+\node at (5.0,-4.5) {\color{youteal}\texttt{focex-agent-instructions.txt, POSCAR}};
+\node at (84.0,-4.5) {\color{black!65}your input};
+\draw[black!40] (1.5,-2.0) |- (4.2,-4.5);
+\node at (5.0,-9.0) {\color{mainblue}\bfseries\texttt{Si/}};
+\node at (84.0,-9.0) {\color{black!65}project folder (\cmd{PROJECT_DIR}; default \cmd{PROJECT_NAME})};
+\draw[black!40] (1.5,-2.0) |- (4.2,-9.0);
+\node at (10.0,-13.5) {\texttt{focex-agent-instructions.txt}};
+\node at (84.0,-13.5) {\color{black!65}the copy the runs read};
+\draw[black!40] (6.5,-11.0) |- (9.2,-13.5);
+\node at (10.0,-18.0) {\texttt{POSCAR.input, POSCAR.init, POTCAR}};
+\node at (84.0,-18.0) {\color{black!65}your structure; reduced and oriented};
+\draw[black!40] (6.5,-11.0) |- (9.2,-18.0);
+\node at (10.0,-22.5) {\texttt{run\_workflow.sh, state.json}};
+\node at (84.0,-22.5) {\color{black!65}the job (\cmd{sbatch} or \cmd{bash}); its state};
+\draw[black!40] (6.5,-11.0) |- (9.2,-22.5);
+\node at (10.0,-27.0) {\texttt{resubmit\_failed.sh}};
+\node at (84.0,-27.0) {\color{black!65}reruns failed supercell runs};
+\draw[black!40] (6.5,-11.0) |- (9.2,-27.0);
+\node at (10.0,-31.5) {\color{rungray}\texttt{report.log, POSCAR0}};
+\node at (84.0,-31.5) {\color{black!65}one entry per task; the relaxed cell};
+\draw[black!40] (6.5,-11.0) |- (9.2,-31.5);
+\node at (10.0,-36.0) {\color{mainblue}\bfseries\texttt{01\_relax/}};
+\node at (84.0,-36.0) {\color{black!65}relaxation};
+\draw[black!40] (6.5,-11.0) |- (9.2,-36.0);
+\node at (15.0,-40.5) {\texttt{INCAR KPOINTS POSCAR POTCAR run.sh}};
+\draw[black!40] (11.5,-38.0) |- (14.2,-40.5);
+\node at (15.0,-45.0) {\color{rungray}\texttt{OUTCAR OSZICAR CONTCAR vasprun.xml}};
+\draw[black!40] (11.5,-38.0) |- (14.2,-45.0);
+\node at (10.0,-49.5) {\color{mainblue}\bfseries\texttt{02\_scf/}};
+\node at (84.0,-49.5) {\color{black!65}SCF on POSCAR0};
+\draw[black!40] (6.5,-11.0) |- (9.2,-49.5);
+\node at (15.0,-54.0) {\color{rungray}\texttt{INCAR KPOINTS POSCAR POTCAR; OUTCAR \ldots}};
+\draw[black!40] (11.5,-51.5) |- (14.2,-54.0);
+\node at (15.0,-58.5) {\color{mainblue}\bfseries\texttt{dfpt/}};
+\node at (84.0,-58.5) {\color{black!65}Born charges, $\epsilon^\infty$ (only with a gap)};
+\draw[black!40] (11.5,-51.5) |- (14.2,-58.5);
+\node at (20.0,-63.0) {\color{rungray}\texttt{run.sh copy\_from\_scf.sh extract\_born.py; OUTCAR}};
+\draw[black!40] (16.5,-60.5) |- (19.2,-63.0);
+\node at (10.0,-67.5) {\color{mainblue}\bfseries\texttt{03\_snaps/}};
+\node at (84.0,-67.5) {\color{black!65}SC-SNAPS: the supercell and the snapshots};
+\draw[black!40] (6.5,-11.0) |- (9.2,-67.5);
+\node at (15.0,-72.0) {\color{rungray}\texttt{cell.inp supercell.inp snaps.inp}};
+\draw[black!40] (11.5,-69.5) |- (14.2,-72.0);
+\node at (15.0,-76.5) {\color{rungray}\texttt{poscar\_000 \ldots{} poscar\_NNN}};
+\node at (84.0,-76.5) {\color{black!65}snapshots; \cmd{poscar_000} undisplaced};
+\draw[black!40] (11.5,-69.5) |- (14.2,-76.5);
+\node at (15.0,-81.0) {\color{rungray}\texttt{snapshots.xyz}};
+\node at (84.0,-81.0) {\color{black!65}all snapshots, for viewing};
+\draw[black!40] (11.5,-69.5) |- (14.2,-81.0);
+\node at (15.0,-85.5) {\color{rungray}\texttt{added\_NNN-MMM/}};
+\node at (84.0,-85.5) {\color{black!65}when \cmd{SNAPSHOTS} is raised};
+\draw[black!40] (11.5,-69.5) |- (14.2,-85.5);
+\node at (10.0,-90.0) {\color{mainblue}\bfseries\texttt{04\_supercells/}};
+\node at (84.0,-90.0) {\color{black!65}the supercell VASP runs};
+\draw[black!40] (6.5,-11.0) |- (9.2,-90.0);
+\node at (15.0,-94.5) {\color{rungray}\texttt{snap\_000/ \ldots{} snap\_NNN/}};
+\node at (84.0,-94.5) {\color{black!65}INCAR KPOINTS POSCAR POTCAR; OUTCAR};
+\draw[black!40] (11.5,-92.0) |- (14.2,-94.5);
+\node at (15.0,-99.0) {\color{youteal}\texttt{unused/}};
+\node at (84.0,-99.0) {\color{black!65}snapshots you set aside};
+\draw[black!40] (11.5,-92.0) |- (14.2,-99.0);
+\node at (15.0,-103.5) {\color{rungray}\texttt{FORCEDISP1, POSCAR1, stress.params}};
+\node at (84.0,-103.5) {\color{black!65}forces; supercell; stress of \cmd{snap_000}};
+\draw[black!40] (11.5,-92.0) |- (14.2,-103.5);
+\node at (10.0,-108.0) {\color{mainblue}\bfseries\texttt{05\_focex/}};
+\node at (84.0,-108.0) {\color{black!65}FOCEX};
+\draw[black!40] (6.5,-11.0) |- (9.2,-108.0);
+\node at (15.0,-112.5) {\color{rungray}\texttt{*.params, POSCAR1, FORCEDISP1}};
+\node at (84.0,-112.5) {\color{black!65}the five inputs and the data};
+\draw[black!40] (11.5,-110.0) |- (14.2,-112.5);
+\node at (15.0,-117.0) {\color{rungray}\texttt{fc*.dat lat\_fc.dat log*.dat}};
+\node at (84.0,-117.0) {\color{black!65}force constants and the log};
+\draw[black!40] (11.5,-110.0) |- (14.2,-117.0);
+\node at (15.0,-121.5) {\color{rungray}\texttt{bs\_freq.dat mech.dat thermo\_QHA.dat \ldots}};
+\node at (84.0,-121.5) {\color{black!65}phonons, elastic constants, QHA};
+\draw[black!40] (11.5,-110.0) |- (14.2,-121.5);
+\node at (15.0,-126.0) {\color{rungray}\texttt{makeplots.sh, *-Si.pdf}};
+\node at (84.0,-126.0) {\color{black!65}the plots};
+\draw[black!40] (11.5,-110.0) |- (14.2,-126.0);
+\node at (15.0,-130.5) {\color{rungray}\texttt{NOBORN/}};
+\node at (84.0,-130.5) {\color{black!65}with Born charges: the fit without them};
+\draw[black!40] (11.5,-110.0) |- (14.2,-130.5);
+\node at (15.0,-135.0) {\color{rungray}\texttt{LASSO/}};
+\node at (84.0,-135.0) {\color{black!65}few equations per unknown (\cmd{LASSO_RATIO})};
+\draw[black!40] (11.5,-110.0) |- (14.2,-135.0);
+\node at (10.0,-139.5) {\color{mainblue}\bfseries\texttt{06\_thermacond/}};
+\node at (84.0,-139.5) {\color{black!65}THERMACOND (\cmd{THERMACOND_JOB} 1--3)};
+\draw[black!40] (6.5,-11.0) |- (9.2,-139.5);
+\node at (15.0,-144.0) {\color{rungray}\texttt{lat\_fc.dat fc2.dat fc3.dat *.params}};
+\node at (84.0,-144.0) {\color{black!65}\cmd{kappa_vs_T.dat}, \ldots};
+\draw[black!40] (11.5,-141.5) |- (14.2,-144.0);
+\node at (10.0,-148.5) {\color{fixamber}\texttt{diagnosis/}};
+\node at (84.0,-148.5) {\color{black!65}\cmd{diagnose.py}: report.txt, fix\_it.sh};
+\draw[black!40] (6.5,-11.0) |- (9.2,-148.5);
+\end{tikzpicture}
+\caption{The folders made from where you call \cmd{focex-agent.py} (here \cmd{~/calc}, with
+\cmd{PROJECT_NAME: Si}). \cmd{focex-agent.py} writes the project folder, \cmd{01_relax/},
+\cmd{run_workflow.sh} and \cmd{resubmit_failed.sh} at once; every other step folder is made when its
+task runs, in the order of the numbers. Each VASP folder is an ordinary VASP folder. In mode
+\cmd{extract_only} there are no \cmd{01}--\cmd{03} folders: \cmd{04_supercells/} holds your data,
+rotated into the FOCEX frame, and \cmd{05_focex/} the fit.}
+\label{fig:project-tree}
+\end{figure}
+
 \begin{longtable}{@{}>{\ttfamily}p{0.37\linewidth}>{\raggedright\arraybackslash}p{0.56\linewidth}@{}}
 \thead \normalfont\bfseries file or folder & \textbf{what it is} \\ \midrule \endhead
 focex-agent-instructions.txt & the copy of your instruction file that the runs read \\
@@ -851,7 +971,8 @@ is read back from \cmd{06_thermacond/V3DELTA} when the force constants and the m
 \item[1.3] 2026-11-06: \cmd{focex-configure.sh} finds the programs, the POTCAR library, VASP and MPI
   and writes \cmd{~/.focex-agent.env}; installation and quick start as numbered steps (commands in
   blue boxes, explanations in amber boxes); the minimal instruction file and a table of every
-  default and how to change it; the manual now says that without \cmd{MPI} VASP runs on one core.
+  default and how to change it; the manual now says that without \cmd{MPI} VASP runs on one core;
+  a diagram of the project folder (Figure~\ref{fig:project-tree}).
 \item[1.2] 2026-10-27, with FOCEX 9.0: the undistorted supercell \cmd{snap_000} is run with
   \cmd{ISIF = 2}, and \cmd{collect} writes its stress, minus the \cmd{in kB} line of OUTCAR divided
   by 10, as \cmd{stress.params} (GPa, tensile positive) for FOCEX (Huang rows and elastic
