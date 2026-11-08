@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""focex-agent.py 1.4 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
+"""focex-agent.py 1.5 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
 structure (MODE: from_scratch, VASP + SC_SNAPS + FOCEX) or from existing force-displacement data
 (MODE: extract_only, FOCEX only).  Manual: FOCEX/AGENT/focexagent_manual.pdf
 
@@ -17,7 +17,8 @@ Tasks (each is recorded in <PROJECT_DIR>/report.log and skipped once done):
   relax      VASP relaxation of the reduced, oriented cell (ACCURACY: Accurate|Normal)
   poscar0    CONTCAR -> Niggli reduction + orientation -> POSCAR0 (frame of every later step)
   scf        SCF on POSCAR0, same INCAR (ISIF=1, NSW=0) and KPOINTS
-  dfpt       epsilon_inf and Born charges, only if the SCF shows a gap (DFPT: auto|on|off)
+  dfpt       epsilon_inf and Born charges in 06_dfpt, only if the SCF shows a gap (DFPT: auto|on|off);
+             EFIELD_PEAD at half the Zener limit, checks: Zener warning, sum of charges, eps_inf
   snaps      SC_SNAPS: supercell (SUPERCELL: SMALL|LARGE|9 integers, RS_i = sum_j n_ij R0_j) and
              snapshots at TEMPERATURE; if none is given, 30 K tuned to an rms of DISP_TARGET
   supercells one folder per snapshot (INCAR as the SCF + ISYM=0, commensurate KPOINTS)
@@ -25,7 +26,7 @@ Tasks (each is recorded in <PROJECT_DIR>/report.log and skipped once done):
   collect    read_outcar.x -> FORCEDISP1, POSCAR1 = poscar_000; all runs checked
   focex      the five *.params files, FOCEX with enforce_inv 1 (+ NOBORN, and LASSO with refit, when needed)
   plots      PDF plots by PLOTTING/allplots (bands, Gruneisen, velocities, QHA, ...), makeplots.sh
-  thermacond THERMACOND in 06_thermacond if THERMACOND_JOB (latdyn.params line 8) is 1, 2 or 3
+  thermacond THERMACOND in 07_thermacond if THERMACOND_JOB (latdyn.params line 8) is 1, 2 or 3
 MODE: extract_only (DATA: <folder> with POSCAR1, FORCEDISP1, [POSCAR2, FORCEDISP2, ...],
 optionally POSCAR = primitive cell and dielectric.params, all in the frame of the data) rotates
 the data into the FOCEX frame and does focex and plots only.
@@ -59,7 +60,7 @@ os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 os.environ.setdefault('OMP_NUM_THREADS', os.environ.get('VASP_OMP_NUM_THREADS', '1'))
 import numpy as np
 
-__version__ = '1.4'
+__version__ = '1.5'
 AGENT = os.path.dirname(os.path.realpath(__file__))          # FOCEX/AGENT (realpath: works through a symlink)
 HERE = os.path.dirname(AGENT)                                # the FOCEX folder: templates, utility/
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
@@ -722,30 +723,135 @@ class Agent:
         m = self.fx['dfpt']
         return m == 'on' or (m == 'auto' and (self.state.get('gap') or 0) > 0.05)
 
+    def legacy_dir(self, new, old):
+        """Folder new; old when only old exists (projects made before 2026-11-07)."""
+        n, o = self.d(new), self.d(old)
+        return o if os.path.isdir(o) and not os.path.isdir(n) else n
+
+    def dfpt_dir(self):
+        return self.legacy_dir('06_dfpt', os.path.join('02_scf', 'dfpt'))      # 06_dfpt as in VASP-Flow
+
+    def tc_dir(self):
+        return self.legacy_dir('07_thermacond', '06_thermacond')
+
+    def safe_efield(self, d):
+        """EFIELD_PEAD (eV/A) for LCALCEPS: half of VASP's Zener limit e|E||a_i| < E_g/(10 N_i), with the SCF
+        gap, the k-mesh of d/KPOINTS and the lattice of POSCAR0; at most VASP's default 0.01. None when the
+        gap or the mesh cannot be read."""
+        gap = self.state.get('gap')
+        try:
+            L = open(os.path.join(d, 'KPOINTS')).read().splitlines()
+            N = [int(x) for x in L[3].split()[:3]]
+        except (OSError, IndexError, ValueError):
+            return None
+        if not gap or gap <= 0 or L[2].strip()[:1].upper() not in 'GM':
+            return None
+        A = read_vasp_cell(self.d('POSCAR0'))['A']
+        e = 0.5 * min(gap / (10 * n * np.linalg.norm(a)) for n, a in zip(N, A))
+        return min(0.01, float('%.2g' % e))
+
+    @staticmethod
+    def incar_value(d, tag):
+        m = None
+        for l in open(os.path.join(d, 'INCAR')).read().splitlines():
+            l = re.split('[!#]', l)[0]
+            if re.match(r'\s*' + tag + r'\s*=', l, re.I):
+                m = l.split('=', 1)[1].split()
+        return m
+
+    def set_efield(self, d, e, why):
+        """EFIELD_PEAD = e e e in d/INCAR (replacing an earlier line)."""
+        f = os.path.join(d, 'INCAR')
+        L = [l for l in open(f).read().splitlines() if not re.match(r'\s*EFIELD_PEAD\s*=', l, re.I)]
+        write(f, '\n'.join(L + [f'EFIELD_PEAD = {e:g} {e:g} {e:g}   ! focex-agent: {why}']) + '\n')
+
     def t_dfpt(self):
-        d = self.d('02_scf', 'dfpt')
+        d = self.dfpt_dir()
+        rel = os.path.relpath(d, self.proj)
         if not self.want_dfpt():
             self.clean(self.d('02_scf'))
             return True, 'skipped (no gap)' if self.fx['dfpt'] == 'auto' else 'skipped (DFPT: off)'
         ok, msg = outcar_status(d, 'dfpt')
+        user_field = has_tag(incar_lines(self.fx['blocks'].get('incar')) +
+                             incar_lines(self.fx['blocks'].get('incar_dfpt')), 'EFIELD_PEAD')
         if not ok:
             g = self.gen(self.d('POSCAR0'), 'dfpt')
             g.generate_dfpt_input(d, self.d('02_scf'))
             self.link_potcar(d)
+            e = self.safe_efield(d)
+            if e and not user_field and (self.incar_value(d, 'LCALCEPS') or [''])[0].upper().startswith('.T'):
+                self.set_efield(d, e, 'half of the Zener limit E_g/(10 N_i |a_i|)')
             subprocess.run('bash copy_from_scf.sh', shell=True, cwd=d)
             self.vasp(d, g)
             ok, msg = outcar_status(d, 'dfpt')
-        if ok:
-            n = sum(read_vasp_cell(self.d('POSCAR0'))['counts'])
+        if not ok:
+            return ok, msg
+        n = sum(read_vasp_cell(self.d('POSCAR0'))['counts'])
+        eps, Z = read_born(os.path.join(d, 'OUTCAR'), n, self.fx['born_transpose'])
+        if eps is None:
+            return False, 'converged, but epsilon/Born charges could not be read from OUTCAR'
+        bad = self.dfpt_checks(d, eps, Z)
+        e = self.safe_efield(d)
+        field = self.incar_value(d, 'EFIELD_PEAD')
+        if any('Zener' in b for b in bad) and e and not user_field and \
+                (field is None or float(field[0]) > 1.01 * e):
+            # VASP's own remedy: a smaller field; the earlier OUTCAR is kept as OUTCAR.<k>
+            self.rep(f'  dfpt: {"; ".join(bad)}; rerun with EFIELD_PEAD = {e:g} eV/A')
+            self.set_efield(d, e, 'half of the Zener limit, after a run with Zener warnings')
+            subprocess.run('bash copy_from_scf.sh', shell=True, cwd=d)
+            self.vasp(d, self.gen(self.d('POSCAR0'), 'dfpt'))
+            ok, msg = outcar_status(d, 'dfpt')
+            if not ok:
+                return ok, msg + ' (rerun with a smaller EFIELD_PEAD)'
             eps, Z = read_born(os.path.join(d, 'OUTCAR'), n, self.fx['born_transpose'])
             if eps is None:
                 return False, 'converged, but epsilon/Born charges could not be read from OUTCAR'
-            self.state['eps'] = eps.tolist()
-            self.state['Z'] = [z.tolist() for z in Z]
-            self.clean(d)
-            self.clean(self.d('02_scf'))
-            msg += '; eps_inf diag ' + ' '.join('%.3f' % x for x in np.diag(eps))
-        return ok, msg
+            bad = self.dfpt_checks(d, eps, Z)
+        msg += '; eps_inf diag ' + ' '.join('%.3f' % x for x in np.diag(eps))
+        msg += self.born_trace(d, rel)
+        self.clean(d)
+        self.clean(self.d('02_scf'))
+        if bad:
+            # not passed on: FOCEX then runs with born_flag 0 (unless a dielectric_params block is given)
+            self.state.pop('eps', None)
+            self.state.pop('Z', None)
+            return True, (msg + ' -- WARNING: ' + '; '.join(bad) + '. Born charges and epsilon NOT used '
+                          '(born_flag 0); give them in a dielectric_params block, or fix the DFPT run in '
+                          + rel + ' and run --only dfpt')
+        self.state['eps'] = eps.tolist()
+        self.state['Z'] = [z.tolist() for z in Z]
+        return True, msg + '; checks passed'
+
+    def dfpt_checks(self, d, eps, Z):
+        """What is wrong with a DFPT result: VASP's Zener warning (EFIELD_PEAD too large for the gap and
+        the k-mesh), charges that do not sum to zero (> 0.1 e in a component; acoustic sum rule), eps_inf
+        not between 1 and 100. Also counts VASP's PEAD warnings (Berry-phase strings not well clustered)."""
+        bad = []
+        t = ''.join(open(os.path.join(d, f), errors='replace').read()
+                    for f in ('vasp.out', 'OUTCAR') if os.path.isfile(os.path.join(d, f)))
+        if 'Zener' in t:
+            bad.append('VASP warns of Zener tunneling (EFIELD_PEAD too large for the gap and the k-mesh)')
+        asr = float(np.abs(np.sum(np.array(Z), axis=0)).max())
+        if asr > 0.1:
+            bad.append('the Born charges sum to %.3f e, not 0' % asr)
+        w = np.linalg.eigvalsh(0.5 * (eps + eps.T))
+        if w.min() <= 1 or w.max() > 100:
+            bad.append('eps_inf eigenvalues %.3g..%.3g, outside 1..100' % (w.min(), w.max()))
+        npead = t.count('not well clustered')
+        if bad and npead:
+            bad.append(f'{npead} PEAD warnings (Berry-phase strings not well clustered)')
+        return bad
+
+    def born_trace(self, d, rel):
+        """The agent runs VASP itself, not run.sh, whose last line calls extract_born.py: run it here
+        (-> born_charges.txt, BORN, extract_born.out in d)."""
+        if not os.path.isfile(os.path.join(d, 'extract_born.py')):
+            return ''
+        r = subprocess.run([sys.executable, 'extract_born.py', 'OUTCAR'], cwd=d, capture_output=True, text=True)
+        write(os.path.join(d, 'extract_born.out'), r.stdout + r.stderr)
+        if r.returncode == 0 and os.path.isfile(os.path.join(d, 'born_charges.txt')):
+            return f'; born_charges.txt written in {rel}'
+        return f'; extract_born.py failed (see {rel}/extract_born.out)'
 
     # ---- task 3: snapshots ---------------------------------------------------
     def t_snaps(self):
@@ -1290,7 +1396,7 @@ class Agent:
 
     # ---- task 8: THERMACOND ----------------------------------------------------
     def tc_latdyn(self):
-        """latdyn.params of 06_thermacond: that of 05_focex with lines 1, 6, 8, 9 from THERMACOND_*"""
+        """latdyn.params of 07_thermacond: that of 05_focex with lines 1, 6, 8, 9 from THERMACOND_*"""
         fx, job = self.fx, self.fx['tc_job']
         L = open(self.d('05_focex', 'latdyn.params')).read().splitlines()
         if fx['tc_mesh']:
@@ -1303,13 +1409,13 @@ class Agent:
         return L
 
     def t_thermacond(self):
-        """THERMACOND on the force constants of 05_focex, in 06_thermacond, when THERMACOND_JOB
+        """THERMACOND on the force constants of 05_focex, in 07_thermacond, when THERMACOND_JOB
         (latdyn.params line 8) is 1, 2 or 3."""
         job, fx = self.fx['tc_job'], self.fx
         if job == 0:
             return True, ('skipped: THERMACOND_JOB 0' + ('' if fx['tc_job_given'] else ' (not given)')
                           + ' -- set THERMACOND_JOB: 2 or 3 for the thermal conductivity')
-        src, d = self.d('05_focex'), self.d('06_thermacond')
+        src, d = self.d('05_focex'), self.tc_dir()
         fc3 = os.path.join(src, 'fc3.dat')
         if not os.path.isfile(fc3) or not any(l.split() and not l.lstrip().startswith('#')
                                                for l in open(fc3).read().splitlines()[1:]):
@@ -1388,7 +1494,7 @@ class Agent:
                 if n != len(dirs):
                     return f'FORCEDISP1 has {n} snapshots, 04_supercells {len(dirs)}'
         if t == 'thermacond' and self.fx['tc_job'] != 0:
-            f = self.d('06_thermacond', 'latdyn.params')
+            f = os.path.join(self.tc_dir(), 'latdyn.params')
             if not os.path.isfile(f):
                 return f'THERMACOND_JOB is {self.fx["tc_job"]} and THERMACOND has not run'
             if os.path.isfile(self.d('05_focex', 'latdyn.params')) and \

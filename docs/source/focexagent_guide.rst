@@ -117,7 +117,7 @@ Results
 ``01_relax``, ``02_scf`` (and ``dfpt``), ``03_snaps``, ``04_supercells`` (``FORCEDISP1``, and
 ``stress.params``: the stress of the undistorted supercell, used by FOCEX for the Huang rows and
 the elastic constants), ``05_focex`` (force constants ``fc*.dat``, dispersion ``bs_freq.dat``,
-``mech.dat``, ``thermo_QHA.dat`` and PDF plots) and ``06_thermacond`` (``kappa_vs_T.dat``).
+``mech.dat``, ``thermo_QHA.dat`` and PDF plots) and ``07_thermacond`` (``kappa_vs_T.dat``).
 
 When a run stops
 ----------------

@@ -3,7 +3,7 @@
 FOCEX agent: from a crystal structure to phonons
 ================================================
 
-Version 1.2 (2026-10-27, with FOCEX 9.0). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
+Version 1.5 (2026-11-07, with FOCEX 9.9). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
 instruction file and ``diagnose.py`` are in ``FOCEX/AGENT``.
 
 What the FOCEX agent does
@@ -289,8 +289,18 @@ The supercell tasks are checked again before they are skipped:
    starts from the charge density and wave functions of the relaxation.
 ``dfpt``
    For an insulator (band gap above 0.05 eV, ``DFPT: auto``): density-functional perturbation
-   theory in ``02_scf/dfpt`` gives the high-frequency dielectric constant and the Born effective
-   charges of every atom (:ref:`agent-born`). ``DFPT: on`` forces it, ``off`` skips it.
+   theory in ``06_dfpt`` (as in VASP-Flow; ``02_scf/dfpt`` in projects made before 2026-11-07)
+   gives the high-frequency dielectric constant and the Born effective charges of every atom
+   (:ref:`agent-born`). ``DFPT: on`` forces it, ``off`` skips it. With the finite-field method
+   (``LCALCEPS``) the field ``EFIELD_PEAD`` is set to half of VASP's limit for Zener tunnelling,
+   e|E| |a_i| < E_g/(10 N_i) (E_g the SCF gap, N_i the k-points along a_i; at most VASP's default
+   0.01 eV/Å), unless you set it in ``INCAR_dfpt``. The values are read from the ``OUTCAR``;
+   ``extract_born.py`` also writes them to ``born_charges.txt`` and ``BORN`` (its output in
+   ``extract_born.out``). The result is checked: no Zener warning from VASP, Born charges summing
+   to zero (within 0.1 e per component), ε∞ between 1 and 100. After a Zener warning the run is
+   repeated once with the smaller field. If a check still fails, ``report.log`` gives a WARNING and
+   the charges are not used: FOCEX runs with ``born_flag`` 0, unless you give them in a
+   ``dielectric_params`` block.
 ``snaps``
    The supercell is chosen (:ref:`agent-supercell`). SC-SNAPS (``03_snaps``)
    then writes the undistorted supercell ``poscar_000`` and 50 snapshots, each atom displaced as in
@@ -333,7 +343,7 @@ The supercell tasks are checked again before they are skipped:
    The gnuplot scripts ``bvel.plt``, ``all.plt``, ``qha.plt`` are filled in and run in every FOCEX
    folder (:ref:`agent-results`); ``makeplots.sh`` remakes them.
 ``thermacond``
-   THERMACOND in ``06_thermacond``: linewidths or the thermal conductivity, when ``THERMACOND_JOB``
+   THERMACOND in ``07_thermacond``: linewidths or the thermal conductivity, when ``THERMACOND_JOB``
    is 1, 2 or 3; skipped for 0, the default (:ref:`agent-thermacond`).
 
 Defaults
@@ -685,15 +695,18 @@ The project folder and the results
      - the job; ``resubmit_failed.sh`` reruns the failed supercell runs
    * - ``POSCAR.input``, ``POSCAR.init``, ``POSCAR0``
      - your structure; reduced and oriented; relaxed
-   * - ``01_relax``, ``02_scf``, ``02_scf/dfpt``
-     - VASP: relaxation, SCF, Born charges
+   * - ``01_relax``, ``02_scf``
+     - VASP: relaxation, SCF
    * - ``03_snaps``
      - SC-SNAPS input and the snapshots ``poscar_NNN``
    * - ``04_supercells``
      - ``snap_NNN/`` (one VASP run each), ``POSCAR1``, ``FORCEDISP1``
    * - ``05_focex``
      - FOCEX: inputs, outputs, plots; ``NOBORN/`` and ``LASSO/`` when made
-   * - ``06_thermacond``
+   * - ``06_dfpt``
+     - VASP: Born charges and ε∞ (``born_charges.txt``), as in VASP-Flow; ``02_scf/dfpt`` in
+       projects made before 2026-11-07
+   * - ``07_thermacond``
      - THERMACOND (``THERMACOND_JOB`` 1-3): ``kappa_vs_T.dat``, ``kappa_wigner.dat``, ...
    * - ``diagnosis``
      - written by ``diagnose.py``: ``report.txt``, ``fix_it.sh``, backups
@@ -802,7 +815,7 @@ instruction file:
    # THERMACOND_SOLVER: 0        # line 9, job 2: 0 conjugate gradient, 1 SVD
 
 The task copies ``lat_fc.dat``, ``fc2.dat``, ``fc3.dat``, ``structure.params``,
-``dielectric.params`` and ``kpbs.params`` from ``05_focex`` to ``06_thermacond``, writes there
+``dielectric.params`` and ``kpbs.params`` from ``05_focex`` to ``07_thermacond``, writes there
 FOCEX's ``latdyn.params`` with lines 1, 6, 8 and 9 from these keywords, and runs ``tcond-2.0.x``
 with the MPI command of the profile; ``05_focex`` is not changed. A ``latdyn_params`` block
 (:ref:`agent-override`) sets all 13 lines for both FOCEX and THERMACOND, and its line 8 is the job
@@ -813,16 +826,34 @@ The report gives, at up to seven of the temperatures, kappa_RTA, the full (direc
 solution and the coherences term kappa_C of the Wigner formulation (W/mK, average of the
 diagonal), and a warning if the full solution falls below the RTA, which it should not do (the
 direct solver has an open issue: compare with job 3). The complete results are in
-``06_thermacond``: ``kappa_vs_T.dat``, ``kappa_wigner.dat``, ``Qvalue.dat`` (scattering rates) and
+``07_thermacond``: ``kappa_vs_T.dat``, ``kappa_wigner.dat``, ``Qvalue.dat`` (scattering rates) and
 the other files described in :doc:`runthermacond`. An existing project gets the task by adding
 ``THERMACOND_JOB`` to its ``focex-agent-instructions.txt`` and submitting ``run_workflow.sh``
 again: the finished tasks are skipped. Changing ``THERMACOND_JOB``, ``_MESH``, ``_T`` or
 ``_SOLVER`` later and submitting again runs the task again; V3*delta is read back from
-``06_thermacond/V3DELTA`` when the force constants and the mesh are the same (job 3 after job 2,
+``07_thermacond/V3DELTA`` when the force constants and the mesh are the same (job 3 after job 2,
 new temperatures).
 
 Version history
 ---------------
+
+1.5
+   2026-11-07: DFPT in its own folder ``06_dfpt``, as in VASP-Flow, and THERMACOND in
+   ``07_thermacond`` (older projects keep ``02_scf/dfpt`` and ``06_thermacond``); ``EFIELD_PEAD``
+   from the gap and the k-mesh, checks of the Born charges and ε∞, ``born_charges.txt`` written
+   (task dfpt). A Cu2O run had given ε∞ = 207 and charges summing to -3.2 e: VASP's default field
+   was 2.7 times its own Zener limit.
+
+1.4
+   2026-11-07: the FOCEX fits hold the invariances exactly (``enforce_inv = 1``; was 0) and the
+   extra LASSO run uses the refit (``enforce_inv = 3``; was 2), as the FOCEX FAQ recommends;
+   ``diagnose.py`` reports the same version.
+
+1.3
+   2026-11-06: ``focex-configure.sh`` finds the programs, the POTCAR library, VASP and MPI and
+   writes ``~/.focex-agent.env``; installation and quick start as numbered steps; the minimal
+   instruction file and a table of every default and how to change it; without ``MPI`` VASP runs
+   on one core; a diagram of the project folder (PDF manual).
 
 1.2
    2026-10-27, with FOCEX 9.0: the undistorted supercell ``snap_000`` is run with ``ISIF = 2``, and

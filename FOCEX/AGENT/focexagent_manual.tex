@@ -89,7 +89,7 @@
   \normalsize Force constants and phonons from a crystal structure: VASP $\cdot$ SC-SNAPS $\cdot$
   FOCEX $\cdot$ Diagnosis \& repair\\[6pt]{\color{mainblue}\rule{\linewidth}{0.5pt}}}
 \author{Keivan Esfarjani}
-\date{v1.4 $\cdot$ November 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
+\date{v1.5 $\cdot$ November 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
 
 \begin{document}
 \maketitle
@@ -267,7 +267,7 @@ settings are kept as \cmd{~/.focex-agent.env.bak}.
 \begin{doit}
 echo $VASP_POTCAR_DIR                 # the POTCAR library found in step 5
 source ~/myenv/bin/activate
-focex-agent --version                 # prints: focex-agent 1.4
+focex-agent --version                 # prints: focex-agent 1.5
 \end{doit}
 \begin{explain}
 An empty first line means the start-up file was not read: on a Mac, check that the terminal runs
@@ -430,9 +430,18 @@ The supercell tasks are checked again before they are skipped:
   same k-mesh), which also gives the band gap. If the cell did not change in the previous task, it
   starts from the charge density and wave functions of the relaxation.
 \item[dfpt] For an insulator (band gap above 0.05\,eV, \cmd{DFPT: auto}): density-functional
-  perturbation theory in \cmd{02_scf/dfpt} gives the high-frequency dielectric constant and the
-  Born effective charges of every atom (Section~\ref{sec:born}). \cmd{DFPT: on} forces it,
-  \cmd{off} skips it.
+  perturbation theory in \cmd{06_dfpt} (as in VASP-Flow; \cmd{02_scf/dfpt} in projects made before
+  2026-11-07) gives the high-frequency dielectric constant and the Born effective charges of every
+  atom (Section~\ref{sec:born}). \cmd{DFPT: on} forces it, \cmd{off} skips it. With the finite-field
+  method (\cmd{LCALCEPS}) the field \cmd{EFIELD_PEAD} is set to half of VASP's limit for Zener
+  tunnelling, $e|E|\,|a_i| < E_g/(10N_i)$ ($E_g$ the SCF gap, $N_i$ the k-points along $\mathbf{a}_i$;
+  at most VASP's default 0.01\,eV/\AA), unless you set it in \cmd{INCAR_dfpt}. The values are read from
+  the \cmd{OUTCAR}; \cmd{extract_born.py} also writes them to \cmd{born_charges.txt} and \cmd{BORN}
+  (its output in \cmd{extract_born.out}). The result is checked: no Zener warning from VASP, Born
+  charges summing to zero (within 0.1\,e per component), $\varepsilon_\infty$ between 1 and 100.
+  After a Zener warning the run is repeated once with the smaller field. If a check still fails,
+  \cmd{report.log} gives a WARNING and the charges are not used: FOCEX runs with \cmd{born_flag} 0,
+  unless you give them in a \cmd{dielectric_params} block.
 \item[snaps] The supercell is chosen (Section~\ref{sec:supercell}). SC-SNAPS
   (\cmd{03_snaps}) then writes the undistorted supercell \cmd{poscar_000} and 50 snapshots, each
   atom displaced as in a thermal ensemble of harmonic oscillators of frequency \cmd{AVG_FREQ} at
@@ -469,7 +478,7 @@ The supercell tasks are checked again before they are skipped:
 \item[plots] \cmd{FOCEX/PLOTTING/allplots} fills the gnuplot scripts (bands, band Gruneisen
   parameters, group velocities, DOS, QHA, FCs) and makes the PDFs in every FOCEX folder
   (Section~\ref{sec:results}); \cmd{makeplots.sh} runs it again.
-\item[thermacond] THERMACOND in \cmd{06_thermacond}: linewidths or the thermal conductivity, when
+\item[thermacond] THERMACOND in \cmd{07_thermacond}: linewidths or the thermal conductivity, when
   \cmd{THERMACOND_JOB} is 1, 2 or 3; skipped for 0, the default (Section~\ref{sec:thermacond}).
 \end{description}
 
@@ -779,59 +788,59 @@ Figure~\ref{fig:project-tree} shows the folders the agent makes; the table lists
 \draw[black!40] (6.5,-11.0) |- (9.2,-49.5);
 \node at (15.0,-54.0) {\color{rungray}\texttt{INCAR KPOINTS POSCAR POTCAR; OUTCAR \ldots}};
 \draw[black!40] (11.5,-51.5) |- (14.2,-54.0);
-\node at (15.0,-58.5) {\color{mainblue}\bfseries\texttt{dfpt/}};
-\node at (84.0,-58.5) {\color{black!65}Born charges, $\epsilon^\infty$ (only with a gap)};
-\draw[black!40] (11.5,-51.5) |- (14.2,-58.5);
-\node at (20.0,-63.0) {\color{rungray}\texttt{run.sh copy\_from\_scf.sh extract\_born.py; OUTCAR}};
-\draw[black!40] (16.5,-60.5) |- (19.2,-63.0);
-\node at (10.0,-67.5) {\color{mainblue}\bfseries\texttt{03\_snaps/}};
-\node at (84.0,-67.5) {\color{black!65}SC-SNAPS: the supercell and the snapshots};
-\draw[black!40] (6.5,-11.0) |- (9.2,-67.5);
-\node at (15.0,-72.0) {\color{rungray}\texttt{cell.inp supercell.inp snaps.inp}};
-\draw[black!40] (11.5,-69.5) |- (14.2,-72.0);
-\node at (15.0,-76.5) {\color{rungray}\texttt{poscar\_000 \ldots{} poscar\_NNN}};
-\node at (84.0,-76.5) {\color{black!65}snapshots; \cmd{poscar_000} undisplaced};
-\draw[black!40] (11.5,-69.5) |- (14.2,-76.5);
-\node at (15.0,-81.0) {\color{rungray}\texttt{snapshots.xyz}};
-\node at (84.0,-81.0) {\color{black!65}all snapshots, for viewing};
-\draw[black!40] (11.5,-69.5) |- (14.2,-81.0);
-\node at (15.0,-85.5) {\color{rungray}\texttt{added\_NNN-MMM/}};
-\node at (84.0,-85.5) {\color{black!65}when \cmd{SNAPSHOTS} is raised};
-\draw[black!40] (11.5,-69.5) |- (14.2,-85.5);
-\node at (10.0,-90.0) {\color{mainblue}\bfseries\texttt{04\_supercells/}};
-\node at (84.0,-90.0) {\color{black!65}the supercell VASP runs};
-\draw[black!40] (6.5,-11.0) |- (9.2,-90.0);
-\node at (15.0,-94.5) {\color{rungray}\texttt{snap\_000/ \ldots{} snap\_NNN/}};
-\node at (84.0,-94.5) {\color{black!65}INCAR KPOINTS POSCAR POTCAR; OUTCAR};
-\draw[black!40] (11.5,-92.0) |- (14.2,-94.5);
-\node at (15.0,-99.0) {\color{youteal}\texttt{unused/}};
-\node at (84.0,-99.0) {\color{black!65}snapshots you set aside};
-\draw[black!40] (11.5,-92.0) |- (14.2,-99.0);
-\node at (15.0,-103.5) {\color{rungray}\texttt{FORCEDISP1, POSCAR1, stress.params}};
-\node at (84.0,-103.5) {\color{black!65}forces; supercell; stress of \cmd{snap_000}};
-\draw[black!40] (11.5,-92.0) |- (14.2,-103.5);
-\node at (10.0,-108.0) {\color{mainblue}\bfseries\texttt{05\_focex/}};
-\node at (84.0,-108.0) {\color{black!65}FOCEX};
-\draw[black!40] (6.5,-11.0) |- (9.2,-108.0);
-\node at (15.0,-112.5) {\color{rungray}\texttt{*.params, POSCAR1, FORCEDISP1}};
-\node at (84.0,-112.5) {\color{black!65}the five inputs and the data};
-\draw[black!40] (11.5,-110.0) |- (14.2,-112.5);
-\node at (15.0,-117.0) {\color{rungray}\texttt{fc*.dat lat\_fc.dat log*.dat}};
-\node at (84.0,-117.0) {\color{black!65}force constants and the log};
-\draw[black!40] (11.5,-110.0) |- (14.2,-117.0);
-\node at (15.0,-121.5) {\color{rungray}\texttt{bs\_freq.dat mech.dat thermo\_QHA.dat \ldots}};
-\node at (84.0,-121.5) {\color{black!65}phonons, elastic constants, QHA};
-\draw[black!40] (11.5,-110.0) |- (14.2,-121.5);
-\node at (15.0,-126.0) {\color{rungray}\texttt{makeplots.sh, *-Si.pdf}};
-\node at (84.0,-126.0) {\color{black!65}the plots};
-\draw[black!40] (11.5,-110.0) |- (14.2,-126.0);
-\node at (15.0,-130.5) {\color{rungray}\texttt{NOBORN/}};
-\node at (84.0,-130.5) {\color{black!65}with Born charges: the fit without them};
-\draw[black!40] (11.5,-110.0) |- (14.2,-130.5);
-\node at (15.0,-135.0) {\color{rungray}\texttt{LASSO/}};
-\node at (84.0,-135.0) {\color{black!65}few equations per unknown (\cmd{LASSO_RATIO})};
-\draw[black!40] (11.5,-110.0) |- (14.2,-135.0);
-\node at (10.0,-139.5) {\color{mainblue}\bfseries\texttt{06\_thermacond/}};
+\node at (10.0,-58.5) {\color{mainblue}\bfseries\texttt{03\_snaps/}};
+\node at (84.0,-58.5) {\color{black!65}SC-SNAPS: the supercell and the snapshots};
+\draw[black!40] (6.5,-11.0) |- (9.2,-58.5);
+\node at (15.0,-63.0) {\color{rungray}\texttt{cell.inp supercell.inp snaps.inp}};
+\draw[black!40] (11.5,-60.5) |- (14.2,-63.0);
+\node at (15.0,-67.5) {\color{rungray}\texttt{poscar\_000 \ldots{} poscar\_NNN}};
+\node at (84.0,-67.5) {\color{black!65}snapshots; \cmd{poscar_000} undisplaced};
+\draw[black!40] (11.5,-60.5) |- (14.2,-67.5);
+\node at (15.0,-72.0) {\color{rungray}\texttt{snapshots.xyz}};
+\node at (84.0,-72.0) {\color{black!65}all snapshots, for viewing};
+\draw[black!40] (11.5,-60.5) |- (14.2,-72.0);
+\node at (15.0,-76.5) {\color{rungray}\texttt{added\_NNN-MMM/}};
+\node at (84.0,-76.5) {\color{black!65}when \cmd{SNAPSHOTS} is raised};
+\draw[black!40] (11.5,-60.5) |- (14.2,-76.5);
+\node at (10.0,-81.0) {\color{mainblue}\bfseries\texttt{04\_supercells/}};
+\node at (84.0,-81.0) {\color{black!65}the supercell VASP runs};
+\draw[black!40] (6.5,-11.0) |- (9.2,-81.0);
+\node at (15.0,-85.5) {\color{rungray}\texttt{snap\_000/ \ldots{} snap\_NNN/}};
+\node at (84.0,-85.5) {\color{black!65}INCAR KPOINTS POSCAR POTCAR; OUTCAR};
+\draw[black!40] (11.5,-83.0) |- (14.2,-85.5);
+\node at (15.0,-90.0) {\color{youteal}\texttt{unused/}};
+\node at (84.0,-90.0) {\color{black!65}snapshots you set aside};
+\draw[black!40] (11.5,-83.0) |- (14.2,-90.0);
+\node at (15.0,-94.5) {\color{rungray}\texttt{FORCEDISP1, POSCAR1, stress.params}};
+\node at (84.0,-94.5) {\color{black!65}forces; supercell; stress of \cmd{snap_000}};
+\draw[black!40] (11.5,-83.0) |- (14.2,-94.5);
+\node at (10.0,-99.0) {\color{mainblue}\bfseries\texttt{05\_focex/}};
+\node at (84.0,-99.0) {\color{black!65}FOCEX};
+\draw[black!40] (6.5,-11.0) |- (9.2,-99.0);
+\node at (15.0,-103.5) {\color{rungray}\texttt{*.params, POSCAR1, FORCEDISP1}};
+\node at (84.0,-103.5) {\color{black!65}the five inputs and the data};
+\draw[black!40] (11.5,-101.0) |- (14.2,-103.5);
+\node at (15.0,-108.0) {\color{rungray}\texttt{fc*.dat lat\_fc.dat log*.dat}};
+\node at (84.0,-108.0) {\color{black!65}force constants and the log};
+\draw[black!40] (11.5,-101.0) |- (14.2,-108.0);
+\node at (15.0,-112.5) {\color{rungray}\texttt{bs\_freq.dat mech.dat thermo\_QHA.dat \ldots}};
+\node at (84.0,-112.5) {\color{black!65}phonons, elastic constants, QHA};
+\draw[black!40] (11.5,-101.0) |- (14.2,-112.5);
+\node at (15.0,-117.0) {\color{rungray}\texttt{makeplots.sh, *-Si.pdf}};
+\node at (84.0,-117.0) {\color{black!65}the plots};
+\draw[black!40] (11.5,-101.0) |- (14.2,-117.0);
+\node at (15.0,-121.5) {\color{rungray}\texttt{NOBORN/}};
+\node at (84.0,-121.5) {\color{black!65}with Born charges: the fit without them};
+\draw[black!40] (11.5,-101.0) |- (14.2,-121.5);
+\node at (15.0,-126.0) {\color{rungray}\texttt{LASSO/}};
+\node at (84.0,-126.0) {\color{black!65}few equations per unknown (\cmd{LASSO_RATIO})};
+\draw[black!40] (11.5,-101.0) |- (14.2,-126.0);
+\node at (10.0,-130.5) {\color{mainblue}\bfseries\texttt{06\_dfpt/}};
+\node at (84.0,-130.5) {\color{black!65}Born charges, $\epsilon^\infty$ (only with a gap)};
+\draw[black!40] (6.5,-11.0) |- (9.2,-130.5);
+\node at (15.0,-135.0) {\color{rungray}\texttt{INCAR \ldots{} extract\_born.py; OUTCAR born\_charges.txt BORN}};
+\draw[black!40] (11.5,-133.0) |- (14.2,-135.0);
+\node at (10.0,-139.5) {\color{mainblue}\bfseries\texttt{07\_thermacond/}};
 \node at (84.0,-139.5) {\color{black!65}THERMACOND (\cmd{THERMACOND_JOB} 1--3)};
 \draw[black!40] (6.5,-11.0) |- (9.2,-139.5);
 \node at (15.0,-144.0) {\color{rungray}\texttt{lat\_fc.dat fc2.dat fc3.dat *.params}};
@@ -844,7 +853,8 @@ Figure~\ref{fig:project-tree} shows the folders the agent makes; the table lists
 \caption{The folders made from where you call \cmd{focex-agent.py} (here \cmd{~/calc}, with
 \cmd{PROJECT_NAME: Si}). \cmd{focex-agent.py} writes the project folder, \cmd{01_relax/},
 \cmd{run_workflow.sh} and \cmd{resubmit_failed.sh} at once; every other step folder is made when its
-task runs, in the order of the numbers. Each VASP folder is an ordinary VASP folder. In mode
+task runs, in the order of the numbers except \cmd{06_dfpt}, which runs right after \cmd{02_scf}
+(the numbering of VASP-Flow). Each VASP folder is an ordinary VASP folder. In mode
 \cmd{extract_only} there are no \cmd{01}--\cmd{03} folders: \cmd{04_supercells/} holds your data,
 rotated into the FOCEX frame, and \cmd{05_focex/} the fit.}
 \label{fig:project-tree}
@@ -857,11 +867,12 @@ report.log & one entry per task: OK or FAILED, minutes, what was checked -- read
 state.json & the finished tasks and the numbers passed between them \\
 run\_workflow.sh & the job; \cmd{resubmit_failed.sh} reruns the failed supercell runs \\
 POSCAR.input, POSCAR.init, POSCAR0 & your structure; reduced and oriented; relaxed \\
-01\_relax, 02\_scf, 02\_scf/dfpt & VASP: relaxation, SCF, Born charges \\
+01\_relax, 02\_scf & VASP: relaxation, SCF \\
 03\_snaps & SC-SNAPS input and the snapshots \cmd{poscar_NNN} \\
 04\_supercells & \cmd{snap_NNN/} (one VASP run each), \cmd{POSCAR1}, \cmd{FORCEDISP1} \\
 05\_focex & FOCEX: inputs, outputs, plots; \cmd{NOBORN/} and \cmd{LASSO/} when made \\
-06\_thermacond & THERMACOND (\cmd{THERMACOND_JOB} 1--3): \cmd{kappa_vs_T.dat}, \cmd{kappa_wigner.dat}, \dots \\
+06\_dfpt & VASP: Born charges and $\epsilon^\infty$ (\cmd{born_charges.txt}), as in VASP-Flow; \cmd{02_scf/dfpt} in projects made before 2026-11-07 \\
+07\_thermacond & THERMACOND (\cmd{THERMACOND_JOB} 1--3): \cmd{kappa_vs_T.dat}, \cmd{kappa_wigner.dat}, \dots \\
 diagnosis & written by \cmd{diagnose.py}: \cmd{report.txt}, \cmd{fix_it.sh}, backups \\
 \bottomrule
 \end{longtable}
@@ -945,7 +956,7 @@ THERMACOND_T: 100 900 9       # line 6: Tmin, Tmax (K), number of temperatures
 # THERMACOND_SOLVER: 0        # line 9, job 2: 0 conjugate gradient, 1 SVD
 \end{lstlisting}
 The task copies \cmd{lat_fc.dat}, \cmd{fc2.dat}, \cmd{fc3.dat}, \cmd{structure.params},
-\cmd{dielectric.params} and \cmd{kpbs.params} from \cmd{05_focex} to \cmd{06_thermacond}, writes
+\cmd{dielectric.params} and \cmd{kpbs.params} from \cmd{05_focex} to \cmd{07_thermacond}, writes
 there FOCEX's \cmd{latdyn.params} with lines 1, 6, 8 and 9 from these keywords, and runs
 \cmd{tcond-2.0.x} with the MPI command of the profile; \cmd{05_focex} is not changed. A
 \cmd{latdyn_params} block (Section~\ref{sec:override}) sets all 13 lines for both FOCEX and
@@ -957,18 +968,23 @@ The report gives, at up to seven of the temperatures, $\kappa_{RTA}$, the full (
 solution and the coherences term $\kappa_C$ of the Wigner formulation (W/mK, average of the
 diagonal), and a warning if the full solution falls below the RTA, which it should not do (the
 direct solver has an open issue: compare with job~3). The complete results are in
-\cmd{06_thermacond}: \cmd{kappa_vs_T.dat}, \cmd{kappa_wigner.dat}, \cmd{Qvalue.dat} (scattering
+\cmd{07_thermacond}: \cmd{kappa_vs_T.dat}, \cmd{kappa_wigner.dat}, \cmd{Qvalue.dat} (scattering
 rates) and the other files described in the THERMACOND manual. An existing project gets the task
 by adding \cmd{THERMACOND_JOB} to its \cmd{focex-agent-instructions.txt} and submitting
 \cmd{run_workflow.sh} again: the finished tasks are skipped. Changing \cmd{THERMACOND_JOB},
 \cmd{_MESH}, \cmd{_T} or \cmd{_SOLVER} later and submitting again runs the task again; V3$\cdot\delta$
-is read back from \cmd{06_thermacond/V3DELTA} when the force constants and the mesh are the same
+is read back from \cmd{07_thermacond/V3DELTA} when the force constants and the mesh are the same
 (job 3 after job 2, new temperatures).
 
 % ============================================================
 \section{Version history}
 % ============================================================
 \begin{description}
+\item[1.5] 2026-11-07: DFPT in its own folder \cmd{06_dfpt}, as in VASP-Flow, and THERMACOND in
+  \cmd{07_thermacond} (older projects keep \cmd{02_scf/dfpt} and \cmd{06_thermacond}); \cmd{EFIELD_PEAD}
+  from the gap and the k-mesh, checks of the Born charges and $\varepsilon_\infty$, \cmd{born_charges.txt}
+  written (task dfpt). A Cu$_2$O run had given $\varepsilon_\infty = 207$ and charges summing to
+  $-3.2$\,e: VASP's default field was 2.7 times its own Zener limit.
 \item[1.4] 2026-11-07: the FOCEX fits hold the invariances exactly (\cmd{enforce_inv = 1}; was 0) and the
   extra LASSO run uses the refit (\cmd{enforce_inv = 3}; was 2), as the FOCEX FAQ recommends;
   \cmd{diagnose.py} reports the same version.

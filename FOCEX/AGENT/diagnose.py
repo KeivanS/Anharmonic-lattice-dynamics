@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""diagnose.py 1.2 -- where and why a focex-agent project stopped, and a script that fixes it.
+"""diagnose.py 1.5 -- where and why a focex-agent project stopped, and a script that fixes it.
 
     diagnose.py <PROJECT_DIR> [<PROJECT_DIR> ...]
 
@@ -40,13 +40,15 @@ import subprocess
 import sys
 
 sys.dont_write_bytecode = True
-__version__ = '1.4'
+__version__ = '1.5'
 AGENT = os.path.dirname(os.path.realpath(__file__))
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
 TASKS = ('relax', 'poscar0', 'scf', 'dfpt', 'snaps', 'supercells', 'vasp_snaps', 'collect',
          'focex', 'plots', 'thermacond')
 INSTR, OLD_INSTR = 'focex-agent-instructions.txt', 'instructions.txt'
-VASP_DIR = {'relax': '01_relax', 'scf': '02_scf', 'dfpt': '02_scf/dfpt'}
+VASP_DIR = {'relax': '01_relax', 'scf': '02_scf', 'dfpt': '06_dfpt'}
+# projects made before 2026-11-07: DFPT in 02_scf/dfpt, THERMACOND in 06_thermacond
+LEGACY = {'06_dfpt': '02_scf/dfpt', '07_thermacond': '06_thermacond'}
 BLOCK = {'relax': 'INCAR_relax', 'scf': 'INCAR_scf', 'dfpt': 'INCAR_dfpt', 'vasp_snaps': 'INCAR_snaps'}
 
 
@@ -84,7 +86,7 @@ FOCEX_PAT = [
 ]
 
 
-# THERMACOND messages in 06_thermacond/thermacond.out: (cause, regex, meaning, what to do)
+# THERMACOND messages in 07_thermacond/thermacond.out: (cause, regex, meaning, what to do)
 TC_PAT = [
     ('imaginary', r'imaginary frequencies', 'the force constants give imaginary frequencies on the k-mesh',
      'check the FOCEX fit (05_focex: min omega^2, LASSO run) before computing kappa'),
@@ -131,6 +133,11 @@ class Project:
 
     def f(self, *a):
         return os.path.join(self.path, *a)
+
+    def sub(self, name):
+        """Folder name of this project: the old one (LEGACY) when only that exists."""
+        old = LEGACY.get(name)
+        return old if old and os.path.isdir(self.f(old)) and not os.path.isdir(self.f(name)) else name
 
     def failed_msg(self, task):
         """The last '=== task -- FAILED' entry of report.log with its continuation lines."""
@@ -260,7 +267,7 @@ def diagnose(pr):
     msg = pr.failed_msg(failed)
     t = failed
     if t in VASP_DIR:
-        d = pr.f(VASP_DIR[t])
+        d = pr.f(pr.sub(VASP_DIR[t]))
         cause, ev, errs = vasp_cause(d, 'relax' if t == 'relax' else 'dfpt' if t == 'dfpt' else 'static', joblog)
         incar = os.path.join(d, 'INCAR')
         tags, held, todo = vasp_fix(t, cause, [incar] if os.path.isfile(incar) else [])
@@ -270,7 +277,7 @@ def diagnose(pr):
         if cause == 'timeout':
             fix.append(('walltime', 2))
         fix.append(('resubmit', 'run_workflow.sh'))
-        findings.append(Finding(t, VASP_DIR[t], cause, CAUSE_TEXT.get(cause, ''), ev + ('; report.log: ' + msg if msg else ''),
+        findings.append(Finding(t, pr.sub(VASP_DIR[t]), cause, CAUSE_TEXT.get(cause, ''), ev + ('; report.log: ' + msg if msg else ''),
                                 errs, fix, held, todo))
     elif t == 'vasp_snaps':
         groups = {}
@@ -336,27 +343,28 @@ def focex_findings(pr, msg):
 
 
 def thermacond_finding(pr, msg):
+    tc = pr.sub('07_thermacond')
     if 'needs cubic force constants' in msg:
-        return Finding('thermacond', '06_thermacond', 'no_fc3', 'no cubic force constants in 05_focex', msg,
+        return Finding('thermacond', tc, 'no_fc3', 'no cubic force constants in 05_focex', msg,
                        held=True, todo='fit rank 3 (RANKS: 1 1 1 0 0 0 0 0), redo from the focex task')
     if 'binary not found' in msg:
-        return Finding('thermacond', '06_thermacond', 'program', 'the THERMACOND binary is missing', msg,
+        return Finding('thermacond', tc, 'program', 'the THERMACOND binary is missing', msg,
                        held=True, todo='make thermacond in Anharmonic-lattice-dynamics, or set THERMACOND_X')
-    text = read(pr.f('06_thermacond', 'thermacond.out'), tail=400000) + '\n' + pr.job_log()
+    text = read(pr.f(tc, 'thermacond.out'), tail=400000) + '\n' + pr.job_log()
     for cause, rx, meaning, todo in TC_PAT:
         hit = re.search(rx, text)
         if hit:
             fix = [('resubmit', 'run_workflow.sh')] if cause == 'mpi' else []
-            return Finding('thermacond', '06_thermacond', cause, meaning, f'thermacond.out: "{hit.group(0)}"',
+            return Finding('thermacond', tc, cause, meaning, f'thermacond.out: "{hit.group(0)}"',
                            held=cause != 'mpi', todo=todo, fix=fix)
     lim = re.search(r'DUE TO TIME LIMIT|time limit', text, re.I)
     if lim:
-        return Finding('thermacond', '06_thermacond', 'timeout', vd.CAUSE_TEXT['timeout'], f'log: "{lim.group(0)}"',
+        return Finding('thermacond', tc, 'timeout', vd.CAUSE_TEXT['timeout'], f'log: "{lim.group(0)}"',
                        fix=[('walltime', 2), ('resubmit', 'run_workflow.sh')], todo='walltime x2, resubmit '
                        '(V3DELTA/ is kept and reused)')
-    tail = [l for l in read(pr.f('06_thermacond', 'thermacond.out')).splitlines() if l.strip()][-4:]
-    return Finding('thermacond', '06_thermacond', 'unknown', 'THERMACOND stopped without a known message',
-                   'report.log: ' + msg[:400], tail, held=True, todo='read 06_thermacond/thermacond.out')
+    tail = [l for l in read(pr.f(tc, 'thermacond.out')).splitlines() if l.strip()][-4:]
+    return Finding('thermacond', tc, 'unknown', 'THERMACOND stopped without a known message',
+                   'report.log: ' + msg[:400], tail, held=True, todo=f'read {tc}/thermacond.out')
 
 
 def other_finding(pr, t, msg):
