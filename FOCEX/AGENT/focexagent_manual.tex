@@ -89,7 +89,7 @@
   \normalsize Force constants and phonons from a crystal structure: VASP $\cdot$ SC-SNAPS $\cdot$
   FOCEX $\cdot$ Diagnosis \& repair\\[6pt]{\color{mainblue}\rule{\linewidth}{0.5pt}}}
 \author{Keivan Esfarjani}
-\date{v1.5 $\cdot$ November 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
+\date{v1.6 $\cdot$ November 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
 
 \begin{document}
 \maketitle
@@ -267,7 +267,7 @@ settings are kept as \cmd{~/.focex-agent.env.bak}.
 \begin{doit}
 echo $VASP_POTCAR_DIR                 # the POTCAR library found in step 5
 source ~/myenv/bin/activate
-focex-agent --version                 # prints: focex-agent 1.5
+focex-agent --version                 # prints: focex-agent 1.6
 \end{doit}
 \begin{explain}
 An empty first line means the start-up file was not read: on a Mac, check that the terminal runs
@@ -640,6 +640,9 @@ GGA\_U & auto: tabulated U on d/f elements if the compound has O, S, Se, Te or a
 DFPT & auto: Born charges and $\varepsilon_\infty$ if the SCF shows a gap ($>$0.05\,eV) & DFPT: off
   \quad (or on) \\
 BORN\_TRANSPOSE & yes (Section~\ref{sec:born}) & BORN\_TRANSPOSE: no \\
+VASP\_RUN & here: the agent starts VASP & VASP\_RUN: external \quad (inputs written, the agent stops as
+  WAITING and goes on from the outputs; \cmd{aladyn-gui} bundles or submits them) \\
+THERMACOND\_RUN & here & THERMACOND\_RUN: external \quad (the same for THERMACOND) \\
 \multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{snapshots}}} \\
 SUPERCELL & SMALL: faces $\geq$10\,\AA\ apart, $\leq$100 atoms (Section~\ref{sec:supercell}) &
   SUPERCELL: LARGE \quad or \quad SUPERCELL: 2 0 0 0 2 0 0 0 2 \\
@@ -980,6 +983,11 @@ is read back from \cmd{07_thermacond/V3DELTA} when the force constants and the m
 \section{Version history}
 % ============================================================
 \begin{description}
+\item[1.6] 2026-11-07: \cmd{VASP_RUN: external} and \cmd{THERMACOND_RUN: external} (the inputs of a stage
+  are written and the agent stops as WAITING; it goes on from the outputs, which \cmd{aladyn-gui} brings back
+  from a cluster); a \cmd{thermacond_params} block (the latdyn.params of \cmd{07_thermacond}, used as it
+  is); the SCF reads the gap also from an OUTCAR made elsewhere and reuses the relaxation's CHGCAR only when it
+  is there.
 \item[1.5] 2026-11-07: DFPT in its own folder \cmd{06_dfpt}, as in VASP-Flow, and THERMACOND in
   \cmd{07_thermacond} (older projects keep \cmd{02_scf/dfpt} and \cmd{06_thermacond}); \cmd{EFIELD_PEAD}
   from the gap and the k-mesh, checks of the Born charges and $\varepsilon_\infty$, \cmd{born_charges.txt}

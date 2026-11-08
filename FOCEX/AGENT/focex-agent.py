@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""focex-agent.py 1.5 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
+"""focex-agent.py 1.6 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
 structure (MODE: from_scratch, VASP + SC_SNAPS + FOCEX) or from existing force-displacement data
 (MODE: extract_only, FOCEX only).  Manual: FOCEX/AGENT/focexagent_manual.pdf
 
@@ -27,6 +27,8 @@ Tasks (each is recorded in <PROJECT_DIR>/report.log and skipped once done):
   focex      the five *.params files, FOCEX with enforce_inv 1 (+ NOBORN, and LASSO with refit, when needed)
   plots      PDF plots by PLOTTING/allplots (bands, Gruneisen, velocities, QHA, ...), makeplots.sh
   thermacond THERMACOND in 07_thermacond if THERMACOND_JOB (latdyn.params line 8) is 1, 2 or 3
+VASP_RUN: external (THERMACOND_RUN: external): the inputs of each stage are written and the agent stops
+as WAITING (exit code 3); it goes on from the outputs once they are in the folders (aladyn-gui, bundle.py).
 MODE: extract_only (DATA: <folder> with POSCAR1, FORCEDISP1, [POSCAR2, FORCEDISP2, ...],
 optionally POSCAR = primitive cell and dielectric.params, all in the frame of the data) rotates
 the data into the FOCEX frame and does focex and plots only.
@@ -34,7 +36,8 @@ the data into the FOCEX frame and does focex and plots only.
 Every generated input can be replaced by a block in the instruction file, named after the
 file:  INCAR ... INCAR_END  (also INCAR_relax, INCAR_scf, INCAR_dfpt, INCAR_snaps),
 KPOINTS, KPOINTS_snaps, cell_inp, supercell_inp, snaps_inp, structure_params,
-latdyn_params, kpbs_params, dielectric_params, default_params  (END_<NAME> also accepted,
+latdyn_params, kpbs_params, dielectric_params, default_params, thermacond_params (the latdyn.params
+of 07_thermacond)  (END_<NAME> also accepted,
 any case).  INCAR blocks are merged tag by tag; the others are written verbatim.
 VASP keywords (FUNCTIONAL, MAGMOM, GGA_U, MPI, ENCUT, ...) are those of VASP-Flow.
 """
@@ -60,7 +63,7 @@ os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 os.environ.setdefault('OMP_NUM_THREADS', os.environ.get('VASP_OMP_NUM_THREADS', '1'))
 import numpy as np
 
-__version__ = '1.5'
+__version__ = '1.6'
 AGENT = os.path.dirname(os.path.realpath(__file__))          # FOCEX/AGENT (realpath: works through a symlink)
 HERE = os.path.dirname(AGENT)                                # the FOCEX folder: templates, utility/
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
@@ -91,7 +94,7 @@ METALS = set('''Li Be Na Mg Al K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Rb Sr Y Zr N
  Tl Pb Bi Po Fr Ra Ac Th Pa U Np Pu Am Cm'''.split())
 BLOCKS = ('incar', 'incar_relax', 'incar_scf', 'incar_dfpt', 'incar_snaps', 'kpoints',
           'kpoints_snaps', 'cell_inp', 'supercell_inp', 'snaps_inp', 'structure_params',
-          'latdyn_params', 'kpbs_params', 'dielectric_params', 'default_params')
+          'latdyn_params', 'kpbs_params', 'dielectric_params', 'default_params', 'thermacond_params')
 INSTR = 'focex-agent-instructions.txt'    # default instruction file; its copy in the project folder
 OLD_INSTR = 'instructions.txt'            # name of that copy before 2026-10-23
 MODES = ('from_scratch', 'extract_only')
@@ -204,9 +207,10 @@ def parse_instructions(path):
     fx['profile'] = keyword(rest, 'PROFILE')
     # THERMACOND: latdyn.params line 8 decides; THERMACOND_JOB, else line 8 of a latdyn_params block
     job = keyword(rest, 'THERMACOND_JOB')
-    if job is None and blocks.get('latdyn_params'):
-        lines = blocks['latdyn_params'].splitlines()
-        job = lines[7].split()[0] if len(lines) > 7 and lines[7].split() else None
+    for blk in ('thermacond_params', 'latdyn_params'):        # line 8 of the THERMACOND latdyn.params
+        if job is None and blocks.get(blk):
+            lines = blocks[blk].splitlines()
+            job = lines[7].split()[0] if len(lines) > 7 and lines[7].split() else None
     try:
         fx['tc_job'] = int(job) if job is not None else 0
     except ValueError:
@@ -220,6 +224,13 @@ def parse_instructions(path):
     if fx['tc_mesh'] and len(fx['tc_mesh']) != 3 or fx['tc_T'] and len(fx['tc_T']) != 3:
         sys.exit('THERMACOND_MESH needs 3 integers (n1 n2 n3), THERMACOND_T 3 numbers (Tmin Tmax nT)')
     fx['thermacond_x'] = os.path.expanduser(keyword(rest, 'THERMACOND_X') or newest_tcond())
+    # where VASP and THERMACOND run: 'here' (the agent starts them) or 'external' (the agent writes the
+    # inputs and stops as WAITING; aladyn-gui bundles them for a cluster, or submits them there, and the
+    # agent continues when the outputs are in the folders)
+    for k, name in (('vasp_run', 'VASP_RUN'), ('tc_run', 'THERMACOND_RUN')):
+        fx[k] = (keyword(rest, name) or 'here').lower()
+        if fx[k] not in ('here', 'external'):
+            sys.exit(f'{name} must be here or external, not {fx[k]!r}')
     fx['blocks'] = blocks
     return inst, fx
 
@@ -601,6 +612,26 @@ def read_born(outcar, natom, transpose):
     return eps, [z.T if transpose else z for z in Z]
 
 
+class ExternalRun(Exception):
+    """VASP_RUN / THERMACOND_RUN external: the folders dirs are ready to run outside the agent; after maps a
+    folder to the one it must wait for (DFPT after the SCF)."""
+    def __init__(self, dirs, after=None, kind='vasp'):
+        super().__init__(kind)
+        self.dirs, self.after, self.kind = list(dirs), dict(after or {}), kind
+
+
+def copy_if_changed(src, dst_dir):
+    """Copy src into dst_dir unless an identical file is there (keeps its time stamp)."""
+    dst = os.path.join(dst_dir, os.path.basename(src))
+    if not (os.path.isfile(dst) and open(src, 'rb').read() == open(dst, 'rb').read()):
+        shutil.copy(src, dst)
+
+
+def write_if_changed(path, text):
+    if not (os.path.isfile(path) and open(path).read() == text):
+        write(path, text)
+
+
 # ── the agent ─────────────────────────────────────────────────────────────────
 class Agent:
     def __init__(self, proj):
@@ -628,12 +659,15 @@ class Agent:
         return g
 
     def vasp(self, d, gen):
-        """Run VASP in d; an existing OUTCAR is kept as OUTCAR.1, OUTCAR.2, ... (never overwritten)."""
+        """Run VASP in d; an existing OUTCAR is kept as OUTCAR.1, OUTCAR.2, ... (never overwritten).
+        VASP_RUN external: the inputs are ready, nothing is run (ExternalRun)."""
         if os.path.isfile(os.path.join(d, 'OUTCAR')):
             k = 1
             while os.path.exists(os.path.join(d, f'OUTCAR.{k}')):
                 k += 1
             shutil.move(os.path.join(d, 'OUTCAR'), os.path.join(d, f'OUTCAR.{k}'))
+        if self.fx['vasp_run'] == 'external':          # also with the old OUTCAR set aside, so that it is
+            raise ExternalRun([d])                     # not read again as the result
         cmd = gen._get_mpi_cmd(gen._get_vasp_exec())
         t0 = time.time()
         subprocess.run(f'{cmd} > vasp.out 2>&1', shell=True, cwd=d)
@@ -693,8 +727,10 @@ class Agent:
         os.makedirs(d, exist_ok=True)
         ok, msg = outcar_status(d, 'static')
         if ok:
-            return True, msg
-        reuse = self.state.get('reuse_relax')
+            return True, self.scf_done(d, msg)
+        # the relaxation's CHGCAR/WAVECAR only when they are there (a relaxed POSCAR given, or a
+        # relaxation run elsewhere, has none)
+        reuse = self.state.get('reuse_relax') and os.path.isfile(self.d('01_relax', 'CHGCAR'))
         g = self.gen(self.d('POSCAR0'), 'scf', ['IBRION = -1', 'NSW = 0', 'ISIF = 1'])
         incar = g._generate_incar_relax()
         incar = set_tags(incar, {'ISTART': 1 if reuse else 0, 'ICHARG': 1 if reuse else 2,
@@ -707,17 +743,28 @@ class Agent:
             for f in ('CHGCAR', 'WAVECAR'):
                 if os.path.isfile(self.d('01_relax', f)):
                     shutil.copy(self.d('01_relax', f), d)
-        dt = self.vasp(d, g)
+        if self.fx['vasp_run'] == 'external' and self.fx['dfpt'] != 'off':
+            # the DFPT inputs go with the SCF, to run after it (its CHGCAR stays where it ran); with
+            # DFPT: auto the job skips itself when the SCF shows no gap (bundle.py)
+            dd = self.dfpt_dir()
+            self.write_dfpt(dd)
+            raise ExternalRun([d, dd], after={dd: d})
+        self.vasp(d, g)
         ok, msg = outcar_status(d, 'static')
         if ok:
             self.clean(self.d('01_relax'))
-            gap = band_gap(d)
-            self.state['gap'] = gap
-            msg += f'; band gap {gap:.3f} eV' if gap is not None else '; band gap unreadable'
-            species = read_vasp_cell(self.d('POSCAR0'))['species']
-            if gap is not None and gap < 0.05 and not self.is_metal(species) and not self.fx['blocks'].get('kpoints'):
-                msg += ' -- WARNING: metallic, but the coarse k-mesh was used (set KMESH_DENSITY: fine)'
+            msg = self.scf_done(d, msg)
         return ok, msg
+
+    def scf_done(self, d, msg):
+        """Band gap of the converged SCF in d, into state['gap'] and the message."""
+        gap = band_gap(d)
+        self.state['gap'] = gap
+        msg += f'; band gap {gap:.3f} eV' if gap is not None else '; band gap unreadable'
+        species = read_vasp_cell(self.d('POSCAR0'))['species']
+        if gap is not None and gap < 0.05 and not self.is_metal(species) and not self.fx['blocks'].get('kpoints'):
+            msg += ' -- WARNING: metallic, but the coarse k-mesh was used (set KMESH_DENSITY: fine)'
+        return msg
 
     def want_dfpt(self):
         m = self.fx['dfpt']
@@ -775,13 +822,8 @@ class Agent:
         user_field = has_tag(incar_lines(self.fx['blocks'].get('incar')) +
                              incar_lines(self.fx['blocks'].get('incar_dfpt')), 'EFIELD_PEAD')
         if not ok:
-            g = self.gen(self.d('POSCAR0'), 'dfpt')
-            g.generate_dfpt_input(d, self.d('02_scf'))
-            self.link_potcar(d)
-            e = self.safe_efield(d)
-            if e and not user_field and (self.incar_value(d, 'LCALCEPS') or [''])[0].upper().startswith('.T'):
-                self.set_efield(d, e, 'half of the Zener limit E_g/(10 N_i |a_i|)')
-            subprocess.run('bash copy_from_scf.sh', shell=True, cwd=d)
+            g = self.write_dfpt(d)
+            subprocess.run('bash copy_from_scf.sh', shell=True, cwd=d, capture_output=True)
             self.vasp(d, g)
             ok, msg = outcar_status(d, 'dfpt')
         if not ok:
@@ -821,6 +863,19 @@ class Agent:
         self.state['eps'] = eps.tolist()
         self.state['Z'] = [z.tolist() for z in Z]
         return True, msg + '; checks passed'
+
+    def write_dfpt(self, d):
+        """The DFPT inputs in d (VASP-Flow's), with EFIELD_PEAD from the SCF gap when it is known; without it
+        (SCF not run yet) VASP-Flow's set_efield.py sets it when the job starts."""
+        user_field = has_tag(incar_lines(self.fx['blocks'].get('incar')) +
+                             incar_lines(self.fx['blocks'].get('incar_dfpt')), 'EFIELD_PEAD')
+        g = self.gen(self.d('POSCAR0'), 'dfpt')
+        g.generate_dfpt_input(d, self.d('02_scf'))
+        self.link_potcar(d)
+        e = self.safe_efield(d)
+        if e and not user_field and (self.incar_value(d, 'LCALCEPS') or [''])[0].upper().startswith('.T'):
+            self.set_efield(d, e, 'half of the Zener limit E_g/(10 N_i |a_i|)')
+        return g
 
     def dfpt_checks(self, d, eps, Z):
         """What is wrong with a DFPT result: VASP's Zener warning (EFIELD_PEAD too large for the gap and
@@ -1103,6 +1158,12 @@ class Agent:
             return False, why
         g = self.gen(os.path.join(dirs[0], 'POSCAR'), 'snaps')
         failed, ran = [], 0
+        if self.fx['vasp_run'] == 'external':
+            todo = [d for d in dirs if not outcar_status(d, 'static')[0] and
+                    (retry or not os.path.isfile(os.path.join(d, 'OUTCAR')) or
+                     outcar_status(d, 'static')[1].startswith('VASP did not finish'))]
+            if todo:
+                raise ExternalRun(todo)                 # all at once: independent runs
         for d in dirs:
             ok, msg = outcar_status(d, 'static')
             if ok:
@@ -1395,10 +1456,13 @@ class Agent:
         return r.returncode == 0, '; '.join(lines)
 
     # ---- task 8: THERMACOND ----------------------------------------------------
-    def tc_latdyn(self):
-        """latdyn.params of 07_thermacond: that of 05_focex with lines 1, 6, 8, 9 from THERMACOND_*"""
+    def tc_latdyn(self, base=None):
+        """latdyn.params of 07_thermacond: a thermacond_params block as it is, else that of 05_focex with
+        lines 1, 6, 8, 9 from THERMACOND_*"""
         fx, job = self.fx, self.fx['tc_job']
-        L = open(self.d('05_focex', 'latdyn.params')).read().splitlines()
+        if fx['blocks'].get('thermacond_params'):
+            return fx['blocks']['thermacond_params'].rstrip('\n').splitlines()
+        L = (base or open(self.d('05_focex', 'latdyn.params')).read()).splitlines()
         if fx['tc_mesh']:
             L[0] = ' '.join(fx['tc_mesh']) + '        # 1 kmesh (THERMACOND_MESH)'
         if fx['tc_T']:
@@ -1426,14 +1490,24 @@ class Agent:
         os.makedirs(d, exist_ok=True)
         # the files are copied over those of an earlier run; V3DELTA/ stays: THERMACOND reuses it when
         # lat_fc/fc2/fc3/structure/dielectric and the mesh are those it was made with
-        for f in ('lat_fc.dat', 'fc2.dat', 'fc3.dat', 'structure.params', 'dielectric.params', 'kpbs.params'):
+        # copied only when changed, so that their time stamps say whether thermacond.out is newer
+        ins = ('lat_fc.dat', 'fc2.dat', 'fc3.dat', 'structure.params', 'dielectric.params', 'kpbs.params')
+        for f in ins:
             if os.path.isfile(os.path.join(src, f)):
-                shutil.copy(os.path.join(src, f), d)
+                copy_if_changed(os.path.join(src, f), d)
         L = self.tc_latdyn()
-        write(os.path.join(d, 'latdyn.params'), '\n'.join(L) + '\n')
-        cmd = self.gen(self.d('POSCAR0'), 'scf')._get_mpi_cmd(fx['thermacond_x'])
+        write_if_changed(os.path.join(d, 'latdyn.params'), '\n'.join(L) + '\n')
         t0 = time.time()
-        rc = subprocess.run(f'{cmd} > thermacond.out 2>&1', shell=True, cwd=d).returncode
+        if fx['tc_run'] == 'external':
+            out = os.path.join(d, 'thermacond.out')
+            newest = max(os.path.getmtime(os.path.join(d, f)) for f in ins + ('latdyn.params',)
+                         if os.path.isfile(os.path.join(d, f)))
+            if not (os.path.isfile(out) and os.path.getmtime(out) > newest):
+                raise ExternalRun([d], kind='thermacond')
+            rc = 0                                      # run elsewhere; its outputs are judged below
+        else:
+            cmd = self.gen(self.d('POSCAR0'), 'scf')._get_mpi_cmd(fx['thermacond_x'])
+            rc = subprocess.run(f'{cmd} > thermacond.out 2>&1', shell=True, cwd=d).returncode
         head = (f"job {job} ({TC_JOB[job]}), mesh {L[0].split('#')[0].strip()}, T {L[5].split('#')[0].strip()}, "
                 f'{(time.time() - t0) / 60:.1f} min')
         if job == 1:
@@ -1528,7 +1602,19 @@ class Agent:
             self.rep(f'=== {t} -- started')
             t0 = time.time()
             fn = getattr(self, 't_' + t)
-            ok, msg = fn(retry) if t == 'vasp_snaps' else fn()
+            try:
+                ok, msg = fn(retry) if t == 'vasp_snaps' else fn()
+            except ExternalRun as x:
+                rel = [os.path.relpath(d, self.proj) for d in x.dirs]
+                self.state['waiting'] = {'task': t, 'kind': x.kind, 'dirs': rel, 'since': now(),
+                                         'after': {os.path.relpath(a, self.proj): os.path.relpath(b, self.proj)
+                                                   for a, b in x.after.items()}}
+                self.save()
+                self.rep(f'=== {t} -- WAITING: {"VASP" if x.kind == "vasp" else "THERMACOND"} inputs ready in '
+                         f'{len(rel)} folder(s): {" ".join(rel[:4])}{" ..." if len(rel) > 4 else ""}; run them '
+                         'outside the agent (aladyn-gui: bundle or submit), then continue')
+                return 'waiting'
+            self.state.pop('waiting', None)
             self.rep(f'=== {t} -- {"OK" if ok else "FAILED"} ({(time.time() - t0) / 60:.1f} min): {msg}')
             if not ok:
                 self.state['failed'] = t
@@ -1675,7 +1761,8 @@ def main():
             ap.add_argument('--retry-failed', action='store_true', help='rerun the failed supercell VASP runs')
         args = ap.parse_args(sys.argv[2:])
         if cmd == 'run':
-            sys.exit(0 if Agent(args.project).run(args.only, args.retry_failed) else 1)
+            r = Agent(args.project).run(args.only, args.retry_failed)
+            sys.exit(0 if r is True else 3 if r == 'waiting' else 1)      # 3: waiting for an external run
         sys.exit(0 if Agent(args.project).run('plots') else 1)
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--instr', default=INSTR, help=f'instruction file (default {INSTR})')

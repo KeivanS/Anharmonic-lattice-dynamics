@@ -66,7 +66,7 @@ FOCEX and THERMACOND set their own compiler options in their Makefiles. Then
    make sc_snaps           # SC-SNAPS (sc_snaps.x, poscar2xyz.py)
    make thermacond         # THERMACOND with MPI (tcond-2.0.x); thermacond-serial: without
    make anfomod            # ANFOMOD
-   make python-tools       # links focex-agent, focex-diagnose, bandplot, allplots, shell-optimizer
+   make python-tools       # links focex-agent, focex-diagnose, bandplot, allplots, shell-optimizer, aladyn-gui
    make scop8              # SCOP8, not part of "make": it does not compile at present
    make clean              # removes the object and module files
 

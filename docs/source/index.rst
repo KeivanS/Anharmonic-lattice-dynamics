@@ -18,6 +18,7 @@ Anharmonic-LATtice-DYNamics (ALATDYN)
    runscop8
    focexagent_guide
    runfocexagent
+   aladyngui
    faq
 
 .. note::

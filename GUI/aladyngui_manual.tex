@@ -1,0 +1,379 @@
+\documentclass[11pt,a4paper]{scrartcl}
+\usepackage[margin=1in,top=1.1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{colortbl}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{tcolorbox}\tcbuselibrary{listings}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric}
+\usepackage{scrlayer-scrpage}
+\usepackage[colorlinks=true,linkcolor=mainblue,urlcolor=accentblue,
+            citecolor=mainblue,pdfborder={0 0 0}]{hyperref}
+
+% the palette and boxes of the FOCEX agent manual
+\definecolor{mainblue}   {RGB}{  0,  74, 153}
+\definecolor{rungray}    {RGB}{110, 110, 110}
+\definecolor{youteal}    {RGB}{  0, 128, 110}
+\definecolor{accentblue} {RGB}{ 30, 120, 210}
+\definecolor{lightblue}  {RGB}{210, 228, 255}
+\definecolor{codebg}     {RGB}{245, 248, 252}
+\definecolor{codeframe}  {RGB}{ 30, 120, 210}
+\definecolor{notebg}     {RGB}{255, 250, 225}
+\definecolor{notebar}    {RGB}{200, 130,   0}
+\definecolor{dftgreen}   {RGB}{226, 242, 226}
+\definecolor{fxorange}   {RGB}{255, 236, 214}
+\definecolor{cmtgreen}   {RGB}{ 40, 130,  40}
+
+\setkomafont{section}      {\color{mainblue}\large\bfseries}
+\setkomafont{subsection}   {\color{mainblue}\normalsize\bfseries}
+\setkomafont{descriptionlabel}{\color{mainblue}\bfseries}
+\pagestyle{scrheadings}
+\clearpairofpagestyles
+\ohead{\small\textcolor{mainblue!60!black}{ALADYN GUI --- User's Guide}}
+\ihead{\small\textcolor{mainblue!60!black}{\headmark}}
+\cfoot{\pagemark}
+\addtokomafont{pageheadfoot}{\normalfont\small}
+
+\lstset{basicstyle=\ttfamily\small, breaklines=true, breakatwhitespace=true,
+  backgroundcolor=\color{codebg}, frame=leftline, framerule=3pt, rulecolor=\color{codeframe},
+  framesep=8pt, xleftmargin=14pt, commentstyle=\color{cmtgreen}\itshape, upquote=true,
+  columns=fullflexible, keepspaces=true, aboveskip=8pt, belowskip=4pt, morecomment=[l]{\#}}
+\newlength{\boxwidth}
+\newenvironment{notebox}{%
+  \par\vspace{6pt}\setlength{\tabcolsep}{5pt}%
+  \setlength{\boxwidth}{\dimexpr\linewidth - 4pt - 2\tabcolsep}%
+  \noindent\begin{tabular}{!{\color{notebar}\vrule width 4pt}>{\columncolor{notebg}}p{\boxwidth}}%
+  \rule{0pt}{11pt}\textbf{\textcolor{notebar}{Note.}}\enspace\ignorespaces}{%
+  \rule[-4pt]{0pt}{4pt}\end{tabular}\par\vspace{6pt}}
+\setlength{\emergencystretch}{3em}
+\newtcblisting{doit}[1][]{listing only, colback=lightblue!35, colframe=mainblue,
+  boxrule=0.8pt, arc=2pt, left=6pt, right=4pt, top=3pt, bottom=3pt, fonttitle=\bfseries\small,
+  title={Do this#1}, listing options={basicstyle=\ttfamily\small\color{mainblue}, breaklines=true,
+  breakatwhitespace=true, columns=fullflexible, keepspaces=true, upquote=true, frame=none,
+  backgroundcolor={}, xleftmargin=0pt, framesep=0pt, aboveskip=0pt, belowskip=0pt,
+  commentstyle=\color{mainblue!55}\itshape}}
+\newcommand{\thead}{\rowcolor{lightblue}}
+\newcommand{\cmd}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\btn}[1]{\fcolorbox{mainblue}{lightblue!40}{\small\textsf{#1}}}
+
+\title{%
+  \vspace*{-10pt}{\color{mainblue}\rule{\linewidth}{2pt}}\\[8pt]%
+  \textbf{\Huge ALADYN GUI}\\[4pt]\large User's Guide\\[6pt]%
+  \normalsize From a POSCAR to phonons and the thermal conductivity, in a browser:
+  VASP $\cdot$ SC-SNAPS $\cdot$ FOCEX $\cdot$ THERMACOND\\[6pt]{\color{mainblue}\rule{\linewidth}{0.5pt}}}
+\author{Keivan Esfarjani}
+\date{v0.1 $\cdot$ November 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{GUI})}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{What the GUI does}
+% ============================================================
+The ALADYN GUI (\cmd{aladyn-gui}) takes you, in a web browser, through a whole lattice-dynamics
+calculation: relaxation of the crystal, SCF and Born charges, supercell snapshots (SC-SNAPS), one DFT
+run per snapshot, the force-constant fit (FOCEX) with its phonon plots, and the lattice thermal
+conductivity (THERMACOND). You upload a POSCAR and press buttons; a panel on the left always says which
+step comes next and what to do.
+
+Underneath it is the FOCEX agent (\cmd{FOCEX/AGENT/focex-agent.py}, its own manual
+\cmd{focexagent_manual.pdf}): every GUI project is an agent project folder, the GUI writes the agent's
+instruction file and runs the agent's tasks one at a time. What the GUI adds:
+\begin{itemize}
+\item a choice, for each DFT stage and for THERMACOND, of \emph{where} it runs: on this computer, as a
+  bundle for a SLURM cluster, or submitted directly when the GUI itself runs on the cluster
+  (Section~\ref{sec:where});
+\item editors for the input files, with a comment after every line and the values that are not known yet
+  marked \cmd{PLACEHOLDER} (Section~\ref{sec:params});
+\item stops before FOCEX and before THERMACOND, so that you review their input files first;
+\item the plots and the SC-SNAPS displacement histograms in the page.
+\end{itemize}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=2.5mm and 2.2mm, every node/.style={font=\footnotesize},
+  s/.style={draw, rounded corners=2pt, align=center, minimum height=10mm, text width=17mm},
+  d/.style={s, fill=dftgreen}, f/.style={s, fill=fxorange}, l/.style={s, fill=lightblue!50},
+  a/.style={-{Stealth[length=2mm]}, thick, mainblue}]
+  \node[l] (p) {Project\\POSCAR};
+  \node[d, right=of p] (r) {Relaxation};
+  \node[d, right=of r] (s) {SCF\\+ DFPT};
+  \node[l, right=of s] (n) {Snapshots\\(here)};
+  \node[d, right=of n] (v) {Supercell\\DFT};
+  \node[f, right=of v] (x) {FOCEX\\+ plots};
+  \node[f, right=of x] (t) {THERMA-\\COND};
+  \foreach \i/\j in {p/r, r/s, s/n, n/v, v/x, x/t} \draw[a] (\i) -- (\j);
+  \node[below=4mm of s, align=center, text width=70mm] (w)
+    {\textbf{green and THERMACOND:} run here $\cdot$ bundle for the cluster $\cdot$ submit here};
+  \draw[densely dotted, mainblue] (r.south) -- (w.north west);
+  \draw[densely dotted, mainblue] (v.south) -- (w.north east);
+  \draw[densely dotted, mainblue] (t.south) |- (w.east);
+\end{tikzpicture}
+\caption{The seven steps of the guide panel. The GUI stops before FOCEX and THERMACOND (orange) until you
+start them; blue steps are quick and always run where the GUI runs.}
+\end{figure}
+
+% ============================================================
+\section{Installation and start}
+% ============================================================
+The GUI is part of the ALADYN repository (\cmd{GUI/aladyn-gui.py}). It needs what the FOCEX agent needs
+(Python with numpy, spglib and pymatgen; VASP-Flow; SC-SNAPS and FOCEX built; a POTCAR library) and the
+Python package Flask. Set these up once as described in the FOCEX agent manual (\cmd{focex-configure.sh}).
+
+\begin{doit}[: once, after git pull]
+cd ~/PROJECTS/Anharmonic-lattice-dynamics
+make python-tools            # links aladyn-gui into ~/ALADYN/bin
+pip install flask            # in the agent's Python environment, if it is not there
+\end{doit}
+
+\subsection*{On your computer}
+\begin{doit}
+source ~/myenv/bin/activate              # the agent's Python environment
+cd ~/calc && aladyn-gui                  # projects go in this folder
+\end{doit}
+Then open \url{http://localhost:5070}. Options: \cmd{--workdir DIR} (folder of the projects, default the
+current one), \cmd{--port N} (default 5070), \cmd{--host} (default 127.0.0.1: only this computer can
+connect).
+
+\subsection*{On a cluster}
+Start it on the login node and reach it from your computer through an ssh tunnel. Then the DFT runs can be
+submitted from the page, and nothing has to be copied back and forth.
+\begin{doit}
+ssh -L 5070:localhost:5070 you@cluster       # on your computer; keep this open
+cd /scratch/$USER && aladyn-gui              # on the cluster
+\end{doit}
+Open \url{http://localhost:5070} on your computer. The button \btn{Submit here} is active when the GUI finds
+\cmd{sbatch}.
+
+% ============================================================
+\section{The page}
+% ============================================================
+\textbf{The guide} (left, always visible) lists the steps in order, each marked \emph{done}, \emph{next},
+\emph{waiting} (its inputs are ready and the runs are outstanding), \emph{failed} or \emph{later}; a step
+done outside (a relaxed POSCAR, results of a cloned project) says \emph{provided}. Below it,
+\textbf{What to do next} names the button to press. It is updated every few seconds while a job runs.
+
+\medskip\noindent
+\begin{tabularx}{\linewidth}{@{}>{\bfseries}p{0.18\linewidth}X@{}}
+\thead Tab & What it holds \\ \midrule
+Projects & open a project; a new project from a POSCAR; a new project from the open one \\
+Run & the run buttons, the import of results, the bundles made so far, the cluster settings \\
+Snapshots & the SC-SNAPS summary (supercell, temperature, displacements) and two histograms \\
+Params & the five FOCEX input files \\
+Results & the PDF plots of FOCEX (\cmd{05_focex}, also \cmd{NOBORN/} and \cmd{LASSO/}) and THERMACOND \\
+THERMACOND & the \cmd{latdyn.params} of THERMACOND and its run buttons \\
+Setup & the whole instruction file of the project (checked before it is saved) \\
+Log & the output of the running job and \cmd{report.log} (one entry per task) \\
+\bottomrule
+\end{tabularx}
+
+% ============================================================
+\section{A calculation, step by step}
+% ============================================================
+\paragraph{1. New project.} On \emph{Projects}: a name, the POSCAR (paste it or choose the file), and the
+main settings:
+
+\medskip\noindent
+\begin{tabularx}{\linewidth}{@{}>{\bfseries}p{0.27\linewidth}X@{}}
+\thead Field & Meaning (instruction keyword) \\ \midrule
+Functional & PBE, PBEsol, LDA, R2SCAN or HSE06 (\cmd{FUNCTIONAL}) \\
+Accuracy & Accurate: ENCUT 600 eV, EDIFF $10^{-7}$; Normal (\cmd{ACCURACY}) \\
+DFPT & Born charges: auto (when the SCF shows a gap), on, off (\cmd{DFPT}) \\
+DFT code & VASP (others later) \\
+Force-constant ranks & harmonic; harmonic + cubic (needed by THERMACOND); + quartic (\cmd{RANKS}) \\
+Shells for ranks 2..8 & neighbour shells of each rank (\cmd{RANGE}) \\
+Supercell & SMALL, LARGE or 9 integers (\cmd{SUPERCELL}) \\
+Snapshots & number of snapshots (\cmd{SNAPSHOTS}) \\
+Temperature & of the snapshots; empty: 30\,K tuned to an rms displacement of 0.02\,\AA \\
+THERMACOND job & 0 none, 1 linewidths, 2 and 3 thermal conductivity (\cmd{THERMACOND_JOB}) \\
+MPI ranks here & VASP and THERMACOND ranks on this computer \\
+More instruction lines & any keyword of the agent or VASP-Flow (\cmd{MAGMOM}, \cmd{GGA_U}, INCAR blocks) \\
+\bottomrule
+\end{tabularx}
+
+\medskip
+Tick \emph{This POSCAR is already relaxed} only if it was relaxed with these same DFT settings: the
+supercell runs must use the settings of the relaxation. Otherwise the GUI relaxes it first.
+\btn{Create project} makes the folder, the POTCAR, the relaxation inputs, and the five draft input files.
+
+\paragraph{2. Relaxation.} On \emph{Run}: \btn{Run here} (a small cell relaxes in minutes on a
+workstation), \btn{Make bundle} or \btn{Submit here}. A relaxed POSCAR: \btn{Skip: POSCAR is relaxed}.
+Then \btn{Continue}: the relaxed cell becomes \cmd{POSCAR0}, the cell of every later step.
+
+\paragraph{3. SCF and DFPT.} The same buttons. With DFPT both go into one bundle or submission; DFPT starts
+after the SCF and reads its charge density.
+
+\paragraph{4. Snapshots.} \btn{Continue} makes the snapshots (SC-SNAPS) and one VASP folder per snapshot,
+here; see the \emph{Snapshots} tab. It stops with the supercell runs waiting.
+
+\paragraph{5. Supercell DFT.} The expensive step: usually \btn{Make bundle} (or \btn{Submit here} on the
+cluster). All snapshots are submitted at once; a last job writes \cmd{FORCEDISP1}, \cmd{POSCAR1} and
+\cmd{stress.params}. Import the results, then \btn{Continue}: the guide moves to FOCEX.
+
+\paragraph{6. FOCEX.} On \emph{Params}, read the five files (Section~\ref{sec:params}), change what you
+want, then \btn{Save and run FOCEX}. FOCEX runs here (minutes) and the plots follow (\emph{Results}).
+
+\paragraph{7. THERMACOND.} On \emph{THERMACOND}, check line 8 (the job), line 1 (q mesh) and line 6
+(temperatures), then \btn{Save and run here}, \btn{Save and make bundle} or \btn{Save and submit here}. The
+thermal conductivity is in \cmd{07_thermacond/kappa_vs_T.dat}; the table of \cmd{report.log} (\emph{Log})
+gives it at a few temperatures.
+
+% ============================================================
+\section{Where the runs go: here, bundle, submit}\label{sec:where}
+% ============================================================
+\begin{description}
+\item[Continue] does the quick steps here (POSCAR0, snapshots, folders, reading results that came back)
+  and stops at the next DFT stage with its inputs ready (the guide then says \emph{waiting}). It never
+  starts VASP.
+\item[Run here] runs the next DFT stage on this computer, with the \emph{MPI ranks here}.
+\item[Make bundle] packs the stage as \cmd{bundles/<project>_<task>_<date>.tar.gz} (link on the
+  \emph{Run} tab) for a SLURM cluster.
+\item[Submit here] submits the same scripts with \cmd{sbatch} (the GUI runs on the cluster). When the jobs
+  are done, \btn{Continue}.
+\end{description}
+
+\subsection{On the cluster, with a bundle}
+\begin{doit}
+tar xzf Cu2O_vasp_snaps_20261107-214157.tar.gz    # where the project should live (scratch)
+cd Cu2O && ./submit_all.sh
+squeue -u $USER                                   # until the jobs are gone
+./pack_results.sh                                 # -> results_Cu2O_<date>.tar.gz
+\end{doit}
+Copy \cmd{results_*.tar.gz} back, choose it under \emph{Import results} and press \btn{Import results},
+then \btn{Continue}. The same folder name is not needed: the top folder of the archive is dropped.
+
+\medskip\noindent
+\begin{tabularx}{\linewidth}{@{}>{\ttfamily}p{0.27\linewidth}X@{}}
+\thead \normalfont\bfseries In the bundle & \textbf{What it is} \\ \midrule
+submit\_all.sh & submits every waiting folder; DFPT waits for the SCF; the supercells all at once,
+  then the collect job \\
+<folder>/job.sh & the SLURM job of that folder (header from the cluster settings) \\
+<folder>/INCAR, KPOINTS, POSCAR, POTCAR & the VASP inputs (the POTCAR is built on your computer) \\
+04\_supercells/collect.py & writes FORCEDISP1, POSCAR1, stress.params and collect.log \\
+04\_supercells/collect\_job.sh & runs collect.py after all supercell jobs (30 min, one task) \\
+06\_dfpt/gap\_check.py & with DFPT auto: the job ends at once when the SCF shows no gap \\
+pack\_results.sh & packs the files to bring back \\
+README\_HPC.txt & these commands \\
+\bottomrule
+\end{tabularx}
+
+\medskip
+\cmd{pack_results.sh} packs, for the relaxation, SCF and DFPT, the OUTCAR, CONTCAR, OSZICAR, EIGENVAL,
+\cmd{vasp.out} and the Born-charge files; for the supercells only \cmd{FORCEDISP1}, \cmd{POSCAR1},
+\cmd{stress.params}, \cmd{collect.log} and each run's OSZICAR and \cmd{vasp.out}
+(\cmd{./pack_results.sh --outcars} adds the OUTCARs); for THERMACOND every file of
+\cmd{07_thermacond} but its scratch folder \cmd{V3DELTA}.
+
+\begin{notebox}
+\cmd{collect.py} does what \cmd{read_outcar.x} does, in Python with the standard library, so nothing has
+to be compiled on the cluster. It checks every run (finished, converged), the net force and the positions,
+and writes nothing if a run is not usable (\cmd{collect.log} names it). On the 21 Cu$_2$O snapshots of
+2026-11-07 it gave the same numbers as \cmd{read_outcar.x}.
+\end{notebox}
+
+\subsection{Cluster settings}
+On the \emph{Run} tab, kept in the project's \cmd{hpc.json}:
+
+\medskip\noindent
+\begin{tabularx}{\linewidth}{@{}>{\bfseries}p{0.32\linewidth}X@{}}
+\thead Setting & Meaning (default) \\ \midrule
+Partition, Account & \texttt{\#SBATCH -{}-partition}, \texttt{-{}-account} (standard, none) \\
+Nodes, Tasks per node & per VASP job (1, 40); also the ranks used for KPAR \\
+Walltime (VASP), (THERMACOND) & \texttt{\#SBATCH -{}-time} (12:00:00, 24:00:00) \\
+Memory & \texttt{\#SBATCH -{}-mem}, optional \\
+MPI launcher & \cmd{srun}, or e.g.\ \cmd{mpirun} (then \cmd{-np} nodes $\times$ tasks) \\
+VASP / THERMACOND binary & on the cluster (\cmd{vasp_std}, \cmd{~/ALADYN/bin/tcond-2.0.x}) \\
+python3 on the cluster & for collect.py, gap\_check.py, set\_efield.py, extract\_born.py \\
+Lines before VASP & e.g.\ \cmd{module load vasp/6.4.2} \\
+More \#SBATCH lines & anything else your cluster wants \\
+\bottomrule
+\end{tabularx}
+
+\medskip
+KPAR and NCORE in the INCARs are adjusted to the number of ranks the job runs with (KPAR divides the ranks).
+
+% ============================================================
+\section{The input files}\label{sec:params}
+% ============================================================
+The \emph{Params} tab shows \cmd{structure.params}, \cmd{latdyn.params}, \cmd{kpbs.params},
+\cmd{dielectric.params} and \cmd{default.params} as FOCEX will get them, each line followed by a comment
+that says what it is. Lines marked \cmd{PLACEHOLDER} are filled in by a later step or need your values:
+\begin{itemize}
+\item \cmd{structure.params}, before the relaxation: lattice and positions of the unrelaxed POSCAR. When
+  the relaxation is done, they are replaced by those of \cmd{POSCAR0}; your other lines (ranks,
+  invariances, shells, \dots) are kept.
+\item \cmd{dielectric.params}, before DFPT: zeros and \cmd{born_flag} 0. After DFPT the Born charges are
+  there. You may also type $\varepsilon_\infty$ and $Z^*$ yourself (e.g.\ from a database) and set line 1
+  to 1.
+\end{itemize}
+A file you change is kept in the instruction file and used as it is; \btn{Back to the generated file}
+undoes your changes (save afterwards). A saved \cmd{dielectric.params} is used instead of the DFPT result.
+
+The \emph{THERMACOND} tab holds the \cmd{latdyn.params} of \cmd{07_thermacond}: before FOCEX has run it
+is FOCEX's file with the THERMACOND lines of your settings; afterwards the one FOCEX used. The lines that
+matter most: 1 the q mesh, 6 the temperatures (Tmin, Tmax, number), 8 the job, 9 the solver of job 2,
+11 isotope scattering, 13 the sample length for boundary scattering.
+
+% ============================================================
+\section{More projects from one}
+% ============================================================
+\emph{New project from the open one} (\emph{Projects} tab) keeps the relaxed cell, the SCF and the DFPT
+(they are marked \emph{provided}) and makes the snapshots again with another temperature, supercell or
+number of snapshots. A second supercell (\cmd{FORCEDISP2} for one FOCEX fit) is a separate project.
+
+% ============================================================
+\section{The project folder}
+% ============================================================
+The folder is that of the FOCEX agent (its manual, Section ``The project folder'':
+\cmd{01_relax}, \cmd{02_scf}, \cmd{03_snaps}, \cmd{04_supercells}, \cmd{05_focex}, \cmd{06_dfpt},
+\cmd{07_thermacond}, \cmd{report.log}, \cmd{state.json}). The GUI adds:
+
+\medskip\noindent
+\begin{tabularx}{\linewidth}{@{}>{\ttfamily}p{0.3\linewidth}X@{}}
+\thead \normalfont\bfseries File & \textbf{What it is} \\ \midrule
+gui.json & the MPI ranks here; when the input files were saved \\
+hpc.json & the cluster settings \\
+bundles/ & the bundles made, and the imported results (\cmd{imported_*}) \\
+submit\_all.sh, pack\_results.sh, README\_HPC.txt & of the last stage made ready \\
+<folder>/job.sh & SLURM job of a waiting folder \\
+\bottomrule
+\end{tabularx}
+
+% ============================================================
+\section{When something goes wrong}
+% ============================================================
+\begin{description}
+\item[A step is marked failed] The guide quotes the message of \cmd{report.log}. Fix the cause (the
+  instruction file on \emph{Setup}, or the INCAR of that folder) and press \btn{Continue}. The agent's
+  \cmd{diagnose.py} explains most VASP failures and writes a fix script (its command is in the guide).
+\item[The step stays \emph{waiting}] The results are not in the folders yet: import them, or (GUI on the
+  cluster) wait until \cmd{squeue} is empty, then \btn{Continue}.
+\item[collect.py wrote no FORCEDISP1] \cmd{collect.log} names the runs that did not finish or converge.
+  Rerun them on the cluster (\cmd{cd 04_supercells/snap_NNN && sbatch job.sh}), then
+  \cmd{python3 collect.py} in \cmd{04_supercells} and \cmd{./pack_results.sh}.
+\item[No POTCAR] The POTCAR library was not found (\cmd{VASP_POTCAR_DIR}); put a POTCAR in the project
+  folder.
+\item[Born charges not used] The DFPT result failed the agent's checks (charges not summing to zero,
+  $\varepsilon_\infty$ outside 1--100, VASP's Zener warning); \cmd{report.log} says why. Type the values
+  in \cmd{dielectric.params}, or redo DFPT.
+\end{description}
+
+% ============================================================
+\section{Version history}
+% ============================================================
+\begin{description}
+\item[0.1] 2026-11-08: first version, with the FOCEX agent 1.6 (\cmd{VASP_RUN} and
+  \cmd{THERMACOND_RUN} external) and \cmd{FOCEX/AGENT/bundle.py}. Tested on Cu$_2$O through all steps with
+  the GUI's own requests (no browser, no cluster yet).
+\end{description}
+\end{document}

@@ -3,7 +3,7 @@
 FOCEX agent: from a crystal structure to phonons
 ================================================
 
-Version 1.5 (2026-11-07, with FOCEX 9.9). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
+Version 1.6 (2026-11-07, with FOCEX 9.9). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
 instruction file and ``diagnose.py`` are in ``FOCEX/AGENT``.
 
 What the FOCEX agent does
@@ -580,6 +580,14 @@ VASP-Flow (its manual lists all of them); the common ones are below.
    * - ``THERMACOND_SOLVER``
      - 0
      - job 2: 0 conjugate gradient, 1 SVD (line 9)
+   * - ``VASP_RUN``
+     - here
+     - ``external``: the agent writes the inputs of each VASP stage and stops as WAITING; the runs are
+       made elsewhere (``aladyn-gui``: bundle or submit, :doc:`aladyngui`) and the agent continues from
+       their outputs
+   * - ``THERMACOND_RUN``
+     - here
+     - the same for THERMACOND
    * - **programs**
      -
      -
@@ -836,6 +844,12 @@ new temperatures).
 
 Version history
 ---------------
+
+1.6
+   2026-11-07: ``VASP_RUN: external`` and ``THERMACOND_RUN: external`` (inputs written, the agent stops as
+   WAITING and continues from the outputs; used by ``aladyn-gui``); a ``thermacond_params`` block (the
+   latdyn.params of ``07_thermacond``, used as it is); the SCF reads the gap also when its OUTCAR came from
+   elsewhere, and reuses the relaxation's CHGCAR only when it is there.
 
 1.5
    2026-11-07: DFPT in its own folder ``06_dfpt``, as in VASP-Flow, and THERMACOND in
