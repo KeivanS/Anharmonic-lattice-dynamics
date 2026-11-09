@@ -664,7 +664,7 @@ THERMACOND\_SOLVER & 0: conjugate gradient (job 2) & THERMACOND\_SOLVER: 1 \quad
 FOCEX\_X & the newest \cmd{~/ALADYN/bin/focex-*.x} & FOCEX\_X: ~/ALADYN/bin/focex-9.8.x \\
 SC\_SNAPS\_X & \cmd{~/ALADYN/bin/sc_snaps.x} (else \cmd{~/BIN/sc_snaps.x}) & SC\_SNAPS\_X: /path/sc\_snaps.x \\
 READ\_OUTCAR\_X & \cmd{~/ALADYN/bin/read_outcar.x} & READ\_OUTCAR\_X: /path/read\_outcar.x \\
-THERMACOND\_X & the newest \cmd{~/ALADYN/bin/tcond-*.x} (MPI build) & THERMACOND\_X: /path/tcond-2.0.x \\
+THERMACOND\_X & the newest \cmd{~/ALADYN/bin/tcond-*.x} (MPI build) & THERMACOND\_X: /path/tcond-2.1.x \\
 \bottomrule
 \end{longtable}
 Further VASP keywords are those of VASP-Flow (its manual lists them all); single INCAR tags are
@@ -961,7 +961,7 @@ THERMACOND_T: 100 900 9       # line 6: Tmin, Tmax (K), number of temperatures
 The task copies \cmd{lat_fc.dat}, \cmd{fc2.dat}, \cmd{fc3.dat}, \cmd{structure.params},
 \cmd{dielectric.params} and \cmd{kpbs.params} from \cmd{05_focex} to \cmd{07_thermacond}, writes
 there FOCEX's \cmd{latdyn.params} with lines 1, 6, 8 and 9 from these keywords, and runs
-\cmd{tcond-2.0.x} with the MPI command of the profile; \cmd{05_focex} is not changed. A
+\cmd{tcond-2.1.x} (the newest) with the MPI command of the profile; \cmd{05_focex} is not changed. A
 \cmd{latdyn_params} block (Section~\ref{sec:override}) sets all 13 lines for both FOCEX and
 THERMACOND, and its line 8 is the job unless \cmd{THERMACOND_JOB} is given. The mesh is the
 expensive choice: the FOCEX default (\cmd{fine}) is usually far too dense, so set

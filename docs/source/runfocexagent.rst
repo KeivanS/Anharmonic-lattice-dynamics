@@ -824,7 +824,7 @@ instruction file:
 
 The task copies ``lat_fc.dat``, ``fc2.dat``, ``fc3.dat``, ``structure.params``,
 ``dielectric.params`` and ``kpbs.params`` from ``05_focex`` to ``07_thermacond``, writes there
-FOCEX's ``latdyn.params`` with lines 1, 6, 8 and 9 from these keywords, and runs ``tcond-2.0.x``
+FOCEX's ``latdyn.params`` with lines 1, 6, 8 and 9 from these keywords, and runs ``tcond-2.1.x``
 with the MPI command of the profile; ``05_focex`` is not changed. A ``latdyn_params`` block
 (:ref:`agent-override`) sets all 13 lines for both FOCEX and THERMACOND, and its line 8 is the job
 unless ``THERMACOND_JOB`` is given. The mesh is the expensive choice: the FOCEX default (``fine``)

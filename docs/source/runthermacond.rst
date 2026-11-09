@@ -17,8 +17,8 @@ Building
 .. code-block:: bash
 
    cd THERMACOND
-   make            # parallel build with mpif90  -> ~/ALADYN/bin/tcond-2.0.x
-   make serial     # serial build, no MPI library -> ~/ALADYN/bin/tcond-2.0-serial.x
+   make            # parallel build with mpif90  -> ~/ALADYN/bin/tcond-2.1.x
+   make serial     # serial build, no MPI library -> ~/ALADYN/bin/tcond-2.1-serial.x
    make DEBUG=1    # either of the above with -g -fbounds-check instead of -O2
 
 Objects and module files go to ``obj_mpi/`` or ``obj_serial/``. On macOS with
@@ -40,8 +40,8 @@ shared among the processes:
 
 .. code-block:: bash
 
-   tcond-2.0.x                 # one process (or tcond-2.0-serial.x)
-   mpirun -np 8 tcond-2.0.x    # eight processes
+   tcond-2.1.x                 # one process (or tcond-2.1-serial.x)
+   mpirun -np 8 tcond-2.1.x    # eight processes
 
 A serial run is the reference for a parallel one: built with the same compiler, both give the
 same output files (``make serial`` uses the compiler of ``mpif90``; ``make serial FC=...``
@@ -51,7 +51,7 @@ a set of degenerate modes do.
 Rank 0 writes all output in the run folder; the other processes work in
 ``.mpi_rank_NNN/``, which are removed at the end.
 
-A single process (``tcond-2.0-serial.x``, or ``tcond-2.0.x`` without ``mpirun``) runs the
+A single process (``tcond-2.1-serial.x``, or ``tcond-2.1.x`` without ``mpirun``) runs the
 V3, V3·delta, collision-matrix and iterative-update loops on OpenMP threads (since
 2026-11-04; same output files, bit for bit). The number of threads is chosen as for FOCEX
 (:ref:`installation <focex-install>`): ``TCOND_NUM_THREADS`` if set, 1 per process with more
@@ -115,6 +115,15 @@ Input files
     job 2, then costs seconds instead of the V3 time. ``V3DELTA/`` keeps copies of the
     ``lat_fc.dat``, ``fc2.dat``, ``fc3.dat``, ``structure.params`` and ``dielectric.params``
     it was made from; if any of them has changed, it is computed again.
+
+    Since version 2.1 the tetrahedron weights are computed first, from the frequencies
+    alone, and the three-phonon matrix elements only where a weight is not zero: about 2 % of
+    them on an 18x18x18 mesh (Cu2O), 12-14 % on 6x6x6 (MgO). The files of ``V3DELTA/``
+    hold only the nonzero elements; the dense files of version 2.0 are still read. Tests
+    against 2.0 (2026-11-09, two threads): every conductivity file identical and P1, P2 equal
+    to 6e-16 for MgO 6x6x6 (job 3; on disk, in memory, two MPI ranks, 2.0 files reused), the
+    Ge example (job 2) and Cu2O 6x6x6 (job 3). Cu2O 6x6x6: V3*delta 2238 s -> 222 s, the run
+    46 -> 12 min, ``V3DELTA/`` 391 -> 34 MB.
 
     Isotope scattering uses the natural isotopic abundances of the elements named in
     ``structure.params`` (built-in table).
@@ -207,8 +216,8 @@ Example
 
 With the FOCEX Ge example run in a folder (``FOCEX/example/Ge``), THERMACOND runs in the
 same folder: set lines 1, 6 and 8 of ``latdyn.params``, e.g. ``6 6 6``, ``300 300 1``
-and ``2``, then ``tcond-2.0.x``. On a 6x6x6 mesh (16 irreducible points) this takes about a minute
-and a half on one core (almost all of it V3*delta) and gives at 300 K kappa_P = 30.90 W/mK in
+and ``2``, then ``tcond-2.1.x``. On a 6x6x6 mesh (16 irreducible points) V3*delta takes 11 s on two
+threads (57 s with version 2.0; 2026-11-09, on a loaded M1 Pro), and it gives at 300 K kappa_P = 30.90 W/mK in
 ``kappa_wigner.dat`` (kappa_C = 0.017); rerunning with
 ``100 400 4`` on line 6 reuses ``V3DELTA/`` and takes a few seconds. Converged values need
 much denser meshes (the paper uses up to 30x30x30 and extrapolates in 1/n).
@@ -232,3 +241,11 @@ As of October 2026:
   (IBZ-reduced) collision matrix is being checked;
 * before 22 October 2026 the k-point symmetry was wrong for hexagonal, trigonal, monoclinic
   and triclinic cells.
+
+Version history
+---------------
+
+2.1
+   2026-11-09: V3*delta computes the matrix elements only where the tetrahedron delta weight is
+   nonzero (``v3_delta`` in ``kappa.f90``), and ``V3DELTA/`` keeps only the nonzero elements (the
+   dense files of 2.0 are still read). Same conductivities as 2.0.

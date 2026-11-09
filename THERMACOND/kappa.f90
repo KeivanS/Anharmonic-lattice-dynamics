@@ -11,7 +11,9 @@
 !! V3*delta does not depend on temperature and is computed once.  latdyn.params line 10:
 !! 0 = one file per irreducible k-point in V3DELTA/ (reused by a later run on the same mesh),
 !! 1 = kept in memory.
-!! Serial and parallel runs are the same program:  tcond-2.0.x   or   mpirun -np N tcond-2.0.x
+!! Serial and parallel runs are the same program:  tcond-2.1.x   or   mpirun -np N tcond-2.1.x
+!! 2.1 (2026-11-09): |V3|^2 only where the tetrahedron delta weight is nonzero (v3_delta), and V3DELTA
+!! files with the nonzero elements only (the dense files of 2.0 are still read).
 !! Rank 0 works in the run folder; the other ranks work in .mpi_rank_NNN/ (removed at the end),
 !! so only rank 0's output files are kept.
  use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
@@ -95,7 +97,7 @@
   open(ugrun,file='bs_grun.dat',status='unknown')
   open(ugrun+1,file='FBZ_grun.dat',status='unknown')
 
- write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' THERMACOND 2.0 launched at  ',today(1:4)//'/'  &
+ write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' THERMACOND 2.1 launched at  ',today(1:4)//'/'  &
 &  //today(5:6)//'/'//today(7:8),now(1:2)//':'//now(3:4)//':'//now(5:10),zone
  write(ulog,*)' MPI processes: ',nprocs
 ! OpenMP threads (common/omp_threads.f90): with more than one MPI process, 1 unless TCOND_NUM_THREADS is set
@@ -374,32 +376,97 @@
 
 !---------------------------------------------------------------
  logical function read_v3(kk)
-!! reads P1smpi(1,...),P2smpi(1,...) of IBZ point kk from V3DELTA if it was made on this mesh
+!! reads P1smpi(1,...),P2smpi(1,...) of IBZ point kk from V3DELTA if it was made on this mesh: the sparse
+!! files of 2.1 (7-integer header ending in -2) or the dense ones of 2.0 (6 integers, then both arrays)
  integer, intent(in) :: kk
- integer u,hdr(6),st
+ integer u,hdr(6),st,fmt
+ integer(8) fsize,dense
  logical ex
  read_v3=.false.
- inquire(file=trim(v3file(kk)),exist=ex)
+ inquire(file=trim(v3file(kk)),exist=ex,size=fsize)
  if (.not.ex) return
  open(newunit=u,file=trim(v3file(kk)),form='unformatted',access='stream',status='old',iostat=st)
  if (st.ne.0) return
  read(u,iostat=st) hdr
  if (st.eq.0 .and. all(hdr.eq.[nc(1),nc(2),nc(3),ndyn,nibz,kk])) then
-    read(u,iostat=st) P1smpi(1,:,:,:,:),P2smpi(1,:,:,:,:)
-    read_v3 = (st.eq.0)
+    dense=24+16*int(nkc,8)*int(ndyn,8)**3
+    if (fsize.eq.dense) then
+       read(u,iostat=st) P1smpi(1,:,:,:,:),P2smpi(1,:,:,:,:)
+       read_v3 = (st.eq.0)
+    else
+       read(u,iostat=st) fmt
+       if (st.eq.0 .and. fmt.eq.-2) read_v3 = read_sparse(u,P1smpi) .and. read_sparse(u,P2smpi)
+    endif
  endif
  close(u)
  end function read_v3
 
 !---------------------------------------------------------------
  subroutine write_v3(kk)
+!! 2.1: only the nonzero elements (about 2 %): header [nc, ndyn, nibz, kk, -2], then for P1smpi and P2smpi
+!! the count (integer 8), the positions in P(1,:,:,:,:) (integer 8, column order) and the values (real 8)
  integer, intent(in) :: kk
  integer u
  open(newunit=u,file=trim(v3file(kk)),form='unformatted',access='stream',status='replace')
- write(u) [nc(1),nc(2),nc(3),ndyn,nibz,kk]
- write(u) P1smpi(1,:,:,:,:),P2smpi(1,:,:,:,:)
+ write(u) [nc(1),nc(2),nc(3),ndyn,nibz,kk,-2]
+ call write_sparse(u,P1smpi)
+ call write_sparse(u,P2smpi)
  close(u)
  end subroutine write_v3
+
+!---------------------------------------------------------------
+ subroutine write_sparse(u,p)
+ integer, intent(in) :: u
+ real(8), intent(in) :: p(:,:,:,:,:)
+ integer(8) m,lin
+ integer w,a,b,c
+ integer(8), allocatable :: idx(:)
+ real(8), allocatable :: val(:)
+ m=count(p(1,:,:,:,:).ne.0d0)
+ allocate(idx(m),val(m))
+ m=0 ; lin=0
+ do c=1,ndyn
+ do b=1,ndyn
+ do a=1,ndyn
+ do w=1,nkc
+    lin=lin+1
+    if (p(1,w,a,b,c).ne.0d0) then
+       m=m+1 ; idx(m)=lin ; val(m)=p(1,w,a,b,c)
+    endif
+ enddo
+ enddo
+ enddo
+ enddo
+ write(u) m
+ if (m.gt.0) write(u) idx,val
+ end subroutine write_sparse
+
+!---------------------------------------------------------------
+ logical function read_sparse(u,p)
+ integer, intent(in) :: u
+ real(8), intent(inout) :: p(:,:,:,:,:)
+ integer(8) m,k,t
+ integer st,w,a,b,c
+ integer(8), allocatable :: idx(:)
+ real(8), allocatable :: val(:)
+ read_sparse=.false.
+ read(u,iostat=st) m
+ if (st.ne.0 .or. m.lt.0) return
+ allocate(idx(m),val(m))
+ if (m.gt.0) then
+    read(u,iostat=st) idx,val
+    if (st.ne.0) return
+ endif
+ p(1,:,:,:,:)=0
+ do k=1,m
+    t=idx(k)-1
+    w=int(mod(t,int(nkc,8)))+1 ; t=t/nkc
+    a=int(mod(t,int(ndyn,8)))+1 ; t=t/ndyn
+    b=int(mod(t,int(ndyn,8)))+1 ; c=int(t/ndyn)+1
+    p(1,w,a,b,c)=val(k)
+ enddo
+ read_sparse=.true.
+ end function read_sparse
 
 !---------------------------------------------------------------
  subroutine read_whole(f,txt,ex)
@@ -510,12 +577,7 @@
     allocate(v33s8(nloc,nkc,ndyn,ndyn,ndyn))
     allocate(P1smpi(nloc,nkc,ndyn,ndyn,ndyn),P2smpi(nloc,nkc,ndyn,ndyn,ndyn))
     P1smpi=0 ; P2smpi=0
-    if (nloc.gt.0) then
-       call calculate_w3_ibz_split_sq(kglob,nloc*nkc*ndyn**3,ndyn,nkc,kpc,eigenval,eigenvec,nv3o)
-       call average_degenerate_v3(kglob)
-       call calculate_FGR_mpi2(kglob,ndyn,nv3o)
-       call average_degenerate_p(kglob)
-    endif
+    if (nloc.gt.0) call v3_delta(kglob)
     deallocate(v33s8)
     call timing('V3*delta in memory')
  else                                                  ! one file per IBZ point, reused if present
@@ -532,10 +594,7 @@
        endif
        ksub=[k,k]
        P1smpi=0 ; P2smpi=0
-       call calculate_w3_ibz_split_sq(ksub,nkc*ndyn**3,ndyn,nkc,kpc,eigenval,eigenvec,nv3o)
-       call average_degenerate_v3(ksub)
-       call calculate_FGR_mpi2(ksub,ndyn,nv3o)
-       call average_degenerate_p(ksub)
+       call v3_delta(ksub)
        call write_v3(k)
        nnew=nnew+1
     enddo
@@ -544,6 +603,166 @@
     call timing('V3*delta on disk')
  endif
  end subroutine v3_delta_ibz
+
+!---------------------------------------------------------------
+ subroutine v3_delta(kr)
+!! P1smpi, P2smpi of the IBZ points kr (2.1, 2026-11-09). Before 2.1 every |V3|^2 of the point was
+!! computed (nkc*ndyn^3 matrix elements) and then weighted by the tetrahedron delta, which is zero for
+!! about 98 % of them (Cu2O 18^3: 0.9-1.5 % of P1, P2 nonzero). Now: (1) the tetrahedron weights alone
+!! (calculate_FGR_mpi2 with |V3|^2 = 1; they depend on the frequencies only); (2) v3_need = the elements
+!! these weights need, closed over the degenerate sets; (3) only those |V3|^2; (4) their degenerate
+!! average as before; (5) P = weight x |V3|^2 as calculate_FGR_mpi2 forms it; (6) the degenerate average
+!! of P as before. Same P up to rounding: (sum_t c_t/6) F instead of sum_t (c_t/6 F).
+ integer, intent(in) :: kr(2)
+ integer nv3w,nv3c
+ nv3w=(kr(2)-kr(1)+1)*nkc*ndyn**3
+ v3_weights_only=.true.
+ call calculate_FGR_mpi2(kr,ndyn,nv3w)                  ! (1) weights in P1smpi, P2smpi
+ v3_weights_only=.false.
+ call v3_needed(kr)                                     ! (2)
+ write(ulog,'(a,2i7,a,f8.4,a)')' V3*delta: IBZ points ',kr,': ',100*count(v3_need)/dble(size(v3_need)), &
+      ' % of the |V3|^2 elements needed'
+ call calculate_w3_ibz_split_sq(kr,nv3w,ndyn,nkc,kpc,eigenval,eigenvec,nv3c)   ! (3)
+ deallocate(v3_need)
+ call average_degenerate_v3(kr)                         ! (4)
+ call apply_v3_weights(kr)                              ! (5)
+ call average_degenerate_p(kr)                          ! (6)
+ end subroutine v3_delta
+
+!---------------------------------------------------------------
+ subroutine v3_needed(kr)
+!! v3_need(s,n2,l1,l2,l3): the |V3|^2 elements the weights in P1smpi, P2smpi multiply. Process 1 of
+!! calculate_FGR_mpi2 puts the element of q2 = w at P1(w), process 2 that of q2 = -w at P2(w)
+!! (F_arbi(nk2n) with nk2n the index of -q2). average_degenerate_v3 mixes the partners of each
+!! degenerate set at q1, q2 and q3 = -q1-q2, so the partners of a needed element are needed too.
+ use lattice, only : g1,g2,g3
+ integer, intent(in) :: kr(2)
+ integer s,n1,n2,i1,i3,ia,ib,ic,ins,ng,w,l1,l2,l3
+ integer g(ndyn),mw(nkc)
+ real(8) q(3)
+ if (allocated(v3_need)) deallocate(v3_need)
+ allocate(v3_need(kr(2)-kr(1)+1,nkc,ndyn,ndyn,ndyn))
+ v3_need=.false.
+ do w=1,nkc
+    q=-kpc(:,w)
+    call get_k_info(q,NC,mw(w),ia,ib,ic,g1,g2,g3,ins)
+ enddo
+ s=0
+ do n1=kr(1),kr(2)
+    s=s+1
+    do l3=1,ndyn
+    do l2=1,ndyn
+    do l1=1,ndyn
+    do w=1,nkc
+       if (P1smpi(s,w,l1,l2,l3).ne.0d0) v3_need(s,w,l1,l2,l3)=.true.
+       if (P2smpi(s,w,l1,l2,l3).ne.0d0) v3_need(s,mw(w),l1,l2,l3)=.true.
+    enddo
+    enddo
+    enddo
+    enddo
+    i1=mapinv(n1)
+    call degenerate_sets(i1,g,ng)
+    call close_axis(s,0,1,g,ng)
+    do n2=1,nkc
+       call degenerate_sets(n2,g,ng)
+       call close_axis(s,n2,2,g,ng)
+       q=-kpc(:,i1)-kpc(:,n2)
+       call get_k_info(q,NC,i3,ia,ib,ic,g1,g2,g3,ins)
+       call degenerate_sets(i3,g,ng)
+       call close_axis(s,n2,3,g,ng)
+    enddo
+ enddo
+ end subroutine v3_needed
+
+!---------------------------------------------------------------
+ subroutine close_axis(s,n2,ax,grp,n)
+!! v3_need(s,n2,...) true for every member of a degenerate set along axis ax (1: l1, 2: l2, 3: l3) when it
+!! is true for one of them; n2 = 0: every q2
+ integer, intent(in) :: s,n2,ax,grp(ndyn),n
+ integer k,a,b,m,qa,qb,q2
+ logical(1) any1
+ if (n.eq.ndyn) return                                  ! no degenerate set
+ if (n2.eq.0) then
+    qa=1 ; qb=nkc
+ else
+    qa=n2 ; qb=n2
+ endif
+ do k=1,n
+    if (count(grp.eq.k).lt.2) cycle
+    do q2=qa,qb
+    do b=1,ndyn
+    do a=1,ndyn
+       any1=.false.
+       do m=1,ndyn
+          if (grp(m).ne.k) cycle
+          select case (ax)
+          case (1) ; any1 = any1 .or. v3_need(s,q2,m,a,b)
+          case (2) ; any1 = any1 .or. v3_need(s,q2,a,m,b)
+          case (3) ; any1 = any1 .or. v3_need(s,q2,a,b,m)
+          end select
+       enddo
+       if (.not.any1) cycle
+       do m=1,ndyn
+          if (grp(m).ne.k) cycle
+          select case (ax)
+          case (1) ; v3_need(s,q2,m,a,b)=.true.
+          case (2) ; v3_need(s,q2,a,m,b)=.true.
+          case (3) ; v3_need(s,q2,a,b,m)=.true.
+          end select
+       enddo
+    enddo
+    enddo
+    enddo
+ enddo
+ end subroutine close_axis
+
+!---------------------------------------------------------------
+ subroutine apply_v3_weights(kr)
+!! P1smpi, P2smpi (the tetrahedron weights) times |V3|^2 as calculate_FGR_mpi2 forms it from v33s8:
+!! x (2 pi)^2/nkc, and 0 for an acoustic mode (index <= 3) of q2 or q3 at Gamma (index NC/2+1 in
+!! every direction). Process 1: q2 = kpc(w), q3 = q1+q2, into P1(w); process 2: q2 = kpc(j), Gamma
+!! tested on -q2, q3 = q1+q2, into P2(index of -q2). Same code as there.
+ use lattice, only : g1,g2,g3
+ integer, intent(in) :: kr(2)
+ integer s,n1,i,j,ii,jj,kk,ins,i2,j2,k2,i3,j3,k3,nk2,nk3
+ integer nk2n(nkc)
+ logical gam2(nkc),gam2n(nkc),gam3(nkc)
+ real(8) q1(3),q2(3),f
+ s=0
+ do n1=kr(1),kr(2)
+    s=s+1
+    i=mapinv(n1)
+    q1=kpc(:,i)
+    do j=1,nkc
+       q2=kpc(:,j)
+       call get_k_info(q2,NC,nk2,i2,j2,k2,g1,g2,g3,ins)
+       gam2(j) = i2.eq.NC(1)/2+1 .and. j2.eq.NC(2)/2+1 .and. k2.eq.NC(3)/2+1
+       call get_k_info(-q2,NC,nk2n(j),i2,j2,k2,g1,g2,g3,ins)
+       gam2n(j) = i2.eq.NC(1)/2+1 .and. j2.eq.NC(2)/2+1 .and. k2.eq.NC(3)/2+1
+       call get_k_info(q1+q2,NC,nk3,i3,j3,k3,g1,g2,g3,ins)
+       gam3(j) = i3.eq.NC(1)/2+1 .and. j3.eq.NC(2)/2+1 .and. k3.eq.NC(3)/2+1
+    enddo
+    do kk=1,ndyn
+    do jj=1,ndyn
+    do ii=1,ndyn
+    do j=1,nkc
+       f=v33s8(s,j,ii,jj,kk) * (2*pi)**2 / nkc
+       if ((jj.le.3 .and. gam2(j)) .or. (kk.le.3 .and. gam3(j))) then
+          P1smpi(s,j,ii,jj,kk)=0
+       else
+          P1smpi(s,j,ii,jj,kk)=P1smpi(s,j,ii,jj,kk)*f
+       endif
+       if ((jj.le.3 .and. gam2n(j)) .or. (kk.le.3 .and. gam3(j))) then
+          P2smpi(s,nk2n(j),ii,jj,kk)=0
+       else
+          P2smpi(s,nk2n(j),ii,jj,kk)=P2smpi(s,nk2n(j),ii,jj,kk)*f
+       endif
+    enddo
+    enddo
+    enddo
+    enddo
+ enddo
+ end subroutine apply_v3_weights
 
 !---------------------------------------------------------------
  subroutine thermal_rates(it_first)

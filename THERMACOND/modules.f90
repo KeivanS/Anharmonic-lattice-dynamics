@@ -773,6 +773,10 @@ end module exactBTE2
  real(8), allocatable ::nmpi(:),kmpi(:),reflectivitympink(:),reflectivity_emmpink(:),n_emmpi(:),k_emmpi(:)
  integer, allocatable:: nq1(:),nq2(:),nq3(:),la1(:),la2(:),la3(:)
  integer nv3,readv3,writev3, iter, split, calc_kappa, max_iter, job, iso ! sy added iter,split, calk, max_iter
+ ! 2.1 (2026-11-09): calculate_FGR_mpi2 with |V3|^2 = 1 gives the tetrahedron weights alone;
+ ! v3_need marks the |V3|^2 elements those weights need (calculate_w3_ibz_split_sq skips the others)
+ logical :: v3_weights_only = .false.
+ logical(1), allocatable :: v3_need(:,:,:,:,:)
  real(8) v3_threshold,const33, conv_error , conv_max_error, conv_max_diff, conv_diff, conv_diff_kap, conv_max_diff_kap,conv_iter,update_mix   ! sy added conv_norm, conv_max, update
  integer ksub_size
  integer solver_direct, v3_store   ! latdyn.params lines 9 and 10

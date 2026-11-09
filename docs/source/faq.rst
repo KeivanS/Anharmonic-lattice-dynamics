@@ -40,7 +40,7 @@ THERMACOND create theirs. Create it with ``mkdir -p`` and re-run ``make``.
 
 **Where are the programs after** ``make`` **?**
 
-In ``~/ALADYN/bin``, named with their version (``focex-9.9.x``, ``tcond-2.0.x``). ``make
+In ``~/ALADYN/bin``, named with their version (``focex-9.9.x``, ``tcond-2.1.x``). ``make
 python-tools`` links the Python tools there: ``focex-agent``, ``allplots``, ``bandplot`` and
 ``shell-optimizer``. Job scripts that call an older ``focex-9.x.x`` must be updated by hand.
 

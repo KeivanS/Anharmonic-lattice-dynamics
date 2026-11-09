@@ -64,7 +64,7 @@ FOCEX and THERMACOND set their own compiler options in their Makefiles. Then
    make                    # = make all: everything below except SCOP8
    make focex              # FOCEX (focex-9.9.x) and its utilities (read_outcar.x, ...)
    make sc_snaps           # SC-SNAPS (sc_snaps.x, poscar2xyz.py)
-   make thermacond         # THERMACOND with MPI (tcond-2.0.x); thermacond-serial: without
+   make thermacond         # THERMACOND with MPI (tcond-2.1.x); thermacond-serial: without
    make anfomod            # ANFOMOD
    make python-tools       # links focex-agent, focex-diagnose, bandplot, allplots, shell-optimizer, aladyn-gui
    make scop8              # SCOP8, not part of "make": it does not compile at present
@@ -219,8 +219,8 @@ THERMACOND
 
 * Run ``make`` in the ``THERMACOND`` directory. THERMACOND needs a ``gfortran``
   compiler and MPI (``make serial``: no MPI). The binary is named after the version,
-  ``tcond-2.0.x`` (serial: ``tcond-2.0-serial.x``), and installed in ``~/ALADYN/bin``. It takes no input from the
-  terminal: ``tcond-2.0.x``, or ``mpirun -np N tcond-2.0.x`` (:doc:`runthermacond`).
+  ``tcond-2.1.x`` (serial: ``tcond-2.1-serial.x``), and installed in ``~/ALADYN/bin``. It takes no input from the
+  terminal: ``tcond-2.1.x``, or ``mpirun -np N tcond-2.1.x`` (:doc:`runthermacond`).
 
 .. _focex-configure:
 

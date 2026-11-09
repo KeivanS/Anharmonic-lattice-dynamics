@@ -1191,6 +1191,13 @@ do l1=1,ndn
  do l2=1 ,ndn
  do l3=1 ,ndn
 
+! 2.1: only the elements the delta weights need (v3_need, kappa.f90 v3_needed); the others stay 0
+if (allocated(v3_need)) then
+   if (.not.v3_need(s,n2,l1,l2,l3)) then
+      indx=indx+1
+      cycle
+   endif
+endif
 call matrix_elt_simplified(q1,q2,l1,l2,l3,xx,inside,ndn)    ! same as matrix_elt but efficiency is improved.
 
 v33sq1_temp=xx*conjg(xx)
@@ -7456,6 +7463,9 @@ do n1=1,ksub_size2
            ! call weight_tet
 
            ! set arbitrary function, F_arbi(j)
+           if (v3_weights_only) then         ! 2.1: tetrahedron weights only (|V3|^2 = 1), see v3_delta in kappa.f90
+              F_arbi=1d0
+           else
            do j=1,nkc  ! for set arbitrary function
 
                 q1=kpc(:,i)
@@ -7482,6 +7492,7 @@ do n1=1,ksub_size2
                 F_arbi(j)=V3sq1  
 
             enddo
+           endif
 
             ! eigen_tet: set omega2+omega3
             do j_tet=1,nkc*6                       !iterate over all tetrahedrons
@@ -7516,6 +7527,9 @@ do n1=1,ksub_size2
            ! call eigen_tet using w2-w3
            ! call weight_tet
 
+           if (v3_weights_only) then         ! 2.1: tetrahedron weights only (|V3|^2 = 1), see v3_delta in kappa.f90
+              F_arbi=1d0
+           else
            do j=1,nkc  ! for set arbitrary function
 
                 q1=kpc(:,i)
@@ -7543,6 +7557,7 @@ do n1=1,ksub_size2
                 F_arbi(nk2n)=V3sq1        ! no 2pi at the front since delta is in linear frequency.
 
             enddo
+           endif
 
             ! eigen_tet: set omega2+omega3
             do j_tet=1,nkc*6                       !iterate over all tetrahedrons

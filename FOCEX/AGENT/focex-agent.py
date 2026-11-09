@@ -244,7 +244,7 @@ def newest_tcond():
     """The newest MPI build ~/ALADYN/bin/tcond-<version>.x (not the -serial one)."""
     c = sorted((f for f in glob.glob(os.path.expanduser('~/ALADYN/bin/tcond-[0-9]*.x')) if 'serial' not in f),
                key=os.path.getmtime)
-    return c[-1] if c else '~/ALADYN/bin/tcond-2.0.x'
+    return c[-1] if c else '~/ALADYN/bin/tcond-2.1.x'
 
 
 def newest_focex():
