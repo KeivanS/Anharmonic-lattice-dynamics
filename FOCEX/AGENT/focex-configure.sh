@@ -70,7 +70,7 @@ else warn "mpif90 not found (only THERMACOND's MPI build needs it)" "install MPI
 
 # ---------------------------------------------------------------- ALATDYN binaries
 head_ "3. FOCEX, SC-SNAPS, read_outcar.x"
-BIN=$(sed -n 's/^[[:space:]]*DESTDIR[[:space:]]*=[[:space:]]*//p' "$REPO/make.inc" 2>/dev/null | head -1)
+BIN=$(sed -n 's/^[[:space:]]*DESTDIR[[:space:]]*=[[:space:]]*\([^#]*\).*/\1/p' "$REPO/make.local" "$REPO/make.inc" 2>/dev/null | head -1 | sed 's/[[:space:]]*$//')
 BIN=$(expand "${BIN:-~/ALADYN/bin}")
 FOCEX_X=$(ls -t "$BIN"/focex-[0-9]*.x 2>/dev/null | head -1)
 if [ -n "$FOCEX_X" ]; then ok "FOCEX: $FOCEX_X (the newest; the agent takes the same)"
@@ -162,10 +162,17 @@ head_ "7. VASP and MPI (from_scratch only)"
 VASP=""
 for v in "$OPT_VASP" "${VASP_STD:-}" "$HOME/BIN/vasp_std" "$(command -v vasp_std 2>/dev/null)"; do
     [ -n "$v" ] || continue; v=$(expand "$v")
-    if [ -x "$v" ]; then VASP=$v; break; fi
+    [ -x "$v" ] || continue
+    # a binary whose libraries are gone (an old build after a system update) cannot run
+    if command -v ldd >/dev/null 2>&1 && ldd "$v" 2>/dev/null | grep -q 'not found'; then
+        warn "$v cannot run here: $(ldd "$v" 2>/dev/null | grep -c 'not found') of its libraries are missing (ldd $v)" \
+             "remove that vasp_std from VASP_STD / PATH; on a cluster the VASP module of the profile is used"
+        continue
+    fi
+    VASP=$v; break
 done
 if [ -n "$VASP" ]; then ok "vasp_std: $VASP"
-elif [ $CLUSTER = 1 ]; then warn "vasp_std not on PATH here: on a cluster it usually comes from 'module load vasp' in the profile"
+elif [ $CLUSTER = 1 ]; then ok "no vasp_std set here: on a cluster the VASP module of the SLURM profile is used (./configure finds it)"
 else fail "vasp_std not found" "bash $0 --vasp /path/to/vasp_std"; fi
 MPI_LAUNCH=""
 if [ $CLUSTER = 1 ]; then
@@ -180,7 +187,9 @@ elif command -v mpirun >/dev/null 2>&1; then
 else
     warn "no mpirun: VASP runs on one core" "macOS 'brew install open-mpi'; Linux 'sudo apt install openmpi-bin'"
 fi
-if command -v gnuplot >/dev/null 2>&1; then ok "gnuplot: $(command -v gnuplot) (the PDF plots)"
+if command -v gnuplot >/dev/null 2>&1 && gnuplot -e 'set terminal pdfcairo' 2>&1 | grep -q 'unknown'; then
+    warn "$(command -v gnuplot) has no pdfcairo terminal: the agent writes the plot scripts, run makeplots.sh where gnuplot makes PDFs"
+elif command -v gnuplot >/dev/null 2>&1; then ok "gnuplot: $(command -v gnuplot) (the PDF plots, pdfcairo)"
 else warn "no gnuplot: the agent writes the plot scripts, run makeplots.sh later" "macOS 'brew install gnuplot'; Linux 'sudo apt install gnuplot'"; fi
 
 # ---------------------------------------------------------------- write the settings
@@ -196,7 +205,16 @@ head_ "8. Settings written to $ENVFILE"
     [ -n "$MPI_LAUNCH" ] && echo "export MPI_LAUNCH=\"$MPI_LAUNCH\""
     [ -n "$VF" ] && echo "export VASP_FLOW_DIR=\"$VF\""
     echo "case \":\$PATH:\" in *\":$BIN:\"*) ;; *) export PATH=\"$BIN:\$PATH\" ;; esac   # focex-agent, focex-diagnose"
-    [ -n "$PY" ] && echo "# Python for the agent: $PY"
+    if [ -n "$PY" ]; then
+        echo "# Python for the agent: $PY"
+        # a virtual environment: its bin first on PATH, so python3 (and focex-agent, which starts with
+        # '#!/usr/bin/env python3') is this one; moved to the front even if already on PATH (a module
+        # loaded later, e.g. python, would otherwise come first)
+        PYB=$(dirname "$PY")
+        if [ -f "$(dirname "$PYB")/pyvenv.cfg" ]; then
+            echo "PATH=\"$PYB:\$(printf '%s' \":\$PATH:\" | sed 's#:$PYB:#:#g; s#^:##; s#:\$##')\"; export PATH   # Python environment: python3 = $PY"
+        fi
+    fi
     echo "# Suggested in the instruction file: MPI: $NPERF   (without an MPI line VASP runs on 1 core)"
 } > "$ENVFILE"
 sed 's/^/  | /' "$ENVFILE"

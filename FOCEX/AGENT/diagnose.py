@@ -40,7 +40,7 @@ import subprocess
 import sys
 
 sys.dont_write_bytecode = True
-__version__ = '1.9'
+__version__ = '1.10'
 AGENT = os.path.dirname(os.path.realpath(__file__))
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
 TASKS = ('relax', 'poscar0', 'scf', 'dfpt', 'snaps', 'supercells', 'vasp_snaps', 'collect',

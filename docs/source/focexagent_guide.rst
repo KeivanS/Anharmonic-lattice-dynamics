@@ -61,15 +61,14 @@ Set up (seconds, no VASP), then start the workflow:
 
 .. code-block:: bash
 
-   source ~/myenv/bin/activate
-   python ~/Anharmonic-lattice-dynamics/FOCEX/AGENT/focex-agent.py --profile mycluster
+   focex-agent                            # on a cluster: the profile ./configure made (or --profile NAME)
    cd Si && sbatch run_workflow.sh        # workstation, no profile: nohup bash run_workflow.sh &
    tail -f report.log
 
-``mycluster`` stands for the profile of your own cluster: copy
-``~/VASP-Flow/profiles/slurm.json`` to ``mycluster.json`` in the same folder and set in it the
-VASP command, the modules to load, partition, account, nodes, tasks per node and time. On a
-workstation leave ``--profile`` out.
+On a cluster ``./configure --install --account <account>`` (installation, below) has made the profile
+of the cluster (partition, account, nodes, tasks per node, time, the modules, the VASP module) and made it
+the default, so no ``--profile`` is needed; ``--profile NAME`` chooses another profile of
+``~/VASP-Flow/profiles/``. On a workstation no profile is needed.
 
 Other keywords often used:
 

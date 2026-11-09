@@ -6,10 +6,12 @@ Anharmonic-LATtice-DYNamics (ALATDYN) is a lattice dynamics code. It calculates 
 For installation and usage instructions, please read our [documentation](https://aladyn.readthedocs.io/en/latest/index.html). In short:
 
 ```bash
+# on a cluster first: module load gcc openmpi python   (module spider gcc lists the versions)
 git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
 cd Anharmonic-lattice-dynamics
-./configure --install      # finds compilers, MPI, Python, VASP; writes make.local and ~/.aladyn.env,
-                           # and adds ~/.aladyn.env to your shell start-up file; ends with "Ready"
+./configure --install      # finds compilers, MPI, Python, VASP, the modules; writes make.local and
+                           # ~/.aladyn.env, adds ~/.aladyn.env to your shell start-up file, checks it in
+                           # a new shell; ends with "Ready". On a cluster add --account <SLURM account>
 make                       # = make all: FOCEX + utilities, SC-SNAPS, THERMACOND, ANFOMOD, the Python
                            # tools -> ~/ALADYN/bin (or one part: make focex | make sc_snaps | make thermacond)
 ```
@@ -17,7 +19,7 @@ make                       # = make all: FOCEX + utilities, SC-SNAPS, THERMACOND
 After every `git pull`, and after installing or moving a compiler, MPI, VASP or Python:
 
 ```bash
-./configure                # make.local and ~/.aladyn.env again (--install is needed only once)
+./configure --install      # again: safe, keeps your choices (account), never adds a line twice
 make
 ```
 

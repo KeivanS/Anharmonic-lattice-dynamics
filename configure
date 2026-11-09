@@ -17,13 +17,21 @@
 #                    ~/.aladyn.env and ~/.focex-agent.env
 #   (the agent options --potcar, --vasp, --python are passed on to focex-configure.sh)
 #   --profile-name N on a SLURM cluster: the name of the VASP-Flow profile drafted (default: the cluster's
-#                    name from scontrol, else the host name); an existing profile is never overwritten
+#                    name from scontrol, else the host name); a profile drafted by configure is redrafted
+#                    (old copy .bak), one written by hand is never overwritten
+#   --account NAME   on a SLURM cluster: the account the jobs are charged to (default: that of the
+#                    profile drafted before, else your SLURM default account)
+#   --vasp-module M  on a cluster: the VASP module (default: the newest vasp/<number> module)
+# On a cluster with modules: load the compiler, MPI and Python modules first (module load gcc openmpi
+# python); configure finds the modules ~/myenv needs if they are not loaded, and writes the module
+# loads into ~/.aladyn.env, so every new shell and batch job has them.
 # Written for bash 3.2 (macOS) and Linux.
 
 set -u
 REPO=$(cd "$(dirname "$0")" && pwd -P)
 MAKEINC="$REPO/make.local"; ENVFILE="$HOME/.aladyn.env"
 AGENTENV="$HOME/.focex-agent.env"; INSTALL=0; BUILD=0; AGENT=1; PREFIX=""; OPT_FC=""; OPT_MPIFC=""; AGENT_OPTS=""; OPT_PROFILE=""
+OPT_PY=""; OPT_ACCOUNT=""; OPT_VMOD=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --install) INSTALL=1 ;;
@@ -36,8 +44,11 @@ while [ $# -gt 0 ]; do
         --env)     ENVFILE="$2"; shift ;;
         --agent-env) AGENTENV="$2"; shift ;;
         --profile-name) OPT_PROFILE="$2"; shift ;;
-        --potcar|--vasp|--python) AGENT_OPTS="$AGENT_OPTS $1 $2"; shift ;;
-        -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
+        --account) OPT_ACCOUNT="$2"; shift ;;
+        --vasp-module) OPT_VMOD="$2"; shift ;;
+        --python) OPT_PY="$2"; AGENT_OPTS="$AGENT_OPTS $1 $2"; shift ;;
+        --potcar|--vasp) AGENT_OPTS="$AGENT_OPTS $1 $2"; shift ;;
+        -h|--help) sed -n '2,29p' "$0"; exit 0 ;;
         *) echo "unknown option $1 (see --help)"; exit 2 ;;
     esac
     shift
@@ -68,10 +79,65 @@ fi
 CLUSTER=0
 if command -v sbatch >/dev/null 2>&1; then CLUSTER=1; ok "SLURM (sbatch): a cluster -- build on a login node, run in jobs"
 else ok "no SLURM"; fi
-if command -v module >/dev/null 2>&1 || [ -n "${MODULESHOME:-}" ]; then
-    ok "environment modules: loaded now: ${LOADEDMODULES:-none} (load the compiler and MPI modules before configure)"
-fi
+HASMOD=0
+type module >/dev/null 2>&1 && HASMOD=1
+nonhidden() { printf '%s' "$1" | tr ':' '\n' | grep -v '/\.' | tr '\n' ' ' | sed 's/ *$//'; }
+# the modules to load in every shell and job: those loaded when configure starts (yours) and the ones
+# configure loads itself below (Python's, gnuplot); not their dependencies, which come with them
+START_MODS=$(nonhidden "${LOADEDMODULES:-}"); EXTRA_MODS=""
+[ $HASMOD = 1 ] && ok "environment modules: loaded now: ${LOADEDMODULES:-none}"
 SHELLNAME=$(basename "${SHELL:-bash}")
+
+# The Python environment (~/myenv) of a cluster is made from a module's Python and does not start without
+# that module (libpython...so not found). Its pyvenv.cfg names that Python's folder, e.g.
+# /apps/.../compiler/gcc/14.2.0/python/3.13.11/bin: every name/version pair of that path that is a module
+# (gcc/14.2.0, python/3.13.11) is loaded here, and goes with the others into ~/.aladyn.env.
+modules_from_path() {
+    local out="" prev="" s
+    for s in $(printf '%s' "$1" | tr '/' ' '); do
+        case "$s" in
+            [0-9]*) if [ -n "$prev" ] && module -t avail "$prev/$s" 2>&1 | grep -qE "^$prev/$s(\(.*\))?\$"; then
+                        out="$out $prev/$s"; fi ;;
+        esac
+        prev=$s
+    done
+    echo "${out# }"
+}
+PYENV=""
+for p in "$OPT_PY" "${VIRTUAL_ENV:+$VIRTUAL_ENV/bin/python}" "$HOME/myenv/bin/python"; do
+    [ -n "$p" ] && [ -x "$p" ] && { PYENV=$p; break; }
+done
+if [ -n "$PYENV" ] && [ $HASMOD = 1 ] && ! "$PYENV" -c '' >/dev/null 2>&1; then
+    HOMEPY=$(sed -n 's/^home *= *//p' "$(dirname "$(dirname "$PYENV")")/pyvenv.cfg" 2>/dev/null | head -1)
+    PYMODS=$(modules_from_path "$HOMEPY")
+    # shellcheck disable=SC2086
+    if [ -n "$PYMODS" ] && module load $PYMODS >/dev/null 2>&1 && "$PYENV" -c '' >/dev/null 2>&1; then
+        ok "$PYENV needs the modules of its Python ($HOMEPY): loaded $PYMODS"
+        EXTRA_MODS="$EXTRA_MODS $PYMODS"
+    else
+        warn "$PYENV does not start (made from the Python in ${HOMEPY:-?}; no module found for it)" \
+             "load the module of that Python (module spider python), then run ./configure again"
+    fi
+fi
+[ $HASMOD = 1 ] && [ -n "$PYENV" ] && "$PYENV" -c '' >/dev/null 2>&1 && ok "Python environment: $PYENV starts"
+# gnuplot makes the agent's PDF plots; on a cluster it is usually a module (built with the compiler loaded)
+if [ $HASMOD = 1 ] && ! command -v gnuplot >/dev/null 2>&1; then
+    GMOD=$(module -t avail gnuplot 2>&1 | sed 's/(.*)//' | grep -E '^gnuplot/' | (sort -V 2>/dev/null || sort) | tail -1)
+    if [ -n "$GMOD" ] && module load "$GMOD" >/dev/null 2>&1 && command -v gnuplot >/dev/null 2>&1; then
+        # the plot templates write PDFs with pdfcairo; a module built without cairo cannot make them
+        if gnuplot -e 'set terminal pdfcairo' 2>&1 | grep -q 'unknown'; then
+            module unload "$GMOD" >/dev/null 2>&1
+            warn "the module $GMOD has no pdfcairo terminal: not used; the agent writes the plot scripts and you run makeplots.sh where gnuplot makes PDFs"
+        else
+            ok "gnuplot: loaded the module $GMOD (the agent's PDF plots)"
+            EXTRA_MODS="$EXTRA_MODS $GMOD"
+        fi
+    fi
+fi
+USERMODS=$(printf '%s\n' $START_MODS $EXTRA_MODS | awk 'NF && !seen[$0]++' | tr '\n' ' ' | sed 's/ *$//')
+# the Python for the launchers make writes (make.local PYTHON): one that has the agent's packages
+PYOK=""
+[ -n "$PYENV" ] && "$PYENV" -c 'import numpy, spglib, pymatgen' >/dev/null 2>&1 && PYOK=$PYENV
 
 # ---------------------------------------------------------------- 2. compilers
 head_ "2. Fortran and MPI compilers"
@@ -88,7 +154,7 @@ if [ -n "$FFC" ]; then
     esac
     ok "Fortran: $FFC ($FVER)"
     if [ "$FAM" = gnu ] && [ "${FVER%%.*}" -lt 9 ] 2>/dev/null; then
-        warn "gfortran $FVER: version 9 or newer is needed" "install a newer gfortran (macOS: brew install gcc)"
+        warn "gfortran $FVER: version 9 or newer is needed" "install a newer gfortran (macOS: brew install gcc; cluster: module load gcc openmpi python -- module spider gcc lists them -- then ./configure again)"
     fi
 else
     fail "no Fortran compiler (gfortran, ifx, ifort)" "macOS 'brew install gcc'; Linux 'sudo apt install gfortran'; cluster 'module load gcc'"
@@ -179,6 +245,8 @@ if [ "$FAM" = intel ]; then FLAGS="-O2 -check bounds"; else FLAGS="-O2 -fcheck=a
     if [ -n "$OMPI_FC_SET" ]; then echo "# Open MPI on macOS: the gfortran its mpi.mod was built with"; echo "OMPI_FC = $OMPI_FC_SET"
     else echo "# OMPI_FC: only for an Open MPI whose mpi.mod comes from another gfortran"; fi
     if [ -n "$SDK" ]; then echo "# macOS: the SDK the linker needs"; echo "SDKROOT = $SDK"; fi
+    if [ -n "$PYOK" ]; then echo "# Python with numpy, spglib, pymatgen: make python-tools writes launchers (focex-agent, ...) that use it"; echo "PYTHON = $PYOK"
+    else echo "# PYTHON: not found (a Python with numpy, spglib, pymatgen); focex-agent etc. are then symlinks run by python3"; fi
 } > "$MAKEINC"
 sed 's/^/  | /' "$MAKEINC"
 
@@ -210,36 +278,83 @@ if [ $CLUSTER = 1 ]; then
     [ -z "$PART" ] && PART=$(printf '%s\n' "$SI" | head -1 | cut -d'|' -f1 | tr -d '*')
     CPN=$(printf '%s\n' "$SI" | awk -F'|' -v p="$PART" '{q=$1; sub(/\*$/,"",q)} q==p {print $2; exit}')
     TL=$(printf '%s\n' "$SI" | awk -F'|' -v p="$PART" '{q=$1; sub(/\*$/,"",q)} q==p {print $3; exit}')
+    CPN=$(printf '%s' "$CPN" | tr -cd '0-9')       # sinfo writes 40+ when the nodes differ: 40
     CPN=${CPN:-1}; PART=${PART:-standard}
     ACCS=$(sacctmgr -nP show assoc user="$USER" format=account 2>/dev/null | awk 'NF' | sort -u)
     [ -z "$ACCS" ] && ACCS=$(sshare -U -h -o account 2>/dev/null | awk 'NF {print $1}' | sort -u)
-    ACC=$(printf '%s\n' "$ACCS" | awk 'NF {print; exit}')
-    LOADED=$(printf '%s' "${LOADEDMODULES:-}" | tr ':' ' ')
-    [ -n "$LOADED" ] && ok "modules loaded now (they go into the profile and the job examples): $LOADED" || \
-        warn "no modules loaded: the jobs will load none" "load the compiler, MPI and Python modules first (module spider <name> finds them), then run ./configure again"
-    VMOD=""
-    if type module >/dev/null 2>&1; then
-        VMOD=$(module -t avail vasp 2>&1 | grep -iE '^vasp/' | (sort -V 2>/dev/null || sort) | tail -1)
+    # account: --account, else the one of the profile configure drafted before (a rerun keeps the choice),
+    # else SLURM's default account, else the first
+    DRAFTED=0
+    [ -f "$PF" ] && grep -q "Drafted by ALADYN's configure" "$PF" && DRAFTED=1
+    OLDACC=""
+    [ $DRAFTED = 1 ] && OLDACC=$(sed -n 's/.*"account": *"\([^"]*\)".*/\1/p' "$PF" | head -1)
+    DEFACC=$(sacctmgr -nP show user "$USER" format=defaultaccount 2>/dev/null | awk 'NF {print; exit}')
+    ACC=${OPT_ACCOUNT:-${OLDACC:-${DEFACC:-$(printf '%s\n' "$ACCS" | awk 'NF {print; exit}')}}}
+    if [ -n "$ACCS" ] && [ -n "$ACC" ] && ! printf '%s\n' "$ACCS" | grep -qx "$ACC"; then
+        fail "account $ACC is not one of yours: $(printf '%s' "$ACCS" | tr '\n' ' ')" "./configure --install --account <one of: $(printf '%s' "$ACCS" | tr '\n' ' ')>"
+    fi
+    LOADED=$USERMODS
+    [ -n "$LOADED" ] && ok "modules (they go into ~/.aladyn.env, the profile and the job examples): $LOADED" || \
+        warn "no modules loaded: the jobs will load none" "module load gcc openmpi python   (module spider <name> lists the versions), then run ./configure again"
+    VMOD=$OPT_VMOD
+    if [ -z "$VMOD" ] && [ $HASMOD = 1 ]; then
+        AV=$(module -t avail vasp 2>&1 | sed 's/(.*)//' | grep -iE '^vasp/')
+        VMOD=$(printf '%s\n' "$AV" | grep -iE '^vasp/[0-9]' | (sort -V 2>/dev/null || sort) | tail -1)
+        [ -z "$VMOD" ] && VMOD=$(printf '%s\n' "$AV" | (sort -V 2>/dev/null || sort) | tail -1)
+    fi
+    # Does the VASP module get along with the modules loaded now? On some clusters (Rivanna) it loads
+    # another compiler (intel), which swaps out gcc and makes the Python module inactive: then the agent's
+    # Python cannot run in the same job. In that case the job loads the modules of now (Python), and VASP
+    # is started through the wrapper vasp-env, which loads the VASP module for the VASP command only.
+    VWRAP=""; VEXE="vasp_std"; VOK=0
+    if [ -n "$VMOD" ]; then
+        VINFO=$( (module load "$VMOD" >/dev/null 2>&1 || exit 1; hash -r
+                  P=$(command -v vasp_std) || exit 2
+                  ldd "$P" 2>/dev/null | grep -q 'not found' && exit 3
+                  printf '%s|%s' "$P" "${LOADEDMODULES:-}") )
+        case $? in
+            0) VOK=1; VPATH=${VINFO%%|*}; AFTER=":${VINFO#*|}:"
+               LOST=""
+               for m in $LOADED; do case "$AFTER" in *":$m:"*) ;; *) LOST="$LOST $m" ;; esac; done
+               ok "module $VMOD: vasp_std = $VPATH (its libraries are all found)"
+               if [ -n "$LOST" ]; then
+                   VWRAP="$(expand "$DEST")/vasp-env"
+                   ok "module $VMOD unloads$LOST: VASP will run through $VWRAP (loads $VMOD for the VASP command only)"
+               fi ;;
+            1) fail "module load $VMOD fails" "module spider $VMOD shows what to load before it; or ./configure --vasp-module <name>" ;;
+            2) fail "module $VMOD gives no vasp_std" "./configure --vasp-module <the module with vasp_std>" ;;
+            3) fail "vasp_std of module $VMOD misses libraries (ldd ... not found)" "module spider $VMOD; or ./configure --vasp-module <another>" ;;
+        esac
+    elif [ $HASMOD = 1 ]; then
+        warn "no vasp module found: the profile runs vasp_std from PATH" "./configure --vasp-module <name>, or edit vasp_std in $PF"
+    fi
+    if [ -n "$VWRAP" ]; then
+        mkdir -p "$(dirname "$VWRAP")"
+        {
+            echo '#!/bin/bash'
+            echo "# vasp-env -- written by ALADYN's configure on $(date '+%Y-%m-%d %H:%M'): runs a command (srun vasp_std ...)"
+            echo "# with the module $VMOD loaded alone. That module unloads$LOST, which the agent's"
+            echo "# Python needs, so the job keeps those and only the VASP command gets the VASP environment."
+            echo 'type module >/dev/null 2>&1 || . /etc/profile.d/modules.sh >/dev/null 2>&1 || . /etc/profile >/dev/null 2>&1'
+            echo 'module purge >/dev/null 2>&1'
+            echo "module load $VMOD || { echo \"vasp-env: module load $VMOD failed\" >&2; exit 1; }"
+            echo 'exec "$@"'
+        } > "$VWRAP"
+        chmod 755 "$VWRAP"
     fi
     if [ ! -d "$VF/profiles" ]; then
         warn "no VASP-Flow profiles folder at $VF/profiles: no profile written" "cd ~ && git clone https://github.com/KeivanS/VASP-Flow.git"
         PROFNAME=""
-    elif [ -f "$PF" ]; then
-        ok "profile $PF exists: kept (--profile-name NAME drafts another)"
+    elif [ -f "$PF" ] && [ $DRAFTED = 0 ]; then
+        ok "profile $PF was written by hand: kept (--profile-name NAME drafts another)"
     else
+        [ -f "$PF" ] && cp "$PF" "$PF.bak" && echo "  (the profile drafted before is kept as $PF.bak)"
         MODS=""
         for m in $LOADED; do MODS="$MODS \"$m\","; done
-        if [ -n "$VMOD" ] && ! printf '%s' "$LOADED" | grep -q "$VMOD"; then
-            if P=$( (module load "$VMOD" >/dev/null 2>&1 && command -v vasp_std) ); then
-                ok "module $VMOD: vasp_std = $P"
-            else
-                warn "module load $VMOD does not give vasp_std (it may need other modules first)" \
-                     "module spider $VMOD shows what to load before it; load those, then run ./configure again (or edit $PF)"
-            fi
-            MODS="$MODS \"$VMOD\","
-        elif ! type module >/dev/null 2>&1; then
-            warn "no 'module' command: the profile has only the modules loaded now" "edit $PF: modules = what to load for VASP"
-        fi
+        MPICMD="srun"
+        if [ -n "$VWRAP" ]; then MPICMD="$VWRAP srun"
+        elif [ $VOK = 1 ] && ! printf ' %s ' "$LOADED" | grep -q " $VMOD "; then MODS="$MODS \"$VMOD\","; fi
+        [ $HASMOD = 0 ] && warn "no 'module' command: the profile has no modules" "edit $PF: modules = what to load for VASP"
         MODS=$(printf '%s' "$MODS" | sed 's/,$//')
         {
             echo "{"
@@ -248,7 +363,7 @@ if [ $CLUSTER = 1 ]; then
             echo "  \"vasp_std\": \"vasp_std\","
             echo "  \"vasp_ncl\": \"vasp_ncl\","
             echo "  \"vasp_gam\": \"vasp_gam\","
-            echo "  \"mpi_cmd\": \"srun\","
+            echo "  \"mpi_cmd\": \"$MPICMD\","
             echo "  \"mpi_np\": $CPN,"
             echo "  \"modules\": [${MODS# }],"
             echo "  \"slurm\": {"
@@ -262,12 +377,14 @@ if [ $CLUSTER = 1 ]; then
             echo "  }"
             echo "}"
         } > "$PF"
-        ok "drafted $PF: partition $PART (limit ${TL:-?}), 1 node x $CPN tasks, account ${ACC:-NONE}, modules [${MODS# }]"
+        if "${PYENV:-python3}" -c 'import json,sys; json.load(open(sys.argv[1]))' "$PF" 2>/dev/null; then
+            ok "drafted $PF: partition $PART (limit ${TL:-?}), 1 node x $CPN tasks, account ${ACC:-NONE}, mpi_cmd '$MPICMD', modules [${MODS# }]"
+        else fail "the drafted $PF is not valid JSON (please report)"; fi
         sed 's/^/  | /' "$PF"
     fi
     [ -z "$ACC" ] && warn "no SLURM account found: set slurm.account in the profile (or ACCOUNT: in the instruction file)"
-    [ "$(printf '%s\n' "$ACCS" | awk 'NF' | wc -l | tr -d ' ')" -gt 1 ] && \
-        warn "several accounts: $(printf '%s' "$ACCS" | tr '\n' ' ')-- $ACC taken; edit the profile (and the job examples) to choose"
+    [ -z "$OPT_ACCOUNT" ] && [ "$(printf '%s\n' "$ACCS" | awk 'NF' | wc -l | tr -d ' ')" -gt 1 ] && \
+        warn "several SLURM accounts ($(printf '%s' "$ACCS" | tr '\n' ' '| sed 's/ $//')): $ACC is used" "if that is the wrong account: ./configure --install --account <name>"
     # THERMACOND batch-job examples, filled in: MPI and multithreaded (serial build)
     TV=$(sed -n 's/^ver *= *//p' "$REPO/THERMACOND/Makefile" | head -1)
     JD="$(dirname "$(expand "$DEST")")/jobs"
@@ -290,6 +407,10 @@ BIN=$(expand "$DEST")
 [ -f "$ENVFILE" ] && cp "$ENVFILE" "$ENVFILE.bak" && echo "  (the old file is kept as $ENVFILE.bak)"
 {
     echo "# ALADYN settings, written by configure on $(date '+%Y-%m-%d %H:%M') ($HOST). Read with: . $ENVFILE"
+    if [ $HASMOD = 1 ]; then
+        ENVMODS=$USERMODS
+        [ -n "$ENVMODS" ] && echo "type module >/dev/null 2>&1 && module load $ENVMODS >/dev/null 2>&1   # compiler, MPI, Python: the modules configure built and tested with"
+    fi
     echo "case \":\$PATH:\" in *\":$BIN:\"*) ;; *) export PATH=\"$BIN:\$PATH\" ;; esac   # the ALADYN programs"
     [ -n "$OMPI_FC_SET" ] && echo "export OMPI_FC=\"$OMPI_FC_SET\"   # Open MPI on macOS: mpif90 calls this gfortran"
     [ -n "$SDK" ] && echo "export SDKROOT=\"\$(xcrun --show-sdk-path 2>/dev/null)\"   # macOS linker SDK (follows Xcode updates)"
@@ -305,17 +426,43 @@ if [ $INSTALL = 1 ]; then
         *)   if [ "$OS" = Darwin ]; then RC="$HOME/.bash_profile"; else RC="$HOME/.bashrc"; fi ;;
     esac
     LINE="[ -f \"$ENVFILE\" ] && . \"$ENVFILE\"   # ALADYN (configure)"
-    if [ -f "$RC" ] && grep -qF "$ENVFILE" "$RC"; then ok "$RC reads $ENVFILE already"
-    else
-        [ -f "$RC" ] && cp "$RC" "$RC.bak-aladyn"
-        echo "$LINE" >> "$RC"; ok "added to $RC (old copy: $RC.bak-aladyn): $LINE"
+    [ -f "$RC" ] && cp "$RC" "$RC.bak-aladyn"
+    # one line only: ~/.aladyn.env reads ~/.focex-agent.env itself, after the module loads (a separate line
+    # for the agent file, from focex-configure.sh --install, read it before the modules)
+    if [ -f "$RC" ] && grep -qF "$AGENTENV\" ] && ." "$RC"; then
+        grep -vF "$AGENTENV\" ] && ." "$RC" > "$RC.tmp-aladyn" && cat "$RC.tmp-aladyn" > "$RC" && rm -f "$RC.tmp-aladyn"
+        ok "removed the separate line for $AGENTENV from $RC ($ENVFILE reads it)"
     fi
+    if [ -f "$RC" ] && grep -qF "$ENVFILE" "$RC"; then ok "$RC reads $ENVFILE already"
+    else echo "$LINE" >> "$RC"; ok "added to $RC (old copy: $RC.bak-aladyn): $LINE"; fi
 fi
 
 # ---------------------------------------------------------------- 7. build
 if [ $BUILD = 1 ] && [ $NFAIL = 0 ]; then
     head_ "7. Build (make)"
     if (cd "$REPO" && make 2>&1 | tail -5); then ok "make done; programs in $BIN"; else fail "make failed (see above)"; fi
+fi
+
+# ---------------------------------------------------------------- 8. a new shell, as the next login or batch job
+if [ $INSTALL = 1 ]; then
+    # the launchers (focex-agent, focex-diagnose, ...) with make.local's PYTHON: quick, and the check needs them
+    if [ $BUILD = 0 ]; then
+        if (cd "$REPO" && make -s python-tools >"$T/pt.log" 2>&1); then ok "make python-tools: focex-agent, focex-diagnose, allplots, ... in $BIN"
+        else fail "make python-tools failed:"; sed 's/^/        /' "$T/pt.log" | head -5; fi
+    fi
+    head_ "8. Check in a new login shell (what the next terminal and every batch job get)"
+    # shellcheck disable=SC2016
+    CHK=$(env -i HOME="$HOME" USER="$USER" LOGNAME="${LOGNAME:-$USER}" TERM=dumb SHELL="${SHELL:-/bin/bash}" \
+          PATH=/usr/local/bin:/usr/bin:/bin "${SHELL:-/bin/bash}" -lc '
+        if command -v focex-agent >/dev/null 2>&1; then echo "AGENT $(focex-agent --version 2>&1 | tail -1)"; else echo "AGENT none"; fi
+        echo "PY $(command -v python3) $(python3 -c "import numpy, spglib, pymatgen; print(\"ok\")" 2>&1 | tail -1)"
+        echo "POTCAR ${VASP_POTCAR_DIR:-unset}"
+        echo "PROFILE ${FOCEX_PROFILE:-unset}"' 2>/dev/null)
+    printf '%s\n' "$CHK" | sed 's/^/  | /'
+    case "$CHK" in *"AGENT focex-agent"*) ok "focex-agent starts in a new shell" ;;
+        *) fail "focex-agent does not start in a new shell (see above)" "open a new terminal and run: focex-agent --version" ;; esac
+    printf '%s\n' "$CHK" | grep -q '^PY .* ok$' && ok "python3 of a new shell has numpy, spglib, pymatgen" || \
+        fail "python3 of a new shell lacks numpy, spglib or pymatgen (see above)"
 fi
 
 echo

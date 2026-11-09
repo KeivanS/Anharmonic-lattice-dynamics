@@ -59,16 +59,24 @@ anfomod:
 scop8:
 	$(MAKE) -C SCOP8
 
-# the Python tools stay in the repository (they find their templates next to themselves);
-# DESTDIR gets symlinks to them. Run them with the Python that has numpy, spglib, pymatgen.
+# the Python tools stay in the repository (they find their templates next to themselves). DESTDIR gets a
+# launcher for each that starts it with PYTHON (make.local, written by ./configure: the Python with numpy,
+# spglib, pymatgen), so they work whatever python3 comes first on PATH (a batch job's 'module load python'
+# puts the module's own python3 first). Without PYTHON: symlinks, run by the python3 on PATH.
+PYTHON ?=
+PYTOOLS = FOCEX/AGENT/focex-agent.py:focex-agent FOCEX/AGENT/diagnose.py:focex-diagnose \
+          FOCEX/PLOTTING/allplots:allplots FOCEX/PLOTTING/kappaplots:kappaplots \
+          FOCEX/utility/shell-optimizer:shell-optimizer GUI/aladyn-gui.py:aladyn-gui
 python-tools:
-	ln -sf $(CURDIR)/FOCEX/AGENT/focex-agent.py $(DESTDIR)/focex-agent
-	ln -sf $(CURDIR)/FOCEX/AGENT/diagnose.py $(DESTDIR)/focex-diagnose
+	mkdir -p $(DESTDIR)
 	ln -sf $(CURDIR)/FOCEX/PLOTTING/bandplot $(DESTDIR)/bandplot
-	ln -sf $(CURDIR)/FOCEX/PLOTTING/allplots $(DESTDIR)/allplots
-	ln -sf $(CURDIR)/FOCEX/utility/shell-optimizer $(DESTDIR)/shell-optimizer
-	ln -sf $(CURDIR)/GUI/aladyn-gui.py $(DESTDIR)/aladyn-gui
-	ln -sf $(CURDIR)/FOCEX/PLOTTING/kappaplots $(DESTDIR)/kappaplots
+	@for t in $(PYTOOLS); do \
+	    src=$(CURDIR)/$${t%%:*}; dst=$(DESTDIR)/$${t##*:}; rm -f "$$dst"; \
+	    if [ -n "$(PYTHON)" ]; then \
+	        printf '#!/bin/sh\n# launcher written by make python-tools: %s with PYTHON of make.local\nexec "%s" "%s" "$$@"\n' \
+	            "$$src" "$(PYTHON)" "$$src" > "$$dst" && chmod 755 "$$dst" && echo "$$dst: launcher, $(PYTHON)"; \
+	    else ln -s "$$src" "$$dst" && echo "$$dst -> $$src"; fi; \
+	done
 
 # the parts' clean rules fail when there is nothing to remove; carry on regardless
 clean:

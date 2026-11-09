@@ -123,6 +123,10 @@ def main(argv):
     name = name or material_name(d)
     sub = bounds(d)
     gp = shutil.which('gnuplot')
+    if gp is not None:            # the templates write PDFs with pdfcairo, which some gnuplot builds lack
+        t = subprocess.run([gp, '-e', 'set terminal pdfcairo'], capture_output=True, text=True)
+        if t.returncode != 0 or 'unknown' in (t.stdout + t.stderr):
+            print(f'allplots: {gp} has no pdfcairo terminal: scripts only'); gp = None
     print(f'allplots: {os.path.abspath(d)}  NAME={name}  ' +
           '  '.join(f'{k}={v}' for k, v in sub.items() if k != 'KTICS'))
     st = 0
@@ -143,7 +147,7 @@ def main(argv):
         if not run:
             print(f'  {tpl}: written'); continue
         if gp is None:
-            print(f'  {tpl}: written; gnuplot not found'); st = 1; continue
+            print(f'  {tpl}: written; no gnuplot with pdfcairo'); st = 1; continue
         with open(os.path.join(d, base + '.log'), 'w') as log:
             r = subprocess.run([gp] + extra + [tpl], cwd=d, stdout=log, stderr=subprocess.STDOUT)
         pdfs = re.findall(r"set\s+output\s+['\"]([^'\"]+\.pdf)", text) or \

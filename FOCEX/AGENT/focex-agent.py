@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""focex-agent.py 1.9 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
+"""focex-agent.py 1.10 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
 structure (MODE: from_scratch, VASP + SC_SNAPS + FOCEX) or from existing force-displacement data
 (MODE: extract_only, FOCEX only).  Manual: FOCEX/AGENT/focexagent_manual.pdf
 
@@ -63,7 +63,20 @@ os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 os.environ.setdefault('OMP_NUM_THREADS', os.environ.get('VASP_OMP_NUM_THREADS', '1'))
 import numpy as np
 
-__version__ = '1.9'
+__version__ = '1.10'
+
+
+def gnuplot_pdf():
+    """gnuplot if it has the pdfcairo terminal the plot scripts use, else None (2026-11-09: a cluster's gnuplot
+    module had no pdfcairo; every plot failed and the run was reported FAILED after a good FOCEX fit)."""
+    gp = shutil.which('gnuplot')
+    if gp is None:
+        return None
+    try:
+        r = subprocess.run([gp, '-e', 'set terminal pdfcairo'], capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return None if (r.returncode != 0 or 'unknown' in (r.stdout + r.stderr)) else gp
 AGENT = os.path.dirname(os.path.realpath(__file__))          # FOCEX/AGENT (realpath: works through a symlink)
 HERE = os.path.dirname(AGENT)                                # the FOCEX folder: templates, utility/
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
@@ -204,8 +217,10 @@ def parse_instructions(path):
     fx['sc_snaps_x'] = os.path.expanduser(keyword(rest, 'SC_SNAPS_X') or first_file(
         '~/ALADYN/bin/sc_snaps.x', '~/BIN/sc_snaps.x'))
     fx['read_outcar_x'] = os.path.expanduser(keyword(rest, 'READ_OUTCAR_X') or '~/ALADYN/bin/read_outcar.x')
-    # PROFILE: in the instruction file, else FOCEX_PROFILE (written to ~/.aladyn.env by ./configure on a cluster)
-    fx['profile'] = keyword(rest, 'PROFILE') or os.environ.get('FOCEX_PROFILE') or None
+    # PROFILE: of the instruction file only; the default FOCEX_PROFILE (written to ~/.aladyn.env by ./configure on
+    # a cluster) is applied at setup (init) after --profile, and the choice is kept in state.json: at run time
+    # it must not replace the --profile given at setup (it did in 1.8-1.9: a --profile workstation test ran srun)
+    fx['profile'] = keyword(rest, 'PROFILE') or None
     fx['mpi_given'] = keyword(rest, 'MPI') is not None      # the parser gives MPI = 1 when it is missing
     # THERMACOND: latdyn.params line 8 decides; THERMACOND_JOB, else line 8 of a latdyn_params block
     job = keyword(rest, 'THERMACOND_JOB')
@@ -1609,9 +1624,10 @@ class Agent:
         write(os.path.join(d, 'makeplots.sh'),
               f'#!/bin/bash\n# remakes the plots of this FOCEX folder\ncd "$(dirname "$0")"\n'
               f'exec python3 "{allplots}" .\n', 0o755)
-        if shutil.which('gnuplot') is None:
+        if gnuplot_pdf() is None:
             subprocess.run([sys.executable, allplots, '.', '--no-run'], cwd=d, capture_output=True)
-            return True, 'scripts written; gnuplot not found, run makeplots.sh where it is'
+            return True, ('scripts written; no gnuplot with the pdfcairo terminal here, run makeplots.sh where '
+                          'there is one')
         r = subprocess.run(['bash', 'makeplots.sh'], cwd=d, capture_output=True, text=True)
         lines = [l.strip() for l in (r.stdout + r.stderr).splitlines()[1:] if l.strip()]
         return r.returncode == 0, '; '.join(lines)
@@ -1703,7 +1719,7 @@ class Agent:
         if not os.path.isfile(os.path.join(d, 'kappa_summary.dat')):
             return 'plots: no kappa_summary.dat (THERMACOND before 2.2)'
         name = os.path.basename(self.proj)
-        if shutil.which('gnuplot'):
+        if gnuplot_pdf():
             r = subprocess.run([sys.executable, os.path.join(HERE, 'PLOTTING', 'allplots'), '.', '--name', name],
                                cwd=d, capture_output=True, text=True)
             ok = [l.strip() for l in r.stdout.splitlines() if 'kappa.plt' in l]
@@ -1819,7 +1835,8 @@ def init(args):
         sys.exit(f'{proj} exists; use --force to start it again')
     if fx['mode'] == 'from_scratch' and not os.path.isfile(args.coord):
         sys.exit(f'coordinate file {args.coord} not found (default name POSCAR; another name: --coord FILE)')
-    prof = vagent.load_profile(args.profile or fx['profile'] or '')
+    args.profile = args.profile or fx['profile'] or os.environ.get('FOCEX_PROFILE') or None
+    prof = vagent.load_profile(args.profile or '')
     if prof.get('slurm'):
         try:
             slurm_account(inst, prof)            # a SLURM run needs an account (profile or ACCOUNT:)

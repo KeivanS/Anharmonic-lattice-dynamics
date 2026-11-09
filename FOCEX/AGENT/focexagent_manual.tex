@@ -89,7 +89,7 @@
   \normalsize Force constants and phonons from a crystal structure: VASP $\cdot$ SC-SNAPS $\cdot$
   FOCEX $\cdot$ Diagnosis \& repair\\[6pt]{\color{mainblue}\rule{\linewidth}{0.5pt}}}
 \author{Keivan Esfarjani}
-\date{v1.9 $\cdot$ November 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
+\date{v1.10 $\cdot$ November 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
 
 \begin{document}
 \maketitle
@@ -156,8 +156,10 @@ extract\_only & existing supercells and their forces (\cmd{POSCAR1}, \cmd{FORCED
 % ============================================================
 \section{Installation, step by step}\label{sec:install}
 % ============================================================
-Do the steps below in order, once on every computer. The same steps work on a Mac, on a Linux
-workstation and on the login node of a cluster; where they differ, the box says so.
+Do the six steps below in order, once on every computer: a Mac, a Linux workstation, or the login
+node of a cluster. Only step~1 differs between them. All the settings are made by \emph{one} command,
+\cmd{./configure --install} (step~4): you do not edit \cmd{~/.bashrc}, a profile or any other file by
+hand, and nothing has to be activated afterwards.
 
 \begin{explain}[: how to read this manual]
 \textcolor{mainblue}{\textbf{Blue boxes}} hold what you type, one command per line. Everything after a
@@ -169,11 +171,10 @@ what it does, and what to do if it fails. They are not commands.
 \noindent\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.21\linewidth}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{0.17\linewidth}@{}}
 \thead What & Needed for & Step \\ \midrule
 gfortran, MPI, gnuplot, git & building the codes; running VASP in parallel; the plots & 1 \\
-FOCEX, \cmd{read_outcar.x}, SC-SNAPS & the fit; reading the OUTCARs; the snapshots & 2 \\
-VASP-Flow & writing the VASP inputs and batch scripts & 3 \\
-Python $\geq$ 3.8 with numpy, spglib, pymatgen & the agent and \cmd{diagnose.py} & 4 \\
+FOCEX, SC-SNAPS, VASP-Flow & the fit, the snapshots, the VASP inputs & 2 \\
+Python $\geq$ 3.8 with numpy, spglib, pymatgen & the agent and \cmd{focex-diagnose} & 3 \\
 VASP 5.4 or newer and its POTCAR library & every DFT step (from\_scratch only) & your licence; found in
-  step 5 \\
+  step 4 \\
 \bottomrule
 \end{tabularx}
 
@@ -186,132 +187,161 @@ brew install gcc open-mpi gnuplot     # gfortran, mpif90 and mpirun, gnuplot
 sudo apt install git gfortran libopenmpi-dev openmpi-bin gnuplot python3-venv
 \end{doit}
 \begin{doit}[ --- a cluster]
-module avail gcc openmpi python       # the names differ from cluster to cluster
-module load gcc openmpi python        # put this line in ~/.bashrc
+module spider gcc                     # the compiler versions (module spider openmpi, python: the same)
+module load gcc openmpi python        # in this terminal only: step 4 saves them for every shell and job
 \end{doit}
 \begin{explain}
-gfortran and MPI are needed to build the codes (step 2), MPI also to run VASP on several cores.
-Without gnuplot the agent writes the plot scripts and you run \cmd{makeplots.sh} later, on a
-computer that has gnuplot.
+On a cluster, load a gcc, its openmpi and its python \emph{before} steps 3 and 4 (with versions if the
+cluster wants them, e.g.\ \cmd{module load gcc/14.2.0 openmpi/5.0.7 python/3.13.11}). Do not put
+\cmd{module load} lines into \cmd{~/.bashrc} yourself: step 4 writes the right ones into
+\cmd{~/.aladyn.env}, which \cmd{~/.bashrc} reads. gnuplot and the VASP module are found by step 4.
 \end{explain}
 
-\subsection*{Step 2. FOCEX, SC-SNAPS and the agent}
+\subsection*{Step 2. Get the codes}
 \begin{doit}
 cd ~
 git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
-cd Anharmonic-lattice-dynamics
-./configure --no-agent             # compilers and MPI: writes make.local; ends with "Ready"
-make focex sc_snaps python-tools      # about 3 minutes
-\end{doit}
-\begin{explain}
-\cmd{configure} finds the Fortran compiler and MPI, tests them, and writes their settings to
-\cmd{make.local}, which the Makefiles read (\cmd{--no-agent}: the agent's checks come in step 5).
-The programs go to \cmd{~/ALADYN/bin} (the \cmd{DESTDIR} of \cmd{make.local}). \cmd{python-tools} puts
-there the links \cmd{focex-agent} and \cmd{focex-diagnose} to the two Python scripts of
-\cmd{FOCEX/AGENT}. A plain \cmd{make} builds also THERMACOND (thermal conductivity) and ANFOMOD.
-To update later: \cmd{git pull}, \cmd{./configure}, then the same \cmd{make} line.
-\end{explain}
-
-\subsection*{Step 3. VASP-Flow}
-\begin{doit}
-cd ~
 git clone https://github.com/KeivanS/VASP-Flow.git
 \end{doit}
 \begin{explain}
-The agent uses VASP-Flow as a library to write the VASP input files and batch scripts; you do not
-need to learn VASP-Flow. It is looked for in \cmd{~/VASP-Flow}; if you put it elsewhere, step 5
-records that place.
+FOCEX, SC-SNAPS, THERMACOND and the agent are in the first repository; the agent uses VASP-Flow as a
+library to write the VASP input files and batch scripts (you do not need to learn VASP-Flow). Both are
+public: no login is needed.
 \end{explain}
 
-\subsection*{Step 4. The Python environment}
+\subsection*{Step 3. The Python environment}
 \begin{doit}
 python3 -m venv ~/myenv
 ~/myenv/bin/pip install numpy spglib pymatgen matplotlib flask
 \end{doit}
 \begin{explain}
-One environment, \cmd{~/myenv}, serves both VASP-Flow and the agent. It is needed whenever
-\emph{you} start \cmd{focex-agent.py} or \cmd{diagnose.py}: activate it first
-(\cmd{source ~/myenv/bin/activate}). The scripts the agent writes (\cmd{run_workflow.sh},
-\cmd{resubmit_failed.sh}, \cmd{diagnosis/fix_it.sh}) contain the full path of the Python you used,
-so batch jobs need no activation.
+One environment, \cmd{~/myenv}, serves both VASP-Flow and the agent. It is made once; step 4 finds it
+(another place: \cmd{./configure --install --python /path/to/bin/python}). On a cluster it can only
+start with the module of the Python it was made from: step 4 finds that module from
+\cmd{~/myenv/pyvenv.cfg} and loads it in every shell and job.
 \end{explain}
 
-\subsection*{Step 5. Let the configuration script find everything}
+\subsection*{Step 4. Configure: one command}
 \begin{doit}
 cd ~/Anharmonic-lattice-dynamics
-./configure                        # 1. look and report only
-./configure --install              # 2. after "Ready": make it permanent
+./configure --install                 # ends with "Ready"; on a cluster add: --account <SLURM account>
 \end{doit}
 \begin{explain}
-\cmd{configure} runs the agent's checks, \cmd{FOCEX/AGENT/focex-configure.sh} (which can also be run
-alone), and reads their settings from \cmd{~/.aladyn.env}. The environment need not be active here: it
-takes \cmd{~/myenv/bin/python} by itself (for an environment elsewhere, activate it or give
-\opt{python}). They find out what this computer has and where: the operating system and
-processor, the number of cores, SLURM, gfortran and mpif90, the FOCEX, SC-SNAPS and
-\cmd{read_outcar.x} programs, Python and its packages, VASP-Flow, the POTCAR library (it searches
-your home folder and \cmd{/opt}, \cmd{/usr/local}, \cmd{/share}, \cmd{/apps}, \cmd{/sw} for folders
-named \cmd{potpaw_PBE*} or \cmd{PAW_PBE*}), \cmd{vasp_std}, MPI and gnuplot. Every item is reported
-as \textbf{ok}, \textbf{WARN} (optional, or needed only for some calculations) or \textbf{FAIL}
-(needed). For each problem the end of the report gives the command that fixes it.
+It finds what this computer has, tests it, writes all the settings and checks them in a new login
+shell. Every item is reported as \textbf{ok}, \textbf{WARN} (optional, or needed only for some
+calculations) or \textbf{FAIL} (needed); for each problem the end of the report gives the command that
+fixes it. Fix it and run the same command again: running it again is always safe.
 
-\smallskip\noindent It writes the settings, and only these, to \cmd{~/.focex-agent.env}: \cmd{VASP_POTCAR_DIR},
-\cmd{VASP_STD}, \cmd{MPI_LAUNCH}, \cmd{VASP_FLOW_DIR} and \cmd{~/ALADYN/bin} added to \cmd{PATH}
-(Section~\ref{sec:env}). It then tests them: VASP-Flow builds a POTCAR from the library, and
-\cmd{focex-agent.py --version} starts. \cmd{configure} also writes \cmd{~/.aladyn.env} (the programs'
-folder in \cmd{PATH}, the macOS MPI settings, and a line reading \cmd{~/.focex-agent.env}), and with
-\opt{install} it adds one line to your shell start-up file (\cmd{~/.bash_profile} on a Mac with bash,
-\cmd{~/.bashrc} on Linux, \cmd{~/.zshrc} with zsh; a copy of the old file is kept) so that every new
-terminal and every batch job reads \cmd{~/.aladyn.env}. Running it again is safe: the line is not added
-twice, and the previous settings are kept as \cmd{~/.aladyn.env.bak} and \cmd{~/.focex-agent.env.bak}.
+\smallskip\noindent\textbf{What it looks at:} the processor and cores, SLURM, the modules, gfortran and
+mpif90 (it compiles and runs an OpenMP and an MPI test program), \cmd{~/myenv} and its packages,
+VASP-Flow, the POTCAR library (\cmd{VASP_POTCAR_DIR}, else folders named \cmd{potpaw_PBE*} or
+\cmd{PAW_PBE*} in your home folder, \cmd{/opt}, \cmd{/usr/local}, \cmd{/share}, \cmd{/apps}, \cmd{/sw}),
+\cmd{vasp_std} (a binary whose libraries are missing, \cmd{ldd ... not found}, is rejected), gnuplot
+(with the \cmd{pdfcairo} terminal the plots use; on a cluster the \cmd{gnuplot} module, if it has it).
 
-\smallskip\noindent\textbf{If it finds the wrong thing, or nothing}, tell it: \opt{potcar} \cmd{/path/to/potpaw_PBE.54}
+\smallskip\noindent\textbf{What it writes} (the previous version of each is kept as \cmd{.bak}):
+\begin{itemize}\itemsep0pt
+\item \cmd{make.local}: compilers, \cmd{DESTDIR} (\cmd{~/ALADYN/bin}) and \cmd{PYTHON} for the Makefiles;
+\item \cmd{~/.aladyn.env}: the \cmd{module load} line (cluster), \cmd{~/ALADYN/bin} in \cmd{PATH},
+  \cmd{FOCEX_PROFILE} (cluster), and it reads \cmd{~/.focex-agent.env};
+\item \cmd{~/.focex-agent.env}: \cmd{VASP_POTCAR_DIR}, \cmd{VASP_STD} (workstation), \cmd{MPI_LAUNCH},
+  \cmd{VASP_FLOW_DIR}, and \cmd{~/myenv/bin} at the front of \cmd{PATH};
+\item one line at the end of \cmd{~/.bashrc} (Linux), \cmd{~/.bash_profile} (Mac with bash) or
+  \cmd{~/.zshrc} (zsh) that reads \cmd{~/.aladyn.env}; never twice;
+\item the launchers \cmd{focex-agent}, \cmd{focex-diagnose}, \cmd{aladyn-gui}, \cmd{allplots},
+  \cmd{kappaplots} in \cmd{~/ALADYN/bin}: they start the scripts with \cmd{~/myenv}'s Python, so they work
+  in any shell and batch job;
+\item on a cluster: the SLURM profile and \cmd{~/ALADYN/bin/vasp-env} (box below), and THERMACOND
+  job examples in \cmd{~/ALADYN/jobs}.
+\end{itemize}
+\textbf{If it finds the wrong thing, or nothing}, tell it: \opt{potcar} \cmd{/path/to/potpaw_PBE.54}
 (the folder with \cmd{Si/}, \cmd{O/}, \dots), \opt{vasp} \cmd{/path/to/vasp_std}, \opt{python}
-\cmd{/path/to/python}.
+\cmd{/path/to/python}, \opt{account} \cmd{NAME}, \opt{vasp-module} \cmd{NAME}.
+\end{explain}
+
+\begin{explain}[: on a cluster, the profile]
+On a cluster VASP is started by SLURM, so the agent needs a \emph{profile}: a small JSON file in
+\cmd{~/VASP-Flow/profiles/}. Step 4 drafts it as \cmd{<cluster name>.json} (\opt{profile-name} for
+another name) and names it in \cmd{~/.aladyn.env} as \cmd{FOCEX_PROFILE}, the default of the agent and
+of \cmd{aladyn-gui}. In it: the default partition and its cores per node (\cmd{sinfo}), 1 node, 12 hours,
+the modules of step 1, and the account. \textbf{The account}: \opt{account} \cmd{NAME}; without it the
+one of the profile drafted before, else your SLURM default account; with several accounts a WARN
+lists them all. \textbf{VASP}: the newest \cmd{vasp/<version>} module (\opt{vasp-module} for another),
+tested: it must give a \cmd{vasp_std} whose libraries are all found.
+
+\smallskip\noindent On some clusters the VASP module loads another compiler (e.g.\ Intel) and so unloads
+gcc and the Python module, which the agent needs in the same job. Step 4 tests that; if it happens, the
+job keeps the modules of step 1 and VASP is started as \cmd{~/ALADYN/bin/vasp-env srun vasp_std}:
+\cmd{vasp-env} loads the VASP module for the VASP command only (\cmd{mpi_cmd} of the profile).
+Otherwise the VASP module is simply one of the profile's modules and \cmd{mpi_cmd} is \cmd{srun}.
+
+\smallskip\noindent A profile drafted by step 4 is drafted again when step 4 is run again (the old one is
+kept as \cmd{.bak}); a profile you wrote yourself (without the ``Drafted by ALADYN's configure''
+comment) is never changed. To check it: \cmd{cat ~/VASP-Flow/profiles/$FOCEX_PROFILE.json}.
+
+\smallskip\noindent\textbf{The number of VASP ranks.} With \cmd{srun} VASP runs on all tasks of the
+job, nodes $\times$ \cmd{ntasks_per_node} (\cmd{NODES:}, \cmd{NTASKS_PER_NODE:}, \cmd{WALLTIME:},
+\cmd{PARTITION:} in the instruction file replace those of the profile). Without an \cmd{MPI} line that
+is the number of ranks, and KPAR and NCORE are chosen for it. \cmd{MPI: N} fewer than the tasks is run
+as \cmd{srun -n N} (a WARNING says the others stay idle); more than the tasks stops the set-up. On a
+workstation no profile is needed: VASP is started with \cmd{MPI_LAUNCH} on \cmd{MPI} ranks, and
+\cmd{run_workflow.sh} with \cmd{bash}.
+\end{explain}
+
+\subsection*{Step 5. Build}
+\begin{doit}
+make                                  # in ~/Anharmonic-lattice-dynamics; a few minutes
+\end{doit}
+\begin{explain}
+Builds FOCEX, SC-SNAPS, \cmd{read_outcar.x} and the other utilities, THERMACOND (MPI and serial) and
+ANFOMOD with the compilers of \cmd{make.local}, into \cmd{~/ALADYN/bin}. (\cmd{./configure --install
+--build} does steps 4 and 5 in one go.)
 \end{explain}
 
 \subsection*{Step 6. Check, in a new terminal}
 \begin{doit}
-echo $VASP_POTCAR_DIR                 # the POTCAR library found in step 5
-source ~/myenv/bin/activate
-focex-agent --version                 # prints: focex-agent 1.9
+focex-agent --version                 # prints: focex-agent 1.10
+echo $VASP_POTCAR_DIR $FOCEX_PROFILE  # the POTCAR library; on a cluster, the profile's name
 \end{doit}
 \begin{explain}
-An empty first line means the start-up file was not read: on a Mac, check that the terminal runs
-the shell named by \cmd{echo $SHELL}, or type \cmd{source ~/.aladyn.env}. \cmd{focex-agent:
-command not found} means \cmd{~/ALADYN/bin} is not in \cmd{PATH} (step 2 with \cmd{python-tools},
-then step 5). The activation is needed in every new terminal in which you start \cmd{focex-agent},
-\cmd{focex-diagnose}, \cmd{aladyn-gui} or \cmd{kappaplots}: they run with the \cmd{python3} found first
-in \cmd{PATH}, and without \cmd{~/myenv} that one lacks numpy, spglib and pymatgen. Batch jobs need
-none: the scripts the agent writes carry the full path of the Python.
+Step 4 has already made this check in a fresh login shell (its section ``8. Check in a new login
+shell''); here you see it yourself. Nothing needs to be activated: \cmd{focex-agent} starts with
+\cmd{~/myenv}'s Python by itself. If \cmd{focex-agent: command not found}: the start-up file was not
+read; on a Mac check that the terminal runs the shell \cmd{echo $SHELL} names, then run step 4 again.
 \end{explain}
 
-\subsection*{Step 7. Only on a cluster: the profile}
+\subsection*{Updating}
 \begin{doit}
-module load gcc openmpi               # your cluster's compiler and MPI modules, before step 5
-cat ~/VASP-Flow/profiles/$FOCEX_PROFILE.json   # the profile step 5 drafted: check it
+cd ~/Anharmonic-lattice-dynamics && git pull && ./configure --install && make
+cd ~/VASP-Flow && git pull
 \end{doit}
-\begin{explain}
-On a cluster VASP is started by SLURM, so the agent needs to know how: a \emph{profile}, a small
-JSON file in \cmd{~/VASP-Flow/profiles/}. On a cluster (\cmd{sbatch} found), step 5 drafts it as
-\cmd{<cluster name>.json} (\opt{profile-name} for another name): the default partition and its cores
-per node (\cmd{sinfo}), your account (\cmd{sacctmgr}; with several, the first, and a warning), the
-loaded modules and the newest \cmd{vasp} module (\cmd{module avail}, test-loaded for \cmd{vasp_std}),
-\cmd{mpi_cmd} \cmd{srun}, 1 node, 12 hours. An existing profile is never overwritten. Its name goes
-into \cmd{~/.aladyn.env} as \cmd{FOCEX_PROFILE}, the default of the agent and of \cmd{aladyn-gui}
-(\cmd{PROFILE:} in an instruction file or \opt{profile} wins). Check \cmd{account}, \cmd{partition},
-\cmd{time} and \cmd{modules}; to write one by hand, copy \cmd{slurm.json} (the template) to a new
-name.
 
-\smallskip\noindent\textbf{The number of VASP ranks.} With \cmd{srun} VASP runs on all tasks of the
-job, nodes $\times$ \cmd{ntasks_per_node} (\cmd{NODES:}, \cmd{NTASKS_PER_NODE:} in the instruction
-file replace those of the profile). Without an \cmd{MPI} line that is the number of ranks, and KPAR and
-NCORE are chosen for it. \cmd{MPI: N} fewer than the tasks is run as \cmd{srun -n N} (a WARNING says
-the others stay idle); more than the tasks stops the set-up. On a workstation no profile is needed:
-VASP is started with \cmd{MPI_LAUNCH} on \cmd{MPI} ranks, and \cmd{run_workflow.sh} with \cmd{bash}.
-\end{explain}
+\subsection{When step 4 reports a problem}\label{sec:install-problems}
+\noindent\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.40\linewidth}X@{}}
+\thead Message & What to do \\ \midrule
+\cmd{gfortran 8.5: version 9 or newer is needed} & cluster: \cmd{module load gcc openmpi python}
+  (step 1), then step 4 again; Mac: \cmd{brew install gcc} \\
+\cmd{~/myenv/bin/python does not start} & the module of its Python was not found: load it
+  (\cmd{module spider python}), or make \cmd{~/myenv} again with the Python loaded now (step 3) \\
+\cmd{no Python with numpy, spglib and pymatgen} & step 3 \\
+\cmd{vasp_std cannot run here: N of its libraries are missing} & an old VASP build (e.g.\ after a
+  system update): on a cluster nothing to do, the VASP module is used; on a workstation rebuild VASP
+  or give \opt{vasp} \\
+\cmd{account X is not one of yours} & \cmd{./configure --install --account <one of the names listed>} \\
+\cmd{several SLURM accounts ...: X is used} & if X is the wrong one: \opt{account} \cmd{NAME} \\
+\cmd{module ... gives no vasp_std} / \cmd{misses libraries} & \cmd{module spider vasp}, then
+  \opt{vasp-module} \cmd{NAME} \\
+\cmd{no POTCAR library found} & \opt{potcar} \cmd{/path/to/potpaw_PBE.54} \\
+\cmd{the module gnuplot/... has no pdfcairo terminal} & nothing to do: the agent writes the plot scripts;
+  run \cmd{makeplots.sh} (in \cmd{05_focex}) on a computer whose gnuplot makes PDFs \\
+\cmd{VASP-Flow not found} & step 2 \\
+\cmd{focex-agent does not start in a new shell} & read the lines above it; usually one of the problems
+  above \\
+\bottomrule
+\end{tabularx}
 
 \subsection{Settings outside the instruction file}\label{sec:env}
-These are environment variables; step 5 sets the first five for you.
+These are environment variables; step 4 sets them for you.
 
 \medskip
 \noindent\begin{tabularx}{\linewidth}{@{}>{\ttfamily}p{0.26\linewidth}>{\raggedright\arraybackslash}p{0.22\linewidth}X@{}}
@@ -362,14 +392,13 @@ EOF
 \end{doit}
 \begin{explain}
 This is the minimal file; Section~\ref{sec:keywords} explains each line and every keyword that you
-may add. \cmd{MPI} is the number of cores VASP uses: \cmd{focex-configure.sh} prints a suggestion
+may add. \cmd{MPI} is the number of cores VASP uses: \cmd{./configure} prints a suggestion
 for this computer. With a SLURM profile it may be left out: VASP then runs on the job's tasks, nodes
-$\times$ ntasks\_per\_node of the profile (Step 7).
+$\times$ ntasks\_per\_node of the profile (step 4, the profile box).
 \end{explain}
 
 \subsection*{3. Set up the project}
 \begin{doit}
-source ~/myenv/bin/activate
 focex-agent                           # on a cluster: the profile of ./configure, or --profile NAME
 \end{doit}
 \begin{explain}
@@ -409,8 +438,8 @@ a script that repairs it (Section~\ref{sec:diagnose}).
 \thead \normalfont\bfseries option & \textbf{meaning} \\ \midrule
 -{}-instr FILE & the instruction file, if it is not called \cmd{focex-agent-instructions.txt} \\
 -{}-coord FILE & the crystal structure, if it is not called \cmd{POSCAR} (from\_scratch) \\
--{}-profile NAME & the VASP-Flow profile (step 7); default: \cmd{PROFILE:} of the instruction file,
-  else none \\
+-{}-profile NAME & the VASP-Flow profile; default: \cmd{PROFILE:} of the instruction file,
+  else \cmd{FOCEX_PROFILE} (step 4 sets it on a cluster), else none. Kept for the whole run \\
 -{}-force & set up again a project folder that exists already. Its record of finished tasks is
   reset, so use it only to start over, after removing the old run folders \\
 \bottomrule
@@ -614,10 +643,10 @@ MPI: 8
 \item[Project] a name, used in titles and as the name of the project folder. Without it the name is
   \cmd{VASP_Calculation}.
 \item[MPI] the number of cores (MPI ranks) VASP uses. \textbf{Without it VASP runs on one core},
-  also with a profile.
+  on a workstation; with a SLURM profile it runs on all the job's tasks.
 \end{description}
-On a cluster add \cmd{PROFILE: mycluster} (step 7 of Section~\ref{sec:install}), and
-\cmd{ACCOUNT: <allocation>} if the profile has no account.
+On a cluster nothing needs to be added: step 4 of Section~\ref{sec:install} made the profile, with the
+account (\cmd{PROFILE:} and \cmd{ACCOUNT:} choose others for one project).
 \end{explain}
 
 \begin{doit}[ --- extract\_only: FOCEX on forces you already have]
@@ -1015,6 +1044,15 @@ is read back from \cmd{07_thermacond/V3DELTA} when the force constants and the m
 \section{Version history}
 % ============================================================
 \begin{description}
+\item[1.10] 2026-11-09: installation in one command, \cmd{./configure --install} (Section~\ref{sec:install}, six steps,
+  a table of the problems it reports): on a cluster it finds and loads the modules \cmd{~/myenv} needs and gnuplot,
+  writes the \cmd{module load} line into \cmd{~/.aladyn.env}, takes the account from \opt{account}, drafts the
+  profile again on a rerun, tests the VASP module and, when it unloads the Python modules, runs VASP through
+  \cmd{~/ALADYN/bin/vasp-env}; a \cmd{vasp_std} with missing libraries is rejected; \cmd{make python-tools}
+  writes launchers with \cmd{~/myenv}'s Python (no activation); the cores of \cmd{sinfo} (\cmd{40+}) no
+  longer break the profile's JSON; a gnuplot without the \cmd{pdfcairo} terminal counts as no gnuplot (scripts
+  written, the run goes on). Fixed: \cmd{FOCEX_PROFILE} replaced the \opt{profile} of the set-up at run
+  time (1.8, 1.9).
 \item[1.9] 2026-11-09: the serial THERMACOND build (\cmd{tcond-*-serial.x}) is started as one process on threads
   (\cmd{TCOND_NUM_THREADS}), not with \cmd{srun}, also in aladyn-gui's bundles (one task, \cmd{--cpus-per-task});
   without an MPI build the agent takes the serial one; \cmd{run_workflow.sh} says where its module lines come from

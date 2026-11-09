@@ -23,9 +23,10 @@ brings SC-SNAPS, in ``SC_SNAPS/``):
 
 .. code-block:: bash
 
+   # on a cluster first:  module load gcc openmpi python   (module spider gcc lists the versions)
    git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
    cd Anharmonic-lattice-dynamics
-   ./configure --install    # this computer's settings (next section); ends with "Ready"
+   ./configure --install    # all the settings (next section); ends with "Ready"
    make                        # = make all
 
 To update it later, from inside that folder:
@@ -33,7 +34,7 @@ To update it later, from inside that folder:
 .. code-block:: bash
 
    git pull
-   ./configure              # again: a pull may change what the Makefiles need
+   ./configure --install    # again: a pull may change what the Makefiles need
    make                        # rebuild
 
 If you have edited files of your own, ``git pull`` keeps them; it stops, changing nothing, when the
@@ -45,37 +46,56 @@ edits aside, updates, and puts them back.
 Configuring: ``configure``
 -----------------------------
 
-Once, after cloning (and again after installing or moving compilers, MPI, VASP or Python):
+One command, once after cloning, and again after every ``git pull`` and after installing or moving
+compilers, MPI, VASP or Python. Running it again is always safe.
 
 .. code-block:: bash
 
-   ./configure              # look, test, write make.local and ~/.aladyn.env
-   ./configure --install    # the same, and one line in ~/.bash_profile (macOS) or ~/.bashrc
-                            # (Linux; ~/.zshrc with zsh) that reads ~/.aladyn.env in every shell
-   ./configure --build      # the same, then make
+   ./configure --install    # find, test, write all the settings, check them in a new login shell
+   ./configure --install --build   # the same, then make
+   ./configure              # look and write the files, but leave the start-up file alone
+
+On a cluster, load a compiler, its MPI and its Python first, in that terminal only
+(``module load gcc openmpi python``; ``module spider <name>`` lists the versions), and add
+``--account <SLURM account>``. Do not put ``module load`` lines into ``~/.bashrc`` yourself:
+``configure`` writes the right ones into ``~/.aladyn.env``.
 
 It looks at the computer (operating system, cores, memory, SLURM, environment modules), finds the
 Fortran compiler (``gfortran``, else ``ifx`` or ``ifort``) and the MPI wrapper (``mpif90``, and the
 compiler it calls), compiles and runs a small OpenMP program on two threads and an MPI program on two
-ranks (on a cluster login node it only compiles), and writes
+ranks (on a cluster login node it only compiles), and checks the FOCEX agent's needs (Python, VASP-Flow,
+POTCARs, VASP, gnuplot; ``--no-agent`` skips them). It writes (the previous version of each is kept as
+``.bak``):
 
 * ``make.local``: ``DESTDIR``, the Fortran compiler ``FF`` (FOCEX, FOCEX/utility, ANFOMOD, SC-SNAPS), the
-  MPI wrapper ``MPIFC`` (THERMACOND), ``FLAGS``, and on macOS with Homebrew's Open MPI ``OMPI_FC`` and
-  ``SDKROOT``. ``make.inc`` (in git: the defaults) reads it at its end, so its values win; it is not in
-  git, so ``git pull`` never conflicts with it (the old one is kept as ``make.local.bak``). The
+  MPI wrapper ``MPIFC`` (THERMACOND), ``FLAGS``, ``PYTHON`` (the Python with numpy, spglib, pymatgen),
+  and on macOS with Homebrew's Open MPI ``OMPI_FC`` and ``SDKROOT``. ``make.inc`` (in git: the defaults)
+  reads it at its end, so its values win; it is not in git, so ``git pull`` never conflicts with it. The
   top-level ``make`` passes these to every part.
-* ``~/.aladyn.env``: ``PATH`` with ``DESTDIR``, ``OMPI_FC`` and ``SDKROOT`` (macOS), and the settings
-  of the FOCEX agent (below), which it also checks; ``--no-agent`` skips them.
+* ``~/.aladyn.env``: on a cluster the ``module load`` line (the modules loaded when ``configure`` ran,
+  and those it loaded itself: the module of ``~/myenv``'s Python, found from ``~/myenv/pyvenv.cfg``,
+  and gnuplot if its module has the ``pdfcairo`` terminal the plots use), ``PATH`` with ``DESTDIR``, ``OMPI_FC`` and ``SDKROOT`` (macOS), ``FOCEX_PROFILE``
+  (cluster), and it reads ``~/.focex-agent.env`` (:ref:`focex-configure`).
+* with ``--install``: one line at the end of ``~/.bashrc`` (Linux), ``~/.bash_profile`` (macOS with bash)
+  or ``~/.zshrc`` that reads ``~/.aladyn.env``, never twice (a separate older line for
+  ``~/.focex-agent.env`` is removed); then the launchers of ``make python-tools`` and a check in a fresh
+  login shell: ``focex-agent --version`` and ``python3`` with numpy, spglib, pymatgen.
 
-Options: ``--prefix DIR`` (``DESTDIR``), ``--fc``, ``--mpifc`` (the compilers to use), and the agent's
-``--potcar``, ``--vasp``, ``--python``. On a cluster load the compiler and MPI modules first: there it
-also drafts the VASP-Flow profile of the FOCEX agent, ``~/VASP-Flow/profiles/<cluster name>.json``
-(``--profile-name`` for another name), from ``sinfo`` (default partition, cores per node),
-``sacctmgr`` (account) and ``module avail`` (the loaded modules and the newest ``vasp`` module),
-keeps an existing one, and makes it the default (``FOCEX_PROFILE`` in ``~/.aladyn.env``). Check it. It also
-writes two THERMACOND job scripts, MPI and OpenMP, with these values and the loaded modules filled in, to
-``~/ALADYN/jobs`` (:doc:`runthermacond`). Module names: ``module spider <name>``, and
-``module spider <name>/<version>`` for what has to be loaded before it.
+Options: ``--prefix DIR`` (``DESTDIR``), ``--fc``, ``--mpifc`` (the compilers to use), ``--account``,
+``--vasp-module``, ``--profile-name`` (cluster), and the agent's ``--potcar``, ``--vasp``, ``--python``.
+
+**On a cluster** it also drafts the VASP-Flow profile of the FOCEX agent,
+``~/VASP-Flow/profiles/<cluster name>.json`` (``--profile-name`` for another name), and makes it the
+default (``FOCEX_PROFILE``): the default partition and its cores per node (``sinfo``), 1 node, 12 hours,
+the modules above, the account (``--account``; else that of the profile drafted before; else your
+SLURM default account; with several a warning lists them) and the newest ``vasp/<version>`` module
+(``--vasp-module`` for another), tested: it must give a ``vasp_std`` whose libraries are all found.
+When that module unloads the Python modules (on some clusters it loads the Intel compiler, which swaps
+out gcc), VASP is started as ``~/ALADYN/bin/vasp-env srun vasp_std``: ``vasp-env``, written by
+``configure``, loads the VASP module for the VASP command only, and the job keeps the others. A profile
+drafted by ``configure`` is drafted again on a rerun; one you wrote yourself is never changed. It also
+writes two THERMACOND job scripts, MPI and OpenMP, with these values and the modules filled in, to
+``~/ALADYN/jobs`` (:doc:`runthermacond`).
 
 Building everything at once
 ---------------------------
@@ -106,7 +126,7 @@ FOCEX and THERMACOND set their own compiler options in their Makefiles. Then
    make sc_snaps           # SC-SNAPS (sc_snaps.x, poscar2xyz.py)
    make thermacond         # THERMACOND with MPI (tcond-2.2.x); thermacond-serial: without
    make anfomod            # ANFOMOD
-   make python-tools       # links focex-agent, focex-diagnose, bandplot, allplots, kappaplots, shell-optimizer, aladyn-gui
+   make python-tools       # launchers focex-agent, focex-diagnose, allplots, kappaplots, shell-optimizer, aladyn-gui; bandplot
    make scop8              # SCOP8, not part of "make": it does not compile at present
    make clean              # removes the object and module files
 
@@ -115,8 +135,9 @@ On macOS with Homebrew's Open MPI, ``configure`` puts ``OMPI_FC`` and ``SDKROOT`
 before ``make``; see :doc:`runthermacond`).
 The sections below describe each part and how to build it on its own.
 
-Finally add the installation directory to your ``PATH`` — put the line in your
-``~/.bashrc`` or ``~/.zshrc`` so that it is set in every session:
+``./configure --install`` puts the installation directory into ``PATH`` (through ``~/.aladyn.env``).
+Without ``configure``, put this line in your ``~/.bashrc`` or ``~/.zshrc`` so that it is set in every
+session:
 
 .. code-block:: bash
 
@@ -270,7 +291,8 @@ Setting up the FOCEX agent: ``focex-configure.sh``
 
 The FOCEX agent (:doc:`focexagent_guide`) also runs the DFT calculations, so it has to know where
 VASP, MPI, the POTCAR library, VASP-Flow and a suitable Python are. ``configure`` (above) runs this
-script and reads its file from ``~/.aladyn.env``; on its own:
+script and reads its file from ``~/.aladyn.env`` (use ``configure``: it also loads the modules the
+script's findings need); on its own:
 
 .. code-block:: bash
 
@@ -282,7 +304,9 @@ script and reads its file from ``~/.aladyn.env``; on its own:
 It looks at, in this order: the computer (operating system, processor, cores, Slurm), the compilers
 (``gfortran``, ``mpif90``; needed only to build FOCEX and SC-SNAPS), the FOCEX, SC-SNAPS and
 ``read_outcar.x`` binaries, Python with numpy, spglib and pymatgen, VASP-Flow, the POTCAR library,
-``vasp_std``, MPI and ``gnuplot``. It then writes the settings to ``~/.focex-agent.env`` and checks
+``vasp_std`` (one whose libraries are missing, ``ldd ... not found``, is rejected), MPI and ``gnuplot``.
+It then writes the settings to ``~/.focex-agent.env`` (``VASP_POTCAR_DIR``, ``VASP_STD``, ``MPI_LAUNCH``,
+``VASP_FLOW_DIR``, ``~/ALADYN/bin`` and the Python environment's ``bin`` at the front of ``PATH``) and checks
 them by building a POTCAR with VASP-Flow's own functions and by starting ``focex-agent.py
 --version``. It ends with ``Ready`` and the number of warnings. When the search finds the wrong
 program or nothing, tell it where to look:

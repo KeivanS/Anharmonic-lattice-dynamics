@@ -3,7 +3,7 @@
 FOCEX agent: from a crystal structure to phonons
 ================================================
 
-Version 1.9 (2026-11-09, with FOCEX 9.9). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
+Version 1.10 (2026-11-09, with FOCEX 9.9). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
 instruction file and ``diagnose.py`` are in ``FOCEX/AGENT``.
 
 What the FOCEX agent does
@@ -96,43 +96,72 @@ The programs
 Install, once
 ~~~~~~~~~~~~~
 
-The same commands on a workstation and on the login node of a cluster (there, load Python 3.8+
-and GCC first, e.g. ``module load gcc python``).
+The same commands on a workstation and on the login node of a cluster. All the settings are made by
+one command, ``./configure --install`` (step 4): nothing is edited by hand and nothing needs to be
+activated afterwards. :ref:`configure` says what it does.
+
+On a cluster, first, in this terminal only: ``module load gcc openmpi python`` (``module spider gcc``
+lists the versions; ``configure`` saves the modules for every shell and job).
 
 .. code-block:: bash
 
    cd ~
-   # 1. this repository: FOCEX, its utilities, SC-SNAPS, the agent
+   # 1. the codes: FOCEX, SC-SNAPS, THERMACOND, the agent; and VASP-Flow, which the agent imports
    git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
-   cd Anharmonic-lattice-dynamics
-   ./configure --no-agent  # compilers and MPI -> make.local (the agent's checks come in step 4)
-   make focex sc_snaps python-tools   # FOCEX, read_outcar.x, ..., sc_snaps.x, the focex-agent link
-                           # -> ~/ALADYN/bin (3 min); plain "make" also builds THERMACOND and ANFOMOD
-   cd ~
-
-   # 2. VASP-Flow; the agent imports it from ~/VASP-Flow
-   #    (another place: export VASP_FLOW_DIR=/that/place)
    git clone https://github.com/KeivanS/VASP-Flow.git
 
-   # 3. one Python environment for VASP-Flow and the FOCEX agent
+   # 2. one Python environment for VASP-Flow and the FOCEX agent
    python3 -m venv ~/myenv
    ~/myenv/bin/pip install numpy spglib pymatgen matplotlib flask
 
-   # 4. the settings (VASP, POTCARs, PATH, ...) for every new terminal; ends with "Ready"
-   (cd Anharmonic-lattice-dynamics && ./configure --install)
+   # 3. configure: finds and tests everything, writes all the settings; ends with "Ready"
+   cd Anharmonic-lattice-dynamics
+   ./configure --install                # on a cluster add: --account <your SLURM account>
 
-   # in every new terminal where you start focex-agent yourself (batch jobs need none):
-   source ~/myenv/bin/activate
+   # 4. build (a few minutes) -> ~/ALADYN/bin
+   make
+
+   # 5. check, in a new terminal
+   focex-agent --version                # focex-agent 1.10
 
 The agent finds the programs at these places; a program installed elsewhere is named in the
-instruction file (``FOCEX_X``, ``SC_SNAPS_X``, ``READ_OUTCAR_X``, :ref:`agent-keywords`). With step 4 and the environment active, ``focex-agent`` and ``focex-diagnose`` are
-short for ``python .../FOCEX/AGENT/focex-agent.py`` and ``python .../FOCEX/AGENT/diagnose.py``.
+instruction file (``FOCEX_X``, ``SC_SNAPS_X``, ``READ_OUTCAR_X``, :ref:`agent-keywords`). ``focex-agent`` and
+``focex-diagnose`` in ``~/ALADYN/bin`` are launchers that start ``FOCEX/AGENT/focex-agent.py`` and
+``diagnose.py`` with ``~/myenv``'s Python, so they work in any shell and batch job.
+
+When step 3 reports a problem, the end of its report gives the command that fixes it; fix it and run
+``./configure --install`` again. The usual ones:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 42 58
+
+   * - message
+     - what to do
+   * - ``gfortran 8.5: version 9 or newer is needed``
+     - cluster: ``module load gcc openmpi python``, then step 3 again; macOS: ``brew install gcc``
+   * - ``~/myenv/bin/python does not start``
+     - the module of its Python was not found: load it (``module spider python``), or make ``~/myenv``
+       again with the Python loaded now (step 2)
+   * - ``vasp_std cannot run here: N of its libraries are missing``
+     - an old VASP build: on a cluster nothing to do (the VASP module is used); on a workstation rebuild
+       VASP or give ``--vasp``
+   * - ``account X is not one of yours`` / ``several SLURM accounts``
+     - ``./configure --install --account <name>``
+   * - ``module ... gives no vasp_std`` / ``misses libraries``
+     - ``module spider vasp``, then ``--vasp-module <name>``
+   * - ``no POTCAR library found``
+     - ``--potcar /path/to/potpaw_PBE.54``
+   * - ``the module gnuplot/... has no pdfcairo terminal``
+     - nothing to do: the agent writes the plot scripts; run ``makeplots.sh`` (in ``05_focex``) on a
+       computer whose gnuplot makes PDFs
 
 Tell VASP-Flow where VASP, MPI and the POTCARs are
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**The POTCAR library** is always given by an environment variable. Put it in your ``~/.bashrc``
-(or ``~/.zshrc``) so that every job sees it:
+``./configure`` does all of this; this section says what it set, for checking. **The POTCAR
+library** is given by an environment variable, which ``configure`` finds and writes into
+``~/.focex-agent.env`` (read by every shell and job):
 
 .. code-block:: bash
 
@@ -158,9 +187,11 @@ Tell VASP-Flow where VASP, MPI and the POTCARs are
        load, partition, nodes, tasks per node, time, account)
    * - *your own* (``mycluster`` below)
      - your cluster: ``./configure`` on the cluster drafts it (``<cluster name>.json``, from ``sinfo``,
-       ``sacctmgr`` and ``module avail``; an existing one is kept) and makes it the default
-       (``FOCEX_PROFILE`` in ``~/.aladyn.env``); or copy ``slurm.json`` to ``mycluster.json``, edit
-       it, and use ``--profile mycluster``
+       ``sacctmgr`` and ``module avail``, the VASP module tested; drafted again on a rerun, one written
+       by hand is kept) and makes it the default (``FOCEX_PROFILE`` in ``~/.aladyn.env``); when the
+       VASP module unloads the Python modules, ``mpi_cmd`` is ``~/ALADYN/bin/vasp-env srun``
+       (:ref:`configure`). Or copy ``slurm.json`` to ``mycluster.json``, edit it, and use
+       ``--profile mycluster``
 
 With a SLURM profile, ``run_workflow.sh`` begins with the ``#SBATCH`` lines and the
 ``module load`` lines of the profile and is submitted with ``sbatch``. VASP runs on all tasks of the
@@ -173,8 +204,7 @@ Check the set-up
 
 .. code-block:: bash
 
-   source ~/myenv/bin/activate
-   python ~/VASP-Flow/check_setup.py local     # a workstation;  "slurm" on a cluster
+   ~/myenv/bin/python ~/VASP-Flow/check_setup.py local     # a workstation;  "slurm" on a cluster
 
 It checks Python and its packages, the POTCAR library, VASP and MPI (and on a cluster the
 profile), and prints for every problem the command that fixes it. **Ready.** at the end means you
@@ -184,12 +214,11 @@ When is the Python environment needed?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 It is the same environment as in VASP-Flow's manual: one, ``~/myenv``, serves both (DFT with
-VASP-Flow, phonons with the FOCEX agent). It is needed whenever *you* start ``focex-agent.py`` or
-``diagnose.py``: they import numpy, spglib, pymatgen and
-VASP-Flow. Either activate it first (``source ~/myenv/bin/activate``, then ``python ...``) or
-call its interpreter directly (``~/myenv/bin/python ...``). The scripts the agent writes
+VASP-Flow, phonons with the FOCEX agent). It never has to be activated: the launchers
+``focex-agent``, ``focex-diagnose``, ``aladyn-gui``, ``allplots``, ``kappaplots`` start the scripts with it,
+``~/.focex-agent.env`` puts its ``bin`` first in ``PATH``, and the scripts the agent writes
 (``run_workflow.sh``, ``resubmit_failed.sh``, ``diagnosis/fix_it.sh``) contain the full path of the
-interpreter you used, so the batch jobs need no activation. The plots need only gnuplot; without it
+interpreter. (On a cluster it needs the module of its Python, which ``~/.aladyn.env`` and the profile load.) The plots need only gnuplot; without it
 the agent writes the plot scripts and you run ``makeplots.sh`` later, where gnuplot is.
 
 Quick start
@@ -223,8 +252,7 @@ The steps of a from_scratch calculation (:ref:`agent-extract` has those of extra
    cp $A/focex-agent-instructions.txt .
    nano focex-agent-instructions.txt  # Project, RANKS, FUNCTIONAL, MPI
 
-   source ~/myenv/bin/activate
-   python $A/focex-agent.py --profile mycluster   # your profile (above)
+   focex-agent                        # on a cluster the profile of ./configure (or --profile NAME)
    cd ZnO
    sbatch run_workflow.sh             # without a profile: nohup bash run_workflow.sh &
    tail -f report.log
@@ -300,7 +328,7 @@ The supercell tasks are checked again before they are skipped:
    gives the high-frequency dielectric constant and the Born effective charges of every atom
    (:ref:`agent-born`). ``DFPT: on`` forces it, ``off`` skips it. With the finite-field method
    (``LCALCEPS``) the field ``EFIELD_PEAD`` is set to half of VASP's limit for Zener tunnelling,
-   e|E| |a_i| < E_g/(10 N_i) (E_g the SCF gap, N_i the k-points along a_i; at most VASP's default
+   ``e|E| |a_i| < E_g/(10 N_i)`` (E_g the SCF gap, N_i the k-points along a_i; at most VASP's default
    0.01 eV/Å), unless you set it in ``INCAR_dfpt``. The values are read from the ``OUTCAR``;
    ``extract_born.py`` also writes them to ``born_charges.txt`` and ``BORN`` (its output in
    ``extract_born.out``). The result is checked: no Zener warning from VASP, Born charges summing
@@ -865,6 +893,16 @@ new temperatures).
 
 Version history
 ---------------
+
+1.10
+   2026-11-09: installation in one command, ``./configure --install``, with a table of the problems it
+   reports: on a cluster it finds and loads the modules ``~/myenv`` needs and gnuplot, writes the
+   ``module load`` line into ``~/.aladyn.env``, takes the account from ``--account``, drafts the profile again
+   on a rerun, tests the VASP module and, when it unloads the Python modules, runs VASP through
+   ``~/ALADYN/bin/vasp-env``; a ``vasp_std`` with missing libraries is rejected; ``make python-tools`` writes
+   launchers with ``~/myenv``'s Python (no activation); ``sinfo``'s ``40+`` cores no longer break the
+   profile's JSON; a gnuplot without the ``pdfcairo`` terminal counts as no gnuplot (scripts written, the run
+   goes on). Fixed: ``FOCEX_PROFILE`` replaced the ``--profile`` of the set-up at run time (1.8, 1.9).
 
 1.9
    2026-11-09: the serial THERMACOND build runs as one process on threads (``TCOND_NUM_THREADS``), not with
