@@ -196,59 +196,63 @@ if [ $AGENT = 1 ]; then
     fi
 fi
 
-# ---------------------------------------------------------------- 5b. SLURM profile (cluster only)
+# ---------------------------------------------------------------- 5b. SLURM profile and job examples (cluster only)
 PROFNAME=""
 if [ $CLUSTER = 1 ]; then
-    head_ "5b. SLURM profile for the FOCEX agent and VASP-Flow"
+    head_ "5b. SLURM profile for the FOCEX agent and VASP-Flow; THERMACOND job examples"
     VF=$(expand "${VASP_FLOW_DIR:-~/VASP-Flow}")
     CN=$(scontrol show config 2>/dev/null | awk -F= '/^ClusterName/ {gsub(/[ \t]/,"",$2); print $2; exit}')
     PROFNAME=$(printf '%s' "${OPT_PROFILE:-${CN:-$HOST}}" | tr -c 'A-Za-z0-9_.-' '_')
     PF="$VF/profiles/$PROFNAME.json"
+    # what SLURM and the module system say (the profile and the job examples use it)
+    SI=$(sinfo -h -o '%P|%c|%l' 2>/dev/null)
+    PART=$(printf '%s\n' "$SI" | awk -F'|' '$1 ~ /\*$/ {sub(/\*$/,"",$1); print $1; exit}')
+    [ -z "$PART" ] && PART=$(printf '%s\n' "$SI" | head -1 | cut -d'|' -f1 | tr -d '*')
+    CPN=$(printf '%s\n' "$SI" | awk -F'|' -v p="$PART" '{q=$1; sub(/\*$/,"",q)} q==p {print $2; exit}')
+    TL=$(printf '%s\n' "$SI" | awk -F'|' -v p="$PART" '{q=$1; sub(/\*$/,"",q)} q==p {print $3; exit}')
+    CPN=${CPN:-1}; PART=${PART:-standard}
+    ACCS=$(sacctmgr -nP show assoc user="$USER" format=account 2>/dev/null | awk 'NF' | sort -u)
+    [ -z "$ACCS" ] && ACCS=$(sshare -U -h -o account 2>/dev/null | awk 'NF {print $1}' | sort -u)
+    ACC=$(printf '%s\n' "$ACCS" | awk 'NF {print; exit}')
+    LOADED=$(printf '%s' "${LOADEDMODULES:-}" | tr ':' ' ')
+    [ -n "$LOADED" ] && ok "modules loaded now (they go into the profile and the job examples): $LOADED" || \
+        warn "no modules loaded: the jobs will load none" "load the compiler, MPI and Python modules first (module spider <name> finds them), then run ./configure again"
+    VMOD=""
+    if type module >/dev/null 2>&1; then
+        VMOD=$(module -t avail vasp 2>&1 | grep -iE '^vasp/' | (sort -V 2>/dev/null || sort) | tail -1)
+    fi
     if [ ! -d "$VF/profiles" ]; then
         warn "no VASP-Flow profiles folder at $VF/profiles: no profile written" "cd ~ && git clone https://github.com/KeivanS/VASP-Flow.git"
         PROFNAME=""
     elif [ -f "$PF" ]; then
         ok "profile $PF exists: kept (--profile-name NAME drafts another)"
     else
-        SI=$(sinfo -h -o '%P|%c|%l' 2>/dev/null)
-        PART=$(printf '%s\n' "$SI" | awk -F'|' '$1 ~ /\*$/ {sub(/\*$/,"",$1); print $1; exit}')
-        [ -z "$PART" ] && PART=$(printf '%s\n' "$SI" | head -1 | cut -d'|' -f1 | tr -d '*')
-        CPN=$(printf '%s\n' "$SI" | awk -F'|' -v p="$PART" '{q=$1; sub(/\*$/,"",q)} q==p {print $2; exit}')
-        TL=$(printf '%s\n' "$SI" | awk -F'|' -v p="$PART" '{q=$1; sub(/\*$/,"",q)} q==p {print $3; exit}')
-        CPN=${CPN:-1}
-        ACCS=$(sacctmgr -nP show assoc user="$USER" format=account 2>/dev/null | awk 'NF' | sort -u)
-        [ -z "$ACCS" ] && ACCS=$(sshare -U -h -o account 2>/dev/null | awk 'NF {print $1}' | sort -u)
-        ACC=$(printf '%s\n' "$ACCS" | awk 'NF {print; exit}')
-        # modules: those loaded now (compiler, MPI) and the newest vasp module, test-loaded
-        MODS=""; VMOD=""; VEXE="vasp_std"
-        for m in $(printf '%s' "${LOADEDMODULES:-}" | tr ':' ' '); do MODS="$MODS \"$m\","; done
-        if type module >/dev/null 2>&1; then
-            VMOD=$(module -t avail vasp 2>&1 | grep -iE '^vasp/' | (sort -V 2>/dev/null || sort) | tail -1)
-            if [ -n "$VMOD" ] && ! printf '%s' "${LOADEDMODULES:-}" | grep -q "$VMOD"; then
-                if P=$( (module load "$VMOD" >/dev/null 2>&1 && command -v vasp_std) ); then
-                    ok "module $VMOD: vasp_std = $P"
-                else
-                    warn "module load $VMOD does not give vasp_std (it may need other modules first)" \
-                         "load the compiler and MPI modules that $VMOD needs, then run ./configure again (or edit $PF)"
-                fi
-                MODS="$MODS \"$VMOD\","
+        MODS=""
+        for m in $LOADED; do MODS="$MODS \"$m\","; done
+        if [ -n "$VMOD" ] && ! printf '%s' "$LOADED" | grep -q "$VMOD"; then
+            if P=$( (module load "$VMOD" >/dev/null 2>&1 && command -v vasp_std) ); then
+                ok "module $VMOD: vasp_std = $P"
+            else
+                warn "module load $VMOD does not give vasp_std (it may need other modules first)" \
+                     "module spider $VMOD shows what to load before it; load those, then run ./configure again (or edit $PF)"
             fi
-        else
-            warn "no 'module' command: the profile has no modules" "edit $PF: modules = what to load for VASP"
+            MODS="$MODS \"$VMOD\","
+        elif ! type module >/dev/null 2>&1; then
+            warn "no 'module' command: the profile has only the modules loaded now" "edit $PF: modules = what to load for VASP"
         fi
         MODS=$(printf '%s' "$MODS" | sed 's/,$//')
         {
             echo "{"
-            echo "  \"_comment\": \"Drafted by ALADYN's configure on $(date '+%Y-%m-%d') from sinfo, sacctmgr and module avail: check it. VASP runs on nodes x ntasks_per_node ranks (srun), or MPI: N of the instruction file.\","
+            echo "  \"_comment\": \"Drafted by ALADYN's configure on $(date '+%Y-%m-%d') from sinfo, sacctmgr and module avail: check it. VASP runs on nodes x ntasks_per_node ranks (srun), or MPI: N of the instruction file. Modules: module spider <name> finds them.\","
             echo "  \"name\": \"$PROFNAME\","
-            echo "  \"vasp_std\": \"$VEXE\","
+            echo "  \"vasp_std\": \"vasp_std\","
             echo "  \"vasp_ncl\": \"vasp_ncl\","
             echo "  \"vasp_gam\": \"vasp_gam\","
             echo "  \"mpi_cmd\": \"srun\","
             echo "  \"mpi_np\": $CPN,"
             echo "  \"modules\": [${MODS# }],"
             echo "  \"slurm\": {"
-            echo "    \"partition\": \"${PART:-standard}\","
+            echo "    \"partition\": \"$PART\","
             echo "    \"nodes\": 1,"
             echo "    \"ntasks_per_node\": $CPN,"
             echo "    \"time\": \"12:00:00\","
@@ -258,12 +262,26 @@ if [ $CLUSTER = 1 ]; then
             echo "  }"
             echo "}"
         } > "$PF"
-        ok "drafted $PF: partition ${PART:-?} (limit ${TL:-?}), 1 node x $CPN tasks, account ${ACC:-NONE}, modules [${MODS# }]"
-        [ -z "$ACC" ] && warn "no SLURM account found: set slurm.account in $PF (or ACCOUNT: in the instruction file)"
-        [ "$(printf '%s\n' "$ACCS" | awk 'NF' | wc -l | tr -d ' ')" -gt 1 ] && \
-            warn "several accounts: $(printf '%s' "$ACCS" | tr '\n' ' ')-- $ACC taken; edit $PF to choose"
+        ok "drafted $PF: partition $PART (limit ${TL:-?}), 1 node x $CPN tasks, account ${ACC:-NONE}, modules [${MODS# }]"
         sed 's/^/  | /' "$PF"
     fi
+    [ -z "$ACC" ] && warn "no SLURM account found: set slurm.account in the profile (or ACCOUNT: in the instruction file)"
+    [ "$(printf '%s\n' "$ACCS" | awk 'NF' | wc -l | tr -d ' ')" -gt 1 ] && \
+        warn "several accounts: $(printf '%s' "$ACCS" | tr '\n' ' ')-- $ACC taken; edit the profile (and the job examples) to choose"
+    # THERMACOND batch-job examples, filled in: MPI and multithreaded (serial build)
+    TV=$(sed -n 's/^ver *= *//p' "$REPO/THERMACOND/Makefile" | head -1)
+    JD="$(dirname "$(expand "$DEST")")/jobs"
+    mkdir -p "$JD"
+    ML=""
+    for m in $LOADED; do ML="${ML}module load $m\n"; done
+    [ -z "$ML" ] && ML="# module load <compiler> <mpi>   (no modules were loaded when ./configure ran)\n"
+    for kind in mpi openmp; do
+        sed -e "s|@PARTITION@|$PART|" -e "s|@ACCOUNT@|${ACC:-<your account>}|" -e "s|@CORES@|$CPN|" \
+            -e "s|@TCOND_MPI@|$(expand "$DEST")/tcond-$TV.x|" -e "s|@TCOND_SERIAL@|$(expand "$DEST")/tcond-$TV-serial.x|" \
+            "$REPO/THERMACOND/jobs/thermacond_$kind.sbatch" | awk -v ml="$ML" '{ if ($0 == "@MODULES@") printf "%s", ml; else print }' \
+            > "$JD/thermacond_$kind.sbatch"
+    done
+    ok "THERMACOND job examples (modules, partition, account, $CPN cores filled in): $JD/thermacond_mpi.sbatch, $JD/thermacond_openmp.sbatch"
 fi
 
 # ---------------------------------------------------------------- 6. ~/.aladyn.env

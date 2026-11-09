@@ -295,7 +295,8 @@ Nodes, Tasks per node & per VASP job (1, 40); also the ranks used for KPAR \\
 Walltime (VASP), (THERMACOND) & \texttt{\#SBATCH -{}-time} (12:00:00, 24:00:00) \\
 Memory & \texttt{\#SBATCH -{}-mem}, optional \\
 MPI launcher & \cmd{srun}, or e.g.\ \cmd{mpirun} (then \cmd{-np} nodes $\times$ tasks) \\
-VASP / THERMACOND binary & on the cluster (\cmd{vasp_std}, \cmd{~/ALADYN/bin/tcond-2.2.x}) \\
+VASP / THERMACOND binary & on the cluster (\cmd{vasp_std}, \cmd{~/ALADYN/bin/tcond-2.2.x}); a serial THERMACOND
+  (\cmd{tcond-2.2-serial.x}) runs as one task on all cores of a node as threads \\
 python3 on the cluster & for collect.py, gap\_check.py, set\_efield.py, extract\_born.py \\
 Lines before VASP & e.g.\ \cmd{module load vasp/6.4.2} \\
 More \#SBATCH lines & anything else your cluster wants \\

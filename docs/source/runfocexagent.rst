@@ -3,7 +3,7 @@
 FOCEX agent: from a crystal structure to phonons
 ================================================
 
-Version 1.8 (2026-11-09, with FOCEX 9.9). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
+Version 1.9 (2026-11-09, with FOCEX 9.9). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
 instruction file and ``diagnose.py`` are in ``FOCEX/AGENT``.
 
 What the FOCEX agent does
@@ -609,8 +609,9 @@ VASP-Flow (its manual lists all of them); the common ones are below.
      - ``~/ALADYN/bin/read_outcar.x``
      - reads OUTCARs
    * - ``THERMACOND_X``
-     - newest ``~/ALADYN/bin/tcond-*.x``
-     - THERMACOND (MPI build)
+     - newest ``~/ALADYN/bin/tcond-*.x`` (MPI build; the serial one if there is none)
+     - THERMACOND; the serial build (``tcond-*-serial.x``) runs as one process on the job's cores as
+       threads (no ``srun``), see :doc:`runthermacond`
 
 .. _agent-override:
 
@@ -864,6 +865,12 @@ new temperatures).
 
 Version history
 ---------------
+
+1.9
+   2026-11-09: the serial THERMACOND build runs as one process on threads (``TCOND_NUM_THREADS``), not with
+   ``srun``, also in aladyn-gui's bundles (one task, ``--cpus-per-task``); without an MPI build the agent takes
+   the serial one; ``run_workflow.sh`` says where its module lines come from; ``./configure`` writes THERMACOND
+   job examples (MPI, OpenMP) to ``~/ALADYN/jobs``.
 
 1.8
    2026-11-09: with a SLURM profile VASP runs on the job's tasks (nodes x ntasks_per_node; before, without

@@ -248,6 +248,82 @@ Checks
 * An empty ``fc3.dat`` (all cubic FCs zero in the FOCEX fit) stops the run instead of giving
   infinite lifetimes.
 
+Batch jobs on a SLURM cluster
+-----------------------------
+
+Two job scripts are in ``THERMACOND/jobs``; on a cluster ``./configure`` writes them, filled in with the
+partition, the account, the cores per node and the modules loaded when it ran, to ``~/ALADYN/jobs``.
+Copy one into the folder with the inputs and submit it there (``sbatch thermacond_mpi.sbatch``).
+
+* **MPI** (``tcond-<version>.x``): one rank per core. Every rank holds its own V3 arrays, about
+  24 bytes x n1 n2 n3 x (3 x atoms)^3 (2 GB for 6 atoms on 24x24x24), so 40 ranks need 40 times that.
+* **OpenMP** (the serial build, ``tcond-<version>-serial.x``, made without ``mpif90``): one task with
+  all cores of the node as threads and one copy of the arrays. For large cells or meshes it is the one
+  that fits; ``TCOND_NUM_THREADS`` sets the threads (THERMACOND does not read ``OMP_NUM_THREADS``).
+  Ranks and threads can be combined: fewer ``--ntasks-per-node``, ``--cpus-per-task`` and
+  ``TCOND_NUM_THREADS`` per rank.
+
+To find the module names on a cluster: ``module spider openmpi`` lists the versions,
+``module spider openmpi/5.0.10`` what has to be loaded before one (usually a ``gcc``). Load the compiler
+and MPI THERMACOND was built with.
+
+.. code-block:: bash
+
+   #!/bin/bash
+   # THERMACOND with MPI on a SLURM cluster: one MPI rank per core, nodes x ntasks-per-node ranks.
+   # Submit it in the folder that holds the THERMACOND inputs:   sbatch thermacond_mpi.sbatch
+   #
+   # Memory: every rank holds its own V3 arrays, about 24 bytes x nk x (3 x atoms)^3 (nk = n1 n2 n3 of
+   # latdyn.params line 1; e.g. 2 GB per rank for 6 atoms on 24x24x24). If the ranks do not fit in the node's
+   # memory, use thermacond_openmp.sbatch (one copy shared by all threads), or fewer ranks with several threads
+   # each (export TCOND_NUM_THREADS=<threads per rank>, and --cpus-per-task with fewer --ntasks-per-node).
+   #
+   # Modules: the compiler and MPI THERMACOND was built with (./configure writes the ones loaded when it ran).
+   # To find module names on any cluster:  module spider openmpi        (the versions there are)
+   #                                       module spider openmpi/5.0.10 (what has to be loaded before it)
+   #SBATCH --job-name=thermacond
+   #SBATCH --partition=@PARTITION@
+   #SBATCH --account=@ACCOUNT@
+   #SBATCH --nodes=1
+   #SBATCH --ntasks-per-node=@CORES@
+   #SBATCH --time=24:00:00
+   #SBATCH --output=slurm-%j.out
+   #SBATCH --error=slurm-%j.err
+
+   @MODULES@
+   cd "$SLURM_SUBMIT_DIR"
+   srun @TCOND_MPI@ > thermacond.out 2>&1
+
+.. code-block:: bash
+
+   #!/bin/bash
+   # THERMACOND without MPI (the serial build, tcond-<version>-serial.x) on one node, multithreaded with OpenMP:
+   # one task with all the cores of the node as threads, and one copy of the V3 arrays for all of them
+   # (about 24 bytes x nk x (3 x atoms)^3, e.g. 2 GB for 6 atoms on 24x24x24).
+   # Submit it in the folder that holds the THERMACOND inputs:   sbatch thermacond_openmp.sbatch
+   #
+   # Modules: the compiler THERMACOND was built with (./configure writes the ones loaded when it ran).
+   # To find module names on any cluster:  module spider gcc            (the versions there are)
+   #                                       module spider gcc/11.4.0     (what has to be loaded before it)
+   #SBATCH --job-name=thermacond
+   #SBATCH --partition=@PARTITION@
+   #SBATCH --account=@ACCOUNT@
+   #SBATCH --nodes=1
+   #SBATCH --ntasks=1
+   #SBATCH --cpus-per-task=@CORES@
+   #SBATCH --time=24:00:00
+   #SBATCH --output=slurm-%j.out
+   #SBATCH --error=slurm-%j.err
+
+   @MODULES@
+   cd "$SLURM_SUBMIT_DIR"
+   export TCOND_NUM_THREADS=$SLURM_CPUS_PER_TASK      # THERMACOND's threads (it does not read OMP_NUM_THREADS)
+   @TCOND_SERIAL@ > thermacond.out 2>&1
+
+The FOCEX agent and ``aladyn-gui`` start the serial build the same way, as one task on threads, when it
+is the THERMACOND binary they are given (``THERMACOND_X``; the GUI's "THERMACOND binary"), and the MPI
+build with ``srun``.
+
 Example
 -------
 

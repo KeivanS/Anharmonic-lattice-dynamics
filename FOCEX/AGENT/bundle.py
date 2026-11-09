@@ -117,11 +117,16 @@ def state(proj):
     return json.load(open(os.path.join(proj, 'state.json')))
 
 
-def sbatch_header(h, name, time=None, ntasks=None, nodes=None):
-    L = ['#!/bin/bash', f'#SBATCH --job-name={name}', f"#SBATCH --partition={h['partition']}",
-         f"#SBATCH --nodes={nodes or h['nodes']}",
-         f"#SBATCH --ntasks-per-node={ntasks or h['ntasks_per_node']}", f"#SBATCH --time={time or h['time']}",
-         '#SBATCH --output=slurm-%j.out', '#SBATCH --error=slurm-%j.err']
+def sbatch_header(h, name, time=None, ntasks=None, nodes=None, cpus=None):
+    """The #SBATCH lines and the module loads of hpc.json; cpus: one task with that many CPUs (threads) on one node."""
+    tasks = ([f'#SBATCH --nodes=1', '#SBATCH --ntasks=1', f'#SBATCH --cpus-per-task={cpus}'] if cpus else
+             [f"#SBATCH --nodes={nodes or h['nodes']}", f"#SBATCH --ntasks-per-node={ntasks or h['ntasks_per_node']}"])
+    L = ['#!/bin/bash',
+         '# The module load lines below come from the cluster settings (aladyn-gui Run tab, hpc.json). Module names on any',
+         '# cluster: module spider <name> (e.g. module spider openmpi), and module spider <name>/<version> for what has to',
+         '# be loaded before it.',
+         f'#SBATCH --job-name={name}', f"#SBATCH --partition={h['partition']}"] + tasks + [
+         f"#SBATCH --time={time or h['time']}", '#SBATCH --output=slurm-%j.out', '#SBATCH --error=slurm-%j.err']
     if h.get('account'):
         L.append(f"#SBATCH --account={h['account']}")
     if h.get('mem'):
@@ -130,6 +135,11 @@ def sbatch_header(h, name, time=None, ntasks=None, nodes=None):
     L += ['', 'cd "$SLURM_SUBMIT_DIR"', 'export OMP_NUM_THREADS=1', 'rm -f STOPCAR']
     L += [l for l in h.get('modules', '').splitlines() if l.strip()]
     return '\n'.join(L) + '\n'
+
+
+def is_serial_tcond(exe):
+    """THERMACOND's serial build (tcond-<version>-serial.x): threads, no MPI."""
+    return 'serial' in os.path.basename(exe)
 
 
 def mpi_line(h, exe, out):
@@ -305,7 +315,11 @@ def prepare(proj, h=None):
         d = os.path.join(proj, rel)
         if kind != 'thermacond':
             fit_kpar(d, ranks(h))
-        if kind == 'thermacond':
+        if kind == 'thermacond' and is_serial_tcond(h['tcond_exec']):
+            # the serial build: one task, the node's cores as OpenMP threads (srun would start that many copies)
+            body = (sbatch_header(h, f'{name}_tcond', h['time_thermacond'], cpus=int(h['ntasks_per_node'])) +
+                    'export TCOND_NUM_THREADS=$SLURM_CPUS_PER_TASK\n' + f"{h['tcond_exec']} > thermacond.out 2>&1\n")
+        elif kind == 'thermacond':
             body = sbatch_header(h, f'{name}_tcond', h['time_thermacond']) + \
                 mpi_line(h, h['tcond_exec'], 'thermacond.out') + '\n'
         else:

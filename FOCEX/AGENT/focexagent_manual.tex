@@ -89,7 +89,7 @@
   \normalsize Force constants and phonons from a crystal structure: VASP $\cdot$ SC-SNAPS $\cdot$
   FOCEX $\cdot$ Diagnosis \& repair\\[6pt]{\color{mainblue}\rule{\linewidth}{0.5pt}}}
 \author{Keivan Esfarjani}
-\date{v1.8 $\cdot$ November 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
+\date{v1.9 $\cdot$ November 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
 
 \begin{document}
 \maketitle
@@ -273,7 +273,7 @@ twice, and the previous settings are kept as \cmd{~/.aladyn.env.bak} and \cmd{~/
 \begin{doit}
 echo $VASP_POTCAR_DIR                 # the POTCAR library found in step 5
 source ~/myenv/bin/activate
-focex-agent --version                 # prints: focex-agent 1.8
+focex-agent --version                 # prints: focex-agent 1.9
 \end{doit}
 \begin{explain}
 An empty first line means the start-up file was not read: on a Mac, check that the terminal runs
@@ -684,7 +684,7 @@ THERMACOND\_SOLVER & 0: conjugate gradient (job 2) & THERMACOND\_SOLVER: 1 \quad
 FOCEX\_X & the newest \cmd{~/ALADYN/bin/focex-*.x} & FOCEX\_X: ~/ALADYN/bin/focex-9.8.x \\
 SC\_SNAPS\_X & \cmd{~/ALADYN/bin/sc_snaps.x} (else \cmd{~/BIN/sc_snaps.x}) & SC\_SNAPS\_X: /path/sc\_snaps.x \\
 READ\_OUTCAR\_X & \cmd{~/ALADYN/bin/read_outcar.x} & READ\_OUTCAR\_X: /path/read\_outcar.x \\
-THERMACOND\_X & the newest \cmd{~/ALADYN/bin/tcond-*.x} (MPI build) & THERMACOND\_X: /path/tcond-2.2.x \\
+THERMACOND\_X & the newest \cmd{~/ALADYN/bin/tcond-*.x} (MPI build; the serial one if there is no MPI build) & THERMACOND\_X: /path/tcond-2.2-serial.x \quad (serial build: one process on the job's cores as threads, no \cmd{srun}) \\
 \bottomrule
 \end{longtable}
 Further VASP keywords are those of VASP-Flow (its manual lists them all); single INCAR tags are
@@ -1015,6 +1015,10 @@ is read back from \cmd{07_thermacond/V3DELTA} when the force constants and the m
 \section{Version history}
 % ============================================================
 \begin{description}
+\item[1.9] 2026-11-09: the serial THERMACOND build (\cmd{tcond-*-serial.x}) is started as one process on threads
+  (\cmd{TCOND_NUM_THREADS}), not with \cmd{srun}, also in aladyn-gui's bundles (one task, \cmd{--cpus-per-task});
+  without an MPI build the agent takes the serial one; \cmd{run_workflow.sh} says where its module lines come from
+  (\cmd{module spider}); \cmd{./configure} writes THERMACOND job examples (MPI, OpenMP) to \cmd{~/ALADYN/jobs}.
 \item[1.8] 2026-11-09: with a SLURM profile VASP runs on the job's tasks (nodes $\times$ ntasks\_per\_node; before, without
   an \cmd{MPI} line, on one core), \cmd{MPI: N} below them as \cmd{srun -n N}, above them an error; \cmd{NODES:},
   \cmd{NTASKS_PER_NODE:}, \cmd{WALLTIME:} reach the job header; \cmd{FOCEX_PROFILE}; \cmd{./configure} drafts the

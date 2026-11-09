@@ -72,7 +72,10 @@ Options: ``--prefix DIR`` (``DESTDIR``), ``--fc``, ``--mpifc`` (the compilers to
 also drafts the VASP-Flow profile of the FOCEX agent, ``~/VASP-Flow/profiles/<cluster name>.json``
 (``--profile-name`` for another name), from ``sinfo`` (default partition, cores per node),
 ``sacctmgr`` (account) and ``module avail`` (the loaded modules and the newest ``vasp`` module),
-keeps an existing one, and makes it the default (``FOCEX_PROFILE`` in ``~/.aladyn.env``). Check it.
+keeps an existing one, and makes it the default (``FOCEX_PROFILE`` in ``~/.aladyn.env``). Check it. It also
+writes two THERMACOND job scripts, MPI and OpenMP, with these values and the loaded modules filled in, to
+``~/ALADYN/jobs`` (:doc:`runthermacond`). Module names: ``module spider <name>``, and
+``module spider <name>/<version>`` for what has to be loaded before it.
 
 Building everything at once
 ---------------------------

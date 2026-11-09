@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""focex-agent.py 1.8 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
+"""focex-agent.py 1.9 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
 structure (MODE: from_scratch, VASP + SC_SNAPS + FOCEX) or from existing force-displacement data
 (MODE: extract_only, FOCEX only).  Manual: FOCEX/AGENT/focexagent_manual.pdf
 
@@ -63,7 +63,7 @@ os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 os.environ.setdefault('OMP_NUM_THREADS', os.environ.get('VASP_OMP_NUM_THREADS', '1'))
 import numpy as np
 
-__version__ = '1.8'
+__version__ = '1.9'
 AGENT = os.path.dirname(os.path.realpath(__file__))          # FOCEX/AGENT (realpath: works through a symlink)
 HERE = os.path.dirname(AGENT)                                # the FOCEX folder: templates, utility/
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
@@ -276,10 +276,16 @@ def first_file(*paths):
 
 
 def newest_tcond():
-    """The newest MPI build ~/ALADYN/bin/tcond-<version>.x (not the -serial one)."""
-    c = sorted((f for f in glob.glob(os.path.expanduser('~/ALADYN/bin/tcond-[0-9]*.x')) if 'serial' not in f),
-               key=os.path.getmtime)
-    return c[-1] if c else '~/ALADYN/bin/tcond-2.2.x'
+    """The newest MPI build ~/ALADYN/bin/tcond-<version>.x, else (no MPI build, e.g. no mpif90) the newest serial one,
+    tcond-<version>-serial.x. THERMACOND_X chooses another; a serial build runs on threads (is_serial_tcond)."""
+    c = sorted(glob.glob(os.path.expanduser('~/ALADYN/bin/tcond-[0-9]*.x')), key=os.path.getmtime)
+    mpi = [f for f in c if 'serial' not in os.path.basename(f)]
+    return (mpi or c or ['~/ALADYN/bin/tcond-2.2.x'])[-1]
+
+
+def is_serial_tcond(exe):
+    """The serial (OpenMP, no MPI) build of THERMACOND: one process with threads, not srun/mpirun."""
+    return 'serial' in os.path.basename(exe)
 
 
 def newest_focex():
@@ -1340,7 +1346,10 @@ class Agent:
     def write_workflow(self, poscar):
         """run_workflow.sh: the batch preamble of the profile (or none), then 'focex-agent.py run'."""
         g = self.gen(poscar, 'relax')
-        write(self.d('run_workflow.sh'), '#!/bin/bash\n' + g._run_sh_preamble('focex_agent') +
+        note = ('# The #SBATCH and module load lines come from the profile (~/VASP-Flow/profiles/<name>.json: slurm, modules).\n'
+                '# Module names on any cluster: module spider <name> (e.g. module spider vasp), and\n'
+                '# module spider <name>/<version> for what has to be loaded before it.\n') if self.profile.get('slurm') else ''
+        write(self.d('run_workflow.sh'), '#!/bin/bash\n' + note + g._run_sh_preamble('focex_agent') +
               f'cd "{self.proj}"\n"{sys.executable}" "{os.path.abspath(__file__)}" run "{self.proj}"\n', 0o755)
 
     def next_step(self):
@@ -1658,7 +1667,13 @@ class Agent:
                 raise ExternalRun([d], kind='thermacond')
             rc = 0                                      # run elsewhere; its outputs are judged below
         else:
-            cmd = self.gen(self.d('POSCAR0'), 'scf')._get_mpi_cmd(fx['thermacond_x'])
+            if is_serial_tcond(fx['thermacond_x']):
+                # serial build: one process on threads (MPI ranks of the job/MPI line as the thread count);
+                # srun/mpirun would start that many independent copies
+                n = int(self.inst.get('mpi_np') or 1)
+                cmd = (f'TCOND_NUM_THREADS={n} ' if n > 1 else '') + f'"{fx["thermacond_x"]}"'
+            else:
+                cmd = self.gen(self.d('POSCAR0'), 'scf')._get_mpi_cmd(fx['thermacond_x'])
             rc = subprocess.run(f'{cmd} > thermacond.out 2>&1', shell=True, cwd=d).returncode
         head = (f"job {job} ({TC_JOB[job]}), mesh {L[0].split('#')[0].strip()}, T {L[5].split('#')[0].strip()}, "
                 f'{(time.time() - t0) / 60:.1f} min')
