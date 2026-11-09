@@ -10,3 +10,6 @@ FOCEX/FOCEX.tws
 .DS_Store
 __pycache__/
 FOCEX/tags
+# written by configure.sh for this computer (read at the end of make.inc)
+make.local
+make.local.bak

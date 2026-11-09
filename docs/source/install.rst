@@ -25,17 +25,50 @@ brings SC-SNAPS, in ``SC_SNAPS/``):
 
    git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
    cd Anharmonic-lattice-dynamics
+   ./configure.sh --install    # this computer's settings (next section); ends with "Ready"
+   make                        # = make all
 
 To update it later, from inside that folder:
 
 .. code-block:: bash
 
    git pull
-   make            # rebuild
+   ./configure.sh              # again: a pull may change what the Makefiles need
+   make                        # rebuild
 
 If you have edited files of your own, ``git pull`` keeps them; it stops, changing nothing, when the
 update touches a file you edited. Then ``git stash``, ``git pull``, ``git stash pop`` puts your
 edits aside, updates, and puts them back.
+
+.. _configure:
+
+Configuring: ``configure.sh``
+-----------------------------
+
+Once, after cloning (and again after installing or moving compilers, MPI, VASP or Python):
+
+.. code-block:: bash
+
+   bash configure.sh              # look, test, write make.local and ~/.aladyn.env
+   bash configure.sh --install    # the same, and one line in ~/.bash_profile (macOS) or ~/.bashrc
+                                  # (Linux; ~/.zshrc with zsh) that reads ~/.aladyn.env in every shell
+   bash configure.sh --build      # the same, then make
+
+It looks at the computer (operating system, cores, memory, SLURM, environment modules), finds the
+Fortran compiler (``gfortran``, else ``ifx`` or ``ifort``) and the MPI wrapper (``mpif90``, and the
+compiler it calls), compiles and runs a small OpenMP program on two threads and an MPI program on two
+ranks (on a cluster login node it only compiles), and writes
+
+* ``make.local``: ``DESTDIR``, the Fortran compiler ``FF`` (FOCEX, FOCEX/utility, ANFOMOD, SC-SNAPS), the
+  MPI wrapper ``MPIFC`` (THERMACOND), ``FLAGS``, and on macOS with Homebrew's Open MPI ``OMPI_FC`` and
+  ``SDKROOT``. ``make.inc`` (in git: the defaults) reads it at its end, so its values win; it is not in
+  git, so ``git pull`` never conflicts with it (the old one is kept as ``make.local.bak``). The
+  top-level ``make`` passes these to every part.
+* ``~/.aladyn.env``: ``PATH`` with ``DESTDIR``, ``OMPI_FC`` and ``SDKROOT`` (macOS), and the settings
+  of the FOCEX agent (below), which it also checks; ``--no-agent`` skips them.
+
+Options: ``--prefix DIR`` (``DESTDIR``), ``--fc``, ``--mpifc`` (the compilers to use), and the agent's
+``--potcar``, ``--vasp``, ``--python``. On a cluster load the compiler and MPI modules first.
 
 Building everything at once
 ---------------------------
@@ -70,8 +103,9 @@ FOCEX and THERMACOND set their own compiler options in their Makefiles. Then
    make scop8              # SCOP8, not part of "make": it does not compile at present
    make clean              # removes the object and module files
 
-On macOS with Homebrew's Open MPI, set ``export OMPI_FC=/opt/homebrew/bin/gfortran`` and
-``export SDKROOT=$(xcrun --show-sdk-path)`` before ``make`` (see :doc:`runthermacond`).
+On macOS with Homebrew's Open MPI, ``configure.sh`` puts ``OMPI_FC`` and ``SDKROOT`` into ``make.local``
+(without it: ``export OMPI_FC=/opt/homebrew/bin/gfortran`` and ``export SDKROOT=$(xcrun --show-sdk-path)``
+before ``make``; see :doc:`runthermacond`).
 The sections below describe each part and how to build it on its own.
 
 Finally add the installation directory to your ``PATH`` — put the line in your
@@ -228,8 +262,8 @@ Setting up the FOCEX agent: ``focex-configure.sh``
 ---------------------------------------------------
 
 The FOCEX agent (:doc:`focexagent_guide`) also runs the DFT calculations, so it has to know where
-VASP, MPI, the POTCAR library, VASP-Flow and a suitable Python are. The configuration script finds
-them and writes the settings once:
+VASP, MPI, the POTCAR library, VASP-Flow and a suitable Python are. ``configure.sh`` (above) runs this
+script and reads its file from ``~/.aladyn.env``; on its own:
 
 .. code-block:: bash
 

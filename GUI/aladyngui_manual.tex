@@ -130,9 +130,10 @@ The GUI is part of the ALADYN repository (\cmd{GUI/aladyn-gui.py}). It needs wha
 (Python with numpy, spglib and pymatgen; VASP-Flow; SC-SNAPS and FOCEX built; a POTCAR library) and the
 Python package Flask. Set these up once as described in the FOCEX agent manual (\cmd{focex-configure.sh}).
 
-\begin{doit}[: once, after git pull]
+\begin{doit}[: once, and after every git pull]
 cd ~/PROJECTS/Anharmonic-lattice-dynamics
-make python-tools            # links aladyn-gui into ~/ALADYN/bin
+./configure.sh               # this computer's settings (--install the first time); checks Flask too
+make                         # also links aladyn-gui into ~/ALADYN/bin
 pip install flask            # in the agent's Python environment, if it is not there
 \end{doit}
 

@@ -200,13 +200,16 @@ computer that has gnuplot.
 cd ~
 git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
 cd Anharmonic-lattice-dynamics
+./configure.sh --no-agent             # compilers and MPI: writes make.local; ends with "Ready"
 make focex sc_snaps python-tools      # about 3 minutes
 \end{doit}
 \begin{explain}
-The programs go to \cmd{~/ALADYN/bin} (the \cmd{DESTDIR} of \cmd{make.inc}). \cmd{python-tools} puts
+\cmd{configure.sh} finds the Fortran compiler and MPI, tests them, and writes their settings to
+\cmd{make.local}, which the Makefiles read (\cmd{--no-agent}: the agent's checks come in step 5).
+The programs go to \cmd{~/ALADYN/bin} (the \cmd{DESTDIR} of \cmd{make.local}). \cmd{python-tools} puts
 there the links \cmd{focex-agent} and \cmd{focex-diagnose} to the two Python scripts of
 \cmd{FOCEX/AGENT}. A plain \cmd{make} builds also THERMACOND (thermal conductivity) and ANFOMOD.
-To update later: \cmd{git pull}, then the same \cmd{make} line.
+To update later: \cmd{git pull}, \cmd{./configure.sh}, then the same \cmd{make} line.
 \end{explain}
 
 \subsection*{Step 3. VASP-Flow}
@@ -236,12 +239,13 @@ so batch jobs need no activation.
 \subsection*{Step 5. Let the configuration script find everything}
 \begin{doit}
 source ~/myenv/bin/activate
-cd ~/Anharmonic-lattice-dynamics/FOCEX/AGENT
-bash focex-configure.sh               # 1. look and report only
-bash focex-configure.sh --install     # 2. after "Ready": make it permanent
+cd ~/Anharmonic-lattice-dynamics
+./configure.sh                        # 1. look and report only
+./configure.sh --install              # 2. after "Ready": make it permanent
 \end{doit}
 \begin{explain}
-\cmd{focex-configure.sh} finds out what this computer has and where: the operating system and
+\cmd{configure.sh} runs the agent's checks, \cmd{FOCEX/AGENT/focex-configure.sh} (which can also be run
+alone), and reads their settings from \cmd{~/.aladyn.env}. They find out what this computer has and where: the operating system and
 processor, the number of cores, SLURM, gfortran and mpif90, the FOCEX, SC-SNAPS and
 \cmd{read_outcar.x} programs, Python and its packages, VASP-Flow, the POTCAR library (it searches
 your home folder and \cmd{/opt}, \cmd{/usr/local}, \cmd{/share}, \cmd{/apps}, \cmd{/sw} for folders

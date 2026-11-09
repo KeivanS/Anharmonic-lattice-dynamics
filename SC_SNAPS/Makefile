@@ -18,9 +18,10 @@ endif
 run:
 	$(PYTHON) sc-snaps-gui.py
 
+FF ?= gfortran
 compile:
 	@mkdir -p "$(BINDIR)"
-	gfortran -O2 -o sc_snaps.x sc_snaps.f90
+	$(FF) -O2 -o sc_snaps.x sc_snaps.f90
 	mv -f sc_snaps.x "$(BINDIR)/sc_snaps.x"
 	cp -f poscar2xyz.py "$(BINDIR)/poscar2xyz.py"
 	@echo "Compiled and moved sc_snaps.x to $(BINDIR)/sc_snaps.x"

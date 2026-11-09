@@ -221,6 +221,7 @@ echo
 if [ $NFAIL = 0 ]; then
     printf '\033[32mReady\033[0m (%d warning(s)).' "$NWARN"
     if [ $INSTALL = 1 ]; then echo " Open a new terminal (or: source $ENVFILE), then follow the Quick start."
+    elif [ -n "${ALADYN_CONFIGURE:-}" ]; then echo     # run by configure.sh, which reads this file from ~/.aladyn.env
     else echo " Next: bash $0 --install   (or add 'source $ENVFILE' to your start-up file yourself)"; fi
 else
     printf '\033[31m%d problem(s)\033[0m, %d warning(s). To fix:\n' "$NFAIL" "$NWARN"; printf '%b\n' "$FIXES" | awk 'NF && !seen[$0]++'

@@ -15,13 +15,22 @@ include make.inc
 # macOS with Homebrew: mpif90 must call the gfortran that compiled Open MPI's mpi.mod (Homebrew's),
 # not another one earlier on the PATH ("mpi.mod ... created by a different version of GNU Fortran").
 # Exported to the sub-makes; values already set in the environment are kept.
+# OMPI_FC and SDKROOT come from make.inc (configure.sh); without them, this guess:
 ifeq ($(shell uname -s),Darwin)
   ifneq ($(wildcard /opt/homebrew/bin/gfortran),)
     OMPI_FC ?= /opt/homebrew/bin/gfortran
     SDKROOT ?= $(shell xcrun --show-sdk-path 2>/dev/null)
-    export OMPI_FC SDKROOT
   endif
 endif
+ifneq ($(OMPI_FC),)
+  export OMPI_FC
+endif
+ifneq ($(SDKROOT),)
+  export SDKROOT
+endif
+# the compilers of make.inc (configure.sh), passed to every part
+FF ?= gfortran
+MPIFC ?= mpif90
 $(shell mkdir -p $(DESTDIR))
 # SC_SNAPS's Makefile quotes its BINDIR, where the shell does not expand ~
 BINDIR_ABS := $(patsubst ~%,$(HOME)%,$(DESTDIR))
@@ -31,18 +40,18 @@ BINDIR_ABS := $(patsubst ~%,$(HOME)%,$(DESTDIR))
 all: python-tools focex sc_snaps thermacond thermacond-serial anfomod
 
 focex:
-	$(MAKE) -C FOCEX DESTDIR=$(DESTDIR)
+	$(MAKE) -C FOCEX DESTDIR=$(DESTDIR) FF=$(FF)
 	$(MAKE) -C FOCEX/utility DESTDIR=$(DESTDIR)
 
 # SC_SNAPS is a git subtree of github.com/KeivanS/SC_SNAPS; its default target starts the GUI
 sc_snaps:
-	$(MAKE) -C SC_SNAPS compile BINDIR=$(BINDIR_ABS)
+	$(MAKE) -C SC_SNAPS compile BINDIR=$(BINDIR_ABS) FF=$(FF)
 
 thermacond:
-	$(MAKE) -C THERMACOND DESTDIR=$(DESTDIR)
+	$(MAKE) -C THERMACOND DESTDIR=$(DESTDIR) MPIFC=$(MPIFC)
 
 thermacond-serial:
-	$(MAKE) -C THERMACOND serial DESTDIR=$(DESTDIR)
+	$(MAKE) -C THERMACOND serial DESTDIR=$(DESTDIR) MPIFC=$(MPIFC)
 
 anfomod:
 	$(MAKE) -C ANFOMOD DESTDIR=$(DESTDIR)

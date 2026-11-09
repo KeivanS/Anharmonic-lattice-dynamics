@@ -3,22 +3,22 @@
 \contentsline {subsection}{\numberline {2.1}What you need}{3}{subsection.2.1}%
 \contentsline {subsection}{\numberline {2.2}Settings outside the instruction file}{5}{subsection.2.2}%
 \contentsline {section}{\numberline {3}Quick start}{6}{section.3}%
-\contentsline {section}{\numberline {4}Mode from\_scratch: from a POSCAR to phonons}{7}{section.4}%
+\contentsline {section}{\numberline {4}Mode from\_scratch: from a POSCAR to phonons}{8}{section.4}%
 \contentsline {subsection}{\numberline {4.1}Defaults}{9}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}The supercell}{9}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.2}The supercell}{10}{subsection.4.2}%
 \contentsline {subsection}{\numberline {4.3}The FOCEX frame}{10}{subsection.4.3}%
 \contentsline {subsection}{\numberline {4.4}The k-mesh of the supercells}{10}{subsection.4.4}%
 \contentsline {section}{\numberline {5}Mode extract\_only: FOCEX on existing data}{10}{section.5}%
 \contentsline {paragraph}{\nonumberline The data folder}{10}{paragraph*.1}%
-\contentsline {paragraph}{\nonumberline What the agent does.}{10}{paragraph*.2}%
+\contentsline {paragraph}{\nonumberline What the agent does.}{11}{paragraph*.2}%
 \contentsline {section}{\numberline {6}The instruction file}{11}{section.6}%
 \contentsline {subsection}{\numberline {6.1}The minimal file}{11}{subsection.6.1}%
-\contentsline {subsection}{\numberline {6.2}Everything else: the defaults, and how to change them}{11}{subsection.6.2}%
-\contentsline {section}{\numberline {7}Changing the files the agent writes}{13}{section.7}%
-\contentsline {paragraph}{\nonumberline Example.}{13}{paragraph*.3}%
-\contentsline {section}{\numberline {8}Born charges and the dielectric constant}{14}{section.8}%
-\contentsline {section}{\numberline {9}The project folder and the results}{14}{section.9}%
-\contentsline {section}{\numberline {10}When a run stops: diagnose.py}{16}{section.10}%
+\contentsline {subsection}{\numberline {6.2}Everything else: the defaults, and how to change them}{12}{subsection.6.2}%
+\contentsline {section}{\numberline {7}Changing the files the agent writes}{14}{section.7}%
+\contentsline {paragraph}{\nonumberline Example.}{14}{paragraph*.3}%
+\contentsline {section}{\numberline {8}Born charges and the dielectric constant}{15}{section.8}%
+\contentsline {section}{\numberline {9}The project folder and the results}{15}{section.9}%
+\contentsline {section}{\numberline {10}When a run stops: diagnose.py}{17}{section.10}%
 \contentsline {section}{\numberline {11}Thermal conductivity}{17}{section.11}%
 \contentsline {section}{\numberline {12}Version history}{18}{section.12}%
 \providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 
