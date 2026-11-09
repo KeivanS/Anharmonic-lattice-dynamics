@@ -3,7 +3,7 @@
 FOCEX agent: from a crystal structure to phonons
 ================================================
 
-Version 1.7 (2026-11-09, with FOCEX 9.9). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
+Version 1.8 (2026-11-09, with FOCEX 9.9). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
 instruction file and ``diagnose.py`` are in ``FOCEX/AGENT``.
 
 What the FOCEX agent does
@@ -105,8 +105,9 @@ and GCC first, e.g. ``module load gcc python``).
    # 1. this repository: FOCEX, its utilities, SC-SNAPS, the agent
    git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
    cd Anharmonic-lattice-dynamics
-   make focex sc_snaps     # FOCEX, read_outcar.x, ..., sc_snaps.x -> ~/ALADYN/bin (3 min)
-                           # plain "make" also builds THERMACOND (needs MPI) and ANFOMOD
+   ./configure --no-agent  # compilers and MPI -> make.local (the agent's checks come in step 4)
+   make focex sc_snaps python-tools   # FOCEX, read_outcar.x, ..., sc_snaps.x, the focex-agent link
+                           # -> ~/ALADYN/bin (3 min); plain "make" also builds THERMACOND and ANFOMOD
    cd ~
 
    # 2. VASP-Flow; the agent imports it from ~/VASP-Flow
@@ -115,12 +116,13 @@ and GCC first, e.g. ``module load gcc python``).
 
    # 3. one Python environment for VASP-Flow and the FOCEX agent
    python3 -m venv ~/myenv
-   source ~/myenv/bin/activate
-   pip install numpy spglib pymatgen matplotlib
+   ~/myenv/bin/pip install numpy spglib pymatgen matplotlib flask
 
-   # 4. optional: the commands focex-agent and focex-diagnose (symlinks in ~/ALADYN/bin)
-   (cd Anharmonic-lattice-dynamics && make python-tools)
-   export PATH=~/ALADYN/bin:$PATH     # put this line in ~/.bashrc
+   # 4. the settings (VASP, POTCARs, PATH, ...) for every new terminal; ends with "Ready"
+   (cd Anharmonic-lattice-dynamics && ./configure --install)
+
+   # in every new terminal where you start focex-agent yourself (batch jobs need none):
+   source ~/myenv/bin/activate
 
 The agent finds the programs at these places; a program installed elsewhere is named in the
 instruction file (``FOCEX_X``, ``SC_SNAPS_X``, ``READ_OUTCAR_X``, :ref:`agent-keywords`). With step 4 and the environment active, ``focex-agent`` and ``focex-diagnose`` are
@@ -155,11 +157,16 @@ Tell VASP-Flow where VASP, MPI and the POTCARs are
      - a template for a SLURM cluster: edit ``profiles/slurm.json`` (VASP command, ``modules`` to
        load, partition, nodes, tasks per node, time, account)
    * - *your own* (``mycluster`` below)
-     - your cluster: copy ``slurm.json`` to ``mycluster.json``, edit it, and use
-       ``--profile mycluster``
+     - your cluster: ``./configure`` on the cluster drafts it (``<cluster name>.json``, from ``sinfo``,
+       ``sacctmgr`` and ``module avail``; an existing one is kept) and makes it the default
+       (``FOCEX_PROFILE`` in ``~/.aladyn.env``); or copy ``slurm.json`` to ``mycluster.json``, edit
+       it, and use ``--profile mycluster``
 
 With a SLURM profile, ``run_workflow.sh`` begins with the ``#SBATCH`` lines and the
-``module load`` lines of the profile and is submitted with ``sbatch``.
+``module load`` lines of the profile and is submitted with ``sbatch``. VASP runs on all tasks of the
+job, nodes x ``ntasks_per_node`` (``NODES:`` and ``NTASKS_PER_NODE:`` in the instruction file replace
+the profile's); KPAR and NCORE are chosen for that number. ``MPI: N`` fewer than the tasks is run as
+``srun -n N``; more than the tasks stops the set-up.
 
 Check the set-up
 ~~~~~~~~~~~~~~~~
@@ -510,8 +517,9 @@ VASP-Flow (its manual lists all of them); the common ones are below.
      - R2SCAN
      - PBE, PBEsol, LDA, AM05, R2SCAN, HSE06, VV10
    * - ``MPI``
-     - the profile's
-     - MPI ranks for VASP
+     - 1; with a SLURM profile nodes x ntasks_per_node
+     - MPI ranks for VASP (with a SLURM profile: fewer than the job's tasks runs as ``srun -n N``, more
+       stops the set-up)
    * - ``ACCURACY``
      - Accurate
      - or Normal (:ref:`agent-scratch`)
@@ -856,6 +864,12 @@ new temperatures).
 
 Version history
 ---------------
+
+1.8
+   2026-11-09: with a SLURM profile VASP runs on the job's tasks (nodes x ntasks_per_node; before, without
+   an ``MPI`` line, on one core), ``MPI: N`` below them as ``srun -n N``, above them an error; ``NODES:``,
+   ``NTASKS_PER_NODE:``, ``WALLTIME:`` reach the job header; ``FOCEX_PROFILE``; ``./configure`` drafts the
+   profile on a cluster; the installation block follows ``./configure``.
 
 1.7
    2026-11-09: MAGMOM, ISPIN, LDAU and the other magnetic and +U tags of any INCAR block apply to every

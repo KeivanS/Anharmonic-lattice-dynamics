@@ -44,11 +44,34 @@ DFT_CODES = {
 TC_SKIP = ['V3DELTA']                         # THERMACOND scratch (large), not packed
 
 
+def profile_hpc():
+    """The cluster settings of the VASP-Flow profile FOCEX_PROFILE (written to ~/.aladyn.env by ./configure on a
+    cluster), in hpc.json's names; {} without one."""
+    name = os.environ.get('FOCEX_PROFILE')
+    vf = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
+    f = os.path.join(vf, 'profiles', f'{name}.json') if name else ''
+    if not (f and os.path.isfile(f)):
+        return {}
+    p = json.load(open(f))
+    s = p.get('slurm') or {}
+    h = {k: s[k] for k in ('partition', 'account', 'nodes', 'ntasks_per_node', 'time') if k in s}
+    if p.get('mpi_cmd'):
+        h['mpi_cmd'] = p['mpi_cmd']
+    if p.get('vasp_std'):
+        h['vasp_exec'] = p['vasp_std']
+    if p.get('modules'):
+        h['modules'] = '\n'.join(f'module load {m}' for m in p['modules'])
+    return h
+
+
 def load_hpc(proj):
+    """hpc.json of the project; without it, the defaults and those of the FOCEX_PROFILE profile."""
     f = os.path.join(proj, 'hpc.json')
     h = dict(HPC_DEFAULTS)
     if os.path.isfile(f):
         h.update(json.load(open(f)))
+    else:
+        h.update(profile_hpc())
     return h
 
 

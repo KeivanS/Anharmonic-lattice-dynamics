@@ -283,7 +283,9 @@ and writes nothing if a run is not usable (\cmd{collect.log} names it). On the 2
 \end{notebox}
 
 \subsection{Cluster settings}
-On the \emph{Run} tab, kept in the project's \cmd{hpc.json}:
+On the \emph{Run} tab, kept in the project's \cmd{hpc.json}. A new project starts from the VASP-Flow profile
+\cmd{FOCEX_PROFILE} that \cmd{./configure} drafted on the cluster (partition, account, nodes, tasks, time,
+modules, VASP command), else from the defaults below:
 
 \medskip\noindent
 \begin{tabularx}{\linewidth}{@{}>{\bfseries}p{0.32\linewidth}X@{}}

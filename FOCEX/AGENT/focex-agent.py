@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""focex-agent.py 1.7 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
+"""focex-agent.py 1.8 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
 structure (MODE: from_scratch, VASP + SC_SNAPS + FOCEX) or from existing force-displacement data
 (MODE: extract_only, FOCEX only).  Manual: FOCEX/AGENT/focexagent_manual.pdf
 
@@ -63,7 +63,7 @@ os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 os.environ.setdefault('OMP_NUM_THREADS', os.environ.get('VASP_OMP_NUM_THREADS', '1'))
 import numpy as np
 
-__version__ = '1.7'
+__version__ = '1.8'
 AGENT = os.path.dirname(os.path.realpath(__file__))          # FOCEX/AGENT (realpath: works through a symlink)
 HERE = os.path.dirname(AGENT)                                # the FOCEX folder: templates, utility/
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
@@ -204,7 +204,9 @@ def parse_instructions(path):
     fx['sc_snaps_x'] = os.path.expanduser(keyword(rest, 'SC_SNAPS_X') or first_file(
         '~/ALADYN/bin/sc_snaps.x', '~/BIN/sc_snaps.x'))
     fx['read_outcar_x'] = os.path.expanduser(keyword(rest, 'READ_OUTCAR_X') or '~/ALADYN/bin/read_outcar.x')
-    fx['profile'] = keyword(rest, 'PROFILE')
+    # PROFILE: in the instruction file, else FOCEX_PROFILE (written to ~/.aladyn.env by ./configure on a cluster)
+    fx['profile'] = keyword(rest, 'PROFILE') or os.environ.get('FOCEX_PROFILE') or None
+    fx['mpi_given'] = keyword(rest, 'MPI') is not None      # the parser gives MPI = 1 when it is missing
     # THERMACOND: latdyn.params line 8 decides; THERMACOND_JOB, else line 8 of a latdyn_params block
     job = keyword(rest, 'THERMACOND_JOB')
     for blk in ('thermacond_params', 'latdyn_params'):        # line 8 of the THERMACOND latdyn.params
@@ -233,6 +235,39 @@ def parse_instructions(path):
             sys.exit(f'{name} must be here or external, not {fx[k]!r}')
     fx['blocks'] = blocks
     return inst, fx
+
+
+def slurm_setup(inst, prof, fx):
+    """A SLURM profile: NODES:, NTASKS_PER_NODE:, WALLTIME:, PARTITION: of the instruction file replace those of
+    the profile (so that the #SBATCH lines and the rank count agree), and the VASP ranks are the job's tasks,
+    nodes x ntasks_per_node, unless MPI: N is given. With 'srun' (no rank count) VASP runs on every task, so an
+    MPI: N below them is run as 'srun -n N' (KPAR/NCORE are chosen for N); above them is an error.
+    Returns (profile, note); note starts with ERROR for the error. Without a SLURM block: (prof, '')."""
+    if not prof.get('slurm'):
+        return prof, ''
+    prof = json.loads(json.dumps(prof))
+    s = prof['slurm']
+    for k, ik in (('nodes', 'slurm_nodes'), ('ntasks_per_node', 'slurm_ntasks_per_node'),
+                  ('time', 'slurm_walltime'), ('partition', 'slurm_partition')):
+        if inst.get(ik) is not None:
+            s[k] = inst[ik]
+    nodes, ntpn = int(s.get('nodes', 1)), int(s.get('ntasks_per_node', 1))
+    ntask = nodes * ntpn
+    n = int(inst.get('mpi_np') or 1)
+    if not fx.get('mpi_given'):
+        inst['mpi_np'] = prof['mpi_np'] = ntask
+        return prof, f'VASP ranks = the job\'s tasks: {nodes} node(s) x {ntpn} = {ntask} (no MPI line)'
+    prof['mpi_np'] = n
+    if n == ntask:
+        return prof, f'VASP ranks: MPI {n} = {nodes} node(s) x {ntpn}'
+    if n > ntask:
+        return prof, (f'ERROR MPI: {n} is more than the job\'s {nodes} node(s) x {ntpn} = {ntask} tasks: raise NODES / '
+                      'NTASKS_PER_NODE (instruction file or profile), or lower MPI')
+    cmd = prof.get('mpi_cmd', 'srun').strip()
+    if cmd == 'srun':
+        prof['mpi_cmd'] = 'srun -n {np}'
+    return prof, (f'WARNING: MPI {n} is fewer than the job\'s {ntask} tasks ({nodes} x {ntpn}): VASP runs on {n} '
+                  f'({prof["mpi_cmd"].replace("{np}", str(n))}), the other tasks stay idle')
 
 
 def first_file(*paths):
@@ -688,6 +723,9 @@ class Agent:
         self.state = json.load(open(st)) if os.path.isfile(st) else {}
         self.inst, self.fx = parse_instructions(self.instr_file())
         self.profile = vagent.load_profile(self.fx['profile'] or self.state.get('profile') or '')
+        self.profile, self.mpi_note = slurm_setup(self.inst, self.profile, self.fx)
+        if self.mpi_note.startswith('ERROR'):
+            sys.exit(self.mpi_note[6:])
 
     def instr_file(self):
         f = os.path.join(self.proj, INSTR)
@@ -1794,6 +1832,8 @@ def init(args):
     rep = a.rep
     rep(f"focex-agent init: {fx['project']}, {len(p['F'])} atoms, space group {c['sg']}, accuracy "
         f"{fx['accuracy']}, relax/SCF k-mesh {dens}")
+    if a.mpi_note:
+        rep('  ' + a.mpi_note)
     potcar_dir, _ = potcar_dir_for(inst.get('functional', 'R2SCAN'))
     if potcar_dir and os.path.isdir(potcar_dir):
         vagent.build_potcar(p['species'], potcar_dir, os.path.join(proj, 'POTCAR'))
