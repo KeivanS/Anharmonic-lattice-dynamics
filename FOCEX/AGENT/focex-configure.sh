@@ -84,11 +84,36 @@ case ":$PATH:" in *":$BIN:"*) INPATH=1 ;; *) INPATH=0 ;; esac
 
 # ---------------------------------------------------------------- Python
 head_ "4. Python with numpy, spglib, pymatgen"
+import_hint() {   # python module error -> what to do
+    case "$3" in
+        *GLIBC*|*.so*|*"cannot open shared"*)
+            echo "a library is missing: load the compiler/Python modules the environment was built with (e.g. module load gcc), then run this again" ;;
+        *"No module named"*)
+            echo "$1 -m pip install numpy spglib pymatgen" ;;
+        *)
+            echo "see the whole message: $1 -c 'import $2'" ;;
+    esac
+}
 PY=""
 for p in "$OPT_PY" "${VIRTUAL_ENV:+$VIRTUAL_ENV/bin/python}" "$HOME/myenv/bin/python" "$(command -v python3 2>/dev/null)"; do
     [ -n "$p" ] && [ -x "$p" ] || continue
-    if "$p" -c 'import numpy, spglib, pymatgen' >/dev/null 2>&1; then PY=$p; break; fi
-    warn "$p lacks numpy, spglib or pymatgen"
+    if ERR=$("$p" -c 'import numpy, spglib, pymatgen' 2>&1); then PY=$p; break; fi
+    # say why (2026-11-09: on a cluster the packages were in site-packages but the import failed, and
+    # "lacks" hid the reason): the Python does not start, or which import fails and its last error line
+    if ! V=$("$p" -c 'import sys; print(sys.version.split()[0], sys.prefix)' 2>&1); then
+        # a venv records the Python it was made from in pyvenv.cfg (home = its bin folder)
+        CFG="$(dirname "$(dirname "$p")")/pyvenv.cfg"
+        HOMEPY=$(sed -n 's/^home *= *//p' "$CFG" 2>/dev/null | head -1)
+        warn "$p does not start: $(printf '%s' "$V" | tail -1)" \
+             "$([ -n "$HOMEPY" ] && echo "this environment was made from the Python in $HOMEPY: load its module (module spider python), add that module load to ~/.bashrc and to the profile's modules, then run this again" || echo "load the module this Python comes from (module load ...), or rebuild ~/myenv with a Python that starts")"
+        continue
+    fi
+    for m in numpy spglib pymatgen; do
+        if ! E=$("$p" -c "import $m" 2>&1); then
+            warn "$p (Python $V): import $m fails: $(printf '%s' "$E" | tail -1)" "$(import_hint "$p" "$m" "$E")"
+            break
+        fi
+    done
 done
 if [ -n "$PY" ]; then ok "$PY ($("$PY" --version 2>&1)): numpy, spglib, pymatgen import"
 else fail "no Python with numpy, spglib and pymatgen" "python3 -m venv ~/myenv && ~/myenv/bin/pip install numpy spglib pymatgen matplotlib"; fi
