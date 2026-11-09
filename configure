@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# configure.sh -- set up the ALADYN suite (FOCEX, SC-SNAPS, THERMACOND, ANFOMOD, the agent and the GUI) on
+# configure -- set up the ALADYN suite (FOCEX, SC-SNAPS, THERMACOND, ANFOMOD, the agent and the GUI) on
 # this computer: find the hardware and software, write make.local for the Makefiles (read at the end of
 # make.inc; not in git, so git pull never conflicts with it) and ~/.aladyn.env for the shell (2026-11-09).
 #
-#   bash configure.sh              look, test the compilers, write make.local and ~/.aladyn.env (no start-up file
-#                                  is changed); also the agent's checks (FOCEX/AGENT/focex-configure.sh)
-#   bash configure.sh --install    the same, and add one line to your shell start-up file (~/.bash_profile on
-#                                  macOS with bash, ~/.bashrc on Linux, ~/.zshrc with zsh) that reads ~/.aladyn.env
-#   bash configure.sh --build      the same, then make (everything; see the Makefile)
+#   ./configure              look, test the compilers, write make.local and ~/.aladyn.env (no start-up file
+#                        is changed); also the agent's checks (FOCEX/AGENT/focex-configure.sh)
+#   ./configure --install    the same, and add one line to your shell start-up file (~/.bash_profile on
+#                        macOS with bash, ~/.bashrc on Linux, ~/.zshrc with zsh) that reads ~/.aladyn.env
+#   ./configure --build      the same, then make (everything; see the Makefile)
 # Options:
 #   --prefix DIR     where the programs are installed (DESTDIR; default: that of make.local, else make.inc)
 #   --fc FILE        the Fortran compiler (default: gfortran, else ifx, else ifort)
@@ -66,7 +66,7 @@ CLUSTER=0
 if command -v sbatch >/dev/null 2>&1; then CLUSTER=1; ok "SLURM (sbatch): a cluster -- build on a login node, run in jobs"
 else ok "no SLURM"; fi
 if command -v module >/dev/null 2>&1 || [ -n "${MODULESHOME:-}" ]; then
-    ok "environment modules: loaded now: ${LOADEDMODULES:-none} (load the compiler and MPI modules before configure.sh)"
+    ok "environment modules: loaded now: ${LOADEDMODULES:-none} (load the compiler and MPI modules before configure)"
 fi
 SHELLNAME=$(basename "${SHELL:-bash}")
 
@@ -161,7 +161,7 @@ if [ "$FAM" = intel ]; then FLAGS="-O2 -check bounds"; else FLAGS="-O2 -fcheck=a
 [ -f "$MAKEINC" ] && cp "$MAKEINC" "$MAKEINC.bak" && echo "  (the old file is kept as $MAKEINC.bak)"
 {
     # GNU make keeps the blanks before a '#' in a value: every comment is on its own line
-    echo "# make.local -- written by configure.sh on $(date '+%Y-%m-%d %H:%M') ($HOST, $OS $ARCH); run it again to redo"
+    echo "# make.local -- written by configure on $(date '+%Y-%m-%d %H:%M') ($HOST, $OS $ARCH); run it again to redo"
     echo "# where make installs the programs (focex-*.x, tcond-*.x, sc_snaps.x, the links of make python-tools)"
     echo "DESTDIR = $DEST"
     echo "# Fortran compiler: FOCEX, FOCEX/utility, ANFOMOD, SC-SNAPS"
@@ -198,7 +198,7 @@ head_ "6. Shell settings -> $ENVFILE"
 BIN=$(expand "$DEST")
 [ -f "$ENVFILE" ] && cp "$ENVFILE" "$ENVFILE.bak" && echo "  (the old file is kept as $ENVFILE.bak)"
 {
-    echo "# ALADYN settings, written by configure.sh on $(date '+%Y-%m-%d %H:%M') ($HOST). Read with: . $ENVFILE"
+    echo "# ALADYN settings, written by configure on $(date '+%Y-%m-%d %H:%M') ($HOST). Read with: . $ENVFILE"
     echo "case \":\$PATH:\" in *\":$BIN:\"*) ;; *) export PATH=\"$BIN:\$PATH\" ;; esac   # the ALADYN programs"
     [ -n "$OMPI_FC_SET" ] && echo "export OMPI_FC=\"$OMPI_FC_SET\"   # Open MPI on macOS: mpif90 calls this gfortran"
     [ -n "$SDK" ] && echo "export SDKROOT=\"\$(xcrun --show-sdk-path 2>/dev/null)\"   # macOS linker SDK (follows Xcode updates)"
@@ -212,7 +212,7 @@ if [ $INSTALL = 1 ]; then
         zsh) RC="$HOME/.zshrc" ;;
         *)   if [ "$OS" = Darwin ]; then RC="$HOME/.bash_profile"; else RC="$HOME/.bashrc"; fi ;;
     esac
-    LINE="[ -f \"$ENVFILE\" ] && . \"$ENVFILE\"   # ALADYN (configure.sh)"
+    LINE="[ -f \"$ENVFILE\" ] && . \"$ENVFILE\"   # ALADYN (configure)"
     if [ -f "$RC" ] && grep -qF "$ENVFILE" "$RC"; then ok "$RC reads $ENVFILE already"
     else
         [ -f "$RC" ] && cp "$RC" "$RC.bak-aladyn"
@@ -230,9 +230,9 @@ echo
 if [ $NFAIL = 0 ]; then
     printf '\033[32mReady\033[0m (%d warning(s)).' "$NWARN"
     [ $BUILD = 1 ] || printf ' Next: make   (in %s)' "$REPO"
-    [ $INSTALL = 1 ] && echo " Open a new terminal (or: . $ENVFILE)." || echo "; bash configure.sh --install adds $ENVFILE to your start-up file."
+    [ $INSTALL = 1 ] && echo " Open a new terminal (or: . $ENVFILE)." || echo "; ./configure --install adds $ENVFILE to your start-up file."
 else
     printf '\033[31m%d problem(s)\033[0m, %d warning(s). To fix:\n' "$NFAIL" "$NWARN"; printf '%b\n' "$FIXES" | awk 'NF && !seen[$0]++'
-    echo "Then run configure.sh again."
+    echo "Then run configure again."
 fi
 [ $NFAIL = 0 ]

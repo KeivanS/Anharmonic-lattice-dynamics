@@ -8,7 +8,7 @@ For installation and usage instructions, please read our [documentation](https:/
 ```bash
 git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
 cd Anharmonic-lattice-dynamics
-./configure.sh --install   # finds compilers, MPI, Python, VASP; writes make.local and ~/.aladyn.env,
+./configure --install      # finds compilers, MPI, Python, VASP; writes make.local and ~/.aladyn.env,
                            # and adds ~/.aladyn.env to your shell start-up file; ends with "Ready"
 make                       # = make all: FOCEX + utilities, SC-SNAPS, THERMACOND, ANFOMOD, the Python
                            # tools -> ~/ALADYN/bin (or one part: make focex | make sc_snaps | make thermacond)
@@ -17,11 +17,11 @@ make                       # = make all: FOCEX + utilities, SC-SNAPS, THERMACOND
 After every `git pull`, and after installing or moving a compiler, MPI, VASP or Python:
 
 ```bash
-./configure.sh             # make.local and ~/.aladyn.env again (--install is needed only once)
+./configure                # make.local and ~/.aladyn.env again (--install is needed only once)
 make
 ```
 
-`configure.sh` writes the settings of your computer to `make.local` (not in git, so `git pull` never
+`configure` writes the settings of your computer to `make.local` (not in git, so `git pull` never
 conflicts with it) and `~/.aladyn.env`; details in the [installation guide](https://aladyn.readthedocs.io/en/latest/install.html).
 
 If you have any queries and want to know more about our code, please visit [our forum](https://matsci.org/c/aladyn/57) hosted at the MATSCI Community Discourse.
