@@ -226,7 +226,7 @@ if [ $INSTALL = 1 ]; then
         zsh) RC="$HOME/.zshrc" ;;
         *)   if [ "$OS" = Darwin ]; then RC="$HOME/.bash_profile"; else RC="$HOME/.bashrc"; fi ;;
     esac
-    LINE="[ -f \"$ENVFILE\" ] && . \"$ENVFILE\"   # FOCEX agent (focex-configure.sh)"
+    LINE="[ -f \"$ENVFILE\" ] && source \"$ENVFILE\"   # FOCEX agent (focex-configure.sh)"
     if [ -f "$RC" ] && grep -qF "$ENVFILE" "$RC"; then ok "$RC reads $ENVFILE already"
     else
         [ -f "$RC" ] && cp "$RC" "$RC.bak-focex"

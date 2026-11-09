@@ -415,7 +415,7 @@ BIN=$(expand "$DEST")
     [ -n "$OMPI_FC_SET" ] && echo "export OMPI_FC=\"$OMPI_FC_SET\"   # Open MPI on macOS: mpif90 calls this gfortran"
     [ -n "$SDK" ] && echo "export SDKROOT=\"\$(xcrun --show-sdk-path 2>/dev/null)\"   # macOS linker SDK (follows Xcode updates)"
     echo "export OPENBLAS_NUM_THREADS=1   # one BLAS thread per MPI rank"
-    echo "[ -f \"$AGENTENV\" ] && . \"$AGENTENV\"   # FOCEX agent: VASP, POTCARs, VASP-Flow"
+    echo "[ -f \"$AGENTENV\" ] && source \"$AGENTENV\"   # FOCEX agent: VASP, POTCARs, VASP-Flow"
     [ -n "$PROFNAME" ] && echo "export FOCEX_PROFILE=\"$PROFNAME\"   # SLURM profile of the agent and aladyn-gui (PROFILE: in an instruction file wins)"
     echo "# FOCEX and THERMACOND choose their threads (FOCEX_NUM_THREADS / TCOND_NUM_THREADS override; $NPERF performance cores here)"
 } > "$ENVFILE"
@@ -425,16 +425,20 @@ if [ $INSTALL = 1 ]; then
         zsh) RC="$HOME/.zshrc" ;;
         *)   if [ "$OS" = Darwin ]; then RC="$HOME/.bash_profile"; else RC="$HOME/.bashrc"; fi ;;
     esac
-    LINE="[ -f \"$ENVFILE\" ] && . \"$ENVFILE\"   # ALADYN (configure)"
+    LINE="[ -f \"$ENVFILE\" ] && source \"$ENVFILE\"   # ALADYN (configure)"
     [ -f "$RC" ] && cp "$RC" "$RC.bak-aladyn"
-    # one line only: ~/.aladyn.env reads ~/.focex-agent.env itself, after the module loads (a separate line
-    # for the agent file, from focex-configure.sh --install, read it before the modules)
-    if [ -f "$RC" ] && grep -qF "$AGENTENV\" ] && ." "$RC"; then
-        grep -vF "$AGENTENV\" ] && ." "$RC" > "$RC.tmp-aladyn" && cat "$RC.tmp-aladyn" > "$RC" && rm -f "$RC.tmp-aladyn"
-        ok "removed the separate line for $AGENTENV from $RC ($ENVFILE reads it)"
+    # one line only, at the end (nothing put on PATH after it can hide ~/myenv's python3), with 'source', not
+    # '.': an alias for '.' (one user had alias .='echo `pwd`') turned '. ~/.aladyn.env' in every terminal into
+    # an echo, so nothing was set. Older lines for either file ('.' or 'source') are replaced by this one;
+    # ~/.aladyn.env reads ~/.focex-agent.env itself, after the module loads.
+    if [ -f "$RC" ] && [ "$(tail -1 "$RC")" = "$LINE" ] && [ "$(grep -cF "$ENVFILE\" ] &&" "$RC")" = 1 ] && \
+       ! grep -qF "$AGENTENV\" ] &&" "$RC"; then
+        ok "$RC reads $ENVFILE already (last line)"
+    else
+        [ -f "$RC" ] && grep -vF -e "$ENVFILE\" ] &&" -e "$AGENTENV\" ] &&" "$RC" > "$RC.tmp-aladyn" && \
+            cat "$RC.tmp-aladyn" > "$RC" && rm -f "$RC.tmp-aladyn"
+        echo "$LINE" >> "$RC"; ok "$RC: last line $LINE (old copy: $RC.bak-aladyn)"
     fi
-    if [ -f "$RC" ] && grep -qF "$ENVFILE" "$RC"; then ok "$RC reads $ENVFILE already"
-    else echo "$LINE" >> "$RC"; ok "added to $RC (old copy: $RC.bak-aladyn): $LINE"; fi
 fi
 
 # ---------------------------------------------------------------- 7. build
@@ -451,9 +455,10 @@ if [ $INSTALL = 1 ]; then
         else fail "make python-tools failed:"; sed 's/^/        /' "$T/pt.log" | head -5; fi
     fi
     head_ "8. Check in a new login shell (what the next terminal and every batch job get)"
+    # interactive (-i) as well as login (-l): a terminal reads the start-up file with the user's aliases on
     # shellcheck disable=SC2016
     CHK=$(env -i HOME="$HOME" USER="$USER" LOGNAME="${LOGNAME:-$USER}" TERM=dumb SHELL="${SHELL:-/bin/bash}" \
-          PATH=/usr/local/bin:/usr/bin:/bin "${SHELL:-/bin/bash}" -lc '
+          PATH=/usr/local/bin:/usr/bin:/bin "${SHELL:-/bin/bash}" -ilc '
         if command -v focex-agent >/dev/null 2>&1; then echo "AGENT $(focex-agent --version 2>&1 | tail -1)"; else echo "AGENT none"; fi
         echo "PY $(command -v python3) $(python3 -c "import numpy, spglib, pymatgen; print(\"ok\")" 2>&1 | tail -1)"
         echo "POTCAR ${VASP_POTCAR_DIR:-unset}"
@@ -469,7 +474,7 @@ echo
 if [ $NFAIL = 0 ]; then
     printf '\033[32mReady\033[0m (%d warning(s)).' "$NWARN"
     [ $BUILD = 1 ] || printf ' Next: make   (in %s)' "$REPO"
-    [ $INSTALL = 1 ] && echo " Open a new terminal (or: . $ENVFILE)." || echo "; ./configure --install adds $ENVFILE to your start-up file."
+    [ $INSTALL = 1 ] && echo " Open a new terminal (or: source $ENVFILE)." || echo "; ./configure --install adds $ENVFILE to your start-up file."
 else
     printf '\033[31m%d problem(s)\033[0m, %d warning(s). To fix:\n' "$NFAIL" "$NWARN"; printf '%b\n' "$FIXES" | awk 'NF && !seen[$0]++'
     echo "Then run configure again."
