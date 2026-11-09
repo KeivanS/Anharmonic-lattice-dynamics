@@ -3,7 +3,7 @@
 FOCEX agent: from a crystal structure to phonons
 ================================================
 
-Version 1.6 (2026-11-07, with FOCEX 9.9). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
+Version 1.7 (2026-11-09, with FOCEX 9.9). The same manual as a PDF: ``FOCEX/AGENT/focexagent_manual.pdf`` in the repository; the agent, its
 instruction file and ``diagnose.py`` are in ``FOCEX/AGENT``.
 
 What the FOCEX agent does
@@ -615,6 +615,18 @@ the file: a line with its name, the contents, and a line with the name followed 
 - **INCAR blocks are merged tag by tag**: the tags you give replace or add to those the agent
   writes; the others stay. ``INCAR`` applies to every VASP step; ``INCAR_relax``, ``INCAR_scf``,
   ``INCAR_dfpt``, ``INCAR_snaps`` to one.
+- **Magnetic order and +U are the same in every step**: ``MAGMOM``, ``ISPIN``, ``NUPDOWN``,
+  ``LNONCOLLINEAR``, ``LSORBIT``, ``SAXIS``, ``M_CONSTR``, ``I_CONSTRAINED_M``, ``LAMBDA``, ``LDAU``,
+  ``LDAUTYPE``, ``LDAUL``, ``LDAUU``, ``LDAUJ`` and ``LMAXMIX``, given in any INCAR block (``INCAR_scf``
+  too), go to the relaxation, the SCF, DFPT and the supercells; the same tag with different values in
+  two blocks stops the agent. A ``MAGMOM`` (or ``M_CONSTR``) with one value, or three for
+  non-collinear moments, per atom of the cell is written for the supercells with each atom's value
+  taken from its site in the cell (an antiferromagnet keeps its order); a list of the supercell's
+  length is used as it is, any other length stops the supercells task. ``LDAUL/U/J`` are per species
+  and the supercells have the species of the cell. Give the per-atom list in the order of your
+  POSCAR: the agent keeps that order. ``04_supercells/snapshots_mag.xyz`` shows the moments of every
+  supercell (Jmol's xyz format, the moment as the vector of each atom, collinear ones along z; in Jmol
+  ``vectors on``); the POSCARs are left as VASP reads them.
 - **Every other block replaces the whole file**, so it must be complete: ``KPOINTS`` (relaxation
   and SCF), ``KPOINTS_snaps``, ``cell_inp``, ``supercell_inp``, ``snaps_inp`` (SC-SNAPS),
   ``structure_params``, ``latdyn_params``, ``kpbs_params``, ``dielectric_params``,
@@ -824,7 +836,7 @@ instruction file:
 
 The task copies ``lat_fc.dat``, ``fc2.dat``, ``fc3.dat``, ``structure.params``,
 ``dielectric.params`` and ``kpbs.params`` from ``05_focex`` to ``07_thermacond``, writes there
-FOCEX's ``latdyn.params`` with lines 1, 6, 8 and 9 from these keywords, and runs ``tcond-2.1.x``
+FOCEX's ``latdyn.params`` with lines 1, 6, 8 and 9 from these keywords, and runs ``tcond-2.2.x``
 with the MPI command of the profile; ``05_focex`` is not changed. A ``latdyn_params`` block
 (:ref:`agent-override`) sets all 13 lines for both FOCEX and THERMACOND, and its line 8 is the job
 unless ``THERMACOND_JOB`` is given. The mesh is the expensive choice: the FOCEX default (``fine``)
@@ -844,6 +856,11 @@ new temperatures).
 
 Version history
 ---------------
+
+1.7
+   2026-11-09: MAGMOM, ISPIN, LDAU and the other magnetic and +U tags of any INCAR block apply to every
+   step; per-atom MAGMOM / M_CONSTR carried to the supercell atoms through their sites (antiferromagnets),
+   shown in ``04_supercells/snapshots_mag.xyz``; THERMACOND 2.2 plots after the thermacond task.
 
 1.6
    2026-11-07: ``VASP_RUN: external`` and ``THERMACOND_RUN: external`` (inputs written, the agent stops as

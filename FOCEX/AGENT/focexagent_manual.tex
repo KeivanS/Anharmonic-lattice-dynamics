@@ -89,7 +89,7 @@
   \normalsize Force constants and phonons from a crystal structure: VASP $\cdot$ SC-SNAPS $\cdot$
   FOCEX $\cdot$ Diagnosis \& repair\\[6pt]{\color{mainblue}\rule{\linewidth}{0.5pt}}}
 \author{Keivan Esfarjani}
-\date{v1.6 $\cdot$ November 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
+\date{v1.7 $\cdot$ November 2026\\[2pt]\small\url{https://github.com/KeivanS/Anharmonic-lattice-dynamics} (\texttt{FOCEX/AGENT})}
 
 \begin{document}
 \maketitle
@@ -200,16 +200,16 @@ computer that has gnuplot.
 cd ~
 git clone https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
 cd Anharmonic-lattice-dynamics
-./configure.sh --no-agent             # compilers and MPI: writes make.local; ends with "Ready"
+./configure --no-agent             # compilers and MPI: writes make.local; ends with "Ready"
 make focex sc_snaps python-tools      # about 3 minutes
 \end{doit}
 \begin{explain}
-\cmd{configure.sh} finds the Fortran compiler and MPI, tests them, and writes their settings to
+\cmd{configure} finds the Fortran compiler and MPI, tests them, and writes their settings to
 \cmd{make.local}, which the Makefiles read (\cmd{--no-agent}: the agent's checks come in step 5).
 The programs go to \cmd{~/ALADYN/bin} (the \cmd{DESTDIR} of \cmd{make.local}). \cmd{python-tools} puts
 there the links \cmd{focex-agent} and \cmd{focex-diagnose} to the two Python scripts of
 \cmd{FOCEX/AGENT}. A plain \cmd{make} builds also THERMACOND (thermal conductivity) and ANFOMOD.
-To update later: \cmd{git pull}, \cmd{./configure.sh}, then the same \cmd{make} line.
+To update later: \cmd{git pull}, \cmd{./configure}, then the same \cmd{make} line.
 \end{explain}
 
 \subsection*{Step 3. VASP-Flow}
@@ -240,11 +240,11 @@ so batch jobs need no activation.
 \begin{doit}
 source ~/myenv/bin/activate
 cd ~/Anharmonic-lattice-dynamics
-./configure.sh                        # 1. look and report only
-./configure.sh --install              # 2. after "Ready": make it permanent
+./configure                        # 1. look and report only
+./configure --install              # 2. after "Ready": make it permanent
 \end{doit}
 \begin{explain}
-\cmd{configure.sh} runs the agent's checks, \cmd{FOCEX/AGENT/focex-configure.sh} (which can also be run
+\cmd{configure} runs the agent's checks, \cmd{FOCEX/AGENT/focex-configure.sh} (which can also be run
 alone), and reads their settings from \cmd{~/.aladyn.env}. They find out what this computer has and where: the operating system and
 processor, the number of cores, SLURM, gfortran and mpif90, the FOCEX, SC-SNAPS and
 \cmd{read_outcar.x} programs, Python and its packages, VASP-Flow, the POTCAR library (it searches
@@ -271,7 +271,7 @@ settings are kept as \cmd{~/.focex-agent.env.bak}.
 \begin{doit}
 echo $VASP_POTCAR_DIR                 # the POTCAR library found in step 5
 source ~/myenv/bin/activate
-focex-agent --version                 # prints: focex-agent 1.6
+focex-agent --version                 # prints: focex-agent 1.7
 \end{doit}
 \begin{explain}
 An empty first line means the start-up file was not read: on a Mac, check that the terminal runs
@@ -668,7 +668,7 @@ THERMACOND\_SOLVER & 0: conjugate gradient (job 2) & THERMACOND\_SOLVER: 1 \quad
 FOCEX\_X & the newest \cmd{~/ALADYN/bin/focex-*.x} & FOCEX\_X: ~/ALADYN/bin/focex-9.8.x \\
 SC\_SNAPS\_X & \cmd{~/ALADYN/bin/sc_snaps.x} (else \cmd{~/BIN/sc_snaps.x}) & SC\_SNAPS\_X: /path/sc\_snaps.x \\
 READ\_OUTCAR\_X & \cmd{~/ALADYN/bin/read_outcar.x} & READ\_OUTCAR\_X: /path/read\_outcar.x \\
-THERMACOND\_X & the newest \cmd{~/ALADYN/bin/tcond-*.x} (MPI build) & THERMACOND\_X: /path/tcond-2.1.x \\
+THERMACOND\_X & the newest \cmd{~/ALADYN/bin/tcond-*.x} (MPI build) & THERMACOND\_X: /path/tcond-2.2.x \\
 \bottomrule
 \end{longtable}
 Further VASP keywords are those of VASP-Flow (its manual lists them all); single INCAR tags are
@@ -683,6 +683,18 @@ after the file: a line with its name, the contents, and a line with the name fol
 \item \textbf{INCAR blocks are merged tag by tag}: the tags you give replace or add to those the
   agent writes; the others stay. \cmd{INCAR} applies to every VASP step; \cmd{INCAR_relax},
   \cmd{INCAR_scf}, \cmd{INCAR_dfpt}, \cmd{INCAR_snaps} to one.
+\item \textbf{Magnetic order and +U are the same in every step}: \cmd{MAGMOM}, \cmd{ISPIN},
+  \cmd{NUPDOWN}, \cmd{LNONCOLLINEAR}, \cmd{LSORBIT}, \cmd{SAXIS}, \cmd{M_CONSTR}, \cmd{I_CONSTRAINED_M},
+  \cmd{LAMBDA}, \cmd{LDAU}, \cmd{LDAUTYPE}, \cmd{LDAUL}, \cmd{LDAUU}, \cmd{LDAUJ} and \cmd{LMAXMIX}, given in
+  any INCAR block (\cmd{INCAR_scf} too), go to the relaxation, the SCF, DFPT and the supercells; the same
+  tag with different values in two blocks stops the agent. A \cmd{MAGMOM} (or \cmd{M_CONSTR}) with one
+  value, or three for non-collinear moments, per atom of the cell is written for the supercells with
+  each atom's value taken from its site in the cell (an antiferromagnet keeps its order); a list of the
+  supercell's length is used as it is, any other length stops the supercells task. \cmd{LDAUL/U/J} are
+  per species, and the supercells have the species of the cell. Give the per-atom list in the order of
+  your POSCAR: the agent keeps that order. \cmd{04_supercells/snapshots_mag.xyz} shows the moments of
+  every supercell (Jmol's xyz format, the moment as the vector of each atom, collinear ones along $z$; in
+  Jmol \cmd{vectors on}); the POSCARs are left as VASP reads them.
 \item \textbf{Every other block replaces the whole file}, so it must be complete: \cmd{KPOINTS}
   (relaxation and SCF), \cmd{KPOINTS_snaps}, \cmd{cell_inp}, \cmd{supercell_inp}, \cmd{snaps_inp}
   (SC-SNAPS), \cmd{structure_params}, \cmd{latdyn_params}, \cmd{kpbs_params},
@@ -965,7 +977,7 @@ THERMACOND_T: 100 900 9       # line 6: Tmin, Tmax (K), number of temperatures
 The task copies \cmd{lat_fc.dat}, \cmd{fc2.dat}, \cmd{fc3.dat}, \cmd{structure.params},
 \cmd{dielectric.params} and \cmd{kpbs.params} from \cmd{05_focex} to \cmd{07_thermacond}, writes
 there FOCEX's \cmd{latdyn.params} with lines 1, 6, 8 and 9 from these keywords, and runs
-\cmd{tcond-2.1.x} (the newest) with the MPI command of the profile; \cmd{05_focex} is not changed. A
+\cmd{tcond-2.2.x} (the newest) with the MPI command of the profile; \cmd{05_focex} is not changed. A
 \cmd{latdyn_params} block (Section~\ref{sec:override}) sets all 13 lines for both FOCEX and
 THERMACOND, and its line 8 is the job unless \cmd{THERMACOND_JOB} is given. The mesh is the
 expensive choice: the FOCEX default (\cmd{fine}) is usually far too dense, so set
@@ -987,6 +999,10 @@ is read back from \cmd{07_thermacond/V3DELTA} when the force constants and the m
 \section{Version history}
 % ============================================================
 \begin{description}
+\item[1.7] 2026-11-09: \cmd{MAGMOM}, \cmd{ISPIN}, \cmd{LDAU} and the other magnetic and +U tags of any INCAR
+  block apply to every step; per-atom \cmd{MAGMOM} / \cmd{M_CONSTR} carried to the supercell atoms through
+  their sites (antiferromagnets), shown in \cmd{04_supercells/snapshots_mag.xyz}; THERMACOND 2.2 plots after
+  the thermacond task.
 \item[1.6] 2026-11-07: \cmd{VASP_RUN: external} and \cmd{THERMACOND_RUN: external} (the inputs of a stage
   are written and the agent stops as WAITING; it goes on from the outputs, which \cmd{aladyn-gui} brings back
   from a cluster); a \cmd{thermacond_params} block (the latdyn.params of \cmd{07_thermacond}, used as it

@@ -30,7 +30,7 @@ import tarfile
 HPC_DEFAULTS = {
     'partition': 'standard', 'account': '', 'nodes': 1, 'ntasks_per_node': 40, 'time': '12:00:00',
     'time_thermacond': '24:00:00', 'mem': '', 'mpi_cmd': 'srun', 'vasp_exec': 'vasp_std',
-    'tcond_exec': '~/ALADYN/bin/tcond-2.1.x', 'python': 'python3',
+    'tcond_exec': '~/ALADYN/bin/tcond-2.2.x', 'python': 'python3',
     'modules': '',            # lines run before VASP, e.g. "module load vasp/6.4.2"
     'extra_sbatch': '',       # further #SBATCH lines
 }

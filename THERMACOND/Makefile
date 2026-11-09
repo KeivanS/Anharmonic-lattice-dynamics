@@ -1,6 +1,6 @@
 # THERMACOND
 #   make            parallel build with mpif90 -> $(DESTDIR)/tcond-$(ver).x
-#                   (run: tcond-2.1.x, or mpirun -np N tcond-2.1.x)
+#                   (run: tcond-2.2.x, or mpirun -np N tcond-2.2.x)
 #   make serial     serial build, no MPI library, same compiler as mpif90 -> $(DESTDIR)/tcond-$(ver)-serial.x
 #   make DEBUG=1    either of the above with -g -fbounds-check -fbacktrace instead of -O2
 #   make clean
@@ -9,7 +9,7 @@
 # built with ("created by a different version of GNU Fortran"), set
 #   export OMPI_FC=/opt/homebrew/bin/gfortran   and   export SDKROOT=$(xcrun --show-sdk-path)
 
-ver = 2.1
+ver = 2.2
 DESTDIR ?= ~/ALADYN/bin
 EXE = tcond-$(ver).x
 EXE_SERIAL = tcond-$(ver)-serial.x

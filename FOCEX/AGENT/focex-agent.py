@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""focex-agent.py 1.6 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
+"""focex-agent.py 1.7 (FOCEX/AGENT) -- force constants and phonons with FOCEX, from a crystal
 structure (MODE: from_scratch, VASP + SC_SNAPS + FOCEX) or from existing force-displacement data
 (MODE: extract_only, FOCEX only).  Manual: FOCEX/AGENT/focexagent_manual.pdf
 
@@ -63,7 +63,7 @@ os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 os.environ.setdefault('OMP_NUM_THREADS', os.environ.get('VASP_OMP_NUM_THREADS', '1'))
 import numpy as np
 
-__version__ = '1.6'
+__version__ = '1.7'
 AGENT = os.path.dirname(os.path.realpath(__file__))          # FOCEX/AGENT (realpath: works through a symlink)
 HERE = os.path.dirname(AGENT)                                # the FOCEX folder: templates, utility/
 VASPFLOW = os.path.expanduser(os.environ.get('VASP_FLOW_DIR', '~/VASP-Flow'))
@@ -244,7 +244,7 @@ def newest_tcond():
     """The newest MPI build ~/ALADYN/bin/tcond-<version>.x (not the -serial one)."""
     c = sorted((f for f in glob.glob(os.path.expanduser('~/ALADYN/bin/tcond-[0-9]*.x')) if 'serial' not in f),
                key=os.path.getmtime)
-    return c[-1] if c else '~/ALADYN/bin/tcond-2.1.x'
+    return c[-1] if c else '~/ALADYN/bin/tcond-2.2.x'
 
 
 def newest_focex():
@@ -255,6 +255,52 @@ def newest_focex():
         if c:
             return c[-1]
     return '~/ALADYN/bin/focex-9.1.x'
+
+
+# tags that fix the magnetic order and +U: given in any INCAR block they apply to every step (relax, SCF, DFPT,
+# supercells), so that all of them describe the same system (2026-11-09, user: MAGMOM of an antiferromagnet in INCAR_scf)
+PHYS_TAGS = ('MAGMOM', 'ISPIN', 'NUPDOWN', 'LNONCOLLINEAR', 'LSORBIT', 'SAXIS', 'M_CONSTR', 'I_CONSTRAINED_M', 'LAMBDA',
+             'LDAU', 'LDAUTYPE', 'LDAUL', 'LDAUU', 'LDAUJ', 'LMAXMIX')
+PER_ATOM_TAGS = {'MAGMOM': (1, 3), 'M_CONSTR': (3,)}          # values per atom (collinear, non-collinear)
+
+
+def phys_lines(fx):
+    """The PHYS_TAGS lines of all INCAR blocks (one per tag); the same tag with two values stops the agent."""
+    seen = {}
+    for b in ('incar', 'incar_relax', 'incar_scf', 'incar_dfpt', 'incar_snaps'):
+        for l in incar_lines(fx['blocks'].get(b)):
+            t, v = l.split('=', 1)
+            t, v = t.strip().upper(), re.split('[!#]', v)[0].strip()
+            if t in PHYS_TAGS:
+                if t in seen and expand_values(seen[t][0]) != expand_values(v):
+                    sys.exit(f'{t} is {seen[t][0]!r} in the {seen[t][1].upper()} block and {v!r} in {b.upper()}: '
+                             'the magnetic order and +U must be the same in every step; give it once (INCAR block)')
+                seen.setdefault(t, (v, b))
+    return [f'{t} = {v}' for t, (v, b) in seen.items()]
+
+
+def expand_values(v):
+    """'2*5.0 -5 0' -> ['5.0', '5.0', '-5', '0'] (VASP's N*value notation)"""
+    out = []
+    for tok in v.split():
+        if '*' in tok:
+            n, x = tok.split('*', 1)
+            out += [x] * int(n)
+        else:
+            out.append(tok)
+    return out
+
+
+def compress_values(vals):
+    """['5', '5', '-5'] -> '2*5 -5'"""
+    out, i = [], 0
+    while i < len(vals):
+        j = i
+        while j < len(vals) and vals[j] == vals[i]:
+            j += 1
+        out.append(vals[i] if j - i == 1 else f'{j - i}*{vals[i]}')
+        i = j
+    return ' '.join(out)
 
 
 def vasp_inst(inst, fx, step, extra=()):
@@ -271,7 +317,8 @@ def vasp_inst(inst, fx, step, extra=()):
         step_list = ['EDIFF = 1E-8'] + step_list             # linear response wants it tight
     # VASP-Flow applies 'all' and then the step's list, later lines winning; scf and snaps
     # INCARs are made from the relaxation INCAR, so their list goes under 'relax'
-    d['incar_raw'] = {'all': first + user_all,
+    # the magnetic and +U tags of any block in every step (PHYS_TAGS); the step's own lines still come last
+    d['incar_raw'] = {'all': first + user_all + phys_lines(fx),
                       'relax' if step in ('relax', 'scf', 'snaps') else step: step_list}
     kp = b.get('kpoints_snaps' if step == 'snaps' else 'kpoints')
     d['kpoints_raw'] = {'all': kp} if kp else {}
@@ -1126,6 +1173,10 @@ class Agent:
         incar = static_incar(g._generate_incar_relax(), '# supercell snapshot, static (focex-agent)')
         if not has_tag(incar_lines(self.fx['blocks'].get('incar_snaps')), 'LORBIT'):
             incar = set_tags(incar, {'LORBIT': None, 'EDIFFG': None, 'ISTART': 0, 'ICHARG': 2})
+        incar, note = self.per_atom_to_supercell(incar, base)
+        if note.startswith('ERROR'):
+            return False, note[6:]
+        note += self.magnetic_xyz(incar, [os.path.join(top, 'snap_' + f.rsplit('_', 1)[1], 'POSCAR') for f in snaps])
         for f in snaps:
             i = f.rsplit('_', 1)[1]
             # the undistorted supercell gives the stress of the reference: full tensor (ISIF=1 is the trace only)
@@ -1135,7 +1186,70 @@ class Agent:
         return True, (f'{len(snaps)} folders{made}' + (f', {aside} set aside in unused/' if aside else '') +
                       f'; KPOINTS {mesh} from the primitive {Np}; '
                       f'{sum(base["counts"])} atoms' + (f'; KPAR {inst_k["relax_kpar"]} NCORE {inst_k["relax_ncore"]}'
-                                                       if inst_k else ''))
+                                                       if inst_k else '') + note)
+
+    def per_atom_to_supercell(self, incar, sc):
+        """MAGMOM (and M_CONSTR) of the supercell INCAR: values given per atom of POSCAR0 (1 or 3 per atom) are
+        carried to every supercell atom through its POSCAR0 site, as magmom_for_supercell does for the MAGMOM
+        keyword; a list of the supercell's length is kept; any other length is an error. LDAUL/U/J must have one
+        value per species of the supercell (its species are those of POSCAR0). Returns (incar, note)."""
+        p = read_vasp_cell(self.d('POSCAR0'))
+        npr, nsc = len(p['F']), len(sc['X'])
+        inv = np.linalg.inv(p['A'])
+        site = []
+        for x in sc['X']:
+            f = (x - p['F'] @ p['A']) @ inv
+            site.append(int(np.argmin(np.abs(f - np.rint(f)).sum(1))))
+        notes, tags = [], {}
+        for l in incar.splitlines():
+            m = re.match(r'\s*([A-Za-z_]+)\s*=\s*([^!#]*)', l)
+            if m:
+                tags[m.group(1).upper()] = m.group(2).strip()
+        for t, comps in PER_ATOM_TAGS.items():
+            if t not in tags:
+                continue
+            vals = expand_values(tags[t])
+            c = next((c for c in comps if len(vals) == c * npr), None)
+            if c is not None and npr != nsc:
+                new = [v for k in site for v in vals[c * k:c * k + c]]
+                incar = set_tags(incar, {t: compress_values(new)})
+                notes.append(f'{t} of the {npr} POSCAR0 atoms carried to the {nsc} supercell atoms')
+            elif not any(len(vals) == c * nsc for c in comps):
+                return incar, (f'ERROR {t} has {len(vals)} values: neither {" or ".join(str(c * npr) for c in comps)} '
+                               f'(POSCAR0, {npr} atoms) nor {" or ".join(str(c * nsc) for c in comps)} (supercell)')
+        nsp = len(sc['species'])
+        for t in ('LDAUL', 'LDAUU', 'LDAUJ'):
+            if t in tags and len(expand_values(tags[t])) != nsp:
+                return incar, f'ERROR {t} has {len(expand_values(tags[t]))} values for the {nsp} species of the supercell'
+        if 'LDAUU' in tags:
+            notes.append(f"LDAUU {tags['LDAUU']} for {' '.join(sc['species'])}")
+        return incar, ''.join('; ' + n for n in notes)
+
+    def magnetic_xyz(self, incar, poscars):
+        """04_supercells/snapshots_mag.xyz: one frame per supercell folder, Jmol's xyz format 'El x y z 0 mx my mz'
+        with the vector = the initial moment of the INCAR (collinear: along z), for viewing the magnetic order
+        (Jmol: vectors on). snapshots.xyz of SC-SNAPS keeps its velocities in these columns. '' without MAGMOM."""
+        m = re.search(r'^\s*MAGMOM\s*=\s*([^!#\n]*)', incar, re.M | re.I)
+        if not m:
+            return ''
+        vals = [float(v) for v in expand_values(m.group(1))]
+        out = []
+        for f in poscars:
+            p = read_vasp_cell(f)
+            n = len(p['X'])
+            if len(vals) == 3 * n:
+                mv = np.array(vals).reshape(n, 3)
+            elif len(vals) == n:
+                mv = np.zeros((n, 3)); mv[:, 2] = vals
+            else:
+                return f'; snapshots_mag.xyz not written (MAGMOM has {len(vals)} values for {n} atoms)'
+            el = [p['species'][t] for t in p['types']]
+            out.append(f'{n}\n {os.path.basename(os.path.dirname(f))}: initial moments (muB) as vectors'
+                       + (' (collinear: along z)' if len(vals) == n else '') + '\n')
+            out += [f'{e:3s} {x[0]:14.8f} {x[1]:14.8f} {x[2]:14.8f}  0.0  {v[0]:8.3f} {v[1]:8.3f} {v[2]:8.3f}\n'
+                    for e, x, v in zip(el, p['X'], mv)]
+        write(os.path.join(os.path.dirname(os.path.dirname(poscars[0])), 'snapshots_mag.xyz'), ''.join(out))
+        return '; magnetic moments in 04_supercells/snapshots_mag.xyz (Jmol: vectors on)'
 
     def magmom_for_supercell(self, g, sc):
         spec = self.inst.get('magmom')
@@ -1527,7 +1641,23 @@ class Agent:
         if low:
             msg.append(f'WARNING: the {full} solution is below the RTA at {len(low)} temperature(s); the full '
                        'solution should not be lower -- the direct solver has an open issue (compare with job 3)')
+        msg.append(self.tc_plots(d))
         return True, '\n  '.join(msg)
+
+    def tc_plots(self, d):
+        """THERMACOND 2.2 plots in d: kappa(T), Wigner by bands, cumulative kappa versus mean free path and frequency
+        per temperature -- gnuplot (allplots, kappa.plt) when it is there, else matplotlib (kappaplots)."""
+        if not os.path.isfile(os.path.join(d, 'kappa_summary.dat')):
+            return 'plots: no kappa_summary.dat (THERMACOND before 2.2)'
+        name = os.path.basename(self.proj)
+        if shutil.which('gnuplot'):
+            r = subprocess.run([sys.executable, os.path.join(HERE, 'PLOTTING', 'allplots'), '.', '--name', name],
+                               cwd=d, capture_output=True, text=True)
+            ok = [l.strip() for l in r.stdout.splitlines() if 'kappa.plt' in l]
+            return 'plots (gnuplot): ' + (ok[0] if ok else (r.stdout + r.stderr)[-200:])
+        r = subprocess.run([sys.executable, os.path.join(HERE, 'PLOTTING', 'kappaplots'), '.', '--name', name],
+                           cwd=d, capture_output=True, text=True)
+        return 'plots (matplotlib): ' + (r.stdout + r.stderr).strip()[-300:]
 
     @staticmethod
     def kappa_rows(path):

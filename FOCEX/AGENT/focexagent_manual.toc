@@ -18,7 +18,7 @@
 \contentsline {paragraph}{\nonumberline Example.}{14}{paragraph*.3}%
 \contentsline {section}{\numberline {8}Born charges and the dielectric constant}{15}{section.8}%
 \contentsline {section}{\numberline {9}The project folder and the results}{15}{section.9}%
-\contentsline {section}{\numberline {10}When a run stops: diagnose.py}{17}{section.10}%
-\contentsline {section}{\numberline {11}Thermal conductivity}{17}{section.11}%
+\contentsline {section}{\numberline {10}When a run stops: diagnose.py}{16}{section.10}%
+\contentsline {section}{\numberline {11}Thermal conductivity}{18}{section.11}%
 \contentsline {section}{\numberline {12}Version history}{18}{section.12}%
 \providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 

@@ -15,7 +15,7 @@ include make.inc
 # macOS with Homebrew: mpif90 must call the gfortran that compiled Open MPI's mpi.mod (Homebrew's),
 # not another one earlier on the PATH ("mpi.mod ... created by a different version of GNU Fortran").
 # Exported to the sub-makes; values already set in the environment are kept.
-# OMPI_FC and SDKROOT come from make.inc (configure.sh); without them, this guess:
+# OMPI_FC and SDKROOT come from make.inc (configure); without them, this guess:
 ifeq ($(shell uname -s),Darwin)
   ifneq ($(wildcard /opt/homebrew/bin/gfortran),)
     OMPI_FC ?= /opt/homebrew/bin/gfortran
@@ -28,7 +28,7 @@ endif
 ifneq ($(SDKROOT),)
   export SDKROOT
 endif
-# the compilers of make.inc (configure.sh), passed to every part
+# the compilers of make.inc (configure), passed to every part
 FF ?= gfortran
 MPIFC ?= mpif90
 $(shell mkdir -p $(DESTDIR))
@@ -68,6 +68,7 @@ python-tools:
 	ln -sf $(CURDIR)/FOCEX/PLOTTING/allplots $(DESTDIR)/allplots
 	ln -sf $(CURDIR)/FOCEX/utility/shell-optimizer $(DESTDIR)/shell-optimizer
 	ln -sf $(CURDIR)/GUI/aladyn-gui.py $(DESTDIR)/aladyn-gui
+	ln -sf $(CURDIR)/FOCEX/PLOTTING/kappaplots $(DESTDIR)/kappaplots
 
 # the parts' clean rules fail when there is nothing to remove; carry on regardless
 clean:

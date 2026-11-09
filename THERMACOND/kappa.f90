@@ -11,7 +11,9 @@
 !! V3*delta does not depend on temperature and is computed once.  latdyn.params line 10:
 !! 0 = one file per irreducible k-point in V3DELTA/ (reused by a later run on the same mesh),
 !! 1 = kept in memory.
-!! Serial and parallel runs are the same program:  tcond-2.1.x   or   mpirun -np N tcond-2.1.x
+!! Serial and parallel runs are the same program:  tcond-2.2.x   or   mpirun -np N tcond-2.2.x
+!! 2.2 (2026-11-09): mode-resolved and cumulative kappa (kappa_modes_T*, kappa_cumul_mfp_T*, kappa_cumul_freq_T*,
+!! kappa_summary, kappa_wigner_modes .dat), tau_eff fixed, 5-figure output, times in h:m:s.
 !! 2.1 (2026-11-09): |V3|^2 only where the tetrahedron delta weight is nonzero (v3_delta), and V3DELTA
 !! files with the nonzero elements only (the dense files of 2.0 are still read).
 !! Rank 0 works in the run folder; the other ranks work in .mpi_rank_NNN/ (removed at the end),
@@ -73,6 +75,10 @@
  integer, allocatable :: counts(:),displs(:)
  integer ukvt,kapRTA,tauf,kapd,tauef,kappai,tauefi,udist,ukw
  real(8) kRTA(3,3),kdir(3,3),resid,kWP(3,3),kWC(3,3),kblk(3,3)
+ ! per IBZ point and mode, star summed (2.1, the mode-resolved and cumulative kappa): RTA (mode_kappa
+ ! with F_RTA), Wigner kappa_P and kappa_C (half of each pair s,s' to each mode), RTA rates 1/tau
+ real(8), allocatable :: cR_k(:,:,:,:),wP_k(:,:,:,:),wC_k(:,:,:,:),tauinvR(:,:)
+ integer usum,uwm
 ! modes closer than degtol (1/cm) are treated as degenerate (|V3|^2 averaging, Wigner kappa_P).
 ! Symmetry-degenerate modes of Ge come out split by up to 1.5e-5 1/cm (4e-7 relative), while
 ! the closest non-degenerate ones are 1e-2 1/cm apart.
@@ -97,7 +103,7 @@
   open(ugrun,file='bs_grun.dat',status='unknown')
   open(ugrun+1,file='FBZ_grun.dat',status='unknown')
 
- write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' THERMACOND 2.1 launched at  ',today(1:4)//'/'  &
+ write(ulog,'(a30,3x,a10,3x,a12,3x,a)')' THERMACOND 2.2 launched at  ',today(1:4)//'/'  &
 &  //today(5:6)//'/'//today(7:8),now(1:2)//':'//now(3:4)//':'//now(5:10),zone
  write(ulog,*)' MPI processes: ',nprocs
 ! OpenMP threads (common/omp_threads.f90): with more than one MPI process, 1 unless TCOND_NUM_THREADS is set
@@ -109,8 +115,8 @@
  write(ulog,'(a,i4,a)')' OpenMP threads per process: ',nthreads,'  ('//trim(thrsrc)//'; set TCOND_NUM_THREADS to choose)'
  if (root) write(*,'(a,i4,a)')' OpenMP threads per process: ',nthreads,'  ('//trim(thrsrc)//'; set TCOND_NUM_THREADS to choose)'
  write(utimes,'(a,i4,a)')' OpenMP threads per process: ',nthreads,'  ('//trim(thrsrc)//')'
- write(utimes,'(a)')' (TIME: CPU seconds, summed over the OpenMP threads; WALL: elapsed seconds)'
- write(utimes,'(a,f12.4)')' At the start of the Program,        TIME IS ',cputim
+ write(utimes,'(a)')' (CPU: time summed over the OpenMP threads; WALL: elapsed time; hours:minutes:seconds)'
+ write(utimes,'(a,a)')' At the start of the Program,  CPU ',hms(dble(cputim))
 
 ! this is used to convert v33 to cm^_1
   const33 = 1d30*(hbar/uma)**1.5d0/(sqrt(ee*1d20/uma))**1.5d0*ee/h_plank/100/c_light
@@ -227,8 +233,19 @@
  character(*), intent(in) :: what
  call cpu_time(cputim)
  call system_clock(wclock1)
- write(utimes,'(a,a,f12.4,a,f12.4)') what,',  TIME IS ',cputim,'   WALL ',dble(wclock1-wclock0)/wrate
+ write(utimes,'(a,a,a,a,a)') what,',  CPU ',hms(dble(cputim)),'   WALL ',hms(dble(wclock1-wclock0)/wrate)
  end subroutine timing
+
+!---------------------------------------------------------------
+ character(len=13) function hms(t)
+!! seconds -> hhh:mm:ss.s
+ real(8), intent(in) :: t
+ integer h,m
+ real(8) sec
+ h=int(t/3600) ; m=int((t-3600d0*h)/60) ; sec=t-3600d0*h-60d0*m
+ write(hms,'(i3,a,i2.2,a,f4.1)') h,':',m,':',sec
+ if (sec.lt.9.95d0) hms(8:8)='0'
+ end function hms
 
 !---------------------------------------------------------------
  subroutine get_cwd(path)
@@ -823,7 +840,19 @@
  real(8), allocatable :: CMt(:,:),CMg(:,:),Ax(:)
  n=nibz*ndyn*3
  allocate(FFF(nibz,ndyn,3))
+ allocate(kappa_k(nibz,ndyn,3,3),cR_k(nibz,ndyn,3,3),wP_k(nibz,ndyn,3,3),wC_k(nibz,ndyn,3,3),tauinvR(nibz,ndyn))
  if (root) then
+    open(newunit=usum,file='kappa_summary.dat',status='replace')
+    write(usum,'(a)')'# kappa (W/mK) versus T: average (xx+yy+zz)/3, then xx yy zz, for RTA = kappa_P (the RTA'// &
+ &   ' with degenerate modes as blocks), the full solution (job 2 direct, job 3 iterative; same block form)'
+    write(usum,'(a)')'# and Wigner = kappa_P + kappa_C (Simoncelli-Marzari-Mauri). Per mode and cumulative: kappa_modes_T*.dat,'// &
+ &   ' kappa_cumul_mfp_T*.dat, kappa_cumul_freq_T*.dat'
+    write(usum,'(a)')'# T(K)  RTA: avg xx yy zz   full: avg xx yy zz   Wigner: avg xx yy zz'
+    open(newunit=uwm,file='kappa_wigner_modes.dat',status='replace')
+    write(uwm,'(a)')'# Wigner kappa (W/mK) summed over the lowest bands at every q (TA1 = band 1, TA2 = band 2,'// &
+ &   ' LA = band 3; by frequency): band 1, bands 1-2, bands 1-3, all bands (= the total)'
+    write(uwm,'(a)')'# kappa_C of a pair of modes counted half to each. Columns: T(K), then for each of the 4: avg xx yy zz'
+    write(uwm,'(a)')'# T(K)  TA1: avg xx yy zz   TA1+TA2: avg xx yy zz   TA1+TA2+LA: avg xx yy zz   all: avg xx yy zz'
     tauf=3450 ; kapRTA=6450 ; ukvt=6460
     open(tauf,file='tau_RTA.dat',status='unknown')
     open(kapRTA,file='kappa_RTA.dat',status='unknown')
@@ -865,13 +894,16 @@
     call gather_2d(QUloc,Qvalue_U)
     call Qandtau(ndyn,tempk)                 ! tau_N, tau_U, tau_total
     call calculate_RTA_distributionfunction(nibz,nkc,kibz,ndyn,tempk,veloc,eigenval)  ! FFF = F_RTA
+    if (.not.allocated(F_RTA)) allocate(F_RTA(nibz,ndyn,3))
+    F_RTA=FFF                                ! for tau_eff in mode_kappa (2.2)
     call mode_kappa(ndyn,tempk,veloc,eigenval)
     call total_kappa(kRTA)
+    cR_k=kappa_k ; tauinvR=tauinv_tot
     if (root) call write_kappa(ndyn,tempk,veloc,eigenval,kapRTA,tauf)
     if (root) call write_F('RTA')
     if (root) then
        call wigner_kappa(kWP,kWC)
-       write(ukw,'(f9.2,24(1x,es13.6))')tempk,(kRTA(i,i),i=1,3),kRTA(1,2),kRTA(1,3),kRTA(2,3),        &
+       write(ukw,'(f8.2,24(1x,es11.4))')tempk,(kRTA(i,i),i=1,3),kRTA(1,2),kRTA(1,3),kRTA(2,3),        &
  &        (kWP(i,i),i=1,3),kWP(1,2),kWP(1,3),kWP(2,3),(kWC(i,i),i=1,3),kWC(1,2),kWC(1,3),kWC(2,3), &
  &        (kWP(i,i)+kWC(i,i),i=1,3),kWP(1,2)+kWC(1,2),kWP(1,3)+kWC(1,3),kWP(2,3)+kWC(2,3)
        flush(ukw)
@@ -917,10 +949,11 @@
           call write_kappa(ndyn,tempk,veloc,eigenval,kapd,tauef)
           call write_F('direct')
           kblk=kdir+kWP-kRTA
-          write(ukvt,'(f9.2,12(1x,f12.5),1x,es10.3,12(1x,f12.5))')tempk,(kWP(i,i),i=1,3),kWP(1,2),kWP(1,3),kWP(2,3), &
+          write(ukvt,'(f8.2,12(1x,es11.4),1x,es9.2,12(1x,es11.4))')tempk,(kWP(i,i),i=1,3),kWP(1,2),kWP(1,3),kWP(2,3), &
                (kblk(i,i),i=1,3),kblk(1,2),kblk(1,3),kblk(2,3),resid, &
                (kRTA(i,i),i=1,3),kRTA(1,2),kRTA(1,3),kRTA(2,3),(kdir(i,i),i=1,3),kdir(1,2),kdir(1,3),kdir(2,3)
           flush(ukvt)
+          call write_modes()
           deallocate(Collision_Matrix,Ax)
        endif
        call timing('direct solution')
@@ -930,16 +963,17 @@
        if (root) then
           call write_F('iterative')
           kblk=kdir+kWP-kRTA
-          write(ukvt,'(f9.2,12(1x,f12.5),1x,i5,12(1x,f12.5))')tempk,(kWP(i,i),i=1,3),kWP(1,2),kWP(1,3),kWP(2,3), &
+          write(ukvt,'(f8.2,12(1x,es11.4),1x,i5,12(1x,es11.4))')tempk,(kWP(i,i),i=1,3),kWP(1,2),kWP(1,3),kWP(2,3), &
                (kblk(i,i),i=1,3),kblk(1,2),kblk(1,3),kblk(2,3),nit, &
                (kRTA(i,i),i=1,3),kRTA(1,2),kRTA(1,3),kRTA(2,3),(kdir(i,i),i=1,3),kdir(1,2),kdir(1,3),kdir(2,3)
           flush(ukvt)
+          call write_modes()
        endif
        call timing('iterative solution')
     endif
  enddo
  if (root) then
-    close(tauf) ; close(kapRTA) ; close(ukvt) ; close(udist) ; close(ukw)
+    close(tauf) ; close(kapRTA) ; close(ukvt) ; close(udist) ; close(ukw) ; close(usum) ; close(uwm)
     if (job.eq.2) then
        close(tauef) ; close(kapd)
     else
@@ -1075,6 +1109,7 @@
  tcm=tempk*k_b/(100*h_plank*c_light)
  vfac=cnst*1d-10*100*2*pi*c_light                   ! (dD/dk)/w -> m/s, as in get_freq_vg
  kP=0 ; kC=0
+ wP_k=0 ; wC_k=0
  do nk=1,nkc
     ib=mapibz(nk)
     call set_dynamical_matrix(kpc(:,nk),dyn,ndyn,dd)
@@ -1108,14 +1143,167 @@
           x=pre*real(vm(s,sp,al)*vm(sp,s,be))
           if (abs(w(s)-w(sp))*cnst.lt.degtol) then
              kP(al,be)=kP(al,be)+x
+             wP_k(ib,s,al,be)=wP_k(ib,s,al,be)+x/2 ; wP_k(ib,sp,al,be)=wP_k(ib,sp,al,be)+x/2
           else
              kC(al,be)=kC(al,be)+x
+             wC_k(ib,s,al,be)=wC_k(ib,s,al,be)+x/2 ; wC_k(ib,sp,al,be)=wC_k(ib,sp,al,be)+x/2
           endif
        enddo ; enddo
     enddo ; enddo
  enddo
  kP=kP/(nkc*volume_r*1d-30) ; kC=kC/(nkc*volume_r*1d-30)
+ wP_k=wP_k/(nkc*volume_r*1d-30) ; wC_k=wC_k/(nkc*volume_r*1d-30)
  end subroutine wigner_kappa
+
+!---------------------------------------------------------------
+ subroutine write_modes()
+!! 2.1 (2026-11-09): mode-resolved and cumulative kappa at this temperature, from the per-IBZ-point tensors
+!! (each star summed, so the components are symmetrized), with the totals of kappa_vs_T.dat and
+!! kappa_wigner.dat:  RTA = kappa_P per mode (wP_k),  full = full solution + kappa_P - RTA per mode
+!! (kappa_k + wP_k - cR_k, the block form of kappa_vs_T.dat),  Wigner = kappa_P + kappa_C (wP_k + wC_k).
+!! Mean free path |v| tau in nm: tau = 1/tau_RTA for RTA and Wigner, 1/tau_eff of the full solution for full
+!! (mode_kappa: tau_eff = tau_RTA (F_RTA.v)/(F.v)); 0 where the rate is not positive. Cumulative: modes sorted by their mean free path (each kind
+!! separately) or by frequency (without the 3 acoustic modes at Gamma, gamma_acoustic), added from the smallest.
+ integer u,i,ii,m,n,k,o,lst
+ character(len=40) tl
+ real(8), allocatable :: om(:),vn(:),mfp(:,:),c(:,:,:),cum(:)
+ integer, allocatable :: ord(:,:)
+ logical, allocatable :: ac(:)
+ real(8) t(3),cs(4,3),wm(4,4)
+ n=nibz*ndyn
+ allocate(om(n),vn(n),mfp(n,3),c(n,4,3),ord(n,3),cum(4),ac(n))
+ m=0
+ do i=1,nibz ; do ii=1,ndyn
+    m=m+1
+    ac(m)=gamma_acoustic(ii,mapinv(i))
+    om(m)=frequency(mapinv(i),ii)
+    vn(m)=sqrt(sum(veloc(:,ii,mapinv(i))**2))*c_light       ! veloc is in units of c (veltest.dat: x c_light = m/s)
+    t(1)=0 ; if (tauinvR(i,ii).gt.0) t(1)=1/tauinvR(i,ii)
+    t(2)=0 ; if (tauinv_eff(i,ii).gt.0) t(2)=1/tauinv_eff(i,ii)
+    mfp(m,1)=vn(m)*t(1)*1d9 ; mfp(m,2)=vn(m)*t(2)*1d9 ; mfp(m,3)=mfp(m,1)      ! nm
+    do k=1,3
+       c(m,k+1,1)=wP_k(i,ii,k,k)
+       c(m,k+1,2)=kappa_k(i,ii,k,k)+wP_k(i,ii,k,k)-cR_k(i,ii,k,k)
+       c(m,k+1,3)=wP_k(i,ii,k,k)+wC_k(i,ii,k,k)
+    enddo
+    c(m,1,:)=(c(m,2,:)+c(m,3,:)+c(m,4,:))/3
+ enddo ; enddo
+ if (abs(tempk-nint(tempk)).lt.1d-6) then
+    write(tl,'(a,i0)') 'T',nint(tempk)
+ else
+    write(tl,'(a,f0.1)') 'T',tempk
+ endif
+ ! per mode
+ open(newunit=u,file='kappa_modes_'//trim(tl)//'.dat',status='replace')
+ write(u,'(a,f8.2,a)')'# T = ',tempk,' K: kappa (W/mK) of each IBZ point and mode, its star summed (sums = the totals of'// &
+ &   ' kappa_summary.dat); avg = (xx+yy+zz)/3'
+ write(u,'(a)')'# mean free paths mfp = |v| tau in nanometres (nm): tau_RTA for RTA and Wigner, tau_eff = tau_RTA (F_RTA.v)/(F.v) of the'// &
+ &   ' full solution for full (mfp 0 where tau_eff <= 0 or v = 0); kappa_C half to each mode of a pair'
+ write(u,'(a)')'# ibz mode omega(1/cm) omega(THz) |v|(m/s) tau_RTA(ps) tau_eff(ps) mfp_RTA(nm) mfp_eff(nm)'// &
+ &   '  RTA: avg xx yy zz  full: avg xx yy zz  Wigner: avg xx yy zz'
+ m=0
+ do i=1,nibz ; do ii=1,ndyn
+    m=m+1
+    t=0
+    if (tauinvR(i,ii).gt.0) t(1)=1d12/tauinvR(i,ii)
+    if (tauinv_eff(i,ii).gt.0) t(2)=1d12/tauinv_eff(i,ii)
+    write(u,'(i6,i4,7(1x,es11.4),12(1x,es11.4))') i,ii,om(m),om(m)*c_light*100*1d-12,vn(m),t(1),t(2),mfp(m,1),mfp(m,2), &
+         c(m,:,1),c(m,:,2),c(m,:,3)
+ enddo ; enddo
+ close(u)
+ ! cumulative versus mean free path, each kind sorted by its own mfp
+ do k=1,3
+    call sort_real(n,mfp(:,k),ord(:,k))
+ enddo
+ open(newunit=u,file='kappa_cumul_mfp_'//trim(tl)//'.dat',status='replace')
+ write(u,'(a,f8.2,a)')'# T = ',tempk,' K: cumulative kappa (W/mK) versus mean free path (in nanometres, nm), modes sorted by'// &
+ &   ' their mean free path, each kind by its own; the last line holds the totals'
+ write(u,'(a)')'# mfp_RTA(nm)  RTA: avg xx yy zz   mfp_eff(nm)  full: avg xx yy zz   mfp_RTA(nm)  Wigner: avg xx yy zz'
+ cs=0
+ do o=1,n
+    do k=1,3
+       cs(:,k)=cs(:,k)+c(ord(o,k),:,k)
+    enddo
+    write(u,'(3(es11.4,4(1x,es11.4),2x))') (mfp(ord(o,k),k),cs(:,k),k=1,3)
+ enddo
+ close(u)
+ ! cumulative versus frequency
+ call sort_real(n,om,ord(:,1))
+ open(newunit=u,file='kappa_cumul_freq_'//trim(tl)//'.dat',status='replace')
+ write(u,'(a,f8.2,a)')'# T = ',tempk,' K: cumulative kappa (W/mK), modes sorted by frequency (the acoustic modes at Gamma left out);'// &
+ &   ' the last line holds the totals'
+ write(u,'(a)')'# omega(1/cm) omega(THz)  RTA: avg xx yy zz   full: avg xx yy zz   Wigner: avg xx yy zz (no acoustic modes at Gamma)'
+ cs=0
+ do o=1,n
+    m=ord(o,1)
+    if (ac(m)) cycle                                     ! acoustic modes at Gamma (omega ~ 0, no heat)
+    cs=cs+c(m,:,:)
+    write(u,'(2(es11.4,1x),3(4(1x,es11.4),1x))') om(m),om(m)*c_light*100*1d-12,cs(:,1),cs(:,2),cs(:,3)
+ enddo
+ close(u)
+ ! Wigner over the lowest bands, and the summary line
+ wm=0
+ m=0
+ do i=1,nibz ; do ii=1,ndyn
+    m=m+1
+    do lst=1,4
+       if (lst.le.3 .and. ii.gt.lst) cycle
+       wm(:,lst)=wm(:,lst)+c(m,:,3)
+    enddo
+ enddo ; enddo
+ write(uwm,'(f8.2,16(1x,es11.4))') tempk,wm(:,1),wm(:,2),wm(:,3),wm(:,4)
+ flush(uwm)
+ do k=1,3
+    cum=0
+    do m=1,n
+       cum=cum+c(m,:,k)
+    enddo
+    cs(:,k)=cum
+ enddo
+ write(usum,'(f8.2,12(1x,es11.4))') tempk,cs(:,1),cs(:,2),cs(:,3)
+ flush(usum)
+ deallocate(om,vn,mfp,c,ord,cum,ac)
+ end subroutine write_modes
+
+!---------------------------------------------------------------
+ subroutine sort_real(n,x,ord)
+!! ord: the permutation sorting x in increasing order (merge sort, stable)
+ integer, intent(in) :: n
+ real(8), intent(in) :: x(n)
+ integer, intent(out) :: ord(n)
+ integer, allocatable :: tmp(:)
+ integer w,lo,mid,hi,i,j,m
+ allocate(tmp(n))
+ do i=1,n
+    ord(i)=i
+ enddo
+ w=1
+ do while (w.lt.n)
+    lo=1
+    do while (lo.le.n)
+       mid=min(lo+w-1,n) ; hi=min(lo+2*w-1,n)
+       i=lo ; j=mid+1 ; m=lo
+       do while (i.le.mid .and. j.le.hi)
+          if (x(ord(i)).le.x(ord(j))) then
+             tmp(m)=ord(i) ; i=i+1
+          else
+             tmp(m)=ord(j) ; j=j+1
+          endif
+          m=m+1
+       enddo
+       do while (i.le.mid)
+          tmp(m)=ord(i) ; i=i+1 ; m=m+1
+       enddo
+       do while (j.le.hi)
+          tmp(m)=ord(j) ; j=j+1 ; m=m+1
+       enddo
+       ord(lo:hi)=tmp(lo:hi)
+       lo=lo+2*w
+    enddo
+    w=2*w
+ enddo
+ deallocate(tmp)
+ end subroutine sort_real
 
 !---------------------------------------------------------------
  subroutine write_F(label)
@@ -1124,7 +1312,7 @@
  integer kk
  write(udist,'(a,f9.2,2a)')'# T(K)= ',tempk,'  solution: ',label
  do kk=1,nibz ; do la=1,ndyn
-    write(udist,'(i6,i4,3(1x,es20.12))')kk,la,FFF(kk,la,:)
+    write(udist,'(i6,i4,3(1x,es11.4))')kk,la,FFF(kk,la,:)
  enddo ; enddo
  write(udist,*)
  end subroutine write_F
@@ -1158,7 +1346,8 @@
  integer, intent(out) :: niter
  integer kk
  real(8), allocatable :: kold(:,:,:)
- if (.not.allocated(F_RTA)) allocate(F_RTA(nibz,ndyn,3),F2(nibz,ndyn,3),F2loc(nloc,ndyn,3))
+ if (.not.allocated(F_RTA)) allocate(F_RTA(nibz,ndyn,3))
+ if (.not.allocated(F2)) allocate(F2(nibz,ndyn,3),F2loc(nloc,ndyn,3))
  allocate(kold(ndyn,3,3))
  F_RTA=FFF
  do niter=1,max_iter

@@ -1341,7 +1341,7 @@ real(8) nbe, temp, tempk, nb0, omega,const1,const2
 real(8) veloc(3,ndn,nkc), eigenval(ndn,nkc)
 real(8) tot_kap,FRTA(3),q(3)!,FFF(nibz,ndn,3)
 real(8) kvecstar(3,48),F12(3)
-real(8) velocc(3)
+real(8) velocc(3),fa,fb
 integer n0i
 integer ukapiter
 ukapiter = 9400
@@ -1360,6 +1360,9 @@ const2 = k_b*tempk**2/(h_plank*c_light*100)/c_light
 
 
 write(ulog,*) 'entering mode_thermal_iter...'
+if (allocated(kappa_k)) kappa_k=0      ! 2.1: kappa(ii,:,:) of each IBZ point (its star summed), for kappa_modes_T*.dat
+! 2.2: once for all points (it was reset inside the mode loop, so only the last mode kept its value)
+tauinv_eff=0
 
 nkF1_loop: do i=1,nibz
 
@@ -1368,7 +1371,6 @@ nkF1_loop: do i=1,nibz
              call kstarsinfbz1(q,nkc,kpc,narms,kvecstar,kvecop)
 
 laF1_loop: do ii=1,ndn
-           tauinv_eff=0
            do s=1,narms
 
           !*** call syop_f(kvecop(s),F_RTA(i,ii,:),FRTA)
@@ -1387,19 +1389,22 @@ laF1_loop: do ii=1,ndn
 
                
                kappa(ii,j,jj)=kappa(ii,j,jj) - const1 * omega * velocc(j) * nb0 * (nb0+1) * F12(jj)
+               if (allocated(kappa_k)) kappa_k(i,ii,j,jj)=kappa_k(i,ii,j,jj) - const1*omega*velocc(j)*nb0*(nb0+1)*F12(jj)
 
              !***  kappa_RTA(ii,j,jj)=kappa_RTA(ii,j,jj) - const1 * omega * velocc(j) * nbb * (nbb+1) * FRTA(jj)
 
 
           enddo beta_loop
-            if (velocc(j) .eq. 0.0) then       ! Gamma point has zero velocity
-                  tauinv_eff(i,ii)= tauinv_eff(i,ii)-const2*F12(j) / omega / 0.01
-            else
-                  tauinv_eff(i,ii)= tauinv_eff(i,ii)-const2*F12(j) / omega / velocc(j)  /(narms*3d0)
-            end if
-
           enddo alpha_loop
          enddo
+         ! 2.2: effective rate 1/tau_eff = (1/tau_RTA) (F_RTA.v)/(F.v): the projection of F on v relative to that of
+         ! F_RTA (no unit factors; = 1/tau_RTA for the RTA). The earlier F_j/v_j form with const2 was off by a
+         ! constant and diverged where a component of v is small. 0 where a projection is 0.
+         if (allocated(F_RTA)) then
+            fa=dot_product(F_RTA(i,ii,:),veloc(:,ii,mapinv(i)))
+            fb=dot_product(FFF(i,ii,:),veloc(:,ii,mapinv(i)))
+            if (fa.ne.0 .and. fb.ne.0) tauinv_eff(i,ii)=tauinv_tot(i,ii)*fa/fb
+         endif
        enddo laF1_loop
 !enddo
 enddo nkF1_loop
@@ -1887,7 +1892,7 @@ write(ulog,*) 'entering write_thermal...'
 
 !***write(ukapiter,*) 'nk, la, al, be, mode_kap, mode_kap_RTA'
 !write(ukapiter+1,*) 'iteration',iteration
-write(ukapiter,*) 'la, kxx,kyy,kzz, kxy,kxz,kyz, k_RTA'
+write(ukapiter,'(a)') '# band  kxx  kyy  kzz  kxy  kxz  kyz (W/mK, summed over the mesh)'
 
 tot_kap=0
 do j=1,3
@@ -1908,11 +1913,11 @@ enddo
 do ii=1,ndn
 write(ukapiter,8) ii,(kappa(ii,j,j),j=1,3),((kappa(ii,j,jj),jj=j+1,3),j=1,2)!,(kappa_RTA(ii,j,j),j=1,3),((kappa_RTA(ii,j,jj),jj=j+1,3),j=1,2)
 enddo
-write(ukapiter,*) ' '
-write(ukapiter,*) 'tot_kap=' ,tot_kap
-write(ukapiter,*) ' '
 
-write(ukapiter,78) (sum(kappa(:,j,j)),j=1,3) !,((sum(kappa(:,j,ajj)),jj=j+1,3),j=1,2) &
+write(ukapiter,'(a,es11.4)') '# (kxx+kyy+kzz)/3 =',tot_kap
+
+
+write(ukapiter,'(a,3(1x,es11.4))') '# kxx kyy kzz =',(sum(kappa(:,j,j)),j=1,3)
 ! &                    (sum(kappa_RTA(:,j,j)),j=1,3),((sum(kappa_RTA(:,j,ajj)),jj=j+1,3),j=1,2)
 write(*,*) (sum(kappa(:,j,j)),j=1,3)
 78 format(2(3x,2(3(1x,f9.3),2x)))
@@ -1920,7 +1925,7 @@ write(*,*) (sum(kappa(:,j,j)),j=1,3)
 !***close(ukapiter)
 !***close(ukapiter+1)
 
-write(uRTA,*)'tempk,i,kibz(:,i),ii,omega,nb0,1/tauinv_N(i,ii),1/tauinv_U(i,ii),1/tauinv_tot(i,ii),1/tauinv_eff(i,ii),veloc(:,ii,mapinv(i))'
+write(uRTA,'(a)')'# T(K) ibz kibz(3) mode omega(1/cm) n0 tau_N(s) tau_U(s) tau(s) 1/tau_eff(1/s) v(3)(m/s)'
 
 nkF1_loop: do i=1,nibz
     laF1_loop: do ii=1,ndn
@@ -1951,9 +1956,9 @@ enddo nkF1_loop
 !***close(uRTA)
 
 
-10 FORMAT(99(1x,g14.8))
+10 FORMAT(f8.2,1x,i6,3(1x,f9.5),1x,i3,99(1x,es11.4))
 3 format(99(1x,g11.4))
-8 format(i2,99(1x,g11.4))
+8 format(i4,99(1x,es11.4))
 
 
 end subroutine write_kappa
@@ -8390,7 +8395,7 @@ real(8) omega1, V3sq1
 uQ=9402
 unt=9400
 open(uQ,file='Qvalue.dat',status='unknown')
-write(uQ,*) 'nk,la,Q'
+write(uQ,'(a)') '# ibz mode Q Q/(n0(n0+1)) (1/cm), at the last temperature'
 
 
 tauinv_N(:,:)=0
@@ -8421,7 +8426,7 @@ nkI1_loop: do ibz=1,nibz
             
            nb1=dist(i,ii)
 
-           write(uQ,*) ibz,ii,Qvalue(ibz,ii),Qvalue(ibz,ii)/(nb1*(nb1+1))
+           write(uQ,'(i6,i4,2(1x,es11.4))') ibz,ii,Qvalue(ibz,ii),Qvalue(ibz,ii)/(nb1*(nb1+1))
 
 ! tauinv_N in 1/sec
            tauinv_N(ibz,ii) = Qvalue_N(ibz,ii)/(nb1*(nb1+1)) * c_light*100

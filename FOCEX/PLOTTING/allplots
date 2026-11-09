@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """allplots [DIR] [--name NAME] [--no-run]: the PDF plots of a FOCEX run (2026-11-02, user's request).
 
-Fills the gnuplot templates next to this script (bandgen, bandgrun, bvel, all, qha, thermo, fcs, chi .plt) for the FOCEX
-output in DIR (default .), writes the filled copies into DIR and runs gnuplot on each (log: <name>.log).
+Fills the gnuplot templates next to this script (bandgen, bandgrun, bvel, all, qha, thermo, fcs, chi .plt; kappa.plt for a
+THERMACOND folder) for the FOCEX output in DIR (default .), writes the filled copies into DIR and runs gnuplot on each (log: <name>.log).
   - bandgen.plt (as bandplot): sorted branches, one colour each -> bands-NAME.pdf (omega^2) and
     freq_bands-NAME.pdf (1/cm); bandgrun.plt, when bs_grun.dat exists (FC3 fitted): the dispersion
     above the Gruneisen parameters along the same path, same colours -> bandgrun-NAME.pdf; in all.plt
@@ -22,13 +22,14 @@ HERE = os.path.dirname(os.path.realpath(__file__))
 FMAX, VMAX, GLIM = 2000.0, 20.0, 10.0
 # template -> data files it needs
 TEMPLATES = [('bandgen.plt', ['bands.dat', 'KTICS.BS']),     # sorted branches, one colour each (as bandplot)
-             ('bandgrun.plt', ['bs_grun.dat', 'KTICS.BS']),  # dispersion over Gruneisen, same k axis
+             ('bandgrun.plt', ['bs_grun.dat', 'KTICS.BS', 'bands.dat']),  # dispersion over Gruneisen, same k axis (FOCEX folder)
              ('bvel.plt', ['bs_freq.dat', 'bands.dat', 'KTICS.BS']),
              ('all.plt', ['ibz_grun.dat', 'fbz_dos.dat', 'bs_freq.dat', 'KTICS.BS']),
              ('qha.plt', ['thermo_QHA.dat', 'temp_free.dat']),
              ('thermo.plt', ['thermo_QHA.dat', 'temp_free.dat']),
              ('fcs.plt', ['trace_fc.dat']),
-             ('chi.plt', ['chi_real.dat', 'chi_imag.dat'])]
+             ('chi.plt', ['chi_real.dat', 'chi_imag.dat']),
+             ('kappa.plt', ['kappa_summary.dat'])]                   # THERMACOND 2.2: kappa(T), Wigner by bands, cumulative
 
 
 def rows(path):

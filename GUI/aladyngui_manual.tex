@@ -132,7 +132,7 @@ Python package Flask. Set these up once as described in the FOCEX agent manual (
 
 \begin{doit}[: once, and after every git pull]
 cd ~/PROJECTS/Anharmonic-lattice-dynamics
-./configure.sh               # this computer's settings (--install the first time); checks Flask too
+./configure               # this computer's settings (--install the first time); checks Flask too
 make                         # also links aladyn-gui into ~/ALADYN/bin
 pip install flask            # in the agent's Python environment, if it is not there
 \end{doit}
@@ -293,7 +293,7 @@ Nodes, Tasks per node & per VASP job (1, 40); also the ranks used for KPAR \\
 Walltime (VASP), (THERMACOND) & \texttt{\#SBATCH -{}-time} (12:00:00, 24:00:00) \\
 Memory & \texttt{\#SBATCH -{}-mem}, optional \\
 MPI launcher & \cmd{srun}, or e.g.\ \cmd{mpirun} (then \cmd{-np} nodes $\times$ tasks) \\
-VASP / THERMACOND binary & on the cluster (\cmd{vasp_std}, \cmd{~/ALADYN/bin/tcond-2.1.x}) \\
+VASP / THERMACOND binary & on the cluster (\cmd{vasp_std}, \cmd{~/ALADYN/bin/tcond-2.2.x}) \\
 python3 on the cluster & for collect.py, gap\_check.py, set\_efield.py, extract\_born.py \\
 Lines before VASP & e.g.\ \cmd{module load vasp/6.4.2} \\
 More \#SBATCH lines & anything else your cluster wants \\

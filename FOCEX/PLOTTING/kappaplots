@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""kappaplots [DIR] [--name NAME] -- the THERMACOND plots with matplotlib (2026-11-09); the same as kappa.plt
+(gnuplot, run by allplots), written as *_mpl-NAME.pdf in DIR (default .):
+
+  kappa_T_mpl-NAME.pdf               thermal conductivity versus T: RTA, full solution, Wigner (P + C)
+  kappa_wigner_modes_mpl-NAME.pdf    Wigner kappa from the lowest bands, stacked: TA1, TA1+TA2, TA1+TA2+LA, all
+  kappa_cumul_mfp_T<T>_mpl-NAME.pdf  cumulative kappa versus mean free path, one file per temperature
+  kappa_cumul_freq_T<T>_mpl-NAME.pdf cumulative kappa versus frequency, one file per temperature
+
+Every curve is (xx+yy+zz)/3. The data are THERMACOND's (2.2) kappa_summary.dat, kappa_wigner_modes.dat,
+kappa_cumul_mfp_T*.dat and kappa_cumul_freq_T*.dat (their column layout is in their headers). NAME: --name, else
+the name of DIR's parent folder (the project of a 07_thermacond folder). Needs numpy and matplotlib.
+"""
+import glob
+import os
+import re
+import sys
+
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+
+def rows(path):
+    out = []
+    for line in open(path):
+        if line.lstrip().startswith('#') or not line.strip():
+            continue
+        try:
+            out.append([float(x) for x in line.split()])
+        except ValueError:
+            pass
+    return np.array(out)
+
+
+def main(argv):
+    args, name = [], None
+    it = iter(argv)
+    for a in it:
+        if a == '--name':
+            name = next(it)
+        elif a in ('-h', '--help'):
+            print(__doc__)
+            return 0
+        else:
+            args.append(a)
+    d = os.path.abspath(args[0] if args else '.')
+    name = name or os.path.basename(os.path.dirname(d))
+    made = []
+
+    def save(fig, base):
+        f = os.path.join(d, f'{base}_mpl-{name}.pdf')
+        fig.tight_layout()
+        fig.savefig(f)
+        plt.close(fig)
+        made.append(os.path.basename(f))
+
+    f = os.path.join(d, 'kappa_summary.dat')
+    if os.path.isfile(f):
+        S = rows(f)
+        fig, ax = plt.subplots(figsize=(5.5, 4))
+        for col, lab, m in ((1, 'RTA', 'o'), (5, 'full solution', 's'), (9, 'Wigner (P + C)', 'D')):
+            ax.plot(S[:, 0], S[:, col], marker=m, ms=3, lw=2, label=lab)
+        ax.set(xlabel='T (K)', ylabel=r'$\kappa$ (W/mK)', title=f'{name}: thermal conductivity, (xx+yy+zz)/3')
+        ax.grid(alpha=.3)
+        ax.legend()
+        save(fig, 'kappa_T')
+    f = os.path.join(d, 'kappa_wigner_modes.dat')
+    if os.path.isfile(f):
+        M = rows(f)
+        fig, ax = plt.subplots(figsize=(5.5, 4))
+        cols = ['#08306b', '#2171b5', '#6baed6', '#c6dbef']
+        labs = ['TA1', 'TA1 + TA2', 'TA1 + TA2 + LA', 'all bands (total)']
+        low = np.zeros(len(M))
+        for k, (c, lab) in enumerate(zip(cols, labs)):
+            y = M[:, 1 + 4 * k]
+            ax.fill_between(M[:, 0], low, y, color=c, lw=0, label=lab)
+            low = y
+        ax.plot(M[:, 0], M[:, 13], 'k', lw=1.2)
+        ax.set(xlabel='T (K)', ylabel=r'$\kappa$ (W/mK)', title=f'{name}: Wigner $\\kappa$ summed over the lowest bands')
+        ax.grid(alpha=.3)
+        ax.legend()
+        save(fig, 'kappa_wigner_modes')
+    for f in sorted(glob.glob(os.path.join(d, 'kappa_cumul_mfp_T*.dat')), key=lambda s: float(re.search(r'_T([\d.]+)\.dat', s).group(1))):
+        t = re.search(r'_T([\d.]+)\.dat', f).group(1)
+        C = rows(f)
+        fig, ax = plt.subplots(figsize=(5.5, 4))
+        for x, y, lab in ((0, 1, 'RTA'), (5, 6, r'full solution ($\tau_{eff}$)'), (10, 11, 'Wigner (P + C)')):
+            ok = C[:, x] > 1e-3          # from 0.001 nm: modes of (almost) zero velocity carry nothing
+            ax.plot(C[ok, x], C[ok, y], lw=2, label=lab)
+        ax.set_xscale('log')
+        ax.set(xlabel='mean free path (nanometres)', ylabel=r'cumulative $\kappa$ (W/mK)',
+               title=f'{name}: cumulative $\\kappa$ versus mean free path, T = {t} K')
+        ax.grid(alpha=.3, which='both')
+        ax.legend(loc='upper left')
+        save(fig, f'kappa_cumul_mfp_T{t}')
+    for f in sorted(glob.glob(os.path.join(d, 'kappa_cumul_freq_T*.dat')), key=lambda s: float(re.search(r'_T([\d.]+)\.dat', s).group(1))):
+        t = re.search(r'_T([\d.]+)\.dat', f).group(1)
+        C = rows(f)
+        fig, ax = plt.subplots(figsize=(5.5, 4))
+        for y, lab in ((2, 'RTA'), (6, 'full solution'), (10, 'Wigner (P + C)')):
+            ax.plot(C[:, 0], C[:, y], lw=2, label=lab)
+        ax.set(xlabel='frequency (1/cm)', ylabel=r'cumulative $\kappa$ (W/mK)',
+               title=f'{name}: cumulative $\\kappa$ versus frequency, T = {t} K')
+        ax.grid(alpha=.3)
+        ax.legend(loc='lower right')
+        save(fig, f'kappa_cumul_freq_T{t}')
+    print(f'kappaplots: {d}  NAME={name}: ' + (' '.join(made) if made else 'no THERMACOND kappa files here'))
+    return 0 if made else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))
