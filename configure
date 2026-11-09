@@ -306,7 +306,7 @@ if [ $CLUSTER = 1 ]; then
     # another compiler (intel), which swaps out gcc and makes the Python module inactive: then the agent's
     # Python cannot run in the same job. In that case the job loads the modules of now (Python), and VASP
     # is started through the wrapper vasp-env, which loads the VASP module for the VASP command only.
-    VWRAP=""; VEXE="vasp_std"; VOK=0
+    VWRAP=""; VEXE="vasp_std"; VOK=0; VVER=""
     if [ -n "$VMOD" ]; then
         VINFO=$( (module load "$VMOD" >/dev/null 2>&1 || exit 1; hash -r
                   P=$(command -v vasp_std) || exit 2
@@ -317,6 +317,11 @@ if [ $CLUSTER = 1 ]; then
                LOST=""
                for m in $LOADED; do case "$AFTER" in *":$m:"*) ;; *) LOST="$LOST $m" ;; esac; done
                ok "module $VMOD: vasp_std = $VPATH (its libraries are all found)"
+               VVER=$(grep -a -o -E 'vasp\.[0-9]+\.[0-9]+\.[0-9]+' "$VPATH" 2>/dev/null | sed 's/^vasp\.//' | sort -u -t. -k1,1n -k2,2n -k3,3n | tail -1)
+               if [ -n "$VVER" ] && [ "${VVER%%.*}" -lt 6 ] 2>/dev/null; then
+                   warn "VASP $VVER has no r2SCAN (the agent's default FUNCTIONAL; VASP 5 runs PBE instead without a word)" \
+                        "put FUNCTIONAL: PBE (or PBEsol) in the instruction files, or use a VASP 6 module (--vasp-module)"
+               fi
                if [ -n "$LOST" ]; then
                    VWRAP="$(expand "$DEST")/vasp-env"
                    ok "module $VMOD unloads$LOST: VASP will run through $VWRAP (loads $VMOD for the VASP command only)"
@@ -417,6 +422,7 @@ BIN=$(expand "$DEST")
     echo "export OPENBLAS_NUM_THREADS=1   # one BLAS thread per MPI rank"
     echo "[ -f \"$AGENTENV\" ] && source \"$AGENTENV\"   # FOCEX agent: VASP, POTCARs, VASP-Flow"
     [ -n "$PROFNAME" ] && echo "export FOCEX_PROFILE=\"$PROFNAME\"   # SLURM profile of the agent and aladyn-gui (PROFILE: in an instruction file wins)"
+    [ -n "${VVER:-}" ] && echo "export VASP_VERSION=\"$VVER\"   # of the profile's VASP module; the agent warns when a FUNCTIONAL needs a newer one"
     echo "# FOCEX and THERMACOND choose their threads (FOCEX_NUM_THREADS / TCOND_NUM_THREADS override; $NPERF performance cores here)"
 } > "$ENVFILE"
 sed 's/^/  | /' "$ENVFILE"

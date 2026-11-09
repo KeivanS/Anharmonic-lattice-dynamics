@@ -335,6 +335,10 @@ cd ~/VASP-Flow && git pull
 \cmd{the module gnuplot/... has no pdfcairo terminal} & nothing to do: the agent writes the plot scripts;
   run \cmd{makeplots.sh} (in \cmd{05_focex}) on a computer whose gnuplot makes PDFs \\
 \cmd{VASP-Flow not found} & step 2 \\
+\cmd{VASP 5.4.4 has no r2SCAN} & r2SCAN, the default \cmd{FUNCTIONAL}, needs VASP 6: VASP 5 reads
+  \cmd{METAGGA = R2SCAN} without a word and runs PBE. Put \cmd{FUNCTIONAL: PBE} (or \cmd{PBEsol}) in the
+  instruction file, or use a VASP 6 module (\opt{vasp-module}). The agent warns at the set-up, and the
+  relaxation stops at its first OUTCAR if \cmd{METAGGA} was ignored \\
 \cmd{focex-agent does not start in a new shell} & read the lines above it; usually one of the problems
   above \\
 \bottomrule
@@ -1051,7 +1055,9 @@ is read back from \cmd{07_thermacond/V3DELTA} when the force constants and the m
   \cmd{~/ALADYN/bin/vasp-env}; a \cmd{vasp_std} with missing libraries is rejected; \cmd{make python-tools}
   writes launchers with \cmd{~/myenv}'s Python (no activation); the cores of \cmd{sinfo} (\cmd{40+}) no
   longer break the profile's JSON; a gnuplot without the \cmd{pdfcairo} terminal counts as no gnuplot (scripts
-  written, the run goes on). Fixed: \cmd{FOCEX_PROFILE} replaced the \opt{profile} of the set-up at run
+  written, the run goes on); \cmd{VASP_VERSION} (from the binary) in \cmd{~/.aladyn.env}: a warning at the
+  set-up when the functional needs a newer VASP (r2SCAN: VASP 6), and any task stops when its OUTCAR shows
+  that VASP ignored \cmd{METAGGA}; \cmd{THERMACOND_X} is checked at the set-up. Fixed: \cmd{FOCEX_PROFILE} replaced the \opt{profile} of the set-up at run
   time (1.8, 1.9).
 \item[1.9] 2026-11-09: the serial THERMACOND build (\cmd{tcond-*-serial.x}) is started as one process on threads
   (\cmd{TCOND_NUM_THREADS}), not with \cmd{srun}, also in aladyn-gui's bundles (one task, \cmd{--cpus-per-task});

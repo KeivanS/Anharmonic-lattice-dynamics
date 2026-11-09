@@ -171,7 +171,14 @@ for v in "$OPT_VASP" "${VASP_STD:-}" "$HOME/BIN/vasp_std" "$(command -v vasp_std
     fi
     VASP=$v; break
 done
-if [ -n "$VASP" ]; then ok "vasp_std: $VASP"
+VVER=""
+if [ -n "$VASP" ]; then
+    VVER=$(grep -a -o -E 'vasp\.[0-9]+\.[0-9]+\.[0-9]+' "$VASP" 2>/dev/null | sed 's/^vasp\.//' | sort -u -t. -k1,1n -k2,2n -k3,3n | tail -1)
+    ok "vasp_std: $VASP${VVER:+ (VASP $VVER)}"
+    if [ -n "$VVER" ] && [ "${VVER%%.*}" -lt 6 ] 2>/dev/null; then
+        warn "VASP $VVER has no r2SCAN (the agent's default FUNCTIONAL; VASP 5 runs PBE instead without a word)" \
+             "put FUNCTIONAL: PBE (or PBEsol) in the instruction files, or use VASP 6 (--vasp)"
+    fi
 elif [ $CLUSTER = 1 ]; then ok "no vasp_std set here: on a cluster the VASP module of the SLURM profile is used (./configure finds it)"
 else fail "vasp_std not found" "bash $0 --vasp /path/to/vasp_std"; fi
 MPI_LAUNCH=""
@@ -202,6 +209,7 @@ head_ "8. Settings written to $ENVFILE"
     else echo "# export VASP_POTCAR_DIR=/path/to/potpaw_PBE.54     # NOT FOUND: set it"; fi
     if [ -n "$VASP" ]; then echo "export VASP_STD=\"$VASP\""
     else echo "# export VASP_STD=/path/to/vasp_std                 # not found here"; fi
+    [ -n "$VVER" ] && echo "export VASP_VERSION=\"$VVER\"   # the agent warns when a FUNCTIONAL needs a newer VASP"
     [ -n "$MPI_LAUNCH" ] && echo "export MPI_LAUNCH=\"$MPI_LAUNCH\""
     [ -n "$VF" ] && echo "export VASP_FLOW_DIR=\"$VF\""
     echo "case \":\$PATH:\" in *\":$BIN:\"*) ;; *) export PATH=\"$BIN:\$PATH\" ;; esac   # focex-agent, focex-diagnose"

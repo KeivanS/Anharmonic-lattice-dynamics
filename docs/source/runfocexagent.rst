@@ -152,6 +152,11 @@ When step 3 reports a problem, the end of its report gives the command that fixe
      - ``module spider vasp``, then ``--vasp-module <name>``
    * - ``no POTCAR library found``
      - ``--potcar /path/to/potpaw_PBE.54``
+   * - ``VASP 5.4.4 has no r2SCAN``
+     - r2SCAN, the default ``FUNCTIONAL``, needs VASP 6: VASP 5 reads ``METAGGA = R2SCAN`` without a word
+       and runs PBE. Put ``FUNCTIONAL: PBE`` (or ``PBEsol``) in the instruction file, or use a VASP 6 module
+       (``--vasp-module``). The agent warns at the set-up, and the relaxation stops at its first OUTCAR if
+       ``METAGGA`` was ignored
    * - ``the module gnuplot/... has no pdfcairo terminal``
      - nothing to do: the agent writes the plot scripts; run ``makeplots.sh`` (in ``05_focex``) on a
        computer whose gnuplot makes PDFs
@@ -902,7 +907,9 @@ Version history
    ``~/ALADYN/bin/vasp-env``; a ``vasp_std`` with missing libraries is rejected; ``make python-tools`` writes
    launchers with ``~/myenv``'s Python (no activation); ``sinfo``'s ``40+`` cores no longer break the
    profile's JSON; a gnuplot without the ``pdfcairo`` terminal counts as no gnuplot (scripts written, the run
-   goes on). Fixed: ``FOCEX_PROFILE`` replaced the ``--profile`` of the set-up at run time (1.8, 1.9).
+   goes on); ``VASP_VERSION`` (from the binary) in ``~/.aladyn.env``: a warning at the set-up when the
+   functional needs a newer VASP (r2SCAN: VASP 6), and any task stops when its OUTCAR shows that VASP ignored
+   ``METAGGA``; ``THERMACOND_X`` is checked at the set-up. Fixed: ``FOCEX_PROFILE`` replaced the ``--profile`` of the set-up at run time (1.8, 1.9).
 
 1.9
    2026-11-09: the serial THERMACOND build runs as one process on threads (``TCOND_NUM_THREADS``), not with

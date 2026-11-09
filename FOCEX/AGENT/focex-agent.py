@@ -646,12 +646,41 @@ def outcar_stress(outcar):
     return -np.array([[xx, xy, zx], [xy, yy, yz], [zx, yz, zz]]) / 10.0, p
 
 
+FUNCTIONAL_IGNORED = 'VASP ignored METAGGA'
+
+
+def needs_vasp6(functional):
+    """True for a functional this agent writes as a meta-GGA that VASP 5.x does not have (r2SCAN came with
+    VASP 6; VASP 5.4.4 reads METAGGA = R2SCAN without a word and runs PBE)."""
+    return str(functional or '').upper().replace('-', '').startswith('R2SCAN')
+
+
+def functional_ignored(d, t):
+    """Message if the INCAR in d asks for a meta-GGA and the OUTCAR text t says VASP ran without it
+    (METAGGA = F), else None. Found on Rivanna 2026-11-09: VASP 5.4.4 gave the PBE energy for R2SCAN."""
+    try:
+        m = re.search(r'^\s*METAGGA\s*=\s*([^\s#!]+)', open(os.path.join(d, 'INCAR')).read(), re.M | re.I)
+    except OSError:
+        return None
+    if not m or m.group(1).upper().strip('.') in ('NONE', 'F', 'FALSE', 'PE'):
+        return None
+    if re.search(r'METAGGA\s*=\s*F\b', t):
+        v = re.search(r'vasp\.(\d+\.\d+\.\d+)', t[:2000])
+        return (f'{FUNCTIONAL_IGNORED} = {m.group(1)}: the OUTCAR says METAGGA = F, so this VASP'
+                f'{" " + v.group(1) if v else ""} ran without it (r2SCAN needs VASP 6). Use FUNCTIONAL: PBE or '
+                'PBEsol, or a VASP 6 build (profile vasp_std / module), then set up again with --force')
+    return None
+
+
 def outcar_status(d, kind):
     """(ok, message) for the OUTCAR in d; kind: relax | static | dfpt."""
     f = os.path.join(d, 'OUTCAR')
     if not os.path.isfile(f):
         return False, 'no OUTCAR (not run)'
     t = open(f, errors='replace').read()
+    ign = functional_ignored(d, t)
+    if ign:
+        return False, ign
     if 'General timing' not in t:
         tail = ''
         vo = os.path.join(d, 'vasp.out')
@@ -800,6 +829,8 @@ class Agent:
             ok, msg = outcar_status(d, 'relax')
             if ok:
                 return True, msg
+            if msg.startswith(FUNCTIONAL_IGNORED):              # a restart cannot help
+                return False, msg
             if os.path.isfile(os.path.join(d, 'OUTCAR')):        # restart from CONTCAR
                 if os.path.isfile(os.path.join(d, 'CONTCAR')) and os.path.getsize(os.path.join(d, 'CONTCAR')) > 0:
                     shutil.copy(os.path.join(d, 'CONTCAR'), os.path.join(d, 'POSCAR'))
@@ -1871,9 +1902,17 @@ def init(args):
         vagent.build_potcar(p['species'], potcar_dir, os.path.join(proj, 'POTCAR'))
     else:
         rep('WARNING: no POTCAR library (VASP_POTCAR_DIR); put a POTCAR in the project folder before running')
-    for x in ('focex_x', 'sc_snaps_x', 'read_outcar_x'):
+    for x in ('focex_x', 'sc_snaps_x', 'read_outcar_x') + (('thermacond_x',) if fx['tc_job'] else ()):
         if not os.path.isfile(fx[x]):
             rep(f'WARNING: {x.upper()} = {fx[x]} not found')
+    # r2SCAN (the default functional) needs VASP 6; VASP 5.4.4 ignores METAGGA = R2SCAN without a word and
+    # runs PBE. VASP_VERSION comes from ./configure (~/.aladyn.env); the relax task checks the OUTCAR as well.
+    fun = inst.get('functional', 'R2SCAN')
+    vv = os.environ.get('VASP_VERSION', '')
+    if needs_vasp6(fun) and re.match(r'\d+', vv) and int(re.match(r'\d+', vv).group()) < 6:
+        rep(f'WARNING: FUNCTIONAL {fun} needs VASP 6, and the VASP here is {vv} (VASP_VERSION, from ./configure): '
+            'it would run PBE without saying so. Use FUNCTIONAL: PBE or PBEsol, or a VASP 6 build (the relaxation '
+            'stops at its first OUTCAR if METAGGA was ignored)')
     a.write_relax()
     a.write_workflow(os.path.join(proj, 'POSCAR.init'))
     a.write_resubmit([])
