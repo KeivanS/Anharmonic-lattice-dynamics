@@ -98,7 +98,7 @@ try:
 except Exception as e:                                        # pragma: no cover
     sys.exit(f'focex-agent needs VASP-Flow at {VASPFLOW} (set VASP_FLOW_DIR): {e}')
 
-ACCURACY = {'accurate': dict(ENCUT=600, EDIFF='1E-7', EDIFFG=-0.001, PREC='Accurate'),
+ACCURACY = {'accurate': dict(ENCUT=600, EDIFF='1E-7', EDIFFG=-0.003, PREC='Accurate'),   # EDIFFG -0.001 until 2026-11-09 (user)
             'normal':   dict(ENCUT=450, EDIFF='1E-6', EDIFFG=-0.003, PREC='Normal')}
 SUPERCELL = {'small': (10.0, 100), 'large': (14.0, 300)}     # min face distance (A), max atoms
 OMEGA2_CM = 521.11 ** 2          # bands.dat: omega^2 in eV/(A^2 amu) -> (1/cm)^2
@@ -210,6 +210,20 @@ def parse_instructions(path):
     if mode == 'from_scratch' and fx['data']:
         sys.exit('DATA is read only with MODE: extract_only')
     fx['mode'] = mode
+    # STOP_AFTER: <task> -- the run stops (OK) after that task, e.g. relax to check the structure first;
+    # deleting the line and submitting run_workflow.sh again goes on from there
+    # STRESS_OFFSET: xx yy zz -- known bias (kB) of VASP's printed stress (e.g. rVV10 in VASP <= 6.2), measured as
+    # printed minus -(1/V) dE/d eps; subtracted before stress.params is written. Default: none.
+    so = keyword(rest, 'STRESS_OFFSET')
+    try:
+        fx['stress_offset'] = [float(x) for x in so.split('#')[0].split()] if so else None
+    except ValueError:
+        sys.exit(f'STRESS_OFFSET must be three numbers (kB: xx yy zz), not {so!r}')
+    if fx['stress_offset'] is not None and len(fx['stress_offset']) != 3:
+        sys.exit(f'STRESS_OFFSET must be three numbers (kB: xx yy zz), not {so!r}')
+    fx['stop_after'] = (keyword(rest, 'STOP_AFTER') or '').split('#')[0].strip().lower()
+    if fx['stop_after'] and fx['stop_after'] not in TASKS:
+        sys.exit(f'STOP_AFTER must be one of {", ".join(TASKS)}, not {fx["stop_after"]!r}')
     # where the calculations go; relative to the folder of the instruction file
     pdir = os.path.expanduser(keyword(rest, 'PROJECT_DIR') or vagent.slugify(fx['project']))
     fx['project_dir'] = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(path)), pdir))
@@ -371,6 +385,10 @@ def vasp_inst(inst, fx, step, extra=()):
     step_list = list(extra) + user_step
     if step == 'dfpt' and not has_tag(user_all + user_step, 'EDIFF'):
         step_list = ['EDIFF = 1E-8'] + step_list             # linear response wants it tight
+    if step == 'relax' and not has_tag(user_all + user_step, 'IBRION'):
+        # quasi-Newton (forces only): the conjugate-gradient line search (IBRION = 2) stopped with 'ZBRENT: fatal
+        # error in bracketing' at 0.003 eV/A near the minimum (FePSe3 r2SCAN+U, 2026-11-09; user's choice)
+        step_list = ['IBRION = 1'] + step_list
     # VASP-Flow applies 'all' and then the step's list, later lines winning; scf and snaps
     # INCARs are made from the relaxation INCAR, so their list goes under 'relax'
     # the magnetic and +U tags of any block in every step (PHYS_TAGS); the step's own lines still come last
@@ -469,6 +487,59 @@ def cell_data(V, F, types):
     assert np.allclose(prim_in_conv @ C, V, atol=1e-8)
     return dict(V=V, F=F % 1.0, C=C, latp=latp, prim_in_conv=prim_in_conv, Xc=(F % 1.0) @ P.T,
                 sg=p2f.get(ds, 'international'), in_frame=bool(np.allclose(C, focex_frame(latp), atol=1e-6)))
+
+
+def input_moments(inst, fx, n):
+    """Initial moments per atom of the input POSCAR given in the instruction file: a per-atom MAGMOM: list, or
+    MAGMOM = in an INCAR block, with n (collinear) or 3n (non-collinear) values. A list of n tuples, or None when
+    no per-atom moments are given (none, one value, or one per element: they do not tell atoms of a species apart)."""
+    lists = []
+    spec = inst.get('magmom')
+    if spec and spec.get('kind') == 'list':
+        lists.append(spec['values'])
+    for k, body in fx.get('blocks', {}).items():
+        m = re.search(r'^\s*MAGMOM\s*=\s*([^!#\n]*)', body, re.M | re.I) if k.lower().startswith('incar') else None
+        if m:
+            lists.append([float(v) for v in expand_values(m.group(1))])
+    for vals in lists:
+        for c in (1, 3):
+            if len(vals) == c * n:
+                return [tuple(vals[c * i:c * i + c]) for i in range(n)]
+    return None
+
+
+def primitive_input(p, moments=None):
+    """The input cell reduced to its primitive cell (same orientation, atoms not moved), or p itself when it is
+    primitive already. Atoms whose per-atom initial moments differ count as different kinds, so a magnetic order
+    that needs the larger cell (an antiferromagnet) keeps it. Given per-atom moments, the cell is never reduced (the
+    MAGMOM list belongs to these atoms): if it could be, the note says so. Returns (p, note)."""
+    n = len(p['F'])
+    types = list(p['types'])
+    if moments is not None:
+        kinds = sorted(set((t, tuple(round(x, 2) for x in m)) for t, m in zip(types, moments)))
+        types = [kinds.index((t, tuple(round(x, 2) for x in m))) for t, m in zip(types, moments)]
+    ds, _ = p2f.dataset(p['A'], p['F'], types)
+    cls = list(p2f.get(ds, 'mapping_to_primitive'))
+    npr = len(set(cls))
+    if npr == n:
+        return p, ('' if moments is None else f'; {n} atoms kept: the initial moments (MAGMOM) need this cell')
+    if moments is not None:
+        return p, (f'; {n} atoms kept because MAGMOM is given per atom, but this magnetic order also fits a cell of '
+                   f'{npr} atoms: give that cell and its MAGMOM to save time')
+    L = np.array(p2f.get(ds, 'primitive_lattice'), dtype=float)
+    M = p['A'] @ np.linalg.inv(L)                    # input cell vectors in primitive units: must be integers
+    if not np.allclose(M, np.rint(M), atol=1e-4) or round(abs(np.linalg.det(M))) * npr != n:
+        sys.exit(f'could not reduce the {n}-atom input cell to its {npr}-atom primitive cell (spglib lattice not '
+                 'commensurate); give the primitive cell as POSCAR')
+    if np.linalg.det(L) < 0:
+        L = -L
+    reps = sorted({c: i for i, c in reversed(list(enumerate(cls)))}.values(), key=lambda i: (p['types'][i], i))
+    q = dict(p)
+    q['A'], q['types'] = L, [p['types'][i] for i in reps]
+    q['F'] = (p['X'][reps] @ np.linalg.inv(L)) % 1.0
+    q['X'] = q['F'] @ L
+    q['counts'] = [q['types'].count(t) for t in range(len(p['species']))]
+    return q, f'; reduced from the {n}-atom input cell to its {npr}-atom primitive cell'
 
 
 def canonical_cell(p):
@@ -657,18 +728,23 @@ def needs_vasp6(functional):
 
 def functional_ignored(d, t):
     """Message if the INCAR in d asks for a meta-GGA and the OUTCAR text t says VASP ran without it
-    (METAGGA = F), else None. Found on Rivanna 2026-11-09: VASP 5.4.4 gave the PBE energy for R2SCAN."""
+    (no "METAGGA = <name>  LMAXTAU" line), else None. Found on Rivanna 2026-11-09: VASP 5.4.4 gave the PBE energy for R2SCAN."""
     try:
         m = re.search(r'^\s*METAGGA\s*=\s*([^\s#!]+)', open(os.path.join(d, 'INCAR')).read(), re.M | re.I)
     except OSError:
         return None
     if not m or m.group(1).upper().strip('.') in ('NONE', 'F', 'FALSE', 'PE'):
         return None
-    if re.search(r'METAGGA\s*=\s*F\b', t):
+    # an active meta-GGA prints 'METAGGA = <name>  LMAXTAU = ...' (SCAN, PBE, R2SCA with the r2SCAN patch); every
+    # OUTCAR also has 'METAGGA=  F  non-selfconsistent MetaGGA calc.', which says nothing about it (2026-11-09: the
+    # old test matched that line and stopped a real r2SCAN run). An ignored METAGGA (R2SCAN in unpatched 5.4.4) has
+    # only the latter.
+    if not re.search(r'^\s*METAGGA\s*=\s*\S+\s+LMAXTAU', t, re.M):
         v = re.search(r'vasp\.(\d+\.\d+\.\d+)', t[:2000])
-        return (f'{FUNCTIONAL_IGNORED} = {m.group(1)}: the OUTCAR says METAGGA = F, so this VASP'
-                f'{" " + v.group(1) if v else ""} ran without it (r2SCAN needs VASP 6). Use FUNCTIONAL: PBE or '
-                'PBEsol, or a VASP 6 build (profile vasp_std / module), then set up again with --force')
+        return (f'{FUNCTIONAL_IGNORED} = {m.group(1)}: the OUTCAR shows no active meta-GGA (no METAGGA = ... '
+                f'LMAXTAU line), so this VASP{" " + v.group(1) if v else ""} ran without it (r2SCAN needs VASP 6, or '
+                '5.4.4 with the r2SCAN patch). Use FUNCTIONAL: PBE or PBEsol, or such a build (profile vasp_std / '
+                'module), then set up again with --force')
     return None
 
 
@@ -1441,6 +1517,10 @@ class Agent:
         if sig is None:
             msg += '; no full stress tensor in snap_000/OUTCAR (ISIF < 2): stress.params not written'
         else:
+            off = self.fx.get('stress_offset')
+            if off:                       # printed - offset = the true printed stress; sigma = -(printed)/10 GPa
+                sig = sig + np.diag(off) / 10.0
+                msg += f'; STRESS_OFFSET {" ".join(f"{x:g}" for x in off)} kB removed'
             write(os.path.join(top, 'stress.params'),
                   ''.join(' '.join(f'{x:12.6f}' for x in r) + '\n' for r in sig) +
                   '# stress of the undistorted supercell (snap_000/OUTCAR), GPa, tensile > 0 (= -VASP in kB/10)\n')
@@ -1721,6 +1801,15 @@ class Agent:
                 cmd = (f'TCOND_NUM_THREADS={n} ' if n > 1 else '') + f'"{fx["thermacond_x"]}"'
             else:
                 cmd = self.gen(self.d('POSCAR0'), 'scf')._get_mpi_cmd(fx['thermacond_x'])
+                # configure's vasp-env (mpi_cmd 'vasp-env srun') swaps the job's modules for the VASP module;
+                # THERMACOND is built with the job's MPI, and under vasp-env srun every rank started as a
+                # singleton (40 copies of the whole job; Rivanna 2026-11-09), so it is started without it
+                cmd = re.sub(r'^\s*("?)\S*/vasp-env\1\s+', '', cmd)
+                # OpenMPI 5 under srun: PMIx's shared-memory store failed before MPI_Init on Rivanna
+                # (PMIX_ERR_FILE_OPEN_FAILURE in gds_shmem2.c, exit code 14; plain srun and --mpi=pmix alike);
+                # the hash store works (tested with 4 and 40 ranks, 2026-11-09). A PMIX_MCA_gds already set wins.
+                if cmd.lstrip().startswith('srun'):
+                    cmd = 'PMIX_MCA_gds=${PMIX_MCA_gds:-hash} ' + cmd
             rc = subprocess.run(f'{cmd} > thermacond.out 2>&1', shell=True, cwd=d).returncode
         head = (f"job {job} ({TC_JOB[job]}), mesh {L[0].split('#')[0].strip()}, T {L[5].split('#')[0].strip()}, "
                 f'{(time.time() - t0) / 60:.1f} min')
@@ -1855,6 +1944,10 @@ class Agent:
             done[t] = now()
             self.state.pop('failed', None)
             self.save()
+            if t == self.fx.get('stop_after') and not only:
+                self.rep(f'=== stopped after {t} (STOP_AFTER: {t}); to go on, delete that line in '
+                         f'{os.path.join(self.proj, INSTR)} and submit run_workflow.sh again')
+                return True
         return True
 
 
@@ -1879,6 +1972,7 @@ def init(args):
         return init_data(args, fx, proj)
     shutil.copy(args.coord, os.path.join(proj, 'POSCAR.input'))
     p = read_vasp_cell(args.coord)
+    p, cell_note = primitive_input(p, input_moments(inst, fx, len(p['F'])))
     c = canonical_cell(p)
     write_poscar(os.path.join(proj, 'POSCAR.init'), f"{fx['project']} (Niggli-reduced, FOCEX frame)",
                  c['V'], p['species'], p['counts'], c['F'])
@@ -1894,7 +1988,7 @@ def init(args):
     a = Agent(proj)
     rep = a.rep
     rep(f"focex-agent init: {fx['project']}, {len(p['F'])} atoms, space group {c['sg']}, accuracy "
-        f"{fx['accuracy']}, relax/SCF k-mesh {dens}")
+        f"{fx['accuracy']}, relax/SCF k-mesh {dens}{cell_note}")
     if a.mpi_note:
         rep('  ' + a.mpi_note)
     potcar_dir, _ = potcar_dir_for(inst.get('functional', 'R2SCAN'))
@@ -1910,9 +2004,9 @@ def init(args):
     fun = inst.get('functional', 'R2SCAN')
     vv = os.environ.get('VASP_VERSION', '')
     if needs_vasp6(fun) and re.match(r'\d+', vv) and int(re.match(r'\d+', vv).group()) < 6:
-        rep(f'WARNING: FUNCTIONAL {fun} needs VASP 6, and the VASP here is {vv} (VASP_VERSION, from ./configure): '
-            'it would run PBE without saying so. Use FUNCTIONAL: PBE or PBEsol, or a VASP 6 build (the relaxation '
-            'stops at its first OUTCAR if METAGGA was ignored)')
+        rep(f'NOTE: FUNCTIONAL {fun} with VASP {vv} (VASP_VERSION, from ./configure): VASP 5.4.4 has r2SCAN only with '
+            'the r2SCAN patch (metagga544.diff of gitlab.com/dhamil/r2scan-subroutines); without it VASP runs PBE '
+            'without saying so. The relaxation stops at its first OUTCAR if METAGGA was ignored')
     a.write_relax()
     a.write_workflow(os.path.join(proj, 'POSCAR.init'))
     a.write_resubmit([])

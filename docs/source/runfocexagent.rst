@@ -316,6 +316,11 @@ The supercell tasks are checked again before they are skipped:
 ``relax``
    The structure you gave is reduced to its primitive cell (Niggli reduction) and rotated into
    the orientation FOCEX and SC-SNAPS use (:ref:`agent-frame`); the result is ``POSCAR.init``.
+   Initial moments given atom by atom (a ``MAGMOM:`` list or ``MAGMOM =`` in an INCAR block, one value
+   per atom, or three for non-collinear moments) keep the cell you gave: atoms with different moments
+   count as different, so an antiferromagnet keeps its magnetic cell, and the report says when that
+   order would also fit a smaller cell. One value per element (``MAGMOM: Fe=4``) does not stop the
+   reduction.
    VASP relaxes the atoms and the cell shape and volume in ``01_relax``. If the forces are not yet
    below EDIFFG after NSW ionic steps, the relaxation continues from its last structure (CONTCAR),
    up to three times.
@@ -389,8 +394,8 @@ The supercell tasks are checked again before they are skipped:
 Defaults
 ~~~~~~~~
 
-- ``ACCURACY: Accurate``: ENCUT 600 eV, EDIFF 10⁻⁷ eV, EDIFFG −0.001 eV/Å, PREC Accurate in every
-  VASP step. ``Normal``: 450 eV, 10⁻⁶, −0.003, PREC Normal -- cheaper, but the residual forces of
+- ``ACCURACY: Accurate``: ENCUT 600 eV, EDIFF 10⁻⁷ eV, EDIFFG −0.003 eV/Å, PREC Accurate in every
+  VASP step; the relaxation uses IBRION = 1 (quasi-Newton). ``Normal``: 450 eV, 10⁻⁶, −0.003, PREC Normal -- cheaper, but the residual forces of
   the relaxed structure are larger (0.01 eV/Å in a ZnO test), which adds noise to the force
   constants. DFPT uses EDIFF 10⁻⁸.
 - Relaxation and SCF k-mesh: VASP-Flow's ``coarse`` density (1000 k-points per reciprocal atom),
@@ -527,6 +532,10 @@ VASP-Flow (its manual lists all of them); the common ones are below.
    * - ``PROFILE``
      - none
      - the VASP-Flow profile, as ``--profile``
+   * - ``STOP_AFTER``
+     - --
+     - a task name (e.g. ``relax``): the run stops after that task; delete the line and submit
+       ``run_workflow.sh`` again to go on
    * - **force constants**
      -
      -
@@ -575,6 +584,11 @@ VASP-Flow (its manual lists all of them); the common ones are below.
    * - ``BORN_TRANSPOSE``
      - yes
      - :ref:`agent-born`
+   * - ``STRESS_OFFSET``
+     - none
+     - three numbers, kB (xx yy zz): a known error of VASP's printed stress (printed minus
+       -(1/V) dE/dε; e.g. rVV10 in VASP up to 6.2), removed before ``stress.params`` is written.
+       It does not change the relaxation: use ``PSTRESS`` in ``INCAR_relax`` for that
    * - **snapshots**
      -
      -

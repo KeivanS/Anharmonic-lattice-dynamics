@@ -473,7 +473,11 @@ The supercell tasks are checked again before they are skipped:
 \begin{description}
 \item[relax] The structure you gave is reduced to its primitive cell (Niggli reduction) and rotated
   into the orientation FOCEX and SC-SNAPS use (Section~\ref{sec:frame}); the result is
-  \cmd{POSCAR.init}. VASP relaxes the atoms and the cell shape and volume in \cmd{01_relax}. If the
+  \cmd{POSCAR.init}. Initial moments given atom by atom (a \cmd{MAGMOM:} list or \cmd{MAGMOM =} in an
+  INCAR block, one value per atom, or three for non-collinear moments) keep the cell you gave: atoms with
+  different moments count as different, so an antiferromagnet keeps its magnetic cell, and the report says
+  when that order would also fit a smaller cell. One value per element (\cmd{MAGMOM: Fe=4}) does not stop
+  the reduction. VASP relaxes the atoms and the cell shape and volume in \cmd{01_relax}. If the
   forces are not yet below EDIFFG after NSW ionic steps, the relaxation continues from its last
   structure (CONTCAR), up to three times.
 \item[poscar0] The relaxed cell is reduced and oriented again and written as \cmd{POSCAR0}: every
@@ -537,8 +541,8 @@ The supercell tasks are checked again before they are skipped:
 
 \subsection{Defaults}
 \begin{itemize}
-\item \cmd{ACCURACY: Accurate}: ENCUT 600\,eV, EDIFF $10^{-7}$\,eV, EDIFFG $-0.001$\,eV/\AA,
-  PREC Accurate in every VASP step. \cmd{Normal}: 450\,eV, $10^{-6}$, $-0.003$, PREC Normal --
+\item \cmd{ACCURACY: Accurate}: ENCUT 600\,eV, EDIFF $10^{-7}$\,eV, EDIFFG $-0.003$\,eV/\AA,
+  PREC Accurate in every VASP step; the relaxation uses IBRION = 1 (quasi-Newton). \cmd{Normal}: 450\,eV, $10^{-6}$, $-0.003$, PREC Normal --
   cheaper, but the residual forces of the relaxed structure are larger (0.01\,eV/\AA\ in a ZnO
   test), which adds noise to the force constants. DFPT uses EDIFF $10^{-8}$.
 \item Relaxation and SCF k-mesh: VASP-Flow's \cmd{coarse} density (1000 k-points per reciprocal
@@ -676,13 +680,15 @@ MODE & from\_scratch; extract\_only when DATA is given & MODE: extract\_only \\
 SPECIES & element names from the POSCARs (extract\_only) & SPECIES: Mg O \\
 PROFILE & none: a workstation, \cmd{bash run_workflow.sh} & PROFILE: mycluster \\
 ACCOUNT & the account of the profile (SLURM) & ACCOUNT: my\_allocation \\
+STOP\_AFTER & all tasks run & STOP\_AFTER: relax \quad (stops after that task; delete the line and submit
+  \cmd{run_workflow.sh} again to go on) \\
 \multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{force constants}}} \\
 RANGE & 6 2 1 0 0 0 0: neighbour shells for ranks 2--8 & RANGE: 8 3 2 0 0 0 0 \\
 FC2RANGE & 0: harmonic range = the supercell & FC2RANGE: 0 \\
 LASSO\_RATIO & 2: below 2 equations per unknown an extra LASSO run & LASSO\_RATIO: 3 \\
 \multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{VASP}}} \\
 FUNCTIONAL & R2SCAN & FUNCTIONAL: PBEsol \quad (PBE, PBEsol, LDA, AM05, R2SCAN, HSE06, VV10) \\
-ACCURACY & Accurate: ENCUT 600\,eV, EDIFF $10^{-7}$, EDIFFG $-0.001$, PREC Accurate &
+ACCURACY & Accurate: ENCUT 600\,eV, EDIFF $10^{-7}$, EDIFFG $-0.003$, PREC Accurate &
   ACCURACY: Normal \quad (450\,eV, $10^{-6}$, $-0.003$) \\
 ENCUT & from ACCURACY & ENCUT: 520 \\
 KMESH\_DENSITY & coarse (1000 k-points per reciprocal atom); fine (6000) if every element is a metal &
@@ -693,6 +699,9 @@ GGA\_U & auto: tabulated U on d/f elements if the compound has O, S, Se, Te or a
 DFPT & auto: Born charges and $\varepsilon_\infty$ if the SCF shows a gap ($>$0.05\,eV) & DFPT: off
   \quad (or on) \\
 BORN\_TRANSPOSE & yes (Section~\ref{sec:born}) & BORN\_TRANSPOSE: no \\
+STRESS\_OFFSET & none & STRESS\_OFFSET: -5.54 -5.54 -6.28 \quad (kB, xx yy zz: known error of VASP's printed
+  stress, printed minus $-(1/V)\,dE/d\varepsilon$, e.g.\ rVV10 in VASP $\le$ 6.2; removed before
+  \cmd{stress.params} is written; the relaxation needs PSTRESS in INCAR\_relax) \\
 VASP\_RUN & here: the agent starts VASP & VASP\_RUN: external \quad (inputs written, the agent stops as
   WAITING and goes on from the outputs; \cmd{aladyn-gui} bundles or submits them) \\
 THERMACOND\_RUN & here & THERMACOND\_RUN: external \quad (the same for THERMACOND) \\

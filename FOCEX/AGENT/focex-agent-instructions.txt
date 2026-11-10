@@ -24,10 +24,13 @@ RANGE: 6 2 1 0 0 0 0        # neighbour shells for ranks 2..8, the same for ever
 FUNCTIONAL: PBEsol
 MAGMOM: Cr=3.0
 MPI: 40                     # MPI ranks for VASP
-# ACCURACY: Accurate        # Accurate: ENCUT 600, EDIFF 1E-7, EDIFFG -0.001, PREC Accurate
+# ACCURACY: Accurate        # Accurate: ENCUT 600, EDIFF 1E-7, EDIFFG -0.003, PREC Accurate
 #                           # Normal:   ENCUT 450, EDIFF 1E-6, EDIFFG -0.003, PREC Normal
 # DFPT: auto                # Born charges and epsilon: auto = only if the SCF shows a gap | on | off
 # PROFILE: mycluster        # VASP-Flow profile, same as --profile
+# STRESS_OFFSET: 0 0 0      # kB, xx yy zz: known error of VASP's printed stress (e.g. rVV10 in VASP <= 6.2),
+#                           # removed before stress.params is written; default none
+# STOP_AFTER: relax         # stop after this task (e.g. to check the relaxed structure); delete to go on
 
 # ── snapshots (SC_SNAPS) ──
 # SUPERCELL: SMALL          # SMALL: >= 10 A, <= 100 atoms;  LARGE: >= 14 A, <= 300 atoms;
