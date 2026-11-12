@@ -5,3 +5,4 @@
 0      relax the reference with the fitted FCs: 1 = yes, 0 = no (default 0)
 0      LASSO (enforce_inv=2,3) lambda: 1 = noise test, 0 = smallest cross-validation error (default 0)
 0      LASSO L2 (ridge) prior term: 1 = add it, 0 = no (default 0)
+0      p/m above which LASSO (enforce_inv=3) is recommended (0 = default 0.3)

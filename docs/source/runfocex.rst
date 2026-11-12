@@ -798,6 +798,7 @@ default"**, given in that comment, so in practice you copy this file unchanged
    0      relax the reference with the fitted FCs: 1 = yes, 0 = no (default 0)
    0      LASSO (enforce_inv=2,3) lambda: 1 = noise test, 0 = smallest cross-validation error (default 0)
    0      LASSO L2 (ridge) prior term: 1 = add it, 0 = no (default 0)
+   0      p/m above which LASSO (enforce_inv=3) is recommended (0 = default 0.3)
 
 They are:
 
@@ -818,6 +819,11 @@ Optional **lines 6 and 7** matter only for LASSO (``enforce_inv = 2, 3``). Line 
 keeps as few force constants as the noise in your forces allows (otherwise it uses
 cross-validation). Line 7 = ``1``: adds a mild ridge penalty; experimental. Both are explained in
 the technical notes.
+
+Optional **line 8** (absent or 0: 0.3) is the ratio *p/m* of free parameters to force rows above
+which the :ref:`fit diagnostics <fit-diagnostics>` warn that LASSO (``enforce_inv = 3``) may be
+needed. It is only a warning: the fit is never changed; choose LASSO yourself with ``enforce_inv``.
+Any other value is used as given; one outside [0.01, 1] is flagged in the log.
 
 An optional **line 5** (absent or 0: off) relaxes the reference structure with the fitted force
 constants (since 2026-11-02): ``1`` on that line.
@@ -1162,8 +1168,9 @@ FOCEX does the first part of this itself: after the fit, the log, the end of the
   :math:`1/(1-p_{\rm eff}/m)`. Snapshots that alone fix some parameters cannot be predicted and are
   left out of this test (their number is printed);
 * per rank, how many fitted FCs are smaller than twice their standard error;
-* conclusions: a **warning** when :math:`p/m > 0.2` (fewer than 5 force rows per parameter: LASSO,
-  ``enforce_inv = 3``, may be necessary) and a stronger one when :math:`p/m > 0.5`;
+* conclusions: a **warning** when :math:`p/m` is above ``default.params`` line 8 (default 0.3, about 3
+  force rows per parameter: LASSO, ``enforce_inv = 3``, may be necessary) and a stronger one when
+  :math:`p/m > 0.5`;
   **over-fitting** when the held-out residual is more than 25 % above the training one; **model
   incomplete (or noisy forces)** when it is not over-fitted but the residual is above 5 %: missing
   range or ranks, or DFT force noise of that size; ranks most of whose FCs are below 2 σ (range

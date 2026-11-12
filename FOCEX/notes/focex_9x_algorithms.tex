@@ -539,7 +539,7 @@ $1-H_{bb}$ fixes some parameters alone and is left out). Ratios to the training 
 the relative residual of the final FCs, since the right-hand side of the SVD may be shifted ($b-Ax_p$). For a correct
 model and independent noise $E[\mathrm{PRESS}]/E[\mathrm{RSS}]=1/(1-p/m)^2$ (uniform leverage). Per rank, the share of
 FCs with $|x|<2\sigma$. With \code{enforce\_inv}=0 only $m$ and the number of FCs are reported.
-\paragraph{Conclusions.} $p/m>0.2$ and $>0.5$: warnings (LASSO may be / is needed); held-out/training $>1.25$:
+\paragraph{Conclusions.} $p/m>p_{\max}$ (\code{default.params} line 8, default 0.3) and $>0.5$: warnings only, the fit is unchanged (LASSO may be / is needed); held-out/training $>1.25$:
 over-fitting; otherwise, residual $>5\,\%$: model incomplete or noisy forces; a rank $\ge2$ with more than half its FCs
 below $2\sigma$: range longer than the data support.
 \paragraph{Validation.} Ge example, \code{enforce\_inv}=1: $p/m=0.016$, held-out/training 1.10 (one snapshot left

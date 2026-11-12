@@ -554,6 +554,8 @@ The supercell tasks are checked again before they are skipped:
   snapshots are often enough (\cmd{SNAPSHOTS}).
 \item \cmd{RANGE: 6 2 1 0 0 0 0}: neighbour shells kept for ranks 2, 3, 4, \dots;
   \cmd{FC2RANGE: 0}: the harmonic force constants are kept over the whole supercell.
+  \cmd{FCFLAGS: 1 1 1 1 1 1}: the clusters of ranks 3--8 are those within the shells (written
+  explicitly on line 12 of \cmd{structure.params}; 0 adds 2-body and collinear clusters out to the FC2 range).
 \item FOCEX k-mesh \cmd{fine}; the band-structure path is found automatically.
 \end{itemize}
 
@@ -685,6 +687,7 @@ STOP\_AFTER & all tasks run & STOP\_AFTER: relax \quad (stops after that task; d
 \multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{force constants}}} \\
 RANGE & 6 2 1 0 0 0 0: neighbour shells for ranks 2--8 & RANGE: 8 3 2 0 0 0 0 \\
 FC2RANGE & 0: harmonic range = the supercell & FC2RANGE: 0 \\
+FCFLAGS & 1 1 1 1 1 1: ranks 3--8 within the shells; 0 = 2-body to the FC2 range & FCFLAGS: 0 1 1 1 1 1 \\
 LASSO\_RATIO & 2: below 2 equations per unknown an extra LASSO run & LASSO\_RATIO: 3 \\
 \multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{VASP}}} \\
 FUNCTIONAL & R2SCAN & FUNCTIONAL: PBEsol \quad (PBE, PBEsol, LDA, AM05, R2SCAN, HSE06, VV10) \\

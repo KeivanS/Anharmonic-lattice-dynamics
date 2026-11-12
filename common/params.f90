@@ -23,6 +23,10 @@ module params
 ! lasso_l2 (default.params line 7, absent or 0 = off): L2 term with prior width tau_r = lasso_l2 x rms of the
 ! rank-r FCs of the least-squares fit (classo_cv_res)
  real(r15):: lasso_l2 = 0
+! pm_max (default.params line 8, absent or 0 = 0.3; 2026-11-11, user): p/m above which the fit diagnostics
+! recommend LASSO (enforce_inv=3); a warning only, the fit is unchanged (fit_diagnostics.f90)
+ real(r15):: pm_max = 0.3d0
+ logical  :: pm_given = .false.
 ! svd_noise_check: svd_set compares the measured relative noise of its fit with line 2's guess and raises the
 ! cut (svd_ridge.f90). Only for fits of the forces themselves: focex.f90 sets it around them (off for fits of
 ! residuals, e.g. lasso_support_errors, whose relative residual is ~1 by construction)

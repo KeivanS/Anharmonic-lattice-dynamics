@@ -13,8 +13,9 @@
 ! held-out error exceeds the training error by the factor 1/(1-p_eff/m) at most; a larger factor means
 ! over-fitting (or correlated rows), a small factor with a large residual means the residual is not
 ! variance but bias: the model is incomplete (ranges, ranks) or the forces are noisy.
-! Thresholds: p/m > pn_warn (0.2, fewer than 5 force rows per free parameter: +25 % expected held-out
-! error) and > pn_strong (0.5: +100 %) warn that LASSO (enforce_inv=3) may be / is needed.
+! Thresholds: p/m > pm_max (default.params line 8, default 0.3: fewer than ~3 force rows per free parameter,
+! +43 % expected held-out error) and > pn_strong (0.5: +100 %) warn that LASSO (enforce_inv=3) may be / is
+! needed. Warnings only: the fit is never changed (user, 2026-11-11).
 !******************************************************************************
  module fit_diag
  use constants, only : r15
@@ -33,7 +34,7 @@
  integer, save :: d_snap_why = 0                     ! 1 no snapshot list, 2 rows differ, 3 too costly, 4 singular
  real(r15), save :: d_peff = 0, d_rss = 0, d_bb = 0, d_press_row = 0, d_press_snap = 0, d_rss_snap = 0
  integer, save :: d_nsing = 0                        ! snapshots that alone fix some parameters (left out)
- real(r15), parameter :: pn_warn = 0.2_r15, pn_strong = 0.5_r15, cv_warn = 1.25_r15, eps_model = 0.05_r15
+ real(r15), parameter :: pn_strong = 0.5_r15, cv_warn = 1.25_r15, eps_model = 0.05_r15
  real(r15), parameter :: snap_cost_max = 5e11_r15    ! flops above which the snapshot LOO is skipped
 
  contains
@@ -173,6 +174,7 @@
 !! x, sig: fitted irreducible FCs and their standard errors; nrank_cols(rank): their number per rank, in
 !! column order; eps_fit: relative residual ||F_dft-F_fit||/||F_dft|| of the final FCs (percent)
  use ios, only : ulog
+ use params, only : pm_max
  character(len=*), intent(in) :: svdfile
  integer, intent(in) :: nx, nrank_cols(8)
  real(r15), intent(in) :: x(nx), sig(nx), eps_fit
@@ -267,12 +269,16 @@
  enddo
 
 ! ---- conclusions
- if (pn .gt. pn_strong) then
-    call addc('WARNING: p/m > 0.5 (fewer than 2 force rows per free parameter): the least-squares fit is')
+ if (pn .gt. max(pn_strong, pm_max)) then
+    write(concl(nc+1),'(a,f6.3,a)') 'WARNING: p/m >',max(pn_strong, pm_max), &
+ &        ' (fewer than 2 force rows per free parameter): the least-squares fit is'
+    nc = nc + 1
     call addc('  over-parametrized; LASSO (enforce_inv=3) is strongly recommended, or shorter ranges / more snapshots.')
- elseif (pn .gt. pn_warn) then
-    call addc('WARNING: p/m > 0.2 (fewer than 5 force rows per free parameter): risk of over-fitting;')
-    call addc('  LASSO (enforce_inv=3) may be necessary (or shorter ranges / more snapshots).')
+ elseif (pn .gt. pm_max) then
+    write(concl(nc+1),'(a,f6.3,a,f6.1,a)') 'WARNING: p/m >',pm_max,' (default.params line 8; fewer than', &
+ &        1/pm_max,' force rows per free parameter):'
+    nc = nc + 1
+    call addc('  risk of over-fitting; LASSO (enforce_inv=3) may be necessary (or shorter ranges / more snapshots).')
  endif
  over = .false.
  if (ratio .gt. 0) then

@@ -10,7 +10,7 @@
  use born, only : born_flag
  use constants, only : r15
  implicit none
- integer i,counter,tau ,rnk,ios_cc,n_cc
+ integer i,counter,tau ,rnk,ios_cc,n_cc,ios_l7
  character(len=32) l2env
  real(r15) scal,force_error
  character fdf*1,r4*7,invr*4,incl*8,it*2,zone*5,now*10,today*8,bornflg*3
@@ -49,6 +49,7 @@
       read(uparams,*,iostat=ios_cc) lasso_l2
       if(ios_cc.ne.0 .or. lasso_l2.ne.1) lasso_l2 = 0
    endif
+   ios_l7 = ios_cc
 ! tests only (not documented): FOCEX_L2_TAU scales the prior width when line 7 = 1
    if(lasso_l2.eq.1) then
       call get_environment_variable('FOCEX_L2_TAU',l2env)
@@ -57,6 +58,16 @@
          if(ios_cc.ne.0 .or. lasso_l2.le.0) lasso_l2 = 1
       endif
    endif
+! line 8 (optional; absent or 0 = default 0.3; user 2026-11-11): p/m above which the fit diagnostics
+! recommend LASSO (enforce_inv=3); p = free parameters, m = force rows. Only a warning threshold: the fit
+! is never changed. Any other value is used as given; outside [0.01,1] it is flagged in the log.
+   pm_max = 0
+   if(ios_l7.eq.0) then
+      read(uparams,*,iostat=ios_cc) pm_max
+      if(ios_cc.ne.0) pm_max = 0
+   endif
+   pm_given = (pm_max.ne.0)
+   if(.not.pm_given) pm_max = 0.3d0
  close(uparams)
 
  open(uparams,file='structure.params',status='old')
@@ -178,6 +189,13 @@
  write(ulog,*)'===================================================================='
 
  write(ulog,*) 'DEFAULT VALUES:'
+ write(ulog,'(a,f10.4,a)') ' p/m above which LASSO is recommended (default.params line 8) =',pm_max, &
+ &     merge(' (given)  ',' (default)',pm_given)
+ if(pm_max.lt.0.01d0 .or. pm_max.gt.1d0) then
+    write(ulog,*)'WARNING: default.params line 8: p/m threshold ',pm_max,' is outside [0.01,1] (p/m is'
+    write(ulog,*)'         between 0 and 1; ~0.2-0.5 is usual); it is used as given'
+    write(*   ,*)'WARNING: default.params line 8: p/m threshold ',pm_max,' outside [0.01,1]; used as given'
+ endif
  write(ulog,*) svdcut   ,'   cutoff for smallest eigenvalue w to be included for inversion'
  write(ulog,*) tolerance,'   tolerance(Ang) for equating two variables '
  write(ulog,*) rcutoff  ,'   cutoff multiple of dist/atom for neighbors of primitive cell '

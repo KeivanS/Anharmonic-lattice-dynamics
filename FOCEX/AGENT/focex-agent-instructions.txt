@@ -19,6 +19,7 @@ Project: AgCrP2S6
 RANKS: 1 1 0 0 0 0 0 0      # harmonic; 1 1 1 0 ... adds cubic, 1 1 1 1 ... cubic and quartic
 RANGE: 6 2 1 0 0 0 0        # neighbour shells for ranks 2..8, the same for every atom
 # FC2RANGE: 0               # 0 = FC2 range from the supercell
+# FCFLAGS: 1 1 1 1 1 1      # ranks 3..8: 1 = clusters within RANGE shells, 0 = also 2-body/collinear to the FC2 range
 
 # ── DFT (VASP-Flow keywords: FUNCTIONAL, MAGMOM, GGA_U, MPI, ENCUT, KMESH_DENSITY ...) ──
 FUNCTIONAL: PBEsol

@@ -194,6 +194,13 @@ def parse_instructions(path):
     shells = [int(x) for x in (keyword(rest, 'RANGE') or '6 2 1 0 0 0 0').split()]
     fx['shells'] = (shells + [0] * 7)[:7]                       # ranks 2..8
     fx['fc2range'] = int(keyword(rest, 'FC2RANGE', 0))
+    # FCFLAGS: fc3flag..fc8flag of structure.params line 12, always written (FOCEX's default for absent
+    # flags became 0 = 2-body/collinear clusters to the FC2 range; the agent keeps 1 = shells only)
+    fl = [int(x) for x in (keyword(rest, 'FCFLAGS') or '1 1 1 1 1 1').split()]
+    if any(x not in (0, 1) for x in fl):
+        sys.exit('FCFLAGS: six numbers 0 or 1 (ranks 3..8): 1 = within the shells of RANGE, '
+                 '0 = 2-body and collinear clusters out to the FC2 range')
+    fx['fcflags'] = (fl + [fl[-1] if fl else 1] * 6)[:6]
     fx['focex_mesh'] = keyword(rest, 'FOCEX_MESH', 'fine')
     fx['kpath'] = int(keyword(rest, 'KPATH', 0))
     fx['bs_nk'] = int(keyword(rest, 'BS_NKPTS', 40))
@@ -1551,7 +1558,8 @@ class Agent:
              ' '.join('%.4f' % m for m in masses) + '   # masses (amu)',
              ' '.join(p['species']) + '   # names',
              f'{n}   # atoms in the primitive cell',
-             f"{fx['fc2range']}   # fc2range (0 = range from the supercell)"]
+             f"{fx['fc2range']} {' '.join(map(str, fx['fcflags']))}"
+             '   # fc2range (0 = range from the supercell); fc3flag..fc8flag (1 = shells, 0 = 2-body to the FC2 range)']
         for r, s in enumerate(fx['shells'], 2):
             L.append(' '.join([str(s)] * n) + f'   # shells for rank {r}')
         for k in range(n):

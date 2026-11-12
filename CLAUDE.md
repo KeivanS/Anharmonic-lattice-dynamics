@@ -410,10 +410,13 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
   so a reading run rebuilds every group. Changes fcN.dat bytes vs 9.9 (header, extra lines); values unchanged.
 - FIT DIAGNOSTICS (fit_diagnostics.f90, module fit_diag; svd_set -> fit_stats when diag_on): p/m, p_eff, row-LOO
   and leave-one-snapshot-out residuals (hat matrix from U, phi; snapshots that alone fix parameters left out),
-  |x| < 2 sigma per rank, conclusions (p/m > 0.2, > 0.5 warnings; held-out/training > 1.25 over-fitting; else
+  |x| < 2 sigma per rank, conclusions (p/m > pm_max [default.params line 8, absent/0 = 0.3, outside [0.01,1]
+  flagged but used; user: a warning only, never switch to LASSO automatically], > 0.5 warnings; held-out/training > 1.25 over-fitting; else
   residual > 5 % model incomplete or noisy forces). Log, screen, end of svd-kernel/svd-lasso/svd-all.dat.
   Ratios are taken to the SVD's own RSS (its RHS may be b - A xpart) and applied to the final residual.
   enforce_inv=0: sizes only (p = all FCs). Ge e1: p/m 0.016, held-out/training 1.10.
+- Agent (focex-agent.py): line 12 is always written with explicit flags, keyword FCFLAGS (default 1 1 1 1 1 1 =
+  the agent's old shells-only clusters; user 2026-11-11). Its LASSO_RATIO run stays an extra comparison run.
 - Not yet run here: BZO, MoTe2, GeSe regressions (inputs only on the user's Mac); Sphinx build (no sphinx on
   Rivanna).
 
@@ -896,7 +899,7 @@ snapshots, sqrt(4/5 sum (x_i - xbar)^2) / SVD sigma: median FC2 1.04, FC3 0.91; 
   identical freqs.dat/modes.dat, any flags work. Rebuilt copies in `~/BIN` and `~/ALADYN/bin`.
 - The parameter files are read positionally by list-directed `read`. A missing
   line or a missing value silently swallows the next record and crashes later
-  with a confusing message. `default.params` has 4 lines plus optional lines 5-7 (the 32 maxterms/maxtermzero/maxtermsindep/maxgroups lines were
+  with a confusing message. `default.params` has 4 lines plus optional lines 5-8 (the 32 maxterms/maxtermzero/maxtermsindep/maxgroups lines were
   removed 2026-10-27: setup_maps sizes its arrays itself; an old 36-line file still works); line 2 of
   `latdyn.params` must carry **six** numbers (shift *and* normal).
 - `bands.dat` columns 6+ are ω², not ω (`bandgen.plt` applies `521.1*sqrt()`). Plot scripts and `bandplot` are in
