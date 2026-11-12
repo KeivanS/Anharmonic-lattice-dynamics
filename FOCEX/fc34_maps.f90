@@ -3,8 +3,10 @@
 ! copies of setup_maps (others.f90), size_force_constants and
 ! collect_force_constants (force_constant_symmetries.f90) with the fcflag=0 range
 ! rule of module fc34_range added (user, 2026-10-26: keep the original routines
-! unchanged, give the new version its own name). focex.f90 calls setup_maps_fc34
-! iff some fcflag(3:8) is 0; otherwise the original setup_maps runs.
+! unchanged, give the new version its own name), and (2026-11-11) the clusters of
+! the read ranks (include_fc=2) taken from their fcN.dat (module fc_read_clusters).
+! focex.f90 calls setup_maps_fc34 iff some fcflag(3:8) is 0 or some rank is read;
+! otherwise the original setup_maps runs.
 !******************************************************************************
 !===============================================================================
  subroutine setup_maps_fc34
@@ -16,8 +18,10 @@
  use ios
  use geometry
  use fc34_range
+ use fc_read_clusters, only : rdc_active
  implicit none
  character lineout*80,frmt*90
+ integer nsh(natom_prim_cell)
  integer i0,j,i,n,m,mxzero,mx,mxi,l,rnk,ichkloop,mxnt,mxnti   &
  &      ,ntermszero,nd,ntindp,ierz,iert,ieri,ierg,mxgrps
  integer, allocatable:: iatmtermzero(:,:),ixyztermzero(:,:)
@@ -67,7 +71,10 @@
 ! below is allocated once, at the size actually needed. No guessing, and no
 ! restart of the symmetry analysis.
 ! ---------------------------------------------------------------------------
-     call size_force_constants_fc34(rnk,nshells(rnk,:),ngroups(rnk),  &
+! a read rank (include_fc=2) takes its clusters from fcN.dat: no shell limit on the enumeration
+     nsh = nshells(rnk,1:natom_prim_cell)
+     if (rdc_active(rnk)) nsh = huge(1)/2
+     call size_force_constants_fc34(rnk,nsh,ngroups(rnk),  &
      &       ntermszero,mxnt,mxnti,mx,mxi,mxzero)
 
      write(ulog,4)'EXACT SIZES: rank,ngroups,max nterm,max ntindep,ntermszero=', &
@@ -97,7 +104,7 @@
      if(allocated(ntermsindep)) deallocate(ntermsindep)
      allocate(nterm(mxgrps),ntermsindep(mxgrps)); nterm=0; ntermsindep=0
 
-     call collect_force_constants_fc34(rnk,nshells(rnk,:),  &
+     call collect_force_constants_fc34(rnk,nsh,  &
      &       rnk,mx,mxi,mxzero,mxgrps,   &
      &       ngroups(rnk),mapmat,  &
      &       ntermsindep,iatmtermindp,ixyztermindp,  &
@@ -279,6 +286,7 @@
 !! the whole analysis.
       use atoms_force_constants
       use fc34_range
+      use fc_read_clusters, only : rdc_active, rdc_partial, rdc_final
       use svd_stuff, only : nterm,ntermsindep
       use ios , only : ulog
       use constants, only : r15
@@ -301,7 +309,7 @@
       integer ixyzd(nrank),icell(3),iatomd2(nrank),ixyzd2(nrank)
       integer nkey,mxkey,mxgrp,mxzero,mxt,mxti,mxt0,ierz,iert,ieri,itry,g,i1,i2
       integer ntloc,ntiloc
-      logical firsttime,seen,fc34_on
+      logical firsttime,seen,fc34_on,rd_on
 
       if(nrank.gt.8)then
         write(ulog,*)'SIZE_FORCE_CONSTANTS: nrank too large ',nrank
@@ -318,7 +326,8 @@
       call alloc_scratch
 
       ngroups=0 ; ntermszero=0 ; nkey=0
-      fc34_on = fc34_active(nrank)
+      rd_on = rdc_active(nrank)              ! read rank: the clusters of its fcN.dat, nothing else
+      fc34_on = fc34_active(nrank) .and. .not.rd_on
 
       iatom0loop: do iatom0=1,natom_prim_cell
         do iatom=1,natoms
@@ -340,6 +349,11 @@
           endif
           iloop: do i=nrank,2,-1
             jloop: do j=iatomd(i)+1,natoms
+              if(rd_on) then          ! include_fc=2: atoms of the read clusters only (fc_read_clusters)
+                if(.not.rdc_partial(nrank,iatom0,j)) cycle jloop
+                iatomd(i:nrank)=j
+                exit iloop
+              endif
               if(fc34_on) then        ! fcflag=0 range rule, module fc34_range
                 iatomd(i)=j
                 if(.not.fc34_partial(i,iatomd(1:i),nshell(iatom0))) cycle jloop
@@ -363,6 +377,9 @@
           enddo iloop
 
 ! fcflag=0 range rule on the complete cluster
+          if(rd_on) then
+            if(.not.rdc_final(nrank,iatomd)) cycle nextatomloop
+          endif
           if(fc34_on) then
             if(.not.fc34_final(nrank,iatomd,nshell(iatom0))) cycle nextatomloop
           endif
@@ -601,6 +618,7 @@
 
       use atoms_force_constants
       use fc34_range
+      use fc_read_clusters, only : rdc_active, rdc_partial, rdc_final
 !      use force_constants_module
       use ios , only : ulog
  use constants, only : r15
@@ -615,7 +633,7 @@
       real(r15), intent(out):: amat(maxterms,maxtermsindep,maxgroups)
       integer i,j,k,m,n0,ncount,iatom,iatom0,iatomd(nrank),ixyz,ngroupsave,  &
      &     ixyzd(nrank),icell(3),iatomd2(nrank),ixyzd2(nrank),ntermszerosave
-      logical firsttime,fc34_on
+      logical firsttime,fc34_on,rd_on
 
       ierz=0; iert=0; ierg=0; ieri=0
 
@@ -636,7 +654,8 @@
 
       ncount=0
       ngroups=0
-      fc34_on = fc34_active(nrank)
+      rd_on = rdc_active(nrank)              ! read rank: the clusters of its fcN.dat, nothing else
+      fc34_on = fc34_active(nrank) .and. .not.rd_on
       amat=0
       ntermszero=0
 ! do each atom in unit cell
@@ -666,6 +685,11 @@
           iloop: do i=nrank,2,-1
 ! try each atom in that position
             jloop: do j=iatomd(i)+1,natoms
+              if(rd_on) then          ! include_fc=2: atoms of the read clusters only (fc_read_clusters)
+                if(.not.rdc_partial(nrank,iatom0,j)) cycle jloop
+                iatomd(i:nrank)=j
+                exit iloop
+              endif
               if(fc34_on) then        ! fcflag=0 range rule, module fc34_range
                 iatomd(i)=j
                 if(.not.fc34_partial(i,iatomd(1:i),nshell(iatom0))) cycle jloop
@@ -692,6 +716,9 @@
             if(i.eq.2)cycle iatom0loop
           enddo iloop
 ! fcflag=0 range rule on the complete cluster
+          if(rd_on) then
+            if(.not.rdc_final(nrank,iatomd)) cycle nextatomloop
+          endif
           if(fc34_on) then
             if(.not.fc34_final(nrank,iatomd,nshell(iatom0))) cycle nextatomloop
           endif

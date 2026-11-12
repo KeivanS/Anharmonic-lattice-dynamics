@@ -391,6 +391,32 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
 - job 1 is slow: function_self_w3 recomputes V3 over the mesh for each (k, mode); use few
   points per segment in kpbs.params.
 
+## fcflag default 0, read clusters, fit diagnostics (2026-11-11, user; not tagged, after 9.9)
+
+- Line 12 absent flags = 0 (ios.f90 read_structure; atoms_force_constants initializer 0): 2-body and collinear
+  clusters to the FC2 range, N-body within the shells. `0 1 1 1 1 1 1` = old behaviour. Ge example: explicit
+  flags 1 -> every output byte-identical to HEAD (build of 7349728); bare `0` new = `0 0` HEAD byte-identical
+  (FC3 95 -> 329 groups). Every agent run now gets flag 0 (the agent writes line 12 as fc2range only).
+- include_fc=2 (read): clusters exactly from fcN.dat (fc_read_clusters.f90: rdc_init before setup_maps,
+  rdc_partial/rdc_final in the fc34_maps enumeration, rdc_report after; setup_maps_fc34 runs whenever a rank is
+  read; read FC2 kept whole, no WS selection, and all its pairs count in fc34_init). Cluster key: multiset of
+  (tau, cell) via the writing run's lat_fc.dat, translation-canonical. Beyond the neighbour list -> stop (icutoff).
+  Tests (Ge, /scratch/ke4c/focex-devtest/tests T3*, T6*): FC3 read with `0 1`, 1 shell: 329 groups, 150294/150294
+  terms, written back identical, FC2 = joint fit to 3e-8; HEAD build: 5 groups, 149148 terms ignored. FC2 read:
+  FC3 = joint fit to 2e-9.
+- fcN.dat: header line (still ONE line: THERMACOND reads one header line then counts term lines with
+  read(*,end=); a '#' line in the body would crash old binaries) carries margin, fc2range, fcflag, nshells; a
+  fitted group with no term above the margin is listed by its largest term (LASSO Ge: 151 FC3, 7 FC2 groups),
+  so a reading run rebuilds every group. Changes fcN.dat bytes vs 9.9 (header, extra lines); values unchanged.
+- FIT DIAGNOSTICS (fit_diagnostics.f90, module fit_diag; svd_set -> fit_stats when diag_on): p/m, p_eff, row-LOO
+  and leave-one-snapshot-out residuals (hat matrix from U, phi; snapshots that alone fix parameters left out),
+  |x| < 2 sigma per rank, conclusions (p/m > 0.2, > 0.5 warnings; held-out/training > 1.25 over-fitting; else
+  residual > 5 % model incomplete or noisy forces). Log, screen, end of svd-kernel/svd-lasso/svd-all.dat.
+  Ratios are taken to the SVD's own RSS (its RHS may be b - A xpart) and applied to the final residual.
+  enforce_inv=0: sizes only (p = all FCs). Ge e1: p/m 0.016, held-out/training 1.10.
+- Not yet run here: BZO, MoTe2, GeSe regressions (inputs only on the user's Mac); Sphinx build (no sphinx on
+  Rivanna).
+
 ## Read some FC ranks, fit the others (include_fc=2; implemented 2026-11-03, user)
 
 read_fcs (ios.f90; the old read_fcs/_3/_old and readfc removed, user), given_fcs.f90 (xfull, full_col), invariance_ranks.f90 (RHS of the rows, merge_given_fcs),

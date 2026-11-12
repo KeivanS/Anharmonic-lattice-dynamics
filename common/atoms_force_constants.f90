@@ -6,7 +6,7 @@
  use geometry
  implicit none
  integer natom_super_cell,nmax, fc2range
- integer :: fcflag(8) = 1  ! fcflag(3:8), structure.params line 12 after fc2range; 0 = rule of fc34_range
+ integer :: fcflag(8) = 0  ! fcflag(3:8), structure.params line 12 after fc2range; 0 (default) = rule of fc34_range, 1 = nshells
 
 !-------------------------
  type cell_id         ! id of atoms: position within cell, and cell coordinates

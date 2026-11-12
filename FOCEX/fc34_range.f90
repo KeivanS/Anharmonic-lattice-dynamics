@@ -1,7 +1,9 @@
 !******************************************************************************
 ! Range of the clusters of rank >= 3 (user's rule, 2026-10-24), used by
 ! size_force_constants and collect_force_constants. structure.params line 12 is
-! "fc2range [fc3flag ... fc8flag]" (fcflag(3:8), default 1 when absent).
+! "fc2range [fc3flag ... fc8flag]" (fcflag(3:8), default 0 when absent since 2026-11-11, user;
+! 1 before). The flags apply to fitted ranks (include_fc=1); a read rank (include_fc=2) takes its
+! clusters from its fcN.dat (module fc_read_clusters).
 ! fcflag(rank) /= 0: the cluster is kept if all its pairs lie within nshells(rank),
 ! as before. fcflag(rank) = 0: the cluster is kept if
 !  - every pair of it is a kept FC2 pair (its FC2 group has a member inside the
@@ -44,17 +46,19 @@
  endif
  allocate(pair_keep(natom_prim_cell,natoms)); pair_keep = .false.
  do g = 1, map(2)%ngr
-    gkeep = .false.
-    tiloop: do ti = 1, map(2)%ntind(g)
-       do t = 1, map(2)%nt(g)
-          if (fc2range.eq.0 .and. map(2)%gr(g)%mat(t,ti).eq.0) cycle
-          i0 = map(2)%gr(g)%iat(1,t)
-          j  = map(2)%gr(g)%iat(2,t)
-          rij = atompos(:,j) - atompos(:,i0)
-          call check_inside_ws(rij,rws26,inside,nb)
-          if (inside) then ; gkeep = .true. ; exit tiloop ; endif
-       enddo
-    enddo tiloop
+    gkeep = (include_fc(2).eq.2)      ! read FC2: every read pair is kept (fc_read_clusters)
+    if (.not.gkeep) then
+       tiloop: do ti = 1, map(2)%ntind(g)
+          do t = 1, map(2)%nt(g)
+             if (fc2range.eq.0 .and. map(2)%gr(g)%mat(t,ti).eq.0) cycle
+             i0 = map(2)%gr(g)%iat(1,t)
+             j  = map(2)%gr(g)%iat(2,t)
+             rij = atompos(:,j) - atompos(:,i0)
+             call check_inside_ws(rij,rws26,inside,nb)
+             if (inside) then ; gkeep = .true. ; exit tiloop ; endif
+          enddo
+       enddo tiloop
+    endif
     if (.not.gkeep) cycle
     do t = 1, map(2)%nt(g)
        i0 = map(2)%gr(g)%iat(1,t)

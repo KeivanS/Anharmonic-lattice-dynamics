@@ -58,6 +58,8 @@ use eigen !, only : ndyn,eigenval,eigenvec,allocate_eig,eigenval_bs,eigenvec_bs,
 use constants, only : r15,ee,pi,eps0,cnst
 use invariance_ranks, only : set_translational_inv_constraints, set_rotational_inv_constraints, write_map_dump, &
 &   merge_given_fcs
+use fc_read_clusters, only : rdc_init, rdc_report
+use fit_diag, only : diag_on, diag_label, fit_diag_reset, fit_report, set_basic
 
 implicit none
 integer i,j,g,ti,rank,iunit,uio,nkernel,imax,n_hom,nt(maxrank),ntind(maxrank),tau,taup,nat,ncs(3),al,be,ia,jb
@@ -186,13 +188,17 @@ real(r15) presid, dev0pos, dpos
 ! outputs: map structure including for rank, the groups of indep FCs and the full FCs
 ! maxterms, nshells, ngroups, nterms, estimate of inv_constraints, nindepfc
 
-   if(any(fcflag(3:8).eq.0)) then   ! fcflag=0 range rule: copies in fc34_maps.f90
+! include_fc(rank)=2: the clusters of that rank are those of its fcN.dat (fc_read_clusters; user, 2026-11-11)
+   call rdc_init
+
+   if(any(fcflag(3:8).eq.0) .or. any(include_fc.eq.2)) then   ! fcflag=0 range rule, read clusters: fc34_maps.f90
       call setup_maps_fc34
    else
       call setup_maps
    endif
 
    close(umap)
+   call rdc_report      ! read ranks: every read cluster is a group, none added but symmetry images
 
 
    write(ulog,*)"rank, indep FC terms , total FC terms , # of groups "
@@ -221,7 +227,11 @@ real(r15) presid, dev0pos, dpos
    enddo
 
 ! nkeptind is defined here
-   if(fc2range.eq.0) then ! determine the range from the supercell WS 
+   if(include_fc(2).eq.2) then ! read FC2: its groups are the read clusters, all kept (no WS selection)
+      map(2)%keep(:)=1
+      map(2)%nkeptind=map(2)%ntotind
+      write(ulog,*)' FC2 is read (include_fc(2)=2): all ',map(2)%ntotind,' irreducible FC2 of the read clusters kept'
+   elseif(fc2range.eq.0) then ! determine the range from the supercell WS 
       call setup_FC2_in_supercell(rws26) 
    else ! use default values found by setup_maps and the required shell numbers; exclude if range is beyond supercell
       map(2)%keep(:)=1  ! keep everything
@@ -471,8 +481,11 @@ real(r15) presid, dev0pos, dpos
       &       lasso_epsratio,enforce_inv.eq.3,fcs,lasso_mu,nnzero,ulasso)
          close(ulasso)
 ! standard errors: least squares on the FCs LASSO kept, invariances exact (was sigma=0, sd(rank)=0)
+         call fit_diag_reset ; diag_on = .true.
+         diag_label = 'LASSO: least-squares refit on the selected FCs'
          call lasso_support_errors(force_constraints,dim_ac,nkernel,aforce,bforce, &
       &       kernelbasis(1:dim_ac,1:nkernel),fcs,svdcut,sigma)
+         diag_on = .false.
          write(ulog,'(a,i6,a,i6)')'LASSO: selected terms (FCs; kernel coefficients if FOCEX_LASSO=old)=',nnzero
          write(*   ,'(a,i6,a,i6)')'LASSO: selected terms (FCs; kernel coefficients if FOCEX_LASSO=old)=',nnzero
        else
@@ -484,9 +497,12 @@ real(r15) presid, dev0pos, dpos
          allocate(bshift(force_constraints))
          bshift = bforce - matmul(aforce,xpart)
          svd_noise_check = .true.    ! a fit of the forces: svd_set may raise the cut (measured noise)
+         call fit_diag_reset ; diag_on = .true.
+         diag_label = 'least squares in the kernel of the invariances'
          call fit_kernel_basis(force_constraints,dim_ac,nkernel,aforce,bshift,  &
       &       kernelbasis(1:dim_ac,1:nkernel),svdcut,fcs,sigma,error,ermax,sig,'svd-kernel.dat')
          svd_noise_check = .false.
+         diag_on = .false.
          fcs = fcs + xpart
          deallocate(bshift)
        endif
@@ -527,6 +543,7 @@ real(r15) presid, dev0pos, dpos
          write(ulog,'(a,f9.3,a)')'Relative residual ||F_dft-F_fit||/||F_dft|| =',sig,' %'
          write(*   ,'(a,f9.3,a)')'Relative residual ||F_dft-F_fit||/||F_dft|| =',sig,' %'
          call write_out(ulog,'Constrained solution, invariances exact by construction',fcs)
+         call fit_diagnostics_report(merge('svd-lasso.dat ','svd-kernel.dat',enforce_inv.ge.2),sig)
          write(ulog,*)'MAIN: Invariance violations of the constrained solution'
          do i=1,n_hom
             write(ulog,*)i,dot_product(ahom(i,:),fcs(:))-bhom(i)
@@ -568,6 +585,10 @@ real(r15) presid, dev0pos, dpos
          deallocate(vsdum)
          write(ulog,'(a,f9.3,a)')'Percent error, || F_dft-F_fit || / || F_dft || =',sig,' %'
          call write_invariance_violations(ulog,dim_ac,fcs)
+! invariance rows are in this SVD: only the sizes (free parameters = the kernel dimension)
+         call fit_diag_reset ; call set_basic(force_constraints,dim_ac)
+         diag_label = 'enforce_inv=0: invariance rows in the SVD'
+         call fit_diagnostics_report('svd-all.dat',sig)
          deallocate(amat,bmat)
 
       endif
@@ -716,6 +737,18 @@ real(r15) presid, dev0pos, dpos
   contains
 
 !-------------------------------------------------------
+ subroutine fit_diagnostics_report(svdfile,epsf)
+!! fit statistics and conclusions (module fit_diag) for the fitted ranks (include_fc=1), columns in rank order
+ character(len=*), intent(in) :: svdfile
+ real(r15), intent(in) :: epsf
+ integer nrc(8), r
+ nrc = 0
+ do r = 1, maxrank
+    if (include_fc(r) .eq. 1) nrc(r) = map(r)%nkeptind
+ enddo
+ call fit_report(trim(svdfile), dim_ac, fcs, sigma, nrc, epsf)
+ end subroutine fit_diagnostics_report
+!-------------------------------------------------------
 
  subroutine read_snaps_set_aforce(frc_cnstr,nconfigs)
 !! read all POSCARi/OUTCARi files and the force displacements as inputs to matrices aforce,bforce
@@ -729,6 +762,7 @@ real(r15) presid, dev0pos, dpos
  use born, only : born_flag
  use atoms_force_constants, only : natom_super_cell,displ,force,energy,atom_sc
  use linalgb
+ use fit_diag, only : add_snapshot_rows
  implicit none
  integer, intent(out) :: frc_cnstr(fdfiles),nconfigs
 ! real(r15), intent(out) :: energies(nconfigs),disp(3,natom_super_cell,nconfigs),force(3,natom_super_cell,nconfigs)
@@ -779,6 +813,7 @@ real(r15) presid, dev0pos, dpos
         write(ulog,*)'fd file#, Cumulative # of configs=',i,nconfigs
 
         frc_cnstr(i)=3*natom_super_cell*ncfg
+        call add_snapshot_rows(ncfg,3*natom_super_cell)   ! fit_diag: rows of each snapshot, for its held-out test
         call allocate_edf(natom_super_cell,ncfg)
         write(*,*)' Allocation of energy, dsp and frc arrays DONE!'
         call read_force_position_data(outcar,ncfg,energy,displ,force,nlin2)  ! displ does not include equilibrium positions

@@ -40,7 +40,9 @@ SUBF90 = \
   nonanal.f90 \
   dielectric.f90 \
   given_fcs.f90 \
+  fc_read_clusters.f90 \
   ios.f90 \
+  fit_diagnostics.f90 \
   svd_ridge.f90 \
   lasso_lars.f90 \
   lasso_constrained.f90 \

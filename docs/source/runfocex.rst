@@ -478,10 +478,13 @@ line 2.
   * ``2`` — this rank is read, not fitted, from ``fcN.dat`` of an earlier run of the
     same crystal; that run's ``lat_fc.dat`` must be in the folder too (ranks 1–4). The
     read terms go to the right-hand side of the force and invariance equations, and
-    the other ranks are fitted with them fixed. Lines ``READ_GIVEN_FCS`` in the log
-    report how many terms were matched. ``fcN.dat`` carries 8 digits, and the fitted
-    ranks inherit that rounding. The read ranks are written out again with the fitted
-    ones (same values).
+    the other ranks are fitted with them fixed. The clusters of a read rank are exactly
+    those of its ``fcN.dat``: line 12 and the shell numbers of lines 13–19 do not apply
+    to it, and no cluster is added or dropped (a cluster beyond this run's neighbour list
+    stops the run: raise ``icutoff``, ``default.params`` line 3). Lines ``RDC_INIT``,
+    ``RDC_REPORT`` and ``READ_FCS`` in the log report the clusters and terms read and
+    matched. ``fcN.dat`` carries 8 digits, and the fitted ranks inherit that rounding.
+    The read ranks are written out again with the fitted ones (same values).
 
   Rank 1 (the residual force :math:`\Pi`) should normally be included: it is
   zero only if the reference structure is exactly at its energy minimum.
@@ -626,11 +629,11 @@ primitive cell (not per type).
   * ``1`` — use the shell counts of line 13; any shell reaching beyond the
     supercell is still discarded, with a warning in the log.
 
-  ``fc3flag fc4flag … fc8flag`` (optional, one per rank 3 … 8; a missing flag means ``1``) —
-  how the range of the anharmonic FCs of that rank is chosen:
+  ``fc3flag fc4flag … fc8flag`` (optional, one per rank 3 … 8; a missing flag means ``0``) —
+  how the range of the anharmonic FCs of that rank is chosen (fitted ranks only; a rank read
+  with ``include_fc = 2`` takes its clusters from its ``fcN.dat``):
 
-  * ``1`` — a cluster is kept if all its pairs are within the shells of lines 14–19.
-  * ``0`` — a cluster is kept if every pair in it is a kept FC2 pair, and one of
+  * ``0`` (default) — a cluster is kept if every pair in it is a kept FC2 pair, and one of
     these holds:
 
     - all its pairs are within the shells of lines 14–19;
@@ -638,10 +641,14 @@ primitive cell (not per type).
     - its distinct atoms lie on one line.
 
     The two-body and collinear terms then reach as far as FC2. The number of
-    unknowns grows a lot; see ``clusters<rank>.dat``.
+    unknowns grows a lot; see ``clusters<rank>.dat`` and the fit diagnostics at the end of
+    the run (with few snapshots LASSO, ``enforce_inv = 3``, is then usually needed).
+  * ``1`` — a cluster is kept if all its pairs are within the shells of lines 14–19 (the
+    only rule, and the default, before November 2026).
 
-  Example: ``0 0 1 1 1 1 1`` takes the FC2 range from the supercell and lets the two-body and
-  collinear FC3 reach as far, while FC4 … FC8 follow their shells.
+  Example: ``0`` alone takes the FC2 range from the supercell and lets the two-body and
+  collinear terms of every anharmonic rank reach as far; ``0 0 1`` does that for FC3 only, while
+  FC4 … FC8 follow their shells; ``0 1 1 1 1 1 1`` reproduces runs made before the change.
 
 **13–19. Neighbor shells** — one line per rank (2 … 8), each containing
 ``natom_prim_cell`` integers: how many neighbor shells around each atom of the
@@ -907,7 +914,11 @@ Force constants
 ``fcN.dat`` (N = 1…4)
     The **full** set of force constants of rank N, i.e. every symmetry-related
     term reconstructed from the irreducible ones. This is the file consumed by
-    ``THERMACOND``, ``SCOP8`` and ``ANFOMOD``.
+    ``THERMACOND``, ``SCOP8`` and ``ANFOMOD``. Terms smaller than the margin
+    (``default.params`` line 4) are left out, except that a group none of whose terms
+    reaches it is still listed by its largest term, so that a run reading the file
+    (``include_fc = 2``) rebuilds every group. The header line also records the margin,
+    ``fc2range``, the rank's flag of line 12 and its shells.
 
 Units are eV/Å\ :sup:`N`: eV/Å for rank 1, eV/Å² for the harmonic FCs, eV/Å³ for
 the cubic ones and eV/Å⁴ for the quartic ones.
@@ -1101,8 +1112,9 @@ Diagnostics
 ``svd-all.dat`` (``enforce_inv = 0``) or ``svd-kernel.dat`` (``enforce_inv = 1``)
     The singular values of the fit matrix, its condition number, the cutoff
     applied, the residual ``Ax-b`` for every
-    equation, and the summary line ``MAE, largest errors in force(eV/Ang),
-    percent deviation``. With ``enforce_inv = 1`` the matrix is the reduced one,
+    equation, the summary line ``MAE, largest errors in force(eV/Ang),
+    percent deviation``, and at the end the block ``FIT DIAGNOSTICS`` (also in the log;
+    see :ref:`fit-diagnostics`). With ``enforce_inv = 1`` the matrix is the reduced one,
     so there are as many singular values as there are free parameters. Each
     force constant with its standard error is in the log, and ``sd(rank)``, the
     mean standard error of each rank, at its end. ``svd-lasso.dat``
@@ -1132,8 +1144,30 @@ Diagnostics
     Structures, real- and reciprocal-space grids and Wigner-Seitz cell
     boundaries in ``.xyz`` format, for visualisation (VMD, OVITO, gnuplot).
 
+.. _fit-diagnostics:
+
 Checking the quality of the fit
 -------------------------------
+
+FOCEX does the first part of this itself: after the fit, the log, the end of the svd file
+(``svd-kernel.dat``, ``svd-lasso.dat`` or ``svd-all.dat``) and the screen carry a block
+``FIT DIAGNOSTICS`` with
+
+* the number of force rows *m* (and snapshots), of free parameters *p* left by the invariances,
+  *p/m*, and the effective number of parameters :math:`p_{\rm eff}` (trace of the hat matrix, after the
+  SVD filter);
+* the training residual, the leave-one-row-out residual and the **leave-one-snapshot-out**
+  residual: each snapshot in turn is predicted by the fit to all the others. For a correct model
+  and independent noise the held-out residual exceeds the training one by about
+  :math:`1/(1-p_{\rm eff}/m)`. Snapshots that alone fix some parameters cannot be predicted and are
+  left out of this test (their number is printed);
+* per rank, how many fitted FCs are smaller than twice their standard error;
+* conclusions: a **warning** when :math:`p/m > 0.2` (fewer than 5 force rows per parameter: LASSO,
+  ``enforce_inv = 3``, may be necessary) and a stronger one when :math:`p/m > 0.5`;
+  **over-fitting** when the held-out residual is more than 25 % above the training one; **model
+  incomplete (or noisy forces)** when it is not over-fitted but the residual is above 5 %: missing
+  range or ranks, or DFT force noise of that size; ranks most of whose FCs are below 2 σ (range
+  longer than the data support).
 
 After a run, look at these numbers, in this order:
 
@@ -1354,6 +1388,15 @@ needs.
 
 Version history
 ---------------
+
+After 9.9 (not tagged)
+    Line 12: a missing ``fcNflag`` now means ``0`` (two-body and collinear clusters out to the FC2
+    range, others within the shells); write ``0 1 1 1 1 1 1`` for the earlier behaviour. A rank read
+    with ``include_fc = 2`` uses exactly the clusters of its ``fcN.dat``, whatever line 12 and the
+    shells say. ``fcN.dat`` records the run's margin, flags and shells in its header and lists the
+    groups below the margin by their largest term. New ``FIT DIAGNOSTICS`` block (log, svd file, screen):
+    p/m, held-out (leave-one-snapshot-out) residual, FCs below 2 σ per rank, and conclusions on
+    over-fitting and model completeness.
 
 9.9 (2026-11-06)
     The SVD cutoff adapts to the data. If the fit shows more noise than ``default.params`` line 2

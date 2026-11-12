@@ -86,9 +86,11 @@
  read(uparams,*) (mas(i),i=1,natom_type)  ! in the same order as in POTCAR
  read(uparams,*) (atname(i),i=1,natom_type)  ! in the same order as in POTCAR
  read(uparams,*) natom_prim_cell        ! # of atoms in primitive cell
- read(uparams,'(a)') line3  ! fc2range [fc3flag ... fc8flag]; absent flags = 1 (nshells, as before)
+ read(uparams,'(a)') line3  ! fc2range [fc3flag ... fc8flag]; absent flags = 0 (user, 2026-11-11)
+! fcNflag = 0 (default): 2-body clusters out to the FC2 range, N-body clusters within the shells of line 13+,
+! collinear clusters whose end atoms are within the FC2 range; 1: all pairs within the shells (before 2026-11-11)
  do n_cc = 7, 1, -1
-    fcflag = 1
+    fcflag = 0
     read(line3,*,iostat=ios_cc) fc2range, fcflag(3:n_cc+1)
     if(ios_cc.eq.0) exit
  enddo
@@ -181,7 +183,7 @@
  write(ulog,*) rcutoff  ,'   cutoff multiple of dist/atom for neighbors of primitive cell '
  write(ulog,*)' ---------------------------------------------------------'
  write(ulog,*) fc2range,'  if 0 default range consistent with the largest supercell is chosen for FC2 '
- write(ulog,*) fcflag(3:8),'  fc3flag..fc8flag: 0 = FC2-range rule for 2-body and aligned clusters, else nshells'
+ write(ulog,*) fcflag(3:8),'  fc3flag..fc8flag: 0 (default) = FC2-range rule for 2-body and aligned clusters, 1 = nshells'
  write(ulog,*) 'itemp,tempk  =',itemp,tempk
  write(ulog,*) 'Whether and How many (not default) shells to include for ranks 2,3,4,5,6,7,8  '
  write(ulog,*) 'rank,incl    = 1',include_fc(1)
@@ -1518,6 +1520,10 @@
  real(r15), allocatable :: ival3(:,:),ival4(:,:)
  integer ninv3,ninv4,ntrm
  integer(8) nb8
+ integer tbest,nbelow
+ real(r15) fbest
+ logical written,gfit
+ character(len=400) hdr
 
  bunit = ryd/ab/ab
  one =1d0
@@ -1554,7 +1560,14 @@
     write(frmt,'(i2)')30+rnk
     write(ulog,*)' FOR RANK=',rnk,' format=',frmt
     write(*,*)' FOR RANK=',rnk,' format=',frmt
-    write(ufc1-1+rnk,*)'# RANK ',rnk,' tensors :term,group,(iatom,ixyz)_2 d^nU/dx_{i,alpha}^n'
+! one header line (readers skip exactly one line): the settings of this run, for the record (2026-11-11, user)
+    write(hdr,'(a,i2,a,es9.2,a,i2)')' # RANK ',rnk,' tensors :term,group,(iatom,ixyz)_2 d^nU/dx_{i,alpha}^n ;'// &
+ &       ' margin=',margin,' fc2range=',fc2range
+    if (rnk.ge.3) write(hdr,'(a,a,i2)') trim(hdr),' fcflag=',fcflag(rnk)
+    write(hdr,'(a,a,99i4)') trim(hdr),' nshells=',nshells(rnk,1:natom_prim_cell)
+    hdr = trim(hdr)//' ; groups below the margin: their largest term'
+    write(ufc1-1+rnk,'(a)') trim(hdr)
+    nbelow = 0
 
     ng=map(rnk)%ngr ! number of groups
     cnt2=0  ! cumulative # of indep terms of given rnk up to g and excluding group g
@@ -1611,6 +1624,16 @@
        enddo
 
     ! write in the fcn.dat file
+! a fitted group none of whose terms reaches the margin is still listed, by its largest term, so that a run
+! reading this file (include_fc=2) rebuilds every group (fc_read_clusters); dropped FC2 groups are not fitted
+       gfit = .true.
+       if (rnk.eq.2) then
+          gfit = .false.
+          do ti=1,map(2)%ntind(g)
+             if (map(2)%keep(counteri(2,g,ti)).eq.1) gfit = .true.
+          enddo
+       endif
+       written = .false.; tbest = 0; fbest = -1
        do t=1,map(rnk)%nt(g)  ! index of dependent terms in that group g
           iat(1:rnk)  = map(rnk)%gr(g)%iat (:,t)
           ixyz(1:rnk) = map(rnk)%gr(g)%ixyz(:,t)
@@ -1639,7 +1662,11 @@
        &                         merge(1,0,ixyz(1).eq.ixyz(3) .and. ixyz(2).eq.ixyz(4)) +  &
        &                         merge(1,0,ixyz(1).eq.ixyz(4) .and. ixyz(2).eq.ixyz(3)))/3d0
           endif
+          if(abs(fcd).gt.fbest) then
+             fbest = abs(fcd); tbest = t
+          endif
           if(abs(fcd).lt.margin) cycle
+          written = .true.
           if(rnk.eq.2 ) then
              write(ufc1-1+rnk,geh2)t,g, (iat(j),ixyz(j),j=1,rnk),fcd,  &  !one
 &              rij,(iatomcell0(iat(k)),iatomcell(:,iat(k)),k=2,rnk),  &
@@ -1649,7 +1676,33 @@
 &              rij,(iatomcell0(iat(k)),iatomcell(:,iat(k)),k=2,rnk)
           endif
        enddo
+       if (.not.written .and. gfit .and. tbest.gt.0) then
+          t = tbest
+          iat(1:rnk)  = map(rnk)%gr(g)%iat (:,t)
+          ixyz(1:rnk) = map(rnk)%gr(g)%ixyz(:,t)
+          fcd = 0
+          do ti=1,map(rnk)%ntind(g)
+             if(rnk.eq.2) then
+                if(map(2)%keep(counteri(2,g,ti)).eq.0) cycle
+                fcd = fcd + fcs(res+current(2,g,ti))*map(rnk)%gr(g)%mat(t,ti)
+             else
+                fcd = fcd + fcs(res+cnt2+ti)*map(rnk)%gr(g)%mat(t,ti)
+             endif
+          enddo
+          nbelow = nbelow + 1
+          if(rnk.eq.2 ) then
+             rij = length(atompos(:,iat(1))-atompos(:,iat(2)))
+             write(ufc1-1+rnk,geh2)t,g, (iat(j),ixyz(j),j=1,rnk),fcd,  &
+&              rij,(iatomcell0(iat(k)),iatomcell(:,iat(k)),k=2,rnk),  &
+       &     matmul(cart_to_conv,atompos(:,iat(1))-atompos(:,iat(2)))
+          else
+             write(ufc1-1+rnk,geh)t,g, (iat(j),ixyz(j),j=1,rnk),fcd,  &
+&              rij,(iatomcell0(iat(k)),iatomcell(:,iat(k)),k=2,rnk)
+          endif
+       endif
   enddo groups
+  write(ulog,'(a,i2,a,i8,a)')' WRITE_OUTPUT_FCS: rank',rnk,': ',nbelow, &
+ &     ' groups below the margin listed by their largest term in fc'//ln//'.dat'
 
      res = res + map(rnk)%nkeptind
      write(ulog,*)'Rank=',rnk,' res= ',res

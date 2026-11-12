@@ -8,6 +8,7 @@
  use constants, only : r15
  use params, only : verbose, svd_noise_check
  use ios, only : ulog
+ use fit_diag, only : diag_on, d_refit, fit_stats
  implicit none
  integer , intent(in):: m3,n
  real(r15), intent(inout) :: a(m3,n)
@@ -141,10 +142,12 @@
         dp = max(p0 - sum(phif(w,wc2)), 0d0)
         if (rss1 - rss0 .le. rss0/max(m3-p0,1d0)*(dp + 2*sqrt(2*dp)) + 1d-13*dot_product(b,b)) then
            cutrel = cut2 ; wcut = wc2
+           if (diag_on) d_refit = 1
            write(ulog,'(a,f10.2,a,es10.3)')' SVD: refit kept (noise test passed): parameters dropped',dp, &
  &              ', RSS increase relative',(rss1-rss0)/max(rss0,tiny(1d0))
         else
            x = x0 ; sigma = sig0
+           if (diag_on) d_refit = 0
            write(*  ,'(a,f10.2,a,es10.3,a)')' SVD: refit rejected: dropping',dp,' parameters raised RSS by', &
  &              (rss1-rss0)/max(rss0,tiny(1d0)),' (relative), more than the noise allows: model error; cut unchanged'
            write(ulog,'(a,f10.2,a,es10.3,a)')' SVD: refit rejected: dropping',dp,' parameters raised RSS by', &
@@ -169,6 +172,8 @@
   enddo
   sig=sqrt(num/denom)*100
   write(uio,3)' MAE, largest errors in force(eV/Ang),percent deviation=',error,ermax,sig
+! fit diagnostics (fit_diag; user, 2026-11-11): leverages, leave-one-row/-snapshot-out residuals from U, phi
+  if (diag_on) call fit_stats(m3,n,a,phif(w,wcut),ax-b,b)
 
 ! standard errors: scale by the residual standard deviation per row (the noise of b, estimated
 ! from the fit itself with m3-n degrees of freedom)

@@ -475,7 +475,8 @@ potentials are mostly pair terms plus a smaller correction, so the two-body part
 three-body terms affordable cuts these off.
 
 \paragraph{Algorithm.} \code{structure.params} line 12 is \code{fc2range [fc3flag ... fc8flag]}; absent
-flags are 1. For a rank with flag 1 a cluster is kept if all its pairs lie within the shells of that
+flags are 0 since 11 November 2026 (\code{ios.f90}: \code{read\_structure}; they were 1 before). The flags apply
+to fitted ranks; a read rank (\code{include\_fc}=2) takes its clusters from its file (Section~\ref{sec:readclusters}). For a rank with flag 1 a cluster is kept if all its pairs lie within the shells of that
 rank (as before). For a rank with flag 0 a cluster is kept if
 \begin{enumerate}
 \item every pair of it is a kept FC2 pair (its FC2 group has a member inside the supercell
@@ -502,6 +503,47 @@ ones to the 7 written digits.
 \paragraph{Version.} The files were added in commit \code{c9edf0a} (27 October 2026), after the
 \code{focex-9.0} tag (23 October) and before \code{focex-9.1}. The manual's 9.0 and 9.1 entries do not
 mention them.
+
+%==============================================================================
+\section{Clusters of read ranks}\label{sec:readclusters}
+%==============================================================================
+\paragraph{Rule.} A rank with \code{include\_fc}=2 is built from the clusters of its \code{fcN.dat}, whatever line 12
+and the shells say: none is added or dropped (user, 11 November 2026). A cluster is the multiset of the atoms of
+a term, each as (sublattice, cell) through the \code{lat\_fc.dat} of the writing run, up to a lattice translation.
+\paragraph{Implementation.} \code{fc\_read\_clusters.f90}: \code{rdc\_init} (called before \code{setup\_maps}) reads the
+clusters and codes each as the lexicographically smallest sorted list of atom codes over the choices of the member
+put in the cell at the origin; \code{allow(tau,j)} marks the atoms $j$ of the list that share a read cluster with
+the primitive atom $\tau$ at the origin. In \code{size\_force\_constants\_fc34} and \code{collect\_force\_constants\_fc34}
+(the enumeration of \code{setup\_maps\_fc34}, called whenever a rank is read) an atom is followed only if
+\code{allow} holds (\code{rdc\_partial}) and a complete candidate is kept only if it is a read cluster
+(\code{rdc\_final}); the shell limit is lifted for that rank. \code{rdc\_report} then stops if a read cluster did not
+become a group and counts the clusters that the symmetry put in the same groups without being listed. A read FC2 is
+kept whole (no Wigner--Seitz selection; \code{focex.f90}, \code{fc34\_init}). A cluster beyond this run's neighbour
+list stops the run. \code{write\_output\_fcs} (\code{ios.f90}) lists a group none of whose terms reaches the margin by
+its largest term, and records margin, \code{fc2range}, flag and shells in the single header line (readers skip
+exactly one line; THERMACOND counts the term lines, so no further comment lines are written).
+\paragraph{Validation.} Ge example, FC3 (flag 0, 3 shells: 329 groups, 150\,294 terms) read with flag 1 and 1 shell:
+329 groups, all terms matched, FC3 written back identical; the fitted FC2 equal to the joint fit to $3\times10^{-8}$
+(rounding of the 8-digit file). The previous code built 5 groups and ignored 149\,148 terms. FC2 read, FC3 fitted:
+FC3 equal to the joint fit to $2\times10^{-9}$. A LASSO fit (151 FC3 groups below the margin) read back: all 329 groups.
+
+%==============================================================================
+\section{Fit diagnostics}\label{sec:fitdiag}
+%==============================================================================
+\paragraph{Quantities.} \code{fit\_diagnostics.f90}, module \code{fit\_diag}; \code{svd\_set} calls \code{fit\_stats} for
+the force fits (\code{enforce\_inv}=1, and the least-squares refit on the LASSO support for 2, 3). With $U$ of the SVD,
+the filter factors $\phi_k=w_k^3/\sqrt{w_k^6+w_c^6}$ and the residual $r$: $H=U\,\mathrm{diag}(\phi)\,U^T$,
+$h_i=\sum_k\phi_kU_{ik}^2$, $p_{\rm eff}=\sum_k\phi_k$; leave-one-row-out residuals $r_i/(1-h_i)$; leave-one-snapshot-out
+residuals $(1-H_{bb})^{-1}r_b$ over the rows $b$ of a snapshot (\code{solve\_gauss}; a snapshot with singular
+$1-H_{bb}$ fixes some parameters alone and is left out). Ratios to the training residual of the same SVD are applied to
+the relative residual of the final FCs, since the right-hand side of the SVD may be shifted ($b-Ax_p$). For a correct
+model and independent noise $E[\mathrm{PRESS}]/E[\mathrm{RSS}]=1/(1-p/m)^2$ (uniform leverage). Per rank, the share of
+FCs with $|x|<2\sigma$. With \code{enforce\_inv}=0 only $m$ and the number of FCs are reported.
+\paragraph{Conclusions.} $p/m>0.2$ and $>0.5$: warnings (LASSO may be / is needed); held-out/training $>1.25$:
+over-fitting; otherwise, residual $>5\,\%$: model incomplete or noisy forces; a rank $\ge2$ with more than half its FCs
+below $2\sigma$: range longer than the data support.
+\paragraph{Validation.} Ge example, \code{enforce\_inv}=1: $p/m=0.016$, held-out/training 1.10 (one snapshot left
+out), no warnings.
 
 %==============================================================================
 \section{Stressed reference: generalized Huang rows, and fixes from the exact-model test}\label{sec:huang}
