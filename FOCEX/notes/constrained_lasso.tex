@@ -1,216 +1,404 @@
 \documentclass[11pt,a4paper]{article}
-\usepackage[margin=2.5cm]{geometry}
+\usepackage[margin=2.4cm]{geometry}
 \usepackage{amsmath,amssymb,booktabs,xcolor}
 \usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black]{hyperref}
 \newcommand{\bA}{\mathbf A}
+\newcommand{\bB}{\mathbf B}
 \newcommand{\bC}{\mathbf C}
-\newcommand{\bK}{\mathbf K}
-\newcommand{\bQ}{\mathbf Q}
+\newcommand{\bD}{\mathbf D}
 \newcommand{\bG}{\mathbf G}
+\newcommand{\bH}{\mathbf H}
+\newcommand{\bK}{\mathbf K}
+\newcommand{\bN}{\mathbf N}
+\newcommand{\bP}{\mathbf P}
+\newcommand{\bQ}{\mathbf Q}
+\newcommand{\bR}{\mathbf R}
+\newcommand{\bU}{\mathbf U}
+\newcommand{\bV}{\mathbf V}
 \newcommand{\bW}{\mathbf W}
+\newcommand{\ba}{\mathbf a}
+\newcommand{\bw}{\mathbf w}
+\newcommand{\bb}{\mathbf b}
+\newcommand{\bc}{\mathbf c}
+\newcommand{\bd}{\mathbf d}
+\newcommand{\bs}{\mathbf s}
+\newcommand{\bt}{\mathbf t}
+\newcommand{\bu}{\mathbf u}
+\newcommand{\bv}{\mathbf v}
 \newcommand{\bx}{\mathbf x}
 \newcommand{\by}{\mathbf y}
 \newcommand{\bz}{\mathbf z}
-\newcommand{\bt}{\mathbf t}
-\newcommand{\bb}{\mathbf b}
-\newcommand{\bc}{\mathbf c}
-\title{LASSO for the force constants with exact invariances\\(FOCEX, \texttt{enforce\_inv} = 2 and 3)}
-\author{Draft for checking (FOCEX notes)}
-\date{24 October 2026}
+\newcommand{\bSig}{\boldsymbol\Sigma}
+\newcommand{\code}[1]{\texttt{#1}}
+\title{LASSO for the force constants with exact invariances\\(FOCEX, \code{enforce\_inv} = 2 and 3), and the error bars of the fitted FCs}
+\author{FOCEX notes}
+\date{11 November 2026 (revision of the note of 24 October 2026; written from the code of that date)}
 \begin{document}
 \maketitle
 
 \begin{abstract}
 FOCEX fits the force constants (FCs) to force--displacement data while imposing the translational,
-rotational and Huang invariances. With \texttt{enforce\_inv}\,=\,2 and 3 the fit is a LASSO: an $L_1$
-penalty on the FCs selects the terms the data support. This note gives the formulation, the numerical
-steps and the reason for each choice, and lists the tests the code has passed. In short: the penalty
-acts on the FCs themselves, the invariances hold exactly because $\bx$ is confined to the kernel of the
-invariance matrix, that kernel is first cut to the directions the data resolve (the same cut the SVD fit
-makes), the LASSO is solved by an interior-point method, and, for \texttt{enforce\_inv}\,=\,3, the
-selected FCs are refitted by least squares. The $L_1$ weight is chosen by cross-validation.
+rotational and Huang invariances exactly. With \code{enforce\_inv}\,=\,2 and 3 the fit is a LASSO: an
+$L_1$ penalty on the FCs themselves selects the terms the data support; with 3 the selected FCs are then
+refitted by ordinary (filtered) least squares. This note derives each step from the starting problem,
+says which routine does it (file:routine), and ends with how the standard errors of the FCs are
+computed for every value of \code{enforce\_inv}.
 \end{abstract}
 
-\section{The problem}
-The unknowns are the $n_x$ irreducible FCs $\bx$ of all ranks fitted (the columns of the fit). The data give
-$N$ force equations and the invariances $n_C$ homogeneous ones,
-\begin{equation}
-\bA\bx\approx\bb\quad(N\times n_x),\qquad \bC\bx=0\quad(n_C\times n_x).
+\section*{Notation}
+\begin{center}\small
+\begin{tabular}{lll}
+\toprule
+symbol & size & meaning \\
+\midrule
+$\bx$ & $n_x$ & irreducible FCs of all fitted ranks (the unknowns) \\
+$\bA,\ \bb$ & $N\times n_x$, $N$ & force equations: $\bA\bx\approx\bb$ ($N$ = number of force components) \\
+$\bC,\ \bd$ & $n_C\times n_x$ & invariance rows: $\bC\bx=\bd$ ($\bd\ne0$ only for a stressed reference, Coulomb) \\
+$\bK$ & $n_x\times n_K$ & orthonormal basis of the kernel of $\bC$ ($\bC\bK=0$, $\bK^T\bK=\mathbf 1$) \\
+$\bx_0$ & $n_x$ & particular solution, $\bC\bx_0=\bd$ (0 if $\bd=0$) \\
+$\sigma_k,\ \bu_k,\ \bv_k$ & & singular values / vectors of $\bA\bK$ \\
+$\bK_r$ & $n_x\times r$ & $\bK\bV_r$: kernel basis rotated onto the right singular vectors of $\bA\bK$ \\
+$w_j,\ \bW$ & & rms of column $j$ of $\bA$; $\bW=\mathrm{diag}(w_j)$ \\
+$\bz$ & $n_x$ & $\bW\bx$, standardised FCs \\
+$\bQ$ & $n_x\times r$ & orthonormal basis of the range of $\bW\bK_r$ \\
+$\bt$ & $r$ & coordinates in that basis: $\bz=\bz_0+\bQ\bt$ \\
+$S$ & & the selected FCs (support of the LASSO solution) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{The problem and the exact invariances}
+The data give $N$ force equations and the invariances $n_C$ linear relations,
+\begin{equation}\label{eq:problem}
+\bA\bx\approx\bb,\qquad \bC\bx=\bd .
 \end{equation}
-$\bC$ is rank deficient and has many redundant rows (exact cubic test model: $n_C=1882$, rank 379, $n_x=555$).
-Its kernel has an orthonormal basis $\bK$ ($n_x\times n_K$, from the SVD of $\bC$, \texttt{get\_kernel}), and every
-$\bx=\bK\by$ satisfies the invariances exactly.
+$\bC$ is rank deficient with many redundant rows (exact cubic test model: $n_C=1882$, rank 379,
+$n_x=555$). \code{svd\_ridge.f90:kernel\_and\_particular} takes the SVD
+$\bC=\bU_C\bSig_C\bV_C^T$; the columns of $\bV_C$ whose singular value is below
+\code{svdcut}$\,\times$ the largest form $\bK$, and $\bx_0=\sum_{\text{others}}\bv_{C,j}(\bu_{C,j}\cdot\bd)/\sigma_{C,j}$
+is the minimum-norm solution of $\bC\bx=\bd$. Every vector of the form
+\begin{equation}\label{eq:kernel}
+\bx=\bx_0+\bK\by
+\end{equation}
+satisfies the invariances, since $\bC\bx=\bC\bx_0+(\bC\bK)\by=\bd+0$; conversely every solution of
+$\bC\bx=\bd$ is of this form. So the constraint is removed by fitting the $n_K$ free coefficients
+$\by$ instead of $\bx$. Substituting \eqref{eq:kernel} in the force equations,
+\begin{equation}\label{eq:shift}
+\bA\bx-\bb=\bA\bK\by-\bb',\qquad \bb'=\bb-\bA\bx_0 .
+\end{equation}
 
-\paragraph{\texttt{enforce\_inv}\,=\,1 (SVD, unchanged).} $\min_{\by}\|\bA\bK\by-\bb\|$ by \texttt{svd\_set}: the SVD of
-$\bA\bK$, with singular values below \texttt{svdcut}$\,\sigma_{\max}$ discarded, i.e.\ the minimum-norm
-least-squares solution. \texttt{svdcut} $=$ \texttt{force\_error}$^2=10^{-10}$ by default.
+\section{\texorpdfstring{Reference: the least-squares fit (\code{enforce\_inv}\,=\,1) and its filter}{Reference: the least-squares fit (enforce\_inv = 1) and its filter}}\label{sec:svd}
+\code{constrained\_fit.f90:fit\_kernel\_basis} minimises $\|\bA\bK\by-\bb'\|^2$ by \code{svd\_ridge.f90:svd\_set}.
+With the thin SVD $\bA\bK=\bU\bSig\bV^T=\sum_k\sigma_k\bu_k\bv_k^T$, write $\by=\sum_k y_k\bv_k$ and
+$\beta_k=\bu_k\cdot\bb'$. Because the $\bu_k$ are orthonormal,
+\begin{equation}\label{eq:decouple}
+\|\bA\bK\by-\bb'\|^2=\sum_k(\sigma_ky_k-\beta_k)^2+\|\bb'\|^2-\sum_k\beta_k^2 ,
+\end{equation}
+so each $y_k$ is fitted independently: $y_k=\beta_k/\sigma_k$. This is unstable when $\sigma_k$ is small
+(noise in $\beta_k$ is divided by $\sigma_k$). \code{svbksb} uses instead
+\begin{equation}\label{eq:filter}
+y_k=\phi_k\,\frac{\beta_k}{\sigma_k},\qquad \phi_k=\frac{\sigma_k^3}{\sqrt{\sigma_k^6+\sigma_c^6}},\qquad
+\sigma_c=\text{cut}\times\sigma_{\max},
+\end{equation}
+so $\phi_k\to1$ for $\sigma_k\gg\sigma_c$ and $y_k\to\sigma_k^2\beta_k/\sigma_c^3\to0$ for $\sigma_k\ll\sigma_c$.
+The cut is \code{svdcut}\,=\,(\code{default.params} line 2)$^2$, $10^{-10}$ by default, possibly moved
+up into a gap of the singular values (\code{svd\_ridge.f90:gap\_cut}), and raised once more if the
+measured noise $\|\bA\bx-\bb\|^2/\|\bb\|^2$ exceeds $100\,$\code{svdcut} and the result passes the
+noise test of \S\ref{sec:noise} (\code{svd\_set}).
 
-\section{What was wrong with the previous LASSO}
-The previous \texttt{enforce\_inv}\,=\,2 minimised $\tfrac12\|\bA\bK\by-\bb\|^2+\mu\sum_k n_k|y_k|$: the penalty
-was on the kernel coefficients $\by$. The columns of $\bK$ are dense orthonormal mixtures of many FCs,
-so FCs that are sparse are dense in $\by$, and a sparse $\by$ gives dense FCs. On an exact model (a pair
-potential, below) the FC2/FC3/FC4 had 98/80/376 non-zero terms where the true FCs have 11/20/43, and FC4
-was wrong (on-site $-0.43$ for $288$). Its solver (coordinate descent) also never converged.
+\paragraph{The filter is a quadratic penalty.} Minimising $\tfrac12(\sigma_ky_k-\beta_k)^2+\tfrac12g_ky_k^2$ gives
+$y_k=\sigma_k\beta_k/(\sigma_k^2+g_k)$. This equals \eqref{eq:filter},
+$y_k=\sigma_k^2\beta_k/\sqrt{\sigma_k^6+\sigma_c^6}$, when $\sigma_k^2+g_k=\sqrt{\sigma_k^6+\sigma_c^6}/\sigma_k$, i.e.
+\begin{equation}\label{eq:gk}
+g_k=\sigma_k^2\Big(\sqrt{1+(\sigma_c/\sigma_k)^6}-1\Big)\qquad
+\big(\approx\sigma_c^6/2\sigma_k^4\ \text{for}\ \sigma_k\gg\sigma_c,\ \ \approx\sigma_c^3/\sigma_k\ \text{for}\ \sigma_k\ll\sigma_c\big).
+\end{equation}
+The LASSO uses this form (\S\ref{sec:step1}): it reproduces the least-squares fit exactly when $\lambda=0$.
 
-\paragraph{Alternatives that were tested and rejected.}
-\begin{itemize}
-\item \emph{Elimination basis} (row-reduce $\bC$, the free FCs are a subset of $\bx$; ALAMODE). With the
-full constraint set the result depends on which FCs are eliminated (those carry no penalty) and FC4 came
-out wrong (error 28 of 288). ALAMODE, with LASSO, keeps only the constraints inside each rank and drops
-the rotational rows coupling FC2--FC3 and FC3--FC4 (its own warning, \texttt{alm/constraint.cpp}); that
-left FC4 errors up to $1.2\times10^4$.
-\item \emph{Free LASSO on $\bx$, then a constrained least-squares fit on the kept FCs.} If the first
-step misses one true FC, the constraint rows containing it force its partners to zero in the second:
-the reduced kernel had dimension 3 and FC3 = FC4 = 0.
-\end{itemize}
-
-\section{Formulation}
+\section{The constrained LASSO}
 \begin{equation}\label{eq:classo}
-\min_{\bx}\ \frac1{2N}\|\bA\bx-\bb\|^2+\lambda\sum_j w_j|x_j|\qquad\text{subject to}\qquad \bC\bx=0 .
+\min_{\bx}\ \frac1{2N}\|\bA\bx-\bb\|^2+\lambda\sum_jw_j|x_j|\qquad\text{subject to}\qquad\bC\bx=\bd .
 \end{equation}
-The penalty is on the FCs. $w_j$ is the rms of column $j$ of $\bA$ (standardisation, as in scikit-learn,
-MATLAB and ALAMODE): FCs of different rank carry different powers of length, and $w_j|x_j|$ is what
-column $j$ contributes to the forces, so the penalty does not depend on units. Columns the data do not
-see at all (Ge: four columns at $2\times10^{-20}$, three exactly zero) get $w_j=10^{-8}\max w$, see
-\S\ref{sec:floor}.
+The penalty is on the FCs $x_j$, not on the kernel coefficients $y_k$: each column of $\bK$ mixes many FCs, so
+a sparse $\by$ is a dense $\bx$ and vice versa (\S\ref{sec:why}). The weight $w_j=\big(\sum_i A_{ij}^2/N\big)^{1/2}$
+(\code{lasso\_constrained.f90:classo\_setup}) is the rms force that FC $j$ produces per unit value, so
+$w_j|x_j|$ is in units of force for every rank, and the penalty does not depend on the units of each
+rank. Columns the data do not see are floored, $w_j\ge10^{-8}\max w$ (\S\ref{sec:step2}).
+The code solves \eqref{eq:classo} in five steps (\code{classo\_cv}, \code{classo\_cv\_res}).
 
-\section{Step 1: the part of the kernel the data resolve}\label{sec:cut}
-Directions of the kernel along which the forces do not change cannot be fitted. The SVD fit sets them
-to zero (minimum norm). The LASSO must do the same: without it, FCs invisible in the data carry
-almost no penalty, and through the invariance couplings they absorb arbitrary values (Ge: phonons
-of $10^8$\,cm$^{-1}$). So with
+\section{Step 1: rotate the kernel onto the singular directions of the data}\label{sec:step1}
+\code{lasso\_constrained.f90:resolved\_kernel} computes the SVD $\bA\bK=\bU\bSig\bV^T$ of \S\ref{sec:svd} and returns
 \begin{equation}
-\bA\bK=\mathbf U\boldsymbol\Sigma\mathbf V^T,\qquad \bK_r=\bK\mathbf V_r,\quad
-\mathbf V_r=\{\mathbf v_k:\sigma_k>\texttt{svdcut}\,\sigma_{\max}\},
+\bK_r=\bK\bV_r,\qquad \bV_r=\{\bv_k:\ \sigma_k>10^{-15}\sigma_{\max}\},
 \end{equation}
-$\bx$ is restricted to $\bx=\bK_r\by$. This is the cut \texttt{svd\_set} makes, and $\bA\bK_r$ has full column rank.
-Exact cubic model: 159 of 176 directions kept; the 17 removed are FC2 components on the boundary of the
-supercell's Wigner--Seitz cell that cancel in every supercell force. Ge: 134 of 144.
+i.e.\ only exactly-null directions (forces do not change at all) are dropped; $r$ is their number.
+$\bK_r$ is again an orthonormal basis of (the resolved part of) the kernel, because
+$\bK_r^T\bK_r=\bV_r^T\bK^T\bK\bV_r=\mathbf 1$, so \eqref{eq:kernel} becomes $\bx=\bx_0+\bK_r\by$, with $\by$ now
+the coordinates along the $\bv_k$. In these coordinates \eqref{eq:decouple} holds term by term, and the
+filter of \S\ref{sec:svd} is the diagonal penalty $\frac1{2N}\sum_kg_ky_k^2$ with $g_k$ from \eqref{eq:gk}
+(\code{classo\_cv\_res:filter\_penalty}). Without it, FCs invisible in the data cost almost nothing
+and absorb arbitrary values through the invariance couplings (Ge: phonons of $10^8$\,cm$^{-1}$).
 
-\paragraph{Why not $\bA^T\bA$.} $\bK^T\bA^T\bA\bK$ is small ($n_K\times n_K$) and quick to form, but its eigenvalues
-are $\sigma_k^2$: the cut $\sigma_k/\sigma_{\max}=10^{-10}$ becomes $10^{-20}$, below the double-precision
-resolution $2\times10^{-16}$. From $\bA^T\bA$ only $\sigma_k/\sigma_{\max}\gtrsim10^{-8}$ can be resolved.
-Instead $\bA\bK$ is reduced row by row to a triangular $\mathbf R$ ($n_K\times n_K$) by Givens rotations,
-$\bA\bK=\mathbf{Q}_0\mathbf R$; $\mathbf R$ has the same singular values and right singular vectors as $\bA\bK$, and its
-SVD is cheap. Cost: about $N n_K^2$ operations (the same as forming $\bA^T\bA$), memory $n_K^2$;
-$\bA\bK$ is never stored.
+\paragraph{How $\bV$ is obtained without squaring $\sigma$ ($\bH$ and $\bR$).} Forming $\bK^T\bA^T\bA\bK$ would be cheap, but its
+eigenvalues are $\sigma_k^2$: a ratio $\sigma_k/\sigma_{\max}=10^{-10}$ becomes $10^{-20}$, below the double-precision
+resolution $2\times10^{-16}$. Instead the rows of $\bA\bK$ are fed one at a time and absorbed into an
+upper-triangular $r\times r$ matrix $\bR$ by Givens rotations (2$\times$2 rotations that zero one
+element of the incoming row against the diagonal of $\bR$). The product of all rotations is an
+orthogonal $\bH$ ($N\times N$, never stored) with
+$\bA\bK=\bH\begin{pmatrix}\bR\\0\end{pmatrix}$. If $\bR=\bU_R\bSig\bV^T$ (\code{svdcmp}, cheap: $r\times r$), then
+$\bA\bK=\big(\bH\begin{smallmatrix}\bU_R\\0\end{smallmatrix}\big)\bSig\bV^T$, and the first factor has orthonormal columns;
+so $\bR$ has the same singular values and right singular vectors $\bV$ as $\bA\bK$, without any squaring.
+Cost about $Nn_K^2$, memory $n_K^2$; $\bA\bK$ is never stored.
 
-\section{Step 2: variables in which the problem is simple}
-Let $\bW=\mathrm{diag}(w_j)$ and $\bz=\bW\bx$ (standardised FCs). Take an orthonormal basis $\bQ$ of the
-range of $\bW\bK_r$ (its left singular vectors, $n_x\times r$, $\bQ^T\bQ=\mathbf 1$), so $\bz=\bQ\bt$ and
-$\bx=\bW^{-1}\bQ\bt$. Then \eqref{eq:classo} becomes, with no constraint left,
+\section{Step 2: variables in which the problem has no constraint and a simple penalty}\label{sec:step2}
+After step 1, \eqref{eq:classo} reads
+\begin{equation}\label{eq:iny}
+\min_{\by}\ \frac1{2N}\|\bA\bK_r\by-\bb'\|^2+\frac1{2N}\sum_kg_ky_k^2+\lambda\|\bW(\bx_0+\bK_r\by)\|_1 .
+\end{equation}
+The constraint is gone, but the $L_1$ term is a norm of a linear map of $\by$. Three changes of variable make it simpler.
+
+\emph{(a) Standardised FCs.} $\bz=\bW\bx$, so $\sum_jw_j|x_j|=\|\bz\|_1$ and
+$\bz=\bz_0+\bW\bK_r\by$, $\bz_0=\bW\bx_0$.
+
+\emph{(b) An orthonormal basis of the reachable $\bz$.} The vectors $\bW\bK_r\by$ span the range of the
+$n_x\times r$ matrix $\bW\bK_r$. Take its thin SVD (\code{classo\_setup}),
+$\bW\bK_r=\bQ\,\bSig_W\bV_W^T$, with $\bQ$ ($n_x\times r$, $\bQ^T\bQ=\mathbf 1$) its left singular vectors, and define
 \begin{equation}\label{eq:t}
-\min_{\bt}\ \tfrac12\bt^T\bG\bt-\bc^T\bt+\lambda\|\bQ\bt\|_1,\qquad
-\bG=\tilde\bA^T\tilde\bA,\ \ \bc=\tilde\bA^T\bb/\sqrt N,\ \ \tilde\bA=\bA\bW^{-1}\bQ/\sqrt N .
+\bt=\bB\by,\qquad \bB=\bQ^T\bW\bK_r=\bSig_W\bV_W^T\ \ (r\times r,\ \text{invertible}),\qquad\text{so}\qquad
+\bz=\bz_0+\bQ\bt,\quad \bx=\bx_0+\bW^{-1}\bQ\bt .
 \end{equation}
-$\bG$ is $r\times r$ and is accumulated row by row, once per cross-validation fold (\S\ref{sec:cv}). The
-$L_1$ term is on $\bz$, i.e.\ on the FCs; $\bQ$ being orthonormal keeps the Newton systems below well
-scaled. Above $\lambda_{\max}=\|\bQ\bc\|_\infty$ the solution is $\bt=0$ exactly: $\boldsymbol\nu=\bQ\bc$ satisfies the
-optimality condition $\bQ^T\boldsymbol\nu=\bc$ with $|\nu_i|\le\lambda$.
+$\bB$ is invertible because $\bW$ is diagonal positive and $\bK_r$ has orthonormal columns, so $\bW\bK_r$ has
+full column rank (the code checks $\min\sigma_W>10^{-12}\max\sigma_W$, \code{info}\,=\,1 otherwise). The penalty
+becomes $\lambda\|\bz_0+\bQ\bt\|_1$, and the orthonormal $\bQ$ keeps the Newton systems of step 3 well scaled
+(any basis of the range would do mathematically).
 
-\paragraph{Weight floor.}\label{sec:floor} $\bx=\bW^{-1}\bQ\bt$ divides by $w_j$. For a column at $10^{-20}$ the
-round-off of $\bQ$ ($10^{-16}$) became FC errors of order $10^4$ (Ge: an FC2 of 153 where the SVD has
-$10^{-6}$). Hence $w_j\ge10^{-8}\max w$; genuine Ge columns go down to $3\times10^{-6}\max w$, so only the
-round-off zeros are affected.
-
-\section{Step 3: solving the LASSO}
-\eqref{eq:t} is the quadratic program
+\emph{(c) The data term in $\bt$.} With \eqref{eq:shift} and \eqref{eq:t}, $\bA\bx-\bb=\bA\bW^{-1}\bQ\bt-\bb'$. Define
+$\tilde\bA=\bA\bW^{-1}\bQ/\sqrt N$ ($N\times r$) and expand the square:
 \begin{equation}
-\min\ \tfrac12\bt^T\bG\bt-\bc^T\bt+\lambda\mathbf 1^T\mathbf s,\qquad
-\mathbf a=\mathbf s-\bQ\bt\ge0,\ \ \mathbf b'=\mathbf s+\bQ\bt\ge0,
+\frac1{2N}\|\bA\bx-\bb\|^2=\tfrac12\|\tilde\bA\bt-\bb'/\sqrt N\|^2
+=\tfrac12\bt^T\bG\bt-\bc^T\bt+\tfrac1{2N}\|\bb'\|^2,\qquad \bG=\tilde\bA^T\tilde\bA,\ \ \bc=\tilde\bA^T\bb'/\sqrt N .
 \end{equation}
-solved by a primal--dual interior-point method (Mehrotra predictor--corrector). With multipliers
-$\boldsymbol\alpha,\boldsymbol\beta\ge0$ the optimality conditions are
-$\bG\bt-\bc+\bQ^T(\boldsymbol\alpha-\boldsymbol\beta)=0$, $\boldsymbol\alpha+\boldsymbol\beta=\lambda$,
-$\alpha_ia_i=\beta_ib'_i=0$. Eliminating $\mathbf s,\boldsymbol\alpha,\boldsymbol\beta$ from the Newton step leaves one
-$r\times r$ system,
+$\bG$ and $\bc$ are accumulated row by row, $\bG=\sum_i\tilde\ba_i\tilde\ba_i^T$ with
+$\tilde\ba_i=\bQ^T(\bA_{i,:}/\bw)^T/\sqrt N$, separately for each cross-validation fold (step 5).
+The filter penalty in $\bt$: $\by=\bB^{-1}\bt$, so $\frac1{2N}\sum_kg_ky_k^2=\tfrac12\bt^T\bP\bt$ with
+$\bP=\bB^{-T}\mathrm{diag}(g_k)\bB^{-1}/N$. Collecting, \eqref{eq:classo} is exactly
+\begin{equation}\label{eq:tproblem}
+\boxed{\ \min_{\bt}\ \tfrac12\bt^T(\bG+\bP)\bt-\bc^T\bt+\lambda\|\bz_0+\bQ\bt\|_1\ }
+\end{equation}
+with no constraint: every $\bt$ gives FCs that satisfy the invariances exactly.
+
+\paragraph{The largest useful $\lambda$.} Take $\bz_0=0$. At $\bt=0$ the $L_1$ term is not differentiable; $\bt=0$ is the minimum
+if $0$ is in the subgradient, $0\in-\bc+\lambda\bQ^T\boldsymbol\nu$ with $|\nu_i|\le1$. The choice
+$\boldsymbol\nu=\bQ\bc/\lambda$ satisfies $\bQ^T\boldsymbol\nu=\bQ^T\bQ\bc/\lambda=\bc/\lambda$, and $|\nu_i|\le1$ when
+$\lambda\ge\lambda_{\max}\equiv\|\bQ\bc\|_\infty$. So for $\lambda\ge\lambda_{\max}$ all FCs are zero (this is a sufficient condition;
+the grid of step 5 starts there). With the L2 option (\S\ref{sec:l2}) $\bc$ is replaced by $\bc-\bc_{pz}$.
+
+\paragraph{Weight floor.} $\bx=\bx_0+\bW^{-1}\bQ\bt$ divides by $w_j$. For a column at $10^{-20}$ the round-off of
+$\bQ$ ($10^{-16}$) became FC errors of order $10^4$ (Ge: an FC2 of 153 where the SVD has $10^{-6}$).
+Hence $w_j\ge10^{-8}\max w$; genuine Ge columns go down to $3\times10^{-6}\max w$, so only round-off zeros are affected.
+
+\section{Step 3: solving \eqref{eq:tproblem} by an interior-point method}\label{sec:ipm}
+\code{lasso\_constrained.f90:ipm\_classo}. Write $\bz=\bz_0+\bQ\bt$ and introduce $\bs\ge|\bz|$ componentwise, i.e.\
+$\mathbf a=\bs-\bz\ge0$, $\mathbf b=\bs+\bz\ge0$. Since the objective increases with $s_i$, at the optimum $s_i=|z_i|$, and
+\eqref{eq:tproblem} is the smooth quadratic program
 \begin{equation}
-(\bG+\bQ^T\mathbf D\bQ)\,\delta\bt=\text{r.h.s.},\qquad D_i=\frac{4A_iB_i}{A_i+B_i},\ A_i=\alpha_i/a_i,\ B_i=\beta_i/b'_i,
+\min_{\bt,\bs}\ \tfrac12\bt^T\bG\bt-\bc^T\bt+\lambda\mathbf 1^T\bs,\qquad\mathbf a=\bs-\bz\ge0,\ \ \mathbf b=\bs+\bz\ge0
 \end{equation}
-which is positive definite ($\mathbf D>0$, $\bQ$ full column rank) even where $\bG$ is badly conditioned;
-it is solved by Cholesky. The iteration stops when the residuals of the two equations and the duality
-gap $\boldsymbol\alpha^T\mathbf a+\boldsymbol\beta^T\mathbf b'$ are below $10^{-10}$ (relative). It takes 10--16 iterations.
-
-\paragraph{Why this solver.} ADMM (the standard splitting for $\|\bQ\bt\|_1$) had not converged after
-200\,000 iterations at 3 of 5 values of $\lambda$ on the exact model. Proximal-gradient methods (ISTA,
-FISTA) need the proximal map of $\lambda\|\bQ\bt\|_1$, which has no closed form; on the unconstrained FOCEX
-matrix FISTA stopped with optimality violations of 0.3--7\,\% at its default settings. LARS is exact and
-fastest for the unconstrained LASSO, but does not handle the constraint. The interior point gives the
-objective to $10^{-11}$ of an independent conic solver (cvxpy/Clarabel) at every $\lambda$.
-
-\paragraph{The selected FCs.} $S=\{j: |z_j|>10^{-8}\max|z|\}$. Interior-point zeros are small, not exact; at small
-$\lambda$ a few terms that vanish in the exact solution pass the test (against LARS, unconstrained: 57 kept for
-46 at $\lambda=10^{-4}\lambda_{\max}$; no true term lost). The test errs on the side of keeping a term,
-deliberately: a lost true term makes the refit collapse (\S2), an extra one is fitted to about zero by it.
-
-\section{\texorpdfstring{Step 4 (\texttt{enforce\_inv}\,=\,3): least-squares refit on the selected FCs}{Step 4 (enforce\_inv = 3): least-squares refit on the selected FCs}}
-The LASSO shrinks every kept FC towards zero by an amount proportional to $\lambda$. The refit removes this
-bias: least squares over the FCs in $S$, all others zero, invariances exact,
+($\bG$ here stands for $\bG+\bP$). With multipliers $\boldsymbol\alpha,\boldsymbol\beta\ge0$, the Lagrangian
+$\mathcal L=\tfrac12\bt^T\bG\bt-\bc^T\bt+\lambda\mathbf 1^T\bs-\boldsymbol\alpha^T\mathbf a-\boldsymbol\beta^T\mathbf b$ gives the optimality (KKT) conditions
+\begin{equation}\label{eq:kkt}
+\partial_{\bt}:\ \bG\bt-\bc+\bQ^T(\boldsymbol\alpha-\boldsymbol\beta)=0,\qquad
+\partial_{\bs}:\ \boldsymbol\alpha+\boldsymbol\beta=\lambda,\qquad
+\alpha_ia_i=\beta_ib_i=0 .
+\end{equation}
+The interior-point method replaces the last pair by $\alpha_ia_i=\beta_ib_i=\mu>0$ and drives $\mu\to0$, taking Newton
+steps on \eqref{eq:kkt}. Linearising, with $\delta\mathbf a=\delta\bs-\bQ\delta\bt$, $\delta\mathbf b=\delta\bs+\bQ\delta\bt$
+and residuals $\mathbf r_t,\ r_s=\lambda-\alpha-\beta,\ r_a,\ r_b$:
+\begin{align*}
+&\alpha_i\delta a_i+a_i\delta\alpha_i=r_{a,i}\ \Rightarrow\ \delta\alpha_i=r_{a,i}/a_i-A_i\delta a_i,\qquad A_i=\alpha_i/a_i,\\
+&\beta_i\delta b_i+b_i\delta\beta_i=r_{b,i}\ \Rightarrow\ \delta\beta_i=r_{b,i}/b_i-B_i\delta b_i,\qquad B_i=\beta_i/b_i .
+\end{align*}
+Inserting these in $\delta\alpha_i+\delta\beta_i=r_{s,i}$ gives $\delta s_i=(e_i+(A_i-B_i)q_i)/(A_i+B_i)$ with $q_i=(\bQ\delta\bt)_i$,
+$e_i=r_{a,i}/a_i+r_{b,i}/b_i-r_{s,i}$; then
+$\delta\alpha_i-\delta\beta_i=f_i+\frac{(A_i+B_i)^2-(A_i-B_i)^2}{A_i+B_i}q_i=f_i+D_iq_i$ with
+$f_i=r_{a,i}/a_i-r_{b,i}/b_i-(A_i-B_i)e_i/(A_i+B_i)$ and
 \begin{equation}
-\min_{\bt}\ \tfrac12\bt^T\bG\bt-\bc^T\bt\quad\text{with}\quad (\bQ\bt)_j=0,\ j\notin S .
+D_i=\frac{4A_iB_i}{A_i+B_i}>0 .
 \end{equation}
-The admissible $\bt$ form the null space $\mathbf N$ of $\bQ_{S^c,:}$, computed by a Householder QR of
-$\bQ_{S^c,:}^T$ with column pivoting (an SVD routine did not converge on some of these matrices, whose
-singular values cluster at 0 and 1). Then $\bt=\mathbf N\mathbf s$, with $\mathbf s$ the pseudo-inverse solution of
-$(\mathbf N^T\bG\mathbf N)\mathbf s=\mathbf N^T\bc$, with eigenvalues below $10^{-13}$ of the largest dropped.
-\emph{Limitation:} this step works with the Gram matrix, so its own cut corresponds to
-$\sigma/\sigma_{\max}\approx3\times10^{-7}$, not $10^{-10}$; directions between the two are treated as
-unresolved here. On the tests below it agrees with a least-squares solution on $\bA$ itself (numpy) to
-$4\times10^{-9}$.
+The first equation of \eqref{eq:kkt} then becomes one $r\times r$ system,
+\begin{equation}
+(\bG+\bQ^T\bD\bQ)\,\delta\bt=-\mathbf r_t-\bQ^T\mathbf f ,
+\end{equation}
+positive definite even where $\bG$ is badly conditioned ($\bD>0$, $\bQ$ full column rank), solved by Cholesky
+(\code{chol\_fac}, \code{chol\_sol}); $\delta\bs,\delta\boldsymbol\alpha,\delta\boldsymbol\beta$ follow from the lines above.
+Each iteration does it twice (Mehrotra predictor--corrector): a predictor with $r_a=-\alpha a$, $r_b=-\beta b$, then a
+corrector with $r_a=\sigma\mu-\alpha a-\delta\alpha^{\rm pred}\delta a^{\rm pred}$ (same for $b$), $\sigma=(\mu_{\rm pred}/\mu)^3$;
+the step is $0.99$ of the largest one that keeps $\mathbf a,\mathbf b,\boldsymbol\alpha,\boldsymbol\beta>0$. It stops when the residuals of
+\eqref{eq:kkt} and the duality gap $\boldsymbol\alpha^T\mathbf a+\boldsymbol\beta^T\mathbf b$ are below $10^{-10}$ (relative), in at most 300
+iterations (10--16 in practice). For $\lambda\ge\|\bQ\bc\|_\infty$ and $\bz_0=0$ it returns $\bt=0$ directly.
 
-\paragraph{When to refit.} With accurate forces the refit gives the unbiased FCs (exact on the exact model).
-With noisy forces or too few snapshots it fits the selected terms to the noise; then
-\texttt{enforce\_inv}\,=\,2 (no refit) is the safer choice.
+\paragraph{The selected FCs.} $S=\{j:\ |z_j|>10^{-8}\max|z|\}$ (\code{classo\_path}). Interior-point zeros are small, not exact; at small
+$\lambda$ a few terms that vanish in the exact solution pass the test (against LARS, unconstrained: 57 kept for 46 at
+$\lambda=10^{-4}\lambda_{\max}$; no true term lost). The test errs on the side of keeping a term: a lost true term makes the
+refit collapse (\S\ref{sec:why}), an extra one is fitted to about zero by it.
 
-\section{\texorpdfstring{Step 5: choosing $\lambda$ by cross-validation}{Step 5: choosing lambda by cross-validation}}\label{sec:cv}
-The force rows are split into 5 folds, interleaved (row $i$ in fold $1+\bmod(i-1,5)$), so that every fold
-samples every snapshot. For each fold the training Gram matrix is the total minus the fold's, so the
-data are read once. On each training set the LASSO is solved on a grid of 40 values of $\lambda$,
-log-spaced from $\lambda_{\max}$ to $10^{-4}\lambda_{\max}$ (from the previous solution as starting point), and
-the mean squared error on the held-out rows is recorded for the model that will be returned (refitted
-or not). The $\lambda$ with the smallest mean error is chosen; within $10^{-10}\langle b^2\rangle$ of the
-minimum (round-off, exact data) the largest such $\lambda$ is taken. The final FCs are the fit on all
-rows at that $\lambda$. If the minimum is at the end of the grid, a warning is printed.
+\section{\texorpdfstring{Step 4 (\code{enforce\_inv}\,=\,3): the refit on the selected FCs}{Step 4 (enforce\_inv = 3): the refit on the selected FCs}}\label{sec:refit}
+\emph{What it means.} Step 3 does two things at once: it \emph{selects} the FCs in $S$ (the others are zero) and it
+\emph{shrinks} the values of those in $S$. The refit keeps the selection and discards the values: it solves the
+least-squares problem again, without the $L_1$ term, with the FCs outside $S$ fixed at zero and the invariances still exact.
+
+\emph{Why the values are biased.} In one orthonormal direction the problem is $\min_x\tfrac12(x-\beta)^2+\lambda|x|$, whose
+solution is $x=\mathrm{sign}(\beta)\max(|\beta|-\lambda,0)$: every kept coefficient is too small in magnitude by $\lambda$.
+The least-squares value is $\beta$. The refit removes this bias (relaxed lasso, Meinshausen 2007).
+
+\emph{The equations} (\code{lasso\_constrained.f90:refit\_support}). Drop the $L_1$ term from \eqref{eq:tproblem} and impose
+$z_j=(\bz_0+\bQ\bt)_j=0$ for $j\notin S$. With $\bB_S=\bQ_{S^c,:}$ (the $m$ rows of $\bQ$ off the support, $m=|S^c|$) the
+constraint is $\bB_S\bt=-\bz_{0,S^c}$. Its solutions are
+\begin{equation}
+\bt=\bt_p+\bN\bs,\qquad \bB_S\bN=0,\ \ \bN^T\bN=\mathbf 1,
+\end{equation}
+with $\bt_p$ one solution (0 if $\bz_0=0$) and the columns of $\bN$ a basis of the null space of $\bB_S$ ($p$ free parameters).
+Substituting in $\tfrac12\bt^T\bG\bt-\bc^T\bt$ ($\bG$ again including $\bP$) and dropping constants,
+\begin{equation}
+\tfrac12\bs^T(\bN^T\bG\bN)\bs-\big(\bN^T(\bc-\bG\bt_p)\big)^T\bs
+\ \Rightarrow\ (\bN^T\bG\bN)\,\bs=\bN^T(\bc-\bG\bt_p) ,
+\end{equation}
+solved by the pseudo-inverse with eigenvalues below $10^{-13}$ of the largest dropped. Because $\bP$ is included, this is the
+filtered least squares of \S\ref{sec:svd} restricted to $S$; with $S$ = all FCs it is \code{svd\_set}'s fit.
+
+\emph{The null space.} $\bN$ comes from a Householder QR of $\bB_S^T$ ($r\times m$) with column pivoting
+(\code{null\_space\_qr}): $\bB_S^T\boldsymbol\Pi=\bH_{\rm QR}\begin{pmatrix}\bR_{11}&\bR_{12}\\0&0\end{pmatrix}$, the rank $\rho$ being where the largest remaining
+column norm drops below $10^{-9}$ of the largest. Then $\bB_S=\boldsymbol\Pi\begin{pmatrix}\bR_{11}^T&0\\\bR_{12}^T&0\end{pmatrix}\bH_{\rm QR}^T$, so the columns
+$\rho+1,\dots,r$ of the orthogonal $\bH_{\rm QR}$ satisfy $\bB_S\mathbf h_j=0$: they are $\bN$, $p=r-\rho$. (An SVD routine did not converge
+on some $\bB_S$, whose singular values cluster at 0 and 1.)
+
+\paragraph{When to refit.} With accurate forces the refit gives unbiased FCs (exact on the exact model). With noisy forces or too
+few snapshots it fits the selected terms to the noise; then \code{enforce\_inv}\,=\,2 (no refit) is the safer choice.
+\emph{Limitation:} the refit works with the Gram matrix $\bN^T\bG\bN$, so its cut $10^{-13}$ on eigenvalues corresponds to
+$\sigma/\sigma_{\max}\approx3\times10^{-7}$; directions between this and \code{svdcut} are treated as unresolved here.
+
+\section{\texorpdfstring{Step 5: choosing $\lambda$}{Step 5: choosing lambda}}\label{sec:cv}
+\paragraph{Grid.} 40 values (\code{common/params.f90}: \code{lasso\_nlambda}), log-spaced from $\lambda_{\max}$ to $10^{-4}\lambda_{\max}$
+(\code{lasso\_epsratio}); the path is solved from large to small $\lambda$, and the refit is redone only when $S$ changes.
+
+\paragraph{Cross-validation (default, \code{default.params} line 6 absent or $\ne1$).} The force rows are split into 5 folds,
+interleaved (row $i$ in fold $1+\bmod(i-1,5)$), so that every fold samples every snapshot. Since $\bG=\sum_f\bG_f$ over the
+folds, the training data of fold $f$ are $\bG-\bG_f$, $\bc-\bc_f$ (no new pass over the data); multiplying by $N/(N-n_f)$
+restores the $1/(2N_{\rm train})$ normalisation of \eqref{eq:classo}. The held-out error is the mean squared residual per
+row of fold $f$, $(\bt^T\bG_f\bt-2\bc_f^T\bt+\|\bb'_f\|^2/N)\,N/n_f$, for the model that is returned (the refit for 3, the
+LASSO for 2). The $\lambda$ of smallest mean error is chosen; within $10^{-13}\langle b^2\rangle$ of the minimum (round-off ties,
+exact data) the largest such $\lambda$. If the minimum is at the end of the grid, the grid is extended by two decades at the
+same density, down to $10^{-8}\lambda_{\max}$ (\code{classo\_cv}). The final FCs are the fit on all rows at that $\lambda$.
+
+\paragraph{Noise test (\code{default.params} line 6 = 1).}\label{sec:noise} First the full fit on all directions ($S$ = all, the
+filtered least squares) gives the residual $\mathrm{RSS}_{\rm full}$, its effective number of parameters
+$p_{\rm full}=\mathrm{tr}$ of the hat matrix, and the noise $s^2=\mathrm{RSS}_{\rm full}/(N-p_{\rm full})$. If the forces are
+Gaussian with variance $s^2$, dropping $\Delta p$ parameters that are truly zero raises the residual by $s^2\chi^2_{\Delta p}$,
+of mean $\Delta p$ and variance $2\Delta p$. The chosen $\lambda$ is the largest one whose refit on all rows passes
+\begin{equation}
+\mathrm{RSS}(\lambda)-\mathrm{RSS}_{\rm full}\le s^2\big(\Delta p+2\sqrt{2\Delta p}\big)
+\end{equation}
+(mean $+$ 2 standard deviations). The same test decides whether \code{svd\_set} and \code{classo\_cv\_res} may raise the
+filter cut when the measured noise is larger than line 2 assumed.
+
+\paragraph{Optional L2 term (\code{default.params} line 7 = 1): a Gaussian prior.}\label{sec:l2} If the forces have Gaussian noise
+of variance $s^2$ and each FC of rank $\rho$ a Gaussian prior of width $\tau_\rho$, the negative log posterior is
+$\|\bA\bx-\bb\|^2/(2s^2)+\sum_jx_j^2/(2\tau_{\rho(j)}^2)$; multiplied by $s^2/N$ it is the data term of \eqref{eq:classo}
+plus $\frac{s^2}N\sum_jx_j^2/(2\tau_{\rho(j)}^2)$. The code adds this term (maximum a posteriori, MAP), with $s^2$ from the full
+fit above and $\tau_\rho$ = rms of the rank-$\rho$ FCs of that fit. In $\bt$ (with $x_j=z_j/w_j$, $\bz=\bz_0+\bQ\bt$) it is
+$\tfrac12\bt^T\bQ^T\bD_2\bQ\bt+(\bQ^T\bD_2\bz_0)^T\bt$ + const, $D_{2,j}=s^2/(Nw_j^2\tau_j^2)$, so $\bP\to\bP+\bQ^T\bD_2\bQ$
+and $\bc\to\bc-\bc_{pz}$, $\bc_{pz}=\bQ^T\bD_2\bz_0$. It enters the LASSO, the refits and the training fits; the CV errors and
+the noise test use the force residuals alone. (The $L_1$ term itself is the MAP of a Laplace prior.)
+
+\section{The error bars of the fitted FCs}\label{sec:errors}
+\paragraph{Derivation (least squares).} In \eqref{eq:filter}, $\by=\bV\mathbf F\bU^T\bb'$ with $\mathbf F=\mathrm{diag}\big(\sigma_k^2/\sqrt{\sigma_k^6+\sigma_c^6}\big)$.
+If $\bb=\bb_{\rm true}+\boldsymbol\epsilon$ with independent errors of variance $s^2$ on every row, $\mathrm{Cov}(\boldsymbol\epsilon)=s^2\mathbf 1$ and
+\begin{equation}
+\mathrm{Cov}(\by)=\bV\mathbf F\bU^T\,s^2\mathbf 1\,\bU\mathbf F\bV^T=s^2\,\bV\,\mathrm{diag}\Big(\frac{\sigma_k^4}{\sigma_k^6+\sigma_c^6}\Big)\bV^T,\qquad
+\mathrm{Cov}(\bx)=\bK\,\mathrm{Cov}(\by)\,\bK^T
+\end{equation}
+($\bx_0$ is fixed, so it adds no variance). For $\sigma_k\gg\sigma_c$ this is the usual $s^2(\bK^T\bA^T\bA\bK)^{-1}$. The noise is
+estimated from the fit itself, $s^2=\|\bA\bx-\bb\|^2/(m-n)$, $m$ rows and $n$ parameters. The standard error of FC $j$ is
+$\sigma_j=\sqrt{\mathrm{Cov}(\bx)_{jj}}$ (\code{svd\_set}, \code{svbksb}, \code{fit\_kernel\_basis}).
+
+\paragraph{By \code{enforce\_inv}.}
+\begin{itemize}
+\item \textbf{0} (invariance rows stacked on the force rows, one \code{svd\_set} of $[\bC;\bA]$, \code{focex.f90}): the formula
+above with $\bK=\mathbf 1$; $m=n_C+N$ counts the invariance rows as rows with the same noise as the forces.
+\item \textbf{1} (\code{fit\_kernel\_basis}): the formula above on $\bA\bK$; $m=N$, $n=n_K$.
+\item \textbf{2 and 3} (\code{constrained\_fit.f90:lasso\_support\_errors}, called after the LASSO): least squares on the selected FCs
+with the invariances exact, i.e.\ the formula above with $\bK$ replaced by $\bK\bN$, $\bN$ the null space of the rows of $\bK$
+off the support (same $S$ test, \code{null\_space\_qr}), and $s^2$ from the residual of that least-squares fit ($n=p$).
+For 3 this is the standard error of the returned refit. For 2 it is the error the refit would have; the returned FCs are the
+LASSO values (the refit is computed but not applied; the log gives $\max|$refit $-$ LASSO$|$). FCs outside $S$ have
+$\sigma_j=0$ (their rows of $\bK\bN$ vanish).
+\item \code{itemp}\,=\,1 (Boltzmann-weighted fit): none, $\sigma_j=0$.
+\end{itemize}
+The log lists every irreducible FC with its $\sigma_j$, and $\mathrm{sd}(\rho)$ = the plain mean of $\sigma_j$ over the irreducible FCs
+of rank $\rho$ (\code{ios.f90:write\_independent\_fcs}); for 2 and 3 the zeros of the dropped FCs are included in that mean.
+
+\paragraph{What these error bars do not contain.} They are the covariance of a linear least-squares fit with independent equal
+noise on all rows. They do not include the uncertainty of the selection $S$, the LASSO shrinkage (for 2), the L2 prior (the
+error fit has no penalty), the choice of the cut, or model error (missing FCs, anharmonic terms beyond the fitted ranks):
+when the misfit is model error, $s^2$ measures it but its rows are not independent. No Bayesian posterior is computed; the
+standard errors coincide with the posterior standard deviations of a Gaussian likelihood with a flat prior, for directions
+well above the cut.
 
 \section{Tests}
-\paragraph{Exact model.} Pair potential $A(r_c^2-r^2)^2$, fcc lattice with two species, ranks 2--4 fitted;
-its FCs are known exactly (FC2/FC3/FC4: 11/20/43 non-zero of 99/80/376). Forces from FOCEX's own matrix.
-\begin{center}
+These were run on 24 October 2026 with the version of that date (hard cut \code{svdcut} in step 1 instead of the filter
+penalty, CV tie tolerance $10^{-10}$); they have not been rerun for this revision.
+\paragraph{Exact model.} Pair potential $A(r_c^2-r^2)^2$, fcc lattice with two species, ranks 2--4 fitted; its FCs are known
+exactly (FC2/FC3/FC4: 11/20/43 non-zero of 99/80/376). Forces from FOCEX's own matrix.
+\begin{center}\small
 \begin{tabular}{lcccc}
 \toprule
  & FC2 max error & FC3 max error & FC4 max error & non-zero FC2/3/4 \\
 \midrule
 penalty on $\by$ (LARS solver) & 28.8 & 0.67 & 288 & 98/80/376 \\
-\texttt{enforce\_inv}\,=\,3, exact forces & $9\times10^{-10}$ & $4\times10^{-9}$ & $8\times10^{-7}$ & 11/20/43 \\
+\code{enforce\_inv}\,=\,3, exact forces & $9\times10^{-10}$ & $4\times10^{-9}$ & $8\times10^{-7}$ & 11/20/43 \\
 \midrule
 \multicolumn{5}{l}{1\,\% random noise on the forces:}\\
-\texttt{enforce\_inv}\,=\,1 (SVD) & 0.095 & 1.13 & 206 & 98/80/376 \\
-\texttt{enforce\_inv}\,=\,2 & 0.012 & 1.35 & 9.2 & 54/61/350 \\
-\texttt{enforce\_inv}\,=\,3 & 0.017 & 0.58 & 4.8 & 11/32/136 \\
+\code{enforce\_inv}\,=\,1 (SVD) & 0.095 & 1.13 & 206 & 98/80/376 \\
+\code{enforce\_inv}\,=\,2 & 0.012 & 1.35 & 9.2 & 54/61/350 \\
+\code{enforce\_inv}\,=\,3 & 0.017 & 0.58 & 4.8 & 11/32/136 \\
 \bottomrule
 \end{tabular}
 \end{center}
-(largest FCs: FC2 80, FC3 48, FC4 288). With noise this data set does not determine FC4 well for any
-method; the LASSO reduces the error by a factor 20--40 compared with the SVD.
+(largest FCs: FC2 80, FC3 48, FC4 288.) With noise this data set does not determine FC4 well for any method; the LASSO
+reduces the error by a factor 20--40 compared with the SVD.
+\paragraph{Ge (FOCEX example, DFT forces).} SVD: fit 0.036\,\%, 171 of 173 FCs non-zero. \code{enforce\_inv}\,=\,3: fit 0.044\,\%,
+107 non-zero; FC2 within $2.5\times10^{-4}$ and FC3 within 0.12 (largest 28) of the SVD values.
+\paragraph{Solver checks.} Interior point vs.\ cvxpy/Clarabel at five values of $\lambda$: objective equal to $10^{-11}$; refit
+vs.\ numpy least squares: $4\times10^{-9}$.
 
-\paragraph{Ge (FOCEX example, DFT forces).} SVD: fit 0.036\,\%, 171 of 173 FCs non-zero.
-\texttt{enforce\_inv}\,=\,3: fit 0.044\,\%, 107 non-zero; FC2 within $2.5\times10^{-4}$ and FC3 within 0.12 (largest
-28) of the SVD values.
-
-\paragraph{Solver checks.} Interior point vs.\ cvxpy/Clarabel at five values of $\lambda$: objective equal to
-$10^{-11}$; refit vs.\ numpy least squares: $4\times10^{-9}$.
+\section{Why these choices}\label{sec:why}
+\begin{itemize}
+\item \emph{Penalty on $\by$} (the previous \code{enforce\_inv}\,=\,2, still available as \code{FOCEX\_LASSO=old}): the columns of $\bK$ are dense
+mixtures of FCs, so sparse FCs are dense in $\by$; on the exact model 98/80/376 non-zero for 11/20/43 true, FC4 wrong.
+\item \emph{Elimination basis} (row-reduce $\bC$; the free FCs are a subset of $\bx$, as in ALAMODE): the result depends on which FCs
+are eliminated (those carry no penalty); FC4 error 28 of 288. ALAMODE with LASSO keeps only the constraints within each
+rank (\code{alm/constraint.cpp}); that left FC4 errors up to $1.2\times10^4$.
+\item \emph{Free LASSO, then a constrained refit}: if the first step misses one true FC, the constraint rows containing it force its
+partners to zero in the refit (reduced kernel of dimension 3, FC3 = FC4 = 0). Hence the selection itself is done with the
+constraints (step 3).
+\item \emph{Solver}: ADMM had not converged after 200\,000 iterations at 3 of 5 values of $\lambda$; FISTA needs the proximal map of
+$\lambda\|\bQ\bt\|_1$, which has no closed form; LARS does not handle the constraint. The interior point needs 10--16
+iterations and agrees with cvxpy/Clarabel to $10^{-11}$.
+\end{itemize}
 
 \section{Open points}
 \begin{itemize}
-\item The refit's Gram-matrix cut (\S7) is coarser than \texttt{svdcut}; a QR-based refit would remove the difference.
-\item The selection threshold $10^{-8}$ (\S6) is a numerical choice, tested only on the cases above.
-\item BZO and MoTe2 with the corrected code are still to be run, with the phonon dispersions.
+\item The refit's Gram-matrix cut (\S\ref{sec:refit}) is coarser than \code{svdcut}; a QR-based refit would remove the difference.
+\item The selection threshold $10^{-8}$ (step 3) is a numerical choice, tested only on the cases above.
+\item The error bars of \S\ref{sec:errors} leave out the selection uncertainty; a bootstrap over snapshots would include it.
+\item The tests should be rerun with the filter-penalty version.
 \end{itemize}
 
 \paragraph{References.}
+R.~Tibshirani, J.\ R.\ Stat.\ Soc.\ B \textbf{58}, 267 (1996) (LASSO; Laplace-prior MAP; cited from memory, not checked);
 B.~Efron, T.~Hastie, I.~Johnstone, R.~Tibshirani, Ann.\ Statist.\ \textbf{32}, 407 (2004) (LARS);
 S.~Boyd \emph{et al.}, Found.\ Trends Mach.\ Learn.\ \textbf{3}, 1 (2011) (ADMM);
-N.~Meinshausen, Comput.\ Stat.\ Data Anal.\ \textbf{52}, 374 (2007) (relaxed lasso: refit after selection; cited from memory, not checked);
-S.~Mehrotra, SIAM J.\ Optim.\ \textbf{2}, 575 (1992) (predictor--corrector interior point; cited from memory, not checked);
-T.~Tadano, ALAMODE, \texttt{github.com/ttadano/alamode} (constraint handling).
+N.~Meinshausen, Comput.\ Stat.\ Data Anal.\ \textbf{52}, 374 (2007) (relaxed lasso; cited from memory, not checked);
+S.~Mehrotra, SIAM J.\ Optim.\ \textbf{2}, 575 (1992) (predictor--corrector; cited from memory, not checked);
+T.~Tadano, ALAMODE, \code{github.com/ttadano/alamode}.
 \end{document}
