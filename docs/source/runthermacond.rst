@@ -139,7 +139,8 @@ In a folder with ``kappa_summary.dat`` (jobs 2 and 3), ``allplots`` (gnuplot; te
 * ``kappa_T-NAME.pdf``: RTA, full solution and Wigner versus temperature;
 * ``kappa_wigner_modes-NAME.pdf``: Wigner kappa from TA1, TA1+TA2, TA1+TA2+LA and all bands, stacked;
 * ``kappa_cumul_mfp_T<T>-NAME.pdf``: cumulative kappa versus mean free path (nm, logarithmic, from
-  0.001 nm), one file per temperature;
+  0.1 nm: a mean free path below an interatomic distance is meaningless; the curves start at the kappa of
+  the modes with shorter mean free paths, which the cumulative sum includes), one file per temperature;
 * ``kappa_cumul_freq_T<T>-NAME.pdf``: cumulative kappa versus frequency, one file per temperature.
 
 .. code-block:: bash

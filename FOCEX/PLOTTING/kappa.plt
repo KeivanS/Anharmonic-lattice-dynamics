@@ -40,11 +40,14 @@ do for [f in fm] {
    set output 'kappa_cumul_mfp_T'.t.'-NAME.pdf'
    set title 'NAME: cumulative kappa versus mean free path, T = '.t.' K'
    set key top left
-   # from 0.001 nm: modes of (almost) zero velocity have mfp ~ 0 and carry nothing
-   plot f u ($1 > 1e-3 ? $1 : 1/0):2   w l lw 2 t 'RTA', \
-        f u ($6 > 1e-3 ? $6 : 1/0):7   w l lw 2 t 'full solution (tau_{eff})', \
-        f u ($11 > 1e-3 ? $11 : 1/0):12 w l lw 2 t 'Wigner (P + C)'
+   # from 0.1 nm (user, 2026-11-23): a mean free path below an interatomic distance is meaningless; the curves start
+   # at the kappa of the modes with mfp < 0.1 nm (cumulative, so they are included, not dropped)
+   set xrange [0.1:*]
+   plot f u ($1 >= 0.1 ? $1 : 1/0):2   w l lw 2 t 'RTA', \
+        f u ($6 >= 0.1 ? $6 : 1/0):7   w l lw 2 t 'full solution (tau_{eff})', \
+        f u ($11 >= 0.1 ? $11 : 1/0):12 w l lw 2 t 'Wigner (P + C)'
 }
+set autoscale x
 unset logscale x
 set format x '% h'
 set xlabel 'frequency (1/cm)'

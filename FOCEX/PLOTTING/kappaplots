@@ -87,9 +87,12 @@ def main(argv):
         C = rows(f)
         fig, ax = plt.subplots(figsize=(5.5, 4))
         for x, y, lab in ((0, 1, 'RTA'), (5, 6, r'full solution ($\tau_{eff}$)'), (10, 11, 'Wigner (P + C)')):
-            ok = C[:, x] > 1e-3          # from 0.001 nm: modes of (almost) zero velocity carry nothing
+            # from 0.1 nm (user, 2026-11-23): a mean free path below an interatomic distance is meaningless; the
+            # curves start at the kappa of the modes with mfp < 0.1 nm (cumulative: included, not dropped)
+            ok = C[:, x] >= 0.1
             ax.plot(C[ok, x], C[ok, y], lw=2, label=lab)
         ax.set_xscale('log')
+        ax.set_xlim(left=0.1)
         ax.set(xlabel='mean free path (nanometres)', ylabel=r'cumulative $\kappa$ (W/mK)',
                title=f'{name}: cumulative $\\kappa$ versus mean free path, T = {t} K')
         ax.grid(alpha=.3, which='both')
