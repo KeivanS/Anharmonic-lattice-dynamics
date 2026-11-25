@@ -14,7 +14,13 @@
 !!                 row key (i1..i_{n-1} ; a1..a_{n-1} ; nu)
 !! As in the old routines, only prefixes whose atoms i2..i_{n-1} lie within nshells(n,i1) are
 !! used: beyond the range of rank n the rotational rows would force combinations of rank n-1 to
-!! vanish, an artefact of the truncation. Every direction combination is used (the old
+!! vanish, an artefact of the truncation. Since 2026-11-23 a prefix is also used when it is the prefix of at
+!! least one rank-n term (first atom in the primitive cell): with fc3flag 1 a triplet is kept when its atoms lie
+!! within the shells of ANY of them, so a term (i1,i2,i3) can have i2 beyond nshells(3,i1); its translational and
+!! rotational rows were skipped and the written FC3 violated sum_k Phi(i1,i2,k) = 0 (FePSe3/FePS3, 4.2 A FC3: up to
+!! 0.6 eV/A^3; acoustic Gruneisen ~1/q^2 near Gamma). Such a row has rank-n terms to balance its rank-(n-1) part,
+!! so it is not the truncation artefact above. Superset of the old rows: unchanged where no such term exists.
+!! Every direction combination is used (the old
 !! translational rows had a2>=a1, a3>=a2); repeated and proportional rows are removed by
 !! compare2previous_lines, as before. Huang invariance (rank 2 only) is unchanged.
 !!
@@ -33,6 +39,8 @@
  real(r15), allocatable :: cval(:)
  integer ncon, keylen
  integer, allocatable :: rkey(:,:)     ! rotational rows kept: rank and key (i1, a1, nu for rank 2)
+ integer, allocatable :: pfx(:,:)      ! sorted distinct atom prefixes iat(1:rnk-1) of the rank-rnk terms (2026-11-23)
+ integer npfx, nextra(2)               ! number of them; prefixes beyond nshells used (translational, rotational part n-1)
  real(r15) :: rdrop                    ! max |C_read x_read| of rows without fitted columns (read FCs' own violation)
 
  contains
@@ -79,12 +87,14 @@
     if (include_fc(rnk) .eq. 0) cycle
     keylen = 2*rnk - 1
     allocate(key(keylen))
+    call term_prefixes(rnk)
+    nextra = 0
 !------------------------------------ translational, rank rnk
     if (do_tr) then
     call start_contributions
     do g = 1, map(rnk)%ngr
     do t = 1, map(rnk)%nt(g)
-       if (.not. prefix_ok(rnk, map(rnk)%gr(g)%iat(:,t), rnk)) cycle
+       if (.not. row_ok(rnk, map(rnk)%gr(g)%iat(:,t), rnk, 1)) cycle
        key(1:rnk-1) = map(rnk)%gr(g)%iat(1:rnk-1,t)
        key(rnk:2*rnk-1) = map(rnk)%gr(g)%ixyz(1:rnk,t)
        do ti = 1, map(rnk)%ntind(g)
@@ -98,6 +108,8 @@
     enddo
     enddo
     call gather_rows(arow, trhs, ntr, 'translational', rnk)
+    if (nextra(1) .gt. 0) write(ulog,'(a,i2,a,i8,a)')'  translational rank', rnk, ':', nextra(1), &
+ &      ' term contributions with a prefix beyond nshells (prefix of a rank-n term) used'
     endif
 !------------------------------------ rotational, rank rnk: the rank-rnk part ...
 ! No rank-1 rows: the torque of FC1 over the primitive cell, sum_i Phi_i x X_i, is not an
@@ -108,7 +120,7 @@
     call start_contributions
     do g = 1, map(rnk)%ngr
     do t = 1, map(rnk)%nt(g)
-       if (.not. prefix_ok(rnk, map(rnk)%gr(g)%iat(:,t), rnk)) cycle
+       if (.not. row_ok(rnk, map(rnk)%gr(g)%iat(:,t), rnk, 0)) cycle
        l = map(rnk)%gr(g)%iat(rnk,t) ; a = map(rnk)%gr(g)%ixyz(rnk,t)
        key(1:rnk-1) = map(rnk)%gr(g)%iat(1:rnk-1,t)
        key(rnk:2*rnk-2) = map(rnk)%gr(g)%ixyz(1:rnk-1,t)
@@ -136,7 +148,7 @@
     if (include_fc(rnk-1) .ne. 0) then
        do g = 1, map(rnk-1)%ngr
        do t = 1, map(rnk-1)%nt(g)
-          if (.not. prefix_ok(rnk-1, map(rnk-1)%gr(g)%iat(:,t), rnk)) cycle
+          if (.not. row_ok(rnk-1, map(rnk-1)%gr(g)%iat(:,t), rnk, 2)) cycle
           do k = 1, rnk-1
           do ak = 1, 3
           do nu = 1, 3
@@ -162,6 +174,17 @@
     endif
     endif
     call gather_rows(rrow, rrhs, nro, 'rotational', rnk)
+    if (nextra(2) .gt. 0) write(ulog,'(a,i2,a,i8,a)')'  rotational rank', rnk, ':', nextra(2), &
+ &      ' rank-(n-1) contributions with a prefix beyond nshells (prefix of a rank-n term) used'
+    endif
+! Exact-model test (2026-11-23, ZnO cubic model, FC3 shells 5 5 3 3 = truncated): with fcflag 1 these rows act on pairs
+! that have no 2-body rank-n terms and distort FC(n-1): FC2 off by 9 % (1.57 of 17.6) against 0.03 % without them;
+! with fcflag 0 (2-body terms to the FC2 range) the invariances hold to 1e-7 and FC2 stays within 0.03 %.
+    if (rnk .ge. 3 .and. fcflag(rnk) .eq. 1 .and. nextra(1)+nextra(2) .gt. 0) then
+       write(ulog,'(a,i2,a)')' WARNING BUILD_INV_ROWS: rank', rnk, ' has terms whose prefix lies beyond nshells and '// &
+ &       'fcflag = 1 (no 2-body terms for those pairs): the invariances are imposed exactly but can distort the lower '// &
+ &       'rank; use fcflag 0 (structure.params line 12)'
+       write(*,'(a,i2,a)')' WARNING: rank', rnk, ' prefixes beyond nshells with fcflag 1; see the log (use fcflag 0)'
     endif
     deallocate(key)
  enddo
@@ -234,8 +257,22 @@
  endif
  deallocate(arow, rrow, trhs, rrhs)
  if (allocated(ckey)) deallocate(ckey, ccol, cval)
+ if (allocated(pfx)) deallocate(pfx)
 
  contains
+
+   logical function row_ok(r, iat, rshell, which)
+!! prefix_ok, or (2026-11-23) the prefix atoms iat(1:rshell-1) are the prefix of a rank-rshell term (pfx).
+!! which: 1 translational, 2 rank-(n-1) part of a rotational row (counted in nextra), 0 not counted
+   integer, intent(in) :: r, iat(:), rshell, which
+   row_ok = prefix_ok(r, iat, rshell)
+   if (row_ok) return
+   if (iat(1) .lt. 1 .or. iat(1) .gt. natom_prim_cell) return
+   if (iat(1) .ne. iatomcell0(iat(1))) return
+   row_ok = in_pfx(iat(1:rshell-1))
+   if (row_ok .and. which .gt. 0) nextra(which) = nextra(which) + 1
+   end function row_ok
+
 
    logical function prefix_ok(r, iat, rshell)
 !! the first atom is in the primitive cell; atoms 2..r of a rank-r term that form a prefix of a
@@ -317,6 +354,114 @@
    end subroutine gather_rows
 
  end subroutine build_inv_rows
+!---------------------------------------------------------------------------
+   logical function in_pfx(p)
+!! binary search of p in the sorted pfx(:,1:npfx)
+   implicit none
+   integer, intent(in) :: p(:)
+   integer lo, hi, mid, cmp
+   in_pfx = .false.
+   lo = 1 ; hi = npfx
+   do while (lo .le. hi)
+      mid = (lo+hi)/2
+      cmp = cmp_int(pfx(:,mid), p)
+      if (cmp .eq. 0) then
+         in_pfx = .true. ; return
+      elseif (cmp .lt. 0) then
+         lo = mid + 1
+      else
+         hi = mid - 1
+      endif
+   enddo
+   end function in_pfx
+
+   subroutine term_prefixes(r)
+!! pfx(1:r-1, 1:npfx): the distinct prefixes iat(1:r-1) of the rank-r terms whose first atom is in the primitive cell
+   use svd_stuff
+   use params
+   use atoms_force_constants
+   use ios
+   implicit none
+   integer, intent(in) :: r
+   integer, allocatable :: all(:,:), ordp(:), wp(:)
+   integer n, gg, tt, i, width, lo, mid, hi
+   if (allocated(pfx)) deallocate(pfx)
+   npfx = 0
+   if (r .lt. 2) then
+      allocate(pfx(1,0)) ; return
+   endif
+   n = 0
+   do gg = 1, map(r)%ngr
+      n = n + map(r)%nt(gg)
+   enddo
+   allocate(all(r-1,max(n,1)))
+   n = 0
+   do gg = 1, map(r)%ngr
+   do tt = 1, map(r)%nt(gg)
+      i = map(r)%gr(gg)%iat(1,tt)
+      if (i .lt. 1 .or. i .gt. natom_prim_cell) cycle
+      if (i .ne. iatomcell0(i)) cycle
+      n = n + 1
+      all(:,n) = map(r)%gr(gg)%iat(1:r-1,tt)
+   enddo
+   enddo
+   allocate(ordp(n), wp(n))
+   do i = 1, n
+      ordp(i) = i
+   enddo
+   width = 1
+   do while (width .lt. n)                 ! stable merge sort of the columns of all
+      lo = 1
+      do while (lo .le. n)
+         mid = min(lo+width-1, n) ; hi = min(lo+2*width-1, n)
+         if (mid .lt. hi) call merge_p(all, ordp, wp, lo, mid, hi)
+         lo = lo + 2*width
+      enddo
+      width = 2*width
+   enddo
+   allocate(pfx(r-1,max(n,1)))
+   do i = 1, n
+      if (npfx .gt. 0) then
+         if (cmp_int(pfx(:,npfx), all(:,ordp(i))) .eq. 0) cycle
+      endif
+      npfx = npfx + 1
+      pfx(:,npfx) = all(:,ordp(i))
+   enddo
+   deallocate(all, ordp, wp)
+   end subroutine term_prefixes
+
+   integer function cmp_int(a, b)
+   implicit none
+   integer, intent(in) :: a(:), b(:)
+   integer m
+   cmp_int = 0
+   do m = 1, size(a)
+      if (a(m) .lt. b(m)) then
+         cmp_int = -1 ; return
+      elseif (a(m) .gt. b(m)) then
+         cmp_int = 1 ; return
+      endif
+   enddo
+   end function cmp_int
+     subroutine merge_p(all, ordp, wp, lo, mid, hi)
+!! one merge step of term_prefixes' stable sort of the columns of all
+     implicit none
+     integer, intent(in) :: all(:,:), lo, mid, hi
+     integer, intent(inout) :: ordp(:), wp(:)
+     integer i, j, k
+     i = lo ; j = mid+1 ; k = lo
+     do while (i .le. mid .and. j .le. hi)
+        if (cmp_int(all(:,ordp(i)), all(:,ordp(j))) .le. 0) then
+           wp(k) = ordp(i) ; i = i+1
+        else
+           wp(k) = ordp(j) ; j = j+1
+        endif
+        k = k+1
+     enddo
+     do while (i .le. mid) ; wp(k) = ordp(i) ; i = i+1 ; k = k+1 ; enddo
+     do while (j .le. hi)  ; wp(k) = ordp(j) ; j = j+1 ; k = k+1 ; enddo
+     ordp(lo:hi) = wp(lo:hi)
+     end subroutine merge_p
 !---------------------------------------------------------------------------
  integer function column_of(rnk, g, ti)
 !! column of independent term ti of group g of rank rnk in the fit, 0 if it is not a column:
