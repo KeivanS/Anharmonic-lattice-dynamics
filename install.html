@@ -1,0 +1,436 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3. Download and installation &mdash; ALADYN 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="4. Running SC-SNAPS" href="runscsnaps.html" />
+    <link rel="prev" title="2. Theory" href="theory.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ALADYN
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">2. Theory</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">3. Download and installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#requirements">3.1. Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#getting-the-code">3.2. Getting the code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuring-configure">3.3. Configuring: <code class="docutils literal notranslate"><span class="pre">configure</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-everything-at-once">3.4. Building everything at once</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#focex">FOCEX</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-utility-programs">The utility programs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#scop8">SCOP8</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#thermacond">THERMACOND</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-the-focex-agent-focex-configure-sh">3.5. Setting up the FOCEX agent: <code class="docutils literal notranslate"><span class="pre">focex-configure.sh</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checking-the-installation">3.6. Checking the installation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="runscsnaps.html">4. Running SC-SNAPS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runfocex.html">5. Running FOCEX</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runthermacond.html">6. Running THERMACOND</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runscop8.html">7. Running SCOP8</a></li>
+<li class="toctree-l1"><a class="reference internal" href="focexagent_guide.html">8. FOCEX agent: user’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runfocexagent.html">9. FOCEX agent: from a crystal structure to phonons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="aladyngui.html">10. ALADYN GUI: the whole calculation in a browser</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ALADYN</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">3. </span>Download and installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/install.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="download-and-installation">
+<h1><span class="section-number">3. </span>Download and installation<a class="headerlink" href="#download-and-installation" title="Link to this heading"></a></h1>
+<section id="requirements">
+<h2><span class="section-number">3.1. </span>Requirements<a class="headerlink" href="#requirements" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>A Fortran compiler — GNU <code class="docutils literal notranslate"><span class="pre">gfortran</span></code> (version 9 or newer) or Intel
+<code class="docutils literal notranslate"><span class="pre">ifort</span></code>/<code class="docutils literal notranslate"><span class="pre">ifx</span></code>. FOCEX and ANFOMOD need nothing else.</p></li>
+<li><p>An MPI implementation (<code class="docutils literal notranslate"><span class="pre">mpif90</span></code>) — only for THERMACOND (<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">thermacond-serial</span></code>
+builds it without MPI) and SCOP8.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">make</span></code>.</p></li>
+<li><p>Optional, for plotting the results: <code class="docutils literal notranslate"><span class="pre">gnuplot</span></code>.</p></li>
+</ul>
+<p>No external numerical library is required: the LAPACK routine used for the
+diagonalisation (<code class="docutils literal notranslate"><span class="pre">zhegv</span></code>) is bundled with the source.</p>
+</section>
+<section id="getting-the-code">
+<h2><span class="section-number">3.2. </span>Getting the code<a class="headerlink" href="#getting-the-code" title="Link to this heading"></a></h2>
+<p>The source is on GitHub: <a class="reference external" href="https://github.com/KeivanS/Anharmonic-lattice-dynamics">https://github.com/KeivanS/Anharmonic-lattice-dynamics</a>
+(in a browser: <em>Code</em> → <em>Download ZIP</em>). From a terminal, clone the repository once (this also
+brings SC-SNAPS, in <code class="docutils literal notranslate"><span class="pre">SC_SNAPS/</span></code>):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># on a cluster first:  module load gcc openmpi python   (module spider gcc lists the versions)</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/KeivanS/Anharmonic-lattice-dynamics.git
+<span class="nb">cd</span><span class="w"> </span>Anharmonic-lattice-dynamics
+./configure<span class="w"> </span>--install<span class="w">    </span><span class="c1"># all the settings (next section); ends with "Ready"</span>
+make<span class="w">                        </span><span class="c1"># = make all</span>
+</pre></div>
+</div>
+<p>To update it later, from inside that folder:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>pull
+./configure<span class="w"> </span>--install<span class="w">    </span><span class="c1"># again: a pull may change what the Makefiles need</span>
+make<span class="w">                        </span><span class="c1"># rebuild</span>
+</pre></div>
+</div>
+<p>If you have edited files of your own, <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">pull</span></code> keeps them; it stops, changing nothing, when the
+update touches a file you edited. Then <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">stash</span></code>, <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">pull</span></code>, <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">stash</span> <span class="pre">pop</span></code> puts your
+edits aside, updates, and puts them back.</p>
+</section>
+<section id="configuring-configure">
+<span id="configure"></span><h2><span class="section-number">3.3. </span>Configuring: <code class="docutils literal notranslate"><span class="pre">configure</span></code><a class="headerlink" href="#configuring-configure" title="Link to this heading"></a></h2>
+<p>One command, once after cloning, and again after every <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">pull</span></code> and after installing or moving
+compilers, MPI, VASP or Python. Running it again is always safe.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./configure<span class="w"> </span>--install<span class="w">    </span><span class="c1"># find, test, write all the settings, check them in a new login shell</span>
+./configure<span class="w"> </span>--install<span class="w"> </span>--build<span class="w">   </span><span class="c1"># the same, then make</span>
+./configure<span class="w">              </span><span class="c1"># look and write the files, but leave the start-up file alone</span>
+</pre></div>
+</div>
+<p>On a cluster, load a compiler, its MPI and its Python first, in that terminal only
+(<code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">load</span> <span class="pre">gcc</span> <span class="pre">openmpi</span> <span class="pre">python</span></code>; <code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">spider</span> <span class="pre">&lt;name&gt;</span></code> lists the versions), and add
+<code class="docutils literal notranslate"><span class="pre">--account</span> <span class="pre">&lt;SLURM</span> <span class="pre">account&gt;</span></code>. Do not put <code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">load</span></code> lines into <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code> yourself:
+<code class="docutils literal notranslate"><span class="pre">configure</span></code> writes the right ones into <code class="docutils literal notranslate"><span class="pre">~/.aladyn.env</span></code>.</p>
+<p>It looks at the computer (operating system, cores, memory, SLURM, environment modules), finds the
+Fortran compiler (<code class="docutils literal notranslate"><span class="pre">gfortran</span></code>, else <code class="docutils literal notranslate"><span class="pre">ifx</span></code> or <code class="docutils literal notranslate"><span class="pre">ifort</span></code>) and the MPI wrapper (<code class="docutils literal notranslate"><span class="pre">mpif90</span></code>, and the
+compiler it calls), compiles and runs a small OpenMP program on two threads and an MPI program on two
+ranks (on a cluster login node it only compiles), and checks the FOCEX agent’s needs (Python, VASP-Flow,
+POTCARs, VASP, gnuplot; <code class="docutils literal notranslate"><span class="pre">--no-agent</span></code> skips them). It writes (the previous version of each is kept as
+<code class="docutils literal notranslate"><span class="pre">.bak</span></code>):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">make.local</span></code>: <code class="docutils literal notranslate"><span class="pre">DESTDIR</span></code>, the Fortran compiler <code class="docutils literal notranslate"><span class="pre">FF</span></code> (FOCEX, FOCEX/utility, ANFOMOD, SC-SNAPS), the
+MPI wrapper <code class="docutils literal notranslate"><span class="pre">MPIFC</span></code> (THERMACOND), <code class="docutils literal notranslate"><span class="pre">FLAGS</span></code>, <code class="docutils literal notranslate"><span class="pre">PYTHON</span></code> (the Python with numpy, spglib, pymatgen),
+and on macOS with Homebrew’s Open MPI <code class="docutils literal notranslate"><span class="pre">OMPI_FC</span></code> and <code class="docutils literal notranslate"><span class="pre">SDKROOT</span></code>. <code class="docutils literal notranslate"><span class="pre">make.inc</span></code> (in git: the defaults)
+reads it at its end, so its values win; it is not in git, so <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">pull</span></code> never conflicts with it. The
+top-level <code class="docutils literal notranslate"><span class="pre">make</span></code> passes these to every part.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">~/.aladyn.env</span></code>: on a cluster the <code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">load</span></code> line (the modules loaded when <code class="docutils literal notranslate"><span class="pre">configure</span></code> ran,
+and those it loaded itself: the module of <code class="docutils literal notranslate"><span class="pre">~/myenv</span></code>’s Python, found from <code class="docutils literal notranslate"><span class="pre">~/myenv/pyvenv.cfg</span></code>,
+and gnuplot if its module has the <code class="docutils literal notranslate"><span class="pre">pdfcairo</span></code> terminal the plots use), <code class="docutils literal notranslate"><span class="pre">PATH</span></code> with <code class="docutils literal notranslate"><span class="pre">DESTDIR</span></code>, <code class="docutils literal notranslate"><span class="pre">OMPI_FC</span></code> and <code class="docutils literal notranslate"><span class="pre">SDKROOT</span></code> (macOS), <code class="docutils literal notranslate"><span class="pre">FOCEX_PROFILE</span></code>
+(cluster), and it reads <code class="docutils literal notranslate"><span class="pre">~/.focex-agent.env</span></code> (<a class="reference internal" href="#focex-configure"><span class="std std-ref">Setting up the FOCEX agent: focex-configure.sh</span></a>).</p></li>
+<li><p>with <code class="docutils literal notranslate"><span class="pre">--install</span></code>: one line at the end of <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code> (Linux), <code class="docutils literal notranslate"><span class="pre">~/.bash_profile</span></code> (macOS with bash)
+or <code class="docutils literal notranslate"><span class="pre">~/.zshrc</span></code> that reads <code class="docutils literal notranslate"><span class="pre">~/.aladyn.env</span></code>, never twice (a separate older line for
+<code class="docutils literal notranslate"><span class="pre">~/.focex-agent.env</span></code> is removed); then the launchers of <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">python-tools</span></code> and a check in a fresh
+login shell: <code class="docutils literal notranslate"><span class="pre">focex-agent</span> <span class="pre">--version</span></code> and <code class="docutils literal notranslate"><span class="pre">python3</span></code> with numpy, spglib, pymatgen.</p></li>
+</ul>
+<p>Options: <code class="docutils literal notranslate"><span class="pre">--prefix</span> <span class="pre">DIR</span></code> (<code class="docutils literal notranslate"><span class="pre">DESTDIR</span></code>), <code class="docutils literal notranslate"><span class="pre">--fc</span></code>, <code class="docutils literal notranslate"><span class="pre">--mpifc</span></code> (the compilers to use), <code class="docutils literal notranslate"><span class="pre">--account</span></code>,
+<code class="docutils literal notranslate"><span class="pre">--vasp-module</span></code>, <code class="docutils literal notranslate"><span class="pre">--profile-name</span></code> (cluster), and the agent’s <code class="docutils literal notranslate"><span class="pre">--potcar</span></code>, <code class="docutils literal notranslate"><span class="pre">--vasp</span></code>, <code class="docutils literal notranslate"><span class="pre">--python</span></code>.</p>
+<p><strong>On a cluster</strong> it also drafts the VASP-Flow profile of the FOCEX agent,
+<code class="docutils literal notranslate"><span class="pre">~/VASP-Flow/profiles/&lt;cluster</span> <span class="pre">name&gt;.json</span></code> (<code class="docutils literal notranslate"><span class="pre">--profile-name</span></code> for another name), and makes it the
+default (<code class="docutils literal notranslate"><span class="pre">FOCEX_PROFILE</span></code>): the default partition and its cores per node (<code class="docutils literal notranslate"><span class="pre">sinfo</span></code>), 1 node, 12 hours,
+the modules above, the account (<code class="docutils literal notranslate"><span class="pre">--account</span></code>; else that of the profile drafted before; else your
+SLURM default account; with several a warning lists them) and the newest <code class="docutils literal notranslate"><span class="pre">vasp/&lt;version&gt;</span></code> module
+(<code class="docutils literal notranslate"><span class="pre">--vasp-module</span></code> for another), tested: it must give a <code class="docutils literal notranslate"><span class="pre">vasp_std</span></code> whose libraries are all found.
+When that module unloads the Python modules (on some clusters it loads the Intel compiler, which swaps
+out gcc), VASP is started as <code class="docutils literal notranslate"><span class="pre">~/ALADYN/bin/vasp-env</span> <span class="pre">srun</span> <span class="pre">vasp_std</span></code>: <code class="docutils literal notranslate"><span class="pre">vasp-env</span></code>, written by
+<code class="docutils literal notranslate"><span class="pre">configure</span></code>, loads the VASP module for the VASP command only, and the job keeps the others. A profile
+drafted by <code class="docutils literal notranslate"><span class="pre">configure</span></code> is drafted again on a rerun; one you wrote yourself is never changed. It also
+writes two THERMACOND job scripts, MPI and OpenMP, with these values and the modules filled in, to
+<code class="docutils literal notranslate"><span class="pre">~/ALADYN/jobs</span></code> (<a class="reference internal" href="runthermacond.html"><span class="doc">Running THERMACOND</span></a>).</p>
+</section>
+<section id="building-everything-at-once">
+<h2><span class="section-number">3.4. </span>Building everything at once<a class="headerlink" href="#building-everything-at-once" title="Link to this heading"></a></h2>
+<p>One <code class="docutils literal notranslate"><span class="pre">make</span></code> in the top folder builds every part and installs the executables in
+<code class="docutils literal notranslate"><span class="pre">DESTDIR</span></code>, set in the top-level <code class="docutils literal notranslate"><span class="pre">make.inc</span></code>:</p>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">DESTDIR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>~/ALADYN/bin
+
+<span class="c"># ANFOMOD, FOCEX</span>
+<span class="nv">FF</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>gfortran
+
+<span class="c"># SCOP8, THERMACOND</span>
+<span class="nv">FC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>mpif90
+<span class="nv">F90</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>mpif90
+
+<span class="nv">FLAGS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>-O2<span class="w"> </span>-fcheck<span class="o">=</span>all<span class="w"> </span>-ffree-line-length-0
+</pre></div>
+</div>
+<p>Edit it if you want a different installation directory (or give <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">DESTDIR=...</span></code>);
+FOCEX and THERMACOND set their own compiler options in their Makefiles. Then</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w">                    </span><span class="c1"># = make all: everything below except SCOP8</span>
+make<span class="w"> </span>focex<span class="w">              </span><span class="c1"># FOCEX (focex-9.9.x) and its utilities (read_outcar.x, ...)</span>
+make<span class="w"> </span>sc_snaps<span class="w">           </span><span class="c1"># SC-SNAPS (sc_snaps.x, poscar2xyz.py)</span>
+make<span class="w"> </span>thermacond<span class="w">         </span><span class="c1"># THERMACOND with MPI (tcond-2.2.x); thermacond-serial: without</span>
+make<span class="w"> </span>anfomod<span class="w">            </span><span class="c1"># ANFOMOD</span>
+make<span class="w"> </span>python-tools<span class="w">       </span><span class="c1"># launchers focex-agent, focex-diagnose, allplots, kappaplots, shell-optimizer, aladyn-gui; bandplot</span>
+make<span class="w"> </span>scop8<span class="w">              </span><span class="c1"># SCOP8, not part of "make": it does not compile at present</span>
+make<span class="w"> </span>clean<span class="w">              </span><span class="c1"># removes the object and module files</span>
+</pre></div>
+</div>
+<p>On macOS with Homebrew’s Open MPI, <code class="docutils literal notranslate"><span class="pre">configure</span></code> puts <code class="docutils literal notranslate"><span class="pre">OMPI_FC</span></code> and <code class="docutils literal notranslate"><span class="pre">SDKROOT</span></code> into <code class="docutils literal notranslate"><span class="pre">make.local</span></code>
+(without it: <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">OMPI_FC=/opt/homebrew/bin/gfortran</span></code> and <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">SDKROOT=$(xcrun</span> <span class="pre">--show-sdk-path)</span></code>
+before <code class="docutils literal notranslate"><span class="pre">make</span></code>; see <a class="reference internal" href="runthermacond.html"><span class="doc">Running THERMACOND</span></a>).
+The sections below describe each part and how to build it on its own.</p>
+<p><code class="docutils literal notranslate"><span class="pre">./configure</span> <span class="pre">--install</span></code> puts the installation directory into <code class="docutils literal notranslate"><span class="pre">PATH</span></code> (through <code class="docutils literal notranslate"><span class="pre">~/.aladyn.env</span></code>).
+Without <code class="docutils literal notranslate"><span class="pre">configure</span></code>, put this line in your <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code> or <code class="docutils literal notranslate"><span class="pre">~/.zshrc</span></code> so that it is set in every
+session:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PATH</span><span class="si">}</span>:~/ALADYN/bin
+</pre></div>
+</div>
+<section id="focex">
+<span id="focex-install"></span><h3>FOCEX<a class="headerlink" href="#focex" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>FOCEX
+make<span class="w">                      </span><span class="c1"># -&gt; ~/ALADYN/bin/focex-9.9.x</span>
+</pre></div>
+</div>
+<p>This compiles the sources listed in <code class="docutils literal notranslate"><span class="pre">FOCEX/Makefile</span></code> and produces a single
+executable. Two details of that Makefile are worth knowing:</p>
+<ul class="simple">
+<li><p>the name of the executable is <code class="docutils literal notranslate"><span class="pre">focex-&lt;ver&gt;.x</span></code>, with the version number <code class="docutils literal notranslate"><span class="pre">ver</span></code> set
+near the top (currently 9.9; 8.18 and earlier were installed as <code class="docutils literal notranslate"><span class="pre">~/BIN/v&lt;ver&gt;</span></code>), and</p></li>
+<li><p>it is moved to <code class="docutils literal notranslate"><span class="pre">DESTDIR</span></code>, <code class="docutils literal notranslate"><span class="pre">~/ALADYN/bin</span></code> by default (<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">DESTDIR=...</span></code> for another
+place; the top-level <code class="docutils literal notranslate"><span class="pre">make</span></code> passes the <code class="docutils literal notranslate"><span class="pre">DESTDIR</span></code> of <code class="docutils literal notranslate"><span class="pre">make.inc</span></code>).</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">FOCEX/Makefile</span></code> also has its own <code class="docutils literal notranslate"><span class="pre">FF</span></code> and <code class="docutils literal notranslate"><span class="pre">FLAGS</span></code> variables. Since 2026-11-04 the
+default is <code class="docutils literal notranslate"><span class="pre">-O3</span> <span class="pre">-fopenmp</span></code>: the SVDs of the fit run on OpenMP threads. <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">DEBUG=1</span></code>
+gives the earlier <code class="docutils literal notranslate"><span class="pre">-O2</span> <span class="pre">-fcheck=all</span></code> build with array-bound checks (slower; for finding
+bugs). Run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span></code> when switching between the two. Both give the same force
+constants and frequencies.</p>
+<p>Threads (FOCEX and THERMACOND): the program chooses the number itself and writes it in the
+log and in <code class="docutils literal notranslate"><span class="pre">times.dat</span></code>. It does not use <code class="docutils literal notranslate"><span class="pre">OMP_NUM_THREADS</span></code>.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">FOCEX_NUM_THREADS</span></code> (<code class="docutils literal notranslate"><span class="pre">TCOND_NUM_THREADS</span></code>) if set;</p></li>
+<li><p>1 when started by <code class="docutils literal notranslate"><span class="pre">mpirun</span></code> with more than one process;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SLURM_CPUS_PER_TASK</span></code> in a Slurm job (<code class="docutils literal notranslate"><span class="pre">#SBATCH</span> <span class="pre">--cpus-per-task=N</span></code>);</p></li>
+<li><p>otherwise all cores but about 20 %, so that the machine stays usable (8 of 10).</p></li>
+</ul>
+</section>
+<section id="the-utility-programs">
+<h3>The utility programs<a class="headerlink" href="#the-utility-programs" title="Link to this heading"></a></h3>
+<p>The tools that prepare the input of FOCEX and post-process DFT output are built
+separately:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>~/ALADYN/bin<span class="w">     </span><span class="c1"># or whatever DESTDIR you set in make.inc</span>
+<span class="nb">cd</span><span class="w"> </span>FOCEX/utility
+make
+</pre></div>
+</div>
+<p>This produces four executables and moves them to <code class="docutils literal notranslate"><span class="pre">DESTDIR</span></code>:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 22.0%" />
+<col style="width: 78.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Executable</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code></p></td>
+<td><p>Extracts positions, forces and energy from a VASP <code class="docutils literal notranslate"><span class="pre">OUTCAR</span></code> in the
+current directory into <code class="docutils literal notranslate"><span class="pre">pos-forc.dat</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">read_qe.x</span></code></p></td>
+<td><p>The same for a Quantum Espresso (PWSCF) output file, whose name is read
+from standard input: <code class="docutils literal notranslate"><span class="pre">echo</span> <span class="pre">pw.out</span> <span class="pre">|</span> <span class="pre">read_qe.x</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">poscar2xyz.x</span></code></p></td>
+<td><p>Converts a POSCAR to <code class="docutils literal notranslate"><span class="pre">.xyz</span></code> for visualisation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">poscar2focex.x</span></code></p></td>
+<td><p>POSCAR to <code class="docutils literal notranslate"><span class="pre">structure.params</span></code>, <code class="docutils literal notranslate"><span class="pre">POSCAR_focex</span></code> and <code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code> (below).</p></td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">poscar2focex.x</span> <span class="pre">POSCAR</span></code> (options <code class="docutils literal notranslate"><span class="pre">-o</span></code>, <code class="docutils literal notranslate"><span class="pre">-p</span></code>, <code class="docutils literal notranslate"><span class="pre">-k</span></code> for the three output names,
+<code class="docutils literal notranslate"><span class="pre">-s</span> <span class="pre">symprec</span></code> in Angstrom, default 1e-3, <code class="docutils literal notranslate"><span class="pre">-f</span></code> to overwrite) finds the symmetry of the
+crystal itself, with no external library: Niggli reduction, the operations of the
+lattice, those of the crystal (with their fractional translations), the crystal system and
+the Bravais lattice. The cell and the band-structure path follow Setyawan and Curtarolo,
+Comput. Mater. Sci. 49, 299 (2010), the convention of pymatgen’s <code class="docutils literal notranslate"><span class="pre">KPathSetyawanCurtarolo</span></code>
+and of VASP-Flow’s k-path:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">structure.params</span></code>: line 1 a b c alpha beta gamma of the conventional cell, line 2 the
+primitive vectors in conventional units, line 3 <code class="docutils literal notranslate"><span class="pre">1.0</span> <span class="pre">0</span></code>, the atoms in conventional
+units; masses and names from the POSCAR, the other lines the defaults of
+<code class="docutils literal notranslate"><span class="pre">FOCEX/example/Ge</span></code>, marked <code class="docutils literal notranslate"><span class="pre">default,</span> <span class="pre">check</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POSCAR_focex</span></code>: the primitive cell in the frame FOCEX builds from line 1 (a along x,
+b in the xy plane); build the supercells from it;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kpbs.params</span></code>: the Setyawan-Curtarolo path for the lattice and its sub-case (FCC,
+BCT1, ORCF2, RHL1, MCLC3, TRI1a, …), in primitive reduced coordinates.</p></li>
+</ul>
+<p>The output does not depend on how the input cell is written: any primitive basis,
+orientation or origin gives the same files. For a crystal of lower symmetry than its
+lattice (pyrite, wurtzite) the setting of the atoms is fixed by a canonical rule, and a
+chiral crystal is never mirrored. Checked against pymatgen on 26 structures covering all
+Setyawan-Curtarolo lattices and 24 of their 26 sub-cases (MCLC2 and MCLC4 are exact
+equalities between the lattice parameters), and on 78 randomly rewritten inputs; the test
+scripts and the results are in <code class="docutils literal notranslate"><span class="pre">FOCEX/utility/tests/poscar2focex</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">FOCEX/utility/poscar2focex.py</span></code> (Python, numpy and spglib) is the earlier version; it is
+kept because <code class="docutils literal notranslate"><span class="pre">focex-agent.py</span></code> uses its functions.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The snapshot generator <code class="docutils literal notranslate"><span class="pre">sc_snaps.x</span></code> is built from the <code class="docutils literal notranslate"><span class="pre">SC_SNAPS</span></code> folder, not here:
+<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">sc_snaps</span></code> in the top folder (or the top-level <code class="docutils literal notranslate"><span class="pre">make</span></code>) installs it in
+<code class="docutils literal notranslate"><span class="pre">~/ALADYN/bin</span></code>; see <a class="reference internal" href="runscsnaps.html"><span class="doc">Running SC-SNAPS</span></a>. The folder is identical to the separate
+repository <a class="reference external" href="https://github.com/KeivanS/SC_SNAPS">github.com/KeivanS/SC_SNAPS</a>.</p>
+</div>
+</section>
+<section id="scop8">
+<span id="scop8-install"></span><h3>SCOP8<a class="headerlink" href="#scop8" title="Link to this heading"></a></h3>
+<ul>
+<li><p>On Linux</p>
+<ul>
+<li><p>Adjust the <code class="docutils literal notranslate"><span class="pre">FLAGS</span></code> option in <code class="docutils literal notranslate"><span class="pre">SCOP8/Makefile</span></code> if you need different
+compiler flags:</p>
+<div class="highlight-makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">FLAGS</span><span class="o">=</span><span class="w"> </span><span class="c1">#-O3 #-C # to check everything O3 #g -p #for profiling with gprof</span>
+</pre></div>
+</div>
+</li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">make</span></code> in <code class="docutils literal notranslate"><span class="pre">SCOP8</span></code>; this creates the binary <code class="docutils literal notranslate"><span class="pre">main.x</span></code>.</p></li>
+</ul>
+</li>
+<li><p>On Windows</p>
+<ul>
+<li><p>Put the MinGW package under the root folder,
+<a class="reference external" href="https://drive.google.com/file/d/1mdHpw7Eac_hwmtHLrHkKdj9zlLljesz8/view?pli=1">download here</a>.
+The newest version of MinGW may not work properly.</p></li>
+<li><p>Open <em>Control Panel &gt; System advanced settings</em> and add the path of
+<code class="docutils literal notranslate"><span class="pre">root:\MingW</span></code>, see below:</p>
+<a class="reference internal image-reference" href="_images/how.jpg"><img alt="_images/how.jpg" src="_images/how.jpg" width="1000" />
+</a>
+</li>
+<li><p>Install the IDE code::blocks,
+<a class="reference external" href="https://www.codeblocks.org/downloads/">download here</a>.</p></li>
+<li><p>Set up the environment in code::blocks: <em>menu &gt; settings &gt; compiler</em>, set
+<strong>GNU Fortran</strong> as default and auto-detect compilers (you may need to
+uncheck all the optional compiling options).</p></li>
+<li><p>Load the project in code::blocks by double clicking <em>test.cbp</em>.</p></li>
+<li><p>Compile and run the code by pressing F9.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="thermacond">
+<h3>THERMACOND<a class="headerlink" href="#thermacond" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">make</span></code> in the <code class="docutils literal notranslate"><span class="pre">THERMACOND</span></code> directory. THERMACOND needs a <code class="docutils literal notranslate"><span class="pre">gfortran</span></code>
+compiler and MPI (<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">serial</span></code>: no MPI). The binary is named after the version,
+<code class="docutils literal notranslate"><span class="pre">tcond-2.2.x</span></code> (serial: <code class="docutils literal notranslate"><span class="pre">tcond-2.2-serial.x</span></code>), and installed in <code class="docutils literal notranslate"><span class="pre">~/ALADYN/bin</span></code>. It takes no input from the
+terminal: <code class="docutils literal notranslate"><span class="pre">tcond-2.2.x</span></code>, or <code class="docutils literal notranslate"><span class="pre">mpirun</span> <span class="pre">-np</span> <span class="pre">N</span> <span class="pre">tcond-2.2.x</span></code> (<a class="reference internal" href="runthermacond.html"><span class="doc">Running THERMACOND</span></a>).</p></li>
+</ul>
+</section>
+</section>
+<section id="setting-up-the-focex-agent-focex-configure-sh">
+<span id="focex-configure"></span><h2><span class="section-number">3.5. </span>Setting up the FOCEX agent: <code class="docutils literal notranslate"><span class="pre">focex-configure.sh</span></code><a class="headerlink" href="#setting-up-the-focex-agent-focex-configure-sh" title="Link to this heading"></a></h2>
+<p>The FOCEX agent (<a class="reference internal" href="focexagent_guide.html"><span class="doc">FOCEX agent: user’s guide</span></a>) also runs the DFT calculations, so it has to know where
+VASP, MPI, the POTCAR library, VASP-Flow and a suitable Python are. <code class="docutils literal notranslate"><span class="pre">configure</span></code> (above) runs this
+script and reads its file from <code class="docutils literal notranslate"><span class="pre">~/.aladyn.env</span></code> (use <code class="docutils literal notranslate"><span class="pre">configure</span></code>: it also loads the modules the
+script’s findings need); on its own:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>FOCEX/AGENT
+bash<span class="w"> </span>focex-configure.sh<span class="w">               </span><span class="c1"># look and report only; writes ~/.focex-agent.env</span>
+bash<span class="w"> </span>focex-configure.sh<span class="w"> </span>--install<span class="w">     </span><span class="c1"># the same, and adds one line to your shell start-up file</span>
+<span class="w">                                      </span><span class="c1"># that reads ~/.focex-agent.env in every terminal and job</span>
+</pre></div>
+</div>
+<p>It looks at, in this order: the computer (operating system, processor, cores, Slurm), the compilers
+(<code class="docutils literal notranslate"><span class="pre">gfortran</span></code>, <code class="docutils literal notranslate"><span class="pre">mpif90</span></code>; needed only to build FOCEX and SC-SNAPS), the FOCEX, SC-SNAPS and
+<code class="docutils literal notranslate"><span class="pre">read_outcar.x</span></code> binaries, Python with numpy, spglib and pymatgen, VASP-Flow, the POTCAR library,
+<code class="docutils literal notranslate"><span class="pre">vasp_std</span></code> (one whose libraries are missing, <code class="docutils literal notranslate"><span class="pre">ldd</span> <span class="pre">...</span> <span class="pre">not</span> <span class="pre">found</span></code>, is rejected), MPI and <code class="docutils literal notranslate"><span class="pre">gnuplot</span></code>.
+It then writes the settings to <code class="docutils literal notranslate"><span class="pre">~/.focex-agent.env</span></code> (<code class="docutils literal notranslate"><span class="pre">VASP_POTCAR_DIR</span></code>, <code class="docutils literal notranslate"><span class="pre">VASP_STD</span></code>, <code class="docutils literal notranslate"><span class="pre">MPI_LAUNCH</span></code>,
+<code class="docutils literal notranslate"><span class="pre">VASP_FLOW_DIR</span></code>, <code class="docutils literal notranslate"><span class="pre">~/ALADYN/bin</span></code> and the Python environment’s <code class="docutils literal notranslate"><span class="pre">bin</span></code> at the front of <code class="docutils literal notranslate"><span class="pre">PATH</span></code>) and checks
+them by building a POTCAR with VASP-Flow’s own functions and by starting <code class="docutils literal notranslate"><span class="pre">focex-agent.py</span>
+<span class="pre">--version</span></code>. It ends with <code class="docutils literal notranslate"><span class="pre">Ready</span></code> and the number of warnings. When the search finds the wrong
+program or nothing, tell it where to look:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>--potcar DIR     the POTCAR library (PBE): the folder with Si/, O/, Zn/, ... each holding a POTCAR
+--vasp FILE      the vasp_std executable
+--python FILE    the Python interpreter of the environment with numpy, spglib, pymatgen
+--env FILE       where to write the settings (default ~/.focex-agent.env)
+</pre></div>
+</div>
+<p>Run it again after installing or moving any of these programs. FOCEX alone (without the agent)
+needs none of this: <code class="docutils literal notranslate"><span class="pre">make</span></code> and the <code class="docutils literal notranslate"><span class="pre">PATH</span></code> line above are enough. The step-by-step installation
+of the agent is in its manual, <code class="docutils literal notranslate"><span class="pre">FOCEX/AGENT/focexagent_manual.pdf</span></code>.</p>
+</section>
+<section id="checking-the-installation">
+<h2><span class="section-number">3.6. </span>Checking the installation<a class="headerlink" href="#checking-the-installation" title="Link to this heading"></a></h2>
+<p>The quickest end-to-end test is the germanium example shipped with FOCEX; see
+<a class="reference internal" href="runfocex.html#focex-quickstart"><span class="std std-ref">Quick start: the Ge example</span></a>. It exercises the symmetry analysis, the SVD fit and the
+whole phonon/thermodynamics post-processing, and finishes in a few minutes on a
+single core.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="theory.html" class="btn btn-neutral float-left" title="2. Theory" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="runscsnaps.html" class="btn btn-neutral float-right" title="4. Running SC-SNAPS" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, University of Virginia.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

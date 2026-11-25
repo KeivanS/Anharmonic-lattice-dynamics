@@ -1,0 +1,14 @@
+{
+    "aladyngui": 0.023,
+    "faq": 0.021,
+    "focexagent_guide": 0.013,
+    "index": 0.003,
+    "install": 0.036,
+    "intro": 0.008,
+    "runfocex": 0.362,
+    "runfocexagent": 0.135,
+    "runscop8": 0.084,
+    "runscsnaps": 0.026,
+    "runthermacond": 0.035,
+    "theory": 0.075
+}
