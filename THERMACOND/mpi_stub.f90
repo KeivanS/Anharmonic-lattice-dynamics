@@ -39,6 +39,13 @@
  error stop 1
  end subroutine MPI_ABORT
 
+ subroutine MPI_BCAST(buf,n,dtype,root,comm,ierr)
+!! one process: the buffer already holds the root's data (2026-11-25, direct-solution check)
+ real(8) buf(*)
+ integer n,dtype,root,comm,ierr
+ ierr=0
+ end subroutine MPI_BCAST
+
  subroutine MPI_ALLGATHER(sendval,ns,stype,recv,nr,rtype,comm,ierr)
  integer sendval,ns,stype,recv(*),nr,rtype,comm,ierr
  recv(1)=sendval ; ierr=0

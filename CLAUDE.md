@@ -320,14 +320,23 @@ Manual: `docs/source/runthermacond.rst`. Theory: npj Comput. Mater. 11, 303 (202
   in git history before that). The physics routines in sub.f90 are unchanged apart
   from guards that let calculate_w3_ibz_split_sq / calculate_FGR_mpi2 be called once per
   IBZ point.
-- OPEN: direct solution (job 2) disagrees with the iterative one (job 3) -- Ge 6^3, 300 K:
-  RTA 29.52, iterative 31.21 (isotropic), direct 28.11/28.10/28.17 even with SVD (exact
-  solve, residual 5e-14). So the IBZ collision matrix M = C*S (CollisionMatrix_mpi) or its
-  RHS (cal_RHS_IBZ) is wrong; pre-existing. Also: cg_quadratic is plain CG (needs a
-  symmetric matrix; M is not): residual 7e-3 after 7 iterations; its printed
-  "|Ax-b|" is really funcmin. mode_kappa_d (old CG path) uses star-averaged velocities,
-  mode_kappa (RTA, SVD, now all paths) does not; mode_kappa resets tauinv_eff inside its
-  band loop.
+- FIXED 2026-11-25 (THERMACOND 2.3; user: "it should at least be consistent with the iterative method"): the job-2
+  collision matrix (CollisionMatrix_mpi) interchanged the second- and third-phonon mode indices in the F(q1 +- q2)
+  terms (P1(n1,q2-q1,l1,l2,l3) for P1(n1,q2-q1,l1,l3,l2); P1(ibz,q2,l1,l2@q2,l3@q1+q2), P2 l3@q1-q2) and kept only -Q in
+  the q2 = q1, l2 = l1 block. Rewritten from update_mpi's loop term by term (same index conventions), so M F = the
+  iteration operator: THERMACOND_CHECK_DIRECT=1 (memory mode) logs max|Q(F2-F)|/max|RHS| of one iteration step on the
+  direct solution: Ge 3e-14 (6^3), 2e-14 (8^3). Ge 6^3 300 K: direct was 29.54 < RTA 30.90; now 32.492/32.476/32.446 =
+  iteration 32.491/32.475/32.444 (its 1e-4 stop). cg_quadratic assumed a symmetric matrix: job 2 line 9 = 0 is now
+  restarted GMRES on the dense matrix. The matrix is NOT symmetric even as W M (star weights) on little-group-invariant,
+  degenerate-set-averaged vectors (THERMACOND_DUMP_CM=1 -> collision_matrix.dat; scratch symtest.py: Ge 6^3 6.5 %,
+  8^3 5.2 %): tetrahedron weights from the first phonon's view and a fixed tetrahedron partition. Hence GMRES, not CG.
+- Matrix-free GMRES (2026-11-25, user asked for matrix-free CG; GMRES because of the asymmetry above): job 3 line 9 = 2,
+  kappa.f90 gmres_bte/gmres_solve/bte_matvec: M x = A(x) - Q x with A from update_mpi (module flag update_return_a:
+  F2mpi = A instead of F_RTA + A/Q), right Jacobi preconditioner -1/Q (0 where Q < 1e-8 max Q: Gamma translations),
+  x0 = F_RTA, b = -Q F_RTA, GMRES(40), tol 1e-8 true residual, <= 400 products (TCOND_GMRES_TOL/_RESTART/_MAXMV); all
+  ranks run the same GMRES (identical arithmetic), the product is collective. kappa_iter.dat: a block per product.
+  Ge 6^3 100-300 K: 12 products to 8e-9; job 2 SVD, job 2 GMRES, job 3 GMRES memory/disk: F equal to 2e-7, kappa to all
+  printed digits; memory = disk byte-identical kappa_vs_T. Line 9 = 0 for job 3 is the old iteration, unchanged.
 - OPEN: isotope scattering (line 11) not wired into jobs 2/3 (stops with a message); the
   Gamma-point optical calculation (old job 50, or 51+52 with tetrahedra) not yet in job 0
   -- ask the user which variant.

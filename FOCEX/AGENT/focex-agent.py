@@ -1765,7 +1765,7 @@ class Agent:
             L[5] = ' '.join(fx['tc_T']) + '        # 6 Tmin(K), Tmax(K), number of temperatures (THERMACOND_T)'
         L[7] = f'{job}            # 8 THERMACOND job ({TC_JOB[job]})'
         if fx['tc_solver'] is not None:
-            L[8] = f"{fx['tc_solver']}            # 9 THERMACOND direct solver: 0 conjugate gradient, 1 SVD"
+            L[8] = f"{fx['tc_solver']}            # 9 THERMACOND solver: job 2: 0 GMRES, 1 SVD; job 3: 0 iteration, 2 matrix-free GMRES"
         return L
 
     def t_thermacond(self):
@@ -1837,7 +1837,7 @@ class Agent:
         low = [r[0] for r in rows if sum(r[7:10]) < 0.99 * sum(r[1:4])]
         if low:
             msg.append(f'WARNING: the {full} solution is below the RTA at {len(low)} temperature(s); the full '
-                       'solution should not be lower -- the direct solver has an open issue (compare with job 3)')
+                       'solution should not be lower (THERMACOND before 2.3: wrong job-2 collision matrix)')
         msg.append(self.tc_plots(d))
         return True, '\n  '.join(msg)
 

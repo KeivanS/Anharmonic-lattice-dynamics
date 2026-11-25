@@ -634,7 +634,7 @@ VASP-Flow (its manual lists all of them); the common ones are below.
      - Tmin Tmax (K), number of temperatures (line 6)
    * - ``THERMACOND_SOLVER``
      - 0
-     - job 2: 0 conjugate gradient, 1 SVD (line 9)
+     - line 9: job 3: 2 GMRES (recommended), 0 iteration; job 2: 0 GMRES, 1 SVD
    * - ``VASP_RUN``
      - here
      - ``external``: the agent writes the inputs of each VASP stage and stops as WAITING; the runs are
@@ -888,11 +888,11 @@ instruction file:
    THERMACOND_JOB: 2
    THERMACOND_MESH: 12 12 12     # latdyn.params line 1 for THERMACOND (default: the FOCEX mesh)
    THERMACOND_T: 100 900 9       # line 6: Tmin, Tmax (K), number of temperatures
-   # THERMACOND_SOLVER: 0        # line 9, job 2: 0 conjugate gradient, 1 SVD
+   # THERMACOND_SOLVER: 0        # line 9: job 2: 0 GMRES, 1 SVD; job 3: 2 GMRES, 0 iteration
 
 The task copies ``lat_fc.dat``, ``fc2.dat``, ``fc3.dat``, ``structure.params``,
 ``dielectric.params`` and ``kpbs.params`` from ``05_focex`` to ``07_thermacond``, writes there
-FOCEX's ``latdyn.params`` with lines 1, 6, 8 and 9 from these keywords, and runs ``tcond-2.2.x``
+FOCEX's ``latdyn.params`` with lines 1, 6, 8 and 9 from these keywords, and runs the newest ``tcond-*.x``
 with the MPI command of the profile; ``05_focex`` is not changed. A ``latdyn_params`` block
 (:ref:`agent-override`) sets all 13 lines for both FOCEX and THERMACOND, and its line 8 is the job
 unless ``THERMACOND_JOB`` is given. The mesh is the expensive choice: the FOCEX default (``fine``)
@@ -900,8 +900,8 @@ is usually far too dense, so set ``THERMACOND_MESH`` and converge kappa with it.
 
 The report gives, at up to seven of the temperatures, kappa_RTA, the full (direct or iterative)
 solution and the coherences term kappa_C of the Wigner formulation (W/mK, average of the
-diagonal), and a warning if the full solution falls below the RTA, which it should not do (the
-direct solver has an open issue: compare with job 3). The complete results are in
+diagonal), and a warning if the full solution falls below the RTA, which it should not do. The
+complete results are in
 ``07_thermacond``: ``kappa_vs_T.dat``, ``kappa_wigner.dat``, ``Qvalue.dat`` (scattering rates) and
 the other files described in :doc:`runthermacond`. An existing project gets the task by adding
 ``THERMACOND_JOB`` to its ``focex-agent-instructions.txt`` and submitting ``run_workflow.sh``

@@ -724,7 +724,7 @@ BS\_NKPTS & 40 points per segment of the band path & BS\_NKPTS: 60 \\
 THERMACOND\_JOB & 0: not run & THERMACOND\_JOB: 2 \quad (1 linewidths, 2 or 3 $\kappa$) \\
 THERMACOND\_MESH & the FOCEX mesh (usually far too dense) & THERMACOND\_MESH: 12 12 12 \\
 THERMACOND\_T & 0 900 31: Tmin, Tmax (K), number of temperatures & THERMACOND\_T: 100 900 9 \\
-THERMACOND\_SOLVER & 0: conjugate gradient (job 2) & THERMACOND\_SOLVER: 1 \quad (SVD) \\
+THERMACOND\_SOLVER & 0: job 2 GMRES, job 3 iteration & THERMACOND\_SOLVER: 2 \quad (job 3 GMRES) \\
 \multicolumn{3}{@{}l}{\textcolor{mainblue}{\textbf{programs}}} \\
 FOCEX\_X & the newest \cmd{~/ALADYN/bin/focex-*.x} & FOCEX\_X: ~/ALADYN/bin/focex-9.8.x \\
 SC\_SNAPS\_X & \cmd{~/ALADYN/bin/sc_snaps.x} (else \cmd{~/BIN/sc_snaps.x}) & SC\_SNAPS\_X: /path/sc\_snaps.x \\
@@ -1033,12 +1033,12 @@ RANKS: 1 1 1 0 0 0 0 0        # cubic force constants are needed
 THERMACOND_JOB: 2
 THERMACOND_MESH: 12 12 12     # latdyn.params line 1 for THERMACOND (default: the FOCEX mesh)
 THERMACOND_T: 100 900 9       # line 6: Tmin, Tmax (K), number of temperatures
-# THERMACOND_SOLVER: 0        # line 9, job 2: 0 conjugate gradient, 1 SVD
+# THERMACOND_SOLVER: 0        # line 9: job 2: 0 GMRES, 1 SVD; job 3: 2 GMRES, 0 iteration
 \end{lstlisting}
 The task copies \cmd{lat_fc.dat}, \cmd{fc2.dat}, \cmd{fc3.dat}, \cmd{structure.params},
 \cmd{dielectric.params} and \cmd{kpbs.params} from \cmd{05_focex} to \cmd{07_thermacond}, writes
 there FOCEX's \cmd{latdyn.params} with lines 1, 6, 8 and 9 from these keywords, and runs
-\cmd{tcond-2.2.x} (the newest) with the MPI command of the profile; \cmd{05_focex} is not changed. A
+the newest \cmd{tcond-*.x} with the MPI command of the profile; \cmd{05_focex} is not changed. A
 \cmd{latdyn_params} block (Section~\ref{sec:override}) sets all 13 lines for both FOCEX and
 THERMACOND, and its line 8 is the job unless \cmd{THERMACOND_JOB} is given. The mesh is the
 expensive choice: the FOCEX default (\cmd{fine}) is usually far too dense, so set
@@ -1046,8 +1046,8 @@ expensive choice: the FOCEX default (\cmd{fine}) is usually far too dense, so se
 
 The report gives, at up to seven of the temperatures, $\kappa_{RTA}$, the full (direct or iterative)
 solution and the coherences term $\kappa_C$ of the Wigner formulation (W/mK, average of the
-diagonal), and a warning if the full solution falls below the RTA, which it should not do (the
-direct solver has an open issue: compare with job~3). The complete results are in
+diagonal), and a warning if the full solution falls below the RTA, which it should not do. The
+complete results are in
 \cmd{07_thermacond}: \cmd{kappa_vs_T.dat}, \cmd{kappa_wigner.dat}, \cmd{Qvalue.dat} (scattering
 rates) and the other files described in the THERMACOND manual. An existing project gets the task
 by adding \cmd{THERMACOND_JOB} to its \cmd{focex-agent-instructions.txt} and submitting

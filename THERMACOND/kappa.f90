@@ -75,6 +75,11 @@
  integer, allocatable :: counts(:),displs(:)
  integer ukvt,kapRTA,tauf,kapd,tauef,kappai,tauefi,udist,ukw
  real(8) kRTA(3,3),kdir(3,3),resid,kWP(3,3),kWC(3,3),kblk(3,3)
+! GMRES (2026-11-25): relative residual tolerance, restart length, maximum number of matrix-vector products
+! (env TCOND_GMRES_TOL, TCOND_GMRES_RESTART, TCOND_GMRES_MAXMV), Jacobi preconditioner
+ real(8) :: gm_tol=1d-8
+ integer :: gm_restart=40, gm_maxmv=400
+ real(8), allocatable :: gm_dinv(:)
  ! per IBZ point and mode, star summed (2.1, the mode-resolved and cumulative kappa): RTA (mode_kappa
  ! with F_RTA), Wigner kappa_P and kappa_C (half of each pair s,s' to each mode), RTA rates 1/tau
  real(8), allocatable :: cR_k(:,:,:,:),wP_k(:,:,:,:),wC_k(:,:,:,:),tauinvR(:,:)
@@ -938,7 +943,11 @@
              svdcut=1d-9
              call svd_solver(n,n,Collision_Matrix,RHS,DirectSolution,sig,svdcut,errorr,ermax,fm,'svd_output_IBZ.dat')
           else
-             call cg_quadratic(n,Collision_Matrix,RHS,DirectSolution,fm,100,2)
+             ! 2026-11-25: cg_quadratic (plain CG) assumes a symmetric matrix; M is not (tetrahedron weights,
+             ! IBZ representatives): restarted GMRES on the dense matrix, Jacobi-preconditioned by -1/Q
+             call gmres_setup(n,gm_dinv)
+             call gmres_solve(1,n,RHS,DirectSolution,gm_dinv,gm_tol,gm_restart,gm_maxmv,nit,resid)
+             write(ulog,*)' direct solution: dense GMRES, matrix-vector products',nit,' |Ax-b|/|b| =',resid
           endif
           Ax=matmul(Collision_Matrix,DirectSolution)
           resid=sqrt(sum((Ax-RHS)**2)/max(sum(RHS**2),1d-300))
@@ -954,11 +963,17 @@
                (kRTA(i,i),i=1,3),kRTA(1,2),kRTA(1,3),kRTA(2,3),(kdir(i,i),i=1,3),kdir(1,2),kdir(1,3),kdir(2,3)
           flush(ukvt)
           call write_modes()
+          call dump_cm(n)
           deallocate(Collision_Matrix,Ax)
        endif
        call timing('direct solution')
+       call check_direct_solution()
     else
-       call iterate_bte(nit)
+       if (solver_direct.eq.2) then
+          call gmres_bte(nit)
+       else
+          call iterate_bte(nit)
+       endif
        call total_kappa(kdir)
        if (root) then
           call write_F('iterative')
@@ -981,6 +996,67 @@
     endif
  endif
  end subroutine kappa_all_temperatures
+
+!---------------------------------------------------------------
+ subroutine dump_cm(n)
+!! THERMACOND_DUMP_CM=1: n, nibz, ndyn, wibz, then RHS and the matrix (row by row) to collision_matrix.dat
+ integer, intent(in) :: n
+ character(len=8) e
+ integer u,i
+ e=' '
+ call get_environment_variable('THERMACOND_DUMP_CM',e)
+ if (e(1:1).ne.'1') return
+ open(newunit=u,file='collision_matrix.dat',status='replace')
+ write(u,*)n,nibz,ndyn,tempk
+ write(u,*)wibz(1:nibz)
+ write(u,*)RHS(1:n)
+ do i=1,n
+    write(u,*)Collision_Matrix(i,:)
+ enddo
+ close(u)
+ end subroutine dump_cm
+
+!---------------------------------------------------------------
+ subroutine check_direct_solution()
+!! THERMACOND_CHECK_DIRECT=1 (tests, V3*delta in memory only; 2026-11-25): one step of the iteration of
+!! job 3 (update_mpi) applied to the direct solution F must return F, since M F = RHS is the fixed-point
+!! equation of the iteration. Logged: max|F2 - F| / max|F|. THERMACOND_DUMP_CM=1 also writes the matrix,
+!! RHS and the IBZ weights to collision_matrix.dat (root; small meshes only) for the symmetry test.
+ character(len=8) e
+ integer kk,la,i,n,s,imax(3)
+ real(8) dev
+ real(8), allocatable :: buf(:),gbuf(:)
+ e=' '
+ call get_environment_variable('THERMACOND_CHECK_DIRECT',e)
+ if (e(1:1).ne.'1' .or. v3_store.ne.1) return
+ n=nibz*ndyn*3
+ call MPI_BCAST(FFF,n,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,ierr)
+ if (allocated(F2mpi)) deallocate(F2mpi)
+ allocate(F2mpi(max(nloc,1),ndyn,3))
+ if (nloc.gt.0) call update_mpi(ndyn,kglob)
+ allocate(buf(nloc*ndyn*3),gbuf(n))
+ s=0
+ do kk=1,nloc ; do la=1,ndyn ; do i=1,3
+    s=s+1
+    buf(s)=F2mpi(kk,la,i)
+ enddo ; enddo ; enddo
+ call gather_all(ndyn*3,buf,gbuf)
+ if (root) then
+! Q (F2 - F) = M F - RHS: the residual of the iteration's own operator at the direct solution, relative to
+! max|RHS| (F2 - F alone is ill-conditioned where Q ~ 0: F2 = F_RTA + A/Q)
+    s=0 ; dev=0 ; imax=0
+    do kk=1,nibz ; do la=1,ndyn ; do i=1,3
+       s=s+1
+       if (abs(Qvalue(kk,la)*(gbuf(s)-FFF(kk,la,i))).gt.dev) then
+          dev=abs(Qvalue(kk,la)*(gbuf(s)-FFF(kk,la,i))) ; imax=[kk,la,i]
+       endif
+    enddo ; enddo ; enddo
+    dev=dev/max(maxval(abs(RHS)),1d-300)
+    write(ulog,*)'CHECK_DIRECT T=',tempk,': max|Q (F2-F)| / max|RHS| =',dev,' at ibz, mode, xyz',imax
+    write(*,*)'CHECK_DIRECT T=',tempk,' max|Q (F2-F)|/max|RHS| =',dev,' at',imax
+ endif
+ deallocate(buf,gbuf)
+ end subroutine check_direct_solution
 
 !---------------------------------------------------------------
  subroutine average_degenerate_v3(kr)
@@ -1394,5 +1470,194 @@
  enddo
  niter=min(niter,max_iter)
  end subroutine iterate_bte
+
+ !---------------------------------------------------------------
+ subroutine gmres_setup(n,dinv)
+!! dinv = -1/Q (the diagonal of M F = A(F) - Q F without the small scattering-in terms), 0 where
+!! Q < 1d-8 max Q (the rigid translations at Gamma: V3 = v = 0, F stays 0); GMRES settings from the environment
+ integer, intent(in) :: n
+ real(8), allocatable, intent(inout) :: dinv(:)
+ character(len=32) e
+ integer kk,la,i,s
+ real(8) qmax
+ if (allocated(dinv)) deallocate(dinv)
+ allocate(dinv(n))
+ qmax=maxval(Qvalue)
+ s=0
+ do kk=1,nibz ; do la=1,ndyn ; do i=1,3
+    s=s+1
+    dinv(s)=0
+    if (Qvalue(kk,la).gt.1d-8*qmax) dinv(s)=-1d0/Qvalue(kk,la)
+ enddo ; enddo ; enddo
+ e=' ' ; call get_environment_variable('TCOND_GMRES_TOL',e)
+ if (e.ne.' ') read(e,*) gm_tol
+ e=' ' ; call get_environment_variable('TCOND_GMRES_RESTART',e)
+ if (e.ne.' ') read(e,*) gm_restart
+ e=' ' ; call get_environment_variable('TCOND_GMRES_MAXMV',e)
+ if (e.ne.' ') read(e,*) gm_maxmv
+ end subroutine gmres_setup
+
+!---------------------------------------------------------------
+ subroutine bte_matvec(mode,x,y)
+!! y = M x.  mode 1: the dense Collision_Matrix (root); mode 2: matrix-free, M x = A(x) - Q x with A the
+!! scattering sum of update_mpi (all ranks; P1, P2 from memory, or recomputed point by point from V3DELTA as
+!! in iterate_bte). Vector order s = 3*((ibz-1)*ndyn+mode-1)+xyz, as the matrix rows and columns.
+ integer, intent(in) :: mode
+ real(8), intent(in) :: x(:)
+ real(8), intent(out) :: y(:)
+ integer kk,la,i,s
+ real(8), allocatable :: bl(:),gb(:)
+ if (mode.eq.1) then
+    y=matmul(Collision_Matrix,x)
+    return
+ endif
+ FFF=reshape(x,[nibz,ndyn,3],order=[3,2,1])
+ update_return_a=.true.
+ if (v3_store.eq.1) then
+    if (allocated(F2mpi)) deallocate(F2mpi)
+    allocate(F2mpi(max(nloc,1),ndyn,3))
+    if (nloc.gt.0) call update_mpi(ndyn,kglob)
+    F2loc=F2mpi(1:nloc,:,:)
+ else
+    if (allocated(F2mpi)) deallocate(F2mpi)
+    allocate(F2mpi(1,ndyn,3))
+    do kk=kglob(1),kglob(2)
+       kl=kk-kglob(1)+1
+       if (.not.read_v3(kk)) call MPI_ABORT(MPI_COMM_WORLD,1,ierr)
+       ksub=[kk,kk]
+       call calculate_tauRTA_mpi2(ksub,ndyn,tempk)
+       call update_mpi(ndyn,ksub)
+       F2loc(kl,:,:)=F2mpi(1,:,:)
+    enddo
+ endif
+ update_return_a=.false.
+ allocate(bl(nloc*ndyn*3),gb(nibz*ndyn*3))
+ s=0
+ do kk=1,nloc ; do la=1,ndyn ; do i=1,3
+    s=s+1
+    bl(s)=F2loc(kk,la,i)
+ enddo ; enddo ; enddo
+ call gather_all(ndyn*3,bl,gb)
+ s=0
+ do kk=1,nibz ; do la=1,ndyn ; do i=1,3
+    s=s+1
+    y(s)=gb(s)-Qvalue(kk,la)*x(s)
+ enddo ; enddo ; enddo
+ deallocate(bl,gb)
+ end subroutine bte_matvec
+
+!---------------------------------------------------------------
+ subroutine gmres_solve(mode,n,b,x,dinv,tol,mr,maxmv,nmv,relres)
+!! Restarted GMRES(mr) for M x = b, right preconditioning x = x0 + D z, D = diag(dinv); M only through
+!! bte_matvec (mode 1 dense, 2 matrix-free). Modified Gram-Schmidt, Givens rotations. Stops when the true
+!! relative residual |b - M x|/|b| < tol (checked at each restart) or after maxmv products. x: start in, solution
+!! out. mode 2 (all ranks, identical arithmetic) writes kappa after every product to kappa_iter.dat.
+!! Saad & Schultz, SIAM J. Sci. Stat. Comput. 7, 856 (1986).
+ integer, intent(in) :: mode,n,mr,maxmv
+ real(8), intent(in) :: b(n),dinv(n),tol
+ real(8), intent(inout) :: x(n)
+ integer, intent(out) :: nmv
+ real(8), intent(out) :: relres
+ real(8), allocatable :: V(:,:),H(:,:),cs(:),sn(:),g(:),y(:),w(:),r(:),xt(:)
+ real(8) bnorm,beta,d,tmp,hn
+ integer i,j,jj
+ bnorm=sqrt(dot_product(b,b))
+ nmv=0 ; relres=0
+ if (bnorm.eq.0) then
+    x=0 ; return
+ endif
+ allocate(V(n,mr+1),H(mr+1,mr),cs(mr),sn(mr),g(mr+1),y(mr),w(n),r(n),xt(n))
+ outer: do
+    call bte_matvec(mode,x,w) ; nmv=nmv+1
+    r=b-w
+    beta=sqrt(dot_product(r,r))
+    relres=beta/bnorm
+    write(ulog,'(a,f8.2,a,i5,a,es10.3)')' GMRES T=',tempk,' products',nmv,' true |b-Mx|/|b| =',relres
+    if (relres.lt.tol .or. nmv.ge.maxmv) exit outer
+    V(:,1)=r/beta
+    g=0 ; g(1)=beta ; H=0 ; jj=0
+    do j=1,mr
+       call bte_matvec(mode,dinv*V(:,j),w) ; nmv=nmv+1
+       do i=1,j
+          H(i,j)=dot_product(w,V(:,i))
+          w=w-H(i,j)*V(:,i)
+       enddo
+       hn=sqrt(dot_product(w,w))
+       H(j+1,j)=hn
+       if (hn.gt.0) V(:,j+1)=w/hn
+       do i=1,j-1
+          tmp=cs(i)*H(i,j)+sn(i)*H(i+1,j)
+          H(i+1,j)=-sn(i)*H(i,j)+cs(i)*H(i+1,j)
+          H(i,j)=tmp
+       enddo
+       d=sqrt(H(j,j)**2+H(j+1,j)**2)
+       cs(j)=H(j,j)/d ; sn(j)=H(j+1,j)/d
+       H(j,j)=d ; H(j+1,j)=0
+       g(j+1)=-sn(j)*g(j) ; g(j)=cs(j)*g(j)
+       relres=abs(g(j+1))/bnorm
+       jj=j
+       if (mode.eq.2) then
+          call gmres_back(j,H,g,y)
+          xt=x+dinv*matmul(V(:,1:j),y(1:j))
+          FFF=reshape(xt,[nibz,ndyn,3],order=[3,2,1])
+          call mode_kappa(ndyn,tempk,veloc,eigenval)
+          if (root) then
+             write(kappai,*)'================= T, GMRES matrix-vector products, |b-Mx|/|b|',tempk,nmv,relres
+             call write_kappa(ndyn,tempk,veloc,eigenval,kappai,tauefi)
+          endif
+       endif
+       if (relres.lt.tol .or. nmv.ge.maxmv .or. hn.eq.0) exit
+    enddo
+    call gmres_back(jj,H,g,y)
+    x=x+dinv*matmul(V(:,1:jj),y(1:jj))
+ enddo outer
+ deallocate(V,H,cs,sn,g,y,w,r,xt)
+ end subroutine gmres_solve
+
+!---------------------------------------------------------------
+ subroutine gmres_back(k,H,g,y)
+!! y(1:k) = R^-1 g, R = the upper triangle of the rotated Hessenberg matrix H (GMRES)
+ integer, intent(in) :: k
+ real(8), intent(in) :: H(:,:),g(:)
+ real(8), intent(inout) :: y(:)
+ integer ii,kk2
+ do ii=k,1,-1
+    y(ii)=g(ii)
+    do kk2=ii+1,k
+       y(ii)=y(ii)-H(ii,kk2)*y(kk2)
+    enddo
+    y(ii)=y(ii)/H(ii,ii)
+ enddo
+ end subroutine gmres_back
+
+!---------------------------------------------------------------
+ subroutine gmres_bte(nmv)
+!! job 3, latdyn line 9 = 2 (2026-11-25): the full solution of M F = RHS by matrix-free GMRES, started from
+!! F_RTA; RHS = -Q F_RTA (= cal_RHS_IBZ), so the solution is the fixed point of the iteration of iterate_bte.
+!! No collision matrix is stored; each product costs one iteration of iterate_bte.
+ integer, intent(out) :: nmv
+ integer n,kk,la,i,s
+ real(8) rr
+ real(8), allocatable :: b(:),x(:)
+ n=nibz*ndyn*3
+ if (.not.allocated(F_RTA)) allocate(F_RTA(nibz,ndyn,3))
+ if (.not.allocated(F2)) allocate(F2(nibz,ndyn,3),F2loc(nloc,ndyn,3))
+ F_RTA=FFF
+ allocate(b(n),x(n))
+ s=0
+ do kk=1,nibz ; do la=1,ndyn ; do i=1,3
+    s=s+1
+    x(s)=F_RTA(kk,la,i)
+    b(s)=-Qvalue(kk,la)*F_RTA(kk,la,i)
+ enddo ; enddo ; enddo
+ call gmres_setup(n,gm_dinv)
+ call gmres_solve(2,n,b,x,gm_dinv,gm_tol,gm_restart,gm_maxmv,nmv,rr)
+ write(ulog,*)' GMRES T=',tempk,': matrix-vector products',nmv,' |b-Mx|/|b| =',rr,' (tolerance',gm_tol,')'
+ if (root) write(*,'(a,f8.2,a,i5,a,es10.3)')' GMRES T=',tempk,': products',nmv,'  |b-Mx|/|b| =',rr
+ if (rr.ge.gm_tol .and. root) write(*,*)'WARNING GMRES: tolerance not reached after',nmv,' products'
+ FFF=reshape(x,[nibz,ndyn,3],order=[3,2,1])
+ call mode_kappa(ndyn,tempk,veloc,eigenval)
+ deallocate(b,x)
+ end subroutine gmres_bte
 
  end program kappa_full

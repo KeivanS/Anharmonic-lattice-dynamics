@@ -786,7 +786,8 @@ and
   :math:`M_{k^*k'^*} = \sum_{k''} C_{k^*k''} \mathcal S_{k''k'^*}`, a square matrix of the number
   of irreducible points times the number of modes, gives
   :math:`\mathbf v_{k^*} \partial n^0_{k^*}/\partial T = \sum_{k'^*} M_{k^*k'^*} \mathbf F_{k'^*}`,
-  solved by singular value decomposition or conjugate gradients.
+  solved by GMRES or singular value decomposition; job 3 solves the same system by GMRES without
+  storing :math:`M` (or by the iteration above). :math:`M` is not symmetric (tetrahedron weights).
 
 **Degenerate modes.** Eigenvectors of degenerate modes are defined only up to a rotation within
 their degenerate set, so a result that depends on one velocity per mode is not unique there.

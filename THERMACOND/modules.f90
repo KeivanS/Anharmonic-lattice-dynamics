@@ -618,6 +618,9 @@ end module mod_ksubset2
 module exactBTE2
 
 integer ncol
+! update_return_a (2026-11-25): update_mpi returns the scattering sum A(F) itself in F2mpi instead of
+! F_RTA + A/Q, for the matrix-free GMRES (M F = A(F) - Q F)
+logical :: update_return_a = .false.
 real(8), allocatable:: F_RTA(:,:,:), F1(:,:,:), Fs1(:,:,:) ,F2(:,:,:), Qvalue(:,:), iselfenergy(:,:), tau(:,:,:), error(:,:,:),diff(:,:,:),F2mpi(:,:,:)
 real(8), allocatable:: F1_old(:,:,:)
 real(8), allocatable:: Qvalue_N(:,:), Qvalue_U(:,:), tauinv_N(:,:), tauinv_U(:,:), tauinv_tot(:,:), tauinv_eff(:,:)

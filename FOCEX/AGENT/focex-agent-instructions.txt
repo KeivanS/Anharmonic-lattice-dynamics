@@ -56,7 +56,7 @@ THERMACOND_JOB: 0           # 0: no THERMACOND (FOCEX already gives bands, DOS, 
 #                           # 2: + kappa, RTA and direct solution; 3: + kappa, RTA and iterative
 # THERMACOND_MESH: 12 12 12  # k-mesh for THERMACOND (default: the FOCEX mesh, often too dense)
 # THERMACOND_T: 100 900 9    # Tmin Tmax (K), number of temperatures (default: FOCEX's 0 900 31)
-# THERMACOND_SOLVER: 0       # job 2: 0 conjugate gradient, 1 SVD
+# THERMACOND_SOLVER: 0       # line 9: job 2: 0 GMRES, 1 SVD; job 3: 2 GMRES (recommended), 0 iteration
 
 # ── programs (defaults shown) ──
 # FOCEX_X: ~/ALADYN/bin/focex-9.1.x    # default: the newest ~/ALADYN/bin/focex-*.x

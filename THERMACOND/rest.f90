@@ -31,7 +31,7 @@
   call next_line ; read(line,*,iostat=ios_l) tmin,tmax,ntemp    ; call check('Tmin, Tmax, number of temperatures')
   call next_line ; read(line,*,iostat=ios_l) classical          ; call check('0 quantum / 1 classical')
   call next_line ; read(line,*,iostat=ios_l) job                ; call check('job 0..3')
-  call next_line ; read(line,*,iostat=ios_l) solver_direct      ; call check('direct solver 0 CG / 1 SVD')
+  call next_line ; read(line,*,iostat=ios_l) solver_direct      ; call check('solver: job 2 0 GMRES / 1 SVD; job 3 0 iteration / 2 GMRES')
   call next_line ; read(line,*,iostat=ios_l) v3_store           ; call check('V3*delta 0 disk / 1 memory')
   call next_line ; read(line,*,iostat=ios_l) iso                ; call check('isotope scattering 0/1')
   call next_line ; read(line,*,iostat=ios_l) calc_cross,q_cross ; call check('calc_cross and q_cross(3)')
@@ -64,7 +64,7 @@
   write(ulog,*)'shift, normal=',shft,normald
   write(ulog,*)'wmesh, wmax=',wmesh,wmax,'  width, eta=',width,etaz
   write(ulog,*)'Tmin,Tmax(K), nT=',tmin,tmax,ntemp
-  write(ulog,*)'job, direct solver (0 CG, 1 SVD), V3*delta (0 disk, 1 memory), iso=',job,solver_direct,v3_store,iso
+  write(ulog,*)'job, solver (job 2: 0 GMRES, 1 SVD; job 3: 0 iteration, 2 GMRES), V3*delta (0 disk, 1 memory), iso=',job,solver_direct,v3_store,iso
   write(ulog,*)'calc_cross, q_cross, sample length (microns)=',calc_cross,q_cross,lmicron
   if (classical .eq. 1) then
      write(ulog,*)'Calculation is done in the CLASSICAL limit'

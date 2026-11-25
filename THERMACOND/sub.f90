@@ -2487,7 +2487,11 @@ loop1 : do ibz=1,ksubsize3 !ibz_subset(1),ibz_subset(2)
         enddo loop2
 
 !changetoIBZ   F2(mapinv(n1),l1,xyz)=F_RTA(mapinv(n1),l1,xyz) + Avalue(mapinv(n1),l1,xyz)/Qvalue(mapinv(n1),l1)
-               F2mpi(ibz,l1,xyz)=F_RTA(n1,l1,xyz) + Avalue(ibz,l1,xyz)/Qvalue(n1,l1)
+               if (update_return_a) then
+                  F2mpi(ibz,l1,xyz)=Avalue(ibz,l1,xyz)
+               else
+                  F2mpi(ibz,l1,xyz)=F_RTA(n1,l1,xyz) + Avalue(ibz,l1,xyz)/Qvalue(n1,l1)
+               endif
 
     enddo loopxyz
 
@@ -3107,188 +3111,90 @@ close(601)
 end subroutine CollisionMatrix
 !===========================================================
 !==========================================================
-subroutine CollisionMatrix_mpi(ksbst,ndn)!Cs) !!Saf!!
-!subroutine sycollisionM(ksbst,nibbz,kibbz,ndn,nk,kp,Cs) !!Saf!!
-!Collision matrix(IBZ*FBZ)*Symmerty matrix(FBZ*IBZ)=Cs(IBZ*IBZ) :output
-
+subroutine CollisionMatrix_mpi(ksbst,ndn)
+!! Rows (IBZ points ksbst(1)..ksbst(2), all modes and Cartesian components) of the linear operator M of
+!! the IBZ-reduced linearized BTE, M F = RHS (cal_RHS_IBZ), with
+!!   (M F)(1) = sum_{q2 in FBZ, l2, l3} [ P1(1;q2,l2,l3) (F(q1+q2,l3) - F(q2,l2)) + 1/2 P2(1;q2,l2,l3) (F(q2,l2) + F(q1-q2,l3)) ]
+!!              - Q(1) F(1),
+!! F at a star member = op_matrix(:,:,op) F at its IBZ point.  This is exactly the operator of update_mpi
+!! (job 3: F <- F_RTA + (M F + Q F)/Q), same loops, same index conventions
+!!   P1(ibz, q2, l1, l2 @ q2, l3 @ q1+q2),  P2(ibz, q2, l1, l2 @ q2, l3 @ q1-q2),
+!! so the direct solution is the fixed point of the iteration.
+!! Rewritten 2026-11-25 (user): the earlier version (a) put the column's mode in the second-phonon slot
+!! of the third-phonon terms, P1(n1,q2-q1,l1,l2,l3) for P1(n1,q2-q1,l1,l3,l2) (and likewise for P2), and
+!! (b) kept only -Q in the block q2 = q1, l2 = l1, dropping the scattering terms there. Ge 6x6x6, 300 K:
+!! direct 29.54 < RTA 30.90 < iterative 32.49 W/mK.
+!! Row layout (as before): local row 3*((n1-1)*ndn+l1-1)+xyz, n1 = 1..ksbst(2)-ksbst(1)+1; column
+!! 3*((n-1)*ndn+l-1)+j for IBZ point n, mode l, component j.  P1, P2, Qvaluempi: this subset (local index).
 use constants
 use exactBTE2
 use params, only : tolerance,margin,nconfigs,classical,fdfiles,threemtrx,lamin,lamax,nshells,include_fc,tmin,tmax,verbose
 use tc_params
 use lattice
-use ios, only : ulog,uposcar,uparams,utraj,ufco,umap,umatrx,utimes,ufc1,ufc2,ufc3,ufc4,ufc,ufit1,ufit2,ufit3,ufit4,uborn,write_out
+use ios, only : ulog
 use tc_ios
 use mod_ksubset2
 use phi3
 use kpoints
 use atoms_force_constants
 implicit none
+integer, intent(in) :: ksbst(2), ndn
+integer n1,n1g,l1,xyz,row,n2,s,narms,kvecstar_op(48),ns,nk3_proc1,nk3_proc2,nk3_proc1_i,nk3_proc2_i
+integer sq2,sp1f,sp2f,l2,l3,i3,j3,k3,inside,c2,c31,c32,j,ksubsize3,k_shift
+real(8) q1(3),q2(3),q3_proc1(3),q3_proc2(3),q3_proc1_i(3),q3_proc2_i(3),kvecstar(3,48),a2,a31,a32
 
-integer n1,l1,n2,l2,ns, s1,s2
-integer ndn,narms
-integer i,j,kil,ii,jj,d,kil1,kil2
-real(8) q(3),q1(3),q2(3),q3_p1(3),q3_p2(3)
-integer i3,j3,k3,inside,nk3_p1,nk3_p2
-real(8) C_d, C_of, C
-real(8) kvecstars(3,48)
-integer kvecops(48),n0,n22,nl2,l3,nl3,ni0,n1i,d1,d2
-integer ksbst(2),k_shift,ksubsize3
-
-s1=0
-s2=0
-!Cs=0
-C=0
-! kil=nibbz*ndn*3
 Collision_Matrixmpi=0
-!!!!Collision_Matrixmpi
-!kil1=((ksbst(2)-ksbst(1))+1)*ndn*3
-!kil2=nibz*ndn*3
-
-
-ksubsize3=(ksbst(2)-ksbst(1))+1
+ksubsize3=ksbst(2)-ksbst(1)+1
 k_shift=ksbst(1)-1
-
-!nkI1_loop: do ibz=1,ksubsize3
-
-!open(701,file='sycmatrix.dat')
- !** do n1=ksbst(1),ksbst(2)
-   do n1=1,ksubsize3
-!    do n1=1,nibbz
-       n1i=mapinv(n1+k_shift)
-    do l1=1,ndn
-! first row of the 3x3 blocks of (n1,l1) and first column of (n2,l2): the values the running counters s1, s2
-! had (2026-11-04: closed form, so that the n2 loop can run on OpenMP threads; each n2 owns its columns
-! and every element is summed over the arms in the same order as before)
-      d1=3*((n1-1)*ndn+l1-1)+1
-
-!$omp parallel do schedule(dynamic) private(n2,q,ni0,narms,kvecstars,kvecops,l2,d2,s1,s2,ns,n0,i3,j3,k3, &
-!$omp&   inside,C,nl2,l3,n22,q1,q2,q3_p1,q3_p2,nk3_p1,nk3_p2,nl3,i,j)
+do n1=1,ksubsize3
+   n1g=n1+k_shift
+   q1=kibz(:,n1g)
+! (l1,xyz) on threads: each pair owns its row, summed in the order of update_mpi
+!$omp parallel do collapse(2) schedule(dynamic) private(l1,xyz,row,n2,q2,narms,kvecstar,kvecstar_op,s, &
+!$omp&   q3_proc1,q3_proc2,ns,nk3_proc1,nk3_proc2,nk3_proc1_i,nk3_proc2_i,q3_proc1_i,q3_proc2_i,sq2,sp1f,sp2f, &
+!$omp&   l2,l3,a2,a31,a32,c2,c31,c32,j,i3,j3,k3,inside)
+   do l1=1,ndn
+   do xyz=1,3
+      row=3*((n1-1)*ndn+l1-1)+xyz
       do n2=1,nibz
-           q=kibz(:,n2)
-           ni0=mapinv(n2)
-           call kstarsinfbz1(q,nkc,kpc,narms,kvecstars,kvecops)
- !     write(701,*) '**************',n2,narms
-       do l2=1,ndn
-          d2=3*((n2-1)*ndn+l2-1)+1
-         !C_d=0
-         !C_of=0
- !      write(701,*)'n1,  n1i,  l1,  n2,  ni0,  n0,  l2,  narms,  ns,  s1,  s2,C_d,  C_of,   Cs(s1,s2)'
-       do ns=1,narms
-          call get_k_info(kvecstars(:,ns),NC,n0,i3,j3,k3,g1,g2,g3,inside)
-      ! do l2=1,ndn
-     !    C_d=0
-     !    C_of=0
-        ! C2=0
-        ! C3=0
-        ! C4=0
-        ! C5=0
-           if (n1i.eq.n0 .and. l1.eq.l2) then
-               C=0
-                 do nl2=1,ndn
-                   do l3=1,ndn
-                    do n22=1,nkc
-
-! K1                    C = C + (-P1(n1i,n22,l1,nl2,l3) - 0.5*P2(n1i,n22,l1,nl2,l3))
-                        C = C + (-P1(n1 ,n22,l1,nl2,l3) - 0.5*P2(n1,n22,l1,nl2,l3))
-
-                    enddo
-                   enddo
-                enddo
-            ! C2 = C_d
-            ! C3 = C_d
-
-           else
-
-         q1 = kibz(:,n1+k_shift)
-         q2 = kvecstars(:,ns)
-         q3_p1 = q1-q2
-         q3_p2 = q2-q1
-
-        ! write(*,*)'here', n1,n1i,l1,n2,ns,narms,n0,l2
-
-         call get_k_info(q3_p1,NC,nk3_p1,i3,j3,k3,g1,g2,g3,inside)
-         call get_k_info(q3_p2,NC,nk3_p2,i3,j3,k3,g1,g2,g3,inside)
-               C=0
-      loopnl3:  do nl3=1,ndn
-
-! K1              C = C + (-P1(n1i,n0,l1,l2,nl3) + P1(n1i,nk3_p1,l1,l2,nl3) +  P2(n1i,n0,l1,l2,nl3))
-           !       C = C + (-P1(n1 ,n0,l1,l2,nl3) + P1(n1 ,nk3_p2,l1,l2,nl3) + P2(n1 ,n0,l1,l2,nl3))
-                  C = C + (-P1(n1,n0,l1,l2,nl3) + P1(n1,nk3_p2,l1,l2,nl3) + 0.5*P2(n1,n0,l1,l2,nl3) + 0.5*P2(n1,nk3_p1,l1,l2,nl3)) 
-                enddo loopnl3
-         !    C4 = C_of
-         !    C5 = C_of
-           endif
-         s2=d2
-         s1=d1
-         do i=1,3
-           s2=d2
-           s1=d1+(i-1)
-            do j=1,3
-                s2=d2+(j-1)
-                ! i=1
-                ! j=1
-                Collision_Matrixmpi(s1,s2) = Collision_Matrixmpi(s1,s2) + (C * op_matrix(i,j,kvecops(ns)))
-                !write(*,*)'n1,n1i,l1,n2,l2,ni0,narms,ns,n0,s1,s2, C'
-!! K1 write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,C_d,C_of,op_matrix(i,j,kvecops(ns)),kvecops(ns),Cs(s1,s2)
-        !        write(701,*)n1,n1i,l1,n2,ni0,n0,l2,narms,ns,s1,s2,op_matrix(i,j,kvecops(ns)),kvecops(ns), Collision_Matrix(s1,s2)
-                !s2=s2+1
+         q2=kibz(:,n2)
+         call kstarsinfbz1(q2,nkc,kpc,narms,kvecstar,kvecstar_op)
+         do s=1,narms
+            q3_proc1=q1+kvecstar(:,s)      ! coalescence 1+2 -> 3
+            q3_proc2=q1-kvecstar(:,s)      ! decay 1 -> 2+3
+            call get_k_info(kvecstar(:,s),NC,ns,i3,j3,k3,g1,g2,g3,inside)
+            call get_k_info(q3_proc1,NC,nk3_proc1,i3,j3,k3,g1,g2,g3,inside)
+            call get_k_info(q3_proc2,NC,nk3_proc2,i3,j3,k3,g1,g2,g3,inside)
+            nk3_proc1_i=mapibz(nk3_proc1)
+            nk3_proc2_i=mapibz(nk3_proc2)
+            q3_proc1_i=kibz(:,nk3_proc1_i)
+            q3_proc2_i=kibz(:,nk3_proc2_i)
+            sq2=kvecstar_op(s)
+            call get_kvecopn2(q3_proc1_i,q3_proc1,nkc,kpc,sp1f)
+            call get_kvecopn2(q3_proc2_i,q3_proc2,nkc,kpc,sp2f)
+            do l2=1,ndn
+            do l3=1,ndn
+               a2 =-P1(n1,ns,l1,l2,l3)+0.5d0*P2(n1,ns,l1,l2,l3)   ! coefficient of F(q2,l2)
+               a31= P1(n1,ns,l1,l2,l3)                            ! of F(q1+q2,l3)
+               a32= 0.5d0*P2(n1,ns,l1,l2,l3)                      ! of F(q1-q2,l3)
+               c2 =3*((n2-1)*ndn+l2-1)
+               c31=3*((nk3_proc1_i-1)*ndn+l3-1)
+               c32=3*((nk3_proc2_i-1)*ndn+l3-1)
+               do j=1,3
+                  Collision_Matrixmpi(row,c2+j) =Collision_Matrixmpi(row,c2+j) +a2 *op_matrix(xyz,j,sq2)
+                  Collision_Matrixmpi(row,c31+j)=Collision_Matrixmpi(row,c31+j)+a31*op_matrix(xyz,j,sp1f)
+                  Collision_Matrixmpi(row,c32+j)=Collision_Matrixmpi(row,c32+j)+a32*op_matrix(xyz,j,sp2f)
+               enddo
             enddo
-           !s1=s1+1
+            enddo
          enddo
-        !s1=d1
-        !if (s2.lt.kil) then
-        !s2=s2+1
-        !else
-        !cycle
-        !endif
-       enddo   !narms loop
-!      write(*,*)'after summation over narms'
-!       d2=s2
-!       d1=s1
-!         do i=1,3
-!           do j=1,3
-!             s2=d2+(j-1)
-!             Cs(s1,s2) = C * op_kmatrix(i,j,kvecops(ns))
-!             write(*,*) s1,s2,C,ns, op_kmatrix(1,1,kvecops(1)), Cs(s1,s2),i,j
-!           enddo
-!          s1=s1+1
-!         enddo
-
-!        s1=d1
-!        if (s2.lt.kil) then
-!        s2=s2+1
- !       else
- !       cycle
- !       endif
-
-       enddo    !l2 loop
-!      s2=d2
-!      s1=s1+1
-      enddo     !n2 loop
-!$omp end parallel do
-
-!   if (s1.le.(kil-3)) then
-!    s1=s1+3
-!    else
-!    exit
-!    endif
-   s2=0
-   !s1=s1+1
-  enddo
+      enddo
+      c2=3*((n1g-1)*ndn+l1-1)+xyz
+      Collision_Matrixmpi(row,c2)=Collision_Matrixmpi(row,c2)-Qvaluempi(n1,l1)
    enddo
-
-!close(701)
-
-!open(601,file='Cs_sycollisionm.dat',status='unknown',form='unformatted')
-!do ii=1,kil1
-!   do jj=1,kil2
-!      write(601) Collision_Matrix(ii,jj)
-!   enddo
-!enddo
-!close(601)
-
-
-
+   enddo
+!$omp end parallel do
+enddo
 end subroutine CollisionMatrix_mpi
 !===========================================================
 

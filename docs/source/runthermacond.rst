@@ -17,8 +17,8 @@ Building
 .. code-block:: bash
 
    cd THERMACOND
-   make            # parallel build with mpif90  -> ~/ALADYN/bin/tcond-2.2.x
-   make serial     # serial build, no MPI library -> ~/ALADYN/bin/tcond-2.2-serial.x
+   make            # parallel build with mpif90  -> ~/ALADYN/bin/tcond-2.3.x
+   make serial     # serial build, no MPI library -> ~/ALADYN/bin/tcond-2.3-serial.x
    make DEBUG=1    # either of the above with -g -fbounds-check instead of -O2
 
 Objects and module files go to ``obj_mpi/`` or ``obj_serial/``. On macOS with
@@ -40,8 +40,8 @@ shared among the processes:
 
 .. code-block:: bash
 
-   tcond-2.2.x                 # one process (or tcond-2.2-serial.x)
-   mpirun -np 8 tcond-2.2.x    # eight processes
+   tcond-2.3.x                 # one process (or tcond-2.3-serial.x)
+   mpirun -np 8 tcond-2.3.x    # eight processes
 
 A serial run is the reference for a parallel one: built with the same compiler, both give the
 same output files (``make serial`` uses the compiler of ``mpif90``; ``make serial FC=...``
@@ -51,7 +51,7 @@ a set of degenerate modes do.
 Rank 0 writes all output in the run folder; the other processes work in
 ``.mpi_rank_NNN/``, which are removed at the end.
 
-A single process (``tcond-2.2-serial.x``, or ``tcond-2.2.x`` without ``mpirun``) runs the
+A single process (``tcond-2.3-serial.x``, or ``tcond-2.3.x`` without ``mpirun``) runs the
 V3, V3·delta, collision-matrix and iterative-update loops on OpenMP threads (since
 2026-11-04; same output files, bit for bit). The number of threads is chosen as for FOCEX
 (:ref:`installation <focex-install>`): ``TCOND_NUM_THREADS`` if set, 1 per process with more
@@ -86,7 +86,7 @@ Input files
        0 900 31      # 6  Tmin, Tmax (K), number of temperatures (equally spaced)
        0             # 7  0 quantum (Bose-Einstein), 1 classical occupations
        2             # 8  job (below)
-       0             # 9  direct solver: 0 conjugate gradient, 1 SVD
+       0             # 9  solver: job 2: 0 GMRES, 1 SVD; job 3: 0 iteration, 2 matrix-free GMRES
        0             # 10 V3*delta: 0 on disk in V3DELTA/ (reused), 1 in memory
        0             # 11 isotope scattering: 0 no, 1 natural abundances
        0 0 0 0       # 12 calc_cross, q_cross(3)
@@ -103,9 +103,9 @@ Input files
     1         0 + three-phonon linewidths of every mode along the band path, at every
               temperature
     2         0 + V3*delta in the irreducible zone; at every temperature the RTA and the
-              direct solution of the BTE (line 9)
-    3         0 + V3*delta; at every temperature the RTA and the iterative solution, for
-              when the collision matrix does not fit in memory
+              full solution with the collision matrix stored (line 9: 0 GMRES, 1 SVD)
+    3         0 + V3*delta; at every temperature the RTA and the full solution without
+              storing the collision matrix (line 9: 2 GMRES, recommended; 0 iteration)
     ========= ===============================================================================
 
     V3*delta (the three-phonon matrix elements times the tetrahedron weights) does not
@@ -115,6 +115,27 @@ Input files
     job 2, then costs seconds instead of the V3 time. ``V3DELTA/`` keeps copies of the
     ``lat_fc.dat``, ``fc2.dat``, ``fc3.dat``, ``structure.params`` and ``dielectric.params``
     it was made from; if any of them has changed, it is computed again.
+
+    **Solving the BTE (line 9).** Both jobs solve the same linear system M F = RHS in the
+    irreducible zone, where M F is the scattering operator applied to F (one pass over all
+    three-phonon processes) and RHS = -Q F_RTA.
+
+    * job 3, ``2`` (recommended): matrix-free GMRES. Each step needs one product M F, which
+      costs one iteration step; the matrix is never stored. It stops when
+      ``|RHS - M F| / |RHS| < 1e-8`` (Ge 6x6x6: 12 products).
+    * job 3, ``0``: the iteration F <- F_RTA + (M F + Q F)/Q (mixing 0.4, at most 150 steps,
+      stops when kappa changes by < 1e-4 W/mK). It converges slowly, or not at all, when normal
+      processes dominate.
+    * job 2, ``0`` GMRES or ``1`` SVD on the stored matrix (size (3 x modes x irreducible
+      points)^2, on rank 0).
+
+    All give the same solution (Ge 6x6x6, 300 K: 32.49 W/mK). The matrix is not symmetric (the
+    tetrahedron weights), so conjugate gradients do not apply. GMRES settings:
+    ``TCOND_GMRES_TOL``, ``TCOND_GMRES_RESTART`` (40), ``TCOND_GMRES_MAXMV`` (400).
+
+    .. note:: Before version 2.3 the job-2 collision matrix was wrong (Ge 6x6x6, 300 K: 29.54
+       W/mK, below the RTA 30.90). Job-2 results of earlier versions should be recomputed;
+       job 3 was not affected.
 
     Since version 2.1 the tetrahedron weights are computed first, from the frequencies
     alone, and the three-phonon matrix elements only where a weight is not zero: about 2 % of
@@ -206,7 +227,7 @@ file                           contents
 ``kappa_vs_T.dat``             one line per temperature: RTA (= kappa_P) and direct (job 2) or
                                iterative (job 3) conductivity tensor xx yy zz xy xz yz (W/mK),
                                degenerate modes as blocks; job 2 adds the relative residual of the
-                               linear solution, job 3 the iterations; then the per-mode values
+                               linear solution, job 3 the iterations or GMRES products; then the per-mode values
                                (RTA, direct/iterative), which depend on the degenerate basis
 ``kappa_RTA.dat``              conductivity per band in the RTA, for each temperature
 ``kappa_wigner.dat``           jobs 2, 3: one line per temperature: RTA, kappa_P, kappa_C and
@@ -217,7 +238,7 @@ file                           contents
 ``Qvalue.dat``                 Q and the three-phonon scattering rates in the irreducible wedge
 ``kappa_direct.dat``           job 2: conductivity per band from the direct solution
 ``tau_RTAandeff.dat``          job 2: RTA and effective lifetimes
-``kappa_iter.dat``             job 3: conductivity per band at each iteration
+``kappa_iter.dat``             job 3: conductivity per band at each iteration (or GMRES product)
 ``lw-selfenergy.dat``          job 1: linewidths along the path, one line per mode and k
 ``lw-selfenergy2.dat``         job 1: the same, one line per k
 ``V3DELTA/``                   V3*delta, one file per irreducible k-point (line 10 = 0)
@@ -339,7 +360,7 @@ much denser meshes (the paper uses up to 30x30x30 and extrapolates in 1/n).
 Status
 ------
 
-As of October 2026:
+As of November 2026:
 
 * isotope scattering (line 11 = 1) is not yet available with jobs 2 and 3;
 * the optical properties at the zone centre (self-energy at q = 0, dielectric function)
@@ -349,15 +370,20 @@ As of October 2026:
   ``kappa_vs_T.dat`` do not;
 * the iterative result for Ge 4x4x4 is anisotropic by 0.24 % (zz high), independently of the
   basis, while the RTA is exactly isotropic: the collision kernel does not have the full
-  symmetry (tetrahedron orientation or the star handling of q2, q3), being checked together
-  with the next item;
-* the direct solution (job 2) and the iterative one (job 3) do not agree; the direct
-  (IBZ-reduced) collision matrix is being checked;
+  symmetry (tetrahedron orientation), see the next item;
+* the collision matrix is not symmetric (Ge: 6.5 % on 6x6x6, 5.2 % on 8x8x8): the tetrahedron
+  weights of a process are computed from one phonon's point of view, and the tetrahedra do not
+  have the crystal's point symmetry;
 * before 22 October 2026 the k-point symmetry was wrong for hexagonal, trigonal, monoclinic
   and triclinic cells.
 
 Version history
 ---------------
+
+2.3
+   2026-11-25: matrix-free GMRES for job 3 (latdyn line 9 = 2). Job 2 collision matrix fixed (it
+   did not agree with job 3) and solved by GMRES (line 9 = 0, was conjugate gradients) or SVD.
+   Job 3 with line 9 = 0 is unchanged.
 
 2.2
    2026-11-09: mode-resolved and cumulative conductivity (``kappa_summary.dat``, ``kappa_wigner_modes.dat``,
